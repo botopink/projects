@@ -4,7 +4,7 @@
 registry, 04's scan registry · **State:** not started
 **Depends on:** 81 step 1 (R88-2 needs a failing release build's message) · 93 step 2 (generator
 `ws generate` wraps) · 92 (R92-6: rsocket routes in 15's registry) · 04 step 4 (`rkScannedDeps`,
-R88-3) · 73's re-measure of `botopink run` (R88-1) · lg2-j (R88-5 stays open) · onze 50 (R88-6, onze's file)
+R88-3) · 73's re-measure of `botopink run` (R88-1) · onze 50 (R88-6, onze's file)
 **Owns:** `modules/rakun-cli/**` (`templates/**` included) except 81's `src/release/**`,
 `test/release/**`, `src/sidecars/rakun_release.erl`; `botopink.json` / `src/root.bp` are 81's until
 it lands, then this front appends · `repository/rakun/AGENTS.md` § CLI
@@ -70,7 +70,7 @@ env variable but `BOTOPINK_BIN`, no external service.
 
 ### Step 4 — R88-5
 
-- [ ] `command_decorator_test.bp`'s load-time refusal across types stays the cell; the box ("two commands claiming the same name fail at comptime, naming both declarations") open on lg2-j, says so; if lg2-j is answered "no", reworded to the load-time refusal and ticked
+- [ ] R88-5 ("two commands claiming the same name fail at comptime, naming both declarations"): refused where the entry point builds the command table with `@TypeInfo.all(with: command)` (343); `command_decorator_test.bp`'s load-time refusal becomes that compile refusal, and the box ticks
 
 ### Step 5 — configuration as a typed record (decision 299)
 

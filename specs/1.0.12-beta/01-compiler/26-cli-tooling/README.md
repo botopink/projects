@@ -2,9 +2,8 @@
 
 **Priority:** high · **State:** partial: steps 1, 2 (box 3 measured, rakun's row), 3, 4, 5, 7 and 8
 done; steps 6, 9 open
-**Depends on:** decision-gated lg2-v (git subdirectory — manifest side is
-`../../02-std-and-packaging/98-packaging-tail/` step 4; `bpmp` resolver half opens here when
-answered) · 23-c's two `botopink test` fixes confirmed (decision 317 — this front's files, kept)
+**Depends on:** `../../02-std-and-packaging/98-packaging-tail/` step 4 (decision 344's manifest
+side; the `bpmp` resolver half is step 6) · 23-c's two `botopink test` fixes confirmed (decision 317 — this front's files, kept)
 **Owns:** `modules/compiler-cli/**` (`src/cli/{build,run,test_cmd,libs,sources,config,resolver}.zig`,
 the rest, `tests/**`) · `modules/bpmp/**` except `src/manifest.zig` under 98's step 4 ·
 `modules/language-server/src/**` except `src/tests/**` (07) and `project_graph.zig`'s import-tree
@@ -39,10 +38,14 @@ only declared dependencies (decision 242); `build`, `test` and the LSP print che
 
 ## Open
 
-### Step 6 — lg2-v's resolver half (decision-gated)
+### Step 6 — a git dependency's `subdir` (decision 344, the resolver half)
 
-If lg2-v is answered with a `subdir` field, `bpmp`'s resolver checks the dependency out at the
-subdirectory (98 step 4 owns the manifest model); nothing before.
+- [ ] `bpmp` clones the repository at `ref` once, builds the package at `subdir`, and resolves that
+      package's `path` dependencies inside the same checkout (rakun-web's `"../rakun"`); two dependencies
+      on one repository at one `ref` share the checkout (98 step 4 owns the manifest model)
+- [ ] refused, located in the manifest: a `subdir` with no `botopink.json` or whose manifest is a
+      workspace; one repository at two `ref`s, naming both dependencies — `tests/cli_contract.sh` cases
+      over a local bare repository
 
 ### Step 9 — a dependency's sidecars and imports answer as its own build does
 

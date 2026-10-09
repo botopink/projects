@@ -106,7 +106,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | named slots, fallback content, slot transfer | `LayoutProps.slots` always `[]` (`render.bp:296`); no named slot on a component | add · 118 |
 | `Astro.slots.has()` / `.render()` | not found | add · 118 |
 | `Astro.self` | a function calls itself by name | have |
-| `.html` components | not found | gap — a comptime body cannot read a file (lg2-o); nearest: markup pasted into a component |
+| `.html` components | not found | gap — no file becomes a component; nearest: the markup pasted into a component, or read with `@embedFile` (342) |
 | layouts with `<slot />` | `layout.bp` + `LayoutProps.children`; nested by directory (`render.bp:341` `compose`) | have |
 | a layout chosen by the page, by import | the directory chain; a page may call any component | have |
 | Markdown layouts (`layout:` in frontmatter, the `frontmatter` / `headings` props) | not found | add · 121 |
@@ -116,15 +116,15 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| scoped `<style>` in a component | not found. emilia: typed utility compiler over `Token[]`, no CSS processor (`emilia/AGENTS.md:602`); DSL `<style>` lowers to the `style` builder, verbatim | add · 119 |
-| `is:global`, `:global()` | not found | add · 119 — `<style #[isGlobal]>` (278) |
+| scoped `<style>` in a component | not found. emilia: typed utility compiler over `Token[]`, no CSS processor (`emilia/AGENTS.md:602`); DSL `<style>` lowers to the `style` builder, verbatim | add · 119 — the `--- style ---` section (or `use styled """…"""` in a `.bp`), scoped by `jhonstart-styled` through the repositories `styled` and `css`; `<style>` in markup refused but `#[isInline]` (338) |
+| `is:global`, `:global()` | not found | add · 119 — `:global(…)` only; site-wide CSS in `globals.css` (338) |
 | `class:list` | `cls` / `clsWith` for emilia tokens (`emilia/src/emilia.bp:186-210`); nothing for plain class names | add · 118 — a value, `class={classList([…])}` (278) |
-| `define:vars` | not found | add · 119 — `<style #[defineVars(a, b)]>` (278) |
+| `define:vars` | not found | add · 119 — a run-time hole in the style section, `${value}` → a CSS variable on the root element (338) |
 | inline `style` as an object | a string attribute | n/a — no object literal; the string is the form |
 | importing a stylesheet | `globals.css` read at build (`onze-cli/src/build.bp:112-114`); `*.module.css` renames classes to `<file>_<class>_<hash6>` (`onze-assets/src/style_module.bp:1-36`) | have |
 | Tailwind | emilia: `emilia(tokens)`, `flush()`, `@layer`s, class `e_<hash>` (`emilia.bp:112-235`) | have — in markup `<h1 #[styled(…)]>`, `class={emilia(tokens)}` leaves templates (301; 119 step 4) |
 | Sass / Less / Stylus / PostCSS / LightningCSS | — | n/a — no preprocessor host; CSS or emilia tokens |
-| cascade order: link, imported, scoped | bridge puts emilia's flush in the head (`jhonstart-emilia/src/root.bp:95`) | add · 119 — fixes the order |
+| cascade order: link, imported, scoped | bridge puts emilia's flush in the head (`jhonstart-emilia/src/root.bp:95`) | add · 119 — fixes the order; `jhonstart-styled`'s one sheet (338) |
 | per-page CSS chunks, inlining under 4 kB | one stylesheet | add · 124 |
 
 ## 12 · Framework components
@@ -148,7 +148,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | Markdown → HTML, GFM, heading ids, smart punctuation | not found anywhere. Blog posts are text files: line 1 title, line 2 date, then body (`onze/examples/blog/src/lib/db.bp:52-59`) | add · 121 |
 | YAML / TOML frontmatter | rakun config's YAML subset (`rakun/modules/rakun/src/config.bp:340`); no TOML | add · 121 (decision `08-f`) |
 | importing a `.md`: `frontmatter`, `<Content />`, `rawContent()`, `compiledContent()`, `getHeadings()` | not found | add · 121 |
-| `import.meta.glob` | `fs.glob` at run time (`libs/std/src/io/fs.bp:122`) | gap — comptime has no filesystem (lg2-o); collections load at build and boot |
+| `import.meta.glob` | `fs.glob` at run time (`libs/std/src/io/fs.bp:122`) | gap — comptime reads named files only (`@embedFile`, 342), no glob; collections load at build and boot |
 | processor choice (Sätteri / Unified), remark / rehype plugins | — | n/a — no plugin host; 121 takes one `fn(MdNode) -> MdNode` |
 | MDX | — | n/a — Markdown with components is a template; 118 is the form |
 | `defineCollection`, `glob()`, `file()` loaders, custom loaders | not found | add · 121 |
@@ -159,7 +159,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | JSON Schema files for data entries | not found | add · 125 — the `#[validated]` type's `jsonSchema` member (306) |
 | `<Image />` with `srcset`, an optimising endpoint | `Image(p, cfg, publicDir)`, `/_onze/image` (`onze-assets/src/image.bp:196`, `image_handler.bp:107`); route unregistered | wire · `07-onze/51` |
 | `<Picture />`, `getImage()`, `image.domains`, remote patterns | not found; remote sources answer 501 | wire · `07-onze/51` (ONZ-51-DoD) |
-| SVG as a component | not found | gap — same row (lg2-o); nearest: inline `<svg>` in a component |
+| SVG as a component | not found | gap — same row; nearest: inline `<svg>` in a component, or `@embedFile` (342) |
 | images in Markdown, `image()` in a collection schema | not found | add · 121 |
 | Sharp, the asset cache | an encoder port; single-flight an open box (ONZ-51-5) | wire · `07-onze/51` |
 

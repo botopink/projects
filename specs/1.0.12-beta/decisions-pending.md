@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**55 questions and 8 contradictions are open, and 88 implementation choices await confirmation.**
+**46 questions and 6 contradictions are open, and 86 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -28,59 +28,6 @@ Nothing open: 138-a answered (337).
 
 `00-gate` has no open question: 114's steps wait on no decision.
 
-#### 03r-ao · `01-compiler/130`'s rakun sites against 128 (*proposed*, raised by the 04-rakun consolidation)
-- **Measured.** 130 step 5 (decision 216) edits files 128 moves or the rakun fronts own (core's `decorators.bp`, `autoconfig.bp`, `config.bp`, `context.bp`, `lifecycle.bp`, `conditions.bp`; `rakun-web/src/convention.bp`; `rakun-app`; `rakun-scheduling`; `rakun-messaging`; `rakun-cli`; `rakun-data`; `rakun-security`; `rakun-websocket`; `rakun-client`; `actuator_api`). The fronts already follow (a) as a provisional rule: 130 step 5 targets post-128 paths (`modules/rakun/src/actuator_api/**`, today `rakun-actuator-api`) and makes no rakun commit while 128 is open; [`04-rakun/README.md`](./04-rakun/README.md) § Order and § Rules make 130 the frozen `decorators.bp`'s one writer ("to confirm"). Landed sites (`#[entity]`, `#[entityRepository]`, `#[belongsTo]`, `#[query]`, `#[cached]`, `#[halResource]`, `front/130-rakun-di`'s `T.make()`) are on `feat` and move with their files. Only the record is missing.
-- **Options.** (a) 128 first and alone; 130's rakun sites re-pointed at post-128 paths; after 128 each is a consumer commit under 188 (never in a wave with the owning front); the frozen-files rule excepts 130's rewrite of `src/decorators.bp`. (b) 130's rakun sites before 128 opens. (c) 128 performs 130's rewrite of the files it moves.
-- **Recommendation.** (a): 128 holds all of rakun, and (b) holds every rakun front on 130.
-- **Blocks.** Only the record — 130 and 04-rakun already follow (a); 128's opening and 130 step 5's rakun rows proceed under the provisional rule until confirmed.
-
-#### 17-b · The per-row increment of a `keyed: true` `Dict`
-- **Measured.** A row is written `counts = counts.insert(k, v)`; `counts.insert(k, (counts.at(k) ?? 0) + 1)` now types but stays refused — a row computed from the var's own rows is 1.0.5's 40 (rule 5(b)) refusal; `counts.at(k)` is a `?V`; `counts.at(k) += 1` / `counts[k] += 1` are not assignment targets. `label: value` per 305.
-- **Options.** (a) None: a keyed row written whole; a per-key counter refused; a counter several processes bump is one `#[@BeamMemory.Ets] var n: i32` each. (b) A std `Dict.bump(key, by) -> Dict<K, V>` (integer `V`, absent key counts from 0), lowered under `keyed: true` to `ets:update_counter(T, K, By, {K, 0})`. (c) An index assignment `counts[k] += 1` in the grammar. (d) Recognise exactly `counts.insert(k, (counts.at(k) ?? 0) + n)` and lower it to `ets:update_counter(T, k, n, {k, 0})`; any other shape stays refused.
-- **Recommendation.** (a): no method or grammar for an annotation; (d) makes a written form change meaning by pattern.
-- **Blocks.** `17-beam-memory` step 1, fourth box.
-
-#### lg2-w · A host function called from a decorator body
-- **Measured.** `json.quote(…)` in a decorator (`comptime path: string`, writing typed meta — module-level `@emit` leaves, 216) refused as a method nothing provides; via `import {json.quote}` it is `call to undefined function quote/1` on both comptime runtimes; a project's own host `declare fn` fails the same — only bodied functions travel into the decorator module.
-- **Options.** (1) A comptime body calls bodied functions only; a host call there refused at the call, located, naming the function, on every target. (2) The Erlang cell travels into the decorator module on the BEAM runtime, refused on wat. (3) Decorators reaching a host cell run on the BEAM runtime whatever the target.
-- **Recommendation.** (1): the answer never depends on the runtime the target selected (1.0.10's 84).
-- **Blocks.** The row; front 16 (`#[scheduled]`); every decorator that would reuse std.
-
-#### lg2-o · Filesystem access from a comptime body
-- **Measured.** `fs.readText(path)` in a decorator body (`comptime path: string`, 280 (0)) refused at the annotation.
-- **Options.** (1) None: generated `.bp` is checked in (`rakun ws generate`). (2) A sandboxed read of declared build inputs, keyed into the build cache.
-- **Recommendation.** (1): a build reads only its sources.
-- **Blocks.** The row; rakun 88, 93.
-
-#### lg2-j · Comptime state across decorator invocations
-- **Measured.** A module-level `var` written by a decorator body is refused at the annotation; each invocation is its own module call.
-- **Options.** (1) Each invocation independent; a catalogue is read with `@TypeInfo.all(with: …)` at the entry point (256, without `member: "make"` or a type-name key, both removed by 281; the type key is `321's). (2) Comptime mutable state scoped to one compilation.
-- **Recommendation.** (1): a decorator's answer depends on its declaration alone.
-- **Blocks.** The row; rakun 05.
-
-#### lg2-v · A subdirectory in a git dependency
-- **Measured.** `DepSpec` is `{git, path, ref, workspace}` (`modules/manifest/src/root.zig`); a package inside a repository is reachable by `path` only.
-- **Options.** (1) None: a git dependency is a repository root; a monorepo member installs by `path`. (2) A `subdir` field on a git `DepSpec`, resolved by `bpmp`.
-- **Recommendation.** (1). Cost: no `rakun-*` starter installs from git outside the meta checkout. Under (2) a `subdir` without `git`, or escaping the checkout (`..`), is refused.
-- **Blocks.** The row; rakun 73; `02/98` step 4 (conditional); `07-h`'s argument.
-
-#### ctr-s · Decision 166 against decision 243
-- **Rules.** 166: "a list written without [a trailing comma] stays on one line". 243: "without it, the width rules (`16-a` / `16-b`) decide", while saying it "extends" 166.
-- **Recommendation.** Record 243 as amending 166's no-comma half; the confirmation of `16-a` / `16-b` then covers it.
-- **Blocks.** 16-formatter step 6.
-
-#### lg2-a · A byte type
-- **Measured.** No primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere); every host cell marshals via `string`.
-- **Options.** (1) None: a binary payload refused where it enters. (2) A `Bytes` primitive with an explicit, fallible boundary (`Bytes.fromUtf8`, `toUtf8 -> @Result`), no implicit conversion. (3) `string` also carries raw bytes.
-- **Recommendation.** (1). Cost: every upload, download, image endpoint; under (2) no conversion without a fallible call; (3) stays refused (how `Socket.recv` mangles UTF-8 today).
-- **Blocks.** The row; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`.
-
-#### lg2-e · A method-level `@Decl`'s owner
-- **Measured.** 280 answered the parameters: `@Decl<T>` binds the function's type (`@Decl<fn(e: E) -> unknown>`), and 280's approved example 1 (`01-checker` step 24) reads `decl.params`, `decl.params[0].module`, `decl.module` on a fn's `@Decl`. Left: `decl.owner` on a method-level decorator is the checker's unknown field of `Decl`, at the read (was `badkey`); only the type-level handle sees the whole type.
-- **Options.** (1) A method-level marker sees its own method (parameters per 280); the type-level decorator reads the type. (2) `owner` on a method-level `@Decl`.
-- **Recommendation.** (1).
-- **Blocks.** The row (marker in `08-bpp/127`'s `typed-action-example.bp`, its parameter half closing with `01-checker` step 24); rakun 06–10, 29.
-
 #### lg2-q · `@Decl`'s source location
 - **Measured.** `decl.loc.file` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation). 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.
 - **Options.** (1) None: the app-relative segment is an explicit decorator argument (`#[page("blog/[slug]")] pub fn BlogPost() -> View`). (2) A `loc` field on `@Decl` (`@src()`'s `SourceLocation`).
@@ -92,14 +39,9 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** Confirm `lem-c` for a bodyless host declaration (a type declared once still compiles for a target its method lacks); state that 146 governs any bodied function, free or method, reaching one; `docs.md` says both.
 - **Blocks.** `lem-c`'s confirmation.
 
-#### ctr-h · Decision 149 against decisions 210 and 211
-- **Rules.** 149: "`==` is reference equality on an array and is refused on a record … a record that wants equality implements `behavior Eq`". 210: "structural equality on every target"; 211: "a type cannot define its own equality". 210 does not cite 149.
-- **Recommendation.** Record 149 as superseded by 210, its `behavior Eq` clause by 211; code on `feat` follows 210 / 214 (`run/record_structural_equality`).
-- **Blocks.** Nothing; the record.
-
 #### 17-c · What else names a `keyed: true` var
 - **Measured.** Built: only `counts.at(k)` (`ets:lookup`) and `counts = counts.insert(k, v)` (`ets:insert`); everything else (`counts[k]`, `hasKey`, `delete`, `size()`, passing it on) refused at the identifier; a keyed var is never `pub`. 1.0.5's 63: an index answers `V` and fails on an absent key; `at` answers `?V` (`null`).
-- **Options.** (a) The two forms, as built. (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
+- **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
 
@@ -161,11 +103,6 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** Confirm `std-a`; `03r-e` lapses when rakun reads queries via `querystring` and cookies via `http`.
 - **Blocks.** rakun 04's readers; 104's consumer sweep.
 
-#### ctr-k · Decision 187 against decision 195
-- **Rules.** 187: "the core absorbs `rakun-actuator-api` and `rakun-logging` … the core calls its own logger and no failure-report plugin exists". 195 (later): "rakun-logging keeps its erlang cells and installs itself as the sink".
-- **Recommendation.** Read 195 as "rakun's core logging (after 128) installs its erlang logger as `log`'s sink at boot", and record it. The fronts already follow it (`04-rakun/17` R17-1 and step 2; `03-bundled-libs/106-log`); only 195's row is pending.
-- **Blocks.** Nothing in the fronts; the record.
-
 #### 07-g · OTP release rendering
 - **Measured.** `rakun-release/release.bp` (into `rakun-cli` under 187) and `onze-release/otp.bp` render the same `.rel` / `vm.args` / `sys.config` / boot script / Dockerfile; onze cannot reuse rakun's (rakun erlang-only, onze-release also commonJS).
 - **Options.** (a) A bundled `release` of pure renderers. (b) A `botopink` CLI feature (02). (c) Leave both.
@@ -178,7 +115,7 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-#### 01-compiler (22)
+#### 01-compiler (20)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -194,8 +131,6 @@ local change in the named place). Full 1.0.10 text under the same id in
 | ck2-e | A std decorator is reached via its module handle (`#[<handle>.<fn>]`); a leaf import of one is `std-decorator-leaf-import`; `#[<handle>.<not a decorator>]` is `unknown-annotation`; the handle is still needed after 216 (`mocks.mock`'s `addType` / `addMember` text names `mocks.invoke`, `testing/mocks.bp:212-220`), while 282/289 already leaf-import other libraries' decorators | checker |
 | rc3-b | `unknown` is the host vocabulary's spelling where `any` was (tested with `is` before use) | `run/host_unknown_parameter` |
 | rc3-c | Assigning a narrowed `var` checks against its declared type and ends the narrowing | `reject/narrow_ends_at_assignment` |
-| 16-a | C-12's argument list enabled with the constructs around it — binary run, brace-less `if`, argument list, array / tuple / behavior literals — one all-or-nothing `groupMeasured` each, outer deciding first | formatter; the libraries' reformat (16 step 4) |
-| 16-b | An array literal written without a trailing comma, when open, is one element per line (with one, 166/243 keep it open) | formatter |
 | 0405-b | commonJS's `__bp_show` prints `undefined` as `null` | commonJS prelude |
 | onze F7 | Integer `/` integer truncates toward zero and is an integer on every target (`7.0 / 2.0` stays `3.5`); `docs.md:961-963` already states it | `run/integer_division_truncates` |
 | lem-a | A host method is a real method of its type whose body is the binding, never inlined at the call site | `codegen/hostMethods.zig` |
@@ -266,7 +201,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** `07-onze/53`'s examples.
 
 #### nat-f · Configuration in JSON — case by case (decision 284)
-`botopink.json` as clean as possible, configuration allowed where it makes sense (284); `"bpp": "<package>"` stays. Each case below is its own question.
+`botopink.json` as clean as possible, configuration allowed where it makes sense (284); `"bpp"` stays, an object since 338 (`{"default": "<package>", "style": …}`). Each case below is its own question.
 
 #### nat-f2 · `onze.json`'s `trailingSlash`, `redirects`, `markdown`, `allowedRedirects` (124, 08-h)
 - **Measured.** `onze.json` is read and validated by `loadConfig` whenever the CLI resolves the project, `onze build` included (`onze-cli/src/resolve.bp:48-50`); an unknown key is refused (49-c) without a line. Only `allowedRedirects` exists (`onze/src/config.bp:192-193`); `trailingSlash`, `redirects`, `markdown` are 124's planned keys (`124-bpp-cli/README.md:67-69`), which 08-h already writes; all four restate options onze's code types (`url_rules`, `MarkdownOptions`, `app(allowedRedirects:)`). Precedent: 299 (typed record bound from a file, errors naming file, line and expected type).
@@ -347,7 +282,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** Nothing; the rule for the next candidate (front 104's `http` exists; rakun adopts it in its step 5).
 
 #### 07-h · Bundled, or a separate shared repository
-- **Measured.** Wires both frameworks must agree on byte for byte ship with the compiler that embeds them; a separate repository = a git dependency, constrained by `lg2-v` (no `subdir`) and 242 (only a direct dependency importable).
+- **Measured.** Wires both frameworks must agree on byte for byte ship with the compiler that embeds them; a separate repository = a git dependency, constrained by 242 (only a direct dependency importable); a member of a repository installs by `subdir` (344).
 - **Options.** (a) Bundled — versioned with the compiler, no `dependencies` entry. (b) A shared `botopink/common` repository with its own cadence.
 - **Recommendation.** (a).
 - **Blocks.** Nothing waits; the track is cut as (a).
@@ -368,8 +303,8 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 09 step 4.
 
 #### 03r-ab · Front 09's binary-protocol stores
-- **Measured.** The store is selected by `rakun.nosql.url`. MongoDB, Neo4j, Cassandra, Couchbase are byte protocols (`lg2-a`) needing OTP drivers a sidecar cannot load; ETS and Mnesia are in the VM; Redis is RESP over `gen_tcp`; Elasticsearch is HTTP + JSON. 09's README is already written to (a): the former steps 4 and 7 are step 5's refusal cells plus one `deferred.md` row each — only the record is missing.
-- **Options.** (a) 09 ships `ets:memory`, `mnesia:local` / `mnesia:cluster`, `redis://`, `https://` with the behavior suite against all four in the gate; `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` are recognised schemes whose boot refusal names `lg2-a` and the driver (step 5). (b) Four protocol clients in Erlang sidecars, a front each. (c) Defer 09.
+- **Measured.** The store is selected by `rakun.nosql.url`. MongoDB, Neo4j, Cassandra, Couchbase are byte protocols (`Bytes` is 346's, not yet built) needing OTP drivers a sidecar cannot load; ETS and Mnesia are in the VM; Redis is RESP over `gen_tcp`; Elasticsearch is HTTP + JSON. 09's README is already written to (a): the former steps 4 and 7 are step 5's refusal cells plus one `deferred.md` row each — only the record is missing.
+- **Options.** (a) 09 ships `ets:memory`, `mnesia:local` / `mnesia:cluster`, `redis://`, `https://` with the behavior suite against all four in the gate; `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` are recognised schemes whose boot refusal names the driver (step 5). (b) Four protocol clients in Erlang sidecars, a front each. (c) Defer 09.
 - **Recommendation.** (a): never a fallback to ETS under a Mongo URL; the Elasticsearch arm without a `rakun-client` edge (`ctr-w`; 09 step 3 still goes through it). The front already follows (a).
 - **Blocks.** 09 step 5 (the refusal cells).
 
@@ -434,12 +369,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 50 step 2; 53 step 6.
 
 ### 08-bpp
-
-#### 08-d · Who scopes CSS
-- **Measured.** emilia compiles `Token[]`, "not a CSS processor"; onze-assets renames `*.module.css` classes (`style_module.bp`); decision 113.
-- **Options.** (a) emilia gains `scopeCss(scope, css)`, reached via `jhonstart-emilia`. (b) onze-assets, beside the module renamer. (c) core `jhonstart`'s `html` scopes its own `<style>` (the `jhonstart-html` member goes, 200). (d) *(proposed 2026-10-09)* CSS in three layers — `css` (reader, `Sheet`, `scope`) and `styled` (`styled "…"` components, each a `@Component<BaseStyled, Styled>` — hooks, build-or-render by `@typeInfo(f).hooks` —, Tailwind v4's CSS syntax where it is CSS: `--spacing()`, `--alpha()`, `@variant`, `@custom-variant`; `@apply` as a typed `${…}` hole), each its own repository (326, `repository/css`, `repository/styled`), emilia a series of `styled` components applied on the tag (301); `"bpp": {"default": "jhonstart", "style": "jhonstart-styled"}`; a `.bpp` file's CSS in a `--- style ---` section compiled by the style package; `<style>` in markup only with `#[isInline]`. Full text and nine open points (p1–p9): [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
-- **Recommendation.** (d), with p1–p9 as recommended; otherwise (a). (c) puts a CSS parser in the HTML library; (b) leaves scoped styles unavailable without onze.
-- **Blocks.** 119, every step — on the critical chain 118 → 119 → 120 → 126 → 127 → 124.
 
 #### props-d · A native tag's attributes (*proposed*)
 - **Measured.** 192 covers component tags only; a native tag is `fn <tag>(children: Children, attrs: Array<#(string, string)> = [])` in jhonstart (118 § Notes).
@@ -506,6 +435,12 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** The arm reaches HTTP via a core extension point (or `httpc` directly, as 65's relay does), not a `rakun-client` edge; answered with `03r-ab`'s arm list.
 - **Blocks.** 09 step 3.
 
+
+#### 119-a · Step 1's grep box against CI check 4's byte-identical hook
+- **Rules.** 119 step 1 and its gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty (338). CI check 4 (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across every library repository — and its line 31 reads `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, so the grep finds it in `repository/css` (and will in `repository/styled`). `src/`, `test/`, `AGENTS.md` and the manifest hold none of the three names.
+- **Options.** (a) The box greps the package's own text: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/styled/{src,test,botopink.json}` — empty today for `css`. (b) The shared hook's comment drops the name, in every library repository at once (check 4), a change none of 119's repositories owns.
+- **Recommendation.** (a): the box measures what the package knows; the hook is one text owned by the gate.
+- **Blocks.** Only ticking 119 step 1's grep box.
 ---
 
 ## Part 3 — Implementation choices of tracks 04–09

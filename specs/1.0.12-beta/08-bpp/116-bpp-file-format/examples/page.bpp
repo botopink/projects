@@ -1,4 +1,3 @@
----
 // Front 116 — bpp file format · examples/page.bpp
 // App file: src/app/blog/[slug]/page.bpp
 //
@@ -11,7 +10,7 @@
 //
 // What a `.bp` page writes by hand: `#[page("blog/[slug]")]` comes from the
 // file's name through the route table built from its file name, or from a decorator on the header's
-// last line (decision 285). A page takes no parameter (decision 293, was
+// last line, before the separator `---` line (decision 285). A page takes no parameter (decision 293, was
 // `bpp-g`): the bracket segment is read with `use params<P>()`.
 //
 // Upstream: astro-docs/07-astro-pages.md · astro-docs/08-routing.md (Rotas

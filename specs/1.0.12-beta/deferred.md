@@ -36,7 +36,7 @@ mechanism it needs does not exist on this stack** (not size of work).
 | CSS-in-JS runtime (styled-components) | `§ 15` | JS-runtime style injection + a Babel plugin, npm artefacts with no counterpart | An npm-interop story | Unlikely — `emilia` is the answer; only the server-insertion seam is ported (front 69) |
 | SWR / React Query client cache | `§ 9` | Third-party npm libraries; no npm dependency path for the client half | Front 68 plus npm interop for client bundles | A small native client cache is likelier; no front opens it |
 | `next telemetry` | `§ 29` | Vendor usage reporting to one company's endpoint | Nothing — a product decision | Never |
-| `next upgrade` | `§ 29` | Rewrites `package.json`, runs codemods over an npm tree | Codemod support in `bpmp` over `botopink.json` | A `bpmp` feature, after lg2-v (`02-std-and-packaging`) |
+| `next upgrade` | `§ 29` | Rewrites `package.json`, runs codemods over an npm tree | Codemod support in `bpmp` over `botopink.json` | A `bpmp` feature, after decision 344's `subdir` (`02-std-and-packaging/98` step 4) |
 | Partial Prerendering | absent from this doc revision | Prerendered shell whose Suspense holes resume in the same response; 60 and 30 must exist and share a resume protocol | Fronts 60 and 30 landed and stable | A front in the milestone after both are green, not before |
 
 ## Deferred — Tailwind CSS

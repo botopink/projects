@@ -1,7 +1,7 @@
 // Front 116 — bpp file format · examples/PostCard-desugared-example.bp
 //
 // Demonstrates: what `PostCard.bpp` IS. This module is what the toolchain
-// unfolds it to (decisions 198, 199), written by hand so it can be read and
+// unfolds it to (decisions 198, 199, 338), written by hand so it can be read and
 // compiled; the two files compile to the same thing. Nothing here is syntax
 // the parser does not already have: the marked pieces are what the unfold
 // adds — the import of the default function, the function header, the
@@ -30,7 +30,7 @@ pub default fn PostCard(props: Props) -> Element {
     val date = props.post.published;
     val kind = if (props.featured) { "card featured" } else { "card" };
 
-    // [the literal] — the bytes after the second `---` line, at their own offset
+    // [the literal] — the bytes after the separator line, at their own offset
     return html """
 <article class={kind}>
   <h2>{props.post.title}</h2>

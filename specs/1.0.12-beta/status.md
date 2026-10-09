@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `c6483b21` (batch 6: the LSP makes 309's refusal; wasm bool/u64 printing; commonJS string reads near native) · rakun `4b4cbee` · jhonstart `61445d2` · emilia `24b0d9e`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `c6483b21` (batch 6: the LSP makes 309's refusal; wasm bool/u64 printing; commonJS string reads near native) · rakun `de85b3d` · jhonstart `6b368ec` · emilia `8ebcea9`
 · onze `d496063` · erika `44aef93` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -58,8 +58,9 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 295 (atoms: `Local<T>()`, `use local` / `use setLocal`; middleware `@Component<RequestBase, Response>`) — 104 s6 · 123 s7 · 127 · 26 s12 · 53
 - [ ] decision 298 (typed meta keyed by type: `setMeta(v)`, `meta(T)`) — 130 s8 · 26 s8 · rakun 08
 - [ ] decision 299 (`#[config("…")]` typed records; 03r-b reversed) — rakun 04 s7 · 08 · 13 · 15 · 88
-- [ ] decision 300 (emilia's typed theme entries, one `#[theme]`) — 34 s3
-- [ ] decision 301 (`#[styled(..tokens)]`) — 119 s4 · 53 s12 · after 34 s1 for the build-time sheet
+- [ ] decision 300 (typed theme entries, one `#[theme]`; the mechanism `styled`'s, the values emilia's — 338) — 119 s1 · 34 s3
+- [ ] decision 301 (`#[styled(..)]`, `jhonstart-styled`'s since 338) — 119 s4 · 53 s12 · after 34 s1 for the build-time sheet
+- [ ] decision 338 (CSS in three layers — the repositories `css` and `styled`, emilia over `styled`; `jhonstart-styled`, `use` of a scoped style; `"bpp": {"default", "style"}`; the header with no opening `---` and one `--- style ---` section; `jhonstart-emilia` deleted) — 119 s1–5 · 116 s1, s2, s5, s6 · 34 s3, s5 · 118 (`<style>` refusal) · 124 (scaffold manifest)
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
 - [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
@@ -105,19 +106,19 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 12 s2 box 1 — `run/throw_in_case_arm_result` (`run/array_unique` landed with 02 s4 and 05 s1) · 01 s6 + 04 s6
 - [ ] 14 s2 — the N=200 slope · 18's runtime-evaluation stage · 01's memo key
-- [ ] 14 s6 — the decision-gated rows · lg2-j, lg2-o, lg2-w
+- [ ] 14 s6 — a decorator's host cells, `@embedFile` / `@embedBytes`, independent invocations · decisions 341–343
 - [x] 14 s7 — a `comptime/tests` fixture for a `\u{…}` decorator body
-- [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · 17-b
+- [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · `Dict.bump`, decision 340
 - [ ] 17 s2 — the `@BeamMemory` text and the migration handed over · 07 s6 · the rakun track
 - [x] 26 s2 box 3 — measured: rakun's `orm_host.bp` workaround deletable (move to `src/orm/host.bp`; rakun-data 128 passed) — the deletion is a rakun-track row (L2)
 - [x] 26 s3 — only a direct dependency is importable (T4, 242): located refusal, `modules/transitive_package_import`
 - [x] 26 s4 — `build` and `test` print checker warnings
-- [ ] 26 s6 — lg2-v's resolver half · lg2-v
+- [ ] 26 s6 — the `subdir` resolver half · decision 344
 - [x] 26 s7 — `build.zig`'s `test-docs` comment
 - [x] 26 s8 — 206's residuals: the LSP reports `module-import-with-from` and `unresolved import source`; a package importing itself by name refused (309), std's three sources migrated
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
 - [x] 26 row — the LSP makes the 309 refusal: the package name from the nearest manifest, through `engine.importDiagnostics` to the resolver
-- [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (03r-ao, only the record) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
+- [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [x] 134 s2 part — `@is` refused (322); the drift test walks the mirrored types and `@Result`'s methods (declared); std `Type` (`keys`, `partial`, `required`, `merge`)
 - [ ] 134 s2 — `Type` a namespace type (329), `Type.Field<T>`, `Type.pick` / `omit`, `examples/types.bp`; `result` deleted and `?T` methodless (330) · 134 s4 · 01-checker s28
@@ -136,7 +137,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 97 s12 — `unicode.fromCodepoint` a `fn:` over `String.fromCodepoint` on all four targets (with `powBody`, `fn:` transcendentals, code-point `contentHash`)
 - [ ] 97 row — an embedded std file's reserved-word error is unlocated · none
 - [ ] 104 s5 — the consumer sweep · 04, 65, 79, 12, 19, 22, `08-bpp/123`, 49, 51 landed (188)
-- [ ] 106 s2 — consumers: 17's and 26 s4's boxes; rakun-web's `problem_digest` commit · 65 landed · ctr-k
+- [ ] 106 s2 — consumers: 17's and 26 s4's boxes; rakun-web's `problem_digest` commit · 65 landed
+- [ ] 106 s3 — `log`'s sinks and runtime-report capture, bound on every target · decision 349
 - [x] 125 s0 residue — the `f32` and `url.parse` platform facts as tests
 - [x] 125 s2 residue — the examples as suite cases, the 2 000-deep test, the refusal test, `schemas.bp`'s accessors
 - [x] 125 s3 — checks and formats (39 `surface.md` rows)
@@ -151,8 +153,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 103 s1 — `id.bp` (`deriveActionId`, `isActionId`) in `libs/actions` (re-implemented)
 - [ ] 102 s3 (W2) — consumers, one commit per member, rakun's first (`rakun-app`, `rakun-hateoas`), then jhonstart `routes.bp`, onze `types.bp`, `scan.bp`, `chunk.bp` · 102 s1–2 landed · decision 323 · jhonstart `routes.bp`'s commit unblocked: the decorator gap (a package record built in a decorator body) fixed by 01-checker s21's `typesReached`
 - [ ] 103 s2 (W2) — consumers: rakun-app `actions.bp`, jhonstart-forms `form.bp` · 103 s1 landed · the `deriveActionId` / rakun-app `actionId` wrapper choice to confirm
-- [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2 · ctr-k
-- [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · **to confirm** (03r-ao — only the record; the fronts follow (a))
+- [ ] 128 (W3) — the nine merges, alone in rakun · the rakun commits of 102 s3 and 103 s2
+- [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · decision 339
 - [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
 - [ ] rakun group B (W5–W7) — 13 (04 s1) · 12 (04 s1, 19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
 - [ ] rakun group C (W8) — 88 (81, 93, 92, 04 s4, 73) · 19 s2–5 (15 s1, 04 s4) · group B
@@ -167,7 +169,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (props-d/e/f hold their boxes; ctr-r closed: 118 goes first, org-3 holds)
 - [ ] 121 s1–2 — Markdown to `Element` in the new member `onze-content` · none
-- [ ] 34 s1–3 — `hashHex` → std and the cross-library comments; the five families; the breakpoint refusal · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-v / 189, only the record)
+- [ ] 119 s1 — the repositories `css` (reader, `Sheet`, `scope`) and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism, `Styleable`) (338) · the first `feat` commit of `botopink/css` and `botopink/styled` (created)
+- [ ] 34 s1–2 — `hashHex` → std and the cross-library comments; the five families · s2: 05emilia-l confirmed · opens before 118's carve-out (ctr-v / 189, only the record)
 - [x] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's)
 - [ ] 49 s1 · s6 — consume std's `Json` accessors in `config.bp`; the `onze-test` group stubs · none — not beside 102 s3's onze commits (188)
 - [ ] 50 s1 — consume std in `onze-cli` / `onze-bundler` · none — not beside 102 s3's `scan.bp` / `chunk.bp` commits (188)
@@ -193,7 +196,8 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 51 s2–6 (W7) — single flight and the route, the prop table, the metrics generator, the OG defaults · 22 · s4: 52-a
 - [ ] 71 s1–2 (W3) · s3–4 (W7) · s5 (W10) — ERTS copy and `bin/onze`; shutdown over real cells and static export; the four gate boxes over the blog · 49 s6 · s3: 11, 04, 81 · s4: 22 · s5: 50, 53
 - [ ] 53 (W8) — the blog's `alias` gone, the acceptance script's second half, the browser · 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (the runner) · s6: 50-b
-- [ ] 119 (W3) — scoped `<style>` · 08-d · s2: 118, 26
+- [ ] 119 s2–5 (W3) — `jhonstart-styled`: the style section, `use`, run-time holes, `#[styled(..)]`, the one sheet; `jhonstart-emilia` deleted (338) · s1 · s2: 118, 26 · s5: 34 s5
+- [ ] 34 s3, s5 — Tailwind's theme values over `styled`'s mechanism; emilia over `styled` (338) · 119 s1
 - [ ] 117 (W7) — `.bpp` / `.md` app files, `staticPaths`, `paginate`, partials · 102 · 22 · 49 · 50 · 121 s1–2 · s1: 293
 - [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 (s1 box 3: 08-j closed → 295/296, `use local(atom)`, the store `rakun-cardume`'s)
 - [ ] 120 (W8) — hydration strategies as `#[client…]` / `#[serverDefer]` annotations (278), server islands · 118 · s1: 26 s8 (`clientOnly`) · 119 · 117 · 26 · 22 · 49 · 50
@@ -205,8 +209,8 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 105 (W9) — bundled `i18n` · 104 s5 · 22 · 26 · 03r-q confirmed
 - [ ] 107 (W9) — bundled `release` · 07-g · 71 · 81
 - [ ] 124 s1–4 (W10) · s5 (W11) — the commands, the config keys, the `.bpp` scaffold (08-h closed → 285, 224) · every other 08 front · s5: 116, 53
-- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4: lg2-v
-- [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243, C-11 · s2: each library track runs the script · s4: 16-a/b · s6: ctr-s · s3 last, after every tree is migrated
+- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4: `subdir` (344)
+- [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243/345, C-11 · s2: each library track runs the script · s6 (345 in the printer) before s4 · s3 last, after every tree is migrated
 - [ ] 18 s1, s3 — the CI matrix, the bench's open row (s2, s4, s5 done) · s1: the maintainer's push
 - [ ] 23 — the import cells and LSP snapshots, the confirmations · 23-a/b/c, std-c
 - [ ] 24 — the guide as one program, the confirmations, the per-item cost · 24-a/b/c/g · rakun's `serverAction`
@@ -227,7 +231,6 @@ implementation choices.
 - [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 
 Then:
-- [ ] 17-b — 17 s1 box 4
 - [ ] std-d — 97 s6 · 50 s4, s7
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole
@@ -241,18 +244,15 @@ Then:
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
-- [ ] 08-d — 119 every step
 - [ ] 08-f — 121 s3
 - [ ] props-d · props-e · props-f — 118 s1, s4 (native attributes, named slots, spread)
 - [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5
 - [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
-- [ ] lg2-a … lg2-w — none opens a front; each opens a step when answered: 01-checker (a, e — only `owner`, q — reduced), 14 s6 (j, o, w), 26 s6 / 98 s4 / 73 (v); the rakun boxes that name them — 04 (e, j), 08 (e), 13 · 65 · 09 · 91 · 92 (a, b), 15 (w), 22 (q), 88 (j), 93 (o) · answered: f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
+- [ ] lg2-b … lg2-u — none opens a front; each opens a step when answered: 01-checker (q — reduced); the rakun boxes that name them — 13 · 65 · 92 (b), 22 (q) · answered: a (346 → 01 s32), e (347), j (343), o (342), w (341) → 14 s6, v (344) → 26 s6 / 98 s4 / 73, f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)
-- [ ] confirmations a step waits on — 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 16-a/b (16 s4) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
-- [ ] ctr-k — 17 · 128 · 106 s2 (only the record)
-- [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-s — 16 s6 · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
-- [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5 (ctr-h blocks nothing)
-- [ ] 03r-ao — the 130 ↔ 128 rule (128, 130 s5) · only the record
+- [ ] confirmations a step waits on — 49-e (49 s2) · 05emilia-l (34 s2) · 52-a (51 s4) · 29-a (26 s5; reduced: `registerRouteStarters` + `globals.starters`) · 27-a (27) · 03r-q (105) · 23-a/b, std-c (23; 23-c → 317) · 24-a/b/c/g (24; 24-g also 97 s5's surface)
+- [ ] ctr-l — 26 s8's refusal list (only the record) · ctr-v — 34 / 33 opening before 118 (only the record) · ctr-w — 09 s3
+- [ ] ctr-o — lem-c · ctr-p — 04's readers · 104 s5
 - [ ] lg2-s — module-graph reflection
 
 Closed on 9 Oct (no longer pending): 08-h → 285, 224 · 08-j → 295 · lg2-g → 281 · ctr-q → 281, 256 · ctr-m (= lg2-s) · ctr-n · ctr-r · 111-c → 228 · 03r-b (reversed), 03r-d → 299 · 95-e · 03r-o → 290 · 05emilia-h → 206 · 68-c → 280, 281. `#[schema]`'s free functions → 306 (ctr-u); `not-found.bpp` (213 against 221) → 289. own-a blocks nothing (`fronts.md` § Ownership's provisional rule).

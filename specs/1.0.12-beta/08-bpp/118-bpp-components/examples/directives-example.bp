@@ -24,7 +24,7 @@
 // The annotations at the end of this track — who adds which return-type arm:
 //
 //   isRaw -> RawBody                                       118 (this front)
-//   isGlobal, isInline, defineVars -> the style types      119
+//   isInline                       -> its style meta       119 (isGlobal, defineVars gone: 338)
 //   clientLoad|Idle|Visible|Media|Only -> Hydrate          120
 //   serverDefer -> Defer                                   120
 //   transitionName|Animate|Persist|PersistProps            126

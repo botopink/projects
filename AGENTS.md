@@ -13,7 +13,7 @@ closest `AGENTS.md` in each directory you touch.
 | Path | What |
 |---|---|
 | `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `libs/std` |
-| `repository/{emilia,erika,jhonstart,onze,rakun,actions,http,log,routing,validation}/` | Libraries written in botopink — `actions`, `http`, `log`, `routing` and `validation` left the compiler with their history (decision 326, front 138); `cardume`, decision 296, joins once `botopink/cardume` holds its scaffold |
+| `repository/{emilia,erika,jhonstart,onze,rakun,actions,http,log,routing,validation,css,styled}/` | Libraries written in botopink — `actions`, `http`, `log`, `routing` and `validation` left the compiler with their history (decision 326, front 138); `css`, the base for building CSS, and `styled`, the base for building CSS components over it (decision 338, `08-bpp/119` step 1), were born as repositories under the same rule; `cardume`, decision 296, joins once `botopink/cardume` holds its scaffold |
 | `repository/vscode-extension/` | VS Code extension |
 | `specs/1.0.12-beta/` | Current milestone — 1.0.11-beta consolidated to current state only (same goals, every open step; history left in 1.0.11-beta). Tracks: `00-gate` (the gate's baseline rules + `114`, the gate's open residue) · `01-compiler` · `02-std-and-packaging` · `03-bundled-libs` (decisions 115–117; `125-validation-zod`) · `04-rakun` (`128` consolidation first; `137` erika's database target) · `05-jhonstart` · `06-emilia` · `07-onze` · `08-bpp` (Astro's feature set; `116` alone edits the toolchain, for the `.bpp` file kind) · `09-cardume` (front `136`: request and client state as atoms, decisions 295–297) · `20-snap` (front 135, last: the snapshot maps re-evaluated case by case). Index in `README.md`, the only status in `status.md` (five lanes), ownership, conflict rules, order and § Gate in `fronts.md`, decisions in `decisions-taken.md` (the next free number is stated at its top) and `decisions-pending.md` (open questions, 1.0.10 confirmations, contradictions `ctr-*`). A reference-driven front carries a `surface.md` and an `examples/` directory; new fronts start from `specs/__template.md`; a front keeps its global number |
 | `specs/1.0.11-beta/` | Closed milestone (`closure.md`, with the audits that measured it in `closure-audit/`); frozen — consolidated into `specs/1.0.12-beta/` on 2026-10-03 |
@@ -37,7 +37,7 @@ closest `AGENTS.md` in each directory you touch.
 3. no `*.snap.new`, `*.snap.md.new` or `todo.md` is tracked in this repository or any submodule;
 4. the library repositories' pre-commit guards are one text — `scripts/git-hooks/pre-commit` and
    `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across emilia, erika, jhonstart,
-   onze, rakun, actions, http, log, routing and validation, each `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
+   onze, rakun, actions, http, log, routing, validation, css and styled, each `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
    `scripts/known-broken-examples.txt`, each `AGENTS.md` naming `git config core.hooksPath
    scripts/git-hooks`;
 5. `scripts/language-gap-markers.sh` exits 0 — every `// LANGUAGE GAP` marker has a row in the

@@ -1,4 +1,3 @@
----
 // Front 126 — bpp view transitions · examples/src/layouts/BaseLayout.bpp
 //
 // Demonstrates: the transition annotations in a `.bpp` layout (278). `<ViewTransitions />`

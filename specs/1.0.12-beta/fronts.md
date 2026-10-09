@@ -46,9 +46,9 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 | `03-bundled-libs` | the six repositories of decision 326 — `repository/{actions,http,log,routing,validation}/**` (moved from `botopink-lang/libs` with their history by 138) and `repository/cardume` until 136 opens —, `repository/{i18n,release}` when born (each a repository: nothing in the compiler registers a package); 138: the bundled-package lines of botopink-lang's `build.zig`, `libs.zig`, scripts and job `libs`, the consumers' `dependencies` lines, the meta `.gitmodules` / `AGENTS.md` / `hook-integrity.yml` library list (carve-out of 114); the consumer lines each front names in rakun, jhonstart and onze, one commit per member | anything else in those members |
 | `04-rakun` | while 128 is open: all of `repository/rakun`; `repository/erika/modules/erika/**` and erika's `docs.md`, `examples.md`, `AGENTS.md` (137); after it, `modules/<member>/**` per front ([`04-rakun/README.md`](./04-rakun/README.md) § Parallel groups); `starters/**`, `examples/**` (73) | the compiler, onze, jhonstart, emilia; the core's `src/{decorators,http,bootstrap}.bp` (frozen; the one writer is 130's decision-216 rewrite) |
 | `05-jhonstart` | `modules/jhonstart/**` and `jhonstart-dom-test/**` (26 — `fake_dom.mjs` stays 26's; a front owns the test file it adds there); `jhonstart-link/**` (27); `jhonstart-forms/**`, `jhonstart-dom-test/test/forms_dom_test.bp`, the harness's `stubWireNames()` (67) | rakun; `element.bp`, `hooks.bp` (frozen); `routes.bp`'s segment walk (102), `render.bp`'s `isLangTag` (105), `form.bp`'s `formAction` check (103) while those fronts are open |
-| `06-emilia` | `modules/emilia/src/**` and its comment carve-outs from 118 (34); `examples/emilia-card/**` and the fifteen example READMEs (33) | jhonstart; `src/scoped.bp` and `jhonstart-emilia/**` (`08-bpp/119`) |
+| `06-emilia` | `modules/emilia/src/**` and its comment carve-outs from 118 (34); `examples/emilia-card/**` and the fifteen example READMEs (33) | jhonstart; `jhonstart-emilia/**`, `jhonstart-styled/**`, `repository/css/**`, `repository/styled/**` (`08-bpp/119`) |
 | `07-onze` | `onze/**` + `onze-server/**` + `onze-test`'s root and group files (49); `onze-cli/**` + `onze-bundler/**` (50); `onze-assets/**` + `onze-og/**` (51); `onze-release/**` + `examples/static-site/**` (71); `examples/blog/**` (53) | rakun, jhonstart; the lines 102 names in `types.bp`, `scan.bp`, `chunk.bp`, 104's in `server.bp` and `image_handler.bp`, 107's in `otp.bp` / `docker.bp` / `spec.bp`, while that front is open |
-| `08-bpp` | `jhonstart-html/**` (118; after 26 step 0, `jhonstart/src/html.bp`, to which 119, 120 and 126 each append one arm), the core's `src/prelude.bp` (118, decision 270); the new member `onze-content` (121); `emilia/src/scoped.bp` + `jhonstart-emilia/**` (119); new files and named lines in the jhonstart core, `jhonstart-link`, `jhonstart-forms`, rakun, `rakun-app`, `libs/actions`, `onze`, `onze-cli`, `onze-bundler` (117 · 120 · 122 · 123 · 124 · 126 · 127, each README § Owns); in botopink-lang, **116 only**: the manifest key, the extension lists and the unfold in `compiler-cli` / `language-server` / `lib-test-runner`, and `vscode-extension` | `modules/compiler-core/**`, every `codegen/*.zig`; a file a front of track 03–07 owns, until it has landed ([`08-bpp/README.md`](./08-bpp/README.md) § Who else owns the files) |
+| `08-bpp` | `jhonstart-html/**` (118; after 26 step 0, `jhonstart/src/html.bp`, to which 119, 120 and 126 each append one arm), the core's `src/prelude.bp` (118, decision 270); the new member `onze-content` (121); the new member `jhonstart-styled`, the deletion of `jhonstart-emilia/**` and the repositories `css` and `styled` (119, decision 338); new files and named lines in the jhonstart core, `jhonstart-link`, `jhonstart-forms`, rakun, `rakun-app`, `libs/actions`, `onze`, `onze-cli`, `onze-bundler` (117 · 120 · 122 · 123 · 124 · 126 · 127, each README § Owns); in botopink-lang, **116 only**: the manifest key, the extension lists and the unfold in `compiler-cli` / `language-server` / `lib-test-runner`, and `vscode-extension` | `modules/compiler-core/**`, every `codegen/*.zig`; a file a front of track 03–07 owns, until it has landed ([`08-bpp/README.md`](./08-bpp/README.md) § Who else owns the files) |
 | `20-snap` (135) | the snapshot steps of 97 s7, 19 s6, 26 s7, 33 s1/s3/s4, 50 s8, 51 s7, 53's runner, 71 s6; `modules/emilia-test/**` (s4) and the helper it names in `rakun-test`; onze's E2E runner `onze-test/src/e2e.bp` (s5) | every test and `.snap` that exists today |
 | meta repo | `.github/` (114); `specs/**` — a front's README is that front's, the top-level files the coordinator's | — |
 
@@ -84,7 +84,7 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   step 5 gates 22; 19 step 1 gates 12 and 09; 15 gates 91 and 92; 74 gates 92. **65 does not wait
   on 13** (its relay streams through `httpc`, not `rakun-client`). 92 step 2 waits on `03r-an`.
   73 is in group A (decision 189).
-- **130 ↔ 128 — to confirm** (`03r-ao`, only the record): (1) 128 does not wait on 130; (2) no 130 rakun
+- **130 ↔ 128 — decision 339**: (1) 128 does not wait on 130; (2) no 130 rakun
   commit is in flight while 128 is open, and 130's rakun sites are re-pointed at the post-128 paths;
   (3) after 128, each 130 rakun commit is a decision-188 consumer commit — before the owning rakun
   front opens if ready, else after it lands; (4) the frozen-files rule excepts 130's rewrite of
@@ -131,10 +131,10 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **103** s2 | s1 | 128 · 22 · 67 · 127 |
 | **104** s5 | 04 · 65 · 79 · 12 · 19 · 22 · 123 · 49 · 51 | 105 |
 | **105** | 104 s5 · 22 · 26 · 03r-q confirmed | — |
-| **106** s2 | 17 · 26 s4 · 65 · ctr-k | — |
+| **106** s2–3 | 17 · 26 s4 · 65 · 349 | — |
 | **107** | 07-g (a) · 71 · 81 | — |
 | **125** s4–10 | 325 (every step) · s6: decision 183 | 127 (s6) |
-| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (03r-ao) · ctr-k | every rakun front |
+| **128** | the rakun commits of 102 s3 and 103 s2 · the 130 rule (339) | every rakun front |
 | **04** | 128 | 13 · 12 (s1) · 22 (s5) · 08 s1 · 19 s2–5 · 88 (s4) · 123 · 104 s5 · 71 s3 |
 | **74** | 128 | 92 |
 | **08** | 128 · s1: 04 s4 · s7: 137 s1–5, 01-checker s29 | — |
@@ -164,7 +164,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **27** | s1 box 2: 22 · 27-a | 50 s6 · 126 · 53 |
 | **67** | 26 · 103 s2 · 67-a | 53 · 127 |
 | **136** | 26 · 120 · 125 · atm-a · atm-c · s8: atm-d | 123 (locals) · 127 · 53 |
-| **34** | s2: 05emilia-l · s4: 05emilia-n | 135 s4 |
+| **34** | s2: 05emilia-l · s4: 05emilia-n · s3, s5: 119 s1 | 135 s4 · 119 s5 |
 | **33** s2 | — | 98 |
 | **49** | 102 s3's `types.bp` (s2–s5; s1 and s6 open now) · s3: 26 s4, 17 · s4: 65 s1 · s5: 22 s4 · 49-e | 50 · 51 · 71 · 53 · 117 · 120 · 122 · 127 · 104 s5 |
 | **50** | 102 s3's `scan.bp`, `chunk.bp` (s2–s7) · 49 s6 · s2: 50-b · s4, s7: std-d · s5: 71 s2 · s6: 27 s1 | 53 · 117 · 120 · 124 · 71 s5 |
@@ -175,16 +175,16 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **53** | 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (s2–6) · s6: 50-b | 71 s5 · 121 s7 · 124 s5 · 120's and 126's browser boxes |
 | **118** | props-d/e/f (their boxes) | 26 · 119 · 120 · 126 · 121 s6 · 116 |
 | **121** s1–2 · s3–6 · s7 | — · s3: 08-f, s6: 118, 117 · 53 | 117 · 124 |
-| **119** | 08-d · s2: 118, 26 | 120 |
+| **119** | s1: the two repositories' first `feat` commit · s2: 118, 26 · s5: 34 s5 | 120 · 34 s3, s5 · 116 s6 (the style section's examples) |
 | **123** | 04 · 65 | 127 s4 · 104 s5 |
 | **117** | 102 · 22 · 49 · 50 · 121 s1–2 | 120 · 127 · 121 s6 · 124 |
 | **120** | 118 · 119 · 117 · 26 · 22 · 49 · 50 | 122 · 126 · 127 · 124 |
 | **122** | 26 · 49 · 102 · 118 · 120 | 124 |
 | **126** | 27 · 118 · 120 | 127 · 124 |
 | **127** | 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123 | 124 |
-| **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270, 285, 288, 289 · s2: `01-checker` s25 | 124 s5 |
+| **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270, 285, 288, 289, 338 · s2: `01-checker` s25 · s6: 119 s2 | 124 s5 |
 | **124** | 50 · 71 · every other `08` front · s5: 116, 53 | — |
-| **98** | every library track's `-test` and README steps · s3: 95-f · s4: lg2-v | — |
+| **98** | every library track's `-test` and README steps · s3: 95-f · s4: `subdir` (344) | — |
 | **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |
 
 ### Waves
@@ -199,7 +199,7 @@ for the carve-outs named above.
 |---|---|---|
 | 1 | 118 · 34 · 33 s2 · 121 s1–2 · the onze "consume std" thread (49 s1, 49 s6, 50 s1, 51 s1) · 27 (s1 box 1, s2, s3) · 125 s3 → s10; 102 s1–2 and 103 s1 pushed and landed (no thread) | now |
 | 2 | 102 s3 + 103 s2, one thread: rakun's commits first, the onze commits after the consume-std thread lands | 102 s1–2 and 103 s1 landed |
-| 3 | 128 · 26 · 49 s2 · 50 s2–3, s7 · 71 s1–2 · 119 | 102 s3 / 103 s2's rakun commits (128); 118 and `routes.bp` (26); `types.bp` (49); `scan.bp`, `chunk.bp` (50); 49 s6 (71); 08-d and 118 (119) |
+| 3 | 128 · 26 · 49 s2 · 50 s2–3, s7 · 71 s1–2 · 119 | 102 s3 / 103 s2's rakun commits (128); 118 and `routes.bp` (26); `types.bp` (49); `scan.bp`, `chunk.bp` (50); 49 s6 (71); 118 (119) |
 | 4 | 04 (s1 first) · 19 s1 · 15 · 74 · 81 · 67 | 128 landed (rakun); 26 and 103 s2 (67) |
 | 5 | 08 · 79 · 93 · 73 · 13 · 12; 116 at the earliest | 128; 04 s4 (08 s1); 04 s1 (13, 12); 19 s1 (12); 118, 26 s0, `01-compiler/26` (116) |
 | 6 | 22 · 65 · 17 · 09 · 92 · 91 | 04 s5 (22); 13 s2 (17); 19 s1 and 13 (09); 74 and 15 (92); 15 (91) |
@@ -210,7 +210,7 @@ for the carve-outs named above.
 | 11 | 124 s5 · 98 · 135 s1–4 | 116 and 53 (124 s5); every library track (98); snap-a, 34 and the owning fronts (135, last) |
 
 The chains that set the pace: 102 / 103 pushed → 102 s3 + 103 s2 → 128 → 04 → 22 → 49 → 53;
-118 → 26 → 67 → 127; 118 → 119 (08-d) → 120 → 126 → 127 → 124.
+118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124.
 
 ## Gate
 

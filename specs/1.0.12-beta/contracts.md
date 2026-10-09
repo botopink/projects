@@ -49,7 +49,7 @@ module.
 | `t` | the route-table blob |
 | `i` | islands, `[id, component, props]` |
 | `a` | actions, `[name, id]` |
-| `s` | emilia class names already in the server-emitted `<style>` — render-plugin key (§ 6a) from `jhonstart-emilia` |
+| `s` | emilia class names already in the server-emitted `<style>` — render-plugin key (§ 6a) from `jhonstart-styled`'s sink (`jhonstart-emilia` until `08-bpp/119` step 5, decision 338) |
 | `h` | open streaming holes |
 | `d` | dynamic flag — `true` only when the render read the query (`searchParams()`) or the request (`request()`, `cookies()`, `headers()`), a boundary's read included (26-b, answered by decision 186: compile-time mark at `05-jhonstart/26` step 8) |
 | `k` | route kinds — front 60 (static / dynamic / revalidate per pattern), joined on `pattern` |
@@ -165,7 +165,7 @@ Five clauses, each a test:
 **Shared fixture:** `className(cardTokens(), defaultTheme()) == "e_39b87d03"` (`cardTokens()` =
 `[.Bg.White, .Pad.All.__4, .Text.Bold, Token.Hover([.Bg.Color.Gray.__100])]`), a **literal hex string**
 on commonJS and erlang (inline test, `emilia/modules/emilia/src/emilia.bp:16503-16516`, no HTML); the
-`jhonstart-emilia` bridge test (30, `bridge_test.bp:165-186`) and 68's bundle test assert the same literal; the payload's `s` key makes it checkable at run time.
+`jhonstart-emilia` bridge test (30, `bridge_test.bp:165-186`; the member is deleted by `08-bpp/119`, and the reader moves to `jhonstart-styled`'s test, decision 338) and 68's bundle test assert the same literal; the payload's `s` key makes it checkable at run time.
 
 ## 4a · Emilia dispatcher shape — owned by fronts 54 and 56, consumed by 33–48, 57, 58
 
@@ -446,12 +446,16 @@ field and still refused:
   per rule body on both targets, build fails when JS and erlang disagree (§ 4 clause 3); the entry
   checks every class it computes against the payload's `s` at run time.
 
-## 6a · Style insertion — jhonstart's `RenderPlugin`, implemented by `jhonstart-emilia`, owned by front 30
+## 6a · Style insertion — jhonstart's `RenderPlugin`, implemented by `jhonstart-styled`, owned by front 30
 
-**Render, then flush, then serialize — once per chunk.** `emilia.flush()` clears the sheet → exactly
+**Render, then flush, then serialize — once per chunk.** A flush clears the sheet (`emilia.flush()` today) → exactly
 one consumer per render phase: the render plugin. jhonstart declares the point, is its only caller;
-bridge member `repository/jhonstart/modules/jhonstart-emilia` implements it over emilia's `flush()`;
-onze registers it at boot; emilia imports nobody (decision 113).
+member `repository/jhonstart/modules/jhonstart-styled` implements it — its sink writes the render's
+one sheet (`styled`'s: emilia's layers, then scoped styles in render order) in the head and each
+boundary fill; onze registers it at boot; emilia imports `styled` and std, no framework (decisions
+113, 338). Today the bridge member `jhonstart-emilia` implements it over emilia's `flush()` (its
+flush plugin, `root.bp:95`); `08-bpp/119` step 5 deletes the member and moves the implementation
+to `jhonstart-styled`'s sink.
 
 ```bp
 // jhonstart/src/plugin.bp
@@ -463,7 +467,7 @@ pub behavior RenderPlugin {
 }
 
 // onze, at boot
-val site = app(plugins: [emiliaPlugin()]);           // {app} from "jhonstart", {plugin as emiliaPlugin} from "jhonstart-emilia"
+val site = app(plugins: [styledSink()]);             // {app} from "jhonstart"; the sink from "jhonstart-styled" (named by 119 step 5)
 ```
 
 | Call | When front 30's render makes it | Its result goes |
@@ -474,13 +478,13 @@ val site = app(plugins: [emiliaPlugin()]);           // {app} from "jhonstart", 
 | `payload()` | **once**, after `close` | into the payload (§ 2) under the plugin's key; `null` writes nothing. A key the render writes itself (every § 2 key but `s`), or given by two plugins, fails the render. `Json` = JSON text from std's `json` writers (decision 116), written verbatim |
 
 - Ordering rules (`head` once, CSS before the markup it styles, nothing left at `close`) are
-  jhonstart's (the caller); adaptation to `flush()` is the bridge's. "Never an unstyled paint" holds
+  jhonstart's (the caller); adaptation to the sheet is the sink's. "Never an unstyled paint" holds
   by construction: a fill's style and markup reach the document together.
 - The plugin never recomputes, re-hashes, sorts or dedups a class (§ 4 untouched); the client bundle
   never calls `flush()` (68 enforces).
-- Every method asynchronous (decision 114): the render awaits each call; the bridge awaits emilia's
-  `@Task`-returning `flush()` in `head` and `chunk`.
-- Bridge's `payload()` returns `#("s", <the class names it flushed>)` — the payload's `s` — checked
+- Every method asynchronous (decision 114): the render awaits each call; the sink awaits the
+  sheet's `@Task`-returning flush in `head` and `chunk`.
+- The sink's `payload()` returns `#("s", <the class names it flushed>)` — the payload's `s` — checked
   by 68's entry with `checkStyles(payload.s)`. jhonstart names no plugin key.
 
 ## 7 · Test and snapshot contract — owned by std, consumed by every `-test` submodule

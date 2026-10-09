@@ -1,10 +1,10 @@
----
 // Front 119 — bpp styling · examples/src/components/Box.bpp
 //
-// Demonstrates: step 2 in a `.bpp` component — a `<style>` after the markup, as
-// in an `.astro` file. The template gives every element IT writes one scope
-// attribute and hands the sheet to the render's style sink, scoped to that
-// attribute; the slotted content was written by the caller and carries none.
+// Demonstrates: step 2 in a `.bpp` component — the style section (decision
+// 338), between the header and the markup. `jhonstart-styled` (the package
+// `"bpp".style` names) scopes it; the template gives every element IT writes
+// the scope attribute; the slotted content was written by the caller and
+// carries none.
 //
 //   ---
 //   const { isRed } = Astro.props;
@@ -16,12 +16,9 @@
 //     .red { border-color: red; }
 //   </style>
 //
-// `#[defineVars(foregroundColor)]` (Astro's `define:vars`, decision 278) names a `val` of the fence: it reaches the
-// root element as the custom property `--foregroundColor`.
-//
-// `scopedStyle` is imported and never spelled: the template names it in the
-// code it builds, and it resolves here, in the component's scope — the way a
-// tag's builder does.
+// Astro's `define:vars` is a hole here: `${foregroundColor}` is a value of the
+// header; known only at render, it becomes a CSS variable — the rule reads
+// `var(--s-0)` and the root element gets `style="--s-0: rgb(221 243 228)"`.
 //
 // The `.bp` form, with its tests: `Box` in `scoped-style-example.bp` at the
 // root of `examples/`.
@@ -31,20 +28,17 @@
 
 import {div} from "jhonstart";
 import {classIf, classList} from "jhonstart";
-import {scopedStyle} from "jhonstart-emilia";
 
 type Props(
     isRed: bool,
-    children: Node = [],
+    children: Node,
 )
 
 val foregroundColor = "rgb(221 243 228)";
+--- style ---
+.box { border: 1px solid blue; color: ${foregroundColor}; }
+.red { border-color: red; }
 ---
-<div class={classList(["box", classIf(isRed, "red")])}>
-  <slot />
+<div class={classList(["box", classIf(props.isRed, "red")])}>
+  {props.children}
 </div>
-
-<style #[defineVars(foregroundColor)]>
-  .box { border: 1px solid blue; color: var(--foregroundColor); }
-  .red { border-color: red; }
-</style>

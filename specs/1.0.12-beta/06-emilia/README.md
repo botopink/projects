@@ -4,7 +4,9 @@
 disk: [`modules.md`](./modules.md).
 
 emilia is CSS (decision 113): a `Token` enum resolved through a theme, emitted as a layered `<style>`
-document, both targets, importing nobody. Green (`emilia` 734 tests on both rows, fifteen example
+document, both targets, importing nobody — until `34` step 5 makes it the third layer over the
+repositories `css` and `styled` (decision 338: each family a `styledProperty`, the theme mechanism
+`styled`'s, Tailwind's values emilia's). Green (`emilia` 734 tests on both rows, fifteen example
 members, `emilia-test` 1). Left: one std-dedupe box, five Tailwind families out of parity with
 4.3.2, a few unplaced rows (test layer is `20-snap`'s). Two fronts by file: library source (every family in `emilia.bp` / `tokens.bp`), and
 test member plus examples.
@@ -17,6 +19,7 @@ test member plus examples.
 | EM-11 | six comment lines of `modules/` name another library (`attributes.bp:4,30`, `emilia.bp:110,16500,16501,16510`), five name jhonstart's `[name]={…}` DSL spelling (`attributes.bp:30,32,36`, `emilia.bp:185,202`) — decision 114's grep cannot be empty | `modules/emilia/src/` | 34 step 1 |
 | EM-8 | five families out of parity with 4.3.2 (05emilia-l's tail) — table in [34 § Mechanism](./34-emilia-modifiers/README.md): transition presets, `backdrop-opacity-*`, `border-spacing-*`, backdrop filters' `-webkit-backdrop-filter`, `divide-*`'s `border-*-style:var(--tw-border-style)` | `emilia.bp` blocks 44 · 42 · 43 · 40; `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` where they pin the output | 34 step 2 |
 | EM-9 | unplaced rows of `34-emilia-modifiers/reference-rows.md`, category (c): named `:has()` / `:not()` / ARIA / data-attribute / `in-[…]` forms; named `group/name` / `peer/name`; a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing; `@theme inline`; negative translate (`tokens.bp:2259-2279` has no `Neg`) | `tokens.bp`, `emilia.bp` blocks 34 · 54 · 45 | 34 steps 3 (the refusal, decision 300) and 4 (the four feature rows, on 05emilia-n) |
+| EM-12 | emilia's own sheet model (`Rule`, `Sheet`, `renderRule`, `renderDocument`, the per-render store) and string-built families become `styled` components (`styledProperty "…"`); the theme mechanism moves to `styled`, `defaultTheme()` stays (decision 338) | `modules/emilia/src/{output,emilia,spacing,theme}.bp`, `botopink.json` | 34 steps 3, 5 |
 | EM-3 | `emilia-test` exposes no `assert<Subject>` — `root.bp` holds one resolve test (PK-4) | `modules/emilia-test/src/**` | `20-snap` step 4 (`snap-a`) |
 | EM-4 · EM-5 | per-front snapshot suites and the eight cross-front examples of the 1.0.10 maps — the 610 inline tests in `emilia.bp` are today's evidence | `modules/emilia/test/**`, `examples/<new>/**` | `20-snap` step 4 (`snap-a`) |
 
@@ -24,7 +27,7 @@ test member plus examples.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — the parity tail moves pinned output every later snapshot would re-record | not started | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; the typed `#[theme]` and the breakpoint refusal (300); the four unplaced feature rows (on 05emilia-n); the examples that pin the moved families | 05emilia-l (step 2), 05emilia-e (step 3's base theme), 05emilia-n (step 4) — opens now |
+| [`34-emilia-modifiers/`](./34-emilia-modifiers/README.md) | **high** — the parity tail moves pinned output every later snapshot would re-record | not started | `modules/emilia/src/**`: `hashHex` → std and the cross-library comments; the five families to upstream's form; Tailwind's theme values over `styled`'s `#[theme]` (300, 338); the four unplaced feature rows (on 05emilia-n); the examples that pin the moved families; emilia over `styled` (338) | 05emilia-l (step 2), 05emilia-e (step 3's base theme), 05emilia-n (step 4), `08-bpp/119` step 1 (steps 3, 5) — steps 1, 2, 4 open now |
 | [`33-emilia-color-palette/`](./33-emilia-color-palette/README.md) | medium | step 2 done | steps 1, 3, 4 (the helpers, the suites, the examples) → `20-snap`; step 2 (the fifteen READMEs, `emilia-card` emilia-only) landed | — |
 
 ## Order
@@ -34,9 +37,9 @@ test member plus examples.
 33 step 2 (READMEs, emilia-card) ────────────────────┘   (examples/*/README.md, examples/emilia-card/**)
    20-snap step 4 (emilia-test's two helpers) — after 34, which moves the output they record
 
-outbound: nothing — emilia imports nobody; onze 68 reads `styleRule` and the fixture, which 34 keeps byte-identical
-inbound:  08-bpp/119 step 1 ──► new `modules/emilia/src/scoped.bp` and its test, beside 34 (119 appends its line to
-                                `root.bp` / `botopink.json`, which no step of 34 edits)
+outbound: nothing — emilia imports nobody (after 34 step 5: the repository `styled`, 338); onze 68 reads `styleRule`
+          and the fixture, which 34 keeps byte-identical
+inbound:  08-bpp/119 step 1 ──► the repositories `css` and `styled`, before 34 steps 3 and 5
 ```
 
 - 34 alone edits `emilia.bp` and `tokens.bp`; a snapshot recorded before a family moves is recorded

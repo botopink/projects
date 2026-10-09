@@ -1,4 +1,3 @@
----
 // Front 26 — jhonstart-router · examples/src/components/post_list.bpp
 //
 // The slow half of `streamed-blog-page-example.bp`, as a `.bpp` component. It

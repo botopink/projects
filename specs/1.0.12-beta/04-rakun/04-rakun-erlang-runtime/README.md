@@ -3,8 +3,8 @@
 **Priority:** critical — waiting: 13, 12 on step 1's tag epoch; 08 step 1 on step 4's eager-pass
 hook; 22 on step 5's `Request` accessors; onze 49 on the page `Request` listing query and headers
 (R62-3); 88's `beans` on step 4's injected fields; 19 on step 4's exit codes · **State:** not started
-**Depends on:** 128 · lg2-e (R06-4's comptime refusal), lg2-j (comptime state — `#[provides]` duplicate
-check runs at boot) · decision 321 (qualified beans, step 6) · decision 318 (step 8) · 03r-c/e (confirmations);
+**Depends on:** 128 · decisions 343, 347 (R06-2's and R06-4's refusals at compile time, where the
+entry point builds the bean table) · decision 321 (qualified beans, step 6) · decision 318 (step 8) · 03r-c/e (confirmations);
 lg2-g closed by 281 (no registry key as a type's name — step 6), 03r-b and 03r-d by 299 (step 7)
 **Owns:** `modules/rakun/**` except 74's four files (`src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`,
 `test/ssl_bundle_test.bp`, `test/tls_listener_test.bp`), 11's `src/actuator_api/**` and 17's
@@ -28,9 +28,9 @@ logging `after()` failures through the core's logger and exposing headers and ra
   share lives here (decision 185): `rakun_runtime.erl` keeps the ETS tables the reset hooks use
   (`rkOnReset` in `src/runtime.bp`), gains a per-tag epoch. No failure seam: after 128 the logger
   is the core's (decision 187); `after()` logs through it.
-- **`#[provides]` duplicates (R06-2).** Comptime across two invocations needs lg2-j; refusal at boot
-  in `bootSequenceFor` (`src/context.bp`), naming both functions ("fail the build" read as "fail
-  before the first request"); README records which.
+- **`#[provides]` duplicates (R06-2).** Each decorator invocation is independent (343): the
+  duplicate is refused at compile time where the entry point builds the bean table with
+  `@TypeInfo.all(with: provides)` (256), naming both functions — "fail the build" as written.
 - **Eager by default (R06-5).** `eagerInitIn` constructs every non-`lazy` singleton; `#[value]` read
   at construction today (the `#[config]` record of step 7 replaces it, 299), so a missing key already
   fails in the pass — the open box asserts `Rakun.run` does not return.
@@ -73,9 +73,9 @@ logging `after()` failures through the core's logger and exposing headers and ra
 ### Step 4 — Context (R06-1 … R06-7)
 
 - [ ] `context_test.bp`: `ctx.beanNames()` equals `rkScannedNames()` filtered to `#[managed]` types, order-insensitive, on `fixtures/tree`
-- [ ] two unqualified `#[provides]` of one type refuse the boot naming both functions (`fixtures/phmissing` gains the case); README says "at boot, until lg2-j"
+- [ ] two unqualified `#[provides]` of one type fail the build at the entry point's bean table, naming both functions (343; `fixtures/phmissing` gains the case)
 - [ ] `#[postConstruct]` runs after construction, before `eagerInit` returns — a hook recording the eager pass's state
-- [ ] `#[scope("request")]` on a constructor-injected factory refused naming the injection site — comptime if lg2-e lets the decorator see it, else boot; README says which
+- [ ] `#[scope("request")]` on a constructor-injected factory refused at compile time naming the injection site — where the entry point builds the bean table, which sees both declarations (343, 347: a method's `@Decl` has no `owner`)
 - [ ] with defaults every registered bean constructed before `Rakun.run` returns; a missing required config key (`#[value]` today, a `#[config]` field after step 7 — 299) fails inside `Rakun.run` (a recording constructor)
 - [ ] `scopes_test.bp` / `context_test.bp`: clean stop exits `0`; failed boot exits non-zero, a distinct code per failure kind (the table 19's `bootAndExit` consumes)
 - [ ] `rakun.d.bp` leaves `botopink.json`'s `files` and the tree; `fixtures/imports` (a consumer naming `Context` in a signature) still compiles — the concrete type carries `resolve` / `has`

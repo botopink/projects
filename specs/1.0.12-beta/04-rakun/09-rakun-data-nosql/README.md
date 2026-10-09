@@ -3,8 +3,8 @@
 **Priority:** low — breadth; an application ships without a document store ·
 **State:** not started (`modules/rakun-data/src/nosql/` does not exist)
 **Depends on:** 128 · 19 step 1 (Redis RESP double — decision 160) · 13 (Elasticsearch arm via
-`rakun-client` and 13's in-process HTTP double) · 03r-ab (four-arm scope; this README follows (a), only the record is missing) · lg2-a (the four
-binary-protocol stores)
+`rakun-client` and 13's in-process HTTP double) · 03r-ab (four-arm scope; this README follows (a), only the record is missing) · 346's `Bytes`, unbuilt
+(the four binary-protocol stores, with their drivers)
 **Owns:** `modules/rakun-data/src/nosql/**`, `src/nosql_host.bp`, `src/sidecars/rakun_nosql.erl`,
 `test/nosql/**`; appends to `modules/rakun-data/botopink.json` `files` and `src/root.bp` (08 does not
 edit them this milestone) · `repository/rakun/AGENTS.md` § NoSQL
@@ -55,7 +55,7 @@ answer a count. Under decision 304 every method answers `@Result<…, StoreError
 | Mnesia | `mnesia:local` · `mnesia:cluster` | yes | `disc_copies` under `BOTOPINK_TEST_TMPDIR`, a transaction per write, `add_table_copy` on join; the two-node box runs two sidecar-started `peer` nodes, or is reworded to the single-node `add_table_copy` path if `peer` cannot start under the runner |
 | Redis | `redis://…` | yes | RESP over `gen_tcp` (`rkSessRedis` wire of `rakun-session/src/store_redis.bp` lifted into `nosql/redis.bp`); suite connects to `rakun-test`'s double on a loopback port |
 | Elasticsearch | `https://…` | yes | `rakun-client`; suite against 13's HTTP double answering the `_doc` and `_search` shapes |
-| MongoDB · Neo4j · Cassandra · Couchbase | `mongodb://` · `bolt://` · `cassandra://` · `couchbase://` | refusal cell | recognised scheme; boot refusal names lg2-a and the driver the sidecar cannot load; one `deferred.md` row each |
+| MongoDB · Neo4j · Cassandra · Couchbase | `mongodb://` · `bolt://` · `cassandra://` · `couchbase://` | refusal cell | recognised scheme; boot refusal names the driver the sidecar cannot load; one `deferred.md` row each |
 
 - A configured driver whose module cannot load fails the boot naming it — never an ETS fallback.
 - ETS / Mnesia filter dialect exact: flat JSON object of equality pairs with `$in`, `$gt`, `$lt`,
@@ -116,7 +116,7 @@ No cell env-gated or *skipped*; refusal cells are green, asserting the refusal t
 
 ### Step 5 — The refusal cells (03r-ab (a))
 
-- [ ] `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` each refuse the boot naming scheme, driver and lg2-a — four cells in `test/nosql/arms_test.bp`
+- [ ] `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` each refuse the boot naming scheme and driver — four cells in `test/nosql/arms_test.bp`
 - [ ] four `deferred.md` rows, each naming its box list and the unblocking gap
 - [ ] member README's arm table says which arms run and which refuse
 

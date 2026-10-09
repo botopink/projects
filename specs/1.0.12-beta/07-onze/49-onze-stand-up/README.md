@@ -65,9 +65,9 @@ reading the query stays prerenderable; `onze-test` has one group file per front.
 ### Step 3 — the error digest reaches the log
 
 After `05-jhonstart/26` step 4 and `04-rakun/17`: the boundary logs/digests via bundled `log` (on
-`feat`); onze sets only the sink (decision 195 — no `RenderHooks.onError`).
+`feat`); onze only installs one of `log`'s sinks (349; no `RenderHooks.onError`, 195).
 
-- [ ] `Onze.run` sets `log`'s sink to rakun's logger (via `onze-server`; core `integration.bp`
+- [ ] `Onze.run` installs `log`'s sink and calls `log.captureRuntimeReports()` (349; via `onze-server`; core `integration.bp`
       imports no rakun type); `server_test.bp`: a throwing page answers 500 with a 16-hex digest
       in the body, same digest in the captured log line
 - [ ] `docs.md` § Errors states the one scheme (`log`'s `errorDigest`, decision 194) and where

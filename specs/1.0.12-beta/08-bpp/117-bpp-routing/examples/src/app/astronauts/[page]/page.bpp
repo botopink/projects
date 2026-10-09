@@ -1,4 +1,3 @@
----
 // Front 117 — bpp routing · examples/src/app/astronauts/[page]/page.bpp
 //
 // Demonstrates: step 3 in a `.bpp` page — `paginate` and `Page<T>`. One file

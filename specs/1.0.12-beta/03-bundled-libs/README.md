@@ -83,9 +83,9 @@ leaves (decision 187).
 - **erika**: pure, dual-target, 1 025 lines, but no library imports it — user-facing DSL. Stays,
   unless LINQ goes in std `collections` (`07-h`).
 - **jhonstart-html**: comptime template bound to jhonstart's `Element` — framework surface.
-- **onze-og, onze-assets**: font-metric tables, shell out for images; image bytes behind lg2-a.
+- **onze-og, onze-assets**: font-metric tables, shell out for images; image bytes behind 346's `Bytes` (unbuilt).
   **onze-bundler**'s `importsOf`: compiler concern (lg2-s) → a CLI capability, never a library.
-- **Erlang-only by nature** (processes, ETS, `gen_tcp`, binary framing behind lg2-a and the absent
+- **Erlang-only by nature** (processes, ETS, `gen_tcp`, binary framing behind 346's unbuilt `Bytes` and the absent
   bitwise operators): rakun-data, rakun-cache (its `CacheLife` twin in rakun-client is a
   rakun-internal fix), rakun-metrics / actuator / tracing, websocket, rsocket, pulsar, JMS, mail,
   rakun-ws (SOAP), rakun-session's Redis client, LDAP / SAML / OAuth2.

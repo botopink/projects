@@ -200,5 +200,5 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 - **Not added.** `defineAction` as one object (description and implementation compile for
   different targets). `.orThrow()` — `callAction(…)` answers `@Task<@Result<T, ActionError>>`,
   so `try` works on it directly (303). Nested action objects (`actions.user.getUser`) — the module path.
-- **File inputs.** No `z.instanceof(File)`: no byte type (lg2-a); rakun answers multipart with 415.
+- **File inputs.** No `z.instanceof(File)` until 346's `Bytes` is built (`01-checker` step 32); rakun answers multipart with 415.
 - **Security.** Id unguessable, name not secret; authorisation in the function (`ctx`) or middleware.

@@ -1,8 +1,10 @@
 // Front 119 — bpp styling · examples/scope-css-example.bp
 //
-// Demonstrates: step 1 — `scopeCss`, the one function in emilia that reads
-// author CSS. It rewrites selectors and nothing else: declarations, values,
-// comments and at-rule preludes pass through byte for byte.
+// Demonstrates: step 1 — `scope`, in the repository `css`: the base for
+// building CSS, the one package that reads author CSS (decision 338). It
+// rewrites selectors and nothing else: declarations, values, comments and
+// at-rule preludes pass through byte for byte. It knows no `.bpp`: the id is a
+// string `jhonstart-styled` hands it.
 //
 //   <style>                         compiles to
 //     h1 { color: red; }              h1[data-astro-cid-hhnqfkh6] { color: red; }
@@ -15,65 +17,65 @@
 // Target: both — pure botopink, no host cell, so the server and a client-side
 // re-render scope a sheet to the same bytes.
 
-import {scoped.scopeCss} from "emilia";
+import {sheet.scope} from "css";
 
 fn scoped(css: string) -> string {
-    return try scopeCss("a1", css) catch "ERROR";
+    return try scope("a1", css) catch "ERROR";
 }
 
-test "emilia: a type selector and a class selector" {
+test "css: a type selector and a class selector" {
     // the reference's own example
     assert scoped("h1 { color: red; }") == "h1[data-s=\"a1\"] { color: red; }";
     assert scoped(".text { color: blue; }") == ".text[data-s=\"a1\"] { color: blue; }";
 }
 
-test "emilia: every compound of a complex selector is scoped" {
+test "css: every compound of a complex selector is scoped" {
     assert scoped("article > p + p { margin: 0; }")
         == "article[data-s=\"a1\"] > p[data-s=\"a1\"] + p[data-s=\"a1\"] { margin: 0; }";
 }
 
-test "emilia: each selector of a list" {
+test "css: each selector of a list" {
     assert scoped("h1, h2 { margin: 0; }")
         == "h1[data-s=\"a1\"], h2[data-s=\"a1\"] { margin: 0; }";
 }
 
-test "emilia: the attribute goes before a pseudo-element and after a pseudo-class" {
+test "css: the attribute goes before a pseudo-element and after a pseudo-class" {
     assert scoped("a:hover::after { content: \"→\"; }")
         == "a:hover[data-s=\"a1\"]::after { content: \"→\"; }";
 }
 
-test "emilia: :global() leaves its selector alone" {
+test "css: :global() leaves its selector alone" {
     // `article :global(h1)` — the article is this component's, the h1 is not.
     assert scoped("article :global(h1) { color: blue; }")
         == "article[data-s=\"a1\"] h1 { color: blue; }";
 }
 
-test "emilia: rules inside @media are scoped; the prelude is not touched" {
+test "css: rules inside @media are scoped; the prelude is not touched" {
     assert scoped("@media (min-width: 40em) { .box { padding: 2em; } }")
         == "@media (min-width: 40em) { .box[data-s=\"a1\"] { padding: 2em; } }";
 }
 
-test "emilia: @keyframes steps are not selectors" {
+test "css: @keyframes steps are not selectors" {
     assert scoped("@keyframes spin { from { rotate: 0deg; } to { rotate: 1turn; } }")
         == "@keyframes spin { from { rotate: 0deg; } to { rotate: 1turn; } }";
 }
 
-test "emilia: a brace inside a string or a comment is not structure" {
+test "css: a brace inside a string or a comment is not structure" {
     assert scoped(".a::before { content: \"}\"; } /* } */ .b { color: red; }")
         == ".a[data-s=\"a1\"]::before { content: \"}\"; } /* } */ .b[data-s=\"a1\"] { color: red; }";
 }
 
-test "emilia: a sheet that does not parse is an Error, never a truncated sheet" {
-    assert scopeCss("a1", ".a { color: red;").isError();
-    assert scopeCss("a1", ".a::before { content: \"oops; }").isError();
+test "css: a sheet that does not parse is an Error, never a truncated sheet" {
+    assert scope("a1", ".a { color: red;").isError();
+    assert scope("a1", ".a::before { content: \"oops; }").isError();
 }
 
-test "emilia: scoping twice with the same id is refused" {
-    val once = try scopeCss("a1", "h1 { color: red; }");
-    assert scopeCss("a1", once).isError();
+test "css: scoping twice with the same id is refused" {
+    val once = try scope("a1", "h1 { color: red; }");
+    assert scope("a1", once).isError();
 }
 
-test "emilia: a scope id outside [a-z0-9-] is refused" {
+test "css: a scope id outside [a-z0-9-] is refused" {
     // The id is written into an attribute selector; a quote in it would close it.
-    assert scopeCss("a\"]", "h1 { }").isError();
+    assert scope("a\"]", "h1 { }").isError();
 }

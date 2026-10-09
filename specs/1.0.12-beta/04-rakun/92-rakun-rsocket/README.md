@@ -5,7 +5,7 @@
 **Depends on:** 128 (RSocket in `rakun-messaging` after it) · 15, landed (the member's
 `botopink.json`, `src/root.bp` are 15's; R92-1's edge, if taken, is one line there) · 74 (R92-2 reads
 the bundle registry; waits for 74's hostname check before relying on `verify=full`) · 03r-an (R92-1's
-transport) · lg2-a (frame codec marshals through `string`; the sidecar holds the bytes)
+transport) · 346's `Bytes`, unbuilt (frame codec marshals through `string`; the sidecar holds the bytes)
 **Owns:** `modules/rakun-messaging/src/rsocket/**`, `test/rsocket/**`, `src/sidecars/rakun_rsocket.erl`
 · `repository/rakun/AGENTS.md` § RSocket
 **Does not touch:** rest of `rakun-messaging` (15's; `pulsar/**` is 91's) · `rakun-websocket` ·
@@ -58,7 +58,7 @@ Nothing env-gated.
 - [ ] `#[messageMapping("r")]` on a method registers in 15's registry; on a `val` fails at build with a located message (`build_test.bp` over a scratch project)
 - [ ] a connection the transport closes mid-request fails that request with an error, caller process alive; a second request on a new connection succeeds
 - [ ] `codec_test.bp` asserts each of the twelve frame types against its checked-in vector
-- [ ] R92-5 reworded to "two handlers claiming the same route are refused at load, naming both declarations" (lg2-j) and ticked
+- [ ] R92-5: two handlers claiming the same route refused at compile time where the entry point builds the route table (`@TypeInfo.all`, 343), naming both declarations, and ticked
 
 R92-6 (`rakun routes` lists rsocket routes) is 88's.
 
@@ -68,4 +68,4 @@ green in `modules/rakun-messaging` (`test/rsocket/` in the run).
 Blast radius: under 03r-an (a) every `rakun-messaging` consumer loads `rakun-websocket`'s tree;
 under (b) the core gains the extension point, `rakun-websocket` one registration.
 
-`examples/rsocket-service-example.bp` kept for open markers (lg2-a, lg2-b, the `await`-in-lambda rule by design).
+`examples/rsocket-service-example.bp` kept for open markers (the byte gap — 346 —, lg2-b, the `await`-in-lambda rule by design).

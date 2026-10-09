@@ -5,8 +5,9 @@ from a `.bp` module (118). · **State:** not started
 **Depends on:** `01-compiler/01-checker` step 25 (the anonymous default, 289) · `118-bpp-components` (the literal's template language) · `05-jhonstart/26` step 0
 (merges `jhonstart-html` into the core, `html` its default function, decision 200) ·
 `01-compiler/26-cli-tooling` (owns `compiler-cli/**`, `language-server/**` this milestone; 116
-opens after it) · `01-compiler`'s prelude scope (decision 270)
-(step 6). Written against decisions 198, 199, 200, 212, 213, 221, 270.
+opens after it) · `01-compiler`'s prelude scope (decision 270) · `119-bpp-styling` step 2
+(`jhonstart-styled`'s `pub default fn`; step 6's style-section examples only).
+Written against decisions 198, 199, 200, 212, 213, 221, 270, 284, 285, 338.
 **Owns:** in `repository/botopink-lang`: `modules/manifest/src/root.zig` (one key),
 `modules/compiler-cli/src/cli/{scanner,resolver,libs,format_cmd,migrate}.zig` (extension lists,
 unfold, formatter's view), `modules/lib-test-runner/src/discovery.zig`,
@@ -17,7 +18,7 @@ mapping), `docs.md` § Modules, `tests/language/modules/bpp_*` · in `repository
 `modules/compiler-core/src/comptime.zig`, `comptime/infer.zig` (no `template.emit` /
 `template.slice`, decision 198) · the prelude scope in `compiler-core` (`01-compiler/01-checker`'s;
 this front hands it the list) · `repository/jhonstart/**` (default function: `05-jhonstart/26`'s
-and 118's; `prelude.bp`: 118's).
+and 118's; `prelude.bp`: 118's; `jhonstart-styled`: 119's).
 
 Reference: `astro-docs/09-astro-components.md` § Estrutura do Componente.
 
@@ -29,7 +30,6 @@ written as `components/PostCard.bpp`, dropping the template import, function hea
 `return html """` (full pair: `examples/PostCard.bpp`, `examples/PostCard-desugared-example.bp`):
 
 ```bpp
----
 import {lib.db.Post};
 
 type Props(post: Post, featured: bool = false)
@@ -46,22 +46,61 @@ no library and no syntax.
 
 ## Mechanism
 
-**The application names the package** (198): `botopink.json` key, value = one dependency's name;
-the toolchain uses its `pub default fn` (for jhonstart `html`, `import html from "jhonstart";`, 200).
+**The application names the packages** (198, 284, 338): `botopink.json` key `"bpp"`, an object.
+`default` (required) names the dependency whose `pub default fn` unfolds the markup (for jhonstart
+`html`, `import html from "jhonstart";`, 200); `style` (optional) names the dependency whose
+`pub default fn` unfolds the style section, required only by a file with one. The string form is
+refused at the key: `error: "bpp" is an object — write "bpp": {"default": "jhonstart"}`.
 
 ```json
-{ "name": "notes", "dependencies": { "jhonstart": { … }, "onze": { … } }, "bpp": "jhonstart" }
+{ "name": "notes", "dependencies": { "jhonstart": { … }, "jhonstart-styled": { … }, "onze": { … } },
+  "bpp": { "default": "jhonstart", "style": "jhonstart-styled" } }
 ```
 
-**The unfold** (198, 199, 212, 213). Header/literal split per 212; bad first line or unclosed
-header: `error: a .bpp header opens with --- on the first line and closes with a second ---` at
-that line. Always the module's **anonymous** `pub default fn` (289), never `pub val`; its name is the
-importer's (the file name or an alias), and `decl.name` reads the file name:
+**The file** (212, 338). The header starts on the first line, with no opening `---`, and ends at
+the first separator line: `---` (the markup follows, to the end of the file) or `--- style ---`
+(the style section follows, closed by a `---` line, then the markup to the end of the file). A file
+with no separator line is markup only. One style section; an unscoped rule is written
+`:global(…)`. Each refused at its line: a first line `---` (`error: the header starts on the first
+line; a .bpp has no opening ---`); a `--- style ---` after the markup; a second style section; an
+unclosed style section; a style section in a project with no `"bpp".style`.
 
-| The header | The module of `components/PostCard.bpp` |
+**The unfold** (198, 199, 212, 213, 338). Always the module's **anonymous** `pub default fn` (289),
+never `pub val`; its name is the importer's (the file name or an alias), and `decl.name` reads the
+file name:
+
+| The file | The module of `components/PostCard.bpp` |
 |---|---|
-| declares `type Props(…)` | the header's declarations, then `pub default fn (props: Props) -> R { <the header's statements> return html """<the markup>"""; }` |
-| declares no `Props` | the header's declarations, then `pub default fn () -> R { <the header's statements> return html """<the markup>"""; }` |
+| header declares `type Props(…)` | the header's declarations, then `pub default fn (props: Props) -> R { <the header's statements> return html """<the markup>"""; }` |
+| header declares no `Props` | the header's declarations, then `pub default fn () -> R { <the header's statements> return html """<the markup>"""; }` |
+| has a style section | as above, plus `import <style> from "<bpp.style>";` and `use <style> """<the section>""";` in the body, after the header's statements, before `return` |
+
+The style section's import names the `"bpp".style` package's default function; its name is the
+unfold's and binds no name the header can reach. The section is a literal like the markup: its
+diagnostics map to the `.bpp` line. With `"bpp": {"default": "jhonstart", "style":
+"jhonstart-styled"}`, the file
+
+```bpp
+type Props(title: string)
+--- style ---
+.title { font-size: 2rem; }
+---
+<h1 class="title">{props.title}</h1>
+```
+
+unfolds to (the prelude's imports, 270, aside)
+
+```bp
+import html, {View} from "jhonstart";
+import styled from "jhonstart-styled";
+
+type Props(title: string)
+
+pub default fn (props: Props) -> View {
+    use styled """.title { font-size: 2rem; }""";
+    return html """<h1 class="title">{props.title}</h1>""";
+}
+```
 
 - `import {components.PostCard};` binds it without alias; another file name needs one
   (`import {components.post_card as PostCard};`). No case conversion; the importer's name is the file's,
@@ -73,12 +112,13 @@ importer's (the file name or an alias), and `decl.name` reads the file name:
   `children` (193). Header imports in the language's form (`import {components.card};`,
   `import {x} from "pkg";`); no relative import.
 
-**What the toolchain knows** (285): the package named by `"bpp"`, its `pub default fn` (`html`, the
-unfold target) and its prelude (270) — nothing else. A file's role (page, layout, …) is the
-framework's: the route table `rakun-app` generates from `routing`'s file kinds (`04-rakun/22`) calls
-jhonstart's `page` / `layout` on the unfolded function; the toolchain applies no decorator by file
-name and reads no `bppKinds`. A decorator written on the line before the closing `---` is ordinary
-header code annotating the function (221 (1)).
+**What the toolchain knows** (285, 338): the package named by `"bpp".default`, its `pub default fn`
+(`html`, the unfold target) and its prelude (270), and the `pub default fn` of the package named by
+`"bpp".style` (the style section's unfold target) — nothing else; it names no library. A file's role
+(page, layout, …) is the framework's: the route table `rakun-app` generates from `routing`'s file
+kinds (`04-rakun/22`) calls jhonstart's `page` / `layout` on the unfolded function; the toolchain
+applies no decorator by file name and reads no `bppKinds`. A decorator written on the header's last
+line, before the separator line, is ordinary header code annotating the function (221 (1)).
 A page takes no parameter: `use params<P>()`, `use pageData<D>()` in the header (293; was `bpp-g`).
 
 **Nothing added to a template body.** The header is the module-level half; no function emits
@@ -87,7 +127,7 @@ declarations or keeps an origin. The literal *is* the file: a literal span is a 
 tokens, hover, go-to-definition. Header is copied, so the unfold maps module positions back; a
 header type error reports at its own line and column.
 
-**The package's prelude** (270). Module `prelude` (`src/prelude.bp`, listed in `files`) gives a `.bpp` what it imports (`Element`, the builders its tags name): `import` items of the
+**The package's prelude** (270). The `"bpp".default` package's module `prelude` (`src/prelude.bp`, listed in `files`) gives a `.bpp` what it imports (`Element`, the builders its tags name): `import` items of the
 package's own modules only (no other package — decision 242; no activation `X*`; alias allowed),
 compiled and tested with the package; no manifest key names/overrides it. Handed to
 `compiler-core` as the module's last scope (generic import-item list, no library); an item becomes
@@ -119,12 +159,15 @@ sibling lookup, `isSource`, `stripBpExt`), `libs.zig` (`stripSourceExt`), `forma
 `PostCard.bpp`, then `PostCard/mod.bp`. Bundled packages still ship `.bp` only (`build.zig`,
 decision 117 rule 8). The manifest (`modules/manifest/src/root.zig`, `parse`) has no file-kind key today.
 
-**Formatter.** `botopink format` formats the header as a module, leaves the markup byte-identical;
-`format --check` checks the header, passes the markup.
+**Formatter.** `botopink format` formats the header as a module, leaves every byte of the style
+section and the markup unchanged; `format --check` checks the header, passes the style section and
+the markup.
 
-**Refusals (compile time).** `.bpp` with no `bpp` key: error at the file, naming the key. `bpp`
-naming a non-dependency, or a package with no `pub default fn` taking `comptime _: @Expr<string>`:
-error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
+**Refusals (compile time).** `.bpp` with no `bpp` key: error at the file, naming the key. `"bpp"`
+a string: error at the key, naming the object. `"bpp".default` missing, or `default` / `style`
+naming a non-dependency or a package with no `pub default fn` taking `comptime _: @Expr<string>`:
+error at the key. A style section with no `"bpp".style`: error at the section's line. `X.bp` +
+`X.bpp` in one directory: error naming both.
 
 ## Open
 
@@ -142,9 +185,17 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 ### Step 1 — `bpp` in the manifest model
 
-- [ ] `modules/manifest`: key parsed and validated — a string naming a dependency
-- [ ] unit tests: not a string, non-dependency, package with no `pub default fn` over
-      `@Expr<string>`, key on a project with no `.bpp` (accepted), `.bpp` with no key
+- [ ] `modules/manifest`: `"bpp"` parsed as an object — `default` required, `style` optional (338)
+- [ ] `default` names a dependency whose `pub default fn` takes `comptime _: @Expr<string>`; unit
+      tests: `default` missing, a non-dependency, a package with no such default function — each
+      refused at the key
+- [ ] `style` likewise: a non-dependency, a package with no such default function — each refused at
+      the key
+- [ ] the string form `"bpp": "jhonstart"` refused at the key: `error: "bpp" is an object — write
+      "bpp": {"default": "jhonstart"}`
+- [ ] the key on a project with no `.bpp` accepted; a `.bpp` with no key refused at the file
+- [ ] a style section in a project whose `"bpp"` has no `style` refused at the section's
+      `--- style ---` line
 
 ### Step 2 — The unfold
 
@@ -155,14 +206,27 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
       jhonstart's (answers the literal's length) — `.bpp` with `type Props` unfolds to
       `pub default fn (props: Props)`, without to `pub default fn ()`, no header = all
       literal; fixture served unchanged (proof the toolchain knows no library)
-- [ ] header between two `---` (212): non-`---` first line in a file containing one, and an
-      unclosed header, each refused at the line
+- [ ] the file's grammar (212, 338): the header from the first line to the first separator line;
+      `---` → markup to the end of the file; `--- style ---` → style section closed by `---`, then
+      markup; no separator line → markup only (a markup-only file compiles)
+- [ ] a first line `---` refused at line 1: `error: the header starts on the first line; a .bpp has
+      no opening ---`
+- [ ] each refused at its line: a `--- style ---` after the markup; a second style section; an
+      unclosed style section (at its `--- style ---` line)
+- [ ] the style section unfolds to `use <style> """<the section>""";` after the header's
+      statements, before `return html """…""";`, with `import <style> from "<bpp.style>";` binding
+      no name the header can reach — § Mechanism's `Props(title)` example unfolds as spelled there
+- [ ] fixture style package (not `jhonstart-styled`) whose default function answers something
+      trivial (the section's length): a `.bpp` with a style section compiles onto it unchanged —
+      the toolchain knows no library for the style section either
+- [ ] a diagnostic inside the style section reported at its `.bpp` line, like the markup's
 - [ ] the default function anonymous (289): `import {components.PostCard};` binds `PostCard` in the
       importer, an alias another name; a file name that is no identifier (`not-found.bpp`) unfolds;
       `decl.name` is the file name; `page.bpp` whose header imports and writes `#[page(…)]` compiles
 - [ ] declarations at module level, statements in the body in order; a statement reads `props`
-- [ ] a decorator before the closing `---` annotates the function (221 (1)); without one the
-      function carries none — no decorator from the file name, no `bppKinds` read (285)
+- [ ] a decorator on the header's last line, before the separator line, annotates the function
+      (221 (1)); without one the function carries none — no decorator from the file name, no
+      `bppKinds` read (285)
 - [ ] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
 - [ ] prelude (270): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
       code import only used items; header name beats prelude's; `prelude.bp` holding a `fn`, another
@@ -188,14 +252,18 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 ### Step 5 — The formatter
 
-- [ ] `botopink format` rewrites a badly indented header, leaves every byte after the second `---`
-      line; `format --check` fails on the first, passes the second
+- [ ] `botopink format` rewrites a badly indented header as a module, leaves every byte of the style
+      section and the markup unchanged; `format --check` fails on the header, passes the style
+      section and the markup
 - [ ] `scripts/format-check.sh` walks `.bpp` files — header under the gate's format stage like any `.bp`
 
 ### Step 6 — A project of `.bpp` files (a page reads its route by hook: 293)
 
 - [ ] this front's `examples/` and every track front's `examples/src/` compile as an onze test
-      project whose `botopink.json` carries `"bpp": "jhonstart"`
+      project whose `botopink.json` carries `"bpp": {"default": "jhonstart"}`
+- [ ] `119-bpp-styling/examples/src/components/` (`Box.bpp`, `Post.bpp`, which carry style
+      sections) compile with `"bpp": {"default": "jhonstart", "style": "jhonstart-styled"}` — once
+      119 step 2 has landed
 - [ ] so do other tracks' `.bpp` forms: `05-jhonstart/{26-jhonstart-router, 27-jhonstart-link,
       67-jhonstart-forms}/examples/src/` and `07-onze/53-onze-example-app/examples/{app,
       components}/` — `07-onze/53`'s blog, every markup-holding app file kind
@@ -204,7 +272,7 @@ error at the key. `X.bp` + `X.bpp` in one directory: error naming both.
 
 ## Decisions
 
-None open (`bpp-g` → 293: step 6, and 117 step 1).
+None open.
 
 **Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
 - [ ] `zig build test-libs`: every library green — no existing `.bp` file changes meaning
@@ -213,16 +281,17 @@ None open (`bpp-g` → 293: step 6, and 117 step 1).
 ## Blast radius
 
 - **Extension sites in four tools become one list.** A missed site silently ignores `.bpp` — hence step 3.
-- **New manifest key.** `botopink.json` ignores unknown keys (`AGENTS.md` § Manifest): an older
-  toolchain reads it, then fails on the first `.bpp` with "no such module".
+- **New manifest key, an object.** `botopink.json` ignores unknown keys (`AGENTS.md` § Manifest): an
+  older toolchain reads `"bpp"`, then fails on the first `.bpp` with "no such module".
 - **compiler-core gains only the prelude scope** (01-checker's). No template member, no backend
   change, no snapshot directory: the unfold yields a module all four backends compile.
-- **Formatter and `00-gate/112`.** `format --check` is a hard gate; a `.bpp` header is under it, markup is not.
+- **Formatter and `00-gate/112`.** `format --check` is a hard gate; a `.bpp` header is under it, the style section and the markup are not.
 
 ## Notes
 
-- **App names the package**: no rule needed for two libraries claiming one file kind.
-- **Not a syntax**: neither a compiler-owned fence nor a library writing the module; header is botopink, rest is literal.
+- **App names the packages**: no rule needed for two libraries claiming one file kind.
+- **Not a syntax**: neither a compiler-owned fence nor a library writing the module; the header is
+  botopink, the style section and the markup are literals handed to the two default functions.
 - **Still to be stated**, before the step named: (1) page parameter — answered by 293 (hooks, no parameter) — `117-bpp-routing`
   step 1; (2) return type — decision 275; (3) header statements other than `val` / `use` — step 0's list;
   (4) `Node`: track examples write `children: Children = []`, declared by no jhonstart module

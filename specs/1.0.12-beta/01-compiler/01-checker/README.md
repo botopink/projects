@@ -2,10 +2,10 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 6 box 3, steps
-13, 21–31 and ten rows open
+13, 21–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated rows lg2-a, lg2-q, lg2-e — each a step here only once
-answered.
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
+lg2-e answered by 347 with nothing to build: a method's `@Decl` has no `owner`).
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
 (node fields its steps add) · `snapshots/comptime/**`, `snapshots/parser/**` · its cells under
@@ -356,6 +356,28 @@ type's body is a parse error.
       `pub type Type { pub type Field<T>(…) { … } }` reads `Type.Field<T>` (308); `reject/` cells for a nested
       type named like a member
 - [ ] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
+
+### Step 32 — a `Bytes` primitive (decision 346)
+
+Today no primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere) and
+every host cell marshals through `string`.
+
+- [ ] `Bytes` in `builtins.d.bp` / `primitives.bp`: an immutable byte sequence; `Bytes.fromUtf8(s: string)
+      -> Bytes`; `b.toUtf8()` answering `@Result` (an `Error` on invalid UTF-8)
+- [ ] no conversion between `string` and `Bytes` without those calls: a string literal where `Bytes` is
+      expected, and `Bytes` where `string` is, are located mismatches (`reject/` cells)
+- [ ] a host cell may take and answer `Bytes`; the lowering is each backend's (an Erlang binary, a
+      `Uint8Array` on commonJS, a buffer in wasm memory — 02–05), one `run/bytes_round_trip` cell on the
+      four targets
+- [ ] the rest of the surface (length, slice, concatenation, `encoding`'s bridges) written in the step's
+      commit under 67; `docs.md` § Primitives (07's prose) and `language-gaps.md`'s byte row point here
+
+### Step 33 — `@embedFile` / `@embedBytes` checked (decision 342)
+
+- [ ] `@embedFile(comptime path: string) -> string` and `@embedBytes(comptime path: string) -> Bytes` in
+      `builtins.d.bp`, callable in any context; a `path` not known at compile time is 280 (0)'s error at
+      the argument; an absolute path or one leaving the package (`..`) refused at the argument (`reject/`
+      cells); the read itself is `14-comptime-on-beam` step 6's
 
 ### Rows other fronts found
 

@@ -13,7 +13,7 @@ Owes:
    its file's front. Front [`97-std-dedupe`](./97-std-dedupe/README.md).
 2. **The packaging rule checked everywhere** — a `-test` member with an `assert<Subject>(loc, …)`
    helper per library, a `README.md` beside every example (29 of 29 lack one), the `git`-dependency
-   subdirectory question (lg2-v), amended decision 79 (95-f). Front
+   `subdir` field (decision 344), amended decision 79 (95-f). Front
    [`98-packaging-tail`](./98-packaging-tail/README.md), after the library tracks' helpers and READMEs.
 
 ## Fronts
@@ -21,7 +21,7 @@ Owes:
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
 | [`97-std-dedupe/`](./97-std-dedupe/README.md) | high | partial: steps 0–5, 8–10, 12 on feat; step 1 box 4, step 2 box 3, step 4 box 2, steps 6, 11, 13–17 open (11's questions: 97-a/b/c → 334, 335); step 7 → 20-snap | the shared primitives in std; the consumer rows; std on wasm group 3 (decision 230); the std bodies of decisions 259, 260, 262, 263 | `std-d` (step 6) · `24-g` confirmed |
-| [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium | not started | `erika-test`'s first helper and `erika-linq`'s README; `scripts/check-packaging.sh`; `docs/botopink-json.md`; the manifest `subdir` field if lg2-v is answered (2) | every library track's `-test` and example-README steps · `95-f` · `lg2-v` |
+| [`98-packaging-tail/`](./98-packaging-tail/README.md) | medium | not started | `erika-test`'s first helper and `erika-linq`'s README; `scripts/check-packaging.sh`; `docs/botopink-json.md`; the manifest `subdir` field (344) | every library track's `-test` and example-README steps · `95-f` |
 
 ## Order
 
@@ -50,7 +50,6 @@ Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../1.0.10
 | 24-g | `std/async`'s started/unstarted surface (`allOf`, `all`, `race`, `runAll`, `raceOf`, `timeout`; `allSettled` gone) | 97 step 5 builds `RetryPolicy` on it |
 | ck2-e | a std decorator is reached through its module handle | — |
 | 95-a · 95-b · 95-c | the relocation cuts; `rakun-app` inherits targets (amended by rakun's `["erlang"]`); `erika-test` exists (`95-e` closed 9 Oct: the `percentDecode` collision left the code, rakun uses `encoding.percentDecode`) | — |
-| lg2-v | a subdirectory in a git dependency — recommendation (1), none ([`../decisions-pending.md`](../decisions-pending.md)) | 98 step 4 |
 
 ### 95-f · The onze takeover happened without the orphan branch and the archive — amend decision 79
 

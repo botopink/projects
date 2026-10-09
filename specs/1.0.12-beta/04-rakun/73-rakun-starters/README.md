@@ -5,8 +5,8 @@ examples are build-only cells whose `botopink run` was never re-measured since t
 sidecars · **State:** not started
 **Depends on:** 128 (rewrites every starter's manifest; `rakun-starter` brings `rakun` only once
 logging is in the core) — no other rakun front: group A (decision 189) · 03r-af (step 3) · 03r-r
-(confirmation) · lg2-v / PK-7 (git dependency with a subdirectory — the out-of-tree install; stays
-open, compiler-owned)
+(confirmation) · decision 344 / PK-7 (a git dependency's `subdir` — the out-of-tree install;
+`02/98` step 4 and `01-compiler/26` step 6)
 **Owns:** `repository/rakun/starters/**` · `repository/rakun/examples/**` · `modules/README.md`
 § starters and examples · `repository/rakun/README.md` § Getting started ·
 `modules/rakun/test/starter_manifest_test.bp` (carve-out from 04) · the "Checkout onze" step of

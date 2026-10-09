@@ -1,4 +1,3 @@
----
 // Front 123 — bpp middleware · examples/src/app/orders/page.bpp
 //
 // Demonstrates: step 1 in a `.bpp` page — reading what middleware stored.

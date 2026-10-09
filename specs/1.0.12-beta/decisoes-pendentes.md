@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 55 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 49 perguntas, 6 contradições e 86 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **350**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,62 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 08-d · Quem faz o escopo do CSS
-
-**Trava:** `08-bpp/119` inteira, passo 1 incluído — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124 · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** A frente 119 quer que o `<style>` de um componente valha só para ele. Nada perto faz
-escopo hoje: o emilia compila `Token[]` e "não é um processador de CSS" (`emilia/AGENTS.md`: sem
-leitura de seletor, nunca lê CSS de autor); o `onze-assets` renomeia as classes de `*.module.css`
-(`style_module.bp`), mas um `h1 { }` num arquivo de módulo continua global; decisão 113. O passo 1 da
-119 não espera frente de trilha nenhuma — só esta resposta.
-
-**Hoje** (medido: `botopink test --target commonJS` num projeto de rascunho sobre `jhonstart-html`):
-```bp
-renderNode(html """<div><style>h1 { color: red }</style><h1>x</h1></div>""")
-// == "<div><style>h1 { color: red }</style><h1>x</h1></div>"   — verbatim: pinta todo <h1> da página
-```
-
-- [ ] **(a)** O emilia ganha `scopeCss(scope, css)`, alcançado pelo `jhonstart-emilia`.
-  ```bp
-  import {scopeCss} from "emilia";
-  val css = scopeCss(scope, "h1 { color: red }");   // o <style> do componente passa por aqui (ilustrativo)
-  ```
-- [ ] **(b)** O `onze-assets`, ao lado do renomeador de módulos.
-  ```text
-  onze build   → o <style> do componente ganha escopo junto com os *.module.css
-  sem o onze   → o mesmo <style> continua global
-  ```
-- [ ] **(c)** O `html` do core `jhonstart` faz o escopo do próprio `<style>` (o membro `jhonstart-html`
-  sai, 200).
-  ```bp
-  html """<style>h1 { color: red }</style><h1>x</h1>"""   // o html lê e reescreve o seletor: um parser de CSS no html
-  ```
-
-- [ ] **(d)** *(proposta, 09/10)* CSS em três camadas. `css` é a base para construir CSS (parser,
-  `Sheet`, `scope`) e `styled` é a base para construir componentes de CSS (`styled "…"` → `@Component<BaseStyled, Styled>`, com hooks e a regra build/render das páginas; a sintaxe
-  CSS do Tailwind v4 onde ela é CSS: `--spacing()`, `--alpha()`, `@variant`, `@custom-variant`; o
-  `@apply` vira um buraco `${…}` tipado). Cada um é um repositório próprio (326: `repository/css`,
-  `repository/styled`). A emilia vira uma série de componentes feitos em `styled`, aplicados na tag
-  (301). O `"bpp"` vira objeto, e o estilo do `.bpp` vai para uma seção própria, compilada pelo pacote
-  de `style`. Proposta inteira, com o que muda e nove pontos ainda abertos (p1–p9):
-  [`08-bpp/119-bpp-styling/proposta-08-d.md`](./08-bpp/119-bpp-styling/proposta-08-d.md).
-  ```bp
-  // botopink.json: "bpp": {"default": "jhonstart", "style": "jhonstart-styled"}
-  // emilia — Tailwind: @utility p-* { padding: --spacing(--value(integer)); }
-  fn padAll(n: i32) -> @Component<BaseStyled, Styled> { return styled "padding: --spacing(${n});"; }
-  ```
-  ```bpp
-  <h1 class="title">{props.title}</h1>
-  --- style ---
-  .title { font-size: 2rem; }          // → .title[data-s="components-post-12"]{font-size:2rem}
-  ```
-
-**Recomendação: (d)**, se os pontos p1–p9 forem aceitos como recomendados; senão, (a). A (d) dá um
-parser e uma folha só para todo mundo, e a emilia vira cliente do `styled`. A (c) põe um parser de CSS
-na biblioteca de HTML; a (b) deixa o estilo com escopo indisponível sem o onze. **Bloqueia:** a 119,
-todo passo — na cadeia crítica 118 → 119 → 120 → 126 → 127 → 124.
 
 ### props-d · Os atributos de uma tag nativa *(proposta)*
 
@@ -613,170 +557,6 @@ io.nope.f()                // unbound variable 'io'
 
 **Recomendação: (a).** (b) só se o diagnóstico nomeando a pasta for desejado. **Bloqueia:** nada.
 
-### 16-a · A lista de argumentos quebra junto com o que a envolve
-
-**Trava:** `01-compiler/16` passos 4 e 6 (o reformat das cinco bibliotecas)
-
-**Contexto.** O formatador (C-12) só quebra uma construção quando ela não cabe em 80 colunas, e o
-grupo de fora decide primeiro (decisão 65: tudo-ou-nada). Habilitada sozinha (o
-`argument-list.patch` estacionado), a lista de argumentos abria ~1 480 de ~2 770 listas por causa do
-que vinha DEPOIS delas (`) != -1;`, `) + "…"`), porque a expressão binária em volta estava fixada — o
-"meio errado" da decisão 65. Por isso a implementação habilitou junto, cada uma com seu
-`groupMeasured`: corrida binária, `if` sem chaves, lista de argumentos e literais de array, tupla e
-behavior. Custo medido: 142 arquivos; linhas acima de 80 colunas 5 973 → 1 840; um segundo passe não
-move nada.
-
-**Hoje:**
-```bp
-assert doc.indexOf("…um argumento comprido…")
-    != -1;                 // o binário quebra primeiro; a lista é medida na própria linha
-```
-
-- [ ] **(a) ★** A lista habilitada junto com as construções que a envolvem, a de fora decidindo
-  primeiro.
-  ```bp
-  if (absDiff > tolerance)
-      throw "…";           // o `if` sem chaves põe o ramo na linha seguinte, sem quebrar a condição
-  ```
-- [ ] **(b)** A lista habilitada sozinha (ou em commits separados — cada passo intermediário é um meio
-  errado próprio, e as seis árvores seriam reformatadas duas vezes).
-  ```bp
-  assert doc.indexOf(
-      "…um argumento comprido…",
-  ) != -1;
-  ```
-- [ ] **(c)** Manter a lista fixada (nunca quebra).
-  ```bp
-  assert doc.indexOf("…um argumento comprido…") != -1;   // passa de 80 colunas
-  ```
-
-**Recomendação: (a).** É a única que não reformata nada duas vezes e não abre lista pelo que vem
-depois; cobre também a metade "sem vírgula" da 166 (ver `ctr-s`). **Bloqueia:** o reformat das cinco
-bibliotecas (09) e o passo 6 da 16-formatter.
-
-### 16-b · Array aberto: um elemento por linha
-
-**Trava:** `01-compiler/16` passo 4
-
-**Contexto.** Antes, elementos escritos numa linha do fonte ficavam numa linha da saída. Quando a lista
-passa a medir largura, isso não é idempotente (a linha junta passa de 80, uma chamada dentro dela
-quebra, e o passe seguinte lê outro layout: 3 arquivos do corpus mudaram num segundo passe), e faz a
-saída depender de como o fonte estava quebrado — o que a decisão 65 parte 2 proíbe. A decisão 166
-(escopo na 243) vem antes desta regra: uma lista escrita com vírgula depois do último elemento sai
-aberta, um por linha, mesmo que caiba — a única marca do fonte que conta. Esta escolha decide só a lista
-escrita sem essa vírgula.
-
-**Hoje:**
-```bp
-val xs = [
-    1,
-    2,
-    3,
-];
-```
-
-- [ ] **(a) ★** Na forma aberta, um elemento por linha (tudo-ou-nada, decisão 65 parte 1).
-  ```bp
-  val xs = [1, 2, 3];      // sem vírgula final e cabe: fica fechado numa linha
-  ```
-- [ ] **(b)** `fill` de Wadler na lista sem vírgula final: quantos couberem por linha — o resultado
-  passa a depender de como o fonte estava quebrado.
-  ```bp
-  val xs = [
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-      21, 22, 23,
-  ];
-  ```
-
-**Recomendação: (a).** É idempotente e não depende da entrada; o custo é que uma lista longa de
-números curtos ocupa uma linha por número. **Bloqueia:** nada.
-
-### ctr-s · Decisão 166 × decisão 243
-
-**Trava:** `01-compiler/16` passo 6
-
-**Contexto.** No formatador, a 166 diz que a vírgula final decide: lista escrita com vírgula depois do
-último elemento fica um por linha (e mantém a vírgula); lista sem ela fica numa linha só. A 243 estendeu
-o alcance da 166 a toda lista delimitada (genéricos, parâmetros, imports, argumentos…), mas diz que, sem a
-vírgula, decidem as regras de largura (`16-a`/`16-b`: quebra o que não cabe) — e se apresenta como
-"extensão" da 166, embora mude a metade "sem vírgula".
-
-**Hoje:**
-```bp
-// escrito sem vírgula final, mais largo que a linha:
-val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo Horizonte", age: 30);
-// 166: fica numa linha · 243: as regras de largura quebram
-```
-
-- [ ] **(a)** Registrar a 243 como emenda da metade "sem vírgula" da 166; a confirmação de `16-a`/`16-b`
-  (confirmações ★, no fim da Parte 3) cobre o resto.
-  ```bp
-  val p = Person(
-      name: "Ana Maria da Silva",
-      email: "ana@example.com",
-      city: "Belo Horizonte",
-      age: 30
-  );                                   // forma exata da quebra: 16-a/16-b
-  ```
-- [ ] **(b)** A 166 vale inteira: sem vírgula, uma linha, por mais larga que fique; a 243 só estende o
-  alcance.
-  ```bp
-  val p = Person(name: "Ana Maria da Silva", email: "ana@example.com", city: "Belo Horizonte", age: 30);
-  ```
-
-**Recomendação: (a).** É o que o formatador da `feat` faz (16-a/16-b implementadas) e o que a 243 quis;
-falta só o texto dizer "emenda". A 286 já aplica essa leitura às listas de anotações ("without one
-the width rules decide (166, 243)"). **Bloqueia:** 16-formatter passo 6.
-
-### 17-b · O incremento por linha de um `Dict` com `keyed: true`
-
-**Trava:** `01-compiler/17` passo 1, quarta caixa
-
-**Contexto.** A frente 17 implementou o `keyed: true` (decisões 168 e 174; a grafia `label: value` é da
-305): um `var` global anotado `#[@BeamMemory.Ets(keyed: true)]` vira uma tabela ETS em que cada chave é
-uma linha. `counts.at(k)` lê uma linha (`ets:lookup`) e `counts = counts.insert(k, v)` escreve uma linha
-(`ets:insert`); dois processos escrevendo cada um a sua chave 20 000 vezes terminam em `20000 20000`. O
-que falta é um `+=` numa linha virar `ets:update_counter` (atômico). O `??` agora existe, então a forma
-abaixo **tipa** — mas continua recusada, porque recalcula a linha a partir do próprio var e pode perder
-um de dois incrementos simultâneos (a regra 5(b) da decisão 40). `counts.at(k) += 1` e `counts[k] += 1`
-não são alvos de atribuição.
-
-**Hoje:**
-```bp
-#[@BeamMemory.Ets(keyed: true)]
-var counts: Dict<string, i32> = Dict.empty();
-
-counts = counts.insert(k, (counts.at(k) ?? 0) + 1);   // tipa; recusado: … can lose one of two concurrent runs
-```
-
-- [ ] **(a)** Nenhum: uma linha keyed se escreve inteira; um contador que vários processos incrementam é
-  um `#[@BeamMemory.Ets] var n: i32` próprio (o incremento da decisão 40).
-  ```bp
-  #[@BeamMemory.Ets] var hitsA: i32 = 0;
-  hitsA += 1;                                  // ets:update_counter
-  ```
-- [ ] **(b)** Um método da std `Dict.bump(key, by)` (valor inteiro; chave ausente conta de 0), comum num
-  `Dict` normal e, sob `keyed: true`, `ets:update_counter(T, K, By, {K, 0})`.
-  ```bp
-  counts = counts.bump(k, 1);
-  ```
-- [ ] **(c)** Atribuição por índice na gramática, com o mesmo lowering.
-  ```bp
-  counts[k] += 1;
-  ```
-- [ ] **(d)** *(nova, agora que `??` existe)* Reconhecer exatamente a forma
-  `counts.insert(k, (counts.at(k) ?? 0) + n)` e baixá-la para `ets:update_counter`, sem método nem
-  gramática nova.
-  ```bp
-  counts = counts.insert(k, (counts.at(k) ?? 0) + 1);   // reconhecida → ets:update_counter(T, k, 1, {k, 0})
-  counts = counts.insert(k, (counts.at(k) ?? 0) * 2);   // outra forma: continua recusada
-  ```
-
-**Recomendação: (a).** Nenhum método ou gramática nova por causa de uma anotação; (b) põe no `Dict` um
-método cuja atomicidade só existe sob `keyed: true`, (c) cria um alvo de atribuição que a linguagem não
-tem, (d) faz uma forma escrita mudar de significado conforme o padrão. **Bloqueia:** a quarta caixa do
-passo 1 da 17.
-
 ### erk-a · A fonte de uma consulta `erika "…"` no corpo de um método *(proposta)*
 
 **Trava:** `04-rakun/137` passo 2 (a forma no corpo); a célula da forma no corpo do passo 7 da rakun 08 · ⏳ pronto para abrir thread ao responder
@@ -888,200 +668,6 @@ val clearSession = use clearCookie(sessionCookie);
 **Recomendação: (a)** — uma regra só, que já é a do jhonstart e a do cardume.
 **Bloqueia:** 123; 127; 104 passo 6; `07-onze/53` (os sites de cookie).
 
-### lg2-v · Subdiretório numa dependência git
-
-**Trava:** `01-compiler/26` passo 6 (a metade do resolver) e `02/98` passo 4 (o campo `subdir`); fora de 00–03: rakun 73; o argumento da `07-h`
-
-**Contexto.** Uma dependência no `botopink.json` é `{git, path, ref, workspace}`
-(`modules/manifest/src/root.zig`): não há como apontar para uma pasta dentro de um repositório git.
-Como todo módulo `rakun-*` é uma pasta do repositório do rakun, quem está fora do checkout meta não
-instala um starter por git. Custa: segura o `07-h` (b) e o 98 passo 4.
-
-**Hoje:**
-```json
-"rakun-web": { "git": "git@github.com:botopink/rakun.git" }      // instala a raiz do repositório, não o módulo
-```
-
-- [ ] **(1)** Não: dependência git é a raiz de um repositório; membro de monorepo só por `path`.
-  ```json
-  "rakun-web": { "path": "../rakun/modules/rakun-web" }
-  ```
-- [ ] **(2)** Campo `subdir`, resolvido pelo `bpmp`.
-  ```json
-  "rakun-web": { "git": "git@github.com:botopink/rakun.git", "subdir": "modules/rakun-web" }
-  ```
-
-**Recomendação: (1).** Se você escolher a (2): `subdir` só vale junto com `git`, e um que escape do
-checkout (`..`) é recusado. **Bloqueia:** a linha; rakun 73; `02/98` passo 4 (condicional); o
-argumento do `07-h`.
-
-### lg2-j · Estado comptime entre invocações de decorator
-
-**Trava:** `01-compiler/14` passo 6; fora de 00–03: rakun 05
-
-**Contexto.** Cada invocação de decorator é uma chamada de módulo independente: um `var` de módulo
-escrito pelo corpo do decorator é recusado na anotação. A pergunta veio do rakun 05, que queria
-acumular um catálogo de chaves enquanto as anotações são visitadas. Hoje um catálogo é o registro de
-entrada da decisão 256, lido com `@TypeInfo.all` (decisões 253/256) — sem `member: "make"` nem chave
-pelo nome do tipo, que a 281 tirou da 256 (a chave por tipo e rótulo é da 321).
-
-**Hoje:**
-```bp
-var seen: Array<string> = [];
-fn register(comptime decl: @Decl) { seen.push(decl.name); }   // erro na anotação
-```
-
-- [ ] **(1)** Cada invocação é independente; a lista de registros vem de `@TypeInfo.all`.
-  ```bp
-  val beans = comptime {
-      var d: unknown[] = [];
-      for (@TypeInfo.all(with: [service, configuration])) { b -> d = d.append([b.value]); }
-      break d;
-  };                                      // lido no ponto de entrada; a ordem é a do catálogo, não a da visita
-  ```
-- [ ] **(2)** Estado mutável comptime por compilação: `seen` acumula, e a ordem de visita passa a importar.
-  ```bp
-  var seen: Array<string> = [];
-  fn register(comptime decl: @Decl) { seen.push(decl.name); }   // compila; seen depende da ordem dos arquivos
-  ```
-
-**Recomendação: (1).** A resposta de um decorator depende só da declaração dele, então a ordem em que
-o compilador visita as declarações nunca muda um build. **Bloqueia:** a linha; rakun 05.
-
-### lg2-o · Acesso a arquivos no comptime
-
-**Trava:** `01-compiler/14` passo 6; fora de 00–03: rakun 88, 93
-
-**Contexto.** Um corpo comptime (decorator, template) só vê o prelude do seu runtime: `fs.readText`
-lá dentro é recusado na anotação. Por isso o rakun gera o `.bp` de um WSDL com um comando
-(`rakun ws generate`) e versiona o resultado. Com (2), o build passaria a ler arquivos além dos
-fontes, e esses arquivos entrariam na chave do cache.
-
-**Hoje:**
-```bp
-fn wsdl(comptime decl: @Decl, comptime path: string) { val xml = fs.readText(path); … }   // recusado na anotação
-```
-
-- [ ] **(1)** Não: o `.bp` gerado é versionado.
-  ```
-  $ rakun ws generate schema.wsdl         → src/ws/billing.bp   # roda antes; o resultado entra no repositório
-  ```
-- [ ] **(2)** Leitura isolada de entradas declaradas, que entram na chave do cache do build.
-  ```bp
-  #[wsdl("schema.wsdl")] type Billing {}  // lê o arquivo durante a compilação
-  ```
-
-**Recomendação: (1).** Um build lê só os seus fontes. **Bloqueia:** a linha; rakun 88, 93.
-
-### lg2-w · Função host chamada do corpo de um decorator
-
-**Trava:** `01-compiler/14` passo 6 (as linhas que esperam decisão: lg2-j, lg2-o, lg2-w); fora de 00–03: rakun 16 (`#[scheduled]`) e todo decorator que reusaria o std
-
-**Contexto.** Um decorator roda num runtime comptime (BEAM ou wat). Só funções com corpo viajam para
-o módulo do decorator; uma função host (`declare fn` com célula Erlang/JS), do std ou do próprio
-projeto, não viaja, e a chamada falha com `call to undefined function quote/1` nos dois runtimes. Na
-prática, o `#[scheduled]` da frente 16 repete as regras de cron inline em vez de reusar o std. (O
-`@emit` de módulo sai da linguagem pela 216; os exemplos usam meta tipado, 298.)
-
-**Hoje:**
-```bp
-fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path: json.quote(path))); }
-// undefined function quote/1
-```
-
-- [ ] **(1)** Corpo comptime só chama funções com corpo; a chamada host é recusada, localizada, nomeando a função, em todo target.
-  ```bp
-  fn route(comptime decl: @Decl, comptime path: string) { decl.setMeta(Route(path: json.quote(path))); }
-  // error: `json.quote` is a host function — a decorator body calls bodied functions only
-  fn quote(s: string) -> string { … }     // a forma aceita: uma fn com corpo no projeto ou num pacote
-  ```
-- [ ] **(2)** A célula Erlang viaja para o módulo do decorator no runtime BEAM; no runtime wat a chamada é recusada.
-  ```bp
-  decl.setMeta(Route(path: json.quote(path)));   // runtime BEAM: compila · runtime wat: error
-  ```
-- [ ] **(3)** Decorator que alcança célula host sempre roda no runtime BEAM, qualquer que seja o target.
-  ```bp
-  decl.setMeta(Route(path: json.quote(path)));   // --target wasm: o decorator roda no BEAM e compila
-  ```
-
-**Recomendação: (1).** A resposta de um decorator nunca depende de qual runtime o target escolheu
-(decisão 84). **Bloqueia:** a linha; frente 16 (`#[scheduled]`); todo decorator que reusaria o std.
-
-### lg2-a · Tipo byte
-
-**Trava:** `01-compiler/01-checker`: a linha da lg2-a vira passo quando respondida; `03/104` (os parsers de fio e os corpos de compressão esperam a lg2-a); fora de 00–03: rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`
-
-**Contexto.** Nenhum primitivo, tipo do std ou literal guarda bytes, e toda célula host (o código
-Erlang/JS por trás de uma função `declare`) passa dados como `string`. Por isso `Socket.recv` devolve
-UTF-8 quebrado num fluxo binário e não dá para escrever upload, download ou endpoint de imagem.
-Custa: uploads, downloads, imagens; Mongo/Bolt/Cassandra/Couchbase e o plano de dados do Pulsar no
-rakun.
-
-**Hoje:**
-```bp
-val b: Bytes = "a";                       // type mismatch em todo target
-val chunk = sock.recv();                  // string: bytes que não são UTF-8 chegam corrompidos
-```
-
-- [ ] **(1)** Sem tipo byte: um payload binário é recusado onde entra; nada lê bytes como texto.
-  ```
-  POST /upload   Content-Type: multipart/form-data
-  → 415 Unsupported Media Type            // a frente 25 recusa na borda
-  ```
-- [ ] **(2)** `Bytes` com fronteira explícita: toda conversão é uma chamada que pode falhar, nenhuma implícita.
-  ```bp
-  val b = Bytes.fromUtf8("a");
-  val s = try b.toUtf8();                 // toUtf8 -> @Result: bytes inválidos viram Error, não lixo
-  ```
-- [ ] **(3)** `string` também carrega bytes crus, como hoje.
-  ```bp
-  val frame: string = sock.recv();        // bytes crus dentro de uma string
-  val n = frame.length();                 // conta caracteres, não bytes; UTF-8 quebrado passa calado
-  ```
-
-**Recomendação: (1).** Um payload binário é recusado onde entra, nunca lido com perda. Se você
-escolher a (2): nenhuma conversão sem uma chamada que pode falhar; a (3) continua recusada.
-**Bloqueia:** a linha "No byte or binary type"; rakun 01, 13, 15, 24, 25, 70, 71; `03r-ab`,
-o plano de dados do Pulsar (adiado pela 274) (todos seguem com `string` + recusa 415 até a resposta).
-
-### lg2-e · O dono num `@Decl` de método
-
-**Trava:** `01-compiler/01-checker`: a linha do dono (`owner`) do `@Decl` de método, ao lado do passo 24; fora de 00–03: rakun 06–10, 29; o marcador da `08-bpp/127`
-
-**Contexto.** A decisão 280 já respondeu os parâmetros: o `@Decl<T>` de uma função ou método tem `T`
-= o tipo da função (`@Decl<fn(e: E) -> unknown>` liga `E`), e os exemplos aprovados da 280 (exemplo
-1, alvo do `01-checker` passo 24) leem `decl.params`, `decl.params[0].module` e `decl.module` num
-`@Decl` de fn. Resta o dono: num decorator aplicado a um método, `decl.owner` dá `badkey`, e só o
-`@Decl` do tipo enxerga o tipo inteiro com seus métodos (`decl.methods[i]`). Por isso o rakun faz o
-decorator do tipo (`#[restController]`) ler os marcadores dos métodos (`#[getMapping]`). A pergunta é
-se o decorator de método deve enxergar o tipo que o declara.
-
-**Hoje:**
-```bp
-type UserController { #[get("/u/:id")] fn show(self: Self, id: i32) … }
-fn get(comptime decl: @Decl, comptime path: string) { decl.owner }     // badkey
-```
-
-- [ ] **(1)** O marcador de método só vê o próprio método (parâmetros pela 280); quem vê o tipo é o decorator do tipo.
-  ```bp
-  #[controller] type UserController { #[get("/u/:id")] fn show(self: Self, id: i32) … }
-  fn controller(comptime decl: @Decl) {
-      for (decl.methods) { m -> … }       // m.annotations tem `get`; m.params tem `id: i32`
-  }
-  ```
-- [ ] **(2)** `decl.owner` existe no método.
-  ```bp
-  fn get(comptime decl: @Decl, comptime path: string) {
-      decl.owner.name;                    // "UserController"
-      decl.owner.methods.length;          // os irmãos do método
-  }
-  ```
-
-**Recomendação: (1).** Um decorator de método responde pelo método; o que depende do tipo inteiro é
-do decorator do tipo, que já vê todos os métodos. **Bloqueia:** a linha (o marcador em
-`typed-action-example.bp` do `08-bpp/127`, que fecha com o passo 24 do `01-checker` quanto aos
-parâmetros); rakun 06–10, 29.
-
 ### lg2-q · Localização no fonte dentro de `@Decl`
 
 **Trava:** `01-compiler/01-checker`: a linha reduzida de `decl.loc`; fora de 00–03: rakun 22
@@ -1116,11 +702,99 @@ foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("
 
 ---
 
+### 97-s13-a · O `abs()` do mínimo de um tipo inteiro (decisões 264 e 319)
+
+**Trava:** nada no gate; só a metade `abs` do `02/97` passo 13
+
+**Contexto.** O `abs` é uma chamada host (`erlang:abs`, `Math.abs` ou a negação de um `BigInt`), não um
+dos operadores da 264, então nenhum teste de faixa roda: o `abs` do mínimo responde um valor fora do
+tipo, igual em commonJS, erlang e beam. O `Signed` declara um `abs` só para `I32` e `I64`, então o
+template não sabe a largura.
+
+**Hoje:**
+```bp
+fn lo64() -> i64 { return -9223372036854775807l - 1l; }
+@print(lo64().abs());   // 9223372036854775808 — fora do i64 (commonJS, erlang, beam)
+```
+
+- [ ] **(a) ★** O `abs` aborta fora do tipo como o `-` unário: sai do `Signed` para `I32` e `I64`, cada um com o seu limite.
+  ```bp
+  @print(lo64().abs());   // aborta: integer overflow: abs on i64 — nos quatro targets
+  ```
+- [ ] **(b)** Como está: o valor matemático, mesmo fora do tipo.
+  ```bp
+  @print(lo64().abs());   // 9223372036854775808, tipado i64
+  ```
+- [ ] **(c)** O `abs` responde o tipo sem sinal.
+  ```bp
+  val m: u64 = lo64().abs();   // 9223372036854775808ul
+  ```
+
+**Recomendação: (a).** Um valor fora do tipo declarado nunca existe (264); custa duas declarações.
+**Bloqueia:** nada no gate; a célula `run/i64_number_methods_past_js_safe` fica longe do mínimo.
+
+### 97-s16-a · Onde ficam as tabelas geradas do `unicode` *(proposta)*
+
+**Trava:** nada hoje — a 97 s16 entra com a forma (b) · confirmar ou mudar o arquivo
+
+**Contexto.** O README da 97 s16 pede as tabelas em `libs/std/src/unicode/tables.bp`, mas o sistema de
+módulos não alcança esse caminho: um `mod` resolve só `<nome>.bp` ou `<nome>/mod.bp` ao lado do arquivo
+que o declara, então um módulo de arquivo `unicode.bp` não pode ter filhos. Transformar `unicode` numa
+pasta mudaria a API dele para um namespace.
+
+**Hoje** (como a thread fez):
+```bp
+// libs/std/src/root.bp
+mod unicode_tables;          // privado, gerado por `zig build gen-unicode`
+// libs/std/src/unicode.bp
+import {unicode_tables as tables};
+```
+
+- [ ] **(a)** `unicode` vira pasta: `libs/std/src/unicode/mod.bp` com `mod tables;` — o caminho do README;
+  `unicode.normalize(…)` continua igual para quem usa.
+  ```bp
+  // libs/std/src/unicode/mod.bp
+  mod tables;
+  pub fn normalize(s: string, form: Form) -> string { … tables.ccc(cp) … }
+  ```
+- [ ] **(b)** Fica como a thread fez: um irmão privado `unicode_tables.bp` na raiz da std.
+
+**Recomendação (da thread): (b)** — nenhuma mudança de API, um arquivo gerado e privado. **Bloqueia:** nada.
+
+### 125-a · Como os documentos JSON Schema são conferidos contra o meta-schema 2020-12 *(proposta)* ⏳
+
+**Trava:** `03-bundled-libs/125` passo 9, caixa 3 · ⏳ pronto para abrir thread ao responder
+
+**Contexto.** A terceira caixa do passo 9 pede "um script node em `test/tools/`, rodado por
+`test/json_schema_test.bp` no commonJS, sem pular nada". Conferir contra o meta-schema 2020-12 exige um
+validador (Ajv 2020 ou outro), e nenhum é alcançável pela suíte do `repository/validation`: o
+repositório só tem `.bp`, não tem `package.json`, e um teste não pode instalar da rede (CI e gate frio).
+Os documentos já estão fixados como literais contra o § 8 do ZOD_DOCUMENTATION.md (dezesseis documentos
+e nós em `test/json_schema_test.bp`).
+
+**Hoje:**
+```bp
+// test/json_schema_test.bp compara o documento gerado com um literal; nenhum validador roda
+```
+
+- [ ] **(a)** Trazer um validador para `test/tools/` (o build standalone do Ajv 2020, ~120 kB de JS, MIT)
+  e rodá-lo pelo `test/json_schema_test.bp` com `io.process.run("node", …)` no commonJS:
+  ```bp
+  // node test/tools/check-schema.js '<documento>'  → "ok" ou a lista de erros
+  ```
+- [ ] **(b)** Uma checagem estrutural escrita à mão das palavras-chave que a biblioteca escreve (`type`,
+  `properties`, `required`, `items`, `prefixItems`, `$ref`, `$defs`, `anyOf`, `format`, …) contra o
+  vocabulário do meta-schema, em botopink — sem dependência, mas não é "validar contra o meta-schema".
+- [ ] **(c)** Tirar a caixa: os literais contra o § 8 são a evidência.
+
+**Recomendação: (a)** — a leitura mais restritiva da caixa, um validador de verdade, sem rede; versão e
+hash do arquivo trazido registrados no `AGENTS.md` do `repository/validation`. **Bloqueia:** 125 passo 9,
+caixa 3.
+
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 
 | Id | Assunto | Recomendação | Trava | Espera também |
 |---|---|---|---|---|
-| `03r-ao` | A ordem entre o 130 e o 128 no rakun *(proposta)* | (a) — o 128 primeiro e sozinho; as frentes já seguem a (a), falta só o registro. | 130 passo 5 (as linhas do rakun); a abertura do 128 | 128: os commits do rakun da 102 s3 e da 103 s2; ctr-k (só o registro) |
 | `67-a` | Onde as caixas de forms do lado do DOM são afirmadas | (a). As caixas rodam no gate da biblioteca dona, onde quebram primeiro, sem dependência nova; o navegador do onze 53 confere de novo. | a forma dos passos 1–3 da 67 (escritos para a (a)); o caminho de | 26; 103 s2 |
 | `03r-ab` | Front 09: stores de protocolo binário | (a) — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta para o `rakun-client` (ver `ctr-w`; o passo 3 da 09 ainda passa por ele). A frente já segue a (a); falta só o registro. | 09 passo 5 (as células de recusa). | 09: 19 s1, 13 (grupo B, depois do 128) |
 | `ctr-p` | Confirmação `std-a` × confirmação `03r-e` | (a). Recusar é o mais restritivo (67) e mantém a lógica compartilhada no std. | os leitores do rakun 04; a varredura de consumidores da 104 (passo 5) | rakun 04: o 128; 104 s5: os donos dos arquivos consumidores (04, 65, 79, 12, 19, 22, 123, 49, 51) |
@@ -1140,6 +814,7 @@ foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("
 | `29-a ★` | A tabela de starters de island: o que resta é o loader por rota — (a) manter — `globals.starters` + `registerRouteStarters`; nenhum `__` escrito à mão; um loader por rota | (a). A divisão segue a unidade do manifest (a rota) e a entrada não declara global nenhum. | 26 passo 5 (reduzida: `registerRouteStarters` + `globals.starters`) | 26: 118 |
 | `erk-b` | O `#[documentQuery]` depois da 313 | (a) agora — uma forma só de repositório para todo store; (b) quando uma necessidade medida pedir. | `04-rakun/09` passo 4 | 09: 19 s1, 13 (depois do 128) |
 | `ctr-w` | O braço Elasticsearch da 09 × decisão 185 | (a) — é o que a 185 manda e não acrescenta membro. | 09 passo 3. | 09: 19 s1, 13 (depois do 128) |
+| `119-a` | A caixa do grep da 119 passo 1 × o hook byte-idêntico da checagem 4 do CI (`runner-standalone.sh` cita `emilia`) | (a) — o grep mede o texto do próprio pacote (`src`, `test`, `botopink.json`); o hook é um texto só, do gate. | Só marcar a caixa do grep da 119 passo 1. | 119 s1 |
 | `03r-ae` | SAML 2.0 ACS | (a) — a 79 está no grupo A do rakun, então está escalada neste milestone; **(b)** só se ela sair dele. Nunca a (c). | 79 passo 3. | 79: grupo A, depois do 128 |
 | `03r-af` | Os sete projetos de exemplo nunca construídos | (a). O contrato de cada membro já é afirmado pelos testes do próprio membro; sete frentes de exemplo não provariam nada novo. | 73 passo 3. | 73: grupo A, depois do 128 |
 | `03r-ak` | Validar o SBOM contra o schema CycloneDX 1.5 | (a). Valida contra o schema de verdade, sem rede, sem afrouxar a caixa e sem pôr no std um validador genérico por causa de um consumidor só. | 81 passo 3. | 81: grupo A, depois do 128 |
@@ -1155,15 +830,13 @@ foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("
 
 | Id | Assunto | Recomendação | Trava |
 |---|---|---|---|
-| `ctr-k` | Decisão 187 × decisão 195 | (a) — as frentes já seguem a (a) (`04-rakun/17`, `03-bundled-libs/106-log`); falta só o registro da 195. | nada nas frentes; só o registro. |
 | `ctr-o` | Decisão 146 × confirmação `lem-c` | (a). Mantém o que cada uma já implementa. | a confirmação da `lem-c` — nenhum passo. |
-| `ctr-h` | Decisão 149 × decisões 210 e 211 | (a). A 210/211 é a mais recente e já está construída e testada nos quatro targets. | nada; só o registro. |
-| `17-c` | O que mais pode nomear um var `keyed: true` | (a). Uma grafia por operação de linha. | nada — o que está construído vale até ser ampliado. |
+| `17-c` | O que mais pode nomear um var `keyed: true` | (a): `at`, `insert` e o `bump` da 340. Uma grafia por operação de linha. | nada — o que está construído vale até ser ampliado. |
 | `ctr-l` | A terceira recusa da 186 × decisão 202 | (a). Sob a 202 nenhuma página se declara pré-renderizada; a recusa é letra morta, e a 202 é a mais restritiva (não há como forçar estágio). | nada nas frentes; só o registro. |
 | `ctr-v` | Decisão 189 (org-3) × as frentes da emilia abrindo antes da 118 | (a). Um comentário não muda comportamento; segurar duas frentes da emilia por ele não protege nada. | nada nas frentes; só o registro. |
 | `own-a` | Quem é dono dos scripts de teste | (a) — um dono só, a frente que já herdou o passo aberto da 25. | nada |
 | `07-b` | "Uma lib, várias cópias divergentes" também justifica pacote? | (a). Pacote bundled novo continua exigindo dois consumidores; a cópia de uma lib só se resolve dentro dela, sem abrir pacote (decisão 67: a regra mais restritiva). |  |
-| `07-h` | Bundled, ou um repositório compartilhado à parte? | (a). Fios que dois frameworks precisam concordar byte a byte saem com o compilador que os embute; a (b) depende de abrir a `lg2-v`, que fica fechada. | nada hoje — a trilha |
+| `07-h` | Bundled, ou um repositório compartilhado à parte? | (a). Fios que dois frameworks precisam concordar byte a byte saem com o compilador que os embute; um membro de repositório já se instala por `subdir` (344). | nada hoje — a trilha |
 | `std-e` | Hooks de ciclo de vida de teste | (a). Nada implícito roda em volta de um teste; o que ele precisa está escrito nele. | só a linha "No test lifecycle hooks" do `language-gaps.md`, que fica como está. |
 | `07-i (revisão)` | A proibição de nomes repetidos em pacotes bundled continua depois do alias? | (desta revisão): (a). Um pacote novo escolher um nome livre não custa nada, e o alias fica para o caso em que o nome natural é do std (decisão 170). Vale também para o 103: o pacote usa `deriveActionId`, porque o `rakun-app` já … | nada; as frentes |
 | `lg2-b` | O que `@Task<T>` significa no BEAM | (1). O tipo promete o valor, nada sobre sobreposição; a única forma concorrente continua sendo a explícita (a leitura restritiva da decisão 120 da 1.0.10). | a linha |

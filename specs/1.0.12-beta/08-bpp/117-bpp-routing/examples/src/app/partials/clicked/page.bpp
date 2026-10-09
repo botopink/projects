@@ -1,4 +1,3 @@
----
 // Front 117 — bpp routing · examples/src/app/partials/clicked/page.bpp
 //
 // Demonstrates: step 4 in a `.bpp` page — a page partial. It is routed like any

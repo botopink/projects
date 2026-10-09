@@ -1,4 +1,3 @@
----
 // Front 122 — bpp data · examples/src/app/product/[id]/page.bpp
 //
 // Demonstrates: the `Astro` global, member by member, in a `.bpp` page. There

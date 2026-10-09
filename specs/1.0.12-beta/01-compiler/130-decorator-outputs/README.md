@@ -3,7 +3,7 @@
 **Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 38
 of 119 sites (plus `#[schema]`'s 5); step 6 not started
 **Depends on:** decisions 254, 256 for rakun's DI (answered; 256's registry needs `01-checker` step
-20) · library tracks for their decorator files · `04-rakun/128` for rakun rows (`03r-ao`)
+20) · library tracks for their decorator files · `04-rakun/128` for rakun rows (decision 339)
 **Owns:** `repository/botopink-lang/modules/compiler-core/src/comptime/{reflection,assoc_types,typeinfo_all}.zig`
 and the decision-216 parts of `comptime.zig`, `comptime/{infer,env,decorator_eval,diagnostics,transform}.zig`,
 `comptime/runtime/prelude.zig`, `parser/exprs.zig` · `libs/std/src/builtins.d.bp`'s `Decl` surface and
@@ -61,7 +61,7 @@ replacements are written here in 216's forms.
 
 Member names are the library's (decision 174's note). Remaining `@emit(` at feat: rakun 67 lines,
 jhonstart 1 (`#[page]`'s `<X>Params`), validation 5. Rakun rows target post-128 paths
-(`04-rakun/README.md` § Order, `03r-ao` (a)): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
+(`04-rakun/README.md` § Order, decision 339): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
 decision 188, never in a wave with the rakun front owning the file.
 
 | File | Sites | Generated today | New form | Written against |

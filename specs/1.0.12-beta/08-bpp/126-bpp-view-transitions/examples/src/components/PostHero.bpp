@@ -1,4 +1,3 @@
----
 // Front 126 — bpp view transitions · examples/src/components/PostHero.bpp
 //
 // Demonstrates: `#[transitionName]` (Astro's `transition:name`, 278) in a `.bpp` component — the other half of the
