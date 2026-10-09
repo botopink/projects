@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 56 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 57 perguntas, 8 contradições e 88 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **338**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1146,6 +1146,34 @@ fn lo64() -> i64 { return -9223372036854775807l - 1l; }
 
 **Recomendação: (a).** Um valor fora do tipo declarado nunca existe (264); custa duas declarações.
 **Bloqueia:** nada no gate; a célula `run/i64_number_methods_past_js_safe` fica longe do mínimo.
+
+### 97-s16-a · Onde ficam as tabelas geradas do `unicode` *(proposta)*
+
+**Trava:** nada hoje — a 97 s16 entra com a forma (b) · confirmar ou mudar o arquivo
+
+**Contexto.** O README da 97 s16 pede as tabelas em `libs/std/src/unicode/tables.bp`, mas o sistema de
+módulos não alcança esse caminho: um `mod` resolve só `<nome>.bp` ou `<nome>/mod.bp` ao lado do arquivo
+que o declara, então um módulo de arquivo `unicode.bp` não pode ter filhos. Transformar `unicode` numa
+pasta mudaria a API dele para um namespace.
+
+**Hoje** (como a thread fez):
+```bp
+// libs/std/src/root.bp
+mod unicode_tables;          // privado, gerado por `zig build gen-unicode`
+// libs/std/src/unicode.bp
+import {unicode_tables as tables};
+```
+
+- [ ] **(a)** `unicode` vira pasta: `libs/std/src/unicode/mod.bp` com `mod tables;` — o caminho do README;
+  `unicode.normalize(…)` continua igual para quem usa.
+  ```bp
+  // libs/std/src/unicode/mod.bp
+  mod tables;
+  pub fn normalize(s: string, form: Form) -> string { … tables.ccc(cp) … }
+  ```
+- [ ] **(b)** Fica como a thread fez: um irmão privado `unicode_tables.bp` na raiz da std.
+
+**Recomendação (da thread): (b)** — nenhuma mudança de API, um arquivo gerado e privado. **Bloqueia:** nada.
 
 ## Parte 2 — Trava, mas o passo ainda espera outra frente
 
