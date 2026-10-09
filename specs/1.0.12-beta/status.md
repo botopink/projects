@@ -107,17 +107,17 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [x] 05-wasm s8 — overflow for `u32`/`u64` and the narrow integer types on wasm (264)
 - [x] 05-wasm — an `@block`'s `return` is the block's value (decision 2), `run/block_return_is_block_value`
 - [x] 05-wasm rows — `_` in a variant payload, a nested variant pattern (`run/variant_payload_wildcard_and_nested`); unsigned compare and divide (`run/unsigned_compare_and_divide`); `u64`'s unsigned overflow checks and printing, an unannotated `u64` literal or sum keeps its type, radix literals to `u64`'s top
-- [ ] 05-wasm row — a nested record field read through a generic record and concatenated prints a number: `type Route<P, D>(params: P, data: D)`, `"<h1>" + route.data.title + "</h1>"` with `data: Post(title: "A")` prints `<h1>332</h1>` on wasm (erlang right) · none
+- [x] 05-wasm row — a nested record field read through a generic record and concatenated is the field's text: `recordTypeOfExpr` reads a field declared as a type parameter (`data: D` of `Route<P, D>`) as the record the receiver's type argument names (`recvTypeArg`); `route.data.title` printed `<h1>332</h1>` on wasm (`run/generic_record_nested_field_concat`; backend-bugs patch 01)
 - [ ] 01-compiler row — an `l`-suffixed literal inside a `case` arm keeps its suffix in the generated code: `Ok(s) -> @print(s.mtime > 1577836800000l)` is a JS `SyntaxError`, an `erlc` syntax error and `illegal integer` on beam (the same literal in a plain function is fine) · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 01-checker row — T7 ("fills the element labeled `x`") fires between two elements of one array literal with no type written (onze-cli `build.bp` static-tree list, `create.bp:187`) · none
-- [ ] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print signed; a `u64` tuple slot is refused · none
+- [x] 05-wasm rows — `?u64`'s `toString` and a `u64` record field print unsigned; a `u64` tuple slot holds its 8-byte cell — already on `feat` (batch 6, `c6483b21`): `run/optional_u64_to_string`, `run/u64_record_field_print`, `run/u64_tuple_slot` green on the four targets at `106c84b3`
 - [x] 02-erlang s4 — `run/array_unique` (C-35), four targets
 - [x] 02-erlang s5 box 2 — a decorator body carrying `\u{…}` (cell: 14 s7)
 - [x] 02-erlang s7 — C-07's erlang tails as `run/is_truth_table`; `run/unknown_stores_nothing` struck (§11 is a cost, no program prints a difference)
 - [x] 02-erlang s10 — the block-as-value lowering (R7): the valueless tail refused by the checker, a `return` the block's fun cannot answer last throws to the block's own guard
 - [x] 02-erlang row — an `@block` with a `return` (or in value position) that reassigns an enclosing `var`: every `return` answers `{V, Group}` and the call site rebinds the group (`valueBlockExpr`; `run/block_value_reassigns_enclosing_var`, a `for`'s `return` in `tests/erlang.zig`; bugs-sweep patch 06)
-- [ ] 03-beam row — a `return` from a `for` inside an `@block` answers from the enclosing function: `val found = @block { for (xs) { x -> if (x > limit) { return x; }; }; return -1; }; return found * 100;` answers `7` on beam, `700` on the other three · none
+- [x] 03-beam row — a `return` from a `for` inside an `@block` is the block's value: a loop's fun throws `{'__bp_return', V}` (apart from a `try`'s `'__bp_try'`), and `guardLoopCall` answers it into the `@block` of its frame (`answerLoopThrow`, `inBlockExit`); beam answered `7` for `700`. wasm's `blockReturnValue` reads a `return` written in the body before one inside a loop (a string block over a `for` printed an address) — `run/block_for_return_is_block_value` (backend-bugs patch 02)
 - [x] 02-erlang s12 · 03-beam s7 — one `math` on every OS (263): on feat (`a443f52d`)
 - [x] 02-erlang s13 · 03-beam s8 — an integer that leaves its type aborts (264): on feat (`48a096ea`)
 - [x] 02-erlang s15 · 97 s14 box 1 (320) — erlang and beam count codepoints: the emitters and std's Erlang templates read the codepoint list (`run/string_index_of_codepoints`, combining-mark and astral rows)
@@ -149,7 +149,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
 - [x] 134 s2 part — `@is` refused (322); the drift test walks the mirrored types and `@Result`'s methods (declared); std `Type` (`keys`, `partial`, `required`, `merge`)
 - [ ] 134 s2 — `Decl.fields` as `Type.Field<unknown>`, `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `Type.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)
-- [ ] 01-checker s31 row — on commonJS, `x?.m()` where `m` is a method of a user type (`doc.field("src")?.str()` on std `Json`) passes the checker and fails at run time (`…?.str is not a function`): the `?.` method lowering box names erlang, beam and wasm only · none
+- [x] 01-checker s31 row — on commonJS, `x?.m()` over an enum method (`doc.field("src")?.str()` on std `Json`) is the static call guarded around a receiver evaluated once (`optEnumCall`); the owner is read at the checker's link loc (`ast.optional_synthetic_col`) — `run/optional_enum_method_call` (backend-bugs patch 03)
+- [ ] 03-beam row — `x?.m()` over an IMPORTED enum's method calls the variant's atom as a module: `doc.field("src")?.str()` on std `Json` is `undef` `'std@json@@Json__v__str':str/1` (a local enum and erlang are right; the written `?.` call's loc records no instance lowering, the payload link's does — `ast.optional_synthetic_col`) · none
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [x] 134 s5 — the `Decorator` type for `with:` (268)
 - [x] 134 s4 — the variadic parameter `..name: T[]` and the print builtins declared with it (267)
