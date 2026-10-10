@@ -2,7 +2,7 @@
 
 **Priority:** high — `05-jhonstart/26` step 4, `04-rakun/17`, `07-onze/49` step 3 written against it
 (decisions 194, 195) · **State:** partial: step 1 (the package) on feat; step 2 open; step 3 built on
-erlang, beam and commonJS (`front/106-s3`), its wasm column waiting on 106-a and two gap rows
+erlang, beam and commonJS (`front/106-s3`), its wasm column waiting on two gap rows (`fileSink` on wasm: decision 405)
 **Depends on:** step 2 — `04-rakun/17` and `05-jhonstart/26` step 4 (their boxes), `04-rakun/65`
 landed (own commit)
 **Owns:** `repository/log/**` · one consumer commit:
@@ -55,7 +55,7 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
       botopink over four cells), `fanOut`, `Threshold` / `Levels` (longest dotted prefix) — choices
       106-b…106-d; `hostWrite` bound on wasm (`fn:printLine`). Left: the wasm binding of the sink slot
       (**A wasm binding cannot keep a value across calls**, 140) and of the four file cells (**A wasm
-      binding cannot reach the file system**, 106-a)
+      binding cannot reach the file system** — 405: each a wasm `fn:` binding reaching no file, `fileSink` an `Error` naming `consoleSink` on both hosts)
 - [x] `log.captureRuntimeReports()`: BEAM the OTP `logger`'s crash, supervisor and SASL reports; node
       `uncaughtException` / `unhandledRejection`; wasm a no-op binding — a cell per target (106-e;
       the wasm cell measured in isolation)

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 79 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **405**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 78 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **406**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -730,38 +730,6 @@ import {unicode_tables as tables};
 - [ ] **(b)** Fica como a thread fez: um irmão privado `unicode_tables.bp` na raiz da std.
 
 **Recomendação (da thread): (b)** — nenhuma mudança de API, um arquivo gerado e privado. **Bloqueia:** nada.
-
-### 106-a · O que o `log.fileSink` é no wasm *(proposta)*
-
-**Trava:** `03-bundled-libs/106` passo 3 — a coluna wasm da caixa 1 e a caixa 3 · espera também a 140 e o `02/97` passo 15
-
-**Contexto.** A decisão 349 pede os sinks do `log` — console, arquivo com rotação, níveis por nome — com uma API só em todo target, cada célula `@External` ligada no erlang/beam, commonJS e wasm. O sink de console não precisa de célula (`@print` existe nos quatro); o de arquivo precisa de quatro (`appendLine`, `fileBytes`, `moveFile`, `removeFile`), ligadas no erlang/beam e no node, e nenhuma ligação wasm alcança arquivo (linha **A wasm binding cannot reach the file system** do `language-gaps.md`): o WASI preview 2 tem `wasi:filesystem`, mas o host `browser` da 334 não tem sistema de arquivos, e a 140 liga uma célula nos dois hosts ou em nenhum.
-
-**Hoje** (medido no `56d4bc29`):
-```text
-error: `fileBytes` has no `#[@External.<Target>(…)]` for the wasm backend
-```
-toda função que alcança uma das quatro células é recusada no wasm (146); o `log` não compila lá.
-
-- [ ] **(a)** Uma API só, recusa localizada no wasm: as quatro células ganham ligação `fn:`, e o `fileSink` devolve `Error` no wasm, nos dois hosts.
-  ```bp
-  val sink = try fileSink(LogFile(path: "app.log", maxBytes: 10485760l, maxFiles: 7), Format.Ecs, levels);
-  // no wasm → Error("log.fileSink: a wasm program has no file system - use consoleSink")
-  ```
-- [ ] **(b)** Arquivo de verdade no host `wasi` por um adaptador `wasi:filesystem` (140), o `Error` da (a) só no `browser` — uma célula que se comporta diferente nos dois hosts.
-  ```bp
-  #[@External.Wasm(wasi: .FileAppend, host: .Wasi)]
-  #[@External.Wasm("fn:noFileAppend", host: .Browser)]
-  declare fn appendLine(path: string, line: string) -> i32;
-  ```
-- [ ] **(c)** O sink de arquivo sai do `log` para um pacote próprio (`log-file`), declarado só para erlang, beam e commonJS; o `log` passa a importar em todo target.
-  ```bp
-  import {logfile.fileSink} from "log-file";   // um build wasm recusa o import, no import
-  ```
-
-**Recomendação: (a)** — a API única da 349, com a recusa localizada na única chamada que não pode ser atendida; a (c) recusa mais cedo, mas tira do `log` um sink que a 349 diz que é dele; a (b) só quando a 140 tiver `wasi:filesystem` e houver motivo para dar arquivo a um programa wasm.
-
----
 
 ### 135-a · Como `import {testing.snapshots} from "std"` aponta para o `snap` *(proposta)*
 

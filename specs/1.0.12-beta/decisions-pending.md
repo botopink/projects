@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**79 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**78 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -450,49 +450,6 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) A bundled `release` of pure renderers. (b) A `botopink` CLI feature (02). (c) Leave both.
 - **Recommendation.** (a); the CLI may adopt the package later.
 - **Blocks.** `107-release` (a conditional front: answer it or defer 107).
-
-#### 106-a · What `log.fileSink` is on wasm (*proposed*)
-- **Measured** (`56d4bc29`, `.tasks/106-s3`). Decision 349 asks for `log`'s sinks — console, a file
-  with rotation, per-name levels — with one API on every target, each `@External` cell bound on
-  erlang/beam, commonJS and wasm. The console sink needs no cell (`@print` is lowered on all four);
-  the file sink needs four (`appendLine`, `fileBytes`, `moveFile`, `removeFile`), bound on
-  erlang/beam and node, and no wasm binding can reach a file (language-gaps.md, **A wasm binding
-  cannot reach the file system**): WASI preview 2 has `wasi:filesystem`, but decision 334's
-  `browser` host has no file system at all, and 140 binds a cell on both hosts or on neither. Today
-  every function reaching the four cells is refused on wasm (146), so `log` does not build there.
-- **Options.**
-  (a) One API, a located refusal on wasm: the four cells get `fn:` bindings, and `fileSink` answers
-  an `Error` on wasm on both hosts — nothing is written, nothing is dropped silently:
-  ```bp
-  // a wasm build of a program calling it
-  val sink = try fileSink(LogFile(path: "app.log", maxBytes: 10485760l, maxFiles: 7), Format.Ecs, levels);
-  // → Error("log.fileSink: a wasm program has no file system - use consoleSink")
-  ```
-  (b) A real file on the `wasi` host through a `wasi:filesystem` adapter (`01-compiler/140`), the
-  `Error` of (a) on `browser` only — a cell whose behaviour differs between the two hosts:
-  ```bp
-  #[@External.Wasm(wasi: .FileAppend, host: .Wasi)]
-  #[@External.Wasm("fn:noFileAppend", host: .Browser)]
-  declare fn appendLine(path: string, line: string) -> i32;
-  ```
-  (c) The file sink leaves `log` for a package of its own (`log-file`), declared for erlang,
-  beam and commonJS only; `log` itself then imports on every target:
-  ```bp
-  import {logfile.fileSink} from "log-file";   // a wasm build refuses the import, at the import
-  ```
-- **Recommendation.** (a) — 349's one API on every target, with the refusal located and named at
-  the one call that cannot be served; (c) refuses earlier (at the import) but takes a sink out of
-  `log`, which 349 names as `log`'s; (b) only once 140 has `wasi:filesystem` and a reason to give
-  wasm programs a file.
-- **Blocks.** `03-bundled-libs/106` step 3 box 1's wasm column (with **A wasm binding cannot keep
-  a value across calls**, `01-compiler/140`) and box 3 (also waiting on `02/97` step 15's `json` and
-  std `io/clock`'s wasm bindings).
-
-### Implementation choices of tracks 00–03
-
-Each implemented with its recommended option; the maintainer confirms or reverses (a reversal is a
-local change in the named place). Full 1.0.10 text under the same id in
-[`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
 #### 01-compiler (23)
 
