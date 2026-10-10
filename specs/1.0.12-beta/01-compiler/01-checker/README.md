@@ -243,6 +243,11 @@ for a function one of whose decorators reads it (questions s23-a – s23-f).
       (every handle's annotations, a field key's included); `HookNode`'s `fn` is `function` (`fn` is reserved, s23-a)
 - [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.same(serverOnly)`;
       a same-named decorator of another package → false (371: `same`, `is` stays a keyword)
+- [ ] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
+      read no `.hooks` first, then the bodies, then the `.hooks` readers, which may only `setMeta` /
+      `addMeta` / `fail` — `run/decl_hooks_reads_member` (`#[graph] fn Page() { return
+      Account(…).validate(); }` above `#[check(…)] pub type Account`, `validate` added by `#[check]`,
+      compiles), `reject/decorator_hooks_output` (`addMember` in a `.hooks` reader, at the call)
 - [x] `docs.md` § Decorators documents `decl.hooks` and `HookNode` (`Decorator.same` with 371); `comptime/AGENTS.md`
       states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks it activates"
       closes

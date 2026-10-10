@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
+**80 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -178,20 +178,6 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** (b): what the reader cannot see is reported, as `hook: null` is; the reader decides (277: a
   `use` with `hook: null` makes a page per-request).
 - **Blocks.** Nothing — built as (a).
-
-#### s23-e · A function whose list a decorator reads is checked before its module's decorator outputs exist
-- **Measured.** Decorators run before bodies; `decl.hooks` needs the bodies of the function and of this module's
-  functions it reaches. Built: when a decorator reads `.hooks` (its body or a function it reaches —
-  `hooks.readsMember`), the module's imports and `val`s are inferred, then those bodies, where the decorator runs. A
-  body naming what a decorator of the same module `@emit`s is refused there as an unbound name — `#[graph] fn Page()
-  { return generatedTitle(); }` beside `#[gen] fn x()` emitting `generatedTitle` fails on `generatedTitle`, and
-  compiles when no decorator of the module reads `.hooks`.
-- **Options.** (a) As built: refused, at the name. (b) A decorator reading `.hooks` runs after the module's bodies are
-  inferred (a further analysis in `comptime.zig`, its outputs spliced by one more), so the example compiles.
-  (c) A decorator reading `.hooks` may only `setMeta` / `fail`: `emit`, `addMember`, `addType` refused in it
-  (`decorator-hooks-output`), so it runs after the bodies with no second splice.
-- **Recommendation.** (b): (a) refuses a program for the order the compiler runs in, not for what it says.
-- **Blocks.** Nothing in the cells; `05-jhonstart/26` step 8 if `#[page]` emits what its page names.
 
 #### s23-f · A type argument's `TypeInfo` in a `HookUse`
 - **Measured.** Built: `typeArgs` gives the type's name, its declaring module (`""` for a primitive or std's), and a
