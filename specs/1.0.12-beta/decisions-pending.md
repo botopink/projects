@@ -1,15 +1,16 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**75 questions and 6 contradictions are open, and 105 implementation choices await confirmation.**
+**88 questions and 6 contradictions are open, and 105 implementation choices await confirmation.**
 
-- An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
+- An answer goes into [`decisions-taken.md`](decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
 - Every recommendation is the most restrictive reading, no configuration bypassing it (decision 67).
 - A front meeting a question it cannot answer from the code adds it here: id · title · Measured
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
-- **Part 1** — what blocks `00-gate`, `01-compiler`, `02-std-and-packaging` and `03-bundled-libs`, by track, then
-  those tracks' implementation choices awaiting confirmation.
+- **Part 1** — what blocks front 144 (`repository/botopink-lang`, decision 433: the open steps of the old tracks
+  `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), by old track, then those
+  tracks' implementation choices awaiting confirmation.
 - **Part 2** — the rest (tracks 04–10, 20, ownership, contradictions that block no 00–03 step).
 - **Part 3** — the implementation choices of tracks 04–09.
 
@@ -22,7 +23,25 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ### What blocks now (answer first)
 
-- Nothing blocks now: `388-a` answered by 414.
+The first group of the milestone (434, front 144 B-00) waits on one answer:
+
+#### 434-a · Which BEAM code `beam-to-wasm` converts first (434 (3))
+- **Measured.** Not measured whole yet: 144 B-00b's first box lists every `@External.Erlang` / `@External.Beam` cell and `.erl` sidecar a comptime evaluation reaches. A first count on botopink-lang `feat`: of std's Erlang templates that open with a module call, the module is `erlang` (5), `lists` (4), `string` (2), `os` (2), `uri_string`, `unicode`, `math`, `binary` (1 each); 32 more are `fn:` botopink bodies (no BEAM code). The libraries' sidecars (rakun's `rakun_*.erl`, jhonstart's `jhonstart_render.erl`, styled's `hash.bp` cell) are reached at comptime only where a decorator or template calls them. The comptime-14 landing builds BEAM host cells for 341 (a decorator's Erlang cell on the BEAM runtime): that code is transitional and is deleted in 144 B-00d.
+- **Options.**
+  (a) A named subset: the BEAM opcodes and BIFs B-00b's measurement lists, plus the OTP functions those cells call, each implemented by std-wasm (`lists:reverse/1`, `string:uppercase/1`, `unicode:characters_to_list/1` …); any other call refused at the call site.
+  ```text
+  error: beam-to-wasm does not convert `re:run/3` — reached at comptime from regex.matches (src/regex.bp:41)
+  ```
+  (b) Whole OTP modules on demand: `lists`, `maps`, `string`, `unicode`, `binary` translated from OTP's own `.beam` files (their opcodes, their BIFs), so a cell calling any function of those five runs.
+  ```bp
+  #[@External.Erlang("lists:keysort(2, $0)")] declare fn byAge(xs: …) -> …;   // runs at comptime: lists.beam translated whole
+  ```
+  (c) No OTP at all: only the opcodes of the cell's own `.beam`; every remote call refused.
+  ```text
+  error: beam-to-wasm converts no remote call — `lists:reverse/1` in rakun_scheduling.erl:12
+  ```
+- **Recommendation.** (a): the subset is what a test proves, a call outside it is a located refusal (67), and a module grows by a measured need, not by OTP's size.
+- **Blocks.** 144 B-00b (the first group of the milestone).
 
 ### 01-compiler
 
@@ -407,6 +426,136 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   would have to take back; (b) when a program needs `bigint` in `unknown` or at compile time.
 - **Blocks.** Nothing — built as (a).
 
+#### 434-b · The render-resident and at-build paths under one wasm comptime runtime (434, 378 (4))
+- **Measured.** 84 sent a comptime evaluation to the target's VM, so an erlang build rendered a `Build` / `Any` component at build on the BEAM (`render_resident`'s erl step) and a commonJS build on wat. 378 (4) asks the comptime runtime to run a component's lambda with `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; 134 step 6's last box (144 B-17). Under 434 the only runtime is wasm, and jhonstart's renderer on the BEAM is a sidecar (`jhonstart_render.erl`).
+- **Options.**
+  (a) The renderer runs at build on wasm only: jhonstart's render path reached at build is botopink (or std-wasm), its Erlang cell translated by beam-to-wasm where it has no botopink body; the answer is one string for every target.
+  ```bp
+  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" on the four targets
+  ```
+  (b) A component is rendered at build only when every function it reaches has a botopink or std-wasm body; one reaching an Erlang cell is refused at the `comptime`, naming the cell.
+  ```text
+  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
+  ```
+  (c) Keep the target's VM for at-build rendering alone (a BEAM step inside the compile for erlang/beam builds).
+- **Recommendation.** (b) now — no at-build answer that depends on a translation not proved; (a) once beam-to-wasm covers the renderer's cells; never (c), which 434 removes.
+- **Blocks.** 144 B-17 (134 step 6's 378 (4) box); nothing in B-00.
+
+#### 431-a · std's hand-caught `@Result<T, string>` bindings under 431 (144 B-08)
+- **Measured.** std's hand-written try/catch templates, on botopink-lang `feat`: fs 11 Node + 2 Erlang, json 3 + 3, encoding 1 + 3, hash 1 + 1, regex 1, async 3, primitives 1, http 1, process 1, clock 1, asserts 1 + 1 — each answers `@Result<T, string>` built by hand. Callers outside std that change if the error type changes: onze 158, rakun 121, snap 17, validation 17, jhonstart 12, log 5, http 1, routing 1.
+- **Options.**
+  (a) Every one `throws: true` answering `@Result<T, failure.HostError>`; where a decision names a typed error (`HttpError` 393 / 335, `StoreError` 304, `ActionError` 303) the public function maps `HostError` into it.
+  ```bp
+  #[@External.Node("fs.readFileSync($0, 'utf8')", throws: true)] declare fn readRaw(p: string) -> @Result<string, HostError>;
+  pub fn readText(p: string) -> @Result<string, HostError> { return readRaw(p); }
+  ```
+  (b) The private binding throws; each module's public function maps to a typed error of its own (`FsError.NotFound(path)`, `JsonError.Syntax(at)`).
+  ```bp
+  pub fn readText(p: string) -> @Result<string, FsError> { return try readRaw(p) catch { e -> Error(FsError.of(e)) }; }
+  ```
+  (c) Keep the hand-written templates (`@Result<T, string>`), option (A) 431 did not take.
+- **Recommendation.** (a): one error type at the boundary, a typed one only where a decision names it; (b) multiplies error types no decision asked for.
+- **Blocks.** 144 B-08; the consumer commits in eight repositories.
+
+#### 431-b · `throws:` beside `inline:` (144 B-03)
+- **Measured.** `inline` must be the last argument today: `hasExternalInline` (`erlang.zig`, `beam_asm.zig`) reads only the last one and `ast.externalRefOf` trims one trailing bool.
+- **Options.**
+  (a) Both labelled, any order, read by label (on 305's labels, B-02); a bare positional `bool` refused.
+  ```bp
+  #[@External.Erlang("json:decode($0)", throws: true, inline: true)]   // or inline: first — the same binding
+  #[@External.Erlang("json:decode($0)", true)]                          // error: name the flag — `inline: true` or `throws: true`
+  ```
+  (b) Fixed positions: the template, then `throws`, then `inline`.
+  ```bp
+  #[@External.Erlang("json:decode($0)", true, false)]
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-03 (after B-02).
+
+#### 431-c · What counts as `HostError` (144 B-03)
+- **Measured.** 431 writes `@Result<…, HostError>`; nothing says whether a user type named `HostError` qualifies.
+- **Options.** (a) Only std's `failure.HostError`, by module identity (as `Decorator.same`, 371): `type HostError(message: string)` in a user module is refused under `throws: true`. (b) Any record with `message: string` and `kind: string`.
+  ```bp
+  import {failure.HostError} from "std";
+  declare fn p(s: string) -> @Result<Json, HostError>;          // (a) and (b): accepted
+  type HostError(message: string, kind: string);                 // user's own
+  declare fn q(s: string) -> @Result<Json, HostError>;          // (a): refused — throws: true answers std's failure.HostError
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-03.
+
+#### 431-d · `HostError`'s `kind` and `message` per backend (144 B-05)
+- **Measured.** A JS throw may be any value; an erlang raise has a class (`error` / `throw` / `exit`) and a reason term.
+- **Options.**
+  (a) commonJS: `kind` = `e.name` (`"throw"` for a non-`Error` value), `message` = `e.message`, else `String(e)`; erlang / beam: `kind` = the class atom, `message` = `~tp` of the reason without the stack.
+  ```text
+  JSON.parse("{")          → HostError(message: "Unexpected end of JSON input", kind: "SyntaxError")
+  json:decode(<<"{">>)     → HostError(message: "{invalid_json,{unexpected_end,1}}", kind: "error")
+  ```
+  (b) One `kind` for all (`"host"`), the message only.
+- **Recommendation.** (a): the kind a caller can test, the same field names on every target.
+- **Blocks.** 144 B-05.
+
+#### 431-e · 126's implicit conversion of a rejecting Node Promise (144 B-05)
+- **Measured.** Every Node binding declared `-> @Task<@Result<T, E>>` is wrapped in `__bp_host_task` (`js_prelude.zig`, decision 126), which turns any rejection into `Error(<message>)` without `throws: true` — under 431 (2) a raise not announced is a crash, and `run/host_node_task_result` relies on the conversion.
+- **Options.**
+  (a) Retire it: a Node `@Task<@Result<…>>` binding writes `throws: true` with `E = HostError`, else it is refused; an erlang host answering `{ok, V}` / `{error, R}` stays as is (a value, not a raise).
+  ```bp
+  #[@External.Node("fetch($0)", throws: true)] declare fn get(u: string) -> @Task<@Result<Response, HostError>>;
+  #[@External.Node("fetch($0)")]               declare fn get2(u: string) -> @Task<@Result<Response, HostError>>;  // error: a rejecting Promise needs throws: true
+  ```
+  (b) Keep 126 for `@Task` bindings only.
+- **Recommendation.** (a). Consequence, recorded: under 432 a `throws: true` `@Task` binding on commonJS rejects with `HostError(e.message, e.name)`.
+- **Blocks.** 144 B-05; `run/host_node_task_result` rewritten.
+
+#### 431-f · `throws:` and `attempt` on wasm (144 B-05, B-07)
+- **Measured.** A wasm binding is `op:`, `fn:` (botopink bodies, no raise) or `wasi:` (an adapter answering an error code); a trap cannot be caught inside the module today.
+- **Options.** `throws:` refused on `op:` / `fn:` in every option. `attempt`: (a) wasm exception handling (`try_table` / `throw`), measured on wasmtime and node first; (b) an unwinding return flag the emitter threads through every call; (c) `attempt` refused on wasm, located.
+  ```text
+  (a) attempt({ -> @panic("x") })   → Error(Failure(message: "x", kind: "panic"))   on wasm as elsewhere
+  (c) error: `attempt` has no wasm form — std/failure.bp:12, reached from main.bp:4
+  ```
+- **Recommendation.** (a) if the measurement passes on both hosts, else ask again; never (b) (a cost on every call).
+- **Blocks.** 144 B-05 (wasm), B-07 (`attempt`'s wasm cell).
+
+#### 431-g · `Failure`'s kinds (144 B-04)
+- **Measured.** 431 (3) names `panic` / `host` / `crash`; which faults fall in which is not written. JS cannot tell a raise of a host binding from any other `throw` without a marker per call.
+- **Options.**
+  (a) `panic` (`@panic`, `@todo`, `x!`, an overflow 264, a division by zero), `host` (a raise from a binding without `throws:`), `crash` (a VM / emitted-code fault, a wasm trap); `host` exact on every target (commonJS wraps each such call).
+  (b) As (a), `host` best-effort: on commonJS any `throw` not from botopink is `host`.
+  (c) `panic` only for `@panic` / `@todo` / `x!`; compiler-emitted aborts (overflow, `case_clause`, division by zero) are `crash`, carrying a tag; anything else `host`.
+  ```text
+  attempt({ -> 1 / zero() })   (a) Failure(kind: "panic")   (c) Failure(kind: "crash")
+  attempt({ -> jsonHost("{") }) (a) Failure(kind: "host")   (b) Failure(kind: "host")
+  ```
+- **Recommendation.** (a) with `host` exact — the kind is a contract or it is nothing (67); the per-call cost measured in B-05.
+- **Blocks.** 144 B-04, B-07.
+
+#### 431-h · `asserts.throws`' signature (144 B-07)
+- **Options.** (a) Generic: `throws<T>(body: fn() -> T)` over `attempt`. (b) `throws(body: fn() -> unknown)`.
+  ```bp
+  asserts.throws({ -> parse("x") })      // (a) T inferred: @Result<Json, HostError>
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-07.
+
+#### 431-i · `attempt`'s `@Task` form (144 B-07)
+- **Options.** (a) A second function `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>`. (b) One `attempt` overloaded on the body's type (the language has no overloading). (c) `attempt(f).task()`.
+  ```bp
+  val r = await attemptTask({ -> render(page) });   // (a)
+  ```
+- **Recommendation.** (a): one name per shape, as 24-g's `allOf` / `runAll`.
+- **Blocks.** 144 B-07.
+
+#### 431-j · A binding that raises without catching (144 B-08)
+- **Measured.** 431 (2): a binding without `throws: true` promises no raise, and one is a crash. std holds bindings whose host call can raise and that catch nothing (net, `process.run`, `clock.parseIso8601` on erlang …); no audit lists them.
+- **Options.** (a) Audit every std binding: one that can raise gains `throws: true`; one that cannot is documented as promising no raise (the list in `libs/std/AGENTS.md`). (b) Only the bindings a test shows raising.
+  ```bp
+  #[@External.Erlang("calendar:rfc3339_to_system_time($0)", throws: true)]   // (a): the audit adds it — badarg on bad text
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-08.
+
 ### 02-std-and-packaging
 
 #### 110-a · `testing.asserts` on wasm under the strict rule (146)
@@ -515,6 +664,21 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) std's names (`filter`, `map`), erika adding only what std lacks (`groupBy`, the aggregates). (b) LINQ's names — erika's identity is LINQ. (c) As is.
 - **Recommendation.** none from this review: erika's purpose decides (b) is a fair reading.
 - **Blocks.** 98 (erika).
+
+#### 97-s15-a · `Decimal` and `Json`'s numbers before or after `json` leaves std (97 s15 against 142 s1)
+- **Measured.** 97 step 15 replaces `Json`'s `Num(value: f64)` with `Int` / `BigInt` / `Dec` in `libs/std/src/json.bp` and adds the arms to the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2); 142 step 1 moves `json.bp` whole to `repository/json`, the six consumers importing `from "json"`. Both rewrite the same file and the same consumers.
+- **Options.**
+  (a) 142 s1 first (144 B-27, then 151 s1); 97 s15's `Json` half lands in the json repository (151), its `Decimal` half in std (144 B-24).
+  ```bp
+  import {Json} from "json";
+  case doc { Int(value: n) { … } BigInt(value: b) { … } Dec(value: d) { … } … }   // written once, in json's tree
+  ```
+  (b) 97 s15 first in std (144 B-24), then 142 s1 moves the new `Json`.
+  ```bp
+  import {json.Json} from "std";   // the arms written here, then every import rewritten again by 142 s1
+  ```
+- **Recommendation.** (a): each consumer is touched once, and std never ships a `Json` it is about to lose.
+- **Blocks.** 144 B-24 (97 s15), B-27 (142 s1's std half), 151 s1.
 
 ### 03-bundled-libs
 

@@ -80,7 +80,7 @@ Not deferred for a missing mechanism: work this milestone files for the next one
 
 | Front | Measurement | What it builds | Owner when opened |
 |---|---|---|---|
-| A content-keyed compile cache in compiler-core | [`01-compiler/07-residuals`](./01-compiler/07-residuals/README.md) step 12: every `test-libs` cell recompiles std and its library from source — 11 of 12 modules per emilia example, ~110 of 114 per rakun member; ~9 s (commonJS) and ~12.7 s + `erlc` (erlang) per emilia cell | Per-module output keyed by the module's source bytes, the compile options and the compiler version, read before a module is compiled and written after; the result store (decision 229) keeps answering whole cells | `01-compiler` (compiler-core); the runners unchanged |
+| A content-keyed compile cache in compiler-core | [`01-compiler/07-residuals`](1-botopink-lang/144-botopink-lang/07-residuals/context.md) step 12: every `test-libs` cell recompiles std and its library from source — 11 of 12 modules per emilia example, ~110 of 114 per rakun member; ~9 s (commonJS) and ~12.7 s + `erlc` (erlang) per emilia cell | Per-module output keyed by the module's source bytes, the compile options and the compiler version, read before a module is compiled and written after; the result store (decision 229) keeps answering whole cells | `01-compiler` (compiler-core); the runners unchanged |
 
 ## Out of scope
 

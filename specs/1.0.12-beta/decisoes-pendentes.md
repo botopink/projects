@@ -1,9 +1,9 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 75 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 88 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **435**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
-- **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
+- **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
 - **Parte 3** — não trava nada hoje: uma linha por pergunta; no fim, as confirmações ★ que nenhum passo espera.
 
 ★ = já implementada: confirmar não muda nada; a alternativa vira trabalho da frente dona. ⏳ = há thread esperando. A recomendação é sempre a leitura mais restritiva, sem configuração que a contorne (decisão 67). Perguntas de método de biblioteca (nome, ordem, assinatura) eu decido pelos seus princípios: ficam marcadas † em `decisions-taken.md`, para você reverter.
@@ -39,6 +39,46 @@ rodado nomeando a função (`itens.map(Card)`) ou por um lambda — os nós do j
 
 **Recomendação: (a)** — uma regra só para a chamada num corpo (a 128, que a 388 não mudou), sem adivinhar a
 intenção pelo uso; a (b) muda o que todo `val x = Card(…)` de corpo significa.
+
+**Primeiro de tudo — a decisão 434** (comptime só no wasm, front 144 grupo B-00) abre antes de qualquer outro
+passo de qualquer frente; ela espera esta resposta:
+
+### 434-a · O que o `beam-to-wasm` converte primeiro (434 (3))
+
+**Trava:** front 144 passo B-00b — o primeiro grupo do milestone (comptime só no wasm)
+
+**Contexto.** Pela 434 o comptime de todo target roda no runtime wasm; código que só existe como BEAM (uma
+célula `@External.Erlang` / `@External.Beam`, um sidecar `.erl`) passa pelo `modules/beam-to-wasm/`, que lê o
+`.beam` do erlc e traduz um subconjunto dos opcodes, com as BIFs servidas pelo std-wasm. Uma chamada que ele
+não converte é recusada no ponto da chamada. A pergunta é quanto do OTP ele cobre primeiro. Contagem inicial
+no `feat` da botopink-lang: dos templates Erlang do std que começam por uma chamada de módulo, o módulo é
+`erlang` (5), `lists` (4), `string` (2), `os` (2), `uri_string`, `unicode`, `math`, `binary` (1 cada); 32 são
+corpos `fn:` em botopink (sem BEAM). A medição inteira é a primeira caixa do B-00b. A frente comptime-14, ao pousar, constrói células host BEAM para a 341: esse código é transitório e sai no B-00d.
+
+**Hoje:**
+```text
+# comptime de um build erlang roda no BEAM (persistent_beam.zig); de um build commonJS, no wat
+```
+
+- [ ] **(a)** Um subconjunto nomeado: os opcodes e BIFs que a medição do B-00b lista, mais as funções do OTP
+  que essas células chamam, cada uma implementada pelo std-wasm; qualquer outra chamada recusada no ponto.
+  ```text
+  error: beam-to-wasm does not convert `re:run/3` — reached at comptime from regex.matches (src/regex.bp:41)
+  ```
+- [ ] **(b)** Módulos do OTP inteiros, sob demanda: `lists`, `maps`, `string`, `unicode`, `binary`
+  traduzidos dos próprios `.beam` do OTP.
+  ```bp
+  #[@External.Erlang("lists:keysort(2, $0)")] declare fn byAge(xs: …) -> …;   // roda no comptime: lists.beam traduzido inteiro
+  ```
+- [ ] **(c)** Nada do OTP: só os opcodes do próprio `.beam` da célula; toda chamada remota recusada.
+  ```text
+  error: beam-to-wasm converts no remote call — `lists:reverse/1` in rakun_scheduling.erl:12
+  ```
+
+**Recomendação: (a)** — o subconjunto é o que um teste prova, o resto é recusa localizada (67), e cresce por
+necessidade medida. **Bloqueia:** front 144 B-00b.
+
+---
 
 ### std-d · `io.process`: sinais e leitor de TTY
 
@@ -752,6 +792,249 @@ de desfazer; a (b) quando um programa precisar de `bigint` em `unknown` ou no bu
 ---
 
 ---
+
+---
+
+## Parte 2 — Trava, mas o passo ainda espera outra frente
+
+As perguntas novas da reorganização por repositório (decisão 433) e da 431 / 432 / 434, inteiras, com exemplo
+por opção; cada passo espera também o grupo B-00 da front 144 (434), que vem antes de tudo.
+
+### 434-b · O caminho de render no build com um runtime de comptime só (434, 378 (4))
+
+**Trava:** front 144 B-17 (a caixa 378 (4) do 134 passo 6) · espera também o B-00
+
+**Contexto.** A 84 mandava o comptime para a VM do target: um build erlang renderizava no build um componente
+`Build` / `Any` no BEAM (o passo erl do `render_resident`). A 378 (4) pede que o runtime de comptime rode o lambda
+do componente com `RenderScope.root()` (388). Com a 434 só existe o wasm, e o renderer do jhonstart no BEAM é um
+sidecar (`jhonstart_render.erl`).
+
+- [ ] **(a)** O renderer roda no build só no wasm: o caminho alcançado é botopink (ou std-wasm), e a célula
+  Erlang sem corpo botopink vai pelo beam-to-wasm; uma resposta para os quatro targets.
+  ```bp
+  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" nos quatro targets
+  ```
+- [ ] **(b)** Um componente só renderiza no build quando toda função que alcança tem corpo botopink ou
+  std-wasm; um que alcança célula Erlang é recusado no `comptime`, nomeando a célula.
+  ```text
+  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
+  ```
+- [ ] **(c)** Manter a VM do target só para o render no build (um passo BEAM dentro do compile).
+
+**Recomendação: (b) agora** — nenhuma resposta de build que dependa de tradução não provada; (a) quando o
+beam-to-wasm cobrir as células do renderer; nunca (c), que a 434 remove. **Bloqueia:** 144 B-17.
+
+### 431-a · Os bindings do std que capturam à mão um `@Result<T, string>` (144 B-08)
+
+**Trava:** 144 B-08 · espera B-02, B-03
+
+**Contexto.** Templates try/catch escritos à mão no std (`feat` da botopink-lang): fs 11 Node + 2 Erlang, json
+3 + 3, encoding 1 + 3, hash 1 + 1, regex 1, async 3, primitives 1, http 1, process 1, clock 1, asserts 1 + 1.
+Chamadores fora do std que mudam se o tipo de erro mudar: onze 158, rakun 121, snap 17, validation 17,
+jhonstart 12, log 5, http 1, routing 1.
+
+- [ ] **(a)** Todos com `throws: true` respondendo `@Result<T, failure.HostError>`; onde uma decisão nomeia um
+  erro tipado (`HttpError` 393 / 335, `StoreError` 304, `ActionError` 303) a função pública mapeia o `HostError`.
+  ```bp
+  #[@External.Node("fs.readFileSync($0, 'utf8')", throws: true)] declare fn readRaw(p: string) -> @Result<string, HostError>;
+  pub fn readText(p: string) -> @Result<string, HostError> { return readRaw(p); }
+  ```
+- [ ] **(b)** O binding privado lança; a função pública de cada módulo mapeia para um erro tipado próprio.
+  ```bp
+  pub fn readText(p: string) -> @Result<string, FsError> { return try readRaw(p) catch { e -> Error(FsError.of(e)) }; }
+  ```
+- [ ] **(c)** Manter os templates à mão (`@Result<T, string>`), a opção (A) que a 431 não tomou.
+
+**Recomendação: (a)** — um tipo de erro na fronteira, tipado só onde uma decisão pede. **Bloqueia:** 144 B-08
+e os commits consumidores em oito repositórios.
+
+### 431-b · `throws:` ao lado de `inline:` (144 B-03)
+
+**Trava:** 144 B-03 · espera B-02 (os rótulos da 305)
+
+**Contexto.** Hoje `inline` tem de ser o último argumento: `hasExternalInline` lê só o último e
+`ast.externalRefOf` tira um só bool do fim.
+
+- [ ] **(a)** Os dois com rótulo, em qualquer ordem, lidos pelo rótulo; um `bool` posicional recusado.
+  ```bp
+  #[@External.Erlang("json:decode($0)", throws: true, inline: true)]   // ou inline: primeiro — o mesmo binding
+  #[@External.Erlang("json:decode($0)", true)]                          // error: name the flag — `inline: true` or `throws: true`
+  ```
+- [ ] **(b)** Posições fixas: o template, depois `throws`, depois `inline`.
+  ```bp
+  #[@External.Erlang("json:decode($0)", true, false)]
+  ```
+
+**Recomendação: (a).** **Bloqueia:** 144 B-03.
+
+### 431-c · O que conta como `HostError` (144 B-03)
+
+**Trava:** 144 B-03
+
+**Contexto.** A 431 escreve `@Result<…, HostError>`; não diz se um tipo do usuário chamado `HostError` serve.
+
+- [ ] **(a)** Só o `failure.HostError` do std, pela identidade do módulo (como `Decorator.same`, 371).
+  ```bp
+  type HostError(message: string, kind: string);            // do usuário
+  declare fn q(s: string) -> @Result<Json, HostError>;     // recusado: throws: true responde o failure.HostError do std
+  ```
+- [ ] **(b)** Qualquer registro com `message: string` e `kind: string`.
+  ```bp
+  declare fn q(s: string) -> @Result<Json, HostError>;     // aceito com o HostError do usuário
+  ```
+
+**Recomendação: (a).** **Bloqueia:** 144 B-03.
+
+### 431-d · `kind` e `message` do `HostError` em cada backend (144 B-05)
+
+**Trava:** 144 B-05
+
+**Contexto.** Um throw em JS pode ser qualquer valor; um raise erlang tem classe (`error` / `throw` / `exit`) e
+um termo de razão.
+
+- [ ] **(a)** commonJS: `kind` = `e.name` (`"throw"` para valor que não é `Error`), `message` = `e.message`,
+  senão `String(e)`; erlang / beam: `kind` = o átomo da classe, `message` = `~tp` da razão, sem stack.
+  ```text
+  JSON.parse("{")          → HostError(message: "Unexpected end of JSON input", kind: "SyntaxError")
+  json:decode(<<"{">>)     → HostError(message: "{invalid_json,{unexpected_end,1}}", kind: "error")
+  ```
+- [ ] **(b)** Um `kind` só para todos (`"host"`), só a mensagem.
+  ```text
+  JSON.parse("{")          → HostError(message: "Unexpected end of JSON input", kind: "host")
+  ```
+
+**Recomendação: (a).** **Bloqueia:** 144 B-05.
+
+### 431-e · A conversão implícita da 126 de uma Promise do Node que rejeita (144 B-05)
+
+**Trava:** 144 B-05
+
+**Contexto.** Todo binding Node declarado `-> @Task<@Result<T, E>>` é embrulhado no `__bp_host_task`
+(`js_prelude.zig`, decisão 126), que transforma qualquer rejeição em `Error(<message>)` sem `throws: true` —
+pela 431 (2) um raise não anunciado é crash, e `run/host_node_task_result` depende da conversão.
+
+- [ ] **(a)** Aposentar: um binding Node `@Task<@Result<…>>` escreve `throws: true` com `E = HostError`, senão é
+  recusado; um host erlang que responde `{ok, V}` / `{error, R}` fica como está (é valor, não raise).
+  ```bp
+  #[@External.Node("fetch($0)", throws: true)] declare fn get(u: string) -> @Task<@Result<Response, HostError>>;
+  #[@External.Node("fetch($0)")]               declare fn get2(u: string) -> @Task<@Result<Response, HostError>>;  // error: a rejecting Promise needs throws: true
+  ```
+- [ ] **(b)** Manter a 126 só para bindings `@Task`.
+
+**Recomendação: (a).** Consequência registrada: pela 432, um binding `@Task` com `throws: true` no commonJS
+rejeita com `HostError(e.message, e.name)`. **Bloqueia:** 144 B-05.
+
+### 431-f · `throws:` e `attempt` no wasm (144 B-05, B-07)
+
+**Trava:** 144 B-05 (wasm), B-07 (a célula wasm do `attempt`)
+
+**Contexto.** Um binding wasm é `op:`, `fn:` (corpo botopink, não lança) ou `wasi:` (adaptador que responde
+código de erro); hoje um trap não é capturável dentro do módulo. Em toda opção, `throws:` é recusado em `op:` /
+`fn:`.
+
+- [ ] **(a)** O `attempt` pelo exception handling do wasm (`try_table` / `throw`), medido antes no wasmtime e no node.
+  ```text
+  attempt({ -> @panic("x") })   → Error(Failure(message: "x", kind: "panic"))   no wasm como nos outros
+  ```
+- [ ] **(b)** Uma flag de desempilhamento que o emissor passa por toda chamada.
+- [ ] **(c)** `attempt` recusado no wasm, localizado.
+  ```text
+  error: `attempt` has no wasm form — std/failure.bp:12, reached from main.bp:4
+  ```
+
+**Recomendação: (a)** se a medição passar nos dois hosts, senão perguntar de novo; nunca (b) (custo em toda
+chamada). **Bloqueia:** 144 B-05, B-07.
+
+### 431-g · Os tipos de `Failure` (144 B-04)
+
+**Trava:** 144 B-04, B-07
+
+**Contexto.** A 431 (3) nomeia `panic` / `host` / `crash`; não diz que falha cai em qual. No JS, distinguir um
+raise de binding de qualquer outro `throw` exige marcar cada chamada.
+
+- [ ] **(a)** `panic` (`@panic`, `@todo`, `x!`, overflow da 264, divisão por zero), `host` (raise de binding sem
+  `throws:`), `crash` (falha da VM ou do código emitido, trap wasm); `host` exato em todo target.
+- [ ] **(b)** Como (a), com `host` aproximado: no commonJS todo `throw` que não vem de botopink é `host`.
+- [ ] **(c)** `panic` só para `@panic` / `@todo` / `x!`; abortos que o compilador emite (overflow, `case_clause`,
+  divisão por zero) são `crash`, com uma etiqueta; o resto `host`.
+  ```text
+  attempt({ -> 1 / zero() })    (a) Failure(kind: "panic")   (c) Failure(kind: "crash")
+  attempt({ -> jsonHost("{") }) (a) Failure(kind: "host")    (b) Failure(kind: "host")
+  ```
+
+**Recomendação: (a)** com `host` exato — o tipo é contrato ou não é nada (67); o custo por chamada medido no
+B-05. **Bloqueia:** 144 B-04, B-07.
+
+### 431-h · A assinatura do `asserts.throws` (144 B-07)
+
+**Trava:** 144 B-07
+
+- [ ] **(a)** Genérica: `throws<T>(body: fn() -> T)` sobre o `attempt`.
+  ```bp
+  asserts.throws({ -> parse("x") })      // T inferido: @Result<Json, HostError>
+  ```
+- [ ] **(b)** `throws(body: fn() -> unknown)`.
+  ```bp
+  asserts.throws({ -> parse("x") })      // o corpo vira unknown; o tipo do resultado se perde
+  ```
+
+**Recomendação: (a).** **Bloqueia:** 144 B-07.
+
+### 431-i · A forma `@Task` do `attempt` (144 B-07)
+
+**Trava:** 144 B-07
+
+- [ ] **(a)** Uma segunda função: `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>`.
+  ```bp
+  val r = await attemptTask({ -> render(page) });
+  ```
+- [ ] **(b)** Um `attempt` sobrecarregado pelo tipo do corpo — a linguagem não tem sobrecarga.
+- [ ] **(c)** `attempt(f).task()`.
+  ```bp
+  val r = await attempt({ -> render(page) }).task();
+  ```
+
+**Recomendação: (a)** — um nome por forma, como `allOf` / `runAll` da 24-g. **Bloqueia:** 144 B-07.
+
+### 431-j · Um binding que lança sem capturar (144 B-08)
+
+**Trava:** 144 B-08
+
+**Contexto.** Pela 431 (2) um binding sem `throws: true` promete não lançar, e um lançamento é crash. O std
+tem bindings cujo host pode lançar e que não capturam nada (net, `process.run`, `clock.parseIso8601` no erlang
+…); nenhuma auditoria os lista.
+
+- [ ] **(a)** Auditar todo binding do std: o que pode lançar ganha `throws: true`; o que não pode fica
+  documentado como "não lança" (a lista no `libs/std/AGENTS.md`).
+  ```bp
+  #[@External.Erlang("calendar:rfc3339_to_system_time($0)", throws: true)]   // a auditoria acrescenta — badarg em texto ruim
+  ```
+- [ ] **(b)** Só os bindings que um teste mostra lançando.
+
+**Recomendação: (a).** **Bloqueia:** 144 B-08.
+
+### 97-s15-a · `Decimal` e os números do `Json` antes ou depois de o `json` sair do std (97 s15 × 142 s1)
+
+**Trava:** 144 B-24 (97 s15), B-27 (a metade std da 142 s1), json 151 s1
+
+**Contexto.** A 97 passo 15 troca o `Num(value: f64)` do `Json` por `Int` / `BigInt` / `Dec` no
+`libs/std/src/json.bp` e acrescenta os braços nos 13 arquivos com `case` sobre `Json` (std 6, rakun 3,
+jhonstart 2, onze 2); a 142 passo 1 move o `json.bp` inteiro para `repository/json`, e os seis consumidores
+passam a importar `from "json"`. Os dois reescrevem o mesmo arquivo e os mesmos consumidores.
+
+- [ ] **(a)** A 142 s1 primeiro (144 B-27, depois 151 s1); a metade `Json` da 97 s15 entra no repositório json
+  (151), a metade `Decimal` no std (144 B-24).
+  ```bp
+  import {Json} from "json";
+  case doc { Int(value: n) { … } BigInt(value: b) { … } Dec(value: d) { … } … }   // escrito uma vez, na árvore do json
+  ```
+- [ ] **(b)** A 97 s15 primeiro no std (144 B-24), depois a 142 s1 move o `Json` novo.
+  ```bp
+  import {json.Json} from "std";   // os braços escritos aqui, e todo import reescrito de novo pela 142 s1
+  ```
+
+**Recomendação: (a)** — cada consumidor tocado uma vez, e o std nunca entrega um `Json` que está para perder.
+**Bloqueia:** 144 B-24, B-27, json 151 s1.
 
 ---
 

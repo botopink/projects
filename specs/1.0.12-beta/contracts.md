@@ -210,7 +210,7 @@ Binding on every token front:
   decision 58).
 - **Naming.** camelCase functions (`gridTokenToCss`), PascalCase sections and variants
   (`Token.Grid.Cols`). Numeric leaves bare digits (`.Pad.All.4`, `.Color.Red.500`) — see
-  [`language-gaps.md`](./language-gaps.md)'s negative-leaf row.
+  [`language-gaps.md`](language-gaps.md)'s negative-leaf row.
 
 ## 5 · Request context — owned by front 62
 
