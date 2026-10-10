@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 69 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **428**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 68 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **429**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -570,27 +570,6 @@ programa precisar. **Bloqueia:** nada.
 ---
 
 ---
-
-### 137-e · As restrições dos agregados na gramática do erika (312, passo 4)
-
-**Trava:** nada (construído); o lado SQL do passo 4 segue as mesmas regras
-
-**Contexto.** Construído: `count` só recebe `*`; `sum` recebe um campo `i32` (o `Query.sum` que já existe), `avg` um `f64`, `min`/`max` respondem `?F`; um agregado sem `group by` não aceita `order by` nem `limit` e responde um valor (uma tupla para vários); um campo ao lado de um agregado exige `group by` nele; com `group by` os campos selecionados são o campo do grupo e o `order by` o nomeia; `select *` com `group by` é recusado.
-
-**Hoje:**
-```text
-select count(pop) from cities          -> error: erika: count takes '*': count(*)
-select count(*) from cities limit 1    -> error: erika: limit has nothing to cut: an aggregate without group by answers one value
-```
-
-- [ ] **(a)** Como construído.
-- [ ] **(b)** `count(f)` aceito (conta toda linha: não há nulos em memória).
-  ```bp
-  erika "select count(pop) from cities"
-  ```
-- [ ] **(c)** `order by` / `limit` aceitos num agregado escalar (sem efeito).
-
-**Recomendação: (a)** — a leitura mais restritiva; (b) e (c) acrescentam formas que não significam nada em memória.
 
 ---
 

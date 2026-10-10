@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**69 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**68 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -546,12 +546,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 
 ### 04-rakun
-
-#### 137-e · The restrictions of aggregates in erika's grammar (312, step 4)
-- **Measured.** Built: `count` takes only `*` (`count(pop)` is a located error), `sum` takes an `i32` field (the existing `Query.sum`), `avg` an `f64` field, `min` / `max` answer `?F`; an aggregate without `group by` takes neither `order by` nor `limit` and answers one value (a tuple for several); a field beside an aggregate needs `group by` on it; with `group by` the selected fields are the group field and `order by` names it; `select *` with `group by` is refused.
-- **Options.** (a) As built. (b) `count(f)` allowed (counts every row: no nulls in memory). (c) `order by` / `limit` allowed on a scalar aggregate (no effect).
-- **Recommendation.** (a): the most restrictive reading; (b) and (c) add forms that mean nothing in memory.
-- **Blocks.** Nothing (built); the SQL side of step 4 follows the same rules.
 
 #### 137-f · Padding the built code of an `erika "…"` expansion (language-gaps row "Two template expansions in one module share the locations of their built code")
 - **Measured.** Without padding, three `erika-test` cells (`group by …`) and two `erika-linq` cells (`select label from boxes where w = h …`) are red on erlang only: `row.w` is lowered `erlang:length(Row)` and `row.region` the same, because the lambdas of two expansions sit at the same locations of their built strings and share a loc-keyed plan. commonJS is green. With `q.build(pad + code)`, `pad` the newlines and spaces that start the code at the literal's own line and column (`q.source()`, as `html.bp` does), all 6 cells are green on both targets.

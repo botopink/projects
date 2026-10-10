@@ -85,6 +85,10 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
 - [ ] `limit <n>` (a number or a hole), `join <Type> on <a.f> = <b.g>` (inner), the aggregates
       `count(*)`, `sum`, `avg`, `min`, `max` with `group by` — each on both targets, each with a located
       error for its malformed forms (`q.failAt`)
+- [ ] the aggregates by 428, one answer in memory and in SQL: `count(f)` on a `?T` field (non-null rows; refused on a
+      field that is not optional, naming `count(*)`); `sum` over `i32` / `i64` → `i64`, over `f64` → `f64`, `0` for no rows
+      (`coalesce(sum(x), 0)` in the SQL); `avg` over a number → `?f64`, `null` for no rows; the built refusals kept — cells
+      over an empty source and a `?T` field on both targets
 - [x] the grammar block of `docs.md` rewritten; `examples.md` gains one example per clause
 
 ### Step 5 — the template annotation `#[erika "…"]` (after `01-checker` step 29)
