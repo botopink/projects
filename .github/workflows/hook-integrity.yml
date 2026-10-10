@@ -14,11 +14,12 @@
 #      repository or in any submodule;
 #   4. the library repositories' pre-commit guards are one text: `pre-commit`
 #      and `lib/runner-standalone.sh` byte-identical across emilia, erika,
-#      jhonstart, onze, rakun, actions, http, log, routing, validation, css
-#      and styled
+#      jhonstart, onze, rakun, actions, http, log, routing, validation, css,
+#      styled and snap
 #      (113 step 5's check, made continuous; actions to validation since
 #      decision 326, 03-bundled-libs/138's carve-out of 114's file; css and
-#      styled since decision 338, 08-bpp/119 step 1), each
+#      styled since decision 338, 08-bpp/119 step 1; snap since decision 391,
+#      20-snap step 0), each
 #      `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
 #      `scripts/known-broken-examples.txt`, and each AGENTS.md naming
 #      `git config core.hooksPath scripts/git-hooks`;
@@ -120,7 +121,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          libs="emilia erika jhonstart onze rakun actions http log routing validation css styled"
+          libs="emilia erika jhonstart onze rakun actions http log routing validation css styled snap"
           ref=jhonstart
           bad=0
           for f in scripts/git-hooks/pre-commit scripts/git-hooks/lib/runner-standalone.sh; do

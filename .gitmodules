@@ -47,3 +47,7 @@
 	path = repository/styled
 	url = git@github.com:botopink/styled.git
 	branch = feat
+[submodule "repository/snap"]
+	path = repository/snap
+	url = git@github.com:botopink/snap.git
+	branch = feat

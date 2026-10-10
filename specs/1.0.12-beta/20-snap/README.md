@@ -1,7 +1,7 @@
 # Front 135 — snap: the second test layer, re-evaluated case by case
 
 **Priority:** low — last, but step 0 first (every later step writes through `snap`) · **State:** evaluated; answered by 390 (the maps closed) and 391 (the `snap` library); no step started
-**Depends on:** step 0: `botopink/snap` created on GitHub (a first `feat` commit before it becomes a submodule, CI check 1) · step 4: `06-emilia/34` landed (it moves the output the helpers record)
+**Depends on:** nothing for step 0 (`botopink/snap` exists, scaffolded, a submodule) · step 4: `06-emilia/34` landed (it moves the output the helpers record)
 **Owns:** the snapshot steps other fronts carried — `02-std-and-packaging/97` step 7 ·
 `04-rakun/19` step 6 · `05-jhonstart/26` step 7 · `06-emilia/33` steps 1, 3, 4 (helper and
 suite parts) · `07-onze/50` step 8 · `51` step 7 · `71` step 6 · the helpers named below in
@@ -37,10 +37,10 @@ test "release: text ---- the vm.args file" {
 }
 ```
 
-- [ ] `botopink/snap` at `repository/snap` (326's rule): manifest `["erlang", "commonJS"]`, std only, no host cell;
-      the meta `.gitmodules` entry, `AGENTS.md` § Layout row and CI check 4's list in the commit that adds it
-      (the hooks byte-identical, `.gitignore` naming `*.snap.new` / `*.snap.md.new`, `AGENTS.md` naming
-      `core.hooksPath`)
+- [x] `botopink/snap` at `repository/snap` (326's rule), `feat` its default branch: the scaffold (the hooks
+      byte-identical, `.gitignore` naming `*.snap.new` / `*.snap.md.new`, `AGENTS.md` naming `core.hooksPath`);
+      the meta `.gitmodules` entry, `AGENTS.md` § Layout row and CI check 4's list in the commit that added it
+- [ ] `snap`'s `botopink.json`: manifest `["erlang", "commonJS"]`, std only, no host cell
 - [ ] `std/testing/snapshots.bp` moves whole to `snap` — the path rule and its slugifier, the `botopink-snap 1`
       format, the check and the `<path>.new` flow, `assertText`, `assertAs`, `assertNamed`, `assertNamedAs` —
       with std's four `__snapshots__/` files and the tests that read them; `testing.snapshots` leaves std,
