@@ -110,7 +110,7 @@ the annotation wrote it and each type parameter as bound (`DecoratorArgValue.lex
 `decorator-member-fn-imported-name` for a library member naming anything but its parameters (until 384) —
 cells `run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime`,
 `modules/decorator_member_fn_import{,ed_name}` (four targets) and six `reject/` cells, red on `90d50ae3`;
-question `s35-f` (`s35-e` answered by 408 — the typed form legal everywhere, step 37; `s35-g` by 384; `s35-h` by 404: one member name, several annotations through typed meta).
+questions answered: `s35-f` by 413 (the member reads no local of the decorator, for now), `s35-e` by 408 — the typed form legal everywhere, step 37; `s35-g` by 384; `s35-h` by 404: one member name, several annotations through typed meta).
 Step 23, `HookNode.async` (375) — `hooks.zig` `Node.is_async` (the term's `async`), set by a written `await`, an
 `async { … }`, a `use` with `hook: null` or of a host hook, a call of a host answering `@Task` / `@Component`, a call
 of a function value or a method answering `@Component<R>` (or open); `markHookAsync` follows the `use`s and calls

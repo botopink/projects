@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**73 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**72 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -39,23 +39,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
 - **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
 - **Blocks.** Nothing — built as (a).
-
-#### s35-f · What a member function reads of the decorator's body
-- **Measured.** Built: the member reads the decorator's parameters (each `@Expr<T>` a `T`, its argument
-  spliced where it is read) and what it declares itself; a read of the `@Decl` handle or of a local of the
-  decorator's body is `decorator-member-captures` at the read (`reject/decorator_member_captures`,
-  `reject/decorator_member_captures_handle`). 370 (2) names only the parameters; the 280 examples' member
-  reads `at?.name` and `code`, both parameters.
-- **Options.** (a) As built: `val field = decl.name; decl.addMember("v", fn(self: T) -> string { return
-  field; });` is refused at `field`. (b) A local or handle field known at build and of a data type (a
-  string, a number, a `bool`, a variant, a record, an array of them — 364 (2)'s `.value` family) is spliced
-  as its build value: the member above returns `"Signup"`; a function or a type is refused as in (a).
-  (c) The handle's data fields alone (`decl.name`, `decl.kind`), spliced as literals; every other local
-  refused.
-- **Recommendation.** (a): the member is the program's code and reads only what is handed to it; a value
-  the decorator computes goes through `.value` and a string member, or typed meta.
-- **Blocks.** Nothing — built as (a). A library that derives a member from the declaration's shape
-  (`#[validated]` reading every field's markers) keeps the string form until this is answered.
 
 #### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
 - **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 73 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **413**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 72 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **414**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -484,31 +484,6 @@ passo 11.
 - [ ] **(b)** A regra do decorator para toda função: `tag(k, 1)` é aceito, porque o corpo não lê `n.value`.
 
 **Recomendação: (a).** O parâmetro `comptime` de uma função de execução é a sua especialização.
-
-### s35-f · O que um membro-função lê do corpo do decorator
-
-**Trava:** nada — implementado como (a).
-
-**Contexto.** A 370 (2) fala só dos parâmetros; o membro dos exemplos da 280 lê `at?.name` e `code`, que são parâmetros.
-
-**Hoje.** O membro lê os parâmetros do decorator (cada `@Expr<T>` é um `T`, o argumento colado onde é lido) e o que ele mesmo declara; ler o handle `@Decl` ou um local do corpo do decorator é `decorator-member-captures` na leitura (`reject/decorator_member_captures`, `reject/decorator_member_captures_handle`).
-
-- [ ] **(a)** Como está.
-  ```bp
-  val field = decl.name;
-  decl.addMember("v", fn(self: T) -> string { return field; });   // decorator-member-captures em `field`
-  ```
-- [ ] **(b)** Um local ou campo do handle conhecido no build e de tipo dado (string, número, `bool`, variante, record, array deles) é colado como o valor de build; função ou tipo recusado como em (a).
-  ```bp
-  val field = decl.name;
-  decl.addMember("v", fn(self: T) -> string { return field; });   // o membro devolve "Signup"
-  ```
-- [ ] **(c)** Só os campos de dado do handle (`decl.name`, `decl.kind`), colados como literais; qualquer outro local recusado.
-  ```bp
-  decl.addMember("v", fn(self: T) -> string { return decl.name; });   // "Signup"
-  ```
-
-**Recomendação: (a).** O membro é código do programa e lê só o que lhe é passado; um valor calculado pelo decorator vai por `.value` num membro string, ou por meta tipado.
 
 ### 130-s8-a · Um tipo de record fixado e acrescentado na mesma declaração; `meta(T)` sobre valores acrescentados (298)
 
