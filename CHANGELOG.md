@@ -1,5 +1,18 @@
 # Botopink Compiler — Summary of Recent Changes
 
+## Version: v1.0.12-beta (draft)
+
+### Moved out of std
+
+- **The snapshot engine is the `snap` library** (decisions 391, 402, 407). `testing.snapshots`
+  left std with its four `.snap` files: write `import {assertAs} from "snap";` and declare
+  `"snap"` in `botopink.json` `"dependencies"`. `import {testing.snapshots} from "std"` now answers
+  `unknown "std" module 'testing' in import`. std keeps the general pieces the engine is written
+  over: `String.normalizeNewlines()`, `trimTrailingNewlines()`, `firstDifferingLine(other)` and
+  `io/fs` `mkdirRecursive(path)`.
+
+---
+
 ## Version: v1.0.10-beta (draft — effects by return type)
 
 ### Overview

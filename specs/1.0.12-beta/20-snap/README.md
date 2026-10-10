@@ -40,18 +40,19 @@ test "release: text ---- the vm.args file" {
 - [x] `botopink/snap` at `repository/snap` (326's rule), `feat` its default branch: the scaffold (the hooks
       byte-identical, `.gitignore` naming `*.snap.new` / `*.snap.md.new`, `AGENTS.md` naming `core.hooksPath`);
       the meta `.gitmodules` entry, `AGENTS.md` § Layout row and CI check 4's list in the commit that added it
-- [ ] `snap`'s `botopink.json`: manifest `["erlang", "commonJS"]`, std only, no host cell
-- [ ] `std/testing/snapshots.bp` moves whole to `snap` — the path rule and its slugifier, the `botopink-snap 1`
+- [x] `snap`'s `botopink.json`: manifest `["erlang", "commonJS"]`, std only, no host cell
+- [x] `std/testing/snapshots.bp` moves whole to `snap` — the path rule and its slugifier, the `botopink-snap 1`
       format, the check and the `<path>.new` flow, `assertText`, `assertAs`, `assertNamed`, `assertNamedAs` —
       with std's four `__snapshots__/` files and the tests that read them; `testing.snapshots` leaves std,
       no re-export (`import {testing.snapshots} from "std"` the plain unknown-module error; `libs/std/AGENTS.md` and `snap`'s `AGENTS.md` name `snap` — 407)
-- [ ] std gains, as generic text methods, what the engine keeps privately today: newline normalisation,
-      trailing-newline trimming, the first differing line of two texts (117); `io/fs` answers a directory made
-      with its parents; `snap` declares no host cell
-- [ ] the consumers import from `snap`, one commit per library (188): jhonstart (`jhonstart-test`, five
+- [x] std gains, as generic text methods, what the engine keeps privately today: newline normalisation,
+      trailing-newline trimming, the first differing line of two texts (117) — `String.normalizeNewlines()`,
+      `trimTrailingNewlines()`, `firstDifferingLine(other)` (402); `io/fs` answers a directory made
+      with its parents (`fs.mkdirRecursive`); `snap` declares no host cell
+- [x] the consumers import from `snap`, one commit per library (188): jhonstart (`jhonstart-test`, five
       examples), onze (`onze`, `onze-assets`, `onze-bundler`, `onze-cli`, `onze-og`, `onze-release`,
       `onze-test`); every `.snap` byte-identical before and after (the engine's text unchanged)
-- [ ] `contracts.md` § 7 owned by `snap` (its snapshot half; `SourceLocation` stays std's)
+- [x] `contracts.md` § 7 owned by `snap` (its snapshot half; `SourceLocation` stays std's)
 
 ### Step 1 — std (390)
 - [ ] `mocks.verify`'s message pinned with `throwsWith` on both targets (§ 1, CONVERT)
