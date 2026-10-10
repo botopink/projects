@@ -165,7 +165,7 @@ calls the checker answers, so the two coexist).
       answered and the member checked again — `run/member_reads_own_meta` (`#[validated]` over two `#[check]`s:
       `validate()` runs both rules, the list a build constant under `comptime`), `typeinfo-unknown-declaration`
       no longer raised for a bound type parameter
-- [ ] questions `130-s8-a`, `130-s8-c`, `130-s8-d` (decisions-pending; `130-s8-b` → 385, `130-s8-e` → 395): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
+- [x] questions `130-s8-a` → 418, `130-s8-c` → 419, `130-s8-d` → 420 (`130-s8-b` → 385, `130-s8-e` → 395): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
       catalogue entry
 
 ### Step 9 — a tag is a `@Decl` (decision 302)

@@ -97,7 +97,7 @@ argument not known at build refused at it only where the body reads it (`decorat
 (`template-value-not-known` for a holed one); `run/decorator_expr_{value,unread_argument}`, 9 `reject/`
 cells, `docs.md` § Generics, § Template functions, § Decorators, the builtin table and § Decided, not
 yet implemented; the codemod over std, `tests/language`, the compiler's own tests, jhonstart, rakun and
-validation; decision 370 (`s35-a`), questions `s35-b`–`s35-d` (`s35-b` answered by 411, `s35-c` by 412). Box 3 (370 (2), the typed member): a
+validation; decision 370 (`s35-a`), questions `s35-b`–`s35-d` (answered by 411, 412, 417). Box 3 (370 (2), the typed member): a
 function expression takes typed parameters and a return (`FunctionExpr.paramTypes` / `.returnType`,
 `parser/exprs.zig`, the formatter prints them), admitted only as `decl.addMember(name, fn(self: T) -> R
 { … })` (`fn-expr-typed` elsewhere); `infer.zig` `inferMemberFnCall` types it as program code, each
@@ -354,7 +354,7 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front
 `pub val RecipeTitle = Type.pick(Recipe, .title);` — built on `front/checker-s28`
 (`comptime/derived_types.zig`): the `val` is rewritten, before the checker, into the record declaration
 it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questions `s28-a`–`s28-d`
-(all built as their recommendation).
+(built as their recommendation, confirmed by 421–424).
 
 - [x] `Type.partial`, `Type.required`, `Type.pick`, `Type.omit`, `Type.merge` answered at build, keyed on
       the receiver bound to std's `types.Type` (an alias included); fields as `.title`; a string field
@@ -541,7 +541,7 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
       (`run/decorator_expr_unread_argument`); an `@Expr` of a function or a type has no `.value`
       (`reject/decorator_call_expr_fn`, `reject/decorator_inspect_expr_type`); any other method of a
       parameter's `@Expr` refused (`reject/expr_param_method`); an optional function's null test refused (411),
-      an ordinary function's unknown argument `s35-d`
+      an ordinary function's unknown argument refused (417)
 - [x] an `@Expr` handed to a typed member is evaluated by the program at run time (370 (2)):
       `decl.addMember("validate", fn(self: T) -> Violation[] { … rule(self) … message … })` — a
       function value, each parameter's `@Expr` spliced where it was written, checked like any function —

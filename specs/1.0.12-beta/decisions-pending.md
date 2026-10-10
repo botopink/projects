@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**72 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,99 +27,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
-
-#### s35-d · An ordinary function's argument not known at build
-- **Measured.** Built: 364's "refused only where `.value` reads it" holds for a decorator (an unread
-  argument is accepted, `run/decorator_expr_unread_argument`); an ordinary function's `comptime`
-  argument stays known at build whatever the body does (`comptime-arg-not-known`, 297's rule) — its body
-  is run-time code, `n.value` the specialised value.
-- **Options.** (a) As built. (b) The decorator rule for every function: `fn tag(comptime n: @Expr<i32>,
-  x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
-- **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
-- **Blocks.** Nothing — built as (a).
-
-#### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
-- **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
-  declaration, never both — a second `setMeta` of a type, or an `addMeta` beside a `setMeta` of it, is
-  `decorator-meta-twice` at the annotation that recorded it (`reject/meta_twice`). `@typeInfo(X).meta(T)`
-  answers `null` or the one value, and over several is `typeinfo-meta-several` at the read
-  (`reject/meta_several`); `metaAll(T)` answers a set-once value as a one-element array. 298 names
-  `setMeta` "one value per type" and `addMeta` "what repeats", not the two together. On a catalogue
-  entry `d.meta(T)` answers the first value (the read is run-time code over any entry).
-- **Options.** (a) As built: `decl.setMeta(Entity(…)); decl.addMeta(Entity(…));` is `decorator-meta-twice`
-  at the second; `meta(Index)` over two `Index` is `typeinfo-meta-several`. (b) A type recorded with
-  `addMeta` is read only with `metaAll` — `meta(Index)` refused even over one `Index`
-  (`typeinfo-meta-repeated`). (c) The two mix: `setMeta` holds one value among the added ones, and
-  `meta(T)` answers the set one.
-- **Recommendation.** (a): a key with two meanings at once is refused where it is written; (b) if a
-  reader must not depend on how many decorators added a type.
-- **Blocks.** Nothing — built as (a).
-
-#### 130-s8-c · A typed meta read of a declaration a `.hooks` reader of this module annotates (298, 372)
-- **Measured.** Built: decision 372 runs a decorator that reads `.hooks` after the module's bodies, and
-  answers a string meta read of its declaration in the module afterwards (`answerDeferredMetaReads`). A
-  typed read is an expression typed where it stands (its constructors, `@Expr` fields), so it is refused
-  in that module before the reader ran: `typeinfo-meta-hooks-pending` at the read; another module reads
-  it after the whole module ran.
-- **Options.** (a) As built: `@typeInfo(Page).meta(Route)` in `Page`'s module, `#[route]` reading
-  `.hooks`, is `typeinfo-meta-hooks-pending`. (b) Deferred like the string read: typed as `?Route` at the
-  read, the value written and typed when the reader ran — a type error in an `@Expr` field then located
-  in the second phase.
-- **Recommendation.** (a).
-- **Blocks.** Nothing — built as (a); `05-jhonstart/26`'s `#[page]` reads its meta from the entry point.
-
-#### 130-s8-d · A generic meta record read through a catalogue entry (298)
-- **Measured.** Built: `d.metaAll(T)` on a `@TypeInfo.all` entry calls a function of the reading module
-  typed for `T` (`declared__metaAll__<T>`, `typed_meta.withMetaHelper`); a generic one cannot be written
-  unapplied (`Check` of `Check<T>`), and a generic reader loses `T` on wasm. `d.metaAll(Check)` is
-  `typeinfo-meta-type` at the argument (`reject/meta_catalogue_generic`); `@typeInfo(X).metaAll(Check)`
-  reads it (`run/meta_expr_field`). The entries of one catalogue may hold `Check<Signup>` and
-  `Check<Login>`.
-- **Options.** (a) As built. (b) The read writes the arguments, `d.metaAll(Check<Signup>)`, and answers
-  the values recorded with exactly those. (c) The read answers `Check<unknown>[]`, its fields typed
-  through `unknown`.
-- **Recommendation.** (a).
-- **Blocks.** Nothing — built as (a).
-
-#### s28-a · An imported source's field default that names a binding of its module (307)
-- **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
-  copies the field without its default — the rule `registerExports` applies to an imported function's
-  parameter (`infer.isClosedDefault`): a literal, `true` / `false`, `null`, a sign, an array or tuple of
-  those travels, anything else does not — so `NoHref(target: null)` is the missing-field refusal at the
-  call (copying it made erlc fail: `function defaultRel/0 undefined`). An enum default (`= .Blank`) is not
-  closed either.
-- **Options.** (a) As built: the default does not travel, the field is supplied at every construction.
-  (b) The derivation is refused at the call naming the field (`derived-type-default-not-closed`).
-  (c) The default travels, the deriving module calling the source module's function (an implicit import).
-- **Recommendation.** (a): no implicit import, no silent value; (b) if a derived type must keep every default.
-- **Blocks.** Nothing — built as (a).
-
-#### s28-b · `Type.required` over a field with a `null` default (307)
-- **Measured.** Built: `required` takes the `?` off each field and drops a `null` default with it
-  (`description: ?string = null` → `description: string`, supplied at every construction); any other
-  default stays.
-- **Options.** (a) As built. (b) Refused at the call, naming the field. (c) The `null` default stays and
-  the field is refused at the constructor when omitted.
-- **Recommendation.** (a): "every `?` goes" (types.bp), a `null` cannot type a non-optional field.
-- **Blocks.** Nothing — built as (a).
-
-#### s28-c · What a derived type takes besides the fields (307)
-- **Measured.** Built: the derived record holds the fields only — the source's methods, `implement`
-  clauses and type-level annotations do not come (`Type.pick(Recipe, .title)` has no `Recipe` method);
-  the `val`'s own annotations go on the type. Decision 307 names "the source fields' markers" only.
-- **Options.** (a) As built: fields and their annotations. (b) The methods whose bodies read only kept
-  fields come too. (c) The `implement` clauses come, refused when a member they need is gone.
-- **Recommendation.** (a): a derived type is data; behaviour is written on it.
-- **Blocks.** Nothing — built as (a).
-
-#### s28-d · A generic record or an imported alias as the source (307)
-- **Measured.** Built: refused at the argument (`derived-type-source-not-record`): a record with type
-  parameters (`Type.pick(Box, .item)` — `T` unbound), and an imported type alias (its target is named in
-  its own module's scope). A local alias of a record is that record.
-- **Options.** (a) As built. (b) A type application as the source, `Type.pick(Box<i32>, .item)`, the
-  fields substituted. (c) An imported alias followed through its module.
-- **Recommendation.** (a) until a front needs (b) or (c).
-- **Blocks.** Nothing — built as (a).
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.
