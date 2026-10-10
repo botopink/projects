@@ -652,24 +652,43 @@ val nomes = erika "select name from cities";      // nomes: Array<string>
 - [ ] `q.note(message)` attached to an error reported at the call — `reject/template_note_on_mismatch` (the note
       in the expected text); `docs.md` § Template functions
 
-### Step 41 — built code located by its expansion (decision 429) — **first: opens now**
+### Step 41 — built code located by its expansion (decision 429)
 
 ```bp
 val porRegiao = erika "select region, count(*) from boxes group by region";   // expansion 1
 val quadrados = erika "select label from boxes where w = h";                  // expansion 2
-// today on erlang: expansion 2's `row.w` takes expansion 1's plan — `erlang:length(Row)`
+// each query's `row.w` keeps its own plan on erlang — no padding in `erika.bp`
 ```
 
-- [ ] every expansion carries an id; a built node's location is (expansion id, offset in its built string);
-      every plan keyed by location reads the pair — the default-argument plan (C-04), the erlang field-access and
-      lambda plans, any other found by `grep` over `comptime/` and `codegen/` (the list in this README)
-- [ ] a diagnostic in built code still maps to the literal's line and column for the reader (`q.source()`)
-- [ ] `run/template_two_alike_expansions` (two expansions whose code sits at the same offsets, no padding) and
+- [x] every expansion carries an id: `infer.builtCodeOrigin` hands each parse of built text (`@code`, a template's
+      `code`, the `code` half of `custom`) the module's next id (`Env.expansionCount`), and `parseCodeText` stamps
+      every token with it; `ast.Loc` is (line, column, expansion), a built node's line and column its offset in the
+      built string read from the literal's line and column. Every plan keyed by location reads the pair — each
+      `AutoHashMap(ast.Loc, …)` hashes the whole `Loc`: in `Env`, `defaultInjections` (C-04), `instanceLowerings`,
+      `method_lowerings`, `dispatchRewrites`, `jsMethodRenames`, `stdArrayLowerings`, `indexRewrites`,
+      `enumSectionRewrites`, `srcRewrites`, `optionalNullCases`, `result_jump_lowerings`, `resultPatternLocs`,
+      `templateExpansions`, `templateLowerings`, `customAstByLoc`, `tupleLabelReads`, `keyedRowAccess`,
+      `componentCalls`, `componentLambdas`, `contextUses`, `hookTargets`, `hostCalls`, `hostComponentRefs`,
+      `syncCalls`, `divisions`, `exprCaptures`, `itemOwners`, `localDepth`, `decoratorArgValues`, `decoratorSame`,
+      `decoratorTypeArgs`, `typeinfoAll`; the backends' `rewrites` / `instance_lowerings` / `renames` / `lowerings`
+      (erlang's field-access and lambda plans among them), erlang's `hoisted_steps`, `transform`'s `result_patterns`,
+      `typeinfo_all`'s answers and rewrites, `typed_meta`'s types, `std_namespace`'s locs, the comptime beam
+      lowering's locals. The comparisons written field by field (`statementBlockLoc`, `memberFnAt`, a `@Result`'s
+      first throw, `Env.warn`'s repeat, the parser's token search) are `Loc.eql`; a location made from a node's
+      (`optional_synthetic_col`, an inline type's constructor, a lifted `comptime` node, a field read's column, a
+      template span) keeps its expansion; the names made from a location carry a non-zero one (`__bp_opt_…`,
+      erlang's `BpAssert…` and seed keys, wat's `__anon_L…_C…`); `dsl_hygiene` reads a node's offset back through the
+      same origin. `componentCalls` holds one type per location — the per-callee list that kept two expansions'
+      calls apart is gone
+- [x] a diagnostic in built code maps to the literal's line and column for the reader (`q.source()`) plus its offset —
+      `reject/template_built_code_diagnostic_located` (17:42; the parent binary located it at 1:20)
+- [x] `run/template_two_alike_expansions` (two expansions whose code sits at the same offsets, no padding) and
       `run/template_default_arg_two_expansions` (the `<GreetingHeadline>` / `<Footer />` shape) green on the four
-      targets, both red on the parent on erlang
-- [ ] in the landing: `repository/erika` (`erika.bp`) and `repository/jhonstart` (`html.bp`) drop the padding — one
-      consumer commit each —, their three `// LANGUAGE GAP` markers go and `language-gaps.md`'s row closes;
-      erika-test and erika-linq green on erlang without it
+      targets, both red on the parent on erlang (`erlang:element/2` badarg over an array; `footer/2 undefined`)
+- [x] `repository/erika` (`erika.bp`) and `repository/jhonstart` (`html.bp`) drop the padding — `q.build(pipe)`,
+      `template.build(code)` —, one consumer commit each; their two `// LANGUAGE GAP` markers go and
+      `language-gaps.md`'s row and its marker-index entries close; erika-test (15), erika (34) and erika-linq (14)
+      green on erlang without it, erika's and jhonstart's pre-commit gates green
 
 ### Step 42 — a host binding that throws answers a `@Result` (decision 431)
 

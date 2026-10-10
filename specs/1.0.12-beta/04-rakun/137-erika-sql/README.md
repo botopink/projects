@@ -85,8 +85,8 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
 - [ ] `limit <n>` (a number or a hole), `join <Type> on <a.f> = <b.g>` (inner), the aggregates
       `count(*)`, `sum`, `avg`, `min`, `max` with `group by` — each on both targets, each with a located
       error for its malformed forms (`q.failAt`)
-- [ ] the erlang cells of this step wait on `01-checker` step 41 (429: built code located by its expansion); no padding is
-      written in `erika.bp`, the existing one removed when 41 lands
+- [x] the erlang cells of this step need no padding: built code is located by its expansion (`01-checker` step 41,
+      429), and `erika.bp` builds the pipeline alone
 - [ ] the aggregates by 428, one answer in memory and in SQL: `count(f)` on a `?T` field (non-null rows; refused on a
       field that is not optional, naming `count(*)`); `sum` over `i32` / `i64` → `i64`, over `f64` → `f64`, `0` for no rows
       (`coalesce(sum(x), 0)` in the SQL); `avg` over a number → `?f64`, `null` for no rows; the built refusals kept — cells
