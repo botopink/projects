@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 24 built on
-`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` but `Decorator.same` (371); step 6
+`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` and `front/decl-hooks-371-372` (371, 372); step 6
 box 3, steps 13, 21, 22, 24–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
@@ -224,7 +224,9 @@ or library.
 
 Built on `front/checker-s23` (botopink-lang patch): `comptime/hooks.zig`, the node recorded as `inferFnDecl`
 infers a top-level function's body and published to the session (`Reflection.hookFns`); `decl.hooks` computed
-for a function one of whose decorators reads it (questions s23-a – s23-f).
+for a function one of whose decorators reads it (questions s23-a – s23-f). 371 and 372 built on
+`front/decl-hooks-371-372` (botopink-lang patch): `comptime/decorator_same.zig`, `infer.zig`'s two decorator
+phases (questions s23-g – s23-i).
 
 - [x] `run/decl_hooks_direct` — `use session()` (a host hook) → one node, `Page(uses: [session], calls: [])`
       (commonJS, erlang, beam: `session` has no wasm binding)
@@ -241,13 +243,18 @@ for a function one of whose decorators reads it (questions s23-a – s23-f).
       an alias with its own annotations
 - [x] `DeclAnnotation` gains `decorator: Decorator` — the declaration's identity, an alias and a namespace resolved
       (every handle's annotations, a field key's included); `HookNode`'s `fn` is `function` (`fn` is reserved, s23-a)
-- [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.same(serverOnly)`;
-      a same-named decorator of another package → false (371: `same`, `is` stays a keyword)
-- [ ] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
+- [x] `modules/decorator_same` (a `modules/` cell: the second package is a path dependency) — `#[srv]` with
+      `import {serverOnly as srv} from "web"` → `a.decorator.same(serverOnly)` true; the project's own
+      `serverOnly` (`#[local.serverOnly]`) → false (371: `same`, `is` stays a keyword); `reject/decorator_same_not_decorator`
+      (`same("serverOnly")`, the mismatch at the argument). `same` is a member of `behavior Decorator` (s23-g); a
+      project module's decorator through a namespace is s23-h
+- [x] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
       read no `.hooks` first, then the bodies, then the `.hooks` readers, which may only `setMeta` /
-      `addMeta` / `fail` — `run/decl_hooks_reads_member` (`#[graph] fn Page() { return
-      Account(…).validate(); }` above `#[check(…)] pub type Account`, `validate` added by `#[check]`,
-      compiles), `reject/decorator_hooks_output` (`addMember` in a `.hooks` reader, at the call)
+      `fail` — `run/decl_hooks_reads_member` (`#[graph] fn Page() { return
+      Account(…).validate(); }` above `#[check] pub type Account`, `validate` added by `#[check]`,
+      compiles), `reject/decorator_hooks_output` (`addMember` in a `.hooks` reader, at the call);
+      a same-module `@TypeInfo.all` of a reader is `typeinfo-all-hooks-reader` (s23-i,
+      `reject/typeinfo_all_hooks_reader`)
 - [x] `docs.md` § Decorators documents `decl.hooks` and `HookNode` (`Decorator.same` with 371); `comptime/AGENTS.md`
       states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks it activates"
       closes
