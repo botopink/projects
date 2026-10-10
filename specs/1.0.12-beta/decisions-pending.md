@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**72 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**71 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -558,12 +558,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) The compiler unifies the expansion's type with the expected type: `val u: ?User = erika "select * from users"` is then `expected ?User, got Array<User>`. (b) The template reads the expected type (`q.expected()`) and fails itself: `erika: an answer ?User requires 'limit 1'`. (c) The annotation form of step 29 carries the method's declared answer, the body form stays as it is.
 - **Recommendation.** (a): one rule for every template, no new template API.
 - **Blocks.** 137 step 3's first box.
-
-#### 137-d · A template call in a `type` method body and as a destructuring initializer (311, 397 (3))
-- **Measured.** `type Filter(minAge: i32) { pub fn names(self: Self) -> string { return dbl "ab"; } }` with a local `pub fn dbl(comptime q: @Expr<string>) -> @Expr<string>` runs `dbl is not defined` (commonJS) / `function dbl/1 undefined` (erlang): the call is never expanded. `val #(n, total) = erika "…";` is `erika is not defined`. The same call in a top-level `fn` or `test` expands.
-- **Options.** (a) A compiler fix inside `01-checker` step 29 (a template call expands wherever an expression may stand). (b) A separate compiler row; step 29's template method waits on it. (c) Leave: write the query in a function.
-- **Recommendation.** (a) — `self.db.query "…"` is a call inside a type method.
-- **Blocks.** 137 step 2's template method; the README's `${self.minAge}` example; 143.
 
 #### 137-e · The restrictions of aggregates in erika's grammar (312, step 4)
 - **Measured.** Built: `count` takes only `*` (`count(pop)` is a located error), `sum` takes an `i32` field (the existing `Query.sum`), `avg` an `f64` field, `min` / `max` answer `?F`; an aggregate without `group by` takes neither `order by` nor `limit` and answers one value (a tuple for several); a field beside an aggregate needs `group by` on it; with `group by` the selected fields are the group field and `order by` names it; `select *` with `group by` is refused.

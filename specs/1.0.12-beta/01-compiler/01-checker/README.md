@@ -411,6 +411,10 @@ naming a parameter cannot be written. After, the template call `f "…"` may be 
       is called `value.method "…"` / `value.method """…"""` as `f "…"` is — the literal captured
       unevaluated, `self` the receiver; erika's `QueryContext.query` its first user —
       `run/template_method_call`
+- [ ] a template call expands wherever an expression may stand (425): a type's method body, a destructuring
+      initializer (`val #(n, total) = erika "…";`), a lambda, an argument, a field default, a `case` arm —
+      `run/template_in_type_method`, `run/template_destructuring_init` and one cell per position, on the four
+      targets; a call left unexpanded is a compiler error (`template-call-unexpanded`), never a run-time `undefined`
 
 ### Step 30 — a decorator wraps the function it annotates: `decl.wrapWith(f)` (decision 316)
 

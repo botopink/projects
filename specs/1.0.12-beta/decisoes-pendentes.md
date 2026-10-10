@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 72 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **425**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 71 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **426**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -614,29 +614,6 @@ val n: i32 = erika "select name from cities";    // aceito
 **Recomendação: (a)** — uma regra para todo template, sem API nova.
 
 ---
-
-### 137-d · Uma chamada de template no corpo de um método de `type` e como inicializador de desestruturação (311, 397 (3))
-
-**Trava:** o método template do passo 2 da 137; o exemplo `${self.minAge}` do README; a 143
-
-**Contexto.** A chamada nunca é expandida nesses dois lugares; num `fn` de topo ou num `test` expande.
-
-**Hoje:**
-```bp
-pub fn dbl(comptime q: @Expr<string>) -> @Expr<string> { return q.build("\"" + q.text() + "!\""); }
-type Filter(minAge: i32) { pub fn names(self: Self) -> string { return dbl "ab"; } }
-// commonJS: dbl is not defined · erlang: function dbl/1 undefined
-val #(n, total) = erika "select count(*), sum(amount) from sales";   // erika is not defined
-```
-
-- [ ] **(a)** Correção no compilador dentro do passo 29 da `01-checker`: uma chamada de template expande onde uma expressão pode estar.
-- [ ] **(b)** Uma linha própria de compilador; o método template do passo 29 espera por ela.
-- [ ] **(c)** Deixar: a consulta se escreve numa função.
-  ```bp
-  fn names(minAge: i32) -> Array<string> { return erika "select name from people where age >= ${minAge}"; }
-  ```
-
-**Recomendação: (a)** — `self.db.query "…"` é uma chamada dentro de um método de `type`.
 
 ---
 
