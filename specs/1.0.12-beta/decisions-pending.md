@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**68 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**67 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -546,12 +546,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 
 ### 04-rakun
-
-#### 137-f · Padding the built code of an `erika "…"` expansion (language-gaps row "Two template expansions in one module share the locations of their built code")
-- **Measured.** Without padding, three `erika-test` cells (`group by …`) and two `erika-linq` cells (`select label from boxes where w = h …`) are red on erlang only: `row.w` is lowered `erlang:length(Row)` and `row.region` the same, because the lambdas of two expansions sit at the same locations of their built strings and share a loc-keyed plan. commonJS is green. With `q.build(pad + code)`, `pad` the newlines and spaces that start the code at the literal's own line and column (`q.source()`, as `html.bp` does), all 6 cells are green on both targets.
-- **Options.** (a) Keep the padding in `erika.bp` (one `// LANGUAGE GAP` marker, indexed) until the compiler locates built code by its expansion. (b) Drop `group by` (and any query meeting another in a module) until then. (c) Site-unique lambda names — measured: it fixes `erika-test` and breaks `erika-linq`'s two cells.
-- **Recommendation.** (a): the form the gaps file already names, removed with the row.
-- **Blocks.** Nothing once (a) is kept; 137 step 4's erlang cells without it.
 
 #### erk-b · `#[documentQuery]` under 313 (*proposed*)
 - **Measured.** 09 step 4: `#[documentQuery("…")]` follows `#[query]`'s shape — a member of the repository type answering the template verbatim. 313 deletes that shape for SQL: a repository is a `#[repository] behavior`, its methods carrying `#[erika "…"]` or `#[nativeQuery("…")]`. erika's grammar is SQL's; a document store's filter is JSON (`$in`, `$gt`, …).

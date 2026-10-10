@@ -652,6 +652,25 @@ val nomes = erika "select name from cities";      // nomes: Array<string>
 - [ ] `q.note(message)` attached to an error reported at the call — `reject/template_note_on_mismatch` (the note
       in the expected text); `docs.md` § Template functions
 
+### Step 41 — built code located by its expansion (decision 429) — **first: opens now**
+
+```bp
+val porRegiao = erika "select region, count(*) from boxes group by region";   // expansion 1
+val quadrados = erika "select label from boxes where w = h";                  // expansion 2
+// today on erlang: expansion 2's `row.w` takes expansion 1's plan — `erlang:length(Row)`
+```
+
+- [ ] every expansion carries an id; a built node's location is (expansion id, offset in its built string);
+      every plan keyed by location reads the pair — the default-argument plan (C-04), the erlang field-access and
+      lambda plans, any other found by `grep` over `comptime/` and `codegen/` (the list in this README)
+- [ ] a diagnostic in built code still maps to the literal's line and column for the reader (`q.source()`)
+- [ ] `run/template_two_alike_expansions` (two expansions whose code sits at the same offsets, no padding) and
+      `run/template_default_arg_two_expansions` (the `<GreetingHeadline>` / `<Footer />` shape) green on the four
+      targets, both red on the parent on erlang
+- [ ] in the landing: `repository/erika` (`erika.bp`) and `repository/jhonstart` (`html.bp`) drop the padding — one
+      consumer commit each —, their three `// LANGUAGE GAP` markers go and `language-gaps.md`'s row closes;
+      erika-test and erika-linq green on erlang without it
+
 ### Rows other fronts found
 
 - [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the

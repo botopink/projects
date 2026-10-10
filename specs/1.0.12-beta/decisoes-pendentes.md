@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 68 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **429**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 67 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **430**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -572,24 +572,6 @@ programa precisar. **Bloqueia:** nada.
 ---
 
 ---
-
-### 137-f · Preencher o código construído de uma expansão `erika "…"` (linha do `language-gaps.md`: "Two template expansions in one module share the locations of their built code")
-
-**Trava:** nada, mantida a (a); sem ela, as células erlang do passo 4 da 137
-
-**Contexto.** Sem o preenchimento, três células do `erika-test` (`group by …`) e duas do `erika-linq` (`select label from boxes where w = h …`) ficam vermelhas só no erlang: `row.w` vira `erlang:length(Row)`, porque as lambdas de duas expansões ficam nas mesmas posições das strings construídas e dividem um plano indexado por posição. O commonJS passa. Com `q.build(pad + code)` — `pad` são as quebras de linha e espaços que fazem o código começar na linha e coluna do literal (`q.source()`, como o `html.bp`) — as 6 células passam nos dois targets.
-
-**Hoje:**
-```text
-modules/erika-test · erlang   FAIL erika query: group by yields one row per key ({error,badarg})
-examples/erika-linq · erlang  FAIL erika where compares two columns (w = h) …
-```
-
-- [ ] **(a)** Manter o preenchimento no `erika.bp` (um marcador `// LANGUAGE GAP`, indexado) até o compilador localizar o código construído pela sua expansão.
-- [ ] **(b)** Tirar o `group by` (e qualquer consulta que divida um módulo com outra) até lá.
-- [ ] **(c)** Nomes de lambda únicos por local — medido: conserta o `erika-test` e quebra duas células do `erika-linq`.
-
-**Recomendação: (a)** — a forma que o arquivo de lacunas já nomeia; sai junto com a linha.
 
 ---
 
