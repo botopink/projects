@@ -3,7 +3,7 @@
 **Priority:** high — rakun-data's repositories (08 step 7) stand on it · **State:** step 0 done
 (`botopink/dbcontext` scaffolded, a submodule); steps 1–3 open
 **Depends on:** decision 398 · `137` step 2 (erika's `QueryContext`, `QueryTable`, `query`, 397) ·
-`01-compiler/01-checker` step 29 (the template annotation `#[dbcontext.sql "…"]` and the template method) ·
+`01-compiler/01-checker` step 29 (the template annotation `#[query "…"]` and the template method) ·
 step 3's rakun commit: `04-rakun/128` landed (decision 339)
 **Owns:** `repository/dbcontext/**` (decision 326's rule) · in rakun-data, the code that moves here
 (`#[entity]`'s mapping, `#[repository]`, `#[nativeQuery]`, `#[query]`'s checks, the row decoding) and
@@ -17,17 +17,17 @@ Decision 398: the persistence layer is a library of its own over erika — erika
 `dbcontext` the entities, the context and the repositories, rakun-data the drivers and the container.
 
 ```bp
-import {dbcontext, dbcontext.DbContext} from "dbcontext";
+import {entity, column, repository, query, nativeQuery, DbContext} from "dbcontext";
 
-#[dbcontext.entity("usuarios")]
-pub type User(id: i32, nome: string, #[dbcontext.column("ativo")] active: bool)
+#[entity("usuarios")]
+pub type User(id: i32, nome: string, #[column("ativo")] active: bool)
 
-#[dbcontext.repository]
+#[repository]
 behavior Users {
-    #[dbcontext.sql "select * from User where id = ${id} limit 1"]            // erika's grammar
+    #[query "select * from User where id = ${id} limit 1"]            // erika's grammar
     fn find(self: Self, id: i32) -> @Result<?User, StoreError>;
 
-    #[dbcontext.nativeQuery("select * from usuarios where nome ilike :q")]     // the driver's SQL
+    #[nativeQuery("select * from usuarios where nome ilike :q")]     // the driver's SQL
     fn search(self: Self, q: string) -> @Result<User[], StoreError>;
 }
 
@@ -48,7 +48,7 @@ type Relatorio(db: DbContext) {
 
 ### Step 1 — entities and the context
 
-- [ ] `dbcontext.entity(name)` and `dbcontext.column(name)`: record erika's `QueryTable(name, columns)` and
+- [ ] `entity(name)` and `column(name)`: record erika's `QueryTable(name, columns)` and
       `dbcontext`'s own entity meta (298); a field's column its name unless `column` says otherwise
 - [ ] `behavior Driver` (running a statement — SQL text, bound parameters — and answering rows by column
       name, the error a parameter of the behavior) and `DbContext(driver: Driver) implement QueryContext`
@@ -58,13 +58,13 @@ type Relatorio(db: DbContext) {
 
 ### Step 2 — repositories
 
-- [ ] `dbcontext.repository` annotates only a `behavior` (318): it reads each method's query meta and
+- [ ] `repository` annotates only a `behavior` (318): it reads each method's query meta and
       generates `Users.Sql(ctx: DbContext) implement Users` and `Users.of(ctx)`; on anything but a behavior
       an error at the annotation; a method with neither query annotation an error at the method
-- [ ] `#[dbcontext.sql "…"]` — a template annotation (311, `01-checker` step 29) in erika's grammar: the query
+- [ ] `#[query "…"]` — a template annotation (311, `01-checker` step 29) in erika's grammar: the query
       checked against the entity's `QueryTable` at build, its SQL and parameters recorded as typed meta; a
       `?T` answer requires `limit 1` (312)
-- [ ] `#[dbcontext.nativeQuery("…")]`: the driver's SQL as a comptime string, verbatim; `:name` placeholders
+- [ ] `#[nativeQuery("…")]`: the driver's SQL as a comptime string, verbatim; `:name` placeholders
       matched by name to the method's parameters (an unanswered placeholder or an unused parameter an error
       at the annotation); the leading-keyword (SELECT, INSERT, UPDATE, DELETE, WITH, CALL) and
       quote-next-to-placeholder checks of rakun's `#[query]`

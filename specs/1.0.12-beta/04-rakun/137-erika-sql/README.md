@@ -5,7 +5,7 @@
 **Owns:** `repository/erika/modules/erika/**` (`src/erika.bp`, its in-file tests, `botopink.json`,
 `src/root.bp`), `repository/erika/{docs.md,examples.md,AGENTS.md}` · `modules/erika-test/**` for the
 helpers its cells need
-**Does not touch:** `dbcontext` (`DbContext` implementing `QueryContext` and `#[dbcontext.entity]` recording `QueryTable` are `04-rakun/143`'s, 398) · the compiler
+**Does not touch:** `dbcontext` (`DbContext` implementing `QueryContext` and `#[entity]` recording `QueryTable` are `04-rakun/143`'s, 398) · the compiler
 (the annotation form is `01-checker` step 29's) · `examples/erika-linq/**` beyond a new example file
 
 ## Goal
@@ -31,9 +31,9 @@ type Report(db: DbContext) {
 }
 
 // a repository method (313, 398: the dbcontext library's)
-#[dbcontext.repository]
+#[repository]
 behavior Users {
-    #[dbcontext.sql "select * from User where id = ${id} limit 1"]
+    #[query "select * from User where id = ${id} limit 1"]
     fn find(self: Self, id: i32) -> @Result<?User, StoreError>;
 }
 ```

@@ -94,7 +94,7 @@ the drivers, the container and the transactions. Today a repository is a `type` 
 `rkRegisterQuery`.
 
 - [ ] the PostgreSQL and ETS drivers implement `dbcontext`'s `Driver`; statements run on the driver's `SqlTemplate`
-- [ ] the container registers `DbContext` and each `#[dbcontext.repository]` behavior's generated implementation
+- [ ] the container registers `DbContext` and each `#[repository]` behavior's generated implementation
       by type (234): `Users` injectable, `Relatorio(db: DbContext)` built by the container
 - [ ] `SqlTemplate.query` / `update` / `single`: `sql` is `comptime` — a statement built at run time is
       refused at the argument (the injection rule `#[query]` kept by shape)
@@ -102,9 +102,9 @@ the drivers, the container and the transactions. Today a repository is a `type` 
       mapping and repository code deleted (moved to `dbcontext`, 143 step 3); the statement inventory
       (`/actuator/sql`, 11) read from `dbcontext`'s query meta through `@TypeInfo.all` (253)
 - [ ] `examples/city-entity-example.bp`, `examples/audit-and-revisions-example.bp` rewritten to
-      `#[dbcontext.repository]`; their `// LANGUAGE GAP` markers for the bodyless-method row go, and the row
+      `#[repository]`; their `// LANGUAGE GAP` markers for the bodyless-method row go, and the row
       with them (`language-gaps.md`)
-- [ ] cells: a `#[dbcontext.repository]` over ETS answering both forms through the container; the body form
+- [ ] cells: a `#[repository]` over ETS answering both forms through the container; the body form
       (`self.db.query "…"`, 397) with an injected `DbContext`
 - [ ] `repository/rakun/AGENTS.md` § SQL data access and the member README name `dbcontext` and the drivers
 
