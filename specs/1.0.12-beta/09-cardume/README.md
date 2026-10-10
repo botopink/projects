@@ -14,5 +14,5 @@ scaffold (workspace, `modules/cardume`, CI copied from erika) waits to be pushed
 it becomes the submodule `repository/cardume` of this repository.
 
 **Decisions:** 295 (request state as atoms), 296 (cardume; the request locals' hooks are its
-`atomSetter` etc.), 297 (an atom by declaration or by type). Open: `atm-a` (reduced to the cookie
-hooks' names), `atm-c` (an atom's `T` across the server/browser seam), `atm-d` (atom effects).
+`atomSetter` etc.), 297 (an atom by declaration or by type). 400 answers `atm-a` (the cookie hooks in the same family: `cookieValue`, `cookieState`, `cookieSetter`,
+`cookieReset`). Open: `atm-c` (an atom's `T` across the server/browser seam), `atm-d` (atom effects).

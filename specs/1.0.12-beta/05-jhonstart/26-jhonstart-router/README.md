@@ -160,7 +160,7 @@ upstream section mirrored and fronts exercised (`modules.md` § Examples).
       run, not a gate row)
 - [ ] `find repository/jhonstart/examples -maxdepth 2 -name README.md | wc -l` is 8 (0 today)
 - [ ] `examples/request-scope-example.bp` rewritten to decision 294 (the locale cookie a
-      `Cookie<string>` declared once, read with `use cookie(decl)`; no `RequestData.cookies` pairs,
+      `Cookie<string>` declared once, read with `use cookieValue(decl)`; no `RequestData.cookies` pairs,
       no `pairValue`)
 
 ### Step 7 — the module-level snapshot map
@@ -227,7 +227,7 @@ list against its own decorators; the compiler names no marker.
 - [ ] `use local(atom: Atom<T>) -> ?T` (295; `Local<T>` is cardume's `Atom<T>`, 296), jhonstart's own
       hook, `#[serverOnly]` by jhonstart's marker (277) beside `cookie` — the value middleware set for
       this request, held in `rakun-cardume`'s store per request (296; `08-j` closed by 295)
-- [ ] `use cookie(decl: Cookie<T>) -> ?T`, `#[serverOnly]` (186): `null` when absent or undecodable;
+- [ ] `use cookieValue(decl: Cookie<T>) -> ?T`, `#[serverOnly]` (186): `null` when absent or undecodable;
       the jar (`use cookies()` → pairs) and `pairValue` go from page code; a render writes no cookie (122)
 
 ### Step 13 — the native builders in props form (decision 362)

@@ -61,7 +61,7 @@ val user = use local(currentUser);            // ?User — null when nobody set 
 Values live in the request's process frame, die with it. Middleware, route handlers and actions
 return `@Component<Response>` (354) so they may `use`; the request is the root context
 `RequestContext`, provided by rakun's pipeline (354); rakun's hooks (`atomSetter`, `cookie`,
-`setCookie`) and jhonstart's (`local`, `cookie`) act over the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
+`cookieSetter`) and jhonstart's (`local`, `cookie`) act over the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
 
 A page reading a local is per-request (a request-time read is what `#[serverOnly]` marks, 186);
 until the checker capability lands, the read marks the render through `04-rakun/22` step 4's
@@ -121,12 +121,12 @@ from the action field and header onze configures (114).
 ### Step 6 — a cookie is declared once, typed (decision 294)
 
 - [ ] middleware writes and clears through hooks over the declaration: `val setSession = use
-      setCookie(sessionCookie); setSession(SessionId(value: t))`, `use clearCookie(sessionCookie)` (295;
+      cookieSetter(sessionCookie); setSession(SessionId(value: t))`, `use cookieReset(sessionCookie)` (295;
       rakun's response, `http`'s `cookie.write`); the example's login middleware rewritten
 
 ### Step 7 — locals are atoms (decision 295)
 
-- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use atomSetter(atom) -> fn(T)` (296) and jhonstart's `use local(atom) -> ?T` (names: `atm-a`);
+- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use atomSetter(atom) -> fn(T)` (296) and jhonstart's `use atomValue(atom)` (296; the cookie hooks in the same family, 400);
       `LocalKey`, `setLocal(key, value)`, `local(key)` gone
 - [ ] `#[middleware]` functions, route handlers and actions return `@Component<Response>` (354)
       (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`

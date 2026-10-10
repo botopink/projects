@@ -171,7 +171,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **26** | 118 · 102 s3's `routes.bp` · s5: 29-a · s8: the checker's hooks capability, ctr-l · s13: s0, `01-checker` s28, the props-filling lowering (362) | 67 · 49 s3 · 53 · 119 s2 · 120 · 122 · 116 · 105 |
 | **27** | s1 box 2: 22 | 50 s6 · 126 · 53 |
 | **67** | 26 · 103 s2 · 67-a | 53 · 127 |
-| **136** | 26 · 120 · 125 · atm-a · atm-c · s8: atm-d | 123 (locals) · 127 · 53 |
+| **136** | 26 · 120 · 125 · atm-c · s8: atm-d | 123 (locals) · 127 · 53 |
 | **34** | s5 (first, 350): 119 s1 · s2: s5 · s3: 119 s1 · s4: 05emilia-n | 135 s4 · 119 s5 |
 | **33** s2 | — | 98 |
 | **49** | 102 s3's `types.bp` (s2–s5; s1 and s6 open now) · s3: 26 s4, 17 · s4: 65 s1 · s5: 22 s4 · 49-e | 50 · 51 · 71 · 53 · 117 · 120 · 122 · 127 · 104 s5 |

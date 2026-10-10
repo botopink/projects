@@ -7,7 +7,7 @@
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
 `03-bundled-libs/125` (a `#[validated]` type's `encode` member, 306 — `T.encode(v)`, 327 — for the
 values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters; `01-checker` step 26), 278
-(`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · open: `atm-a`, `atm-c`, `atm-d`
+(`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · 400 (`atm-a`: the cookie hooks in cardume's family) · open: `atm-c`, `atm-d`
 **Owns:** `repository/cardume/**` (the core: `modules/cardume/src/cardume.bp`, its tests) · new
 member `repository/rakun/modules/rakun-cardume/**` (the request store, its hooks reading rakun's root context `RequestContext`, 354) ·
 new member `repository/jhonstart/modules/jhonstart-cardume/**` (the page store, `sidecars/store_runtime.mjs`,
@@ -77,8 +77,8 @@ several values of one type (`cartItems`, `wishlist`).
 
 Hook names are **nouns** (`atomState`, `atomValue`, `atomSetter` — jhonstart's rule, `hooks.bp`'s
 header): `use` is the activation, the name never repeats it (no `useAtomValue`). 296 settled the
-request locals (`use setLocal` is `use atomSetter`); whether the cookie hooks (`use setCookie` /
-`use clearCookie`, 294) follow is `atm-a`. Both bridges spell the same hooks, each reading the store from
+request locals (`use setLocal` is `use atomSetter`), and the cookie hooks follow the same family (400:
+`cookieValue`, `cookieState`, `cookieSetter`, `cookieReset`). Both bridges spell the same hooks, each reading the store from
 its framework's root context (296 as amended by 354): `jhonstart-cardume`'s from `ElementContext`,
 `rakun-cardume`'s from `RequestContext`.
 
@@ -200,8 +200,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ## Decisions
 
-- `atm-a` — reduced to the cookie hooks (296 settled the locals: `atomSetter` etc.): nouns
-  (`use cookieSetter(c)`, `use cookieClearer(c)`) or 294's verbs (`use setCookie`, `use clearCookie`)
+- `atm-a` → 400: the cookie hooks are `cookieValue`, `cookieState`, `cookieSetter`, `cookieReset`
 - `atm-c` — what an atom's `T` may be when the server seeds it: "encodable" is the `encode` member of
   a `#[validated]` type (306) or a type 294 accepts for a cookie; every `T` encodable, or any `T` with
   a non-encodable atom an island reads declared client-only

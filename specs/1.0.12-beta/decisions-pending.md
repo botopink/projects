@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**82 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**81 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -460,12 +460,6 @@ Nothing open: 138-a answered (337).
 - **Blocks.** 98 (erika).
 
 ### 03-bundled-libs
-
-#### atm-a · Cookie hook names: nouns, or 294/295's verbs (*proposed*)
-- **Measured.** jhonstart's rule (`hooks.bp` header): a hook is a noun, `use` the activation. Request locals are settled by 296 (cardume atoms; "each bridge spells the same hooks (`atomValue`, `atomState`, `atomSetter`, `atomReset` …)" — `use setLocal` becomes `use atomSetter`). Left: `Cookie<T>` stays in `http` (294, 296), written `use setCookie(decl)` / `use clearCookie(decl)` — verbs.
-- **Options.** (a) Nouns: `use cookieSetter(c)`, `use cookieClearer(c)`. (b) Keep 294/295's verbs for cookies. (c) Each library its own.
-- **Recommendation.** (a) — one rule, jhonstart's and cardume's.
-- **Blocks.** 123; 127; 104 step 6; `07-onze/53` (the cookie sites).
 
 #### ctr-p · Confirmation `std-a` against confirmation `03r-e`
 - **Rules.** `std-a`: `querystring.parse` / `parseForm` "refuse … an escape that decodes to a control character", and rakun's `splitQuery` moves onto them. `03r-e`: a cookie or query component that would decode to a control character "stays exactly as written". 196 moves rakun's cookie readers into `http`.

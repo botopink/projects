@@ -153,7 +153,7 @@ Labels only; text in [`../decisions-taken.md`](../decisions-taken.md).
 | 224 | Server-island props default **sealed** (AES-256-GCM in the URL; `ONZE_KEY` or build-generated, `onze create-key`); per project `onze.json` `"islands": {"props": "sealed"}` | 120 step 4 · 124 |
 | 278 · 302 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope — since 302 the same thing as a decorator (`comptime decl: @Decl`, no return, typed meta `html` reads by type); `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
 | 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
-| 293 · 294 | A page takes no parameter: `use params<P>()`, `use pageData<D>()`; a cookie is declared once, `use cookie(decl)` | 116 · 117 · 120–123 · 127 |
+| 293 · 294 | A page takes no parameter: `use params<P>()`, `use pageData<D>()`; a cookie is declared once, `use cookieValue(decl)` | 116 · 117 · 120–123 · 127 |
 | 295 · 296 | Request state = cardume atoms (`rakun-cardume`'s store per request), read through `use` | 123 · 127 |
 | 306 | `#[schema]` merged into `#[validated]`; `Schema<T>` private — a library takes the type | 117 step 8 · 121 step 10 · 127 step 5 |
 

@@ -127,8 +127,8 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
 ### Step 11 — a cookie is declared once, typed (decision 294)
 
 - [ ] `lib/cookies.bp` declares `sessionCookie = Cookie<SessionId>("session", …)`; the dashboard
-      layout reads `use cookie(sessionCookie)` (no `pairValue(jar, "session")`), the login action
-      and the logout action write and clear it with `use setCookie` / `use clearCookie` (295)
+      layout reads `use cookieValue(sessionCookie)` (no `pairValue(jar, "session")`), the login action
+      and the logout action write and clear it with `use cookieSetter` / `use cookieReset` (295)
 
 ### Step 12 — emilia through `#[emilia(…)]` (decisions 301, 369)
 

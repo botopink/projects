@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 82 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **400**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 81 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **401**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -468,35 +468,6 @@ usos nos repositórios: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1
 **Recomendação (da thread): (1) agora**; a (2) se o wasm precisar rodar asserções — é a única que
 não espera a 05-wasm. **Bloqueia:** nada no gate; só o "std compila no wasm" do 05-wasm passo 5 / 97
 passo 11.
-
-### atm-a · Nomes dos hooks de cookie: substantivos, ou os verbos da 294/295 *(proposta)*
-
-**Trava:** `03/104` passo 6 (os hooks de cookie); fora de 00–03: 123, 127, `07-onze/53`
-
-**Contexto.** A regra do jhonstart (no cabeçalho do `hooks.bp`) diz que hook é **substantivo** e que o
-`use` é quem ativa: `use state(0)`, `use memo(…)`. Para as locais de request a 296 já decidiu: elas são
-átomos do cardume e "each bridge spells the same hooks (`atomValue`, `atomState`, `atomSetter`,
-`atomReset` …)" — `use setLocal(currentUser)` vira `use atomSetter(currentUser)`. Resta o cookie: o
-`Cookie<T>` fica no `http` (294, 296), e a 294/295 escreveram **verbos** para escrever e limpar.
-
-**Hoje:**
-```bp
-val session = use cookie(sessionCookie);          // 294: leitura, substantivo
-val setSession = use setCookie(sessionCookie);    // 294/295: verbo
-val clearSession = use clearCookie(sessionCookie);
-```
-
-- [ ] **(a)** Substantivo também no cookie, como no cardume.
-  ```bp
-  val setSession = use cookieSetter(sessionCookie);
-  val clearSession = use cookieClearer(sessionCookie);
-  ```
-- [ ] **(b)** Manter os verbos da 294/295 no cookie (`use setCookie`, `use clearCookie`); substantivo no
-  resto.
-- [ ] **(c)** Cada lib com o seu.
-
-**Recomendação: (a)** — uma regra só, que já é a do jhonstart e a do cardume.
-**Bloqueia:** 123; 127; 104 passo 6; `07-onze/53` (os sites de cookie).
 
 ### s35-b · Saber se um argumento função opcional foi dado (`rule == null`)
 

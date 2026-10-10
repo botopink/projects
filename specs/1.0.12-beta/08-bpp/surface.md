@@ -181,7 +181,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | adapters (Node, Netlify, Vercel, Cloudflare) | one runtime: BEAM, packaged by `onze-release` | n/a — rakun is erlang-only by manifest |
 | `output: "server"` | every page `Auto`: mode derived from what the render reads | n/a — decision 202 — no `output` key |
 | HTML streaming | `App.renderStream`, boundaries in completion order (`streaming.bp:935-957`) | have |
-| `Astro.cookies` | `cookies()` reads (`jhonstart/src/server.bp:270`); writes in a handler, action or middleware (`rakun/src/request_context.bp:586`, `:752`) | have — becomes `use cookie(decl)` over a declared `Cookie<T>` (294) |
+| `Astro.cookies` | `cookies()` reads (`jhonstart/src/server.bp:270`); writes in a handler, action or middleware (`rakun/src/request_context.bp:586`, `:752`) | have — becomes `use cookieValue(decl)` over a declared `Cookie<T>` (294) |
 | `Astro.request`, `.url`, `.method`, `.headers` | `request()` → `RequestData(method, path, params, query, headers, cookies)` (`server.bp:106`, `:252`); onze fills `query`, `headers` with `[]` | wire · `07-onze/49` (ONZ-49-4.3); read with `use request()` (291) |
 | `Astro.response.status`, `.headers` | not found from a page | add · 122 |
 | returning a `Response` from a page | navigation signals only | add · 122 |

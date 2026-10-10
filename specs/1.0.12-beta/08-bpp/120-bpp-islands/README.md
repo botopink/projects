@@ -129,7 +129,7 @@ closed). Today `client.bp` reaches `<Component>Props` by name — step 6. Step 0
    call the component**; a prerendered page stays prerendered.
 3. `<url>` = `<prefix>/Avatar?p=<sealed props>`; over 2 048 bytes the element carries
    `data-jh-body` and the runtime sends a `POST`.
-4. Endpoint unseals, renders in its own request frame (`use cookie(decl)`, 294, and `use request()`,
+4. Endpoint unseals, renders in its own request frame (`use cookieValue(decl)`, 294, and `use request()`,
    291, read this request), answers the markup alone; runtime replaces the fallback.
 5. Response headers are the component's (`Cache-Control`); page URL = the request's `Referer`.
 

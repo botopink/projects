@@ -35,8 +35,8 @@ Paths under `repository/`.
 | `params` | `use params<P>()` (293; today `<fn>Params(route)`, emitted by `#[page]`) | `jhonstart/src/routes.bp:233-262` |
 | `slots.has` / `slots.render`, `self` | `hasContent(slot)`; the function's own name | 118 |
 | `request` — `url`, `method`, `headers` | `use request()` → `RequestData(method, path, params, query, headers, cookies)` | `jhonstart/src/server.bp:106`, `:252` — `query`, `headers` empty until `07-onze/49` |
-| `cookies.get` / `.has` | `use cookie(sessionCookie)` over a `Cookie<T>` declared once (294); today `use cookies()`, `pairValue(jar, name)`, which leave page code | `server.bp:270` |
-| `cookies.set` / `.delete` | **refused in a render** — writes belong to a handler, action or middleware (`use setCookie(decl)`, `use clearCookie(decl)`, 294, 295) | `rakun/src/request_context.bp:586`, `:752`; the render phase raises |
+| `cookies.get` / `.has` | `use cookieValue(sessionCookie)` over a `Cookie<T>` declared once (294); today `use cookies()`, `pairValue(jar, name)`, which leave page code | `server.bp:270` |
+| `cookies.set` / `.delete` | **refused in a render** — writes belong to a handler, action or middleware (`use cookieSetter(decl)`, `use cookieReset(decl)`, 294, 295) | `rakun/src/request_context.bp:586`, `:752`; the render phase raises |
 | `redirect(url, status)` | `redirect(url)` — 303 / 307 / 308 in the signal | `jhonstart/src/error_boundary.bp:187`, `libs/routing` `navigation` |
 | a 404 | `notFound()` | `error_boundary.bp:180` |
 | `url`, `routePattern` | `route.pathname`, `route.pattern` — `route: PageContext` goes (293) | `PageContext`, `routes.bp` |
@@ -108,7 +108,7 @@ recorded by `#[page]` at comptime (`@typeInfo(Page).meta(PageMeta)?.kind`, 277).
 
 ### Step 5 — a cookie is declared once, typed (decision 294)
 
-- [ ] `response-control-example.bp` and its `.bpp` page read a declared `Cookie<T>` with `use cookie(decl)`; `use cookies()` / `pairValue(jar, "…")` gone from page code
+- [ ] `response-control-example.bp` and its `.bpp` page read a declared `Cookie<T>` with `use cookieValue(decl)`; `use cookies()` / `pairValue(jar, "…")` gone from page code
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/jhonstart` and `libs/routing`
