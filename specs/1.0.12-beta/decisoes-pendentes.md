@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 80 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **374**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 84 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **374**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -718,6 +718,99 @@ val clearSession = use clearCookie(sessionCookie);
 - [ ] **(b)** A regra do decorator para toda função: `tag(k, 1)` é aceito, porque o corpo não lê `n.value`.
 
 **Recomendação: (a).** O parâmetro `comptime` de uma função de execução é a sua especialização.
+
+### s35-e · Uma expressão de função tipada fora do membro de um decorator
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** A 370 (2) escreve o membro como `fn(self: T) -> Violation[] { … }`, que não era sintaxe (`fn(a, b) { … }` só levava nomes).
+
+**Hoje.** O parser lê `fn(x: T, …) -> R { … }` (todo parâmetro tipado ou nenhum); o checker só aceita como segundo argumento de `decl.addMember(nome, fn…)` no corpo de um decorator — em qualquer outro lugar é `fn-expr-typed` no `fn` (`reject/fn_expr_typed`).
+
+- [ ] **(a)** Como está: o lambda recebe os tipos da posição.
+  ```bp
+  val inc = fn(x: i32) -> i32 { return x + 1; };   // fn-expr-typed
+  val inc: fn(x: i32) -> i32 = { x -> x + 1 };     // aceito
+  ```
+- [ ] **(b)** A forma tipada vale em todo lugar, os tipos escritos conferidos com os da posição.
+  ```bp
+  val inc = fn(x: i32) -> i32 { return x + 1; };   // inc: fn(i32) -> i32
+  ```
+
+**Recomendação: (a).** Um jeito só de tipar um lambda; a forma tipada existe para o único lugar que a 370 precisa.
+
+### s35-f · O que um membro-função lê do corpo do decorator
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** A 370 (2) fala só dos parâmetros; o membro dos exemplos da 280 lê `at?.name` e `code`, que são parâmetros.
+
+**Hoje.** O membro lê os parâmetros do decorator (cada `@Expr<T>` é um `T`, o argumento colado onde é lido) e o que ele mesmo declara; ler o handle `@Decl` ou um local do corpo do decorator é `decorator-member-captures` na leitura (`reject/decorator_member_captures`, `reject/decorator_member_captures_handle`).
+
+- [ ] **(a)** Como está.
+  ```bp
+  val field = decl.name;
+  decl.addMember("v", fn(self: T) -> string { return field; });   // decorator-member-captures em `field`
+  ```
+- [ ] **(b)** Um local ou campo do handle conhecido no build e de tipo dado (string, número, `bool`, variante, record, array deles) é colado como o valor de build; função ou tipo recusado como em (a).
+  ```bp
+  val field = decl.name;
+  decl.addMember("v", fn(self: T) -> string { return field; });   // o membro devolve "Signup"
+  ```
+- [ ] **(c)** Só os campos de dado do handle (`decl.name`, `decl.kind`), colados como literais; qualquer outro local recusado.
+  ```bp
+  decl.addMember("v", fn(self: T) -> string { return decl.name; });   // "Signup"
+  ```
+
+**Recomendação: (a).** O membro é código do programa e lê só o que lhe é passado; um valor calculado pelo decorator vai por `.value` num membro string, ou por meta tipado.
+
+### s35-g · Em que escopo resolve um nome que o membro-função de um decorator de biblioteca escreve
+
+**Trava:** toda migração de biblioteca para o canal de membro (125 passo 7 `#[check]`, rakun, jhonstart).
+
+**Contexto.** O membro entra no tipo anotado, no módulo do tipo anotado: um nome que o corpo ou a assinatura do membro escreve (`Violation`, um helper) resolveria lá — no escopo do usuário, não no da biblioteca.
+
+**Hoje.** Para decorator declarado em outro módulo, o membro é recusado na anotação quando nomeia algo além dos parâmetros, dos próprios locais, de tipos primitivos e dos parâmetros de tipo do decorator (`decorator-member-fn-imported-name`, `modules/decorator_member_fn_imported_name`); sem isso é aceito (`modules/decorator_member_fn_import`). Decorator do mesmo módulo tem um escopo só e não é recusado.
+
+- [ ] **(a)** A higiene da decisão 112 para membros: cada nome que a biblioteca escreveu resolve no módulo do decorator (alias que nenhum fonte soletra, importado como no template), os nomes de cada argumento no módulo da anotação.
+  ```bp
+  // validation: decl.addMember("validate", fn(self: T) -> Violation[] { … Violation(…) … })
+  import {check} from "validation";   // Violation da validation, seja o que for que o usuário importe
+  ```
+- [ ] **(b)** Todo nome resolve no módulo do tipo anotado: o usuário importa `Violation` junto.
+  ```bp
+  import {check, Violation} from "validation";   // sem isso: unbound; um Violation próprio seria capturado
+  ```
+- [ ] **(c)** Como está: esse membro é recusado; membro de biblioteca só lê os parâmetros.
+  ```bp
+  #[check(passwordsMatch)]   // decorator-member-fn-imported-name: names `Violation`
+  ```
+
+**Recomendação: (a).** Cada nome resolve onde foi escrito — os argumentos onde a anotação os escreveu (370 (2)), os da biblioteca na biblioteca (112); nenhuma captura silenciosa.
+
+### s35-h · Duas anotações acrescentando um membro de mesmo nome
+
+**Trava:** vários `#[check]` num tipo (125 passo 7) até o passo 8 da `01-compiler/130`.
+
+**Contexto.** Os exemplos da 280 põem `#[check(passwordsMatch, …)]` e `#[check(handleFree, …)]` no mesmo `Account`, e um `validate` junta as duas regras.
+
+**Hoje.** Um nome de membro é um membro (`decorator-member-duplicate` no segundo, 216 (1)), para `decl.addMember(nome, fn…)` como para a forma string.
+
+- [ ] **(a)** Como está: uma anotação por nome de membro; duas regras num tipo são um membro escrito por um decorator, ou meta tipado (370 (1)) quando o passo 8 da 130 entrar.
+  ```bp
+  // cada #[check] grava Check(message, rule); um validate lê metaAll(Check)
+  decl.addMeta(Check(message: message, rule: rule));
+  ```
+- [ ] **(b)** Membros de mesmo nome de várias anotações se compõem na ordem das anotações quando as assinaturas batem e devolvem array: `validate` devolve a concatenação.
+  ```bp
+  #[check(passwordsMatch, …), check(handleFree, …)]   // validate() == regra1 ++ regra2
+  ```
+- [ ] **(c)** O membro posterior substitui o anterior.
+  ```bp
+  #[check(passwordsMatch, …), check(handleFree, …)]   // só handleFree vale
+  ```
+
+**Recomendação: (a).** Um decorator acrescenta, nunca substitui nem mescla (216 (1)); juntar é papel do meta tipado.
 
 ### s28-a · O default de um campo de fonte importada que nomeia algo do seu módulo (307)
 

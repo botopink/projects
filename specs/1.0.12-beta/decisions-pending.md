@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**84 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -58,6 +58,70 @@ Nothing open: 138-a answered (337).
   x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
 - **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
 - **Blocks.** Nothing — built as (a).
+
+#### s35-e · A typed function expression outside a decorator's member
+- **Measured.** Built: decision 370 (2) writes the member as `fn(self: T) -> Violation[] { … }`, which
+  did not parse (`fn(a, b) { … }` took names only). The parser now reads `fn(x: T, …) -> R { … }` (every
+  parameter typed or none) everywhere; the checker admits it only as the second argument of
+  `decl.addMember(name, fn…)` in a decorator's body, and refuses it anywhere else at the `fn`
+  (`fn-expr-typed`, `reject/fn_expr_typed`).
+- **Options.** (a) As built: `val inc = fn(x: i32) -> i32 { return x + 1; };` is `fn-expr-typed`; a lambda
+  takes the types of its position (`val inc: fn(x: i32) -> i32 = { x -> x + 1 };`). (b) A typed function
+  expression is legal everywhere: `val inc = fn(x: i32) -> i32 { return x + 1; };` types `inc` as
+  `fn(i32) -> i32`, the written types checked against the position's.
+- **Recommendation.** (a): one way to type a lambda, and the typed form exists for the one place 370 needs it.
+- **Blocks.** Nothing — built as (a).
+
+#### s35-f · What a member function reads of the decorator's body
+- **Measured.** Built: the member reads the decorator's parameters (each `@Expr<T>` a `T`, its argument
+  spliced where it is read) and what it declares itself; a read of the `@Decl` handle or of a local of the
+  decorator's body is `decorator-member-captures` at the read (`reject/decorator_member_captures`,
+  `reject/decorator_member_captures_handle`). 370 (2) names only the parameters; the 280 examples' member
+  reads `at?.name` and `code`, both parameters.
+- **Options.** (a) As built: `val field = decl.name; decl.addMember("v", fn(self: T) -> string { return
+  field; });` is refused at `field`. (b) A local or handle field known at build and of a data type (a
+  string, a number, a `bool`, a variant, a record, an array of them — 364 (2)'s `.value` family) is spliced
+  as its build value: the member above returns `"Signup"`; a function or a type is refused as in (a).
+  (c) The handle's data fields alone (`decl.name`, `decl.kind`), spliced as literals; every other local
+  refused.
+- **Recommendation.** (a): the member is the program's code and reads only what is handed to it; a value
+  the decorator computes goes through `.value` and a string member, or typed meta.
+- **Blocks.** Nothing — built as (a). A library that derives a member from the declaration's shape
+  (`#[validated]` reading every field's markers) keeps the string form until this is answered.
+
+#### s35-g · Whose scope resolves a name a library decorator's member function writes
+- **Measured.** Built: the rendered member joins the annotated type in the annotated type's module, so a
+  name the member's body or signature writes (`Violation`, a helper) would resolve there — the user's scope,
+  not the library's. For a decorator declared in another module the member is refused at the annotation
+  when it names anything beyond the decorator's parameters, its own locals, primitive types and the
+  decorator's type parameters (`decorator-member-fn-imported-name`,
+  `modules/decorator_member_fn_imported_name`); one that does not is accepted
+  (`modules/decorator_member_fn_import`). A decorator of the same module has one scope and is not refused.
+- **Options.** (a) Decision 112's hygiene for members: each name the library wrote resolves in the
+  decorator's module (bound under an alias no source can spell and imported, as a template's), each
+  argument's names in the annotation's module — `validation`'s member writes `Violation(…)` and reaches
+  `validation`'s `Violation` whatever the user imports. (b) Every name resolves in the annotated type's
+  module: the user imports `Violation` beside `check` (`import {check, Violation} from "validation"`), and
+  a user `Violation` of their own would be captured. (c) As built: such a member is refused; a library
+  member reads only its parameters.
+- **Recommendation.** (a): each name resolves where it was written — the arguments where the annotation
+  wrote them (370 (2)), the library's names in the library (112); no silent capture.
+- **Blocks.** Every library migration to the member channel (125 step 7's `#[check]`, rakun, jhonstart):
+  their members name their own types and helpers.
+
+#### s35-h · Two annotations adding a member of one name
+- **Measured.** Built: a member name is one member (`decorator-member-duplicate` at the second, 216 (1)),
+  for `decl.addMember(name, fn…)` as for the string form. The 280 examples' `#[check(passwordsMatch, …)]`
+  and `#[check(handleFree, …)]` on one `Account` show one `validate` collecting both rules.
+- **Options.** (a) As built: one annotation per member name; two rules on one type are one member written
+  by one decorator, or typed meta (370 (1)) — each `#[check]` records `Check(message, rule)` and one
+  `validate` reads `metaAll(Check)` — once `01-compiler/130` step 8 lands. (b) Members of one name from
+  several annotations compose in annotation order when their signatures agree and they return an array:
+  `validate` returns the concatenation of each member's result. (c) A later member of one name replaces
+  the earlier.
+- **Recommendation.** (a): a decorator adds and never replaces or merges (216 (1)); collection is typed
+  meta's.
+- **Blocks.** 125 step 7's several `#[check]` on one type until `01-compiler/130` step 8.
 
 #### s28-a · An imported source's field default that names a binding of its module (307)
 - **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
