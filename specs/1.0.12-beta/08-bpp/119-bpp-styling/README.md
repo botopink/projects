@@ -211,7 +211,7 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       (355, built: `styled.bp` `atBuild` over `Part.known` / `Part.value`; `repository-stages.sh` reads
       `tabRed`'s constant) — a hole naming an imported `val` stays computed at render until
       `01-compiler/14` step 8's last boxes, the same CSS
-- [ ] `styled`'s reader keeps source order (368): a declaration after a nested rule opens a new rule of
+- [x] `styled`'s reader keeps source order (368): a declaration after a nested rule opens a new rule of
       the class, as CSS Nesting's nested-declarations rule — `styled "${bg} &:focus { ${gray} } ${pad}"`
       renders `.k{background:#ffffff}.k:focus{…}.k{padding:…}` on both targets (`reader.bp`
       `readBlock`); before `06-emilia/34` step 5, which keeps emilia's CSS byte-identical through it
@@ -337,6 +337,19 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
   StyledView`, the tests render under a provider. `styled` builds on neither beam nor wasm; the
   mechanism's language cells are botopink-lang's `run/context_sheet_registers` and
   `run/context_sheet_unbound` (erlang, beam, commonJS; wasm refuses the `use`, `.wasm.expect`).
+
+- Step 1, the reader's source order (368 (1)) — `reader.bp` `readBlock` closes the run of a block's
+  declarations at each nested rule, `@variant` or at-rule, so a declaration written after one opens a
+  new rule of the block's selector, as CSS Nesting's nested-declarations rule: `styled "${bg} &:focus
+  { ${gray} } ${pad}"` renders `.s_b2548ea2{background:#ffffff}.s_b2548ea2:focus{background:var(--color-gray-100)}.s_b2548ea2{padding:calc(var(--spacing) * 4)}`,
+  its class `s_` + `contentHash` of the rules as rendered; a literal whose declarations all come before
+  its nested rules renders as before, so no recorded class changed (`tab4` `s_e8b00b8b`, `tabRed`
+  `s_b480a37a`, `styled-context`'s `expected.out`). `test/source_order_test.bp` (a declaration after a
+  nested rule, the other order another class, several alternations, a nested block's own order, a
+  `@variant` and an `@media` between declarations, a `${p}` splice after a nested rule computed at
+  render equal to the same literal computed at build); `examples/styled-source-order`, whose constant
+  the repository stage reads from the emitted module and whose run it compares with `expected.out`, on
+  erlang and commonJS (the old reader fails the stage: measured). 41 tests on both targets, 14 refusals.
 
 ## Decisions
 
