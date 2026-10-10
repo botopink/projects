@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**88 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
+**91 questions and 6 contradictions are open, and 95 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -1168,7 +1168,7 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 | 03r-x | Outbox relay claims by conditional `UPDATE` (a crashed relay's claims return via `reclaimStale`); saga and 2PC coordinators persist every transition and resume at boot (`resumeSagas`, `recover2pc`); job store claims triggers and takes over leases the same way | 15 |
 | 04-a | The core's tag epoch only grows (`rkResetContext` leaves it), is `i64`, and the empty tag is refused in `rkBumpTag` / `rkTagEpoch` | 04 step 1 · `rakun/src/runtime.bp`, `rakun_runtime.erl` |
 
-### 05-jhonstart (10)
+### 05-jhonstart (9)
 
 | Id | Choice implemented | Where |
 |---|---|---|
