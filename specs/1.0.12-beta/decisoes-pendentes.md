@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 84 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **376**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 87 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **376**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -62,6 +62,38 @@ antecipado; não nomeia os operadores de curto-circuito, cujo operando direito r
   ```
 
 **Recomendação: (a)** — a 357 (2): nunca sob uma condição.
+
+### 134-i · Um valor `@Component` entregue a um host que não é uma lambda escrita ali (374)
+
+**Trava:** `08-bpp/119` passo 3 (o preenchimento de um boundary guarda o `StyledContext`) · o filho do `Suspense` na `05-jhonstart/26`
+
+**Contexto.** A 374 está construída: uma lambda `@Component` escrita como argumento de uma chamada de host
+não recebe mapa e lê o mapa do corpo onde foi escrita; um componente declarado passado por nome é
+embrulhado (`hostNow(Plain)` → `{ -> Plain(<mapa>) }`) — `run/context_host_thunk` em erlang, beam e
+commonJS. A 374 não diz o que é um **valor** `@Component` (parâmetro, local, campo de record) entregue a um
+host. Hoje ele guarda o mapa como primeiro parâmetro e o host passa `null`. No jhonstart: `componentOutcome(f)`
+passa o parâmetro a `__jhTryComponent(f)`; o registro `jhRegisterPage(record, render)` guarda um parâmetro que
+`__jhRoutesLookup` devolve tipado `fn(route) -> @Component<Element>` e o botopink chama com mapa; e o filho de
+um `Suspense` de segmento com loading (`val child: fn() -> @Component<Element> = { -> caughtBelow(…) }`,
+guardado em `Boundary(child:)`) roda em `resolveIn` → `componentOutcome(child)` fora de todo corpo — o
+`StyledContext` acima se perde no preenchimento, o caso que o texto da 374 cita e a regra não alcança.
+
+- [ ] **(a)** Como construído; o jhonstart passa a lambda do filho por um host onde ela é escrita.
+  ```bp
+  val child = __jhKeep({ -> caughtBelow(chain, i, route, page) });   // captura o mapa de errorLevel
+  ```
+- [ ] **(b)** Todo valor `@Component` entregue a um host é embrulhado ali.
+  ```bp
+  __jhTryComponent(f)          // { -> f(<mapa de componentOutcome: null>) } — nada ganho
+  jhRegisterPage(line, render) // a função guardada perde o mapa; o lookup a chama com um: badarity no erlang
+  ```
+- [ ] **(c)** Uma lambda `@Component` captura em todo lugar que não seja argumento de chamada botopink.
+  ```bp
+  val child: fn() -> @Component<Element> = { -> caughtBelow(chain, i, route, page) };  // captura aqui
+  // o tipo fn() -> @Component<Element> passa a ter valores de duas aridades
+  ```
+
+**Recomendação: (a)** — (b) quebra o registro e não ganha nada; (c) faz um tipo valer duas convenções.
 
 ### 08-f · Onde moram Markdown e YAML
 
@@ -1142,6 +1174,8 @@ toda função que alcança uma das quatro células é recusada no wasm (146); o 
 
 | Id | Assunto | Recomendação | Trava |
 |---|---|---|---|
+| `s23-j ★` | O que a marca da 375 conta como "não dá para seguir", e um host `@Component` | (a) construída: chamada por valor-função ou método conta só quando o tipo resolve para `@Component<R>` (ou fica aberto); `use`/chamada de host `@Component` conta como host `@Task` (`Component` estende `Task`); `await` dentro de lambda do corpo conta; (b) toda chamada por valor ou método marca assíncrono (`xs.length()` incluso); (c) host `@Component` é síncrono | nada — (a) está construída |
+| `04s12-a ★` | Método, lambda e `default fn` `@Component` não têm nó (375 (2), 04-js passo 12) | (b) — o checker marca todo corpo `@Component` pela regra da 375 e o commonJS emite cada um pela marca; hoje (a) ★: continuam `async` e a chamada mantém o `await`; (c) (b) e o nó do método entra no `decl.hooks` | a caixa 1 do 04-js passo 12 (método, lambda, `default fn`) |
 | `s23-a ★` | Dois nomes de campo da 277 (`fn` é reservada; o objeto do contexto da 354 (4) não tinha nome) | (a) ★ — `HookNode(function: …)` e `HookUse(…, context: ?Declared<unknown>)`, lidos `n.function.name` / `u.context.name`; (b) `n.decl` / `u.target`; (c) `n.of` / `u.object` | nada — (a) está construída |
 | `s23-c ★` | O que um `Declared` alcançado guarda no corpo de um decorator | (b) — ler `h.value` num corpo de decorator é recusado (`decl-hooks-value`), como num corpo de template; hoje (a) ★: `h.value == null` é `true` e `h.meta` lista `route.path` (toda entrada, chave `<decorator>.<key>`); (c) (b) e `meta` só do decorator que lê | nada — (a) está construída |
 | `s23-d ★` | Um `@Component` chamado por valor-função ou por método | (b) — `HookCall(callee: ?Declared<unknown>, at)`, a chamada entra com `callee: null` (`fn Page(render: fn() -> @Component<Element>) { val r = render(); }` → `calls: [HookCall(callee: null, at: "main:3:13")]`); hoje (a) ★: não entra (`calls: []`); (c) recusada no build (`hooks-dynamic-call`) | nada — (a) está construída |

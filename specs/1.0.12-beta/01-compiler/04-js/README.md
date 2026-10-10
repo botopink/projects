@@ -47,6 +47,11 @@ every target); no snapshot moved. · 9 (most) `i64`/`isize`/`u64`/`usize` hybrid
 `__bp_has_surrogate` + `__bp_str_length` / `__bp_string_char_at` / `__bp_str_index_of` /
 `__bp_str_last_index_of`, std's Node `stringSlice0`/`stringSlice1`/`charCodeAt` cells;
 `run/string_index_of_codepoints` (strcp-erl's) green on commonJS, `run/string_codepoint_slice_and_code`.
+· 12 (375), top-level functions: a `@Component` function whose hooks node is synchronous is a plain `function`
+(`Emitter.fnShape`), a call or `use` of one is not awaited, written or spliced (`SyncMarks`, `useHookExpr`), and its
+typedef answers `R` (`typescript.zig` `fnReturnType`) — `run/component_sync_plain_function` (commonJS: a call of
+`Card` answers no `Promise`, one of `Post` does; red on the parent), the four `codegen ---- use … is a plain call`
+commonJS snapshots re-recorded (`function state(…)`, no `await`); methods, lambdas and `default fn`s: `04s12-a`.
 
 ## Open
 
@@ -167,8 +172,12 @@ async function Post(map) { … Card(map, "x") … await Comments(map) … }
 
 - [ ] a `@Component` function or hook whose node is synchronous emits `function` (a method, a lambda and a
       `default fn` alike); an asynchronous one `async function`; a call of a synchronous one emits no
-      `await`, written or not; a call the checker cannot follow keeps the `await`
-- [ ] the TypeScript typedef answers the value, not a `Promise`, for a synchronous one; `tsc-check.sh` green
+      `await`, written or not; a call the checker cannot follow keeps the `await` — built on
+      `front/ctx-async-374-375` for a top-level function (`Emitter.fnShape`, `SyncMarks` from `OkData.sync_fns` /
+      `sync_calls`, `useHookExpr`, the `.await_` arm); a method, a lambda and a `default fn` have no node and stay
+      `async` (`04s12-a`)
+- [ ] the TypeScript typedef answers the value, not a `Promise`, for a synchronous one; `tsc-check.sh` green —
+      built for a top-level function (`typescript.zig` `fnReturnType`)
 - [ ] `run/component_sync_plain_function` (the emitted module holds `function Card(` and `async function
       Post(`) and every `run/context_*` / jhonstart and emilia cell green on commonJS; erlang, beam and wasm
       output unchanged

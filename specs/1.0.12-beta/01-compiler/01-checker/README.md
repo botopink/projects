@@ -111,6 +111,14 @@ the annotation wrote it and each type parameter as bound (`DecoratorArgValue.lex
 cells `run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime`,
 `modules/decorator_member_fn_import{,ed_name}` (four targets) and six `reject/` cells, red on `90d50ae3`;
 questions `s35-e`–`s35-h`.
+Step 23, `HookNode.async` (375) — `hooks.zig` `Node.is_async` (the term's `async`), set by a written `await`, an
+`async { … }`, a `use` with `hook: null` or of a host hook, a call of a host answering `@Task` / `@Component`, a call
+of a function value or a method answering `@Component<R>` (or open); `markHookAsync` follows the `use`s and calls
+to a fixpoint before the `.hooks` readers (a cycle with one asynchronous node is asynchronous) and fills
+`Env.syncFns` / `syncCalls` for commonJS; `builtins.d.bp` and `comptime.zig`'s mirror declare `async: bool` —
+`run/decl_hooks_async` (`Card` and `Header` sync, `Comments` and `Page` async, the `Ring` / `Link` cycle async,
+`Feed` over a function value async) and `modules/decl_hooks_async_imported` (an imported node's published mark),
+four targets, red on the parent; question `s23-j`.
 ## Open
 
 Steps 6, 10, 13 all touch `infer.zig`/`parser/**`: one commit per step, serial.
@@ -261,12 +269,14 @@ phases (questions s23-g – s23-i).
       `serverOnly` (`#[local.serverOnly]`) → false (371: `same`, `is` stays a keyword); `reject/decorator_same_not_decorator`
       (`same("serverOnly")`, the mismatch at the argument). `same` is a member of `behavior Decorator` (s23-g); a
       project module's decorator through a namespace is s23-h
-- [ ] `HookNode.async: bool` (375): `true` when the body writes `await` / `async { … }`, `use`s an asynchronous
+- [x] `HookNode.async: bool` (375): `true` when the body writes `await` / `async { … }`, `use`s an asynchronous
       hook or calls an asynchronous component (written `await` or not), calls a host function answering
       `@Task`, or calls what the checker cannot follow (a function value, a method, `hook: null`); a cycle
       asynchronous when any node in it is; published with the module's nodes; `builtins.d.bp` declares the
       field — `run/decl_hooks_async` (a page over a synchronous `Card` and an awaiting `Comments`: `Card`
-      `false`, `Comments` and the page `true`), `modules/decl_hooks_async_imported`
+      `false`, `Comments` and the page `true`), `modules/decl_hooks_async_imported` — built on
+      `front/ctx-async-374-375`: `Builder.is_async` / `dynamicCalls`, `noteAsyncCall`, `markHookAsync` before the
+      `.hooks` readers; the reading of "cannot follow" and of a host `@Component` is `s23-j`
 - [x] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
       read no `.hooks` first, then the bodies, then the `.hooks` readers, which may only `setMeta` /
       `fail` — `run/decl_hooks_reads_member` (`#[graph] fn Page() { return
