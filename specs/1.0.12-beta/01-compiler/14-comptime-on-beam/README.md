@@ -1,11 +1,12 @@
 # Front 14 — comptime-on-beam: the comptime pipeline's evidence and its cost per evaluation
 
 **Priority:** medium · **State:** partial: steps 1 (fixture half), 3, 4, 7, decision 237, step 2's
-slope and step 8's boxes 1–3 and 5 on feat; step 2's N=200 wall clock on the BEAM runtime, step 6 and
-step 8's imported `val` and `contentHash` (T19) open
+slope, step 6's 341 and 343, step 8's boxes 1–3, 5, its imported `val` and `contentHash` (T19);
+step 2's N=200 wall clock on the BEAM runtime, step 6's 342, and step 8's `Any` calls and 380 open
 **Depends on:** `18-comptime-runtimes` (step 2's runtime-evaluation stage) · `01-checker` (step 2's
-memo key; body file name and T17 are 01's rows) · step 6 (decisions 341, 342, 343).
-**Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig` ·
+memo key; body file name and T17 are 01's rows; step 36's stages for step 8's `Any` calls; 342's
+builtins) · 346 (`Bytes`, for `@embedBytes`).
+**Owns:** `modules/compiler-core/src/comptime/template_eval.zig`, `decorator_eval.zig`, `host_cells.zig` ·
 `src/comptime/runtime/beam/**` (lowering) · `src/comptime/runtime/etf.zig` (term round trip) ·
 `src/comptime/runtime/prelude.zig` (resident preludes) · `src/codegen/beam/asm_text.zig` (listing) ·
 `scripts/comptime_bench.sh` (with 18: this front measures, 18 records the table) · `COMPTIME BEAM
@@ -81,6 +82,35 @@ call-site project ≤ 600 ms on both runtimes.
   in a carried function lowers in the comptime module (`erlang.zig`'s untyped `stringTemplate` arm), so
   the erlang emitter no longer aborts (`modules/comptime_reaches_package_template`,
   `run/comptime_interpolation_in_called_fn`, `reject/comptime_template_call_declared_after`)
+- Step 6, 341 — a host function a body that runs at build reaches travels with the cell of the runtime
+  that evaluates it (`comptime/host_cells.zig`): the BEAM runtime runs the `@External.Erlang` cell (an
+  `@External.Beam("module", "symbol")` read as one), the wat runtime the function an
+  `@External.Wasm("fn:…")` binding names (`forRuntime`; an `op:` / `wasi:` binding, or no cell, a
+  refusal naming the function — `has no #[@External.<Target>(…)] for the wat comptime runtime`); std's
+  functions travel too, through a namespace or a leaf import, each renamed `__bp_std__<module>__<name>`
+  with its module's closure (`Env.stdCarried`, built once by `registerStdlib`), and an export carries
+  its own (`registerExports` `exportedFn` / `exportedSupport`). What a decorator may call is decided
+  when its package is compiled (`checkDecorators`, from `Module.targets`, filled by the CLI's
+  loaders): a host function it reaches without a cell its declared `targets` need is
+  `decorator-host-cell-missing` at the call, naming the function, the cell and the reason
+  (`run/decorator_host_cells`, `modules/decorator_imported_host_function`,
+  `modules/decorator_host_cell_targets`, `reject/decorator_host_cell_missing`; `COMPTIME REPLY`
+  byte-identical on beam and wat, `decorator_invocation.zig`'s round trip); `docs.md` § Host
+  functions at compile time
+- Step 6, 343 — a decorator body writing a module-level `var` (directly or through a function of its
+  module) is `decorator-writes-module-var` at the write, the hint pointing at `@TypeInfo.all(with: …)`
+  (`decorator_eval.checkIndependent`, `reject/decorator_writes_module_var`); a duplicate across
+  declarations is refused at the entry point naming both (`reject/typeinfo_all_duplicate_at_entry`)
+- Step 8, the imported `val` — a hole naming a `val` another module exports is known at build when
+  its initializer is: the export carries the value (`block_eval.exportedBuildValue`, read through
+  `Env.importedBuildValues`) — `modules/hole_imported_val_known_at_build`, four targets
+- Step 8, `contentHash` at comptime (T19, with step 6's cells) — `comptime hash.contentHash("hello")`
+  is `"f923099"` on the four targets (`run/comptime_std_host_function`); a private type of another
+  module a carried function builds travels too (`block_eval.findDeclared`, emilia's `Placed`).
+  `comptime padAll(2)` now reaches styled's `use context(StyledContext)` and is refused naming the
+  `use` (`block_eval.useReached`, question `14s8-e` (a) ★); emilia's `comptime className(…)` evaluates
+  on the BEAM runtime and is refused on the wat one at `register` (no `@External.Wasm`) — emilia's
+  369 step, 34 step 5 box 5
 - Step 8, box 5 — `styled "${tab4} color: red;"` with `tab4 = styledProperty "tab-size: 4;"` is emitted
   `styledConstant("s_b480a37a", ".s_b480a37a{tab-size:4;color:red}")` on erlang and commonJS (styled's
   `repository-stages.sh` reads it; `${padAll(2)}` stays `styledComputed`); the four-target cell is
@@ -104,23 +134,15 @@ builds above 600 ms is not per evaluation:
 - [ ] N=200 ≤ 600 ms on the BEAM runtime, measured with `scripts/comptime_bench.sh` and recorded in
       18's table (wat: met)
 
-### Step 6 — host cells, files and independence in a decorator (decisions 341, 342, 343)
+### Step 6 — files at compile time (decision 342)
 
-- [ ] 341: a host function reached from a decorator body travels with the cell of the runtime that
-      evaluates it — `@External.Beam` (or `@External.Erlang`) on the BEAM runtime, `@External.Wasm` on the
-      wat runtime (which forms run there, and the bridge to the term layout, are front 18's); the cells
-      required are those of the package's declared `targets` (`erlang`/`beam` → Beam, `commonJS`/`wasm` →
-      Wasm, none declared → both); a missing one refused at the call when the package is compiled, naming
-      the function, the cell and the reason; `@External.Node` never serves; a cell per case on both
-      runtimes, `COMPTIME REPLY` byte-identical where both cells exist
 - [ ] 342: `@embedFile` / `@embedBytes` read the file relative to the `botopink.json` of the package that
       wrote the path (the application's for a decorator annotating its declarations; the member's in a
       workspace); a missing file, or a non-UTF-8 one for `@embedFile`, is a compile error at the call; the
       content hash enters the cell's cache key (with 26 for watch and the LSP); `rakun ws generate`'s
-      checked-in `.bp` can go (rakun 93)
-- [ ] 343: a module-level `var` written by a decorator body stays refused, the message pointing at
-      `@TypeInfo.all(with: …)` at the entry point; one cell refusing a duplicate there naming both
-      declarations
+      checked-in `.bp` can go (rakun 93). Waits on `01-checker` (the builtins' declaration in
+      `builtins.d.bp` and their checking) and 346 (`Bytes`, not built); this front's half is the
+      package root on `Module` and the read at the call
 
 **Gate:** standard (fronts.md § Gate) + `scripts/snap_audit.sh --mode=runtime-parity` green, every
 re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·
@@ -133,9 +155,10 @@ pub val tab4 = styledProperty "tab-size: 4;";
 pub val code = styled "${tab4} color: red;";   // styledConstant("s_…", ".s_…{tab-size:4;color:red}")
 ```
 
-- [ ] a hole naming a `val` another module exports is known at build when its initializer is: the
-      exporting module's expansion travels with the export (`comptime.zig` `registerExports`); today it
-      is computed at render (376 answers `14s8-b`), the same CSS
+Both open boxes wait on `01-checker` step 36 (every function's stage, not built): which call is `Any`
+is the checker's answer. `padAll(2)` also reads styled's context (`use context(StyledContext)`), which
+no `comptime` provides — question `14s8-e`.
+
 - [ ] a call of an `Any` function (376) whose arguments are known at build is known at build and computed
       by the comptime runtime — in a hole (`styled "${padAll(2)}"`, `padAll(ESPACO)`) and in a `val`'s
       initializer; a raise refused at the hole (14s8-c); `padAll(n)` with `n` a parameter stays at render —
@@ -144,8 +167,6 @@ pub val code = styled "${tab4} color: red;";   // styledConstant("s_…", ".s_�
       a body's `val raio = ESPACO * 2 + 4;` emitted as `12`; no step or time budget — a raise an error at the
       expression (`reject/fold_raises_at_build`); `@panic` / `throw` computed only under a written `comptime`
       (`run/fold_keeps_dead_panic`)
-- [ ] `contentHash` at comptime (T19; with step 6's host cells) — `comptime padAll(2).rules` is refused
-      naming `.contentHash(…)` (a run-time hole reaches `propertyComputed`)
 
 ## Notes
 

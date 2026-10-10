@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 6 contradictions are open, and 105 implementation choices await confirmation.**
+**75 questions and 6 contradictions are open, and 105 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -289,6 +289,27 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) Refused, naming the call and the remedy (as built). (b) The checker infers the body of every function a `comptime` reaches before the `comptime` is evaluated, so the order of declarations does not matter.
 - **Recommendation.** (a) until (b) is built by `01-checker`; (b) refuses nothing a program needs.
 - **Blocks.** Nothing — built as (a).
+
+#### 14s8-e · A `comptime` reaching a component that reads a context (`comptime padAll(2)`)
+- **Measured.** Step 8's box read `comptime padAll(2).rules` as refused at `.contentHash(…)`; with
+  `contentHash` carried (step 6, 341) the run now reaches styled's `styledPropertyComputed`, whose body
+  is `val sheet = use context(StyledContext); … sheet.add(sheet.layer, …)` — a `comptime` has no render
+  tree (354 (3)), so nothing provides `StyledContext`, and the run stopped at ``the comptime block calls
+  `.add(…)` with 2 argument(s) at 144:11, which no primitive type … provides`` (botopink-lang
+  `front/comptime-14`, styled `feat`). 376 (3) makes `context` `Any`, and 355 / 376 (5) compute
+  `styled "${padAll(2)}"` at build — yet at build there is no provider to read.
+- **Options.** (a) ★ A `comptime` (or a hole computed at build) that reaches a `use` in a function it
+  carries is refused at the `comptime`, naming the `use` and its function: ``the comptime reaches `use
+  context.context(…)` at 139:17 in `__bp_tpl_styled_styled__propertyComputed`, and a `comptime` runs with
+  no render tree: nothing provides what the `use` reads (decision 354 (3))`` (`reject/comptime_reaches_use`); `padAll(2)` stays at render until styled reads no
+  context on that path. (b) The build provides each context's declared default (`StyledContext`'s), so
+  `comptime padAll(2)` computes with the default sheet and its registration is dropped:
+  `val p = comptime padAll(2);` answers `StyledProperty(className: "s_…", …)` and no sheet holds the
+  rule. (c) A hole naming a call that reaches a `use` is never known at build (376's `Any` excludes a
+  function reaching a `use context`): `styled "${padAll(2)}"` is computed at render, as today.
+- **Recommendation.** (a) — refuse rather than answer with a provider nobody wrote (67); (c) is what
+  01-checker step 36's stage gives once it lands, and agrees with (a).
+- **Blocks.** Nothing — built as (a) (`block_eval.useReached`); step 8's `Any`-call box reads it.
 
 #### 140-d · How a task adapter is spelled: 393's `wasi: .Delay` against 238's one string
 - **Measured.** 393 writes `#[@External.Wasm(wasi: .Delay)]`; 238's closed vocabulary (and every std
