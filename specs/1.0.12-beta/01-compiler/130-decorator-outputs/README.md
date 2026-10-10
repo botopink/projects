@@ -1,7 +1,8 @@
 # Front 130 — decorator outputs: a decorator's four places, then module-level `@emit` removed
 
 **Priority:** high · **State:** partial: steps 1–4 on feat (decisions 216, 235, 248); step 5 at 38
-of 119 sites (plus `#[schema]`'s 5); step 6 not started; step 10 (353): the catalogue answered for the expanding program, the importer's diagnostic, the cells; open: `value` at build (`119-e`)
+of 119 sites (plus `#[schema]`'s 5); step 6 not started; step 8 (298, 370 (1)): typed meta, its reads and
+`@Expr<T>` fields built, the library migration open; step 10 (353): the catalogue answered for the expanding program, the importer's diagnostic, the cells; open: `value` at build (`119-e`)
 **Depends on:** decisions 254, 256 for rakun's DI (answered; 256's registry needs `01-checker` step
 20) · library tracks for their decorator files · `04-rakun/128` for rakun rows (decision 339)
 **Owns:** `repository/botopink-lang/modules/compiler-core/src/comptime/{reflection,assoc_types,typeinfo_all}.zig`
@@ -22,7 +23,7 @@ library decorator uses them; `@emit` is a named error.
 | Place | Written in a decorator | Read | Refused |
 |---|---|---|---|
 | member of the annotated type | `decl.addMember("pub fn fromRow(r: Row) -> Self { … }")` | `City.fromRow(r)`, `c.describe()`; travels with the type | `decorator-member-without-type`, `decorator-member-duplicate`, `decorator-member-not-one-fn` |
-| comptime meta, a typed value keyed by its type (298) | `decl.setMeta(Entity(table: "cities"))`, `decl.addMeta(Index(…))` | `@typeInfo(City).meta(Entity)` → `?Entity`; `metaAll(Index)` → `Index[]` |
+| comptime meta, a typed value keyed by its type (298) | `decl.setMeta(Entity(table: "cities"))`, `decl.addMeta(Index(…))` | `@typeInfo(City).meta(Entity)` → `?Entity`; `metaAll(Index)` → `Index[]`; `d.meta(Entity)` on a catalogue entry | `decorator-meta-not-record`, `decorator-meta-field-type`, `decorator-meta-expr-arg`, `decorator-meta-twice`, `decorator-meta-on-member`, `typeinfo-meta-type`, `typeinfo-meta-several`, `typeinfo-meta-expr-elsewhere`, `typeinfo-meta-hooks-pending`, `typeinfo-meta-at-build` |
 | associated type | `decl.addType("Columns", "(id: string)")` | `City.Columns` in type positions, `City.Columns(id: "x")`; imported with its owner | `decorator-type-without-owner`, `decorator-type-name`, `decorator-type-duplicate`, `decorator-type-not-one-type` |
 | project reflection | (every top-level declaration a decorator runs over) | `@TypeInfo.all(with: d)` (or a list, decision 235) → `Declared<unknown>[]` (decision 254), `member: "m"` for types (a reference after step 7, 281) | `typeinfo-all-arguments`, `typeinfo-all-not-decorator`, `typeinfo-all-mixed`, `typeinfo-all-needs-member`, `typeinfo-all-private`, `typeinfo-all-imported` |
 
@@ -31,8 +32,10 @@ library decorator uses them; `@emit` is a named error.
   (`comptime.zig` `mergeMembers`). Members closed: a name a record-shaped type neither declares nor
   answers via a field or behavior = `unknown-associated-fn` at the call
   (`reject/decorator_member_unknown`).
-- **Meta.** String values; namespace = the decorator's name (typed, keyed by its type after step 8,
-  298); describes a top-level `type`, `behavior` or `fn`. Reads answered by the checker, spliced as
+- **Meta.** A typed value keyed by its record type (298, step 8): the record's constructor written at
+  the call, each field data or `@Expr<T>` (370 (1), spliced where read), written back as the
+  constructor where it is read; the string form (values under the decorator's name) stands until the
+  library migration; describes a top-level `type`, `behavior`, `fn` or `val`. Reads answered by the checker, spliced as
   literals. One builtin (decision 248): bare `@typeInfo(T)` = structural `TypeInfo`, comptime only;
   lowercase spelling = `typeinfo-lowercase`.
 - **Associated types.** Top-level type `Owner__Name`; `comptime/assoc_types.zig` rewrites every
@@ -50,6 +53,23 @@ library decorator uses them; `@emit` is a named error.
 - Step 5, migrated — std `#[mocks.mock]`; validation `#[validated]`; jhonstart `#[client]`; rakun-data `#[entity]` (20 of 22), `#[entityRepository]` (3), `#[belongsTo]` (2), `#[query]` (1 of 2; the other is not migrated — 313 deletes `#[query]`, rakun 08 step 7); rakun-cache `#[cached]` (2); rakun-hateoas `#[halResource]` (1); jhonstart `#[page]` / `#[layout]` / `#[template]` / `#[defaultView]` registrations (4: meta `seg`, registered by the entry point with `jhRegisterRoutes(@TypeInfo.all(with: page), …)` — onze's `onze_main.bp`, jhonstart's, onze-server's and the blog example's tests)
 - Step 10, part (353) — a template function's body reads `@TypeInfo.all` for the program that expands it: its module is no reader (`typeinfo_all.collect` skips template bodies); `infer.zig` `noteTemplateQueries` resolves the queries in the template's module, `answerTemplateQueries` answers them at the expansion (every module's entries, the catalogue's rules refused at the call) into a copy of the template; `comptime.zig` `compile` compiles a second time with the first session's catalogue as the oracle when an answer missed a module analysed later, and refuses a read the final catalogue still disagrees with (`typeinfo-all-template-unstable`); an entry's `value` read in a template body is `typeinfo-all-template-value`; `import pkg from "pkg"` naming a reader's default fn is `typeinfo-all-imported` at the handle (was `unbound variable` at the use) — cells `modules/template_reads_program_catalogue`, `modules/template_catalogue_{two_themes,private}`, `modules/typeinfo_all_imported_package_default`, `reject/typeinfo_all_template_value`, red on `56d4bc29`, green on all four targets
 - Step 10, a decorator on a `val` (356; landed with `08-bpp/116` step 1) — `infer.zig` `validateDecorators` / `invokeDecorators` reach a module-level `val` as `DeclKind.Val` (`name`, its declared type as `returnType`, `""` when none; `addMember` / `addType` refused at the annotation naming "the val"); `reflection.DeclaredEntry.Kind.val`, its declared type as `returnTypeName`; `typeinfo_all.zig` `kindClass` — one query answers functions, `val`s or types (`typeinfo-all-mixed` names both kinds); `DeclKind.Val` in `builtins.d.bp` and `comptime.zig` `decl_reflection_src`; a user decorator on a module `var` refused at the annotation (`116-c`) — cells `run/val_decorator_catalogue`, `reject/val_decorator_{runs,add_member,add_type,on_var}`, `reject/typeinfo_all_val_and_fn`, red on `dd4cda88`, green on all four targets. The template half (a `val`'s build value lifted into a template module) stays open below
+- Step 8 (298, 370 (1)) — typed meta keyed by its record type: `decl.setMeta(v)` / `decl.addMeta(v)`
+  checked where the decorator is declared (`infer.zig` `checkTypedMetaCalls`: the record's constructor
+  written at the call, `decorator-meta-not-record`; each field data or `@Expr<T>`,
+  `decorator-meta-field-type`; a parameter's `@Expr` only in an `@Expr<T>` field,
+  `decorator-meta-expr-arg`), typed in the body (`inferTypedMetaCall`), run as `'__bp_typedMeta'(k, v)`
+  (`expr_param.zig`, prelude) and written back as the constructor's arguments (`comptime/typed_meta.zig`
+  `render`) per declaration (`Reflection.typedMeta`; `decorator-meta-twice`, `decorator-meta-on-member`);
+  a record field `@Expr<T>` is `Field.exprWrapped` (`parser/expr_params.zig`). Read
+  `@typeInfo(X).meta(T)` / `.metaAll(T)` (`inferTypedMetaRead`: `typeinfo-meta-type`,
+  `typeinfo-meta-several`, `typeinfo-meta-expr-elsewhere`, `typeinfo-meta-hooks-pending`) and
+  `d.meta(T)` / `d.metaAll(T)` on a catalogue entry (`Declared.typedMeta`, thunks keyed by the type's
+  identity, `typeinfo_all.zig` `typedSlots`; read by the module's own `declared__metaAll__<T>`,
+  `typed_meta.withMetaHelper`; `typeinfo-meta-at-build`) — cells `run/meta_typed`,
+  `run/meta_expr_field`, `modules/meta_typed_catalogue`, `modules/meta_catalogue_private_type`,
+  `modules/meta_expr_read_elsewhere`, `reject/meta_{twice,not_record,field_type,several,read_not_type,
+  add_outside_decorator,read_at_build,catalogue_generic,expr_field_literal,expr_param_plain_field}`,
+  30 of 30 red on `882adcd2`, green on all four targets; `docs.md` § Typed meta
 - Rows found during the migration, closed — a reader found in the parse, not the text (`comptime/typeinfo_all.zig` `reads(program)`, cell `modules/typeinfo_all_spelled_in_string`; onze-cli's `start.bp` writes `@TypeInfo.all` in its generated source); a fn-typed local called at its current binding on erlang (`codegen/erlang.zig`, cell `run/fn_local_rebound_call`, `02-erlang`'s half; jhonstart's `jhRegisterRoutes` binds `val v` in each of its four loops)
 
 ## Open
@@ -97,6 +117,10 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 - [ ] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
 - [ ] a member's / associated type's diagnostic is located past the file's last line (member source
       placed after the module's lines) and names `City__Columns`, not `City.Columns`
+- [ ] a decorator imported from another module whose body builds a record private to its module fails
+      at the evaluator (`call to undefined function Entity/1`): `block_eval.typesReached` finds an imported
+      decorator's types through the export registry only — string meta and typed meta alike (found by
+      step 8; `01-checker` step 21 owns `block_eval.zig`)
 
 ### Step 7 — references, not strings (decision 281)
 
@@ -110,16 +134,30 @@ the call —; `Decl.addMeta(value: T)` for what repeats; read `@typeInfo(X).meta
 `@typeInfo(X).metaAll(T) -> T[]`, and `Declared.meta(T)` in `@TypeInfo.all`'s answer. Comptime only
 (280 (0)). `setMeta(key: string, value: string)` and `.meta.<decorator>.<key>` go.
 
-- [ ] `builtins.d.bp`: `setMeta`, `addMeta` on `Decl`; `meta`, `metaAll` on `TypeInfo<T>` and `Declared<T>`
-      (`comptime t: type`, 280); `DeclaredMeta(key, value)` gone
-- [ ] `run/meta_typed` — `#[entity("cities")]` sets `Entity(table: "cities")`, `meta(Entity)?.table ==
+Built (see § Done): the typed surface, its reads, the catalogue's and 370 (1)'s `@Expr<T>` fields. The
+string form stands beside it until the last box: rakun's sites wait on `04-rakun/128` (decision 339),
+and `Declared.meta` / `TypeInfo<T>.meta` stay `DeclaredMeta[]` fields until then (the typed reads are
+calls the checker answers, so the two coexist).
+
+- [x] `builtins.d.bp`: `setMeta(v)`, `addMeta` on `Decl`; `meta(T)`, `metaAll(T)` on `@typeInfo(X)` and
+      on a `Declared<T>` entry, answered by the checker (`TypeInfo<T>`'s and `Declared<T>`'s `meta` fields
+      keep the string form until the box below)
+- [x] `run/meta_typed` — `#[entity("cities")]` sets `Entity(table: "cities")`, `meta(Entity)?.table ==
       "cities"`; two `#[index]` add two `Index`, `metaAll(Index).length == 2`; `meta(Other)` is `null`
-- [ ] `reject/meta_twice` — two `setMeta(Entity(…))` on one declaration, at the second
-- [ ] a meta record may hold `@Expr<T>` fields (370 (1)): `decl.addMeta(Check(message: message, rule:
+- [x] `reject/meta_twice` — two `setMeta(Entity(…))` on one declaration, at the second (annotation)
+- [x] a meta record may hold `@Expr<T>` fields (370 (1)): `decl.addMeta(Check(message: message, rule:
       rule))` built in the reading program with each expression spliced where it was written —
       `run/meta_expr_field` (the reader calls `rule` and evaluates `message` at run time, on the four
       targets)
-- [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`)
+- [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`
+      and `#[client]`), then `setMeta(key, value)`, `.meta.<decorator>.<key>` and `DeclaredMeta(key,
+      value)` gone (`Declared.meta` / `TypeInfo<T>.meta` the typed reads only)
+- [ ] a meta field of a record type, a `Type.Field<T>` (364 (2)'s data family) or a tuple: refused
+      today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
+      reader's scope (an `@Expr<T>` field carries such a value as written)
+- [ ] questions `130-s8-a`…`130-s8-e` (decisions-pending): one type set and added, `@Expr` values read
+      in another module, a `.hooks` reader's typed meta read in its module, a generic record through a
+      catalogue entry, a typed member reading its type's meta (`@typeInfo(T)` — 125 step 7's route)
 
 ### Step 9 — a tag is a `@Decl` (decision 302)
 
