@@ -127,15 +127,14 @@ pub default fn Card(props: type(title: string)) -> View {
 {case status { Draft -> <em>draft</em>; _ -> <span>live</span>; }}
 ```
 
-**Tag annotations** (278; **since 302 the same thing as a declaration's decorator**: `fn name(comptime
-decl: @Decl, …)`, no return, typed meta through `decl` — the text below reads "return type" as "meta
-the annotation records", and `comptime tag: Tag` as `comptime decl: @Decl` of kind `Element`). Astro's `prefix:name` directives are not in the grammar. `#[name(args)]`
-inside a tag resolves `name` in the caller's scope (hygiene below; unbound = the ordinary unbound-name
-error at its span, never a rendered attribute) and `html` calls it at comptime with typed arguments.
-Its first parameter says what it receives: `comptime decl: @Decl` — the tag's component (written on
-an element: error at the annotation, "`div` is an element"); `comptime tag: Tag` — any tag (`Tag`,
-declared by this front: the tag's name and, for a component, its `@Decl`). `html` acts on the
-**return type**, never the name: `RawBody` (this front), `isInline`'s style meta (119; `isGlobal` and `defineVars` went with 338), `Hydrate` / `Defer`
+**Tag annotations** (278, 302: the same thing as a declaration's decorator — `fn name(comptime decl:
+@Decl, …)`, no return, typed meta through `decl`). Astro's `prefix:name` directives are not in the
+grammar. `#[name(args)]` inside a tag resolves `name` in the caller's scope (hygiene below; unbound = the
+ordinary unbound-name error at its span, never a rendered attribute) and `html` calls it at comptime with
+typed arguments. `decl.kind` says what it receives — `Element` (a native tag: `decl.name`, its static
+attributes) or `Component` (`decl.component` the component's own `@Decl`); an annotation that takes only
+one refuses the other at the annotation ("`div` is an element"). `html` reads the **meta the annotation
+records**, by type, never the name: `RawBody` (this front), `isInline`'s style meta (119; `isGlobal` and `defineVars` went with 338), `Hydrate` / `Defer`
 (120), the transition types (126) — each arm appended by its front —, `void` a check only; any other
 type is an error at the annotation, two results of one type on one tag an error at the second.
 Values are not annotations: `set:html={s}` is `{raw(s)}`, `set:text={s}` is `{s}`, `class:list` is

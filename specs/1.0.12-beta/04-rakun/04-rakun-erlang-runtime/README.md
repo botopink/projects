@@ -72,7 +72,7 @@ logging `after()` failures through the core's logger and exposing headers and ra
 
 ### Step 4 — Context (R06-1 … R06-7)
 
-- [ ] `context_test.bp`: `ctx.beanNames()` equals `rkScannedNames()` filtered to `#[managed]` types, order-insensitive, on `fixtures/tree`
+- [ ] `context_test.bp`: `ctx.beanNames()` equals `rkScannedNames()` filtered to `#[component]` types (318), order-insensitive, on `fixtures/tree`
 - [ ] two unqualified `#[provides]` of one type fail the build at the entry point's bean table, naming both functions (343; `fixtures/phmissing` gains the case)
 - [ ] `#[postConstruct]` runs after construction, before `eagerInit` returns — a hook recording the eager pass's state
 - [ ] `#[scope("request")]` on a constructor-injected factory refused at compile time naming the injection site — where the entry point builds the bean table, which sees both declarations (343, 347: a method's `@Decl` has no `owner`)
