@@ -165,6 +165,12 @@ fn Button() -> @Component<Element> {
       `run/context_default`), a type with no declaration refused at the read (`reject/context_undeclared_type`);
       `comptime createContext(…)` refuses a run-time argument; the codemod over `tests/language` (20 cells),
       `styled`, jhonstart
+- [ ] dependency injection over contexts (416): `createContext(value, Behavior)` keys the context by the behavior,
+      the value checked to implement it (`reject/context_behavior_not_implemented`); `use inject(T)` builds the record
+      `T` from the context of each field's type — provided above, else the declared default, else the field's default,
+      else an error at build naming the field (`reject/inject_field_undeclared`); a behavior refused
+      (`reject/inject_behavior`) — `run/inject_record`, `run/inject_behavior_keyed`, `run/inject_test_root_fake`
+      (a test's root providing a fake) on the four targets; `docs.md` § Contexts
 - [ ] a context read known at build (379 (6)): every `createContext` that can reach it of build and of one
       value, or none — computed from the hooks list from the roots; the reading function then `Any` with build
       arguments — `run/context_read_at_build` (`corDoTema()` a constant when `Theme` is never provided),
