@@ -143,7 +143,7 @@ pub val code = styled """
 | run-time holes | a hole whose value is known at build is written into the rule; one known only at render becomes `var(--s-<n>)` in the rule and `style="--s-<n>: …"` on the template's root element, escaped by `escape.css` (a `97-std-dedupe` row) — Astro's `define:vars`, with no annotation |
 | the `StyledContext` provider | `use provide(StyledContext, …)` at the render's root: styled components computed at render write to that sheet (352, 354); at a prerender, the build's sheet |
 | the sink | writes the render's one `styled` sheet — emilia's layers, then scoped styles in render order — in the head and each boundary fill (step 3), after linked sheets; payload key `s` (`contracts.md` § 6a) |
-| `#[styled(comptime decl: @Decl, comptime ..items: Styleable[])]` | records `ClassName(names: […])` (302); takes emilia's tokens (`Token implement Styleable`) and the application's components alike: `<button #[styled(btn, .Pad.All.4)]>` (301's spelling; moved from `jhonstart-emilia`, step 4) |
+| `#[styled(comptime decl: @Decl, comptime ..items: Styleable[])]` | records `ClassName(names: […])` (302); takes the application's `styled` components only — emilia's tokens reach a tag through emilia's own `#[emilia(…)]` (369), whose meta, a type `styled` declares, `html` reads beside `ClassName`: `<button #[styled(btn)] #[emilia(.Pad.All.4)]>` (step 4) |
 
 **A component activates its style with `use`** (338): `html` reads the `use` of a scoped style in
 the function's hooks and writes `data-s="<id>"` on every element that function's template writes; a
@@ -247,24 +247,32 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] a boundary's fill carries the scoped sheet of a component the shell did not render, as
       emilia's flush does today (`jhonstart-emilia/src/root.bp:95`)
 
-### Step 4 — `#[styled(..)]` in `jhonstart-styled` (decisions 301, 338)
+### Step 4 — `#[styled(..)]` in `jhonstart-styled`, and the reader of `#[emilia(..)]`'s meta (decisions 301, 338, 369)
 
 ```bpp
-<h1 #[styled(.Text.Size.X3xl, .Text.Bold, .Color.Gray.900)]>{post.title}</h1>
-<button #[styled(btn, .Pad.All.4)]>Salvar</button>
+<h1 #[emilia(.Text.Size.X3xl, .Text.Bold, .Color.Gray.900)]>{post.title}</h1>
+<button #[styled(btn)] #[emilia(.Pad.All.4)]>Salvar</button>
 ```
+
+`#[emilia(…)]` is emilia's (`..tokens: Token[]`, so a leading-dot path resolves against `Token`; under
+`Styleable[]` it names no enum) and runs at build (369); this step owns the meta it records — a type
+`styled` declares, holding the class and the rules — and its reader in jhonstart.
 
 - [ ] `jhonstart-styled` declares `pub fn styled(comptime decl: @Decl, comptime ..items: Styleable[])`
       — no return (302): it records `decl.addMeta(ClassName(names: […]))`; `ClassName(names:
       string[])` is jhonstart's (the core; `html` merges every `ClassName` meta into the tag's `class`,
       after a static `class`); `html` names no emilia or `styled` (113)
+- [ ] `styled` declares the meta type `#[emilia(…)]` records (the class and its rules, 369); `html`
+      reads it beside `ClassName` and merges the class into the tag's `class` in annotation order; the
+      sink writes its rules in emilia's layer; jhonstart names no emilia (113)
 - [ ] the item list is comptime (280): its order is the class's identity (`contracts.md` § 4) by
       construction; class and rules computed at build once `hashHex` is std's pure
       `hash.contentHash` (`06-emilia/34` step 1) — this makes `68-d` (the bundler's styleMap probe)
       moot (301)
 - [ ] a token naming a cleared breakpoint refused at compile time (300, now `styled`'s)
-- [ ] `class={emilia(tokens)}` leaves markup: refused in a template, naming `#[styled(…)]`; a style
-      chosen at run time picks among annotated branches (`{if (urgent) { <p #[styled(.Color.Red.600)]>…</p> } else { … }}`)
+- [ ] `class={emilia(tokens)}` leaves markup: refused in a template, naming `#[emilia(…)]` (369: emilia
+      has no run-time entry point); a style chosen at run time picks among annotated branches
+      (`{if (urgent) { <p #[emilia(.Color.Red.600)]>…</p> } else { … }}`)
 
 ### Step 5 — one sheet; `jhonstart-emilia` deleted (after `06-emilia/34` step 5)
 
@@ -274,7 +282,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] `modules/jhonstart-emilia/**` deleted — its flush plugin (`root.bp:95`), its annotation (moved
       in step 4), its bridge test (the contract-4 literal `e_f51c2501`, 367, is asserted by
       `jhonstart-styled`'s test); onze registers `jhonstart-styled`'s sink, exported as `styledSink()` (`contracts.md` § 6a)
-- [ ] an application using `#[styled]` without `"bpp".style` renders emilia's sheet (the annotation
+- [ ] an application using `#[emilia]` / `#[styled]` without `"bpp".style` renders emilia's sheet (the annotation
       is an ordinary import; the key is only the style section's)
 
 ## Done
@@ -332,7 +340,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Answered: `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Answered: `34-a` → 369 (`#[emilia(…)]`'s meta and its reader, step 4), `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
 Open: `119-f` (a `val` holding a literal computed at render), `119-g` (a provider lost below a host-called `@Component` thunk).
 
 **Gate:** standard (fronts.md § Gate), plus:

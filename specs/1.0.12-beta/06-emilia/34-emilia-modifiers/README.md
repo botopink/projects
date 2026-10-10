@@ -4,7 +4,7 @@
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
 step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes done; its
-other seven follow 366 (34-a, provisional), 367 (34-b) and 368 (34-c), and wait on 119 step 1 box 4
+other seven follow 369 (34-a: emilia at compile time), 367 (34-b) and 368 (34-c), and wait on 119 step 1 box 4
 (`StyledContext`) and the source-order reader (368)
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
@@ -16,7 +16,7 @@ reworded by step 1 (no code uses `[name]={`).
 **Owns:** `repository/emilia/modules/emilia/src/**` (all eleven files; edited blocks named per step),
 `modules/emilia/AGENTS.md`, `docs.md`,
 `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` · this directory · step 5
-only, the carve-out of 366 and 367 (the `await` on emilia's entry points and the re-recorded class):
+only, the carve-out of 369 and 367 (emilia's run-time calls moved to `comptime` / `#[emilia]`, and the re-recorded class):
 `repository/jhonstart/modules/jhonstart-emilia/{src/root.bp,test/bridge_test.bp}`, onze 68's
 `styleRule` reader and bundle test, `onze-cli`, `examples/emilia-card/**` and the other eleven
 examples' `src/main.bp`
@@ -33,8 +33,9 @@ the contract-4 fixture re-derived once in step 5, `e_f51c2501`;
 `modules/` names no other library (decision 114); five families render what Tailwind 4.3.2 renders;
 the theme is typed and declared once with `#[theme]` — the mechanism `styled`'s, the Tailwind values
 emilia's `defaultTheme()` —, a token naming a cleared breakpoint a compile error (decisions 300, 338);
-the four unplaced feature rows declared or stated as deviations (05emilia-n); emilia is a series of
-components built with `styled`, its families `styledProperty`s, its own sheet model gone (338).
+the four unplaced feature rows declared or stated as deviations (05emilia-n); emilia runs at compile
+time — a tag decorator `#[emilia(…)]` over typed tokens, its families compile-time functions written
+with `styled`'s literal, its own sheet model gone (338, 369).
 `emilia`: 734 tests on both rows; the five families pinned by inline tests in their blocks and by
 the four owned examples.
 
@@ -99,26 +100,28 @@ Order (decision 350: the library on `styled` first): step 5 → step 2 → step 
 ### Step 5 — emilia over `styled` — first (decisions 338, 350; after `08-bpp/119` step 1)
 
 emilia is the third layer: `css` the base for building CSS, `styled` the base for building CSS
-components, emilia a series of components built with `styled`, applied to a tag with
-`jhonstart-styled`'s `#[styled(…)]` (`<h1 #[styled(.Text.Bold)]>`, 301 — the template side is
-`08-bpp/119` step 4). emilia's own sheet model — `Rule`, `Sheet`, `Variant`, `renderRule`,
+components, emilia a compile-time library written with `styled`'s literal, applied to a tag with its
+own decorator `#[emilia(…)]` (`<h1 #[emilia(.Text.Bold)]>`, 369: the parameter is `..tokens: Token[]`,
+so the leading-dot path resolves — the reader of its meta is `08-bpp/119` step 4). emilia's own sheet model — `Rule`, `Sheet`, `Variant`, `renderRule`,
 `renderDocument` (`output.bp:44-593`) and the per-render store `flush()` drains
-(`emilia.bp:227-235`) — is what `css` and `styled` now hold. Each family is a `styledProperty`, the
+(`emilia.bp:227-235`) — is what `css` and `styled` now hold. Each family is a compile-time function
+answering `StyledProperty` (never a `@Component`, 369), written with the `styledProperty` literal; the
 ladder of `spacing.bp` becomes the literal's `--spacing()`, and a variant wraps declarations in a
 `styled`:
 
 ```bp
-import styled, {styledProperty, StyledView, StyledPropertyView, Styleable} from "styled";
+import styled, {styledProperty, Styled, StyledProperty} from "styled";
 
 // Tailwind: @utility p-*  { padding: --spacing(--value(integer)); }
-fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
+fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
 // Tailwind: @utility px-* { padding-inline: --spacing(--value(integer)); }
-fn padX(n: i32) -> StyledPropertyView { return styledProperty "padding-inline: --spacing(${n});"; }
-fn padAllHalf(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n}.5);"; }
+fn padX(n: i32) -> StyledProperty { return styledProperty "padding-inline: --spacing(${n});"; }
+fn padAllHalf(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n}.5);"; }
 
-fn hover(inner: StyledPropertyView) -> StyledView { return styled "&:hover { ${inner} }"; }
+fn hover(inner: StyledProperty) -> Styled { return styled "&:hover { ${inner} }"; }
 
-Token implement Styleable { fn toStyled(self: Self) -> StyledView { … } }   // each token → its component
+// the tag decorator: runs at build, records the class and the rules as `styled`'s meta (369)
+pub fn emilia(comptime decl: @Decl, comptime ..tokens: Token[]) { … }
 ```
 
 emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 338).
@@ -132,11 +135,14 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       a token list is the composition of its tokens' components in order, its order the class's
       identity — `[.Bg.White, Token.Focus([.Bg.Color.Gray.__100]), .Pad.All.__4]` renders three rules,
       the `padding` after the `:focus` (368, through `styled`'s source-order reader)
-- [ ] `Token implement Styleable`
-- [ ] the entry points above `tokenToSheet` (`tokensToSheet`, `styleRule`, `emiliaWith`, `emilia`,
-      `className`, `styled`, `styledWith`, `cls`, `clsWith`, `named`, `assertAsciiBody`) answer
-      `@Task<…>`, and every consumer `await`s them in this landing — `jhonstart-emilia`, onze 68's
-      reader, `onze-cli`, the examples (366, provisional)
+- [ ] `#[emilia(…)]`: `pub fn emilia(comptime decl: @Decl, comptime ..tokens: Token[])`, no return
+      (302) — `<div #[emilia(.Pad.All.4, .Bg.White)]>` resolves the dot paths against `Token`, computes
+      the class and the rules at build and records them as `styled`'s meta (369, the type named by
+      `08-bpp/119` step 4); no family answers a `@Component`, no function of emilia answers `@Task`
+- [ ] no run-time entry point: `emilia(tokens)`, `emiliaWith`, `className`, emilia's `styled` /
+      `styledWith`, `cls`, `clsWith`, `named` leave the run-time API; every caller moves in this
+      landing — `jhonstart-emilia` (until `08-bpp/119` step 5), onze 68's reader, `onze-cli`, the
+      examples — to `#[emilia(…)]` in a template or `comptime className(…)` elsewhere (369)
 - [ ] `output.bp`'s sheet model and codec (`Rule`, `Sheet`, `encodeSheet`) deleted; `flush()` writes the
       document frame — `<style>`, the `@layer …;` statement, `:root`, the base rules, keyframes, the
       `@property` fallback, the options — around `styled`'s `Sheet.render()`, byte-identical to today's
@@ -154,14 +160,10 @@ Waits on (measured on botopink-lang `0c544566`, styled `3ac4a07`):
 - `08-bpp/119` step 1's source-order reader (368) — `styled`'s reader writes a block's declarations
   before its nested rules today, so a list with a selector variant between two plain tokens would
   change bytes (box 3, the CSS of box 6).
-- the gap row "A `@Component` value's field is read without `await`" — worth closing in `01-checker`
-  first (366), so a missed `await` is refused at the read rather than found red on commonJS.
+- `08-bpp/119` step 4's meta type — the `styled` type `#[emilia]` records and jhonstart's `html`
+  reads (369; box 4).
 - `08-bpp/119` step 1 box 4 — `styled` declares no `StyledContext` (`StyledBase` is still the phantom),
   so the per-render store has nothing to register through (box 5).
-- `Token implement Styleable` is written in `Token`'s own body (`pub type Token implement Styleable
-  { … }` compiles; `Impl implement Styleable for Token` in another module does not make `Token`
-  conform), so the dispatcher `toStyled()` reaches must be importable from `tokens.bp` — the families
-  move beside `Token` or `Token` beside them (box 4, with box 1).
 
 ### Step 2 — the five families to upstream's form, in `styled`'s literal (decision 350; after step 5)
 
@@ -198,7 +200,7 @@ pub val appTheme = comptime extendTheme(defaultTheme(), [
 ]);
 ```
 ```bpp
-<div #[styled(.Lg(.Pad.All.4))]>…</div>        // compile error: breakpoint lg was cleared in the theme
+<div #[emilia(.Lg(.Pad.All.4))]>…</div>        // compile error: breakpoint lg was cleared in the theme
 ```
 
 The theme is always declared (358): an application with no `#[theme]` is a compile error at its
@@ -210,7 +212,7 @@ first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; em
       own `extendTheme`, `#("--…", "…")` pairs and `""`-as-clear leave its API
 - [ ] a token's breakpoint, colour or spacing resolves through the app's `#[theme]` (`styled`'s), so a
       token naming a cleared or absent breakpoint (`Lg` after `clear(.Breakpoint, "lg")`) is refused at
-      compile time when the token list is comptime-known (every `#[styled(…)]` annotation, 301, 338),
+      compile time when the token list is comptime-known (every `#[emilia(…)]` annotation, 301, 338, 369),
       naming the theme's line; the run-time refusal stays only for a list built at run time
 - [ ] an emilia token reading an entry the declared theme lacks is a compile error at the token
       (358); `flush()` renders with the declared theme; every example and test program declares

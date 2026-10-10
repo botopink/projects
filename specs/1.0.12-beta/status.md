@@ -67,7 +67,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 298 (typed meta keyed by type: `setMeta(v)`, `meta(T)`) — 130 s8 · 26 s8 · rakun 08
 - [ ] decision 299 (`#[config("…")]` typed records; 03r-b reversed) — rakun 04 s7 · 08 · 13 · 15 · 88
 - [ ] decision 300 (typed theme entries, one `#[theme]`; the mechanism `styled`'s, the values emilia's — 338) — 119 s1 · 34 s3
-- [ ] decision 301 (`#[styled(..)]`, `jhonstart-styled`'s since 338) — 119 s4 · 53 s12 · after 34 s1 for the build-time sheet
+- [ ] decision 301 (`#[styled(..)]`, `jhonstart-styled`'s since 338; emilia's tokens through `#[emilia(..)]` since 369) — 119 s4 · 53 s12 · after 34 s1 for the build-time sheet
 - [ ] decision 338 (CSS in three layers — the repositories `css` and `styled`, emilia over `styled`; `jhonstart-styled`, `use` of a scoped style; `"bpp": {"default", "style"}`; the header with no opening `---` and one `--- style ---` section; `jhonstart-emilia` deleted) — 119 s1–5 · 116 s1, s2, s5, s6 · 34 s3, s5 · 118 (`<style>` refusal) · 124 (scaffold manifest)
 - [ ] decision 354 (`@Component<R>`; contexts — `Context<T>`, `use provide` / `use context`, only in a render tree, checked at build through `Decl.hooks`, stage markers, the island seam, the hidden map; answers 134-f) — 134 s6 · 01-checker · 02–05 · 18 · codemod · 26 · rakun 128 · 119 s1 box 4 · 120 · 34 s5
 - [ ] decision 357 (rules of hooks: `use` only at a `@Component` body's top level — never in `if`, a loop, a lambda, `try`, after an early return; every `use` runs on every call, its arguments always given) — 134 s6 · 01-checker · 24 (guide § use) · every library body with a `use`
@@ -203,7 +203,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
-- [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes done (`AGENTS.md`, the grep), the other seven follow 366 (34-a, provisional) · 367 (34-b) · 368 (34-c) and wait on 119 s1 box 4 and the source-order reader (368) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
+- [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes done (`AGENTS.md`, the grep), the other seven follow 369 (34-a: emilia at compile time, `#[emilia(…)]`) · 367 (34-b) · 368 (34-c) and wait on 119 s1 box 4 and the source-order reader (368) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
 

@@ -64,7 +64,7 @@ Built as recommended; full rows in [`decisions-pending.md`](../decisions-pending
 choices / 07-onze: `49-a` · `49-c` · `49-e`
 (closes 49 step 2's wording box) · `50-a` (amended: `start` calls 71's `bin/onze`; closes 50) ·
 `52-a` (closes 51 step 4) · `53-a` · `68-a` · `68-d` (moot once `06-emilia/34` step 1 and 119 step 4
-land — 301's `#[styled]` tokens are comptime, class and rule computed at build; holds until then) ·
+land — emilia's `#[emilia]` tokens are comptime (301, 369), class and rule computed at build; holds until then) ·
 `69-a`. `68-c` closed (280, 281): starters and client props found by type at comptime
 (`#[clientProps]`, 120 step 6), never by name.
 

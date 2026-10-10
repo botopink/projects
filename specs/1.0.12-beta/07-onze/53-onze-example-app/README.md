@@ -130,12 +130,12 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
       layout reads `use cookie(sessionCookie)` (no `pairValue(jar, "session")`), the login action
       and the logout action write and clear it with `use setCookie` / `use clearCookie` (295)
 
-### Step 12 — emilia through `#[styled(…)]` (decision 301)
+### Step 12 — emilia through `#[emilia(…)]` (decisions 301, 369)
 
 - [ ] every `class={emilia(xTokens())}` in the examples (`post_card.bpp`, the layouts, `error.bpp`,
-      `not-found.bpp`, the blog pages) becomes `#[styled(…)]` with the tokens inline; the `fn
+      `not-found.bpp`, the blog pages) becomes `#[emilia(…)]` with the tokens inline; the `fn
       xTokens() -> Token[]` helpers go; `classList(["onze-font-inter", emilia(…)])` becomes
-      `class="onze-font-inter" #[styled(…)]`
+      `class="onze-font-inter" #[emilia(…)]` (369: emilia has no run-time entry point)
 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` green for `blog`, `onze-test`; `serve.sh` exit 0

@@ -184,7 +184,8 @@ meta of each `setMeta` type per tag; `addMeta` types repeat.
 | `#[transitionAnimate(a)]` | `transition:animate` | `TransitionAnimate` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersist(key?)]` | `transition:persist` | `TransitionPersist` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersistProps]` | `transition:persist-props` | `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
-| `#[styled(..items)]` | (none — emilia's tokens, the app's `styled` components) | `ClassName` (`addMeta`) | `jhonstart-styled` | 119 step 4 (301, 338) |
+| `#[styled(..items)]` | (none — the app's `styled` components) | `ClassName` (`addMeta`) | `jhonstart-styled` | 119 step 4 (301, 338) |
+| `#[emilia(..tokens)]` | (none — emilia's tokens, `Token[]`, run at build) | `styled`'s class meta (`addMeta`), read by `html` | `emilia` | `06-emilia/34` step 5 · 119 step 4 (369) |
 | `#[reload]` | `data-astro-reload` | `LinkReload` | `transitions.bp` | 126 step 2 (292) |
 | `#[history(h)]` | `data-astro-history` | `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
 
