@@ -62,12 +62,14 @@ val doc = markdown.parse(body);                     // Heading, Paragraph, Link,
 
 ### Step 3 — `markdown`
 
-- [ ] onze-content's Markdown reader moves to `repository/markdown`, answering a tree of its own
+- [x] onze-content's Markdown reader moves to `repository/markdown`, answering a tree of its own
       (`Heading`, `Paragraph`, `Emphasis`, `Strong`, `Code`, `CodeBlock`, `Link`, `Image`, `List`,
-      `Quote`, …); it names no framework (113)
-- [ ] onze-content maps the tree to jhonstart's `Element` (a node rendered by a component of the page's
-      own where the page asks); onze-content's 714 tests green on both rows
-- [ ] `markdown`'s one consumer is the maintainer's exception to 115, stated in its `AGENTS.md` (396 (4))
+      `Quote`, …); it names no framework (113); its fixtures and tests move with it (690, both rows)
+- [ ] onze-content maps the tree to jhonstart's `Element` (`element.toElement`, built; onze-content
+      depends on `markdown` by git, 242; 31 tests left in onze-content, 721 with the library's, both rows) —
+      **open:** "a node rendered by a component of the page's own where the page asks" (the hook's form is a
+      question, `decisions-pending.md`)
+- [x] `markdown`'s one consumer is the maintainer's exception to 115, stated in its `AGENTS.md` (396 (4))
 
 **Gate:** standard (fronts.md § Gate) + every consumer's suite green on both rows after its import
 commit · `grep -rn "pub mod json" repository/botopink-lang/libs/std/src/root.bp` empty
