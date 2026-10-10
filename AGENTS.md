@@ -73,7 +73,26 @@ submodule first, then commit the submodule bump in the meta repo.
 ### Which model a thread runs on
 
 A coordinator that spawns a thread (a sub-agent working in its own worktree) picks
-the thread's model by what the thread must decide, not by its size:
+its agent and its model with one rule: **the cheapest that can make every decision the
+thread will meet, one tier up when a wrong decision would slip past the checks.** Ask in
+order:
+
+1. **Agent type.** Only reads and reports (find where, measure, audit) → `Explore`;
+   writes a plan and nothing else → `Plan`; edits or runs anything → `general-purpose`.
+2. **What it must decide.** Something no decision or README fixes — a design, a reading
+   of two decisions against each other, whether to raise a question → `opus`. The
+   prompt and the specs fix every choice, only the code is unknown → `sonnet`. No
+   choice at all, the steps are a script → `haiku`.
+3. **What checks it.** The result is judged by an oracle that cannot be fooled — a
+   cell red on the parent and green after, the cold gate, a library's hooks, a byte
+   comparison — keep the tier from step 2. What it gets wrong would pass every check
+   (a semantic rule, a decision's wording, every backend and every library at once) →
+   one tier up (`haiku` → `sonnet` → `opus` → `fable`).
+4. **On failure.** A thread that fails, or reports a judgement it was not asked to make,
+   is redone one tier up — never the same model twice on the same work. `fable` only
+   when the maintainer asks for it or `opus` failed on the work once.
+
+Applied to the threads this workflow opens:
 
 | Thread | Model |
 |---|---|
