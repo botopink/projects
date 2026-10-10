@@ -16,9 +16,9 @@ implements each decision (`01-compiler/134`'s codemod, `05-jhonstart/26`, `04-ra
 another front's README holds a box to rewrite (§ Hand-offs); the meaning of any decision, question,
 step or acceptance box — a spelling changes, never a rule; the answer to any pending question.
 
-Measured in [`inventory.md`](./inventory.md) (2026-10-10, meta `feat`): 9 families, 282 lines in
-71 spec files besides `decisions-taken.md`, and 25 rows of `decisions-taken.md` that still state
-the text an amendment replaced.
+Measured in [`inventory.md`](./inventory.md) (2026-10-10, meta `feat`; re-measured by step 0 on
+`54c8a60f`): 10 families, 276 lines in 70 spec files besides `decisions-taken.md`, and 26 rows of
+`decisions-taken.md` that still state the text an amendment replaced.
 
 ## Goal
 
@@ -65,15 +65,16 @@ Per-file counts and the patterns are in [`inventory.md`](./inventory.md).
 
 | Family | Decisions | Retired → in force | In code | Lines · files |
 |---|---|---|---|---|
-| **F1** wrapper and contexts | 354, 357, 378, 379 | `@Component<C, R>` → `@Component<R>`; `implement @Context<C>` → `implement @Renderable`; `ElementBase` / `RequestBase` / `StyledBase` as anchors → the root contexts `ElementContext` / `RequestContext` / `StyledContext`; `Context<T>()`, `provide(ctx, v)`, `use context(ctx)`, `context-unbound` → `createContext(value)`, `use provide(ctx)`, `use context(T)`, the declared default | wrapper landed (134 s6 boxes 1, 6); `ElementBase` and `RequestBase` left as phantoms to retire (`jhonstart/src/element.bp:10` by 26, `rakun/src/request_context.bp:94` by 128); 378 / 379 not landed (134 s6) | 74 · 36 |
+| **F1** wrapper and contexts | 354, 357, 378, 379 | `@Component<C, R>` → `@Component<R>`; `implement @Context<C>` → `implement @Renderable`; `ElementBase` / `RequestBase` / `StyledBase` as anchors → the root contexts `ElementContext` / `RequestContext` / `StyledContext`; `Context<T>()`, `provide(ctx, v)`, `use context(ctx)`, `context-unbound` → `createContext(value)`, `use provide(ctx)`, `use context(T)`, the declared default | wrapper landed (134 s6 boxes 1, 6); `ElementBase` and `RequestBase` left as phantoms to retire (`jhonstart/src/element.bp:10` by 26, `rakun/src/request_context.bp:94` by 128); 378 / 379 not landed (134 s6) | 76 · 36 |
 | **F2** node type | 223 | `Children`, `JhonstartNode` → `Node` | partly: the core declares `Node` (`node.bp`, 118 s6) and the track's examples write it; `element.bp` / `elements.bp` still take `Children` (118's hand-off to `05-jhonstart`) | 14 · 7 |
-| **F3** request locals | 295, 296, 354 | `LocalKey<T>(name)`, `Local<T>()`, `use setLocal(…)` → cardume's `atom(…)`, `use atomSetter(…)`; the page reads `use local(atom)` | not landed (136, 123) | 20 · 8 |
+| **F3** request locals | 295, 296, 354 | `LocalKey<T>(name)`, `Local<T>()`, `use setLocal(…)` → cardume's `atom(…)`, `use atomSetter(…)`; the page reads `use local(atom)` | not landed (136, 123) | 19 · 7 |
 | **F4** tag annotation | 302, 364 | `comptime tag: Tag`, "`html` acts on the return type" → `comptime decl: @Decl`, typed meta | partly (130 s9) | 2 · 1 |
-| **F5** styles | 338, 361, 367, 369, 381 | `StyledPropertyView` → `StyledProperty`; `styledWith` / `cls` / `clsWith` → `#[emilia(…)]`; `#[styled(.Token…)]` for emilia's tokens → `#[emilia(…)]`; `#[htmlPrelude]` / `#[stylePrelude]` → `#[bpp.htmlPrelude]` / `#[bpp.stylePrelude]`; `encodeSheet` → gone | not landed (119, 34) | 28 · 13 |
+| **F5** styles | 338, 361, 367, 369, 381, 382 | `StyledPropertyView` → `StyledProperty`; `styledWith` / `cls` / `clsWith` → `#[emilia(…)]`; `#[styled(.Token…)]` for emilia's tokens → `#[emilia(…)]`; `#[htmlPrelude]` / `#[stylePrelude]` → `#[bpp.htmlPrelude]` / `#[bpp.stylePrelude]`; `encodeSheet` → gone; `..tokens: Token[]` → `..tokens: @Expr<Token[]>` | not landed (119, 34) | 21 · 10 |
 | **F6** validation and emit | 306, 327, 373 | `#[schema]` → `#[validated]`; `schemaOfX()`, `parseX(doc)` → `X.parse(doc)`, `X.jsonSchema()`; no new `@emit` site | not landed (125 s12, 130) | 64 · 18 |
 | **F7** std | 330, 336 | `json.stringify` / `json.parse` → `json.encode` / `json.decode`; `result.map(r, f)` → `r.map(f)` | 336 not landed (97 s15) | 5 · 2 |
 | **F8** bracket attribute | 118 step 1 (189) | `[name]={expr}` → `name={expr}` | not landed (118 s1) | 17 · 8 |
 | **F9** rakun's annotations | 234, 242, 254, 299, 318, 324 | `#[restController]`, `#[configuration]`, `#[bean]`, `#[httpExchange]`, `#[getExchange]`, `#[streamListener]`, `#[listener]` → 318's one decorator per role; `#[value("…")]`, `rkProp*` → 299's typed `#[config]` record; `__rkMake_<T>` → no generated name | not landed (the rakun fronts) | 61 · 21 |
+| **F10** diagnostic codes | 384, 385 | `decorator-member-fn-imported-name`, `typeinfo-meta-expr-elsewhere` → gone (a name resolves where it was written) | not landed (01 s35, 130 s8) | 5 · 2 |
 
 Expected split, from reading samples of each family (step 0 measures it): F1, F2, F3 and F5 are
 mostly class S in prose and examples; F6, F8 and F9 are mostly class R, the open steps that remove
@@ -112,7 +113,7 @@ the amendment; a row fully replaced is one line". 25 rows still state the replac
 `**Amended by N:** …`:
 
 193, 200, 270, 276, 277, 280, 284, 285, 295, 296, 300, 301, 302, 338, 351, 352, 353, 354, 355,
-356, 360, 364, 369, 376, 378.
+356, 360, 364, 369, 376, 378 — and 370, amended by 384 after this front was written (26 in all).
 
 Each is rewritten as the rule in force, citing the amendment by number in place, for example 276:
 "`pub type View = @Component<Element>;` (354) …", not "`@Component<ElementBase, Element>` …
@@ -205,6 +206,13 @@ it lists it in `todo.md` as class R.
 | `StyledPropertyView` in `119-bpp-styling/examples/styled-example.bp` | `08-bpp/119`'s box "`StyledPropertyView` gone" |
 | `styledWith` / `cls` / `clsWith` callers | `06-emilia/34` ("every caller moves in this step"); `07-onze/53`'s examples follow 34 |
 | `[name]={expr}` attributes | `08-bpp/118` step 1 |
+| `#[schema]` / `schemaOf…()` in `117-bpp-routing/examples/pagination-example.bp` and `static-paths-example.bp` | `08-bpp/117` step 8 ("`pagination-example.bp`, `static-paths-example.bp` and the two `page.bpp` rewritten") |
+| `#[schema]` / `schemaOf…()` in `121-bpp-content/README.md` § Mechanism, `examples/content-collection-example.bp`, `examples/markdown-example.bp` | `08-bpp/121` step 10 ("`content-collection-example.bp` rewritten", "`markdown-example.bp`'s `Meta` is `#[validated]`") |
+| `#[schema]` / `schemaOf…()` / `actionRef("…", schemaOf…, schemaOf…)` in `127-bpp-actions/README.md` § Mechanism (today's form) and `examples/typed-action-example.bp` | `08-bpp/127` step 5 ("`Signup` / `Subscribed` in the examples drop `#[schema]`") |
+| `rkProp` / `rkPropInt` imports in `04-rakun/08-rakun-data-sql/examples/*.bp` | `04-rakun/08`'s box "rewritten to decision 281 … and 299 (no `rkProp` / `rkPropInt` import)" |
+| `#[configuration]` / `#[bean]` (318 (3): `#[provides]`) in `04-rakun/13-rakun-http-clients/examples/http-exchange-example.bp` and `19-rakun-test-utilities/examples/controller-test-example.bp` | `04-rakun/04` step 7's box "`#[configuration]`, `#[bean]` … deleted"; 19 step 5 (the example) |
+| `#[httpExchange]` comments in `13-rakun-http-clients/examples/http-exchange-example.bp` | `04-rakun/13`'s box "`#[httpExchange]`, `#[getExchange]` … deleted" |
+| `#[listener]`, `__rkMake_<Template>` in `15-rakun-messaging/examples/order-listeners-example.bp` | `04-rakun/15`'s box "`#[streamListener]` and the type-level `#[listener]` deleted, every site and test rewritten" |
 
 ## Gate
 

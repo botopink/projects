@@ -1,9 +1,17 @@
 # Front 141 — inventory: where each retired spelling is written
 
-Measured 2026-10-10 on the meta `feat`, by [`README.md`](./README.md) § Measure, over every tracked
-`.md` and `.bp` of `specs/1.0.12-beta/` (plus the root `AGENTS.md` and `architecture.md`, which hold
-none), without `decisions-taken.md` (step 1) and without `10-specs/**`. Step 0 re-measures it.
-A line can match two families: the families add up to 285 lines, and 282 distinct lines in 71 files.
+Measured 2026-10-10 on the meta `feat` (re-measured by step 0 on `54c8a60f`), by
+[`README.md`](./README.md) § Measure, over every tracked `.md` and `.bp` of `specs/1.0.12-beta/` (plus
+the root `AGENTS.md` and `architecture.md`, which hold none), without `decisions-taken.md` (step 1)
+and without `10-specs/**`. A line can match two families: F1–F9 add up to 279 lines, and 276
+distinct lines in 70 files; F10 adds 5 lines in two files already counted.
+
+Step 0 narrowed two patterns that matched forms in force: F3's `setLocal` matched `setLocaleCookie`
+(`03-bundled-libs/105`), now `setLocal\b`; F5's `#\[styled\(\.` matched 301's `#[styled(..)]` /
+`#[styled(..items)]` (the application's `styled` components, in force), now `#\[styled\(\.[A-Z]`
+(a token path). F5 gains 382's retired parameter spelling, `..tokens: Token[]` (written only in
+`decisions-taken.md`, step 1). Decisions 384 and 385, taken after this front was written, retire two
+diagnostic codes (family F10); 386 retires no spelling (a namespace-imported decorator now runs).
 
 ## Patterns
 
@@ -15,13 +23,14 @@ table, `\|` is the alternation `|` (escaped for the table).
 |---|---|
 | F1 | `@Component<(ElementBase\|RequestBase\|StyledBase\|C), \|@Context<\|\bElementBase\b\|\bRequestBase\b\|\bStyledBase\b\|Context<[A-Z][A-Za-z]*>\(\)\|@getContext\|context-unbound\|provide\([A-Z][A-Za-z]*Context, \|use context\([A-Z][A-Za-z]*Context\)` |
 | F2 | `\bChildren\b\|JhonstartNode` |
-| F3 | `LocalKey\|\bLocal<\|setLocal` |
+| F3 | `LocalKey\|\bLocal<\|setLocal\b` |
 | F4 | `comptime tag: Tag` |
-| F5 | `StyledPropertyView\|styledWith\|\bclsWith\b\|#\[(htmlPrelude\|stylePrelude)\]\|encodeSheet\|#\[styled\(\.` |
+| F5 | `StyledPropertyView\|styledWith\|\bclsWith\b\|#\[(htmlPrelude\|stylePrelude)\]\|encodeSheet\|#\[styled\(\.[A-Z]\|\.\.tokens: Token\[\]` |
 | F6 | `#\[schema\]\|schemaOf[A-Z]\|@emit\b` |
 | F7 | `json\.(stringify\|parse)\(\|\bresult\.(map\|flatMap\|unwrapOr)\(` |
 | F8 | `\[[a-z-]+\]=\{` |
 | F9 | `#\[(restController\|configuration\|bean\|httpExchange\|getExchange\|streamListener\|listener)\]\|#\[value\(\|rkProp\|__rkMake_` |
+| F10 | `decorator-member-fn-imported-name\|typeinfo-meta-expr-elsewhere` |
 
 ## Lines per file
 
@@ -29,11 +38,11 @@ Path relative to `specs/1.0.12-beta/`, most hits first.
 
 ### F1 — wrapper and contexts (354, 357, 378, 379)
 
-74 lines in 36 files.
+76 lines in 36 files.
 
 | File | Lines |
 |---|---|
-| `01-compiler/134-builtins-declared/README.md` | 15 |
+| `01-compiler/134-builtins-declared/README.md` | 16 |
 | `08-bpp/119-bpp-styling/README.md` | 8 |
 | `09-cardume/136-cardume/README.md` | 6 |
 | `08-bpp/123-bpp-middleware/README.md` | 4 |
@@ -67,7 +76,7 @@ Path relative to `specs/1.0.12-beta/`, most hits first.
 | `08-bpp/127-bpp-actions/examples/typed-action-example.bp` | 1 |
 | `08-bpp/README.md` | 1 |
 | `08-bpp/surface.md` | 1 |
-| `decisions-pending.md` | 1 |
+| `decisions-pending.md` | 2 |
 | `decisoes-pendentes.md` | 1 |
 
 ### F2 — node type (223)
@@ -86,14 +95,13 @@ Path relative to `specs/1.0.12-beta/`, most hits first.
 
 ### F3 — request locals (295, 296, 354)
 
-20 lines in 8 files.
+19 lines in 7 files.
 
 | File | Lines |
 |---|---|
 | `08-bpp/123-bpp-middleware/examples/locals-and-sequence-example.bp` | 7 |
 | `08-bpp/123-bpp-middleware/README.md` | 6 |
 | `09-cardume/136-cardume/README.md` | 2 |
-| `03-bundled-libs/105-i18n/README.md` | 1 |
 | `05-jhonstart/26-jhonstart-router/README.md` | 1 |
 | `decisions-pending.md` | 1 |
 | `decisoes-pendentes.md` | 1 |
@@ -107,25 +115,22 @@ Path relative to `specs/1.0.12-beta/`, most hits first.
 |---|---|
 | `08-bpp/118-bpp-components/README.md` | 2 |
 
-### F5 — styles (338, 361, 367, 369, 381)
+### F5 — styles (338, 361, 367, 369, 381, 382)
 
-28 lines in 13 files.
+21 lines in 10 files.
 
 | File | Lines |
 |---|---|
 | `08-bpp/119-bpp-styling/examples/styled-example.bp` | 5 |
-| `08-bpp/119-bpp-styling/README.md` | 4 |
 | `07-onze/53-onze-example-app/examples/app-layout-example.bp` | 3 |
 | `07-onze/53-onze-example-app/examples/post-card-example.bp` | 3 |
+| `08-bpp/119-bpp-styling/README.md` | 3 |
 | `06-emilia/34-emilia-modifiers/README.md` | 2 |
-| `08-bpp/README.md` | 2 |
-| `language-gaps.md` | 2 |
-| `status.md` | 2 |
 | `02-std-and-packaging/98-packaging-tail/test-helpers.md` | 1 |
-| `05-jhonstart/modules.md` | 1 |
 | `07-onze/53-onze-example-app/acceptance.md` | 1 |
 | `08-bpp/116-bpp-file-format/README.md` | 1 |
 | `08-bpp/surface.md` | 1 |
+| `language-gaps.md` | 1 |
 
 ### F6 — validation and emit (306, 327, 373)
 
@@ -204,10 +209,21 @@ Path relative to `specs/1.0.12-beta/`, most hits first.
 | `04-rakun/README.md` | 1 |
 | `language-gaps.md` | 1 |
 
+### F10 — retired diagnostic codes (384, 385)
+
+5 lines in 2 files; each names the code as what an open box removes or as a `## Done` record (class R
+or H). *In code:* not landed (`01-checker` step 35, `01-compiler/130` step 8).
+
+| File | Lines |
+|---|---|
+| `01-compiler/130-decorator-outputs/README.md` | 3 |
+| `01-compiler/01-checker/README.md` | 2 |
+
 ## `decisions-taken.md` — rows to state as in force (step 1)
 
 Rows that append `**Amended by N:**` to the text it replaced (25): 193, 200, 270, 276, 277, 280,
-284, 285, 295, 296, 300, 301, 302, 338, 351, 352, 353, 354, 355, 356, 360, 364, 369, 376, 378.
+284, 285, 295, 296, 300, 301, 302, 338, 351, 352, 353, 354, 355, 356, 360, 364, 369, 376, 378 — and 370, amended by 384 after this front was written (26 in
+all).
 
 Rows fully replaced, one line each (3): 269, 279, 366. 269's line names 354's `Context<T>` object,
 retired by 379; step 1 checks the other two.
