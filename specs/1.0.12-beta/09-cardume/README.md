@@ -7,7 +7,7 @@ its store and its `use` hooks in a bridge member of its own repository.
 
 | Front | Priority | State | What | Depends on (open) |
 |---|---|---|---|---|
-| [`136-cardume/`](./136-cardume/README.md) | medium | not started · repository scaffolded (0.0.1, the model's surface) | the core; `rakun-cardume` (request store, 295's locals); `jhonstart-cardume` (page store in the browser, shared by islands) | `05-jhonstart/26` · `08-bpp/120` · `03-bundled-libs/125` · `atm-a`, `atm-c`, `atm-d` |
+| [`136-cardume/`](./136-cardume/README.md) | medium | not started · repository scaffolded (0.0.1, the model's surface) | the core; `rakun-cardume` (request store, 295's locals); `jhonstart-cardume` (page store in the browser, shared by islands) | `05-jhonstart/26` · `08-bpp/120` · `03-bundled-libs/125` · `atm-c`, `atm-d` |
 
 **The repository.** `botopink/cardume` is to be created on GitHub (empty) by the maintainer; the
 scaffold (workspace, `modules/cardume`, CI copied from erika) waits to be pushed to its `feat`, then
