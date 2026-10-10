@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**79 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**84 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -58,6 +58,70 @@ Nothing open: 138-a answered (337).
   x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
 - **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
 - **Blocks.** Nothing — built as (a).
+
+#### s35-e · A typed function expression outside a decorator's member
+- **Measured.** Built: decision 370 (2) writes the member as `fn(self: T) -> Violation[] { … }`, which
+  did not parse (`fn(a, b) { … }` took names only). The parser now reads `fn(x: T, …) -> R { … }` (every
+  parameter typed or none) everywhere; the checker admits it only as the second argument of
+  `decl.addMember(name, fn…)` in a decorator's body, and refuses it anywhere else at the `fn`
+  (`fn-expr-typed`, `reject/fn_expr_typed`).
+- **Options.** (a) As built: `val inc = fn(x: i32) -> i32 { return x + 1; };` is `fn-expr-typed`; a lambda
+  takes the types of its position (`val inc: fn(x: i32) -> i32 = { x -> x + 1 };`). (b) A typed function
+  expression is legal everywhere: `val inc = fn(x: i32) -> i32 { return x + 1; };` types `inc` as
+  `fn(i32) -> i32`, the written types checked against the position's.
+- **Recommendation.** (a): one way to type a lambda, and the typed form exists for the one place 370 needs it.
+- **Blocks.** Nothing — built as (a).
+
+#### s35-f · What a member function reads of the decorator's body
+- **Measured.** Built: the member reads the decorator's parameters (each `@Expr<T>` a `T`, its argument
+  spliced where it is read) and what it declares itself; a read of the `@Decl` handle or of a local of the
+  decorator's body is `decorator-member-captures` at the read (`reject/decorator_member_captures`,
+  `reject/decorator_member_captures_handle`). 370 (2) names only the parameters; the 280 examples' member
+  reads `at?.name` and `code`, both parameters.
+- **Options.** (a) As built: `val field = decl.name; decl.addMember("v", fn(self: T) -> string { return
+  field; });` is refused at `field`. (b) A local or handle field known at build and of a data type (a
+  string, a number, a `bool`, a variant, a record, an array of them — 364 (2)'s `.value` family) is spliced
+  as its build value: the member above returns `"Signup"`; a function or a type is refused as in (a).
+  (c) The handle's data fields alone (`decl.name`, `decl.kind`), spliced as literals; every other local
+  refused.
+- **Recommendation.** (a): the member is the program's code and reads only what is handed to it; a value
+  the decorator computes goes through `.value` and a string member, or typed meta.
+- **Blocks.** Nothing — built as (a). A library that derives a member from the declaration's shape
+  (`#[validated]` reading every field's markers) keeps the string form until this is answered.
+
+#### s35-g · Whose scope resolves a name a library decorator's member function writes
+- **Measured.** Built: the rendered member joins the annotated type in the annotated type's module, so a
+  name the member's body or signature writes (`Violation`, a helper) would resolve there — the user's scope,
+  not the library's. For a decorator declared in another module the member is refused at the annotation
+  when it names anything beyond the decorator's parameters, its own locals, primitive types and the
+  decorator's type parameters (`decorator-member-fn-imported-name`,
+  `modules/decorator_member_fn_imported_name`); one that does not is accepted
+  (`modules/decorator_member_fn_import`). A decorator of the same module has one scope and is not refused.
+- **Options.** (a) Decision 112's hygiene for members: each name the library wrote resolves in the
+  decorator's module (bound under an alias no source can spell and imported, as a template's), each
+  argument's names in the annotation's module — `validation`'s member writes `Violation(…)` and reaches
+  `validation`'s `Violation` whatever the user imports. (b) Every name resolves in the annotated type's
+  module: the user imports `Violation` beside `check` (`import {check, Violation} from "validation"`), and
+  a user `Violation` of their own would be captured. (c) As built: such a member is refused; a library
+  member reads only its parameters.
+- **Recommendation.** (a): each name resolves where it was written — the arguments where the annotation
+  wrote them (370 (2)), the library's names in the library (112); no silent capture.
+- **Blocks.** Every library migration to the member channel (125 step 7's `#[check]`, rakun, jhonstart):
+  their members name their own types and helpers.
+
+#### s35-h · Two annotations adding a member of one name
+- **Measured.** Built: a member name is one member (`decorator-member-duplicate` at the second, 216 (1)),
+  for `decl.addMember(name, fn…)` as for the string form. The 280 examples' `#[check(passwordsMatch, …)]`
+  and `#[check(handleFree, …)]` on one `Account` show one `validate` collecting both rules.
+- **Options.** (a) As built: one annotation per member name; two rules on one type are one member written
+  by one decorator, or typed meta (370 (1)) — each `#[check]` records `Check(message, rule)` and one
+  `validate` reads `metaAll(Check)` — once `01-compiler/130` step 8 lands. (b) Members of one name from
+  several annotations compose in annotation order when their signatures agree and they return an array:
+  `validate` returns the concatenation of each member's result. (c) A later member of one name replaces
+  the earlier.
+- **Recommendation.** (a): a decorator adds and never replaces or merges (216 (1)); collection is typed
+  meta's.
+- **Blocks.** 125 step 7's several `#[check]` on one type until `01-compiler/130` step 8.
 
 #### s28-a · An imported source's field default that names a binding of its module (307)
 - **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
@@ -189,6 +253,54 @@ Nothing open: 138-a answered (337).
   declarations.
 - **Recommendation.** (b): the record is `TypeInfo`'s, and an empty list that means "not carried" is a lie.
 - **Blocks.** Nothing for 293.
+
+#### s23-g · Where `Decorator.same` is declared (371's `extend Decorator { … }` does not parse)
+- **Measured.** 371 writes `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` in `builtins.d.bp`. An
+  `extend` is always named (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` is
+  parsed by the drift test (`comptime/builtins.zig` `collectTypes`), and that test holds a builtin type's instance
+  methods inside its declaration. Built (`front/decl-hooks-371-372`): a member of the behavior, mirrored in
+  `comptime.zig`'s `decl_reflection_src` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
+  `a.decorator.same(serverOnly)` reads the same either way.
+- **Options.** (a) As built: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) A named
+  extension: `pub DecoratorIdentity extend Decorator { fn same(self: Self, other: Decorator) -> bool; }`, the drift
+  test taught to read an `extend`'s methods into its target. (c) The parser takes an anonymous `extend Decorator { … }`
+  in `builtins.d.bp` only.
+- **Recommendation.** (a): no exception to the parser for one file, and the drift test already holds it.
+- **Blocks.** Nothing — built as (a).
+
+#### s23-h · A decorator of a project module reached through a namespace (`#[ns.d]`, `ns.d` as a value)
+- **Measured.** After `import {markers};` (a module of the package, not std), `#[markers.tag]` is accepted and
+  `tag`'s body never runs: `pub fn tag(comptime decl: @Decl) { decl.setMeta("k", "ran"); }` on `A`, then
+  `@typeInfo(A).meta.tag.k` is `typeinfo-meta-missing: no decorator set any` (parent binary `90d50ae3` and this
+  branch alike). Std's decorators are registered under `<handle>.<name>` (`infer.zig` `registerStdDecorators`); a
+  project module's are not (`comptime.zig` `resolveImports` binds the namespace's exports only). The annotation's
+  `DeclAnnotation.decorator` does resolve (`annotationDecoratorId`: `markers@@tag`). As a value, `a.decorator.same(
+  markers.serverOnly)` is refused `unbound variable 'markers'` at the namespace, located; 371 says "an alias and a
+  namespace resolved". Built: `same` takes a name, an alias or std's `<handle>.<name>`; `modules/decorator_same`
+  compares through a leaf import.
+- **Options.** (a) A namespace import of a module registers its body-carrying decorators under `<ns>.<name>` as
+  std's are: `#[markers.tag]` runs `tag` (`@typeInfo(A).meta.tag.k` is `"ran"`) and `a.decorator.same(
+  markers.serverOnly)` compiles. (b) `#[ns.d]` of a non-std module refused at the annotation
+  (`decorator-through-namespace: import the decorator by name`), `ns.d` as a `same` argument refused as today —
+  written `import {markers.tag}; #[tag]`. (c) As today: the annotation accepted and not run.
+- **Recommendation.** (a) — 277 and 371 name the namespace form, and an annotation that does not run is refused or
+  run, never accepted silently (decision 67); (b) if the namespace form is not wanted.
+- **Blocks.** 371's namespace half of a `same` argument; `#[ns.d]` for every library decorator.
+
+#### s23-i · A catalogue of a `.hooks` reader read in the reader's own module (372)
+- **Measured.** 372 runs a `.hooks` reader after the module's bodies. `@TypeInfo.all(with: graph)` written in the
+  module of `#[graph] pub fn Page` is answered when the module is re-analysed, from the meta set so far: the parent
+  binary printed `Page 1` (`d.meta.length`), and with the readers moved after the bodies the answer would print
+  `Page 0` — the meta silently missing. Built: refused, `typeinfo-all-hooks-reader` at `graph` in `with:`
+  (`reject/typeinfo_all_hooks_reader`). A catalogue in another module (an entry point — `@TypeInfo.all` readers are
+  analysed after every other module) carries the reader's meta; `@typeInfo(Page).meta.graph.count` in the same module
+  is answered after the reader ran.
+- **Options.** (a) As built: the same-module query refused at the decorator's name. (b) The answer's meta of a
+  same-module reader filled after the reader ran, as a `@typeInfo(X).meta` read is — `@TypeInfo.all(with: graph)`
+  prints `Page 1` in `Page`'s module. (c) A `.hooks` reader's meta never appears in a catalogue entry (`meta: []`
+  everywhere), read only through `@typeInfo(X).meta`.
+- **Recommendation.** (a) until a front needs the same-module catalogue; (b) is the complete answer.
+- **Blocks.** Nothing — built as (a).
 
 #### 14s8-a · How a template reads a hole's build value (355; `01-compiler/14` step 8 box 1)
 - **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built (`front/fourteen-s8`): each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
