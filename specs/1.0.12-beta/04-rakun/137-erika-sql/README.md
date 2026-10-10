@@ -1,12 +1,11 @@
 # Front 137 — erika queries a database: holes, a SQL target, the template annotation
 
 **Priority:** high — rakun-data's repositories (08 step 7) stand on it · **State:** not started
-**Depends on:** decisions 311, 312, 313 · `01-compiler/01-checker` step 29 (step 5 only) · `erk-a`
-(step 2's body form) · nat-d9 (erika's operator names; none of this front's steps waits on it)
+**Depends on:** decisions 311, 312, 313 · `01-compiler/01-checker` step 29 (step 5, and step 2's template method `query`, 397) · nat-d9 (erika's operator names; none of this front's steps waits on it)
 **Owns:** `repository/erika/modules/erika/**` (`src/erika.bp`, its in-file tests, `botopink.json`,
 `src/root.bp`), `repository/erika/{docs.md,examples.md,AGENTS.md}` · `modules/erika-test/**` for the
 helpers its cells need
-**Does not touch:** rakun (`Table<T>` implementing `QuerySource<T>` is 08 step 7's) · the compiler
+**Does not touch:** rakun (`DbContext` implementing `QueryContext` and `#[entity]` recording `QueryTable` are 08 step 7's) · the compiler
 (the annotation form is `01-checker` step 29's) · `examples/erika-linq/**` beyond a new example file
 
 ## Goal
@@ -23,10 +22,11 @@ import {models.User};
 // in memory, as today
 val adults = erika "select * from people where age >= ${min}";
 
-// a database source (QuerySource<T>; rakun-data's Table<T> implements it)
-type Report(users: Table<User>) {
+// a database query on the context (397): QueryContext — rakun-data's DbContext implements it;
+// `User` an entity: its QueryTable meta (#[entity]) gives the table and the columns at build
+type Report(db: DbContext) {
     fn active(self: Self) -> @Result<User[], StoreError> {
-        return erika "select * from User where active = true";        // the source: erk-a
+        return self.db.query "select * from User where active = true";
     }
 }
 
@@ -38,8 +38,8 @@ behavior Users {
 }
 ```
 
-erika names no library (decision 113): the SQL target speaks to its own `QuerySource<T>` behavior and
-never to `#[entity]`, `SqlTemplate` or rakun.
+erika names no library (decision 113): the SQL target speaks to its own `QueryContext` behavior and
+reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397).
 
 ## Open
 
@@ -52,20 +52,21 @@ never to `#[entity]`, `SqlTemplate` or rakun.
       position is a located error
 - [ ] `docs.md` § Known gaps loses "Interpolated queries"; in-file tests on commonJS and erlang
 
-### Step 2 — the `QuerySource<T>` behavior and the SQL target
+### Step 2 — `QueryContext`, `QueryTable` and the SQL target (397)
 
-- [ ] `pub behavior QuerySource<T>` in `erika.bp`: the table name, and running a statement (text and
-      bound parameters) answering `@Result<…, StoreError-like>` — the error type a parameter of the
-      behavior, so erika names no library's error (the exact signature recorded in `docs.md`)
-- [ ] the target is the source's type: an `Array<T>` lowers to the fluent pipeline (today's), a
-      `QuerySource<T>` to SQL text with `$1…$n` parameters in hole order plus the parameter list; any
-      other source is an error at `from`
-- [ ] `from User` names a type, resolved at the call site (`e.lookup`, decision 112: hover and
-      go-to-definition reach `User`); not imported is an error at the token; a field `User` lacks is an
-      error at the field; the table name comes from the source at run time, never from erika
-- [ ] the body form's source per `erk-a` (recommended: the one field of `self` typed `QuerySource<User>`;
-      none or two an error at the query)
-- [ ] cells: the SQL text and parameters a recording `QuerySource<T>` receives, for every clause
+- [ ] `pub behavior QueryContext` in `erika.bp`: running a statement (SQL text and bound parameters) answering
+      `@Result<T[], E>`, the error a parameter of the behavior, so erika names no library's error (the exact
+      signature in `docs.md`); `pub type QueryTable(name: string, columns: QueryColumn[])` and
+      `QueryColumn(field, column)`, the meta a persistence library records on an entity
+- [ ] `query`, erika's template method on every `QueryContext` (397 (3); the template method is
+      `01-checker` step 29's): `self.db.query "select * from User where active = true"`; an `Array<T>`
+      source keeps the in-memory form (`erika "…"`, today's fluent pipeline)
+- [ ] `from User` names a type, resolved at the call site (`e.lookup`, 112): not imported is an error at the
+      token; on a `QueryContext` it reads `@typeInfo(User).meta(QueryTable)` at build — no meta is an error at
+      the query ("`User` is not an entity"), a field `User` lacks an error at the field —, and the SQL text with
+      `$1…$n` parameters in hole order is built at build from the type's table and columns
+- [ ] cells: the SQL text and parameters a recording `QueryContext` receives, for every clause; an entity
+      read through two tables' types on one context
 
 ### Step 3 — the number of rows is written
 

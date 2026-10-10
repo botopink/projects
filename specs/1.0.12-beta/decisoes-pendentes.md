@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 84 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **397**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 83 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **398**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -307,43 +307,6 @@ io.nope.f()                // unbound variable 'io'
   ```
 
 **Recomendação: (a).** (b) só se o diagnóstico nomeando a pasta for desejado. **Bloqueia:** nada.
-
-### erk-a · A fonte de uma consulta `erika "…"` no corpo de um método *(proposta)*
-
-**Trava:** `04-rakun/137` passo 2 (a forma no corpo); a célula da forma no corpo do passo 7 da rakun 08 · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** Pela 312, `from User` nomeia o tipo; uma fonte de banco implementa o `QuerySource<T>` do
-erika (o `Table<T>` do rakun-data). Num behavior `#[repository]`, o `Users.Sql(db)` gerado é dono da
-fonte (313). No corpo de um método, nada na consulta diz qual valor é a fonte. A 137 vive no
-repositório do erika e não espera o 128; o passo 5 espera o passo 29 do `01-checker`, o passo 2 só a
-forma no corpo.
-
-**Hoje** (ilustrativo):
-```bp
-type Report(users: Table<User>) {
-    fn active(self: Self) -> @Result<User[], StoreError> {
-        return erika "select * from User where active = true";   // qual valor é a fonte?
-    }
-}
-```
-
-- [ ] **(a)** A fonte é um buraco; `from User` fica só para a forma em memória e a de anotação.
-  ```bp
-  return erika "select * from ${self.users} where active = true";   // tipo da linha vindo de Table<User>
-  ```
-- [ ] **(b)** `from User` em todo lugar; no corpo, a fonte é o único campo de `self` do tipo
-  `Table<User>` — nenhum ou dois é erro na consulta (por tipo, como o contêiner do rakun injeta).
-  ```bp
-  return erika "select * from User where active = true";   // fonte: self.users, o único Table<User>
-  ```
-- [ ] **(c)** As duas: a (b), e a (a) quando há dois campos do mesmo tipo de tabela.
-  ```bp
-  return erika "select * from ${self.archived} where active = true";   // dois Table<User>: buraco
-  ```
-
-**Recomendação: (b).** Uma grafia só do `from`, em todo lugar; a fonte achada pelo tipo, nunca por
-nome. **Bloqueia:** o passo 2 da `04-rakun/137` (a forma no corpo); a célula da forma no corpo do passo
-7 da rakun 08.
 
 ### 97-s13-a · O `abs()` do mínimo de um tipo inteiro (decisões 264 e 319)
 

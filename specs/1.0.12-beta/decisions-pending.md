@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**84 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**83 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -737,12 +737,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 
 ### 04-rakun
-
-#### erk-a · The source of an `erika "…"` query in a method body (*proposed*)
-- **Measured.** 312: `from User` names the type; a database source implements erika's `QuerySource<T>` (rakun-data's `Table<T>`). In a `#[repository]` behavior the generated `Users.Sql(db)` owns the source (313). In a method body — `type Report(users: Table<User>) { fn active(self: Self) -> @Result<User[], StoreError> { return erika "select * from User where active = true"; } }` — nothing in the query says which value is the source.
-- **Options.** (a) The source is a hole: `erika "select * from ${self.users} where active = true"` — the row type from `Table<User>`; `from User` is then the in-memory and annotation form only. (b) `from User` everywhere; in a body the source is the one field of `self` typed `Table<User>` — none or two is an error at the query (by type, as rakun's container injects). (c) Both: (b), and (a) when two fields of the same table type exist.
-- **Recommendation.** (b): one spelling of `from` in every place; the source found by type, never by a name.
-- **Blocks.** `04-rakun/137` step 2's body form; rakun 08 step 7's body-form cell.
 
 #### erk-b · `#[documentQuery]` under 313 (*proposed*)
 - **Measured.** 09 step 4: `#[documentQuery("…")]` follows `#[query]`'s shape — a member of the repository type answering the template verbatim. 313 deletes that shape for SQL: a repository is a `#[repository] behavior`, its methods carrying `#[erika "…"]` or `#[nativeQuery("…")]`. erika's grammar is SQL's; a document store's filter is JSON (`$in`, `$gt`, …).

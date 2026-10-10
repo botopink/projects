@@ -407,6 +407,11 @@ naming a parameter cannot be written. After, the template call `f "…"` may be 
 - [ ] `docs.md` § Decorators and § Template functions document the form; `comptime/AGENTS.md` states
       how the literal and the `@Decl` reach the body
 
+- [ ] a template method (397): a method whose first parameter after `self` is `comptime q: @Expr<…>`
+      is called `value.method "…"` / `value.method """…"""` as `f "…"` is — the literal captured
+      unevaluated, `self` the receiver; erika's `QueryContext.query` its first user —
+      `run/template_method_call`
+
 ### Step 30 — a decorator wraps the function it annotates: `decl.wrapWith(f)` (decision 316)
 
 A decorator answers only 216's four outputs today; a free function's decorator has nowhere to put a

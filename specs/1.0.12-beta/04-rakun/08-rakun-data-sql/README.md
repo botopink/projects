@@ -4,7 +4,7 @@
 `rakun-data`; its open boxes are small · **State:** not started
 **Depends on:** 128 · 04 step 4 (`rkExcludeFromEager`, step 1 only) · decision 147 (`try` in a
 lambda takes its expected type's return — tests written against it) · decision 347 (R78-1's field list: the type-level generator reads it) ·
-decisions 311–313 (step 7: `01-checker` step 29, `137` steps 1–5, `erk-a` for the body-form cell, decision 318: `#[repository]` is rakun-data's, on a behavior only) · 03r-v (confirmation)
+decisions 311–313 (step 7: `01-checker` step 29, `137` steps 1–5, 397 for the body-form cell, decision 318: `#[repository]` is rakun-data's, on a behavior only) · 03r-v (confirmation)
 **Owns:** `modules/rakun-data/**` except 09's (`src/nosql/**`, `src/nosql_host.bp`,
 `src/sidecars/rakun_nosql.erl`, `test/nosql/**`), 15's (`src/tx/**`, `test/tx/**`) and 65's line in
 `src/devtools/devtools.bp`; edits neither `botopink.json` nor `src/root.bp` this milestone ·
@@ -115,8 +115,9 @@ val users: Users = Users.of(db);      // generated: Users.Sql(db: SqlTemplate) i
       `#[query]` kept; rows decoded into the declared answer by column name
 - [ ] a `?T` answer: erika's query must say `limit 1` (312, checked by erika); a native query meeting more
       than one row is the `single()` panic naming the statement (304)
-- [ ] `Table<T>` implements erika's `QuerySource<T>` (`137` step 2): the table name from `#[entity]`
-      (298), statements run on its `SqlTemplate`
+- [ ] `DbContext` implements erika's `QueryContext` (397, `137` step 2), statements run on its `SqlTemplate`;
+      `#[entity]` records erika's `QueryTable(name, columns)` beside rakun's own meta (298), so `from User`
+      reads the table and the columns at build; the context injected by type (234)
 - [ ] `SqlTemplate.query` / `update` / `single`: `sql` is `comptime` — a statement built at run time is
       refused at the argument (the injection rule `#[query]` kept by shape)
 - [ ] `#[query]`, the `<m>Sql()` members, `rkRegisterQuery` / `rkRegisteredQueries` deleted; the statement
@@ -125,7 +126,7 @@ val users: Users = Users.of(db);      // generated: Users.Sql(db: SqlTemplate) i
       repository behavior; their `// LANGUAGE GAP` markers for the bodyless-method row go, and the row
       with them (`language-gaps.md`)
 - [ ] cells: a `#[repository]` over ETS answering both forms; `Users.mock()` (`#[mocks.mock]`) on the same
-      behavior; the body form (`erika "…"` in a `type` method — its source per `erk-a`); `reject/` cells
+      behavior; the body form (`self.db.query "…"` in a `type` method, 397); `reject/` cells
       for a `?T` without `limit 1`, a field `User` lacks, a placeholder no parameter answers
 - [ ] `repository/rakun/AGENTS.md` § SQL data access and the member README rewritten to the two forms
 
