@@ -1,7 +1,7 @@
 # Front 119 — bpp styling: `css`, `styled`, `jhonstart-styled`, the style section
 
 **Priority:** step 1 **high** — emilia moves onto `styled` first (decision 350; `06-emilia/34` step 5 waits on it); steps 2–5 medium — a page is complete without them (emilia tokens, global stylesheet); a
-self-styled component is not. · **State:** step 1: `css` done, `styled` landed but for the theme read from the program and the run-time registration (two boxes below, blocked: `01-compiler/134` step 6 (354), and row 134 — `01-compiler/130` step 10, 353; box 4's registration is 352, on `134-f`)
+self-styled component is not. · **State:** step 1: `css` and `styled` done but for the theme read from the program (box 5, blocked: row 134 — `01-compiler/130` step 10, 353); `StyledContext`'s provider in jhonstart's core (step 2's) written and held: a program holding emilia and `styled` does not compile (`language-gaps.md`, "Two packages with a module of one name")
 **Decision 361:** `jhonstart-styled` merges into the core `jhonstart` — every step below that names
 that member writes its modules in the core (`jhonstart/src/styled_*.bp`), the style function carrying
 `bpp`'s `#[style]`; the manifest is `"bpp": "jhonstart"`.
@@ -205,10 +205,9 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       share one class; the layer's prefix; a sheet renders its layers in declaration order
 - [x] `styledProperty` refuses `{`, `&`, `@` at the character; `@utility` and `@theme` refused in
       either literal, each error naming the botopink form
-- [ ] a component with no run-time hook is computed at build (the emitted module holds the class as
+- [x] a component with no run-time hook is computed at build (the emitted module holds the class as
       a constant); one reaching a run-time hook registers at render through `use context(StyledContext)` (352, 354:
-      the render's sheet and layer, no store in `styled`; waits on the hidden context map,
-      `01-compiler/134` step 6); a literal whose every hole is known at build is computed at build
+      the render's sheet and layer, no store in `styled`); a literal whose every hole is known at build is computed at build
       (355, built: `styled.bp` `atBuild` over `Part.known` / `Part.value`; `repository-stages.sh` reads
       `tabRed`'s constant) — a hole naming an imported `val` stays computed at render until
       `01-compiler/14` step 8's last boxes, the same CSS
@@ -230,7 +229,10 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] two components both writing `.title` render two rules and two attributes; neither rule
       matches the other's element — asserted on the rendered document with a `jhonstart-dom-test` selector matcher
 - [ ] a parent's style does not reach a child component's own elements
-- [ ] a component rendered twenty times registers its sheet once
+- [ ] a component rendered twenty times registers its sheet once — `compose` provides
+      `StyledContext` (`jhonstart/src/styled_sheet.bp`, written with step 1, held: § State); a provider
+      is lost below a `@Component` thunk a host cell calls (an `error` / `not-found` segment, a
+      `Suspense` child — `119-g`)
 - [ ] head order: `<link>`, emilia's layers, scoped styles
 - [ ] a run-time hole's value containing `;` or `}` is escaped in the root's `style`; the test injects one
 
@@ -288,7 +290,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
   row, CI check 4's list); manifest `["erlang", "commonJS"]`, std and `css` (`dependencies`, the
   reader's character walk), no host cell. `styled "…"` (the default module's `pub default fn`) and
   `styledProperty "…"` read the literal at build and answer `@Component<Styled>` /
-  `@Component<StyledProperty>` (354; landed as `@Component<StyledBase, …>`): declarations (`;` required), `${p}` splices of a
+  `@Component<StyledProperty>` (354): declarations (`;` required), `${p}` splices of a
   `StyledPropertyView`, value holes (`string | i32 | f64`), CSS nesting, `@variant` (pseudo-classes,
   media conditions, the theme's breakpoints, `max-*`), `@media` / `@supports` / `@container` /
   `@starting-style`, `--spacing()`, `--alpha()`, `--theme()`. The class is `s_` + `contentHash` of
@@ -305,12 +307,29 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
   two `#[theme]` are not refused, and a cleared breakpoint is refused only against the theme the
   literal reads, `readVariant` checked at run time); `@custom-variant` is refused, naming the
   function form (a template cannot read another expansion's value); `Styleable` is implemented by the
-  records, not the view aliases. A component with holes is computed when it runs; registering it in
-  the render's sheet is `jhonstart-styled`'s sink (step 2).
+  records, not the view aliases. A component with holes is computed when it runs.
+- Step 1, the registration (352, 354) — `styled.bp`: `StyledSheet(layer, add)`, the render's sheet as
+  a component sees it (the layer it writes to and the writer of the sheet its provider holds), and
+  `pub val StyledContext = Context<StyledSheet>()`, replacing the phantom `StyledBase`.
+  `styledComputed` / `propertyComputed` read it with `use context(StyledContext)` at the top of their
+  bodies (357) and hand `add` their class and rules each time they run; a `${p}` splice registers
+  nothing — the computed call takes it as `splice({ -> <hole> })`, run under a provider that keeps
+  nothing (without it, a computed property spliced in `badge` added its own class: measured); a
+  literal computed at build registers nothing. `styled` holds no store. `test/context_test.bp` (the
+  provider's writer a std mock: a computed literal registers its class and rules, a splice and a
+  constant nothing, a property standing alone itself, each run once more), and the repository stage
+  runs `examples/styled-context` (a print writer, `expected.out`) and `styled-context-unbound`
+  (`before`, then `context-unbound` naming `StyledContext`) on erlang and commonJS; 35 tests on both
+  targets, 14 refusals. A computed literal is a function: a `val` of one is evaluated outside every
+  render (`119-f`) — `code` in the example, the tests and `styled-example` became `fn code() ->
+  StyledView`, the tests render under a provider. `styled` builds on neither beam nor wasm; the
+  mechanism's language cells are botopink-lang's `run/context_sheet_registers` and
+  `run/context_sheet_unbound` (erlang, beam, commonJS; wasm refuses the `use`, `.wasm.expect`).
 
 ## Decisions
 
 Answered: `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Open: `119-f` (a `val` holding a literal computed at render), `119-g` (a provider lost below a host-called `@Component` thunk).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

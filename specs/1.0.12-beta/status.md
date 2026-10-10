@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `0c544566` (batch 15: a template reads a hole's build value — 14 s8, 355)) · rakun `7be8632` · jhonstart `8936320` · emilia `8f43cef`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `051dc91c` (the context-held sheet cells — 119 s1 box 4)) · rakun `7be8632` · jhonstart `8936320` · emilia `8f43cef`
 · onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
