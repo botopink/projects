@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**79 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
+**79 questions and 8 contradictions are open, and 93 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -691,6 +691,28 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (b).
 - **Blocks.** 92 step 2's first and third boxes.
 
+#### 04-a · The tag epoch's lifetime, type and empty tag (*implemented as (a), awaits confirmation*)
+- **Measured.** 185 puts the per-tag epoch in the core (04 step 1): `rkBumpTag(tag)` bumps it, `rkTagEpoch(tag)` reads it, `rakun-client` stores the epochs of a response's tags beside it and treats a changed one as a miss (13 step 1), `rakun-cache`'s three verbs bump (12 step 3). 185 does not say whether `rkResetContext` (the test seam that drops registrations and runs every `rkOnReset` hook) clears the epochs, which integer type they are, or what an empty tag is. Every other counter in `src/runtime.bp` is `i32` (`rkBuildCount`, `rkScannedCount`); a BEAM counter does not wrap, so an `i32` past `2^31 - 1` would be a value outside its type.
+- **Options.** (a) An epoch only grows: `rkResetContext` leaves the table; `i64`; `""` refused in both cells (`rakun: a tag is a non-empty string (rkBumpTag)`), located by the raise:
+  ```bp
+  val _b = rkBumpTag("t");        // 1
+  val _r = rkResetContext();
+  assert rkTagEpoch("t") == 1;    // a response stored at epoch 1 before the reset stays stale after the next bump (2)
+  val _x = rkBumpTag("");         // raises: rakun: a tag is a non-empty string (rkBumpTag)
+  ```
+  (b) `rkResetContext` clears the epochs (a test starts at 0 for every tag); a client cache that outlives the reset can meet its stored epoch again — a stale hit:
+  ```bp
+  // stored beside a response: epoch 1
+  val _r = rkResetContext();      // epochs back to 0
+  val _b = rkBumpTag("t");        // 1 again — the stored 1 matches, the stale response is served
+  ```
+  (c) (a)'s lifetime, `i32` like the other counters, and `""` an ordinary tag:
+  ```bp
+  val e: i32 = rkBumpTag("");     // 1 — the empty tag is a tag
+  ```
+- **Recommendation.** (a): a version counter never goes back, so no stored epoch can match a later state; `i64` has no reachable edge; an empty tag is a caller's bug, refused (decision 67).
+- **Blocks.** nothing — built as (a); (b) or (c) would be a few lines in `rakun_runtime.erl` and `runtime.bp` before 13 and 12 consume it.
+
 ### 05-jhonstart
 
 #### 27-b · The driver's inputs: where the markup comes from, and who sets `data-jh-pending` (*proposed* ★)
@@ -1089,7 +1111,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 ## Part 3 — Implementation choices of tracks 04–09
 
-### 04-rakun (21)
+### 04-rakun (22)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -1113,6 +1135,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 | 03r-v | Typed query builder's operator is the enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`): `queryOf(City.entityMeta()).where(City.columns().state, Op.Eq, "CA")`; the column as `Type.Field<City>` (308) is a separate question | 08 · `orm/query.bp:84-115` |
 | 03r-w | OAuth2's explicit endpoints are `OAuth2Provider` fields (`authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri`); client credentials are `withClientToken(id, call)`, retrying once on 401 | 79 · 13 |
 | 03r-x | Outbox relay claims by conditional `UPDATE` (a crashed relay's claims return via `reclaimStale`); saga and 2PC coordinators persist every transition and resume at boot (`resumeSagas`, `recover2pc`); job store claims triggers and takes over leases the same way | 15 |
+| 04-a | The core's tag epoch only grows (`rkResetContext` leaves it), is `i64`, and the empty tag is refused in `rkBumpTag` / `rkTagEpoch` | 04 step 1 · `rakun/src/runtime.bp`, `rakun_runtime.erl` |
 
 ### 05-jhonstart (10)
 

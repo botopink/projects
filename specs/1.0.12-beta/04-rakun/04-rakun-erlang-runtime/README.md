@@ -1,8 +1,8 @@
 # Front 04 — rakun Erlang runtime: the core's open boxes
 
-**Priority:** critical — waiting: 13, 12 on step 1's tag epoch; 08 step 1 on step 4's eager-pass
-hook; 22 on step 5's `Request` accessors; onze 49 on the page `Request` listing query and headers
-(R62-3); 88's `beans` on step 4's injected fields; 19 on step 4's exit codes · **State:** not started
+**Priority:** critical — waiting: 08 step 1 on step 4's eager-pass hook; 22 on step 5's `Request`
+accessors; onze 49 on the page `Request` listing query and headers (R62-3); 88's `beans` on step 4's
+injected fields; 19 on step 4's exit codes · **State:** partial (step 1)
 **Depends on:** 128 · decisions 343, 347 (R06-2's and R06-4's refusals at compile time, where the
 entry point builds the bean table) · decision 321 (qualified beans, step 6) · decision 318 (step 8) · 03r-c/e (confirmations);
 lg2-g closed by 281 (no registry key as a type's name — step 6), 03r-b and 03r-d by 299 (step 7)
@@ -24,10 +24,13 @@ logging `after()` failures through the core's logger and exposing headers and ra
 
 ## Mechanism
 
-- **Tag epoch (step 1).** The core is the one member all depend on, so what two optional members
-  share lives here (decision 185): `rakun_runtime.erl` keeps the ETS tables the reset hooks use
-  (`rkOnReset` in `src/runtime.bp`), gains a per-tag epoch. No failure seam: after 128 the logger
-  is the core's (decision 187); `after()` logs through it.
+- **Tag epoch (step 1, done).** The core is the one member all depend on, so what two optional
+  members share lives here (decision 185): `rkTagEpoch(tag) -> i64` / `rkBumpTag(tag) -> i64` in
+  `src/runtime.bp`, a `rakun_tag_epochs` ETS table in `rakun_runtime.erl` bumped with
+  `ets:update_counter/4` (atomic across request processes). An epoch only grows: `rkResetContext`
+  leaves it, so an epoch a reader stored never matches a later state (`04-a`). The empty tag is
+  refused in both cells. No failure seam: after 128 the logger is the core's (decision 187);
+  `after()` logs through it.
 - **`#[provides]` duplicates (R06-2).** Each decorator invocation is independent (343): the
   duplicate is refused at compile time where the entry point builds the bean table with
   `@TypeInfo.all(with: provides)` (256), naming both functions — "fail the build" as written.
@@ -46,15 +49,12 @@ logging `after()` failures through the core's logger and exposing headers and ra
 ## Done
 
 - R04-3 — `zig build test-libs` green on erlang with the ledger lines gone (`00-gate/113`, decision 153)
+- Step 1 — the tag epoch (decision 185): `rkTagEpoch(tag)` is `0` before any bump, `1` after
+  `rkBumpTag(tag)`, and a bump of another tag leaves it `1`; the empty tag refused in both cells,
+  located; both `pub` through `src/root.bp`'s `pub mod runtime`, documented in `AGENTS.md` § The
+  erlang host module (`test/erlang_runtime_test.bp`; `botopink test --target erlang` in the 16 members: 1 819 → 1 822 passed, 0 failed, the core 439 → 442)
 
 ## Open
-
-### Step 1 — The tag epoch (lands first, alone; decision 185)
-
-`rkTagEpoch(tag)` + `rkBumpTag(tag)` in `src/runtime.bp` and `rakun_runtime.erl`.
-
-- [ ] `rkTagEpoch("t")` is `0` before any bump, `1` after `rkBumpTag("t")`, and `rkBumpTag` of another tag leaves it `1`
-- [ ] both `pub` in `src/root.bp`, documented in `AGENTS.md` § The erlang host module
 
 ### Step 2 — Boot options and the cycle stack (R04-1, R04-2)
 
@@ -137,7 +137,7 @@ A bean, an event or a condition is named by its type or its function, never its 
 
 ## Blast radius
 
-Step 1: two `pub` functions, no behaviour change. Step 4's boot-time `#[value]` refusal may red a
+Step 1 (done): two `pub` functions, no behaviour change. Step 4's boot-time `#[value]` refusal may red a
 consumer relying on first-request failure — none in the repository (`grep -rn '#\[value' examples
 starters` finds keys the examples define). Removing `rakun.d.bp` removes a `Context` stub;
 `fixtures/imports` is the consumer test. `rkScannedDeps` widens the scan registry's row;
