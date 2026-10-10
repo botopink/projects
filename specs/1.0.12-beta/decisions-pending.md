@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**73 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
+**75 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -916,6 +916,70 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a) until a use is measured: refusing loses nothing a library needs today, and
   (b) or (c) can be added without breaking a program.
 - **Blocks.** Nothing.
+
+#### 119-f · A `val` holding a `styled` literal computed at render (decisions 352, 354, 355) (*proposed*)
+- **Measured** (front 119 step 1 box 4, `front/styled-context`, botopink-lang `0c544566`). A literal
+  with a hole known only at render (`${padAll(2)}`, a call) emits `styledComputed(<map>, …)`, which now
+  reads `use context(StyledContext)`. A module `val` initializer runs outside every render — the hidden
+  map is `undefined` / `null`: erlang evaluates it on the first read (`persistent_term`), a test module
+  at its init, commonJS at module load — so `pub val code = styled """ … ${padAll(2)} … """;` (front
+  119's own example until this step) is `context-unbound` there: the erlang test module dies in
+  `_botopink_init` before its first test, and nothing refuses the `val` at build. The step rewrote
+  `code` as a function (`fn code() -> StyledView`) in the example, the tests and `styled-example`.
+- **Options.**
+  (a) Refused at build: a module `val` whose initializer calls a `@Component` is an error at the
+  initializer — no render tree there (354 (3)) — naming the function form:
+  ```bp
+  pub val code = styled "color: ${pick()};";
+  // error: `code` is a module `val`, evaluated outside every render; a component computed at render is
+  //        a function — `fn code() -> StyledView { return styled "…"; }`        (at `styled`)
+  ```
+  (b) Refused at build only when the initializer reaches a context read (`Decl.hooks` lists a
+  `context`) — a `@Component` that reads none (`pub val tab4 = styledProperty "tab-size: 4;"`, a
+  constant) stays legal:
+  ```bp
+  pub val tab4 = styledProperty "tab-size: 4;";    // ok: styledConstant reads no context
+  pub val code = styled "${padAll(2)}";            // error at `styled`: reads StyledContext
+  ```
+  (c) Accepted; `context-unbound` at run time when first read (today):
+  ```text
+  escript: exception error: {panic,<<"context-unbound: no `use provide(StyledContext, ...)` …">>}
+    in call from styled_test:code/0 … '_botopink_init'/0
+  ```
+- **Recommendation.** (b): fail at build where the program cannot work (decision 67) without
+  refusing the build-time constants `styled` emits for a `val` today.
+- **Blocks.** Nothing in 119 step 1 (built as functions). `06-emilia/34` step 5 (emilia's `val`
+  families) and any library `val` of a computed component.
+
+#### 119-g · A `@Component` thunk a host cell calls loses every provider above it (decision 354 (8)) (*proposed*)
+- **Measured** (front 119 step 1, jhonstart's `compose` providing `StyledContext`). A lambda answering
+  `@Component<R>` takes the hidden map as its first parameter, and "a host that calls one passes the
+  map first (`null` when it has none)" (`context_lower.zig`). jhonstart's `__jhTryComponent` /
+  `componentOutcome` (`signal_runtime.mjs` `tryTask(f)` → `f()`) and a `Suspense` boundary's child
+  are such thunks: below an `error` or `not-found` segment, or in a boundary fill, the map is gone. A
+  page under `withError(segment("/"), …)` whose component is a `styled` literal computed at render
+  renders the segment's error view (`<div data-jh-e="/">caught</div>`) and writes no sheet — its
+  `use context(StyledContext)` was `context-unbound` — on erlang and commonJS.
+- **Options.**
+  (a) The compiler: a `@Component` lambda handed to a host function captures the map where it is
+  written (it takes no hidden parameter), so the host's call keeps the providers:
+  ```bp
+  val outcome = await __jhTryComponent({ -> notFoundLevel(chain, i, route, page) });
+  // lowered: { -> notFoundLevel(bpContextKids__0, chain, i, route, page) } — the map captured
+  ```
+  (b) jhonstart: every thunk it hands a host is a `fn() -> @Task<Element>` (no hidden parameter; a
+  component call in its body takes the enclosing body's map), `__jhTryComponent` goes:
+  ```bp
+  val outcome = await __jhTryTask({ -> notFoundLevel(chain, i, route, page) });
+  ```
+  (c) A host cell that calls a `@Component` thunk declares the map as a parameter, and the caller
+  passes its own (`declare fn __jhTryComponent(map: unknown, f: …)` — a program names the map, which
+  354 (8) says it never does).
+- **Recommendation.** (a): a provider cannot be lost by the shape of a call — no library has to know
+  which of its thunks a host calls.
+- **Blocks.** 119 step 2's "rendered twenty times" box under an `error` / `not-found` / `loading`
+  segment, step 3 (a boundary's fill), and every context read below one (`ElementContext`,
+  `05-jhonstart/26`).
 
 ### 09-cardume
 
