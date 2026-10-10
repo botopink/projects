@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 24 built on
-`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` but `Decorator.is` (s23-b); step 6
+`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` but `Decorator.is` (s23-b); step 28 built on `front/checker-s28` but `Type.keys` and the run-time `Type.Field<T>`; step 6
 box 3, steps 13, 21, 22, 24–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
@@ -302,27 +302,36 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front
 
 ### Step 28 — a derived type: a compile-time function answering a new type (decision 307)
 
-`pub val RecipeTitle = Type.pick(Recipe, .title);` — today `tryResolveTypeManipulationCall` (`infer.zig`)
-resolves the bare names `partial`, `pick`, `omit`, `mergeRecords` to an anonymous record no decorator can
-annotate. After, the five are static methods of std's `Type` (`libs/std/src/types.bp`, declared by 134
-step 2) and the resolver keys on that declaration.
+`pub val RecipeTitle = Type.pick(Recipe, .title);` — built on `front/checker-s28`
+(`comptime/derived_types.zig`): the `val` is rewritten, before the checker, into the record declaration
+it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questions `s28-a`–`s28-d`
+(all built as their recommendation).
 
-- [ ] `Type.partial`, `Type.required`, `Type.pick`, `Type.omit`, `Type.merge` are compile-time functions:
-      every parameter `comptime`, fields as `Type.Field<T>` (`.title`); a string field (`"title"`) is a located
-      error naming `.title`; an unknown field the ordinary `Type.Field<T>` error at the argument (280); the bare
-      `partial(…)` / `mergeRecords(…)` are unbound names
-- [ ] the answer is a new nominal record named after its `val`: `RecipeTitle` in diagnostics and hover,
-      usable in every type position, constructed `RecipeTitle(title: "…")`, matched, exported and
-      imported (`import {recipes.RecipeTitle};`); two `val`s over the same call are two types
-- [ ] a decorator on that `val` sees a type declaration (`decl.kind`, `decl.fields`):
-      `#[validated] pub val RecipePatch = Type.partial(Recipe);` emits as on a written record; each field
-      keeps the source field's annotations (`partial` makes it `?T`)
-- [ ] the call is refused outside a module-level `val` (a local, a parameter default) — located
-- [ ] `run/derived_type_functions` on the four targets; `language-gaps.md`'s derived-record row closed
-- [ ] `Type.keys(Recipe)` is `Type.Field<Recipe>` (decision 308) — the same type, not a copy
+- [x] `Type.partial`, `Type.required`, `Type.pick`, `Type.omit`, `Type.merge` answered at build, keyed on
+      the receiver bound to std's `types.Type` (an alias included); fields as `.title`; a string field
+      `derived-type-field-string` naming `.title`; an unknown field the `Type.Field<T>` error at it; a field
+      twice, no field, an `omit` leaving none `derived-type-fields`; a non-record source (enum, namespace
+      type, primitive, generic record, imported alias) `derived-type-source-not-record`; a field on both
+      sides of `merge` `derived-type-merge-duplicate` at the second argument; arity / label
+      `derived-type-arguments`; the bare `partial(…)` / `mergeRecords(…)` unbound
+- [x] the answer is a new nominal record named after its `val`: usable in every type position,
+      constructed, told apart by `is`, printed by its name, exported and imported; a derived or nested
+      derivation as source (`Type.merge(Type.merge(A, B), C)`); `AnchorProps` as a parameter type
+      (`modules/derived_type_imported`) — the s28 prerequisite of 362
+- [x] a decorator on that `val` sees a type declaration (`decl.kind`, `decl.fields`); each field keeps
+      the source field's annotations, `partial` makes it `?T` (`run/derived_type_decorated`)
+- [x] the call is refused outside a module-level `val` — a body, a `var`, an annotated `val`
+      (`derived-type-outside-val`, at the call)
+- [x] `run/derived_type_functions`, `run/derived_type_decorated`, `modules/derived_type_imported` on the
+      four targets; eleven `reject/derived_type_*` cells; all red on the parent — the derived-record
+      row of `language-gaps.md` closes when 125 s5's example runs (its `#[validated]` half is 125's)
+- [ ] `Type.keys(Recipe)` is `Type.Field<Recipe>` (decision 308) — the same type, not a copy: not a record
+      derivation, not answered
 - [ ] a `Type.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
       `T`'s fields (a field added to `T` makes a `case` without it an error); `key.name`, `Key.of(text) ->
       ?Key`, `Key.all()` in declaration order — `run/field_key_runtime` on the four targets
+- [ ] `decl.fields` as `Type.Field<unknown>` (134 s2's box) — not part of this mechanism (the reflection
+      record is `comptime.zig`'s `__Decl__Field`): left to 134 s2
 
 ### Step 29 — the template annotation `#[f "…"]` (decision 311)
 

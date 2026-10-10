@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**79 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
+**83 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -76,6 +76,46 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) As built. (b) The decorator rule for every function: `fn tag(comptime n: @Expr<i32>,
   x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
 - **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-a · An imported source's field default that names a binding of its module (307)
+- **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
+  copies the field without its default — the rule `registerExports` applies to an imported function's
+  parameter (`infer.isClosedDefault`): a literal, `true` / `false`, `null`, a sign, an array or tuple of
+  those travels, anything else does not — so `NoHref(target: null)` is the missing-field refusal at the
+  call (copying it made erlc fail: `function defaultRel/0 undefined`). An enum default (`= .Blank`) is not
+  closed either.
+- **Options.** (a) As built: the default does not travel, the field is supplied at every construction.
+  (b) The derivation is refused at the call naming the field (`derived-type-default-not-closed`).
+  (c) The default travels, the deriving module calling the source module's function (an implicit import).
+- **Recommendation.** (a): no implicit import, no silent value; (b) if a derived type must keep every default.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-b · `Type.required` over a field with a `null` default (307)
+- **Measured.** Built: `required` takes the `?` off each field and drops a `null` default with it
+  (`description: ?string = null` → `description: string`, supplied at every construction); any other
+  default stays.
+- **Options.** (a) As built. (b) Refused at the call, naming the field. (c) The `null` default stays and
+  the field is refused at the constructor when omitted.
+- **Recommendation.** (a): "every `?` goes" (types.bp), a `null` cannot type a non-optional field.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-c · What a derived type takes besides the fields (307)
+- **Measured.** Built: the derived record holds the fields only — the source's methods, `implement`
+  clauses and type-level annotations do not come (`Type.pick(Recipe, .title)` has no `Recipe` method);
+  the `val`'s own annotations go on the type. Decision 307 names "the source fields' markers" only.
+- **Options.** (a) As built: fields and their annotations. (b) The methods whose bodies read only kept
+  fields come too. (c) The `implement` clauses come, refused when a member they need is gone.
+- **Recommendation.** (a): a derived type is data; behaviour is written on it.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-d · A generic record or an imported alias as the source (307)
+- **Measured.** Built: refused at the argument (`derived-type-source-not-record`): a record with type
+  parameters (`Type.pick(Box, .item)` — `T` unbound), and an imported type alias (its target is named in
+  its own module's scope). A local alias of a record is that record.
+- **Options.** (a) As built. (b) A type application as the source, `Type.pick(Box<i32>, .item)`, the
+  fields substituted. (c) An imported alias followed through its module.
+- **Recommendation.** (a) until a front needs (b) or (c).
 - **Blocks.** Nothing — built as (a).
 
 #### s24-b · Example 1's `#[check]` puts defaulted parameters before `message`
