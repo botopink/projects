@@ -107,9 +107,9 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
 ### Step 6 — contexts: `@Component<R>`, `use provide` / `use context` (decision 354, replaces 269)
 
 ```bp
-import {context.Context} from "std";
+import {context.createContext} from "std";
 
-pub val ThemeContext = Context<Theme>();
+pub val ThemeContext = createContext(Theme, Theme(mode: .Light));   // the default is required (378)
 
 fn App() -> @Component<Element> {
     use provide(ThemeContext, Theme(mode: .Dark));   // for everything App renders below it
@@ -137,6 +137,15 @@ fn Button() -> @Component<Element> {
       (handed to 02–05 and 18 for each lowering) — built on erlang, beam and commonJS; open: wasm (refused at the
       `use`, 05), the comptime runtimes (`emitComptimeModule` lowers the parsed program, 18 / 14), a `@Component`
       value handed to generic code (`134-g`)
+- [ ] every context declares its default (378): std's `context` module answers `createContext(T,
+      default)` and `Context<T>()` goes; a read answers the nearest provider or the default on every target
+      (`context-unbound` goes, `run/context_default` replacing `styled-context-unbound`'s shape); `comptime
+      createContext(…)` needs a build default (a `Run` one refused at it), without `comptime` the default is
+      computed by its stage (376); the codemod over `tests/language` (20 cells), `styled`, jhonstart
+- [ ] a `Build` / `Any` component called at build (378 (4)): the comptime runtime lowers the hidden map
+      (the open comptime-runtime half of box 4 above), its `use`s run with an empty map, a context answering
+      its providers within the tree or its default — `run/comptime_render_component`
+      (`comptime renderToString(<Rodape ano={2026} />)` a constant), `reject/component_run_hook_at_build`
 - [ ] a `@Component` function value handed to a host function captures the map where it is written
       (374): no hidden parameter on a lambda that is a host call's argument, a named component wrapped as
       `{ -> C() }`, a lambda's own parameters kept — `run/context_host_thunk` (a provider read below

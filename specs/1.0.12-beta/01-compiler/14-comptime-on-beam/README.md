@@ -124,7 +124,11 @@ pub val code = styled "${tab4} color: red;";   // styledConstant("s_…", ".s_�
 
 - [ ] a hole naming a `val` another module exports is known at build when its initializer is: the
       exporting module's expansion travels with the export (`comptime.zig` `registerExports`); today it
-      is computed at render (`14s8-b`), the same CSS
+      is computed at render (376 answers `14s8-b`), the same CSS
+- [ ] a call of an `Any` function (376) whose arguments are known at build is known at build and computed
+      by the comptime runtime — in a hole (`styled "${padAll(2)}"`, `padAll(ESPACO)`) and in a `val`'s
+      initializer; a raise refused at the hole (14s8-c); `padAll(n)` with `n` a parameter stays at render —
+      `run/hole_any_call_at_build`, `reject/hole_any_call_raises`
 - [ ] `contentHash` at comptime (T19; with step 6's host cells) — `comptime padAll(2).rules` is refused
       naming `.contentHash(…)` (a run-time hole reaches `propertyComputed`)
 

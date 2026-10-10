@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**84 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**83 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -306,12 +306,6 @@ Nothing open: 138-a answered (337).
 - **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built (`front/fourteen-s8`): each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
 - **Options.** (a) As built: `for (q.parts()) { p -> if (p.kind == "Interp" && p.known) built = built + p.value; }`; `p.value` is `null` for a hole computed at render. (b) `q.lookup(p.code)` answers `Binding(name, kind, value)` for a hole that names a `val`: `val b = q.lookup(p.code); if (b?.value != null) …` — a literal or a `comptime` hole is never known. (c) 364's `@Expr<T>.value` on each hole: `if (p.known) built = built + p.hole.value;`, `.value` of a hole not known at build an error at the read, located — one spelling with every other `comptime` parameter, the hole typed `@Expr<T>`.
 - **Recommendation.** (c) — one spelling, typed, a read of an unknown value refused (decision 67); (a) stands until `01-checker` s24 builds `@Expr.value`, and either way `Part` in `builtins.d.bp` (02's) declares what the part carries.
-- **Blocks.** Nothing — built as (a).
-
-#### 14s8-b · Which holes are known at build (355)
-- **Measured.** Built narrowest: a string, number, `true` / `false` or `null` literal; a `comptime`; a non-`var` `val` of the same module whose initializer is known at build; a template call, already expanded, whose every argument is known at build. Computed at render: an array or tuple literal (`${[1, 2]}`), a record constructor call with literal arguments (`${Point(x: 1, y: 2)}`), a field read (`${tab4.rules}`), any other call, a parameter or a local — and, until 14 step 8's open box, a `val` another module exports (`import {tab4} from "tokens"; styled "${tab4}"`), the same CSS either way.
-- **Options.** (a) As built: `styled "${tab4} color: red;"` is a constant, `styled "${[a, b].join(" ")};"` is computed. (b) (a) plus array and tuple literals and constructor calls whose elements are known at build: `styled "grid-template-areas: ${areas};"` with `pub val areas = ["a", "b"].join(" ");` is still computed (a call), `pub val p = Pad(n: 4);` read by a template is known. (c) (b) plus any call to a function whose arguments are known at build, run at build.
-- **Recommendation.** (a) — 355 names literals, `comptime` values and `val`s; (c) runs user code at build where no `comptime` says so (364 (3)).
 - **Blocks.** Nothing — built as (a).
 
 #### 14s8-c · A hole known at build whose value raises there
@@ -995,40 +989,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a) until a use is measured: refusing loses nothing a library needs today, and
   (b) or (c) can be added without breaking a program.
 - **Blocks.** Nothing.
-
-#### 119-f · A `val` holding a `styled` literal computed at render (decisions 352, 354, 355) (*proposed*)
-- **Measured** (front 119 step 1 box 4, `front/styled-context`, botopink-lang `0c544566`). A literal
-  with a hole known only at render (`${padAll(2)}`, a call) emits `styledComputed(<map>, …)`, which now
-  reads `use context(StyledContext)`. A module `val` initializer runs outside every render — the hidden
-  map is `undefined` / `null`: erlang evaluates it on the first read (`persistent_term`), a test module
-  at its init, commonJS at module load — so `pub val code = styled """ … ${padAll(2)} … """;` (front
-  119's own example until this step) is `context-unbound` there: the erlang test module dies in
-  `_botopink_init` before its first test, and nothing refuses the `val` at build. The step rewrote
-  `code` as a function (`fn code() -> StyledView`) in the example, the tests and `styled-example`.
-- **Options.**
-  (a) Refused at build: a module `val` whose initializer calls a `@Component` is an error at the
-  initializer — no render tree there (354 (3)) — naming the function form:
-  ```bp
-  pub val code = styled "color: ${pick()};";
-  // error: `code` is a module `val`, evaluated outside every render; a component computed at render is
-  //        a function — `fn code() -> StyledView { return styled "…"; }`        (at `styled`)
-  ```
-  (b) Refused at build only when the initializer reaches a context read (`Decl.hooks` lists a
-  `context`) — a `@Component` that reads none (`pub val tab4 = styledProperty "tab-size: 4;"`, a
-  constant) stays legal:
-  ```bp
-  pub val tab4 = styledProperty "tab-size: 4;";    // ok: styledConstant reads no context
-  pub val code = styled "${padAll(2)}";            // error at `styled`: reads StyledContext
-  ```
-  (c) Accepted; `context-unbound` at run time when first read (today):
-  ```text
-  escript: exception error: {panic,<<"context-unbound: no `use provide(StyledContext, ...)` …">>}
-    in call from styled_test:code/0 … '_botopink_init'/0
-  ```
-- **Recommendation.** (b): fail at build where the program cannot work (decision 67) without
-  refusing the build-time constants `styled` emits for a `val` today.
-- **Blocks.** Nothing in 119 step 1 (built as functions). `06-emilia/34` step 5 (emilia's `val`
-  families) and any library `val` of a computed component.
 
 ### 09-cardume
 
