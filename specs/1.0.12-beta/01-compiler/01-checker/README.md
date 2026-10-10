@@ -243,6 +243,12 @@ for a function one of whose decorators reads it (questions s23-a – s23-f).
       (every handle's annotations, a field key's included); `HookNode`'s `fn` is `function` (`fn` is reserved, s23-a)
 - [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.same(serverOnly)`;
       a same-named decorator of another package → false (371: `same`, `is` stays a keyword)
+- [ ] `HookNode.async: bool` (375): `true` when the body writes `await` / `async { … }`, `use`s an asynchronous
+      hook or calls an asynchronous component (written `await` or not), calls a host function answering
+      `@Task`, or calls what the checker cannot follow (a function value, a method, `hook: null`); a cycle
+      asynchronous when any node in it is; published with the module's nodes; `builtins.d.bp` declares the
+      field — `run/decl_hooks_async` (a page over a synchronous `Card` and an awaiting `Comments`: `Card`
+      `false`, `Comments` and the page `true`), `modules/decl_hooks_async_imported`
 - [ ] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
       read no `.hooks` first, then the bodies, then the `.hooks` readers, which may only `setMeta` /
       `addMeta` / `fail` — `run/decl_hooks_reads_member` (`#[graph] fn Page() { return

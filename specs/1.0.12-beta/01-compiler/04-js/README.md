@@ -1,7 +1,7 @@
 # Front 04 — js: commonJS keeps no dead lowering and no marker std alone may write
 
 **Priority:** medium · **State:** partial: steps 1–5, 7, 8 and C-37 done; steps 9 and 10 done on commonJS but for
-`Json` (332), the conversions (a std surface) and the string-read cost (+24 % against 10 %); steps 6, 11 open
+`Json` (332), the conversions (a std surface) and the string-read cost (+24 % against 10 %); steps 6, 11, 12 open
 **Depends on:** step 6's typed AST (step 6)
 **Owns:** `modules/compiler-core/src/codegen/commonJS.zig` · `src/codegen/typescript.zig` ·
 `src/codegen/js/**` · `src/comptime/primOpTemplate.zig`'s `$stringify` arm (step 2, decision 239) ·
@@ -155,6 +155,23 @@ function strLength(s) {
       emitted `.js`) and calls it through the same glue
 - [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/wasm_library_binding`
       one answer on commonJS and wasm
+
+### Step 12 — a synchronous component is a plain `function` (decision 375; after `01-checker` step 23's `HookNode.async`)
+
+`effectShape`'s `.component => .{ .is_async = true }` (1.0.10's 104 (6)) gives way to the node's mark:
+
+```js
+function Card(map, titulo) { … }                       // HookNode.async == false
+async function Post(map) { … Card(map, "x") … await Comments(map) … }
+```
+
+- [ ] a `@Component` function or hook whose node is synchronous emits `function` (a method, a lambda and a
+      `default fn` alike); an asynchronous one `async function`; a call of a synchronous one emits no
+      `await`, written or not; a call the checker cannot follow keeps the `await`
+- [ ] the TypeScript typedef answers the value, not a `Promise`, for a synchronous one; `tsc-check.sh` green
+- [ ] `run/component_sync_plain_function` (the emitted module holds `function Card(` and `async function
+      Post(`) and every `run/context_*` / jhonstart and emilia cell green on commonJS; erlang, beam and wasm
+      output unchanged
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
