@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **381**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 94 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **381**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -855,7 +855,7 @@ val clearSession = use clearCookie(sessionCookie);
 
 ### s35-h · Duas anotações acrescentando um membro de mesmo nome
 
-**Trava:** vários `#[check]` num tipo (125 passo 7) até o passo 8 da `01-compiler/130`.
+**Trava:** vários `#[check]` num tipo (125 passo 7): o meta tipado existe (passo 8 da `01-compiler/130`); o `validate` que o lê espera a `130-s8-e` e a `s35-g`.
 
 **Contexto.** Os exemplos da 280 põem `#[check(passwordsMatch, …)]` e `#[check(handleFree, …)]` no mesmo `Account`, e um `validate` junta as duas regras.
 
@@ -876,6 +876,127 @@ val clearSession = use clearCookie(sessionCookie);
   ```
 
 **Recomendação: (a).** Um decorator acrescenta, nunca substitui nem mescla (216 (1)); juntar é papel do meta tipado.
+
+### 130-s8-a · Um tipo de record fixado e acrescentado na mesma declaração; `meta(T)` sobre valores acrescentados (298)
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** A 298 diz que `setMeta` guarda "um valor por tipo" e `addMeta` "o que se repete", não os dois juntos.
+
+**Hoje.** Um tipo é guardado uma vez (`decl.setMeta(v)`) ou se repete (`decl.addMeta(v)`), nunca os dois: o segundo `setMeta` do tipo, ou um `addMeta` ao lado de um `setMeta` dele, é `decorator-meta-twice` na anotação que o gravou (`reject/meta_twice`). `meta(T)` responde `null` ou o valor, e sobre vários é `typeinfo-meta-several` (`reject/meta_several`); `metaAll(T)` responde um valor fixado como array de um. Numa entrada do catálogo, `d.meta(T)` responde o primeiro.
+
+- [ ] **(a)** Como está.
+  ```bp
+  decl.setMeta(Entity(table: "a"));
+  decl.addMeta(Entity(table: "b"));            // decorator-meta-twice
+  @typeInfo(City).meta(Index)                  // typeinfo-meta-several com dois Index
+  ```
+- [ ] **(b)** Tipo gravado com `addMeta` só se lê com `metaAll`, mesmo com um só.
+  ```bp
+  @typeInfo(City).meta(Index)                  // typeinfo-meta-repeated, mesmo com um Index
+  ```
+- [ ] **(c)** Os dois se misturam: o `setMeta` é um valor entre os acrescentados e `meta(T)` responde o fixado.
+  ```bp
+  decl.setMeta(Entity(table: "a")); decl.addMeta(Entity(table: "b"));   // meta(Entity) == "a"
+  ```
+
+**Recomendação: (a).** Uma chave com dois sentidos ao mesmo tempo é recusada onde é escrita.
+
+### 130-s8-b · Em que escopo resolve um campo `@Expr<T>` de meta lido em outro módulo (370 (1))
+
+**Trava:** entry point ou biblioteca que lê meta `@Expr` de declarações de outro módulo (um catálogo de `#[check]`); não o `#[check]` de tipo do 125 passo 7, lido no módulo do tipo.
+
+**Contexto.** A 370 (1) diz "construído no programa que lê, cada expressão colada onde foi escrita" — o lugar, não o escopo que resolve os nomes em outro módulo; a `s35-g` pergunta o mesmo para membro.
+
+**Hoje.** Lido no módulo da anotação, roda (`run/meta_expr_field`); lido em outro — `@typeInfo(Signup).metaAll(Check)` no `main`, onde `passwordsMatch` (privada de `signup`) não está no escopo — é `typeinfo-meta-expr-elsewhere` na leitura (`modules/meta_expr_read_elsewhere`), e uma consulta `@TypeInfo.all` cujas entradas carregam esse valor é recusada igual.
+
+- [ ] **(a)** Como está: recusado fora do módulo da anotação.
+  ```bp
+  // main.bp
+  @typeInfo(Signup).metaAll(Check)   // typeinfo-meta-expr-elsewhere
+  ```
+- [ ] **(b)** Higiene da 112: cada nome da expressão resolve no módulo da anotação, importado no leitor sob alias que nenhum fonte soletra; nome privado lá recusado na leitura (ou viaja como o privado de template).
+  ```bp
+  @typeInfo(Signup).metaAll(Check)   // Check(message: "…", rule: <passwordsMatch de signup>)
+  ```
+- [ ] **(c)** Escopo do leitor: `passwordsMatch` precisa estar importada no leitor, e uma homônima do leitor é capturada.
+  ```bp
+  import {signup.passwordsMatch};    // senão unbound
+  ```
+
+**Recomendação: (a)** até a `s35-g` ser respondida; depois a mesma resposta para os dois (a da 112: cada nome resolve onde foi escrito).
+
+### 130-s8-c · Leitura de meta tipado de declaração que um leitor de `.hooks` do mesmo módulo anota (298, 372)
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** A 372 roda o decorator que lê `.hooks` depois dos corpos do módulo e responde depois a leitura string de meta da declaração (`answerDeferredMetaReads`). A leitura tipada é uma expressão tipada onde está (construtores, campos `@Expr`).
+
+**Hoje.** Recusada nesse módulo antes do leitor rodar: `typeinfo-meta-hooks-pending` na leitura; outro módulo lê depois que o módulo inteiro rodou.
+
+- [ ] **(a)** Como está.
+  ```bp
+  // #[route] lê .hooks
+  @typeInfo(Page).meta(Route)   // typeinfo-meta-hooks-pending no módulo de Page
+  ```
+- [ ] **(b)** Adiada como a leitura string: tipada `?Route` na leitura, o valor escrito e tipado quando o leitor rodou (erro num campo `@Expr` localizado na segunda fase).
+  ```bp
+  @typeInfo(Page).meta(Route)   // respondida depois de #[route]
+  ```
+
+**Recomendação: (a).**
+
+### 130-s8-d · Record genérico de meta lido por entrada do catálogo (298)
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** `d.metaAll(T)` numa entrada de `@TypeInfo.all` chama uma função do módulo leitor tipada para `T` (`declared__metaAll__<T>`); um genérico não se escreve sem argumentos (`Check` de `Check<T>`), e um leitor genérico perde `T` no wasm. As entradas de um catálogo podem ter `Check<Signup>` e `Check<Login>`.
+
+**Hoje.** `d.metaAll(Check)` é `typeinfo-meta-type` no argumento (`reject/meta_catalogue_generic`); `@typeInfo(X).metaAll(Check)` lê (`run/meta_expr_field`).
+
+- [ ] **(a)** Como está.
+  ```bp
+  for (@TypeInfo.all(with: mark)) { d -> d.metaAll(Check) }   // typeinfo-meta-type
+  ```
+- [ ] **(b)** A leitura escreve os argumentos e responde só os valores gravados com eles.
+  ```bp
+  d.metaAll(Check<Signup>)
+  ```
+- [ ] **(c)** A leitura responde `Check<unknown>[]`.
+  ```bp
+  d.metaAll(Check)              // Check<unknown>[]
+  ```
+
+**Recomendação: (a).**
+
+### 130-s8-e · Membro tipado lendo o meta tipado do próprio tipo (298, 370)
+
+**Trava:** a rota de membro tipado do 125 passo 7 (`#[validated]` a partir de `metaAll(Check)`), junto com a `s35-g`.
+
+**Contexto.** O membro tipado é conferido no corpo do decorator com os parâmetros de tipo do decorator em escopo (`inferMemberFnCall`) e renderizado no módulo do tipo anotado com cada um ligado.
+
+**Hoje.** `@typeInfo(T).metaAll(Check)`, `T` parâmetro de tipo do decorator, não nomeia declaração quando o corpo é conferido: `typeinfo-unknown-declaration` em `T`. A rota que a 370 traçou para o 125 passo 7 não compila:
+```bp
+fn validated<T>(comptime decl: @Decl<T>) {
+    decl.addMember("validate", fn(self: T) -> Violation[] {
+        var out: Violation[] = [];
+        for (@typeInfo(T).metaAll(Check)) { c -> if (!c.rule(self)) out.push(Violation(message: c.message)); }
+        return out;
+    });
+}
+```
+
+- [ ] **(a)** Como está: membro não lê meta do seu tipo; `#[validated]` lê as checagens de outro jeito (membro string que nomeia o tipo, ou cada `#[check]` com seu próprio membro — a `s35-h` (a) recusa dois de mesmo nome).
+- [ ] **(b)** Num membro tipado, `@typeInfo(T)` com `T` ligado pela anotação é tipado no corpo do decorator como o tipo das leituras (`Check<T>[]`) e respondido quando o membro é renderizado no módulo do tipo anotado, `T` trocado pelo tipo (conferido de novo lá).
+  ```bp
+  for (@typeInfo(T).metaAll(Check)) { … }   // no membro de Signup: @typeInfo(Signup).metaAll(Check)
+  ```
+- [ ] **(c)** O membro lê o próprio tipo como `@typeInfo(Self)`, respondido só no membro renderizado.
+  ```bp
+  for (@typeInfo(Self).metaAll(Check)) { … }
+  ```
+
+**Recomendação: (a)** como a mais restritiva; **(b)** é o que a rota precisa — a leitura é conferida nos dois lugares e nada que o corpo do decorator não sabe é respondido lá.
 
 ### s28-a · O default de um campo de fonte importada que nomeia algo do seu módulo (307)
 

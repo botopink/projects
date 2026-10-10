@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**89 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
+**94 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -121,7 +121,104 @@ Nothing open: 138-a answered (337).
   the earlier.
 - **Recommendation.** (a): a decorator adds and never replaces or merges (216 (1)); collection is typed
   meta's.
-- **Blocks.** 125 step 7's several `#[check]` on one type until `01-compiler/130` step 8.
+- **Blocks.** 125 step 7's several `#[check]` on one type: typed meta is built (`01-compiler/130` step
+  8); the `validate` that reads it waits on `130-s8-e` and `s35-g`.
+
+#### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
+- **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
+  declaration, never both — a second `setMeta` of a type, or an `addMeta` beside a `setMeta` of it, is
+  `decorator-meta-twice` at the annotation that recorded it (`reject/meta_twice`). `@typeInfo(X).meta(T)`
+  answers `null` or the one value, and over several is `typeinfo-meta-several` at the read
+  (`reject/meta_several`); `metaAll(T)` answers a set-once value as a one-element array. 298 names
+  `setMeta` "one value per type" and `addMeta` "what repeats", not the two together. On a catalogue
+  entry `d.meta(T)` answers the first value (the read is run-time code over any entry).
+- **Options.** (a) As built: `decl.setMeta(Entity(…)); decl.addMeta(Entity(…));` is `decorator-meta-twice`
+  at the second; `meta(Index)` over two `Index` is `typeinfo-meta-several`. (b) A type recorded with
+  `addMeta` is read only with `metaAll` — `meta(Index)` refused even over one `Index`
+  (`typeinfo-meta-repeated`). (c) The two mix: `setMeta` holds one value among the added ones, and
+  `meta(T)` answers the set one.
+- **Recommendation.** (a): a key with two meanings at once is refused where it is written; (b) if a
+  reader must not depend on how many decorators added a type.
+- **Blocks.** Nothing — built as (a).
+
+#### 130-s8-b · Whose scope resolves an `@Expr<T>` meta field read in another module (370 (1))
+- **Measured.** Built: a meta value with `@Expr<T>` fields is written back where it is read with each
+  expression as the annotation wrote it, typed in the reading module. Read in the annotation's module it
+  runs (`run/meta_expr_field`); read in another — `@typeInfo(signup.Signup).metaAll(Check)` in `main`,
+  where `passwordsMatch` (private to `signup`) is not in scope — it is `typeinfo-meta-expr-elsewhere` at
+  the read (`modules/meta_expr_read_elsewhere`), and a `@TypeInfo.all` query whose entries carry such a
+  value is refused the same way at the query. 370 (1) says "built in the reading program with each
+  expression spliced where it was written" — the place, not whose scope resolves its names elsewhere;
+  `s35-g` asks the same for a member's names.
+- **Options.** (a) As built: refused outside the annotation's module.
+  ```bp
+  // main.bp
+  @typeInfo(Signup).metaAll(Check)   // typeinfo-meta-expr-elsewhere
+  ```
+  (b) Decision 112's hygiene: each name the expression wrote resolves in the annotation's module,
+  imported into the reader under an alias no source spells; a private name there (`passwordsMatch`) is
+  refused at the read (or travels as a template's private does, `templatePrivateKey`).
+  ```bp
+  @typeInfo(Signup).metaAll(Check)   // Check(message: "…", rule: <signup's passwordsMatch>)
+  ```
+  (c) The reader's scope: the expression's names resolve in the reading module — `passwordsMatch` must
+  be imported there, and a same-named function of the reader is captured.
+- **Recommendation.** (a) until `s35-g` is answered, then the same answer for both (112's: every name
+  resolves where it was written).
+- **Blocks.** An entry point or a library reading `@Expr` meta of another module's declarations (a
+  catalogue of `#[check]`s); not 125 step 7's own type-level `#[check]`, read in the type's module.
+
+#### 130-s8-c · A typed meta read of a declaration a `.hooks` reader of this module annotates (298, 372)
+- **Measured.** Built: decision 372 runs a decorator that reads `.hooks` after the module's bodies, and
+  answers a string meta read of its declaration in the module afterwards (`answerDeferredMetaReads`). A
+  typed read is an expression typed where it stands (its constructors, `@Expr` fields), so it is refused
+  in that module before the reader ran: `typeinfo-meta-hooks-pending` at the read; another module reads
+  it after the whole module ran.
+- **Options.** (a) As built: `@typeInfo(Page).meta(Route)` in `Page`'s module, `#[route]` reading
+  `.hooks`, is `typeinfo-meta-hooks-pending`. (b) Deferred like the string read: typed as `?Route` at the
+  read, the value written and typed when the reader ran — a type error in an `@Expr` field then located
+  in the second phase.
+- **Recommendation.** (a).
+- **Blocks.** Nothing — built as (a); `05-jhonstart/26`'s `#[page]` reads its meta from the entry point.
+
+#### 130-s8-d · A generic meta record read through a catalogue entry (298)
+- **Measured.** Built: `d.metaAll(T)` on a `@TypeInfo.all` entry calls a function of the reading module
+  typed for `T` (`declared__metaAll__<T>`, `typed_meta.withMetaHelper`); a generic one cannot be written
+  unapplied (`Check` of `Check<T>`), and a generic reader loses `T` on wasm. `d.metaAll(Check)` is
+  `typeinfo-meta-type` at the argument (`reject/meta_catalogue_generic`); `@typeInfo(X).metaAll(Check)`
+  reads it (`run/meta_expr_field`). The entries of one catalogue may hold `Check<Signup>` and
+  `Check<Login>`.
+- **Options.** (a) As built. (b) The read writes the arguments, `d.metaAll(Check<Signup>)`, and answers
+  the values recorded with exactly those. (c) The read answers `Check<unknown>[]`, its fields typed
+  through `unknown`.
+- **Recommendation.** (a).
+- **Blocks.** Nothing — built as (a).
+
+#### 130-s8-e · A typed member reading its own type's typed meta (298, 370)
+- **Measured.** Built: a decorator's typed member is checked in the decorator's body with the
+  decorator's type parameters in scope (`inferMemberFnCall`), and rendered into the annotated type's
+  module with each bound. `@typeInfo(T).metaAll(Check)` there, `T` the decorator's type parameter, names
+  no declaration while the body is checked: `typeinfo-unknown-declaration` at `T`. So the route 370 laid
+  out for 125 step 7 — `#[check]` records `Check`, `#[validated]` gives one `validate` reading
+  `metaAll(Check)` — does not compile:
+  ```bp
+  fn validated<T>(comptime decl: @Decl<T>) {
+      decl.addMember("validate", fn(self: T) -> Violation[] {
+          var out: Violation[] = [];
+          for (@typeInfo(T).metaAll(Check)) { c -> if (!c.rule(self)) out.push(Violation(message: c.message)); }
+          return out;
+      });
+  }
+  ```
+- **Options.** (a) As built: a member reads no meta of its type; `#[validated]` reads the checks
+  another way (a string member naming the type, or each `#[check]` adding its own member — `s35-h` (a)
+  refuses two of one name). (b) In a typed member, `@typeInfo(T)` with `T` a type parameter the
+  annotation binds is typed in the decorator's body as the reads' types (`Check<T>[]`), and answered
+  when the member is rendered into the annotated type's module, `T` replaced by the type (checked again
+  there). (c) A member reads its own type as `@typeInfo(Self)`, answered in the rendered member only.
+- **Recommendation.** (a) as the strictest; (b) is what the route needs — the read is checked in both
+  places, and nothing a decorator's body cannot know is answered there.
+- **Blocks.** 125 step 7's typed-member route (`#[validated]` from `metaAll(Check)`), with `s35-g`.
 
 #### s28-a · An imported source's field default that names a binding of its module (307)
 - **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
