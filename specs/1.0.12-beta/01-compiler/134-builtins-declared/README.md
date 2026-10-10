@@ -75,6 +75,16 @@ implementation to the declarations; `docs.md` documents each from its declaratio
   onze, styled, rakun and the VS Code extension (patches); no `use @getContext(T)` remained to report
 - Step 2, `Type.pick` / `Type.omit` — `types.bp` declares both `(comptime source: type T, comptime ..fields:
   Type.Field<T>[]) -> type`, bodyless; std tests green on erlang and commonJS
+- Step 6 box 4, host thunks (374) — `infer.zig` `noteHostCall` records every call of a host function, this
+  module's or an imported one (`Env.hostCalls`), and a declared `@Component` named as its argument
+  (`Env.hostComponentRefs`); `context_lower.zig` `lowerHostArg` walks a `@Component` lambda written as a host
+  argument under the enclosing frame (no hidden parameter: it reads the map where it is written) and
+  `hostThunk` wraps a named one as `{ a0 -> C(<map>, a0) }`; a host's parameter types keep their written arity —
+  `run/context_host_thunk` (a thunk called at once, one with the host's argument, a named component, and one
+  the host keeps and `main` calls twice after the render) green on erlang, beam and commonJS and red on the
+  parent (`context-unbound` / `badarity`); wasm refuses the `use` (`.wasm.expect`, unchanged); the comptime
+  runtimes do not lower the map (354-comptime); `run/context_provide_read`, `run/context_nearest_wins` green;
+  jhonstart's `styled_sheet_test` "a page under an error segment writes its sheet" (patch)
 - Step 5 (268) — `builtins.d.bp` declares `pub behavior Decorator {}` and `all(with: Decorator | Decorator[], member: ?string = null)`; the row held `.declaration`, drift green. `infer.zig` `checkCatalogueArguments` types `with:` by `decoratorArgumentType` (a name of a body-carrying `comptime _: @Decl` function is `Decorator`, an array literal of them `Decorator[]`) and holds the call to the declaration; `typeinfo_all.plan` leaves a query naming anything else unanswered; `typeinfo-all-not-decorator` removed, its cell moved to `reject/typeinfo_all_with_ordinary_fn` beside `reject/typeinfo_all_with_number` (the ordinary mismatch at the argument); `run/typeinfo_all_decorator_argument` (a decorator with an argument, a single one, a list) on the four targets; `docs.md` § Builtins
 
 ## Open
@@ -146,11 +156,13 @@ fn Button() -> @Component<Element> {
       (the open comptime-runtime half of box 4 above), its `use`s run with an empty map, a context answering
       its providers within the tree or its default — `run/comptime_render_component`
       (`comptime renderToString(<Rodape ano={2026} />)` a constant), `reject/component_run_hook_at_build`
-- [ ] a `@Component` function value handed to a host function captures the map where it is written
+- [x] a `@Component` function value handed to a host function captures the map where it is written
       (374): no hidden parameter on a lambda that is a host call's argument, a named component wrapped as
       `{ -> C() }`, a lambda's own parameters kept — `run/context_host_thunk` (a provider read below
       `__jhTryComponent`-shaped host call, and below one the host calls later) on erlang, beam and
-      commonJS; a lambda handed to a botopink function unchanged (`run/context_provide_read` stays green)
+      commonJS; a lambda handed to a botopink function unchanged (`run/context_provide_read` stays green) —
+      built on `front/ctx-async-374-375`; open: a `@Component` value that is not a lambda written at the host
+      call (a parameter, a local, a `Suspense` child stored in a record) keeps the map parameter (`134-i`)
 - [x] the rules of hooks (357): `use` only at the top level of a `@Component` body —
       `error[use-not-top-level]` inside `if` / `else`, a `case` arm, a loop, a lambda, `try` /
       `catch`, or after a statement that may return early, naming the enclosing construct;
@@ -160,6 +172,8 @@ fn Button() -> @Component<Element> {
       `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
 
 ## Decisions
+
+Open: `134-i` (a `@Component` value handed to a host that is not a lambda written there).
 
 Answered: `134-f` → 354 (contexts), 329, 330 (`134-e`: a namespace type, `?T` methodless, `result` deleted,
 `Type.Field<T>` associated — step 2), 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
