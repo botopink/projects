@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**67 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
+**72 questions and 6 contradictions are open, and 100 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,6 +27,133 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
+
+#### s29-a · How a template annotation receives the annotated declaration, and whether it is also a call-site template (311)
+- **Measured.** 311 leaves the `@Decl`'s spelling to `01-checker` step 29 and says "one function is both
+  the template and the annotation (`erika "…"` and `#[erika "…"]`)". A template function is called with
+  its literal alone (`f "…"`), so a declared `@Decl` parameter has no argument at a call site; 398 has
+  since split the two uses into two functions (dbcontext's `#[query "…"]`, erika's
+  `self.db.query "…"` template method), so no library writes one function for both. Built: the handle
+  is the second parameter, `fn query(comptime q: @Expr<string>, comptime decl: @Decl) -> @Expr<string>`
+  (`member_fn.isTemplateAnnotation`); such a function is written only as an annotation — `query "…"`
+  is `template-annotation-only` at the call (`reject/template_annotation_called`) — and a template
+  without the parameter at `#[f "…"]` is `template-annotation-without-decl`
+  (`reject/template_annotation_without_decl`); the value the body returns is not used.
+- **Options.** (a) ★ The `@Decl` is a declared second parameter, and a function that declares it is
+  annotation-only: `fn query(comptime q: @Expr<string>, comptime decl: @Decl) -> @Expr<string> { … }`
+  with `#[query "select …"] fn find(…)`, and `val x = query "select 1";` refused. (b) The same parameter
+  as `?@Decl`, `null` at a call site, one function for both:
+  `fn erika(comptime q: @Expr<string>, comptime decl: ?@Decl) -> @Expr<Q> { if (decl != null) decl.setMeta(…); return q.build(…); }`.
+  (c) No parameter: the handle is a capture method, `q.decl()` answering `?@Decl`.
+- **Recommendation.** (a): the signature says which form a function takes, a call site never meets a
+  handle it cannot have, and 398 already writes the two forms as two functions; (b) if a library must
+  serve both forms from one name.
+- **Blocks.** Nothing — built as (a) (`01-checker` step 29).
+
+#### s29-b · How an owner's decorator reads a method's typed meta (313)
+- **Measured.** 313 has `#[erika "…"]` / `#[query "…"]` and `#[nativeQuery(…)]` record "typed meta of
+  the method (298)", and `#[repository]` on the behavior "reads each method's meta"; step 29's cell asks
+  for "a method annotation whose meta a type-level decorator reads". Before: typed meta on a method was
+  `decorator-meta-on-member`, an owner's decorators ran before its methods', and a `decl.methods` entry
+  carried name, parameters, return type and annotations only. Built: a type's or a behavior's methods'
+  decorators run before the owner's; a method's `decl.setMeta(v)` / `decl.addMeta(v)` is kept for its
+  owner (one value per type and method, `decorator-meta-twice`); the owner's body reads
+  `m.meta(Query)` (`?Query`) / `m.metaAll(Query)` (`Query[]`) on a `decl.methods` entry, `Query`
+  written by its declared name (`run/template_annotation`). A field's decorator still records no meta;
+  string meta (216 (2)) on a method stays refused.
+- **Options.** (a) ★ As built: `for (decl.methods) { m -> val q = m.meta(Query); … }` in
+  `#[repository]`. (b) The method's meta through the reflection of the owner, at build:
+  `@typeInfo(Users).method("find").meta(Query)`, the order of decorators unchanged. (c) No method meta:
+  the owner's decorator re-reads the method's annotation literal from `m.annotations[i].args[0]` and
+  parses it itself.
+- **Recommendation.** (a): the read is where the owner's decorator already walks its methods, typed as
+  `@typeInfo(X).meta(T)` is, and a member's facts exist before its owner reads them; (c) duplicates the
+  template's work in every owner.
+- **Blocks.** Nothing — built as (a); `04-rakun/137` and `143`'s `#[repository]` read it.
+
+#### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
+- **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
+  declaration, never both — a second `setMeta` of a type, or an `addMeta` beside a `setMeta` of it, is
+  `decorator-meta-twice` at the annotation that recorded it (`reject/meta_twice`). `@typeInfo(X).meta(T)`
+  answers `null` or the one value, and over several is `typeinfo-meta-several` at the read
+  (`reject/meta_several`); `metaAll(T)` answers a set-once value as a one-element array. 298 names
+  `setMeta` "one value per type" and `addMeta` "what repeats", not the two together. On a catalogue
+  entry `d.meta(T)` answers the first value (the read is run-time code over any entry).
+- **Options.** (a) As built: `decl.setMeta(Entity(…)); decl.addMeta(Entity(…));` is `decorator-meta-twice`
+  at the second; `meta(Index)` over two `Index` is `typeinfo-meta-several`. (b) A type recorded with
+  `addMeta` is read only with `metaAll` — `meta(Index)` refused even over one `Index`
+  (`typeinfo-meta-repeated`). (c) The two mix: `setMeta` holds one value among the added ones, and
+  `meta(T)` answers the set one.
+- **Recommendation.** (a): a key with two meanings at once is refused where it is written; (b) if a
+  reader must not depend on how many decorators added a type.
+- **Blocks.** Nothing — built as (a).
+
+#### 130-s8-c · A typed meta read of a declaration a `.hooks` reader of this module annotates (298, 372)
+- **Measured.** Built: decision 372 runs a decorator that reads `.hooks` after the module's bodies, and
+  answers a string meta read of its declaration in the module afterwards (`answerDeferredMetaReads`). A
+  typed read is an expression typed where it stands (its constructors, `@Expr` fields), so it is refused
+  in that module before the reader ran: `typeinfo-meta-hooks-pending` at the read; another module reads
+  it after the whole module ran.
+- **Options.** (a) As built: `@typeInfo(Page).meta(Route)` in `Page`'s module, `#[route]` reading
+  `.hooks`, is `typeinfo-meta-hooks-pending`. (b) Deferred like the string read: typed as `?Route` at the
+  read, the value written and typed when the reader ran — a type error in an `@Expr` field then located
+  in the second phase.
+- **Recommendation.** (a).
+- **Blocks.** Nothing — built as (a); `05-jhonstart/26`'s `#[page]` reads its meta from the entry point.
+
+#### 130-s8-d · A generic meta record read through a catalogue entry (298)
+- **Measured.** Built: `d.metaAll(T)` on a `@TypeInfo.all` entry calls a function of the reading module
+  typed for `T` (`declared__metaAll__<T>`, `typed_meta.withMetaHelper`); a generic one cannot be written
+  unapplied (`Check` of `Check<T>`), and a generic reader loses `T` on wasm. `d.metaAll(Check)` is
+  `typeinfo-meta-type` at the argument (`reject/meta_catalogue_generic`); `@typeInfo(X).metaAll(Check)`
+  reads it (`run/meta_expr_field`). The entries of one catalogue may hold `Check<Signup>` and
+  `Check<Login>`.
+- **Options.** (a) As built. (b) The read writes the arguments, `d.metaAll(Check<Signup>)`, and answers
+  the values recorded with exactly those. (c) The read answers `Check<unknown>[]`, its fields typed
+  through `unknown`.
+- **Recommendation.** (a).
+- **Blocks.** Nothing — built as (a).
+
+#### s28-a · An imported source's field default that names a binding of its module (307)
+- **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
+  copies the field without its default — the rule `registerExports` applies to an imported function's
+  parameter (`infer.isClosedDefault`): a literal, `true` / `false`, `null`, a sign, an array or tuple of
+  those travels, anything else does not — so `NoHref(target: null)` is the missing-field refusal at the
+  call (copying it made erlc fail: `function defaultRel/0 undefined`). An enum default (`= .Blank`) is not
+  closed either.
+- **Options.** (a) As built: the default does not travel, the field is supplied at every construction.
+  (b) The derivation is refused at the call naming the field (`derived-type-default-not-closed`).
+  (c) The default travels, the deriving module calling the source module's function (an implicit import).
+- **Recommendation.** (a): no implicit import, no silent value; (b) if a derived type must keep every default.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-b · `Type.required` over a field with a `null` default (307)
+- **Measured.** Built: `required` takes the `?` off each field and drops a `null` default with it
+  (`description: ?string = null` → `description: string`, supplied at every construction); any other
+  default stays.
+- **Options.** (a) As built. (b) Refused at the call, naming the field. (c) The `null` default stays and
+  the field is refused at the constructor when omitted.
+- **Recommendation.** (a): "every `?` goes" (types.bp), a `null` cannot type a non-optional field.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-c · What a derived type takes besides the fields (307)
+- **Measured.** Built: the derived record holds the fields only — the source's methods, `implement`
+  clauses and type-level annotations do not come (`Type.pick(Recipe, .title)` has no `Recipe` method);
+  the `val`'s own annotations go on the type. Decision 307 names "the source fields' markers" only.
+- **Options.** (a) As built: fields and their annotations. (b) The methods whose bodies read only kept
+  fields come too. (c) The `implement` clauses come, refused when a member they need is gone.
+- **Recommendation.** (a): a derived type is data; behaviour is written on it.
+- **Blocks.** Nothing — built as (a).
+
+#### s28-d · A generic record or an imported alias as the source (307)
+- **Measured.** Built: refused at the argument (`derived-type-source-not-record`): a record with type
+  parameters (`Type.pick(Box, .item)` — `T` unbound), and an imported type alias (its target is named in
+  its own module's scope). A local alias of a record is that record.
+- **Options.** (a) As built. (b) A type application as the source, `Type.pick(Box<i32>, .item)`, the
+  fields substituted. (c) An imported alias followed through its module.
+- **Recommendation.** (a) until a front needs (b) or (c).
+- **Blocks.** Nothing — built as (a).
+
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.
@@ -346,7 +473,7 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-#### 01-compiler (26)
+#### 01-compiler (29)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -376,6 +503,7 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 388-d | The wasm backend refuses a module the scope lowering reached, at its first component (`the wasm backend does not lower a component yet`), until 05's lowering: every component cell is a `.wasm.expect` (32 cells; `run/decl_hooks_*` among them, which ran on wasm under 354's map) | `wat.zig` `refuseScopeLowering` · `language-gaps.md` 354-wasm |
 | 388-e | A body that keeps a bare `try` runs the statements after its last `use provide` as an inner closure, whose answer (the value, or the error the `try` returns early) is the result; every other body answers `rendered(v, kids)` at each `return` | `context_lower.zig` `lowerComponentBody` · `run/component_try_in_body` |
 | 389-a | A declared function whose own return is no `@Component` answering one through its type arguments (`first<T>(cards)`) is 389's "what generic code answers": an edge with `callee: null`, the node asynchronous, no synchronous mark on the call | `infer.noteHookCall` · `run/decl_hooks_dynamic_call` |
+| s29-c | A template annotation's outputs name a hole by its expression as written (the part's `code` placeholder `__bp_hole_q_0` becomes `id` in a recorded meta or member source); `q.fail` / `q.failAt` / `decl.fail` and a `lookup` of a name not in the text are reported at the annotation (the literal has no span map there); its `DeclAnnotation.args` is the literal as written; `decl.params` lists `self` | `infer.unplaceholderContributions` · `decorator_eval.annotationPlans` · `run/template_annotation` |
 
 #### 02-std-and-packaging (10)
 

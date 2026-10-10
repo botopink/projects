@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 67 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 72 perguntas, 6 contradições e 100 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -346,6 +346,190 @@ usos nos repositórios: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1
 não espera a 05-wasm. **Bloqueia:** nada no gate; só o "std compila no wasm" do 05-wasm passo 5 / 97
 passo 11.
 
+### s29-a · Como uma anotação de template recebe a declaração anotada, e se ela também é template de chamada (311)
+
+**Trava:** nada — implementado como (a) ★.
+
+**Contexto.** A 311 deixa a grafia do `@Decl` para o passo 29 do `01-checker` e diz "uma função é o template e a anotação (`erika "…"` e `#[erika "…"]`)". Um template é chamado só com o literal (`f "…"`), então um parâmetro `@Decl` declarado não tem argumento numa chamada. A 398 já separou as duas formas em duas funções (`#[query "…"]` do dbcontext, o método template `self.db.query "…"` do erika).
+
+**Hoje.** O handle é o segundo parâmetro; a função que o declara só se escreve como anotação; o valor que o corpo devolve não é usado.
+
+- [ ] **(a) ★** Segundo parâmetro declarado; quem o declara é só anotação.
+  ```bp
+  fn query(comptime q: @Expr<string>, comptime decl: @Decl) -> @Expr<string> { … }
+  #[query "select * from users where id = ${id}"]
+  fn find(id: i32) -> string { … }
+  val x = query "select 1";      // template-annotation-only
+  ```
+- [ ] **(b)** O mesmo parâmetro como `?@Decl`, `null` na chamada: uma função para as duas formas.
+  ```bp
+  fn erika(comptime q: @Expr<string>, comptime decl: ?@Decl) -> @Expr<Q> {
+      if (decl != null) decl.setMeta(…);
+      return q.build(…);
+  }
+  ```
+- [ ] **(c)** Sem parâmetro: o handle vem da captura, `q.decl()` responde `?@Decl`.
+  ```bp
+  fn erika(comptime q: @Expr<string>) -> @Expr<Q> { val d = q.decl(); … }
+  ```
+
+**Recomendação: (a).** A assinatura diz qual forma a função aceita, nenhuma chamada encontra um handle que não pode ter, e a 398 já escreve as duas formas como duas funções. (b) se uma biblioteca precisar das duas formas num nome só. **Bloqueia:** nada.
+
+### s29-b · Como o decorator do dono lê o meta tipado de um método (313)
+
+**Trava:** nada — implementado como (a) ★.
+
+**Contexto.** A 313 diz que `#[query "…"]` e `#[nativeQuery(…)]` gravam "meta tipado do método (298)" e que o `#[repository]` do behavior "lê o meta de cada método"; a célula do passo 29 pede "uma anotação de método cujo meta um decorator do tipo lê". Antes: meta tipado em método era `decorator-meta-on-member`, os decorators do dono rodavam antes dos dos métodos, e uma entrada de `decl.methods` só tinha nome, parâmetros, retorno e anotações.
+
+**Hoje.** Os decorators dos métodos rodam antes dos do dono; o meta tipado de um método fica guardado para o dono (um valor por tipo e método, `decorator-meta-twice`); o corpo do dono lê `m.meta(Query)` (`?Query`) / `m.metaAll(Query)` (`Query[]`). Campo continua sem meta; meta de string (216 (2)) em método continua recusado.
+
+- [ ] **(a) ★** Leitura na entrada de `decl.methods`.
+  ```bp
+  fn repository(comptime decl: @Decl) {
+      for (decl.methods) { m -> val q = m.meta(Query); … }
+  }
+  ```
+- [ ] **(b)** Pela reflexão do dono, no build, sem mudar a ordem dos decorators.
+  ```bp
+  val q = @typeInfo(Users).method("find").meta(Query);
+  ```
+- [ ] **(c)** Sem meta de método: o dono relê o literal da anotação e o interpreta ele mesmo.
+  ```bp
+  val sql = m.annotations[0].args[0];   // "\"select …\"" — cada dono refaz o trabalho do template
+  ```
+
+**Recomendação: (a).** A leitura fica onde o decorator do dono já percorre os métodos, tipada como `@typeInfo(X).meta(T)`, e o fato do membro existe antes de o dono ler. **Bloqueia:** nada; o `#[repository]` da `04-rakun/137` e da `143` lê assim.
+
+### 130-s8-a · Um tipo de record fixado e acrescentado na mesma declaração; `meta(T)` sobre valores acrescentados (298)
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** A 298 diz que `setMeta` guarda "um valor por tipo" e `addMeta` "o que se repete", não os dois juntos.
+
+**Hoje.** Um tipo é guardado uma vez (`decl.setMeta(v)`) ou se repete (`decl.addMeta(v)`), nunca os dois: o segundo `setMeta` do tipo, ou um `addMeta` ao lado de um `setMeta` dele, é `decorator-meta-twice` na anotação que o gravou (`reject/meta_twice`). `meta(T)` responde `null` ou o valor, e sobre vários é `typeinfo-meta-several` (`reject/meta_several`); `metaAll(T)` responde um valor fixado como array de um. Numa entrada do catálogo, `d.meta(T)` responde o primeiro.
+
+- [ ] **(a)** Como está.
+  ```bp
+  decl.setMeta(Entity(table: "a"));
+  decl.addMeta(Entity(table: "b"));            // decorator-meta-twice
+  @typeInfo(City).meta(Index)                  // typeinfo-meta-several com dois Index
+  ```
+- [ ] **(b)** Tipo gravado com `addMeta` só se lê com `metaAll`, mesmo com um só.
+  ```bp
+  @typeInfo(City).meta(Index)                  // typeinfo-meta-repeated, mesmo com um Index
+  ```
+- [ ] **(c)** Os dois se misturam: o `setMeta` é um valor entre os acrescentados e `meta(T)` responde o fixado.
+  ```bp
+  decl.setMeta(Entity(table: "a")); decl.addMeta(Entity(table: "b"));   // meta(Entity) == "a"
+  ```
+
+**Recomendação: (a).** Uma chave com dois sentidos ao mesmo tempo é recusada onde é escrita.
+
+### 130-s8-c · Leitura de meta tipado de declaração que um leitor de `.hooks` do mesmo módulo anota (298, 372)
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** A 372 roda o decorator que lê `.hooks` depois dos corpos do módulo e responde depois a leitura string de meta da declaração (`answerDeferredMetaReads`). A leitura tipada é uma expressão tipada onde está (construtores, campos `@Expr`).
+
+**Hoje.** Recusada nesse módulo antes do leitor rodar: `typeinfo-meta-hooks-pending` na leitura; outro módulo lê depois que o módulo inteiro rodou.
+
+- [ ] **(a)** Como está.
+  ```bp
+  // #[route] lê .hooks
+  @typeInfo(Page).meta(Route)   // typeinfo-meta-hooks-pending no módulo de Page
+  ```
+- [ ] **(b)** Adiada como a leitura string: tipada `?Route` na leitura, o valor escrito e tipado quando o leitor rodou (erro num campo `@Expr` localizado na segunda fase).
+  ```bp
+  @typeInfo(Page).meta(Route)   // respondida depois de #[route]
+  ```
+
+**Recomendação: (a).**
+
+### 130-s8-d · Record genérico de meta lido por entrada do catálogo (298)
+
+**Trava:** nada — implementado como (a).
+
+**Contexto.** `d.metaAll(T)` numa entrada de `@TypeInfo.all` chama uma função do módulo leitor tipada para `T` (`declared__metaAll__<T>`); um genérico não se escreve sem argumentos (`Check` de `Check<T>`), e um leitor genérico perde `T` no wasm. As entradas de um catálogo podem ter `Check<Signup>` e `Check<Login>`.
+
+**Hoje.** `d.metaAll(Check)` é `typeinfo-meta-type` no argumento (`reject/meta_catalogue_generic`); `@typeInfo(X).metaAll(Check)` lê (`run/meta_expr_field`).
+
+- [ ] **(a)** Como está.
+  ```bp
+  for (@TypeInfo.all(with: mark)) { d -> d.metaAll(Check) }   // typeinfo-meta-type
+  ```
+- [ ] **(b)** A leitura escreve os argumentos e responde só os valores gravados com eles.
+  ```bp
+  d.metaAll(Check<Signup>)
+  ```
+- [ ] **(c)** A leitura responde `Check<unknown>[]`.
+  ```bp
+  d.metaAll(Check)              // Check<unknown>[]
+  ```
+
+**Recomendação: (a).**
+
+### s28-a · O default de um campo de fonte importada que nomeia algo do seu módulo (307)
+
+**Trava:** nada — implementado como (a).
+
+**Hoje.** `Type.omit(Link, .href)` sobre um `Link(…, rel: string = defaultRel())` importado copia o campo sem o default (a regra de `registerExports` para parâmetro importado, `infer.isClosedDefault`); copiá-lo fazia o erlc falhar (`function defaultRel/0 undefined`).
+
+- [ ] **(a)** Como está: o default não viaja; o campo é passado em toda construção.
+  ```bp
+  val NoHref = Type.omit(Link, .href);
+  val n = NoHref(target: null);           // erro na chamada: falta `rel`
+  ```
+- [ ] **(b)** A derivação é recusada na chamada, nomeando o campo.
+  ```bp
+  val NoHref = Type.omit(Link, .href);    // derived-type-default-not-closed: `rel`
+  ```
+- [ ] **(c)** O default viaja, chamando a função do módulo de origem (import implícito).
+
+**Recomendação: (a).** Sem import implícito, sem valor silencioso.
+
+### s28-b · `Type.required` sobre um campo com default `null` (307)
+
+**Trava:** nada — implementado como (a).
+
+- [ ] **(a)** Como está: o `?` sai e o default `null` sai junto.
+  ```bp
+  val Full = Type.required(Recipe);   // description: string, sem default
+  ```
+- [ ] **(b)** Recusado na chamada, nomeando o campo.
+- [ ] **(c)** O default `null` fica e a construção que o omite é recusada.
+
+**Recomendação: (a).** "Todo `?` sai"; `null` não tipa um campo não opcional.
+
+### s28-c · O que um tipo derivado leva além dos campos (307)
+
+**Trava:** nada — implementado como (a).
+
+- [ ] **(a)** Como está: só os campos e suas anotações; métodos e `implement` da fonte não vêm.
+  ```bp
+  val T = Type.pick(Recipe, .title);   // T(title: string), sem os métodos de Recipe
+  ```
+- [ ] **(b)** Vêm os métodos cujo corpo só lê campos mantidos.
+- [ ] **(c)** Vêm as cláusulas `implement`, recusadas quando falta um membro.
+
+**Recomendação: (a).** Tipo derivado é dado; comportamento se escreve nele.
+
+### s28-d · Registro genérico ou alias importado como fonte (307)
+
+**Trava:** nada — implementado como (a).
+
+- [ ] **(a)** Como está: recusado no argumento (`derived-type-source-not-record`).
+  ```bp
+  val P = Type.pick(Box, .item);        // Box<T>: recusado
+  ```
+- [ ] **(b)** Uma aplicação de tipo como fonte.
+  ```bp
+  val P = Type.pick(Box<i32>, .item);   // P(item: i32)
+  ```
+- [ ] **(c)** O alias importado seguido pelo seu módulo.
+
+**Recomendação: (a)** até uma frente precisar de (b) ou (c).
+
+
 ### 97-s16-a · Onde ficam as tabelas geradas do `unicode` *(proposta)*
 
 **Trava:** nada hoje — a 97 s16 entra com a forma (b) · confirmar ou mudar o arquivo
@@ -570,6 +754,7 @@ Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `de
 | `388-d ★` | O wasm recusa a baixa do escopo | (a) O wasm recusa o módulo que a baixa alcançou, no primeiro componente (`the wasm backend does not lower a component yet`), até a baixa da 05: toda célula de componente ganhou `.wasm.expect` (32 células; as `run/decl_hooks_*`, que rodavam no wasm com o mapa da 354, entre elas). | (a) ★. Recusar no build, localizado, em vez de rodar com outra semântica; a baixa é da `05-wasm`. |
 | `388-e ★` | Um `try` solto no corpo de um componente | (a) O corpo que guarda um `try` solto roda o que vem depois do último `use provide` numa closure interna, cuja resposta (o valor, ou o erro que o `try` devolve antes) é o resultado; os demais corpos respondem `rendered(v, kids)` em cada `return`. | (a) ★. O `try` continua com o significado que os backends já dão, e nada antes do último provide pode sair cedo (357). |
 | `389-a ★` | O que o código genérico responde | (a) Uma função declarada cujo retorno não é `@Component`, mas que devolve um pelos argumentos de tipo (`first<T>(cards)`), é o "o que o código genérico responde" da 389: uma aresta com `callee: null`, o nó assíncrono, sem marca de síncrono na chamada. | (a) ★. O lado seguro que a 389 pede, sem seguir o tipo de quem chama. |
+| `s29-c ★` | O que uma anotação de template escreve e onde falha | (a) Uma saída nomeia o buraco pela expressão escrita nele (o `__bp_hole_q_0` do `code` vira `id` no meta ou no membro gravado); `q.fail` / `q.failAt` / `decl.fail` e um `lookup` de nome fora do texto são reportados na anotação; o `DeclAnnotation.args` é o literal como escrito; `decl.params` inclui o `self`. | (a) ★. O meta guarda o parâmetro que o buraco nomeia, que é o que o dono precisa para gerar a chamada. |
 | `01std-e` | `actions.readEnvelope` recusa um envelope incoerente | (a) Recusar o envelope incoerente (decisão 67). | (a). É a mais restritiva: o que o escritor não produz, o leitor não aceita. |
 | `std-a` | `querystring` recusa por `Error`, nos dois sentidos | (a) Como está: recusa nos dois sentidos, dois leitores. | (a) — a leitura restritiva (decisão 67): o que não pode ser lido não é lido, e o que o próprio leitor recusaria não é escrito. A `03r-e` cai junto (ver `ctr-p`). |
 | `std-b` | `fs.exists` segue link simbólico | (a) Segue o link (`stat`). | (a). A pergunta de quem chama antes de ler é se a leitura vai achar alguma coisa. |

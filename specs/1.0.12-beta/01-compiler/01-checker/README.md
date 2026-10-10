@@ -388,24 +388,31 @@ it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questi
 annotation is `#[name]` or `#[name(args)]`, and its arguments are comptime values (280), so a hole
 naming a parameter cannot be written. After, the template call `f "…"` may be written as an annotation.
 
-- [ ] parser: `#[f "…"]` and `#[f """…"""]` (also inside a `#[a, b]` list) — a node of its own beside
-      the call form, printed as written (`16-formatter` step 9 gains the cell)
-- [ ] checker: `f` resolves to a template function (first parameter `comptime q: @Expr<…>`); any other
-      function is a located error at the annotation; `#[f(…)]` naming a template function is a located
-      error naming `#[f "…"]`
-- [ ] the literal is captured unevaluated, as at a call site; a `${…}` hole resolves in the annotated
+- [x] parser: `#[f "…"]` and `#[f """…"""]` (also inside a `#[a, b]` list) — a node of its own beside
+      the call form (`Annotation.template`, `parser/tests/decision311.zig`), printed as written (the
+      `16-formatter` step 9 cell; inside a list it prints as its own block until that step's box 1)
+- [x] checker: `f` resolves to a template function (first parameter `comptime q: @Expr<…>`); any other
+      function is a located error at the annotation (`template-annotation-not-template`); `#[f(…)]`
+      naming a template function is a located error naming `#[f "…"]` (`template-annotation-call-form`)
+- [x] the literal is captured unevaluated, as at a call site; a `${…}` hole resolves in the annotated
       declaration's scope — on a method its parameters, by name and type (an unknown name is the
       ordinary unbound-name error at the hole) —; other names in the module's scope (112)
-- [ ] the template function receives the annotated declaration's `@Decl` beside `q` (spelling decided
-      here and recorded in `docs.md` § Decorators); a method's own `@Decl` carries `params` — closes
-      `language-gaps.md`'s row "A method's own `@Decl` has no parameter list" (280)
-- [ ] what the function produces goes to 216's four places, as a decorator's (typed meta, 298, for
-      erika's query)
-- [ ] `run/template_annotation` (a method annotation whose meta a type-level decorator reads) on the
+- [x] the template function receives the annotated declaration's `@Decl` beside `q` — its second
+      parameter, `comptime decl: @Decl<…>`; such a function is written only as an annotation
+      (`template-annotation-only` at a call, `template-annotation-without-decl` for a template without
+      it — question `s29-a` ★) —, recorded in `docs.md` § Template annotations; a function's and a
+      method's own `@Decl` carry `params` (`language-gaps.md`'s row "A method's own `@Decl` has no
+      parameter list" is closed in the compiler; it goes with its two markers)
+- [x] what the function produces goes to 216's four places, as a decorator's (typed meta, 298, for
+      erika's query); a method's typed meta is read by its owner's decorator, `m.meta(T)` on a
+      `decl.methods` entry, the methods' decorators running first (question `s29-b` ★); a string an
+      output carries names a hole by its expression (`s29-c` ★)
+- [x] `run/template_annotation` (a method annotation whose meta a type-level decorator reads) on the
       four targets; `reject/` cells for `#[f(…)]` on a template function, a non-template `#[f "…"]` and an
-      unknown hole name
-- [ ] `docs.md` § Decorators and § Template functions document the form; `comptime/AGENTS.md` states
-      how the literal and the `@Decl` reach the body
+      unknown hole name (`template_annotation_call_form`, `_not_template`, `_unknown_hole`), and for
+      `s29-a` (`_without_decl`, `_called`)
+- [x] `docs.md` § Decorators and § Template functions document the form (§ Template annotations);
+      `comptime/AGENTS.md` states how the literal and the `@Decl` reach the body
 
 - [ ] a template method (397, 415): `comptime self: @Expr<R>` then `comptime q: @Expr<…>` — the receiver the call site's code (`self.text()`)
       is called `value.method "…"` / `value.method """…"""` as `f "…"` is — the literal captured
