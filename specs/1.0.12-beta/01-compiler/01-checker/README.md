@@ -110,7 +110,7 @@ the annotation wrote it and each type parameter as bound (`DecoratorArgValue.lex
 `decorator-member-fn-imported-name` for a library member naming anything but its parameters (until 384) —
 cells `run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime`,
 `modules/decorator_member_fn_import{,ed_name}` (four targets) and six `reject/` cells, red on `90d50ae3`;
-questions `s35-e`, `s35-f` (`s35-g` answered by 384, `s35-h` by 404: one member name, several annotations through typed meta).
+question `s35-f` (`s35-e` answered by 408 — the typed form legal everywhere, step 37; `s35-g` by 384; `s35-h` by 404: one member name, several annotations through typed meta).
 Step 23, `HookNode.async` (375) — `hooks.zig` `Node.is_async` (the term's `async`), set by a written `await`, an
 `async { … }`, a `use` with `hook: null` or of a host hook, a call of a host answering `@Task` / `@Component`, a call
 of a function value or a method answering `@Component<R>` (or open); `markHookAsync` follows the `use`s and calls
@@ -581,6 +581,40 @@ fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + a
       `run/decorator_calls_any_helper`, `reject/decorator_calls_run`; `language-gaps.md`'s sibling-fn row
       closes
 - [ ] std declares `Any` on its pure host primitives (`string`, `math`), every other host binding `Run`
+
+### Step 37 — the typed function expression in every position (decision 408)
+
+```bp
+val inc = fn(x: i32) -> i32 { return x + 1; };            // inc: fn(i32) -> i32
+xs.map(fn(n: i32) -> string { return n.toString(); });
+val f: fn(x: i32) -> i32 = fn(x: string) -> i32 { … };     // ❌ at the expression: expected fn(i32) -> i32
+```
+
+- [ ] `fn(x: T, …) -> R { … }` typed where it stands — a `val` / `var`, an argument, a return, `decl.addMember`;
+      written types checked against the position's when it has one — `run/fn_expr_typed_anywhere`,
+      `reject/fn_expr_typed_mismatch`
+- [ ] `fn-expr-typed` and `reject/fn_expr_typed` deleted; `docs.md` § Lambdas and § Decorators rewritten; the
+      braced lambda still untyped (328)
+
+### Step 38 — a body's last expression without `;` is its value (decision 409)
+
+```bp
+fn inc(x: i32) -> i32 { x + 1 }
+fn sign(n: i32) -> i32 { if (n < 0) return -1; n }
+val inc = fn(x: i32) -> i32 { x + 1 };
+fn bad(x: i32) -> i32 { "a" }           // ❌ expected i32, got string — at "a"
+fn semi(x: i32) -> i32 { x + 1; }       // ❌ as today: the body falls off its end
+```
+
+- [ ] the parser keeps a body's last expression statement written without `;` as the tail (`ast` flag), in a named
+      `fn`, a method, a `fn` expression and a lambda; a braced `if` / `case` / loop at the end stays a statement (16)
+- [ ] the checker types the tail against `-> R` (`stmtsMayFallThrough` answers `false` after it); a non-`void` tail in
+      a body answering nothing refused at it — `run/fn_tail_value`, `run/method_tail_value`,
+      `run/fn_expr_tail_value`, `reject/fn_tail_type_mismatch`, `reject/fn_tail_in_void`
+- [ ] every backend returns the tail (erlang the last expression, commonJS a `return`, wasm the block value) —
+      the four targets
+- [ ] measured first: the bodies in std, `tests/language` and the libraries whose last line has no `;` today,
+      the count in this README; `docs.md` § Functions, § Lambdas
 
 ### Rows other fronts found
 

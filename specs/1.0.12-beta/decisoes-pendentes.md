@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 77 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **408**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 76 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **410**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -551,26 +551,6 @@ passo 11.
 - [ ] **(b)** A regra do decorator para toda função: `tag(k, 1)` é aceito, porque o corpo não lê `n.value`.
 
 **Recomendação: (a).** O parâmetro `comptime` de uma função de execução é a sua especialização.
-
-### s35-e · Uma expressão de função tipada fora do membro de um decorator
-
-**Trava:** nada — implementado como (a).
-
-**Contexto.** A 370 (2) escreve o membro como `fn(self: T) -> Violation[] { … }`, que não era sintaxe (`fn(a, b) { … }` só levava nomes).
-
-**Hoje.** O parser lê `fn(x: T, …) -> R { … }` (todo parâmetro tipado ou nenhum); o checker só aceita como segundo argumento de `decl.addMember(nome, fn…)` no corpo de um decorator — em qualquer outro lugar é `fn-expr-typed` no `fn` (`reject/fn_expr_typed`).
-
-- [ ] **(a)** Como está: o lambda recebe os tipos da posição.
-  ```bp
-  val inc = fn(x: i32) -> i32 { return x + 1; };   // fn-expr-typed
-  val inc: fn(x: i32) -> i32 = { x -> x + 1 };     // aceito
-  ```
-- [ ] **(b)** A forma tipada vale em todo lugar, os tipos escritos conferidos com os da posição.
-  ```bp
-  val inc = fn(x: i32) -> i32 { return x + 1; };   // inc: fn(i32) -> i32
-  ```
-
-**Recomendação: (a).** Um jeito só de tipar um lambda; a forma tipada existe para o único lugar que a 370 precisa.
 
 ### s35-f · O que um membro-função lê do corpo do decorator
 

@@ -137,6 +137,13 @@ fn mix(…) -> …                          // stays one list, one per line (tra
       `#[@External.Erlang("…", inline: true)]`); `src/format/AGENTS.md`'s "prints `label = value`" row
       rewritten; `format/tests/declarations.zig` cases updated (`assertFormat`, `assertIdempotent`)
 
+### Step 11 — a body's tail printed as written (decision 409)
+
+- [ ] a body's last expression without `;` (`fn inc(x: i32) -> i32 { x + 1 }`) prints without it, one written with
+      `;` keeps it — the printer adds and removes none; a one-line body stays on one line when it fits;
+      `format/tests/declarations.zig` cases (`assertFormat`, `assertIdempotent`); the typed `fn` expression (408)
+      printed in every position
+
 **Gate:** standard (fronts.md § Gate) + `scripts/format-check.sh` green over every `TREES` tree, a
 second pass moves nothing · `zig build test-libs` at baseline after step 3 (every library compiles
 under the refusal)

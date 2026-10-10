@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**77 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**76 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -59,19 +59,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) As built. (b) The decorator rule for every function: `fn tag(comptime n: @Expr<i32>,
   x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
 - **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
-- **Blocks.** Nothing — built as (a).
-
-#### s35-e · A typed function expression outside a decorator's member
-- **Measured.** Built: decision 370 (2) writes the member as `fn(self: T) -> Violation[] { … }`, which
-  did not parse (`fn(a, b) { … }` took names only). The parser now reads `fn(x: T, …) -> R { … }` (every
-  parameter typed or none) everywhere; the checker admits it only as the second argument of
-  `decl.addMember(name, fn…)` in a decorator's body, and refuses it anywhere else at the `fn`
-  (`fn-expr-typed`, `reject/fn_expr_typed`).
-- **Options.** (a) As built: `val inc = fn(x: i32) -> i32 { return x + 1; };` is `fn-expr-typed`; a lambda
-  takes the types of its position (`val inc: fn(x: i32) -> i32 = { x -> x + 1 };`). (b) A typed function
-  expression is legal everywhere: `val inc = fn(x: i32) -> i32 { return x + 1; };` types `inc` as
-  `fn(i32) -> i32`, the written types checked against the position's.
-- **Recommendation.** (a): one way to type a lambda, and the typed form exists for the one place 370 needs it.
 - **Blocks.** Nothing — built as (a).
 
 #### s35-f · What a member function reads of the decorator's body
