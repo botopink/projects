@@ -95,18 +95,18 @@ pub type StyledSheet(…);                                  // the render's shee
 pub val StyledContext = Context<StyledSheet>();           // provided by whoever renders (354)
 pub type Styled(className: string, rules: string) implement @Renderable;
 pub type StyledView = @Component<Styled>;
-pub type StyledPropertyView = @Component<StyledProperty>;
+pub type StyledProperty(declarations: string);        // a value, never a component (381)
 
 pub default fn styled(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
-pub fn styledProperty(comptime css: @Expr<string>) -> @ExprCustom<StyledPropertyView> { … }
-pub behavior Styleable { fn toStyled(self: Self) -> StyledView; }   // StyledView, StyledPropertyView
+pub fn styledProperty(comptime css: @Expr<string>) -> @ExprCustom<StyledProperty> { … }
+pub behavior Styleable { fn toStyled(self: Self) -> StyledView; }   // StyledView
 ```
 
 ```bp
 import styled, {styledProperty} from "styled";
 
 pub val tab4 = styledProperty "tab-size: 4;";                         // declarations only
-fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
+fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }   // Any (376)
 
 pub val code = styled """
   ${tab4}                                                             // @apply: declarations inlined
@@ -120,8 +120,8 @@ pub val code = styled """
 |---|---|
 | `--spacing(4)`, `--alpha(var(--c) / 50%)`, `--theme(--breakpoint-md)` | the same, expanded at build (`calc(var(--spacing) * 4)`, `color-mix(…)`, the theme's value) |
 | `@variant hover { … }`, `@variant md { … }`, `@custom-variant hocus (&:hover, &:focus);` | the same; `md` from the theme |
-| `@apply p-4;` | a hole of a `StyledPropertyView`: `${padAll(4)}` |
-| `@utility tab-4 { … }`, `@utility tab-* { … --value(integer) … }` | refused: `pub val tab4 = styledProperty "…";`, `fn tab(n: i32) -> StyledPropertyView` |
+| `@apply p-4;` | a hole of a `StyledProperty`: `${padAll(4)}` |
+| `@utility tab-4 { … }`, `@utility tab-* { … --value(integer) … }` | refused: `pub val tab4 = styledProperty "…";`, `fn tab(n: i32) -> StyledProperty` |
 | `@theme { … }` | refused: the typed `#[theme]` (300) |
 
 - A component's class is std's `hash.contentHash` over its rules, with its layer's prefix (`s_` by
@@ -215,6 +215,11 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       the class, as CSS Nesting's nested-declarations rule — `styled "${bg} &:focus { ${gray} } ${pad}"`
       renders `.k{background:#ffffff}.k:focus{…}.k{padding:…}` on both targets (`reader.bp`
       `readBlock`); before `06-emilia/34` step 5, which keeps emilia's CSS byte-identical through it
+- [ ] `styledProperty "…"` answers the record `StyledProperty` (381): built by a pure function, reading no
+      context, registering nothing; `StyledPropertyView` gone; a property used alone (`use p`,
+      `#[styled(p)]`) refused at the use naming `styled`; `examples/styled-context` and
+      `test/context_test.bp` reversed ("a property standing alone registers itself" no longer); `fn
+      padAll(n: i32) -> StyledProperty` compiles and `comptime padAll(2)` is a value
 - [ ] a literal with render holes is built at build into a template with slots (377): parsed and checked,
       its known holes — an `Any` call with build arguments included (376) — written in, the render filling
       the slots, hashing, registering; a hole's mark (`p.hole.known`, `p.hole.why`) is the compiler's

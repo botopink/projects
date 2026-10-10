@@ -4,7 +4,7 @@
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
 step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes and its class box
-(367) done; boxes 1–3 and 6 wait on 34-d (369's family answering `StyledProperty` does not compile),
+(367) done; boxes 1–3 and 6 wait on 381's literal in `styled` (34-d: `styledProperty` answers the record),
 box 4 on 34-e, 34-f, `08-bpp/119` step 4 and the toolchain row "A nested-section enum value at comptime",
 box 5 on that row and "emilia's dispatcher at comptime", box 8 on box 1
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
@@ -174,9 +174,9 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
 
 Waits on (measured on botopink-lang `90d50ae3`, styled `01a5299`; `119` step 1's source-order reader
 and `StyledContext` have landed):
-- 34-d — 369 (3)'s `fn padAll(n: i32) -> StyledProperty { return styledProperty "…"; }` is `type
-  mismatch: expected StyledProperty, got Component`; with `-> StyledPropertyView` a `comptime` read of
-  it fails at `propertyComputed`'s `sheet.add` (no render tree) — boxes 1–3, 6, and 8 through them.
+- 381 (34-d) in `styled` — `styledProperty "…"` answering the record `StyledProperty` (`08-bpp/119`
+  step 1): until it lands, 369 (3)'s `fn padAll(n: i32) -> StyledProperty { return styledProperty "…"; }`
+  is `type mismatch: expected StyledProperty, got Component` — boxes 1–3, 6, and 8 through them.
 - 34-e (369 (1)'s `comptime ..tokens: Token[]` is `comptime-param-not-expr`; `@Expr<Token[]>`
   compiles), 34-f (no meta type in `styled`) and `08-bpp/119` step 4 — box 4.
 - The toolchain rows "A nested-section enum value at comptime" (`comptime f([.Pad.All.__4])` and a

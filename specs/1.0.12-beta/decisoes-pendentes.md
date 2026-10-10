@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 94 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **381**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 93 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **382**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,39 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 34-d · O que uma família da emilia devolve quando a emilia roda só no compile time (369 (3) × o tipo do literal `styledProperty`) *(proposta)*
-
-**Trava:** `06-emilia/34` passo 5, caixas 1–3 e 6 (e por elas a dependência de `styled`, caixa 8, e o passo 2) — a cadeia de prioridade da 350 · ⏳ thread `emilia-34-s5b` esperando
-
-**Contexto.** A 369 (3) escreve cada família como função de compile time que devolve `StyledProperty`, escrita com o literal `styledProperty`. O literal responde `@Component<StyledProperty>`, e um buraco que nomeia um parâmetro torna o literal computado no render (355), lendo `use context(StyledContext)`.
-
-**Hoje** (medido em botopink-lang `90d50ae3`, styled `01a5299`):
-```text
-fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
-  → type mismatch: expected StyledProperty, got Component
-return await v;                      → effect-await-without-task
--> StyledPropertyView lido em comptime → "calls .add(…) with 2 argument(s) … no type the block reaches provides"
-```
-
-- [ ] **(a)** `styledProperty "…"` devolve o registro `StyledProperty` (declarações como valor, função pura, nada registrado — uma propriedade só é inlined); `StyledPropertyView` sai, e "uma propriedade sozinha se registra" do `styled` se inverte.
-  ```bp
-  fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
-  ```
-- [ ] **(b)** Uma segunda função de template no `styled` que devolve o registro; `styledProperty` fica.
-  ```bp
-  fn padAll(n: i32) -> StyledProperty { return styledDeclarations "padding: --spacing(${n});"; }
-  ```
-- [ ] **(c)** As famílias devolvem `StyledPropertyView` e a cadeia da emilia roda no render, `@Task` até cada consumidor (a (a) da 366, substituída pela 369).
-  ```bp
-  val cls = await emilia([.Pad.All.__4]);
-  ```
-- [ ] **(d)** As famílias continuam montando strings; a emilia só usa a folha do `styled` (emenda 338 (3), 350, 369 (3)).
-  ```bp
-  fn padAll(n: i32) -> string { return "padding:" + spacing(n); }
-  ```
-
-**Recomendação: (a).** É o texto da 369, um literal e um tipo para um valor só de declarações; nada numa propriedade precisa de render (numa tag ela passa pelo `Styleable.toStyled()` do registro). **Bloqueia:** 34 s5 caixas 1–3 e 6; sob (a), o exemplo e o teste de contexto da `08-bpp/119` passo 1. Mesmo respondida, uma família lida em `comptime` ainda espera as linhas de toolchain "A nested-section enum value at comptime" e "emilia's dispatcher at comptime" (`language-gaps.md`).
 
 ### 134-g · Um valor-função `@Component` entregue a código genérico (354 (8))
 
