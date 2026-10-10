@@ -56,7 +56,7 @@ All eleven **not started**.
 | Front | Priority | State | What | Depends on (open) |
 |---|---|---|---|---|
 | [`118-bpp-components/`](./118-bpp-components/README.md) | **critical** — all markup goes through it | not started · ready to open | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<script>` to its sink (`<style>` in markup refused but `#[isInline]`, 338); jhonstart's `prelude.bp` and node type | — |
-| [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | steps 1–2, 4–5 done (4–5's boxes on 3, 9, 10, 117, 124, 125 left) · step 3 on `08-f` | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections typed by a `#[validated]` type (306), `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
+| [`121-bpp-content/`](./121-bpp-content/README.md) | **high** — largest new code | steps 1–2, 4–5 done (4–5's boxes on 3, 9, 10, 117, 124, 125 left) · step 3 on `03-bundled-libs/142` step 2 (396) | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections typed by a `#[validated]` type (306), `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
 | [`120-bpp-islands/`](./120-bpp-islands/README.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
 | [`117-bpp-routing/`](./117-bpp-routing/README.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 |
 | [`119-bpp-styling/`](./119-bpp-styling/README.md) | step 1 **high** (350: emilia on `styled` first) · steps 2–5 medium | step 1: `css` done, `styled` landed but two boxes | The repositories `css` and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism); `jhonstart-styled` (the style section, `use`, `:global()`, run-time holes as CSS variables, `#[styled(..)]`, the one sheet); `jhonstart-emilia` deleted; cascade order (338) | 118, `05-jhonstart/26` (step 2) · `06-emilia/34` step 5 (step 5) |
@@ -73,7 +73,7 @@ Waves (cross-track numbers: [`../fronts.md`](../fronts.md) § Execution order of
 
 - **A** (after `00-gate` → 125 steps 0–2): 118 (alone in `html.bp`, in the core after 26 step 0;
   carve-outs before 34, 33, 26, 119 open — decision 189) · 121 steps 1–2 (alone, new member;
-  step 3 on 08-f) · 119 step 1 (alone in the repositories `css` and `styled`, 338).
+  step 3 on 142's `yaml`, 396) · 119 step 1 (alone in the repositories `css` and `styled`, 338).
 - **B**: 123 ◄ `04-rakun/04` (core), `04-rakun/65` (rakun-web) · 117 ◄ `03-bundled-libs/102`,
   `04-rakun/22`, `07-onze/49`, `50` · 120 ◄ `05-jhonstart/26`, `07-onze/50` (lazy starters), 117
   (rakun-app) · 122 ◄ 26, 49, 120 (core) · 126 ◄ `05-jhonstart/27` (reconcile driver), 120
@@ -198,7 +198,7 @@ step 2 owns.
 
 ## Decisions the maintainer owes
 
-Open: `08-f` (below) and `nat-f2`
+Open: `nat-f2`
 ([`../decisions-pending.md`](../decisions-pending.md)); `props-d` → 351 (native tags typed as React's intrinsic elements, through `prelude.bp`); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
 Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296 (request state is
 `rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277); `08-d` → 338
@@ -208,16 +208,9 @@ the `.bpp` style section; `jhonstart-emilia` deleted).
 - Answered: `props-f` → 359 (spread on a component and in a record's construction), `props-e` → 360 (slots as Astro's, `#[slot("x")]`).
 - `nat-f2` — which `onze.json` keys (`trailingSlash`, `redirects`, `markdown`, `allowedRedirects`) and how they are read. Blocks 124's key boxes.
 
-### 08-f · Where Markdown and YAML live
+### 08-f · Where Markdown and YAML live — closed (396)
 
-**Measured.** No Markdown code. One YAML-subset reader, rakun's config
-(`rakun/modules/rakun/src/config.bp:340`); `03-bundled-libs/README.md` § "What does not move":
-config readers go to std "when a second consumer appears".
-**Options.** (a) both in new member `onze-content`; (b) Markdown in `onze-content`, YAML in std as
-`yaml` (97's tree), rakun's reader deleted by rakun's front; (c) a bundled `markdown` package.
-**Recommendation.** (b). Frontmatter is that second consumer; Markdown has one, so decision 115's
-"two or more libraries" makes no package. Until std's `yaml`, 121 step 3 keeps its own copy, deleted on landing.
-**Blocks.** 121 step 3 (frontmatter); under (c), where steps 1–2 live; a row for `02-std-and-packaging/97`.
+Three libraries of their own — `json`, `yaml`, `markdown` (`03-bundled-libs/142`); std knows nothing of JSON; `yaml` reads one subset into `json`'s `Json`; `markdown` answers a tree of its own, which onze-content maps to `Element`.
 
 ### 08-h · The config file and the commands — closed (285, 224)
 

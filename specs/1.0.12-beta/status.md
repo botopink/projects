@@ -220,6 +220,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
+- [ ] 142 (396) — `json`, `yaml`, `markdown`, one repository each: s0 the three repositories (GitHub first), s1 std's `json.bp` out with the six consumers' imports, s2 `yaml` (rakun's reader its seed; 121 s3), s3 `markdown` (onze-content's reader, a tree of its own) · s0: the GitHub repositories · s1–2's rakun commits after 128
 - [ ] 135 s0 (391) — the `snap` library: `botopink/snap` scaffolded and a submodule (`repository/snap`, meta `79e4af6`); left: `snap`'s `botopink.json`, `std/testing/snapshots.bp` moved whole into it with std's four `.snap`, std's generic text methods (newline normalisation, trailing trim, first differing line), the consumers' imports one commit per library (jhonstart, onze), `contracts.md` § 7 · none — every `.snap` byte-identical before and after; 135 s1–5 write through it
 - [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
@@ -256,7 +257,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 - [ ] 117 (W7) — `.bpp` / `.md` app files, `staticPaths`, `paginate`, partials · 102 · 22 · 49 · 50 · 121 s1–2 · s1: 293
 - [ ] 123 (W7) — `locals`, `sequence`, `actionContext` · 04 · 65 (s1 box 3: 08-j closed → 295/296, `use local(atom)`, the store `rakun-cardume`'s)
 - [ ] 120 (W8) — hydration strategies as `#[client…]` / `#[serverDefer]` annotations (278), server islands · 118 · s1: 26 s8 (`clientOnly`) · 119 · 117 · 26 · 22 · 49 · 50
-- [ ] 121 s3–6 (W9) · s7 (W10) — frontmatter, collections, references and RSS, `.md` pages; the blog reads Markdown · s3: 08-f · s6: 118, 117 · s7: 53
+- [ ] 121 s3–6 (W9) · s7 (W10) — frontmatter, collections, references and RSS, `.md` pages; the blog reads Markdown · s3: 142 s2 (396's `yaml`) · s6: 118, 117 · s7: 53
 - [ ] 122 (W9) — page-side status and headers, `rewrite`, `site` · 26 · 49 · 102 · 118 · 120
 - [ ] 126 (W9) — view transitions, `#[transition…]` annotations (278) · 27 · 118 · 120
 - [ ] 127 (W10) — actions typed by a schema · 125 s6 · 103 · 22 · 67 · 49 · 117 · 120 · 126 · s4: 123
@@ -300,7 +301,6 @@ Then:
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
-- [ ] 08-f — 121 s3
 - [ ] erk-a · erk-b — the body form's source (137 s2, 08 s7) · `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-b … lg2-u — none opens a front; each opens a step when answered: 01-checker (q — reduced); the rakun boxes that name them — 13 · 65 · 92 (b), 22 (q) · answered: a (346 → 01 s32), e (347), j (343), o (342), w (341) → 14 s6, v (344) → 26 s6 / 98 s4 / 73, f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281
 - [ ] C-14 — 07-residuals s9 (a 1.0.10 id)

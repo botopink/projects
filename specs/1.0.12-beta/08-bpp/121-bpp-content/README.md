@@ -2,17 +2,16 @@
 
 **Priority:** high — the track's largest code that exists in no form; content sites are the
 reference's first use case. · **State:** steps 1–2 done (`onze-content`'s `markdown`) · steps 4–5 done
-but for the boxes below (`collections`, `feeds`) · step 3 waits on `08-f`
-**Depends on:** open: [`08-f`](../README.md#08-f--where-markdown-and-yaml-live) (step 3,
-frontmatter reader's home) · `03-bundled-libs/125-validation-zod` steps 0–2 for steps
+but for the boxes below (`collections`, `feeds`) · step 3 follows 396 (`yaml`, `03-bundled-libs/142` step 2); steps 1–2's reader moves to the `markdown` library (142 step 3)
+**Depends on:** `03-bundled-libs/142` step 2 (step 3: the frontmatter reads through the `yaml` library, 396) · `03-bundled-libs/125-validation-zod` steps 0–2 for steps
 4–5 (step 12 for step 10: the `#[validated]` type; `Schema<T>` is private, 306) — steps 0–2 merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still lists
 them pending · `118-bpp-components`, `117-bpp-routing` (`page.md`) for step 6 · `07-onze/53` for
 step 7. **Steps 1–2 depend on nothing**, open with wave A.
 **Owns:** new member `repository/onze/modules/onze-content/**` (`botopink.json`, `src/**`,
 `test/**`, `AGENTS.md`) · its line in `onze/botopink.json`'s `workspaces` and `onze/modules.md` ·
 `onze/examples/blog/content/**`, `src/lib/db.bp` (step 7, after `07-onze/53`)
-**Does not touch:** `onze-cli` (`sync` is 124's), `onze-assets`, `libs/std` (`yaml` is
-`02-std-and-packaging/97`'s — `08-f`), the compiler.
+**Does not touch:** `onze-cli` (`sync` is 124's), `onze-assets`, `libs/std`, the `yaml` and
+`markdown` libraries (`03-bundled-libs/142`, 396), the compiler.
 
 Reference: `astro-docs/14-markdown-content.md`, `15-content-collections.md`,
 `10-layouts.md` § Layouts Markdown, `19-images.md` § Imagens em arquivos Markdown.
@@ -146,7 +145,7 @@ reads, renders, calls the layout. No `layout`: rendered inside the directory's l
 
 ## Open
 
-### Step 3 — Frontmatter (waits on `08-f`)
+### Step 3 — Frontmatter (396: through the `yaml` library, `03-bundled-libs/142` step 2)
 
 - [ ] `test/frontmatter_test.bp`: the reference's five frontmatter blocks decode to the meant
       `Json`; an anchor, a tag, a second document each refused with the line
@@ -204,8 +203,9 @@ reads, renders, calls the layout. No `layout`: rendered inside the directory's l
 
 ## Decisions
 
-- `08-f` — where Markdown and YAML live: (b) recommended (Markdown in `onze-content`, YAML in
-  std); until std's `yaml`, step 3 keeps its own copy. Step 3 (under (c), steps 1–2 too).
+- `08-f` → 396: Markdown, YAML and JSON are libraries of their own (`03-bundled-libs/142`); step 3's
+  frontmatter reads through `yaml`, and steps 1–2's reader moves to `markdown` (a tree of its own,
+  onze-content mapping it to `Element`).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `modules/onze-content`

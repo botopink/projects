@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 85 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **396**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 84 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **397**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -32,44 +32,6 @@ antecipado; não nomeia os operadores de curto-circuito, cujo operando direito r
   ```
 
 **Recomendação: (a)** — a 357 (2): nunca sob uma condição.
-
-### 08-f · Onde moram Markdown e YAML
-
-**Trava:** `08-bpp/121` passo 3 (o leitor de frontmatter; os passos 1–2 não esperam nada e abrem já) · uma linha da `02/97` (o `yaml` no std, se for a (b)) · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** Páginas de conteúdo (posts de blog) são Markdown com um cabeçalho YAML ("frontmatter").
-Hoje não existe código de Markdown em lugar nenhum, e há um único leitor de um subconjunto de YAML, no
-`config.bp` do rakun. A regra do `03-bundled-libs` (115) manda um leitor de config para o std "quando
-aparecer um segundo consumidor" — e o frontmatter é esse segundo consumidor do YAML; o Markdown tem um
-só.
-
-**Hoje:**
-```text
----
-title: Hello
----
-# Post
-→ ninguém lê isto ainda; o único leitor de YAML é o de rakun/src/config.bp (subconjunto, privado)
-```
-
-- [ ] **(a)** Os dois no novo membro `onze-content` — o rakun fica com a sua cópia de YAML.
-  ```bp
-  import {markdown, frontmatter} from "onze-content";
-  ```
-- [ ] **(b)** Markdown no `onze-content`; YAML no std, e o leitor de config do rakun é apagado pela frente
-  do rakun. Até o `yaml` do std chegar, o passo 3 da 121 lê o frontmatter com cópia própria e a apaga
-  depois.
-  ```bp
-  import {yaml} from "std";
-  import {markdown} from "onze-content";
-  ```
-- [ ] **(c)** Um bundled `markdown`.
-  ```bp
-  import {markdown} from "markdown";
-  ```
-
-**Recomendação: (b).** O frontmatter é o segundo consumidor do YAML; o Markdown tem um só (115).
-**Bloqueia:** 121 passo 3; uma linha para a 97.
 
 ### 05emilia-n · As linhas do Tailwind sem dono
 
