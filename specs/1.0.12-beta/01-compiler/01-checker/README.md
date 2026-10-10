@@ -268,7 +268,10 @@ phases (questions s23-g – s23-i).
       `import {serverOnly as srv} from "web"` → `a.decorator.same(serverOnly)` true; the project's own
       `serverOnly` (`#[local.serverOnly]`) → false (371: `same`, `is` stays a keyword); `reject/decorator_same_not_decorator`
       (`same("serverOnly")`, the mismatch at the argument). `same` is a member of `behavior Decorator` (s23-g); a
-      project module's decorator through a namespace is s23-h
+      project module's decorator through a namespace is 386 (below)
+- [ ] a namespace import registers the module's body-carrying decorators under `<ns>.<name>`, as std's are
+      (386): `#[markers.tag]` runs `tag`, `markers.serverOnly` is a `Decorator` value for `same` —
+      `modules/decorator_through_namespace` (the meta `tag` sets read back; `same(markers.serverOnly)` true)
 - [x] `HookNode.async: bool` (375): `true` when the body writes `await` / `async { … }`, `use`s an asynchronous
       hook or calls an asynchronous component (written `await` or not), calls a host function answering
       `@Task`, or calls what the checker cannot follow (a function value, a method, `hook: null`); a cycle

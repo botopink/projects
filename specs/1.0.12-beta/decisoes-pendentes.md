@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 90 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **386**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **387**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1176,7 +1176,6 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 
 | Id | Assunto | Recomendação | Trava | Espera também |
 |---|---|---|---|---|
-| `s23-h` | Depois de `import {markers};` de um módulo do projeto, `#[markers.tag]` é aceito mas o corpo nunca roda (bug medido no pai e na branch) | registrar os decorators de um import de namespace como os da std são registrados — `#[markers.tag]` roda; `a.decorator.same(markers.serverOnly)` compila | a metade de namespace da 371 (`same` com `markers.serverOnly`) | — |
 | `s23-g ★` | Onde `same` é declarado: a 371 escreve `extend Decorator {…}`, que não analisa | (a) construída: membro do behavior, `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` | nada | — |
 | `s23-i ★` | O catálogo do mesmo módulo de um leitor de `.hooks` (372) | (a) construída: `@TypeInfo.all(with: reader)` no mesmo módulo é recusado (`typeinfo-all-hooks-reader`) — sem a recusa, perderia em silêncio a meta do leitor (`Page 0` em vez de `Page 1`) | nada | — |
 | `67-a` | Onde as caixas de forms do lado do DOM são afirmadas | (a). As caixas rodam no gate da biblioteca dona, onde quebram primeiro, sem dependência nova; o navegador do onze 53 confere de novo. | a forma dos passos 1–3 da 67 (escritos para a (a)); o caminho de | 26; 103 s2 |

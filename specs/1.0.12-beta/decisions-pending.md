@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**90 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
+**89 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -400,25 +400,6 @@ Nothing open: 138-a answered (337).
   in `builtins.d.bp` only.
 - **Recommendation.** (a): no exception to the parser for one file, and the drift test already holds it.
 - **Blocks.** Nothing — built as (a).
-
-#### s23-h · A decorator of a project module reached through a namespace (`#[ns.d]`, `ns.d` as a value)
-- **Measured.** After `import {markers};` (a module of the package, not std), `#[markers.tag]` is accepted and
-  `tag`'s body never runs: `pub fn tag(comptime decl: @Decl) { decl.setMeta("k", "ran"); }` on `A`, then
-  `@typeInfo(A).meta.tag.k` is `typeinfo-meta-missing: no decorator set any` (parent binary `90d50ae3` and this
-  branch alike). Std's decorators are registered under `<handle>.<name>` (`infer.zig` `registerStdDecorators`); a
-  project module's are not (`comptime.zig` `resolveImports` binds the namespace's exports only). The annotation's
-  `DeclAnnotation.decorator` does resolve (`annotationDecoratorId`: `markers@@tag`). As a value, `a.decorator.same(
-  markers.serverOnly)` is refused `unbound variable 'markers'` at the namespace, located; 371 says "an alias and a
-  namespace resolved". Built: `same` takes a name, an alias or std's `<handle>.<name>`; `modules/decorator_same`
-  compares through a leaf import.
-- **Options.** (a) A namespace import of a module registers its body-carrying decorators under `<ns>.<name>` as
-  std's are: `#[markers.tag]` runs `tag` (`@typeInfo(A).meta.tag.k` is `"ran"`) and `a.decorator.same(
-  markers.serverOnly)` compiles. (b) `#[ns.d]` of a non-std module refused at the annotation
-  (`decorator-through-namespace: import the decorator by name`), `ns.d` as a `same` argument refused as today —
-  written `import {markers.tag}; #[tag]`. (c) As today: the annotation accepted and not run.
-- **Recommendation.** (a) — 277 and 371 name the namespace form, and an annotation that does not run is refused or
-  run, never accepted silently (decision 67); (b) if the namespace form is not wanted.
-- **Blocks.** 371's namespace half of a `same` argument; `#[ns.d]` for every library decorator.
 
 #### s23-i · A catalogue of a `.hooks` reader read in the reader's own module (372)
 - **Measured.** 372 runs a `.hooks` reader after the module's bodies. `@TypeInfo.all(with: graph)` written in the
