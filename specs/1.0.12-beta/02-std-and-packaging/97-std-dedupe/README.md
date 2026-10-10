@@ -193,7 +193,7 @@ and beam, 2 on wasm.
       the request and response mapped by each adapter; on `browser` a forbidden header or a `Set-Cookie` read answers
       `HttpError.NotAllowedOnHost(…)` naming it (335 (1)); `run/std_io_http_on_every_target` against a local double
 - [ ] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
-      gate cells as pollables) and on `browser` (JSPI promises); `RetryPolicy` / `nextDelay` unchanged;
+      gate cells as pollables) and on `browser` (the same adapters, 394), through 392's scheduler; `RetryPolicy` / `nextDelay` unchanged;
       `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
 - [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
 

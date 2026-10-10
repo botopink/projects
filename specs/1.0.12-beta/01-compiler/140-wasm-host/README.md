@@ -1,7 +1,7 @@
 # Front 140 — a wasm build binds to its runtime: wasmtime (WASI preview 2) and the browser, together
 
 **Priority:** high — `io/http` and `async` stay refused on wasm until it lands (97-a, 97-b → 334) ·
-**State:** partial: steps 1–3 built, step 6 built but for `@Task` through JSPI; 4, 5 wait on `140-a`…`140-c`
+**State:** partial: steps 1–3 built, step 6 built but for `@Task`; 4, 5 and 6's `@Task` follow 392–394 (a Promise's behaviour, the state machine and its scheduler)
 **Depends on:** decision 334 · `05-wasm` step 5 (std on wasm, groups 1–2) · front 18 (the binary
 emitter, for the component wrapping) · `02-std-and-packaging/98` (the manifest model, for the
 `"wasm"` key)
@@ -63,11 +63,20 @@ declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
 
 ### Step 4 — `@Task` on `wasi`
 
-Waits on `140-a` (what a pending Task is on wasm) and `140-b` (an adapter that answers a `@Task`).
+Decisions 392 (a Promise's behaviour), 393 (an adapter answering `@Task<T>`).
 
-- [ ] a `@Task` runs to completion when awaited, blocking on its pollable (the model erlang's eager
-      lowering already has, lg2-b); `delay(ms)` waits on the monotonic clock; `race` / `raceOf` answer the
-      first pollable ready; `spawnAll` runs each in turn and keeps the order of the answers
+- [ ] an asynchronous function (375's mark) compiles to a resumable state machine in `wat.zig`: the state
+      index and the locals that live across an `await` in a heap frame; loops, `try` and closures holding an
+      `await` transformed with it; a synchronous function unchanged
+- [ ] the prelude's scheduler waits on the pending pollables (`wasi:io/poll`) and resumes the task owning the
+      one ready; `delay(ms)` a pollable on the monotonic clock; `race` answers the first to settle, `raceOf`
+      runs its thunks concurrently, `spawnAll` keeps the order of the answers —
+      `raceOf([{ -> async { await delay(30, ()); "a" } }, { -> delay(10, "b") }])` is `"b"` as on node and erlang
+- [ ] a host adapter answering `@Task<T>` over a generic `T` (393): its signature checked by shape at the
+      annotation, the host's pollable wrapped into the pending task; `fetch`'s `Request` / `Response` in the
+      compiler's layout; each adapter's row in `docs.md`
+- [ ] the cost measured: a frame per asynchronous call against today's eager lowering, on a `delay` / `fetch`
+      benchmark, in this README
 - [ ] the `async_block_*` cells gain the wasm column (`.targets` widened)
 
 ### Step 5 — the cells
@@ -80,8 +89,9 @@ Waits on step 4 and on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings)
 
 ### Step 6 — the `browser` profile (with 3–5, never after)
 
-- [ ] JS imports for the `browser` host (`fetch`, `setTimeout`) and `@Task` as a `Promise` through JSPI
-      (waits on `140-a`, `140-c`); the emitted `.wasm` and its loader are built (§ Done)
+- [ ] one adapter list for both hosts (394): each `wasi:` adapter's JavaScript implementation in the loader
+      (`fetch`, `setTimeout`), the same state machine (392) suspending on the JS event loop — no JSPI; the
+      emitted `.wasm` and its loader are built (§ Done)
 - [ ] parity: std's check refuses a cell bound on one host only (std's, `02/97` step 17); `test-libs` runs
       the wasm column on both hosts once `botopink test` runs wasm (335 (3)) — `test-language`'s does (§ Done)
 
