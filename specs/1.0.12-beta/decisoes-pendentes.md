@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 81 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **401**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 80 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **402**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -32,37 +32,6 @@ antecipado; não nomeia os operadores de curto-circuito, cujo operando direito r
   ```
 
 **Recomendação: (a)** — a 357 (2): nunca sob uma condição.
-
-### 05emilia-n · As linhas do Tailwind sem dono
-
-**Trava:** `06-emilia/34` passo 4 (condicional: só as quatro linhas de feature) · ⏳ pronto para abrir thread ao responder
-
-**Contexto.** Quatro linhas não têm dono: as formas nomeadas `:has()` / `:not()` / ARIA / data /
-`in-[…]` (hoje só por `arbSel`); grupos e peers nomeados; `@theme inline`; translate negativo
-(`TranslateX/Y.Neg` não existe, `tokens.bp:2259-2272`). A quinta — um breakpoint apagado emitindo
-`@media (width >= )` — é da decisão 300: "um token que nomeia um breakpoint apagado ou ausente é erro
-de compilação onde a lista de tokens é conhecida no comptime" (34 passo 3, incondicional).
-
-**Hoje** (ilustrativo):
-```text
-:has() / :not() / ARIA / data / in-[…]   → só por arbSel
-TranslateX.Neg / TranslateY.Neg          → não existem
-```
-
-- [ ] **(a)** Nenhuma: as quatro fora do escopo em `docs.md` § Deviations, escritas com `arbSel`.
-  ```text
-  docs.md § Deviations: as quatro linhas; quem precisa escreve com arbSel
-  ```
-- [ ] **(b)** Translate negativo e grupos / peers nomeados.
-  ```text
-  TranslateX.Neg / TranslateY.Neg   ;   GroupNamed(name, inner) / PeerNamed(name, inner)
-  ```
-- [ ] **(c)** As quatro, `@theme inline` incluído (um segundo modo de render).
-  ```text
-  (b) + as formas nomeadas + @theme inline
-  ```
-
-**Recomendação: (a); (b)** se você quiser alguma feature. **Bloqueia:** 34 passo 4 (condicional).
 
 ### std-d · `io.process`: sinais e leitor de TTY
 

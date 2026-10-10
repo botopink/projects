@@ -300,7 +300,6 @@ Then:
 - [ ] 03r-am — 19 s3–4
 - [ ] 03r-an — 92 s2 (boxes 1, 3)
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
-- [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] erk-b — `#[documentQuery]` under 313 (09 s4) 
 - [ ] lg2-b … lg2-u — none opens a front; each opens a step when answered: 01-checker (q — reduced); the rakun boxes that name them — 13 · 65 · 92 (b), 22 (q) · answered: a (346 → 01 s32), e (347), j (343), o (342), w (341) → 14 s6, v (344) → 26 s6 / 98 s4 / 73, f, i (280), k (216, 253), r (311–313), t (314), m (315), c (316); g has no subject under 281

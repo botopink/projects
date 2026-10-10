@@ -58,22 +58,7 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 
 Snapshot suites and the eight cross-front examples: decision 390 (390), worked by [`20-snap`](../20-snap/README.md) step 4.
 
-### 05emilia-n · The unplaced Tailwind rows — declare them, or leave them to `arbSel` (reduced: only the four features)
+### 05emilia-n · The unplaced Tailwind rows — closed (401)
 
-> **Raised by:** front 34, from [`34-emilia-modifiers/reference-rows.md`](./34-emilia-modifiers/reference-rows.md)
-> (category (c)). Current wording: [`decisions-pending.md`](../decisions-pending.md) `05emilia-n`.
-> **Measured.** Four ownerless feature rows: named `:has()` / `:not()` / ARIA / data-attribute /
-> `in-[…]` forms (only via `arbSel`); named groups and peers (`group/item`, `peer/name` — six group
-> and eight peer states exist, unnamed); `@theme inline` (emilia always emits `var(--x)`); negative
-> translate (`Rotate.Neg` exists, `TranslateX/Y.Neg` not, `tokens.bp:2259-2279`). The fifth row —
-> a cleared `--breakpoint-*` emitting `@media (width >= )` instead of refusing — is no longer part of
-> this question: decision 300 settles it ("a token naming a cleared or absent breakpoint is a
-> compile error where the token list is comptime-known"; 34 step 3, unconditional).
-> **Options.** (a) None: the four out of scope, stated in `docs.md` § Deviations (`arbSel` is the
-> spelling); (b) negative translate and named groups/peers (two token sections, one `Variant` fn
-> each — small, upstream-shaped); (c) all four, including `@theme inline` (a second render mode over
-> every `var()` site — large).
-> **Recommendation.** (a); (b) is the feature answer if any: negative translate is the row a user
-> meets first (`-translate-y-2`), named groups the one documented modifier `arbSel` cannot spell
-> readably.
-> **Blocks.** 34 step 4 (conditional).
+Negative translate (`.Transform.TranslateY.Neg.2`, 314's `Neg`) and named groups / peers (`GroupNamed`, `PeerNamed`) are added in 34 step 4; the named `has` / `not` / ARIA / data / `in` forms keep `arbSel`, and `@theme inline` is not added — both `docs.md` § Deviations.
+

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**81 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**80 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -834,12 +834,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 67 steps 1–3 (written for (a)); onze 53's write path.
 
 ### 06-emilia
-
-#### 05emilia-n · The unplaced Tailwind rows
-- **Measured.** Four rows have no owner: named `:has()` / `:not()` / ARIA / data / `in-[…]` forms (reachable via `arbSel` only); named groups and peers; `@theme inline`; negative translate (`TranslateX/Y.Neg` absent, `tokens.bp:2259-2272`). The fifth — a cleared breakpoint emitting `@media (width >= )` — is decision 300's: "a token naming a cleared or absent breakpoint is a compile error where the token list is comptime-known" (34 step 3, unconditional).
-- **Options.** (a) None: the four out of scope in `docs.md` § Deviations, written with `arbSel`. (b) Negative translate and named groups / peers. (c) All four, `@theme inline` included (a second render mode).
-- **Recommendation.** (a); (b) is the feature answer if any is wanted.
-- **Blocks.** 34 step 4 (conditional).
 
 ### 07-onze
 

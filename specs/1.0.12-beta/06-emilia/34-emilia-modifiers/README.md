@@ -3,14 +3,14 @@
 **Priority:** high — emilia on `styled` first (decision 350): step 5 before step 2, so the five
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
-step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes and its class box
+step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 401 (no wait) · step 5's two text boxes and its class box
 (367) done; boxes 1–3 and 6 wait on 381's literal in `styled` (34-d: `styledProperty` answers the record),
 box 4 on `08-bpp/119` step 4 (383's `StyledMeta` and its reader), `01-compiler/130` step 8 and the toolchain row "A nested-section enum value at comptime",
 box 5 on that row and "emilia's dispatcher at comptime", box 8 on box 1
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledSheet)`, 352, 354, 379, so `flush()` — which provides `StyledContext` — waits on
 `01-compiler/134` step 6; step 3: the repositories `css`
-and `styled` — the components and the theme mechanism, decision 338) · `05emilia-n` (step 4, the four feature rows only).
+and `styled` — the components and the theme mechanism, decision 338) · nothing for step 4 (401).
 Nothing else:
 `hash.contentHash` exists; `08-bpp/118` step 1's bracket-attribute carve-out is comments only here,
 reworded by step 1 (no code uses `[name]={`).
@@ -34,7 +34,7 @@ the contract-4 fixture re-derived once in step 5, `e_f51c2501`;
 `modules/` names no other library (decision 114); five families render what Tailwind 4.3.2 renders;
 the theme is typed and declared once with `#[theme]` — the mechanism `styled`'s, the Tailwind values
 emilia's `defaultTheme()` —, a token naming a cleared breakpoint a compile error (decisions 300, 338);
-the four unplaced feature rows declared or stated as deviations (05emilia-n); emilia runs at compile
+negative translate and named groups / peers added, the other two feature rows stated as deviations (401); emilia runs at compile
 time — a tag decorator `#[emilia(…)]` over typed tokens, its families compile-time functions written
 with `styled`'s literal, its own sheet model gone (338, 369).
 `emilia`: 734 tests on both rows; the five families pinned by inline tests in their blocks and by
@@ -109,8 +109,7 @@ commonJS, and every example's printed output and test log byte-identical to `a12
 
 ## Open
 
-Order (decision 350: the library on `styled` first): step 5 → step 2 → step 3; step 4 when
-05emilia-n is answered. Step 5 keeps today's CSS byte for byte (368) — only the class names move, once
+Order (decision 350: the library on `styled` first): step 5 → step 2 → step 3; step 4 (401) at any point. Step 5 keeps today's CSS byte for byte (368) — only the class names move, once
 (367) —, so the five families move only in step 2, each as its `styledProperty` literal.
 
 ### Step 5 — emilia over `styled` — first (decisions 338, 350; after `08-bpp/119` step 1)
@@ -239,21 +238,21 @@ first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; em
       `#[theme] pub val appTheme = comptime defaultTheme();`
 - [ ] `reference-rows.md` § 3.3 "removing breakpoints" reads as a deviation in `docs.md`
 
-### Step 4 — the unplaced rows (on `05emilia-n`, reduced to the four features; the refusal is step 3, 300)
+### Step 4 — the unplaced rows (decision 401; the refusal is step 3, 300)
 
-(b): `TranslateX.Neg` / `TranslateY.Neg` in `tokens.bp` (`:2259-2279`) beside `Rotate.Neg`, with
-350's `calc(… * -1)` form; named groups and peers as `GroupNamed(name, inner)` /
+`TranslateX.Neg` / `TranslateY.Neg` in `tokens.bp` (`:2259-2279`) beside `Rotate.Neg` (314: a numeric leaf
+has no sign), with 350's `calc(… * -1)` form; named groups and peers as `GroupNamed(name, inner)` /
 `PeerNamed(name, inner)` payload variants (top-level, like every payload-carrying token) with
-`.group\/<name>` / `.peer\/<name>` selectors. (c): also `@theme inline` as an `Options` field
-resolving every `var(--x)` at render. (a), recommended: only `docs.md` § Deviations stating
-`arbSel` as the spelling.
+`.group\/<name>` / `.peer\/<name>` selectors. The named `has` / `not` / ARIA / data / `in` forms keep
+`arbSel`; `@theme inline` is not added.
 
-- [ ] under (b): `-translate-y-2` renders `--tw-translate-y:calc(var(--spacing) * -2)` and the
-      composed `translate`; `group/item:hover` renders `.group\/item:hover .e_…`; both measured
-      against 4.3.2
-- [ ] under (a): the `docs.md` paragraph; `reference-rows.md` rows marked (b)
-- [ ] `tokens.bp:2190-2195`'s comment states `Neg` as the decided form (decision 314), not a language gap;
-      `TranslateX.Neg` / `TranslateY.Neg`, when (b) adds them, follow it
+- [ ] `-translate-y-2` is `.Transform.TranslateY.Neg.2`, rendering `--tw-translate-y:calc(var(--spacing) * -2)`
+      and the composed `translate`; `TranslateX.Neg` likewise — measured against 4.3.2
+- [ ] `GroupNamed("card", …)` / `PeerNamed(…)`: `group-hover/card:underline` renders `.group\/card:hover .e_…`,
+      every unnamed group and peer state available named — measured against 4.3.2
+- [ ] `docs.md` § Deviations: the named `has` / `not` / ARIA / data / `in` forms written with `arbSel`
+      (`arbSel("&:has(img)", [.Pad.All.4])`), `@theme inline` not supported; `reference-rows.md`'s rows marked
+- [ ] `tokens.bp:2190-2195`'s comment states `Neg` as the decided form (314), not a language gap
 
 **Gate:** standard (fronts.md § Gate) + `emilia` 734 or more on both rows; the fifteen examples
 green on both rows; `jhonstart-emilia` and `onze-cli` (the two fixture readers) green, the class
