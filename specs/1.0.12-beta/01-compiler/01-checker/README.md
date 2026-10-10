@@ -407,7 +407,7 @@ naming a parameter cannot be written. After, the template call `f "…"` may be 
 - [ ] `docs.md` § Decorators and § Template functions document the form; `comptime/AGENTS.md` states
       how the literal and the `@Decl` reach the body
 
-- [ ] a template method (397): a method whose first parameter after `self` is `comptime q: @Expr<…>`
+- [ ] a template method (397, 415): `comptime self: @Expr<R>` then `comptime q: @Expr<…>` — the receiver the call site's code (`self.text()`)
       is called `value.method "…"` / `value.method """…"""` as `f "…"` is — the literal captured
       unevaluated, `self` the receiver; erika's `QueryContext.query` its first user —
       `run/template_method_call`
@@ -615,6 +615,24 @@ fn semi(x: i32) -> i32 { x + 1; }       // ❌ as today: the body falls off its 
       the four targets
 - [ ] measured first: the bodies in std, `tests/language` and the libraries whose last line has no `;` today,
       the count in this README; `docs.md` § Functions, § Lambdas
+
+### Step 39 — a template body reads a declaration through `@Decl` (decision 415)
+
+```bp
+val decl = q.lookup("User") ?? q.fail("`User` is not in scope");   // ?@Decl, resolved at the call site
+val table = decl.meta(QueryTable) ?? q.fail("`User` is not an entity — annotate it with #[entity(…)]");
+decl.setMeta(…);                                                    // ❌ the looked-up handle is read-only
+```
+
+- [ ] `e.lookup(name)` answers `?@Decl` — `name`, `kind`, `module`, `fields`, `meta(T)`, `metaAll(T)` — of the declaration
+      the name resolves to at the call site (112), `null` when none; `setMeta` / `addMeta` / `addMember` / `addType` on it
+      refused at the call — `run/template_lookup_decl`, `reject/template_lookup_decl_write`
+- [ ] `decl.meta(T)` / `metaAll(T)` answered at build when `T` is data (380); a meta with a run-time `@Expr` field refused at
+      the read naming the field — `run/template_lookup_meta`, `reject/template_lookup_meta_expr_field`; `@typeInfo(X).meta(T)`
+      in a template body stays `typeinfo-meta-at-build`
+- [ ] the looked-up declaration's decorators run before the template body: another module as today, one module ordered
+      (372's pattern) — `modules/template_lookup_meta_other_module`, `run/template_lookup_meta_same_module`
+- [ ] `docs.md` § Template functions documents `lookup`'s handle; `comptime/AGENTS.md` states the order
 
 ### Rows other fronts found
 

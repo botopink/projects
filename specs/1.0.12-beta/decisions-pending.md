@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**81 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**80 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -645,12 +645,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) `Array<string>`, each hole's text: `ctx.run("select * from users where id = $1", ["7"])`. (b) A `QueryParam` variant (`Int`, `Text`, `Bool`, `Null`) built by the hole's lowering: `ctx.run(sql, [QueryParam.Int(7)])`; the template does not know a hole's type, so every hole goes through a generic `param(v)`. (c) `unknown[]` — refused today.
 - **Recommendation.** (a): the only form that types today and the one the drivers already take; (b) when a driver needs the type.
 - **Blocks.** 137 step 2 (the SQL target), 143 s1 (`DbContext` implementing it).
-
-#### 137-b · Reading `QueryTable` at build in a template body (397 (2))
-- **Measured.** `@typeInfo(User).meta(QueryTable)` in a template function's body is refused (`typeinfo-meta-at-build`, `docs.md` § `@TypeInfo.all`); a template body sees only the scope's binding kind (`q.lookup("User")` → `Record_`).
-- **Options.** (a) A compiler change: a template body may read the typed meta of a type its text names (`val t = @typeInfo(User).meta(QueryTable)` yields the table and columns while the program compiles). (b) The generated code reads the meta at run time (`@typeInfo(User).meta(QueryTable)` in the expansion), the SQL is built when the query runs and "`User` is not an entity" / "a field `User` lacks" become run-time errors — against 397 (2). (c) Wait for `01-checker` step 29, which builds the template method.
-- **Recommendation.** (a): the errors stay compile-time, as 397 (2) says.
-- **Blocks.** 137 step 2 (`from User`, the SQL text, the recording cells) and step 4's SQL side.
 
 #### 137-c · How the query learns its declared answer (312, step 3)
 - **Measured.** `val n: i32 = erika "select name from cities";` is accepted: the call is typed by the template's free `T`, the expansion is checked apart and never unified with it (`infer.zig` `finishExpansion` skips a `typeVar` bound). Today the query decides: `limit 1` answers `?T`, anything else an array.

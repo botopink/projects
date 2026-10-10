@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 81 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 80 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **416**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -733,26 +733,6 @@ ctx.run("select * from users where id = $1", ["7"])      # cada buraco vira o te
 **Recomendação: (a)** — a única forma que tipa hoje e a que os drivers já recebem; (b) quando um driver precisar do tipo.
 
 ---
-
-### 137-b · Ler o `QueryTable` no build, no corpo de um template (397 (2))
-
-**Trava:** o passo 2 da 137 (`from User`, o texto SQL, as células com contexto gravador) e o lado SQL do passo 4
-
-**Contexto.** `@typeInfo(User).meta(QueryTable)` no corpo de uma função template é recusado (`typeinfo-meta-at-build`); o corpo só vê o tipo de binding do escopo (`q.lookup("User")` → `Record_`).
-
-**Hoje:**
-```text
-error[typeinfo-meta-at-build]   # a leitura do meta tipado num corpo de template
-```
-
-- [ ] **(a)** Mudança no compilador: o corpo de um template lê o meta tipado do tipo que o texto nomeia.
-  ```bp
-  val t = @typeInfo(User).meta(QueryTable);   // a tabela e as colunas, enquanto o programa compila
-  ```
-- [ ] **(b)** O código gerado lê o meta na execução; o SQL é montado quando a consulta roda, e "`User` não é uma entidade" / "campo que `User` não tem" viram erros de execução — contra a 397 (2).
-- [ ] **(c)** Esperar o passo 29 da `01-checker`, que constrói o método template.
-
-**Recomendação: (a)** — os erros continuam em tempo de compilação, como a 397 (2) diz.
 
 ---
 

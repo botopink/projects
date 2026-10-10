@@ -58,11 +58,11 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
       `@Result<T[], E>`, the error a parameter of the behavior, so erika names no library's error (the exact
       signature in `docs.md`); `pub type QueryTable(name: string, columns: QueryColumn[])` and
       `QueryColumn(field, column)`, the meta a persistence library records on an entity
-- [ ] `query`, erika's template method on every `QueryContext` (397 (3); the template method is
-      `01-checker` step 29's): `self.db.query "select * from User where active = true"`; an `Array<T>`
+- [ ] `query`, erika's template method on every `QueryContext` — `pub fn query<E>(comptime self: @Expr<QueryContext<E>>,
+      comptime q: @Expr<string>) -> @Expr<@Result<unknown[], E>>` (397 (3), 415; the template method is `01-checker` step 29's): `self.db.query "select * from User where active = true"`; an `Array<T>`
       source keeps the in-memory form (`erika "…"`, today's fluent pipeline)
 - [ ] `from User` names a type, resolved at the call site (`e.lookup`, 112): not imported is an error at the
-      token; on a `QueryContext` it reads `@typeInfo(User).meta(QueryTable)` at build — no meta is an error at
+      token; on a `QueryContext` it reads `q.lookup("User")`'s `@Decl` and its `meta(QueryTable)` at build (415, `01-checker` step 39) — no meta is an error at
       the query ("`User` is not an entity"), a field `User` lacks an error at the field —, and the SQL text with
       `$1…$n` parameters in hole order is built at build from the type's table and columns
 - [ ] cells: the SQL text and parameters a recording `QueryContext` receives, for every clause; an entity
