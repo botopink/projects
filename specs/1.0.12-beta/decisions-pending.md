@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**91 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
+**90 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -120,33 +120,6 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** (a): a key with two meanings at once is refused where it is written; (b) if a
   reader must not depend on how many decorators added a type.
 - **Blocks.** Nothing — built as (a).
-
-#### 130-s8-b · Whose scope resolves an `@Expr<T>` meta field read in another module (370 (1))
-- **Measured.** Built: a meta value with `@Expr<T>` fields is written back where it is read with each
-  expression as the annotation wrote it, typed in the reading module. Read in the annotation's module it
-  runs (`run/meta_expr_field`); read in another — `@typeInfo(signup.Signup).metaAll(Check)` in `main`,
-  where `passwordsMatch` (private to `signup`) is not in scope — it is `typeinfo-meta-expr-elsewhere` at
-  the read (`modules/meta_expr_read_elsewhere`), and a `@TypeInfo.all` query whose entries carry such a
-  value is refused the same way at the query. 370 (1) says "built in the reading program with each
-  expression spliced where it was written" — the place, not whose scope resolves its names elsewhere;
-  `s35-g` (→ 384) asks the same for a member's names.
-- **Options.** (a) As built: refused outside the annotation's module.
-  ```bp
-  // main.bp
-  @typeInfo(Signup).metaAll(Check)   // typeinfo-meta-expr-elsewhere
-  ```
-  (b) Decision 112's hygiene: each name the expression wrote resolves in the annotation's module,
-  imported into the reader under an alias no source spells; a private name there (`passwordsMatch`) is
-  refused at the read (or travels as a template's private does, `templatePrivateKey`).
-  ```bp
-  @typeInfo(Signup).metaAll(Check)   // Check(message: "…", rule: <signup's passwordsMatch>)
-  ```
-  (c) The reader's scope: the expression's names resolve in the reading module — `passwordsMatch` must
-  be imported there, and a same-named function of the reader is captured.
-- **Recommendation.** (a) until `s35-g` (→ 384) is answered, then the same answer for both (112's: every name
-  resolves where it was written).
-- **Blocks.** An entry point or a library reading `@Expr` meta of another module's declarations (a
-  catalogue of `#[check]`s); not 125 step 7's own type-level `#[check]`, read in the type's module.
 
 #### 130-s8-c · A typed meta read of a declaration a `.hooks` reader of this module annotates (298, 372)
 - **Measured.** Built: decision 372 runs a decorator that reads `.hooks` after the module's bodies, and

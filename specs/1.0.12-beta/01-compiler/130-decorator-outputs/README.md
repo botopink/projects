@@ -155,8 +155,11 @@ calls the checker answers, so the two coexist).
 - [ ] a meta field of a record type, a `Type.Field<T>` (364 (2)'s data family) or a tuple: refused
       today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
       reader's scope (an `@Expr<T>` field carries such a value as written)
-- [ ] questions `130-s8-a`…`130-s8-e` (decisions-pending): one type set and added, `@Expr` values read
-      in another module, a `.hooks` reader's typed meta read in its module, a generic record through a
+- [ ] an `@Expr<T>` meta field read in another module resolves its names where the annotation wrote them
+      (385): imported into the reader under an unspellable alias, a private one as `templatePrivateKey`;
+      `typeinfo-meta-expr-elsewhere` goes — `modules/meta_expr_read_elsewhere` turns `run` (`main` reads
+      `signup`'s `Check` and calls its private `passwordsMatch`), and the `@TypeInfo.all` route the same
+- [ ] questions `130-s8-a`, `130-s8-c`…`130-s8-e` (decisions-pending; `130-s8-b` → 385): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
       catalogue entry, a typed member reading its type's meta (`@typeInfo(T)` — 125 step 7's route)
 
 ### Step 9 — a tag is a `@Decl` (decision 302)

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 91 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **385**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 90 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **386**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -844,30 +844,6 @@ val clearSession = use clearCookie(sessionCookie);
   ```
 
 **Recomendação: (a).** Uma chave com dois sentidos ao mesmo tempo é recusada onde é escrita.
-
-### 130-s8-b · Em que escopo resolve um campo `@Expr<T>` de meta lido em outro módulo (370 (1))
-
-**Trava:** entry point ou biblioteca que lê meta `@Expr` de declarações de outro módulo (um catálogo de `#[check]`); não o `#[check]` de tipo do 125 passo 7, lido no módulo do tipo.
-
-**Contexto.** A 370 (1) diz "construído no programa que lê, cada expressão colada onde foi escrita" — o lugar, não o escopo que resolve os nomes em outro módulo; a `s35-g` (→ 384) pergunta o mesmo para membro.
-
-**Hoje.** Lido no módulo da anotação, roda (`run/meta_expr_field`); lido em outro — `@typeInfo(Signup).metaAll(Check)` no `main`, onde `passwordsMatch` (privada de `signup`) não está no escopo — é `typeinfo-meta-expr-elsewhere` na leitura (`modules/meta_expr_read_elsewhere`), e uma consulta `@TypeInfo.all` cujas entradas carregam esse valor é recusada igual.
-
-- [ ] **(a)** Como está: recusado fora do módulo da anotação.
-  ```bp
-  // main.bp
-  @typeInfo(Signup).metaAll(Check)   // typeinfo-meta-expr-elsewhere
-  ```
-- [ ] **(b)** Higiene da 112: cada nome da expressão resolve no módulo da anotação, importado no leitor sob alias que nenhum fonte soletra; nome privado lá recusado na leitura (ou viaja como o privado de template).
-  ```bp
-  @typeInfo(Signup).metaAll(Check)   // Check(message: "…", rule: <passwordsMatch de signup>)
-  ```
-- [ ] **(c)** Escopo do leitor: `passwordsMatch` precisa estar importada no leitor, e uma homônima do leitor é capturada.
-  ```bp
-  import {signup.passwordsMatch};    // senão unbound
-  ```
-
-**Recomendação: (a)** até a `s35-g` (→ 384) ser respondida; depois a mesma resposta para os dois (a da 112: cada nome resolve onde foi escrito).
 
 ### 130-s8-c · Leitura de meta tipado de declaração que um leitor de `.hooks` do mesmo módulo anota (298, 372)
 
