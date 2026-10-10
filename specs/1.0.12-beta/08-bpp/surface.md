@@ -62,7 +62,7 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| `.astro` pages | `page.bp`, `#[page("<dir>")]` on `fn(route: PageContext) -> @Component<ElementBase, Element>` (`jhonstart/src/routes.bp:220`) | have |
+| `.astro` pages | `page.bp`, `#[page("<dir>")]` on `fn(route: PageContext) -> @Component<Element>` (`jhonstart/src/routes.bp:14`, `:315`) | have |
 | the page as a single file — script fence + markup | not found: a function returning builder calls | add · 116 · 118 |
 | `.md` pages | not found | add · 121 |
 | `.html` pages | not found | add · 117 |

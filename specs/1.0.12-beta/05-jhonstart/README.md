@@ -23,7 +23,7 @@ marker). Left: a tail of code and spec items, three fronts by the member each ed
 | PK-2 | the eight example members have no `README.md` | `examples/*/` | 26 step 6 |
 | JH-SNAP | module-level snapshot layer (`snap-a`) | every member's `test/` | `20-snap` step 3 |
 | JH-27-3b | `reconcile(current, target)` has no driver: a shared layout's islands re-hydrate on every transition; route-kind flag unread | `jhonstart-link` | 27 step 1 |
-| JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<ElementBase, Element>` untested | `jhonstart-link` | 27 step 2 |
+| JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<Element>` untested | `jhonstart-link` | 27 step 2 |
 | JH-67-dom | five DOM-side forms boxes (1.0.10's 3a, 3b, 4, 5): `fieldError` after `__jhFormState`, `ok: false` envelope re-rendering in place, `pending` / `actionId` for two forms at once, optimistic commit and roll-back, `push` after the envelope | `jhonstart-forms` | 67 steps 1–3 |
 | JH-49-4.6 | `__bp_action` / `X-Bp-Action` as literals — onze's defaults, spelled by neither library (decision 114): `jhonstart-forms/test/form_test.bp` (18 lines), `examples/forms/src/like.bp:23`, `examples/forms/src/main.bp:14`, `examples/forms/test/forms_test.bp:16,21,30,36`, four recorded `.snap` files under `examples/forms/test/__snapshots__/forms/` | `jhonstart-forms`, `examples/forms` | 67 step 4 |
 
