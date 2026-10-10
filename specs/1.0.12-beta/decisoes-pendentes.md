@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 75 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 81 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -706,6 +706,146 @@ vezes — a thread recusa no `await`.
 
 **Recomendação: (a) agora** — nunca uma chamada rodando duas vezes, recusa localizada; a (b) quando um
 programa precisar. **Bloqueia:** nada.
+
+---
+
+### 137-a · Os parâmetros ligados de `QueryContext.run` (397 (1))
+
+**Trava:** o passo 2 da 137 (o alvo SQL) · o passo 1 da 143 (`DbContext` implementando-o)
+
+**Contexto.** O erika declara `fn run<T>(self: Self<E>, sql: string, params: Array<string>) -> @Result<Array<T>, E>`; o `SqlTemplate` do rakun-data já liga `string[]`. Um array de tipos misturados não tipa: `val ps: unknown[] = [1, "a"]` é `expected i32, got string`.
+
+**Hoje:**
+```text
+ctx.run("select * from users where id = $1", ["7"])      # cada buraco vira o texto do valor
+```
+
+- [ ] **(a)** `Array<string>`, o texto de cada buraco.
+  ```bp
+  ctx.run("select * from users where id = $1", ["7"])
+  ```
+- [ ] **(b)** Uma variante `QueryParam` (`Int`, `Text`, `Bool`, `Null`); o template não sabe o tipo do buraco, então todo buraco passa por um `param(v)` genérico.
+  ```bp
+  ctx.run("select * from users where id = $1", [QueryParam.Int(7)])
+  ```
+- [ ] **(c)** `unknown[]` — recusado hoje.
+
+**Recomendação: (a)** — a única forma que tipa hoje e a que os drivers já recebem; (b) quando um driver precisar do tipo.
+
+---
+
+### 137-b · Ler o `QueryTable` no build, no corpo de um template (397 (2))
+
+**Trava:** o passo 2 da 137 (`from User`, o texto SQL, as células com contexto gravador) e o lado SQL do passo 4
+
+**Contexto.** `@typeInfo(User).meta(QueryTable)` no corpo de uma função template é recusado (`typeinfo-meta-at-build`); o corpo só vê o tipo de binding do escopo (`q.lookup("User")` → `Record_`).
+
+**Hoje:**
+```text
+error[typeinfo-meta-at-build]   # a leitura do meta tipado num corpo de template
+```
+
+- [ ] **(a)** Mudança no compilador: o corpo de um template lê o meta tipado do tipo que o texto nomeia.
+  ```bp
+  val t = @typeInfo(User).meta(QueryTable);   // a tabela e as colunas, enquanto o programa compila
+  ```
+- [ ] **(b)** O código gerado lê o meta na execução; o SQL é montado quando a consulta roda, e "`User` não é uma entidade" / "campo que `User` não tem" viram erros de execução — contra a 397 (2).
+- [ ] **(c)** Esperar o passo 29 da `01-checker`, que constrói o método template.
+
+**Recomendação: (a)** — os erros continuam em tempo de compilação, como a 397 (2) diz.
+
+---
+
+### 137-c · Como a consulta sabe a resposta declarada (312, passo 3)
+
+**Trava:** a primeira caixa do passo 3 da 137
+
+**Contexto.** A chamada é tipada pelo `T` livre do template; a expansão é checada à parte e nunca unificada com ele. Hoje a consulta decide: `limit 1` responde `?T`, o resto um array.
+
+**Hoje:**
+```bp
+val n: i32 = erika "select name from cities";    // aceito
+```
+
+- [ ] **(a)** O compilador unifica o tipo da expansão com o esperado.
+  ```bp
+  val u: ?User = erika "select * from users";    // expected ?User, got Array<User>
+  ```
+- [ ] **(b)** O template lê o tipo esperado e falha ele mesmo.
+  ```bp
+  // erika: an answer ?User requires 'limit 1'
+  ```
+- [ ] **(c)** A forma de anotação do passo 29 carrega a resposta declarada do método; a forma de corpo fica como está.
+
+**Recomendação: (a)** — uma regra para todo template, sem API nova.
+
+---
+
+### 137-d · Uma chamada de template no corpo de um método de `type` e como inicializador de desestruturação (311, 397 (3))
+
+**Trava:** o método template do passo 2 da 137; o exemplo `${self.minAge}` do README; a 143
+
+**Contexto.** A chamada nunca é expandida nesses dois lugares; num `fn` de topo ou num `test` expande.
+
+**Hoje:**
+```bp
+pub fn dbl(comptime q: @Expr<string>) -> @Expr<string> { return q.build("\"" + q.text() + "!\""); }
+type Filter(minAge: i32) { pub fn names(self: Self) -> string { return dbl "ab"; } }
+// commonJS: dbl is not defined · erlang: function dbl/1 undefined
+val #(n, total) = erika "select count(*), sum(amount) from sales";   // erika is not defined
+```
+
+- [ ] **(a)** Correção no compilador dentro do passo 29 da `01-checker`: uma chamada de template expande onde uma expressão pode estar.
+- [ ] **(b)** Uma linha própria de compilador; o método template do passo 29 espera por ela.
+- [ ] **(c)** Deixar: a consulta se escreve numa função.
+  ```bp
+  fn names(minAge: i32) -> Array<string> { return erika "select name from people where age >= ${minAge}"; }
+  ```
+
+**Recomendação: (a)** — `self.db.query "…"` é uma chamada dentro de um método de `type`.
+
+---
+
+### 137-e · As restrições dos agregados na gramática do erika (312, passo 4)
+
+**Trava:** nada (construído); o lado SQL do passo 4 segue as mesmas regras
+
+**Contexto.** Construído: `count` só recebe `*`; `sum` recebe um campo `i32` (o `Query.sum` que já existe), `avg` um `f64`, `min`/`max` respondem `?F`; um agregado sem `group by` não aceita `order by` nem `limit` e responde um valor (uma tupla para vários); um campo ao lado de um agregado exige `group by` nele; com `group by` os campos selecionados são o campo do grupo e o `order by` o nomeia; `select *` com `group by` é recusado.
+
+**Hoje:**
+```text
+select count(pop) from cities          -> error: erika: count takes '*': count(*)
+select count(*) from cities limit 1    -> error: erika: limit has nothing to cut: an aggregate without group by answers one value
+```
+
+- [ ] **(a)** Como construído.
+- [ ] **(b)** `count(f)` aceito (conta toda linha: não há nulos em memória).
+  ```bp
+  erika "select count(pop) from cities"
+  ```
+- [ ] **(c)** `order by` / `limit` aceitos num agregado escalar (sem efeito).
+
+**Recomendação: (a)** — a leitura mais restritiva; (b) e (c) acrescentam formas que não significam nada em memória.
+
+---
+
+### 137-f · Preencher o código construído de uma expansão `erika "…"` (linha do `language-gaps.md`: "Two template expansions in one module share the locations of their built code")
+
+**Trava:** nada, mantida a (a); sem ela, as células erlang do passo 4 da 137
+
+**Contexto.** Sem o preenchimento, três células do `erika-test` (`group by …`) e duas do `erika-linq` (`select label from boxes where w = h …`) ficam vermelhas só no erlang: `row.w` vira `erlang:length(Row)`, porque as lambdas de duas expansões ficam nas mesmas posições das strings construídas e dividem um plano indexado por posição. O commonJS passa. Com `q.build(pad + code)` — `pad` são as quebras de linha e espaços que fazem o código começar na linha e coluna do literal (`q.source()`, como o `html.bp`) — as 6 células passam nos dois targets.
+
+**Hoje:**
+```text
+modules/erika-test · erlang   FAIL erika query: group by yields one row per key ({error,badarg})
+examples/erika-linq · erlang  FAIL erika where compares two columns (w = h) …
+```
+
+- [ ] **(a)** Manter o preenchimento no `erika.bp` (um marcador `// LANGUAGE GAP`, indexado) até o compilador localizar o código construído pela sua expansão.
+- [ ] **(b)** Tirar o `group by` (e qualquer consulta que divida um módulo com outra) até lá.
+- [ ] **(c)** Nomes de lambda únicos por local — medido: conserta o `erika-test` e quebra duas células do `erika-linq`.
+
+**Recomendação: (a)** — a forma que o arquivo de lacunas já nomeia; sai junto com a linha.
 
 ---
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**75 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**81 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -639,6 +639,42 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 
 ### 04-rakun
+
+#### 137-a · The bound parameters of `QueryContext.run` (397 (1))
+- **Measured.** `erika.bp` declares `fn run<T>(self: Self<E>, sql: string, params: Array<string>) -> @Result<Array<T>, E>`; rakun-data's `SqlTemplate` binds `string[]` (`sql/template.bp`). `val ps: unknown[] = [1, "a"]` is `type mismatch: expected i32, got string` (re-run with any binary).
+- **Options.** (a) `Array<string>`, each hole's text: `ctx.run("select * from users where id = $1", ["7"])`. (b) A `QueryParam` variant (`Int`, `Text`, `Bool`, `Null`) built by the hole's lowering: `ctx.run(sql, [QueryParam.Int(7)])`; the template does not know a hole's type, so every hole goes through a generic `param(v)`. (c) `unknown[]` — refused today.
+- **Recommendation.** (a): the only form that types today and the one the drivers already take; (b) when a driver needs the type.
+- **Blocks.** 137 step 2 (the SQL target), 143 s1 (`DbContext` implementing it).
+
+#### 137-b · Reading `QueryTable` at build in a template body (397 (2))
+- **Measured.** `@typeInfo(User).meta(QueryTable)` in a template function's body is refused (`typeinfo-meta-at-build`, `docs.md` § `@TypeInfo.all`); a template body sees only the scope's binding kind (`q.lookup("User")` → `Record_`).
+- **Options.** (a) A compiler change: a template body may read the typed meta of a type its text names (`val t = @typeInfo(User).meta(QueryTable)` yields the table and columns while the program compiles). (b) The generated code reads the meta at run time (`@typeInfo(User).meta(QueryTable)` in the expansion), the SQL is built when the query runs and "`User` is not an entity" / "a field `User` lacks" become run-time errors — against 397 (2). (c) Wait for `01-checker` step 29, which builds the template method.
+- **Recommendation.** (a): the errors stay compile-time, as 397 (2) says.
+- **Blocks.** 137 step 2 (`from User`, the SQL text, the recording cells) and step 4's SQL side.
+
+#### 137-c · How the query learns its declared answer (312, step 3)
+- **Measured.** `val n: i32 = erika "select name from cities";` is accepted: the call is typed by the template's free `T`, the expansion is checked apart and never unified with it (`infer.zig` `finishExpansion` skips a `typeVar` bound). Today the query decides: `limit 1` answers `?T`, anything else an array.
+- **Options.** (a) The compiler unifies the expansion's type with the expected type: `val u: ?User = erika "select * from users"` is then `expected ?User, got Array<User>`. (b) The template reads the expected type (`q.expected()`) and fails itself: `erika: an answer ?User requires 'limit 1'`. (c) The annotation form of step 29 carries the method's declared answer, the body form stays as it is.
+- **Recommendation.** (a): one rule for every template, no new template API.
+- **Blocks.** 137 step 3's first box.
+
+#### 137-d · A template call in a `type` method body and as a destructuring initializer (311, 397 (3))
+- **Measured.** `type Filter(minAge: i32) { pub fn names(self: Self) -> string { return dbl "ab"; } }` with a local `pub fn dbl(comptime q: @Expr<string>) -> @Expr<string>` runs `dbl is not defined` (commonJS) / `function dbl/1 undefined` (erlang): the call is never expanded. `val #(n, total) = erika "…";` is `erika is not defined`. The same call in a top-level `fn` or `test` expands.
+- **Options.** (a) A compiler fix inside `01-checker` step 29 (a template call expands wherever an expression may stand). (b) A separate compiler row; step 29's template method waits on it. (c) Leave: write the query in a function.
+- **Recommendation.** (a) — `self.db.query "…"` is a call inside a type method.
+- **Blocks.** 137 step 2's template method; the README's `${self.minAge}` example; 143.
+
+#### 137-e · The restrictions of aggregates in erika's grammar (312, step 4)
+- **Measured.** Built: `count` takes only `*` (`count(pop)` is a located error), `sum` takes an `i32` field (the existing `Query.sum`), `avg` an `f64` field, `min` / `max` answer `?F`; an aggregate without `group by` takes neither `order by` nor `limit` and answers one value (a tuple for several); a field beside an aggregate needs `group by` on it; with `group by` the selected fields are the group field and `order by` names it; `select *` with `group by` is refused.
+- **Options.** (a) As built. (b) `count(f)` allowed (counts every row: no nulls in memory). (c) `order by` / `limit` allowed on a scalar aggregate (no effect).
+- **Recommendation.** (a): the most restrictive reading; (b) and (c) add forms that mean nothing in memory.
+- **Blocks.** Nothing (built); the SQL side of step 4 follows the same rules.
+
+#### 137-f · Padding the built code of an `erika "…"` expansion (language-gaps row "Two template expansions in one module share the locations of their built code")
+- **Measured.** Without padding, three `erika-test` cells (`group by …`) and two `erika-linq` cells (`select label from boxes where w = h …`) are red on erlang only: `row.w` is lowered `erlang:length(Row)` and `row.region` the same, because the lambdas of two expansions sit at the same locations of their built strings and share a loc-keyed plan. commonJS is green. With `q.build(pad + code)`, `pad` the newlines and spaces that start the code at the literal's own line and column (`q.source()`, as `html.bp` does), all 6 cells are green on both targets.
+- **Options.** (a) Keep the padding in `erika.bp` (one `// LANGUAGE GAP` marker, indexed) until the compiler locates built code by its expansion. (b) Drop `group by` (and any query meeting another in a module) until then. (c) Site-unique lambda names — measured: it fixes `erika-test` and breaks `erika-linq`'s two cells.
+- **Recommendation.** (a): the form the gaps file already names, removed with the row.
+- **Blocks.** Nothing once (a) is kept; 137 step 4's erlang cells without it.
 
 #### erk-b · `#[documentQuery]` under 313 (*proposed*)
 - **Measured.** 09 step 4: `#[documentQuery("…")]` follows `#[query]`'s shape — a member of the repository type answering the template verbatim. 313 deletes that shape for SQL: a repository is a `#[repository] behavior`, its methods carrying `#[erika "…"]` or `#[nativeQuery("…")]`. erika's grammar is SQL's; a document store's filter is JSON (`$in`, `$gt`, …).

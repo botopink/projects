@@ -79,7 +79,7 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
 - [ ] `limit <n>` (a number or a hole), `join <Type> on <a.f> = <b.g>` (inner), the aggregates
       `count(*)`, `sum`, `avg`, `min`, `max` with `group by` — each on both targets, each with a located
       error for its malformed forms (`q.failAt`)
-- [ ] the grammar block of `docs.md` rewritten; `examples.md` gains one example per clause
+- [x] the grammar block of `docs.md` rewritten; `examples.md` gains one example per clause
 
 ### Step 5 — the template annotation `#[erika "…"]` (after `01-checker` step 29)
 
