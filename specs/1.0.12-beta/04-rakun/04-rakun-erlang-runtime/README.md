@@ -97,8 +97,8 @@ R62-1 (`setPhase(RequestPhase.Action)` visible to `requestPhase()` and `rkCacheP
 A bean, an event or a condition is named by its type or its function, never its text
 (`examples/context-lifecycle-example.bp`).
 
-- [ ] `ctx.resolve("OrderCache")` → resolution by type (`use bean(OrderCache)`, 269's `@getContext`
-      shape); `resolveNamed("Clock", "fixed")` → `resolveNamed(Clock, "fixed")` (321: the type as a type,
+- [ ] `ctx.resolve("OrderCache")` → resolution by type (`use bean(OrderCache)`, the shape of a
+      context read by type, `use context(T)` — 354, 379); `resolveNamed("Clock", "fixed")` → `resolveNamed(Clock, "fixed")` (321: the type as a type,
       the label a `comptime` string checked against the registry at build; `resolveNamed(Clock)` the `#[primary]`);
       `#[qualifier("…")]` also on a constructor field; an unknown label, a duplicate label or two `#[primary]` a build error
 - [ ] `#[eventListener("OrderPlaced")]` → `#[on] fn f(e: OrderPlaced)`, the event the parameter's type
@@ -113,7 +113,7 @@ A bean, an event or a condition is named by its type or its function, never its 
 
 - [ ] `#[config("rakun.data")] pub type DataConfig(poolSize: i32 = 10, bootstrapMode: BootstrapMode =
       .Eager)`: bound at boot from the config file (and `#[env("…")]` fields from the environment),
-      injected by type (`use config(DataConfig)` in a `RequestBase` body, or as a bean); `#[configurationProperties]`
+      injected by type (`use config(DataConfig)` in a body under the request's `RequestContext` (354), or as a bean); `#[configurationProperties]`
       folds into it
 - [ ] a field's key is its exact name (`poolSize`, `Lazy` — no case conversion, 280 (4)); `#[key("pool-size")]`
       names an existing file's spelling; a wrong type, an unknown variant, an unknown key or a malformed
