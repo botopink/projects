@@ -246,13 +246,13 @@ has no sign), with 350's `calc(… * -1)` form; named groups and peers as `Group
 `.group\/<name>` / `.peer\/<name>` selectors. The named `has` / `not` / ARIA / data / `in` forms keep
 `arbSel`; `@theme inline` is not added.
 
-- [ ] `-translate-y-2` is `.Transform.TranslateY.Neg.2`, rendering `--tw-translate-y:calc(var(--spacing) * -2)`
+- [x] `-translate-y-2` is `.Transform.TranslateY.Neg.2`, rendering `--tw-translate-y:calc(var(--spacing) * -2)`
       and the composed `translate`; `TranslateX.Neg` likewise — measured against 4.3.2
-- [ ] `GroupNamed("card", …)` / `PeerNamed(…)`: `group-hover/card:underline` renders `.group\/card:hover .e_…`,
+- [x] `GroupNamed("card", …)` / `PeerNamed(…)`: `group-hover/card:underline` renders `.e_…:is(:where(.group\/card):hover *)` (4.3.2's form; the `@media (hover: hover)` wrapper is not added, as for the unnamed `GroupHover`),
       every unnamed group and peer state available named — measured against 4.3.2
-- [ ] `docs.md` § Deviations: the named `has` / `not` / ARIA / data / `in` forms written with `arbSel`
+- [x] `docs.md` § Deviations: the named `has` / `not` / ARIA / data / `in` forms written with `arbSel`
       (`arbSel("&:has(img)", [.Pad.All.4])`), `@theme inline` not supported; `reference-rows.md`'s rows marked
-- [ ] `tokens.bp:2190-2195`'s comment states `Neg` as the decided form (314), not a language gap
+- [x] `tokens.bp:2190-2195`'s comment states `Neg` as the decided form (314), not a language gap
 
 **Gate:** standard (fronts.md § Gate) + `emilia` 734 or more on both rows; the fifteen examples
 green on both rows; `jhonstart-emilia` and `onze-cli` (the two fixture readers) green, the class

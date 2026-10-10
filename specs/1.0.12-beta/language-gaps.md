@@ -78,7 +78,7 @@ script does not read it). Each note's row, by content:
 
 | Note | Says | Gap row | Owner |
 |---|---|---|---|
-| `repository/emilia/modules/emilia/src/tokens.bp:2190-2195` | `Neg` is a sub-section, not a sign: `Rotate { -12 }` does not parse | **No spelling for a negative numeric enum leaf — by design.** | 314 (34 step 4 rewrites the comment) |
+| `repository/emilia/modules/emilia/src/tokens.bp:2190-2196` | `Neg` is a sub-section, not a sign: `Rotate { -12 }` does not parse — the comment now states 314's decided form | **No spelling for a negative numeric enum leaf — by design.** | 314 (comment rewritten in 34 step 4) |
 | `repository/rakun/modules/rakun/src/conditions.bp:280-284` | a type named by a string — a decorator argument is an ordinary value | **A decorator argument cannot name a type** | 280 (was lg2-f) |
 | `repository/rakun/modules/rakun-session/src/session.bp:4-8` | session immutable; a forgotten `save` after `withAttribute` is uncatchable | **No assignment to a `self` field — by design.** | — |
 | `repository/rakun/modules/rakun-data/src/sql/query.bp:33` | a method-level `@Decl` exposes no parameter list | **A method-level `@Decl` carries no owner and no parameter list** · **A method's own `@Decl` has no parameter list** | 347 |
