@@ -220,6 +220,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
+- [ ] 143 (398) — `dbcontext`, botopink's JPA over erika: s0 done (`botopink/dbcontext` scaffolded, a submodule); s1 entities and `DbContext` over a `Driver`, s2 `#[dbcontext.repository]` / `#[dbcontext.sql "…"]` / `#[dbcontext.nativeQuery]`, s3 rakun-data over it · 137 s2 · 01-checker s29 · s3 after 128
 - [ ] 142 (396) — `json`, `yaml`, `markdown`, one repository each: s0 done (the three repositories scaffolded, submodules), s1 std's `json.bp` out with the six consumers' imports, s2 `yaml` (rakun's reader its seed; 121 s3), s3 `markdown` (onze-content's reader, a tree of its own) · s1–2's rakun commits after 128
 - [ ] 135 s0 (391) — the `snap` library: `botopink/snap` scaffolded and a submodule (`repository/snap`, meta `79e4af6`); left: `snap`'s `botopink.json`, `std/testing/snapshots.bp` moved whole into it with std's four `.snap`, std's generic text methods (newline normalisation, trailing trim, first differing line), the consumers' imports one commit per library (jhonstart, onze), `contracts.md` § 7 · none — every `.snap` byte-identical before and after; 135 s1–5 write through it
 - [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`

@@ -5,7 +5,7 @@
 **Owns:** `repository/erika/modules/erika/**` (`src/erika.bp`, its in-file tests, `botopink.json`,
 `src/root.bp`), `repository/erika/{docs.md,examples.md,AGENTS.md}` · `modules/erika-test/**` for the
 helpers its cells need
-**Does not touch:** rakun (`DbContext` implementing `QueryContext` and `#[entity]` recording `QueryTable` are 08 step 7's) · the compiler
+**Does not touch:** `dbcontext` (`DbContext` implementing `QueryContext` and `#[dbcontext.entity]` recording `QueryTable` are `04-rakun/143`'s, 398) · the compiler
 (the annotation form is `01-checker` step 29's) · `examples/erika-linq/**` beyond a new example file
 
 ## Goal
@@ -22,7 +22,7 @@ import {models.User};
 // in memory, as today
 val adults = erika "select * from people where age >= ${min}";
 
-// a database query on the context (397): QueryContext — rakun-data's DbContext implements it;
+// a database query on the context (397): QueryContext — dbcontext's DbContext implements it (398);
 // `User` an entity: its QueryTable meta (#[entity]) gives the table and the columns at build
 type Report(db: DbContext) {
     fn active(self: Self) -> @Result<User[], StoreError> {
@@ -30,10 +30,10 @@ type Report(db: DbContext) {
     }
 }
 
-// a repository method (313; #[repository] is rakun-data's side)
-#[repository]
+// a repository method (313, 398: the dbcontext library's)
+#[dbcontext.repository]
 behavior Users {
-    #[erika "select * from User where id = ${id} limit 1"]
+    #[dbcontext.sql "select * from User where id = ${id} limit 1"]
     fn find(self: Self, id: i32) -> @Result<?User, StoreError>;
 }
 ```
