@@ -7,7 +7,7 @@ track holds the sweep that brings it back in line. It edits no repository under 
 
 | Front | Priority | State | What | Depends on (open) |
 |---|---|---|---|---|
-| [`141-specs-sweep/`](./141-specs-sweep/README.md) | high | not started · ready to open | the retired spellings out of `specs/1.0.12-beta/**`; `decisions-taken.md`'s amended rows stated as in force; the overtaken pending questions listed for the maintainer | nothing · step 6: `141-a` |
+| [`141-specs-sweep/`](./141-specs-sweep/README.md) | high | partial — steps 0–5 done | the retired spellings out of `specs/1.0.12-beta/**`; `decisions-taken.md`'s amended rows stated as in force; the overtaken pending questions listed for the maintainer | nothing · step 6: `141-a` |
 
 **Decisions:** none of its own; it applies the ones in force (§ Inventory of the front names them).
 Open: `141-a` (how a decision that retires a spelling keeps the specs from drifting again).

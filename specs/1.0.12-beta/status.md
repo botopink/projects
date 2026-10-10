@@ -220,7 +220,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
-- [ ] 141 (`10-specs`) — the retired spellings out of the specs: `decisions-taken.md`'s 25 amended rows stated as in force, then the central files, the fronts' READMEs and examples track by track (about 280 lines, 71 files) · none (s6: `141-a`)
+- [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (s1: 351's html-side rules; native props handed to 26 s13 (362); s4's slots are 360; s1's component spread is 359, on 01-checker s34; ctr-r closed: 118 goes first, org-3 holds)
 - [x] 121 s1–2 — Markdown to `Element` in `onze-content` (onze `584f64a`, on `feat`): 714 / 714 on both rows at onze `05b7005`
