@@ -1,6 +1,6 @@
 # Front 135 — snap: the second test layer, re-evaluated case by case
 
-**Priority:** low — last, but step 0 first (every later step writes through `snap`) · **State:** evaluated; answered by 390 (the maps closed) and 391 (the `snap` library); no step started
+**Priority:** low — last, but step 0 first (every later step writes through `snap`) · **State:** evaluated; answered by 390 (the maps closed) and 391 (the `snap` library); step 0's first box done (`botopink/snap` scaffolded, a submodule), its other boxes ready to open (`status.md` L3)
 **Depends on:** nothing for step 0 (`botopink/snap` exists, scaffolded, a submodule) · step 4: `06-emilia/34` landed (it moves the output the helpers record)
 **Owns:** the snapshot steps other fronts carried — `02-std-and-packaging/97` step 7 ·
 `04-rakun/19` step 6 · `05-jhonstart/26` step 7 · `06-emilia/33` steps 1, 3, 4 (helper and
