@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**70 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
+**74 questions and 8 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,6 +27,56 @@ Nothing open: 138-a answered (337).
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
+
+#### s35-a · How a decorator body hands a parameter's `@Expr` on to the program (364 (1))
+- **Measured.** Every output a decorator body has takes a string: `@emit(source: string)`,
+  `decl.addMember(source: string)`, `decl.setMeta(key: string, value: string)`; typed meta
+  (`decl.addMeta(Check(…))`, 298) is `01-compiler/130` step 8, not built. A parameter's `@Expr` where a
+  `string` is expected is a type mismatch, and `message.text()` on a decorator parameter is
+  `expr-param-method` (built: a parameter answers `.value` and `.fail`). So 364 (1) has no channel:
+  `#[check(passwordsMatch, message: t("signup.mismatch"))]` checks both arguments, and neither reaches
+  the program (`run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime` are not written).
+- **Options.** (a) Typed meta carries it: `decl.addMeta(Check(message: message, rule: rule))`, `Check`'s
+  fields `@Expr<string>` / `@Expr<fn(v: T) -> bool>`, the record built in the reading program with each
+  expression spliced where it was written — waits for 130 s8. (b) The source text: `.text()` answers a
+  decorator parameter's argument as written, spliced into a string output —
+  `decl.addMember("pub fn rule(self: Self) -> bool { return " + rule.text() + "(self); }")` — resolved in
+  the annotated module, where the argument was written. (c) A typed member: `decl.addMember("validate",
+  fn(self: T) -> bool { return rule(self); })` (example 1's illustrative form), the closure's `rule` the
+  argument spliced in.
+- **Recommendation.** (a), with (c) as the member form: typed and located; (b) splices untyped text.
+- **Blocks.** `01-checker` s35 box 3 (the two `run/` cells); 125 s7's `#[check]` reaching validation at run time.
+
+#### s35-b · Whether an optional function argument was given (`rule == null`)
+- **Measured.** Built: `comptime rule: @Expr<?fn(v: T) -> bool> = null` — an optional function is a
+  function for 364 (3), so `rule.value == null` is `expr-value-of-function` at the read, and a body cannot
+  ask whether the annotation gave a rule. `run/decorator_arguments_check` and
+  `reject/decorator_check_without_rule_not_bool` tell the function form by `decl.kind == DeclKind.Fn`.
+- **Options.** (a) As built: no null test; the body reads the declaration (`decl.kind`) or the library
+  splits the decorator (`#[check(rule)]` on a type, `#[check]` on a function). (b) `rule.value == null` /
+  `!= null` is legal — the comparison calls nothing —, any other read of `rule.value` refused. (c) The
+  parameter is optional itself: `comptime rule: ?@Expr<fn(v: T) -> bool> = null`, tested `rule == null`.
+- **Recommendation.** (a): no read of a function's `@Expr` at all; (b) if example 1's spelling is wanted.
+- **Blocks.** Nothing — built as (a).
+
+#### s35-c · A `comptime` variadic's spelling
+- **Measured.** Built: `comptime ..fields: @Expr<Type.Field<T>[]>` — the wrapper over the declared type
+  (std's `Type.pick` / `Type.omit`, the cells); each argument is checked against `Type.Field<T>`, and
+  `fields.value` is the array.
+- **Options.** (a) As built, `@Expr<T[]>`: `fields.value.map({ f -> f.name })`. (b) `@Expr<T>[]`, one
+  expression per argument: `fields.map({ f -> f.value.name })`, `fields[1].fail("…")` at that argument.
+- **Recommendation.** (a): 364's `comptime x: @Expr<T>` with `T` the parameter's declared type.
+- **Blocks.** Nothing — built as (a).
+
+#### s35-d · An ordinary function's argument not known at build
+- **Measured.** Built: 364's "refused only where `.value` reads it" holds for a decorator (an unread
+  argument is accepted, `run/decorator_expr_unread_argument`); an ordinary function's `comptime`
+  argument stays known at build whatever the body does (`comptime-arg-not-known`, 297's rule) — its body
+  is run-time code, `n.value` the specialised value.
+- **Options.** (a) As built. (b) The decorator rule for every function: `fn tag(comptime n: @Expr<i32>,
+  x: i32) -> i32 { return x; }` accepts `tag(k, 1)` with `k` a local.
+- **Recommendation.** (a): a run-time function's `comptime` parameter is its specialisation.
+- **Blocks.** Nothing — built as (a).
 
 #### s24-b · Example 1's `#[check]` puts defaulted parameters before `message`
 - **Measured.** `01-checker/examples/decorator-arguments-280.md` example 1 declares `check<T>(comptime decl:
