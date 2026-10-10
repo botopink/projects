@@ -274,8 +274,8 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the 9 Oct revalidation and the answers since (309–337): 61 questions, 8 contradictions, 88
-implementation choices.
+last section. Open after the answers through 389: 90 questions, 6 contradictions, 94 implementation choices (the
+counts live at the top of `decisions-pending.md`).
 
 **First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
 - [ ] 05w-i → 333 (A): 97 s16 · 05w-j → 336: 97 s15

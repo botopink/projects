@@ -256,7 +256,7 @@ Nothing open: 138-a answered (337).
 - **Measured.** Built (`front/ctx-async-374-375`, `infer.zig` `noteAsyncCall`, `finishHookNode`,
   `markHookAsync`): (1) a call of a function value or a method makes the node asynchronous only when the call's
   type resolves to `@Component<R>` or stays an open type variable — `xs.length()`, a record constructor and a
-  method answering `string` do not (s23-d's "a `@Component` called through a function value or a method");
+  method answering `string` do not (s23-d's, answered by 389: "a `@Component` called through a function value or a method");
   (2) a `use` of a host hook and a call of a host function answering `@Component` count as a host answering
   `@Task` (`Component<R> extends Task`) — `run/decl_hooks_direct`'s `Page` (`use session()`, `declare fn
   session() -> @Component<string>`) is `async`; (3) a call of a botopink function answering `@Task` with no
