@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-10 · **Base** (each repository's `feat`): botopink-lang `856bbc69` (batch 21: typed meta keyed by type — 298, 370 (1); section values and records on the comptime runtime — 34 s5) · rakun `d609f8c` · jhonstart `50514f1` · emilia `9c3e24a`
+**Date:** 2026-10-10 · **Base** (each repository's `feat`): botopink-lang `11bde540` (135 s0: the snap library — 391, 402, 407) · rakun `d609f8c` · jhonstart `50514f1` · emilia `9c3e24a`
 · onze `783af40` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 72 — **0 done** · **23 partial** · **49 not started**.
@@ -222,7 +222,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 - [ ] 143 (398) — `dbcontext`, botopink's JPA over erika: s0 done (`botopink/dbcontext` scaffolded, a submodule); s1 entities and `DbContext` over a `Driver`, s2 `#[repository]` / `#[query "…"]` / `#[nativeQuery]`, s3 rakun-data over it · 137 s2 · 01-checker s29 · s3 after 128
 - [ ] 142 (396) — `json`, `yaml`, `markdown`, one repository each: s0 done (the three repositories scaffolded, submodules), s1 std's `json.bp` out with the six consumers' imports, s2 `yaml` (rakun's reader its seed; 121 s3), s3 `markdown` (onze-content's reader, a tree of its own) · s1–2's rakun commits after 128
-- [ ] 135 s0 (391) — the `snap` library: scaffolded and a submodule (`repository/snap`), `botopink.json`, the engine and std's four `.snap` moved in, std's `String.normalizeNewlines` / `trimTrailingNewlines` / `firstDifferingLine` and `fs.mkdirRecursive` (402), jhonstart and onze importing from `snap`, `contracts.md` § 7 — landing as patches (every `.snap` byte-identical); the old import keeps the plain unknown-module error, the pointer documentation (407) · none; 135 s1–5 write through it
+- [x] 135 s0 (391) — the `snap` library: scaffolded and a submodule (`repository/snap`), `botopink.json`, the engine and std's four `.snap` moved in, std's `String.normalizeNewlines` / `trimTrailingNewlines` / `firstDifferingLine` and `fs.mkdirRecursive` (402), jhonstart and onze importing from `snap`, `contracts.md` § 7 — landed (botopink-lang `11bde540`, snap `30ee7f5`, jhonstart `d47fffc`, onze `b6b0e0d`; every `.snap` byte-identical); the old import keeps the plain unknown-module error, the pointer documentation (407) · none; 135 s1–5 write through it
 - [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (s1: 351's html-side rules; native props handed to 26 s13 (362); s4's slots are 360; s1's component spread is 359, on 01-checker s34; ctr-r closed: 118 goes first, org-3 holds)
