@@ -505,6 +505,12 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
       `comptime_module.zig`, `decorator_invocation.zig` (from `14-comptime-on-beam` step 1)
 - [ ] package module namespace in type and value position (`import {report} from "validation"`, then
       `report.X`) as for std modules — exports known only to `comptime.zig`'s `resolveImports`
+- [x] a module is its package plus its path (170, 337): an item with no `from` names one module of
+      the importing package by its registry key (`ImportSource.key`, `Module.package` stamped on each
+      import as `ImportDecl.ownPackage`), so `a/theme` and `b/theme` are two modules to the checker,
+      `crossModule.pick`, every backend (erlang's imported-enum owner), the `.d.ts` and the comptime
+      runtime (`block_eval.findType` by module); a dependency's shorthand stays in its package
+      (`modules/two_packages_one_module_name`, four targets; from `08-bpp/119` step 1 box 4)
 - [ ] two aliased imports of two same-named **types** are legal (310): every backend qualifies a type by
       its module; `modules/import_two_types_one_name` becomes an accept cell on every target (until
       then the refusal is a `language-gaps.md` row)
