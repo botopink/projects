@@ -47,6 +47,17 @@ call-site project ≤ 600 ms on both runtimes.
   (`template_eval.memoKey`, 01's row); the bench's E-2 is the in-compiler stage split
   (`runtime/stages.zig`, `BOTOPINK_COMPTIME_STAGES`)
 - Step 3 — three round-trip fixtures, `COMPTIME REPLY` byte-identical on beam and wat
+- `06-emilia/34` step 5's toolchain rows — a section value at comptime: inference's untyped rewrites
+  (`enumSectionRewrites`, `indexRewrites`) applied to the block, this module's carried functions, a
+  decorator's argument and the functions a decorator reaches (inferred first, as 371's), the section
+  types carried (`block_eval.sectionType`, wrapper variants), an atom or tagged tuple lifted as the
+  expected enum's constructor; a path in a function declared after the `comptime` refused naming it
+  (`run/comptime_enum_section_value`, `run/comptime_decorator_section_value`,
+  `modules/comptime_imported_section_path`, `reject/comptime_section_path_declared_after`) — and
+  emilia's dispatcher: a record matched on the comptime runtime as its untagged map, no package atom
+  (`run/comptime_record_pattern`); emilia's `comptime assertAsciiBody([.Pad.All.4, …], emptyTheme())`
+  evaluates on both runtimes, `comptime className(…)` waits on T19 (`contentHash`, step 6) ·
+  choices `cep-a`–`cep-c`
 - Step 4 — T15 answered by decision 216: closes with `130-decorator-outputs` step 6, nothing built here
 - Step 5 — T17 re-measured (holds for `Param`, `Field`): fix is `01-checker`'s row
 - Step 7 — `decorator_invocation.zig`'s `a \u{…} literal in the body …`: a body literal and a plain
