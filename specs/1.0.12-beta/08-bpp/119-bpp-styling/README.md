@@ -259,6 +259,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 - [ ] a boundary's fill carries the scoped sheet of a component the shell did not render, as
       emilia's flush does today (`jhonstart-emilia/src/root.bp:95`)
+- [ ] the `Suspense` child is written `val child = capture({ -> caughtBelow(…) });` (387, std's
+      `context.capture`), so a fill reads `StyledContext` and every provider above the boundary
 
 ### Step 4 — `#[styled(..)]` in `jhonstart-styled`, and the reader of `#[emilia(..)]`'s meta (decisions 301, 338, 369)
 

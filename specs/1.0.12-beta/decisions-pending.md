@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**89 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
+**88 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -257,46 +257,6 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) Refused (as built), 357 (2)'s "never under a condition": `val n = ready && use flag();` is `use-not-top-level`; written `val f = use flag(); val n = ready && f;`. (b) Accepted: only the listed constructs refuse — `val n = ready && use flag();` builds, and `flag` runs on the calls where `ready` holds.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — built as (a).
-
-#### 134-i · A `@Component` value handed to a host that is not a lambda written there (374)
-- **Measured.** 374 is built (`front/ctx-async-374-375`, `comptime/context_lower.zig` `lowerHostArg`): a
-  `@Component` lambda written as an argument of a host call takes no hidden map and reads the map of the body
-  it is written in, and a declared component named as one is wrapped (`hostNow(Plain)` → `{ -> Plain(<map>) }`)
-  — `run/context_host_thunk` on erlang, beam and commonJS. 374 does not say what a `@Component` **value** handed
-  to a host is — a parameter, a local, a record field. Built: it keeps the hidden map as its first parameter
-  and the host passes `null` (jhonstart's `jhonstart_signal.erl` `call/1`). Three jhonstart sites meet it:
-  `componentOutcome(f)` hands its parameter to `__jhTryComponent(f)`; `jhRegisterPage(record, render)` stores a
-  parameter that `__jhRoutesLookup` hands back typed `fn(route: PageContext) -> @Component<Element>`, which
-  botopink then calls with the map; and a loading segment's `Suspense` child (`render.bp` `errorLevel`: `val
-  child: fn() -> @Component<Element> = { -> caughtBelow(…) }`, stored in `Boundary(child:)`) is run by
-  `streaming.bp` `resolveIn` → `componentOutcome(child)` outside every body, so a provider above it
-  (`StyledContext`) is lost in a boundary fill — the case 374's text names ("a `Suspense` fill … reads the same
-  captured map") and its rule does not reach, the lambda being a `val`'s initializer, not a host argument.
-- **Options.**
-  (a) As built: only a lambda written as the host argument and a declared component name capture; any other
-  value keeps the map parameter. jhonstart moves the `Suspense` child's lambda into a host call where it is
-  written (a host identity cell), so it captures there:
-  ```bp
-  val child = __jhKeep({ -> caughtBelow(chain, i, route, page) });   // the lambda captures errorLevel's map
-  // a value: componentOutcome(f) → __jhTryComponent(f) still hands the host f(map, …), which it calls with null
-  ```
-  (b) Every `@Component` value handed to a host is wrapped where it is handed over, `{ -> f(<map here>) }`:
-  ```bp
-  __jhTryComponent(f)          // lowered: __jhTryComponent({ -> f(<componentOutcome's map: null>) })
-  jhRegisterPage(line, render) // lowered: the stored function takes no map; a lookup typed
-                               // fn(route) -> @Component<Element> is then called with one — erlang badarity
-  ```
-  (c) A lambda answering `@Component` captures wherever it is not an argument of a botopink call — a `val`'s
-  initializer and a record field included:
-  ```bp
-  val child: fn() -> @Component<Element> = { -> caughtBelow(chain, i, route, page) };  // captures here
-  // the type `fn() -> @Component<Element>` then holds values of two arities (a parameter's takes the map)
-  ```
-- **Recommendation.** (a): (b) breaks the registry round trip and gains nothing at `componentOutcome` (its map
-  is `null`), (c) makes one function type stand for two calling conventions. The loss under a `Suspense` fill
-  is closed where the lambda is written, which is 374's own reading.
-- **Blocks.** `08-bpp/119` step 3 (a boundary's fill keeps `StyledContext`), `05-jhonstart/26`'s `Suspense`
-  child.
 
 #### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
 - **Measured.** Built (`front/ctx-async-374-375`, `infer.zig` `noteAsyncCall`, `finishHookNode`,

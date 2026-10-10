@@ -168,7 +168,11 @@ fn Button() -> @Component<Element> {
       `__jhTryComponent`-shaped host call, and below one the host calls later) on erlang, beam and
       commonJS; a lambda handed to a botopink function unchanged (`run/context_provide_read` stays green) —
       built on `front/ctx-async-374-375`; open: a `@Component` value that is not a lambda written at the host
-      call (a parameter, a local, a `Suspense` child stored in a record) keeps the map parameter (`134-i`)
+      call (a parameter, a local, a `Suspense` child stored in a record) keeps the map parameter (387)
+- [ ] std's `context.capture(f)` (387): `capture({ -> body })` lowered as `(_map) => body(<the map here>)` — the
+      lambda as a host argument (374), the answer taking the map parameter and ignoring it —
+      `run/context_capture` (a value captured in a provider's body, called later by a host with `null` and
+      by botopink with another map, reads the provider of the capture on erlang, beam and commonJS)
 - [x] the rules of hooks (357): `use` only at the top level of a `@Component` body —
       `error[use-not-top-level]` inside `if` / `else`, a `case` arm, a loop, a lambda, `try` /
       `catch`, or after a statement that may return early, naming the enclosing construct;
@@ -179,7 +183,7 @@ fn Button() -> @Component<Element> {
 
 ## Decisions
 
-Open: `134-i` (a `@Component` value handed to a host that is not a lambda written there).
+`134-i` → 387 (std's `context.capture(f)`).
 
 Answered: `134-f` → 354 (contexts), 329, 330 (`134-e`: a namespace type, `?T` methodless, `result` deleted,
 `Type.Field<T>` associated — step 2), 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
