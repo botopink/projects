@@ -146,9 +146,12 @@ Consumed by fronts 26, 31, 67, 68.
 class = "e_" + hash.contentHash(<the class's rules, as styled renders them>)
 ```
 
-Decision 367 (338's class, one rule for every component; `06-emilia/34` step 5 lands it — the code
-answers the codec form `"e_" + hash.contentHash(encodeSheet(tokensToSheet(tokens, theme)))` until
-then). `contentHash` = std's djb2 fold in `hash`: lowercase hex, seed 5381, multiplier 33, masked to
+Decision 367 (338's class, one rule for every component), landed by `06-emilia/34` step 5: the code is
+`"e_" + hash.contentHash(classRules(tokensToSheet(tokens, theme)))` (`output.bp` `classRules`: the
+class's rules as the document writes them — layer order, plain rules before conditioned ones, runs of
+one context folded — the class written `\u{1}`, the text `styled` hashes for a component; no
+`prefix` / `important` option enters it). The codec payload is what emilia's cell stores, not what is
+hashed. `contentHash` = std's djb2 fold in `hash`: lowercase hex, seed 5381, multiplier 33, masked to
 32 bits, over the class's rules (the `e_` prefix is emilia's layer's), `tokens` in author order. emilia and onze
 68 use this one function; emilia keeps no private hasher (decision 116). Nothing else enters the
 hash — no counter, salt, request id. With a static class: `<static> + " " + <emilia class>`.
@@ -167,9 +170,11 @@ Five clauses, each a test:
 5. Attribute array order fixed (`renderToString` writes attrs in array order).
 
 **Shared fixture:** `className(cardTokens(), defaultTheme()) == "e_f51c2501"` (367; re-derived once in 34
-step 5, every reader re-recorded in that landing — `e_39b87d03` until it lands) (`cardTokens()` =
+step 5, every reader re-recorded in that landing — it was `e_39b87d03`; the hashed text
+`\u{1}{background:#ffffff;padding:calc(var(--spacing) * 4);font-weight:bold}@media (hover: hover){\u{1}:hover{background-color:var(--color-gray-100)}}`
+is asserted beside it) (`cardTokens()` =
 `[.Bg.White, .Pad.All.__4, .Text.Bold, Token.Hover([.Bg.Color.Gray.__100])]`), a **literal hex string**
-on commonJS and erlang (inline test, `emilia/modules/emilia/src/emilia.bp:16503-16516`, no HTML); the
+on commonJS and erlang (`emilia/modules/emilia/src/emilia.bp`, test "class: attributes — the shared fixture", no HTML); the
 `jhonstart-emilia` bridge test (30, `bridge_test.bp:165-186`; the member is deleted by `08-bpp/119`, and the reader moves to `jhonstart-styled`'s test, decision 338) and 68's bundle test assert the same literal; the payload's `s` key makes it checkable at run time.
 
 ## 4a · Emilia dispatcher shape — owned by fronts 54 and 56, consumed by 33–48, 57, 58

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 80 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **374**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 83 perguntas, 6 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **374**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,6 +13,39 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
+
+### 34-d · O que uma família da emilia devolve quando a emilia roda só no compile time (369 (3) × o tipo do literal `styledProperty`) *(proposta)*
+
+**Trava:** `06-emilia/34` passo 5, caixas 1–3 e 6 (e por elas a dependência de `styled`, caixa 8, e o passo 2) — a cadeia de prioridade da 350 · ⏳ thread `emilia-34-s5b` esperando
+
+**Contexto.** A 369 (3) escreve cada família como função de compile time que devolve `StyledProperty`, escrita com o literal `styledProperty`. O literal responde `@Component<StyledProperty>`, e um buraco que nomeia um parâmetro torna o literal computado no render (355), lendo `use context(StyledContext)`.
+
+**Hoje** (medido em botopink-lang `90d50ae3`, styled `01a5299`):
+```text
+fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
+  → type mismatch: expected StyledProperty, got Component
+return await v;                      → effect-await-without-task
+-> StyledPropertyView lido em comptime → "calls .add(…) with 2 argument(s) … no type the block reaches provides"
+```
+
+- [ ] **(a)** `styledProperty "…"` devolve o registro `StyledProperty` (declarações como valor, função pura, nada registrado — uma propriedade só é inlined); `StyledPropertyView` sai, e "uma propriedade sozinha se registra" do `styled` se inverte.
+  ```bp
+  fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
+  ```
+- [ ] **(b)** Uma segunda função de template no `styled` que devolve o registro; `styledProperty` fica.
+  ```bp
+  fn padAll(n: i32) -> StyledProperty { return styledDeclarations "padding: --spacing(${n});"; }
+  ```
+- [ ] **(c)** As famílias devolvem `StyledPropertyView` e a cadeia da emilia roda no render, `@Task` até cada consumidor (a (a) da 366, substituída pela 369).
+  ```bp
+  val cls = await emilia([.Pad.All.__4]);
+  ```
+- [ ] **(d)** As famílias continuam montando strings; a emilia só usa a folha do `styled` (emenda 338 (3), 350, 369 (3)).
+  ```bp
+  fn padAll(n: i32) -> string { return "padding:" + spacing(n); }
+  ```
+
+**Recomendação: (a).** É o texto da 369, um literal e um tipo para um valor só de declarações; nada numa propriedade precisa de render (numa tag ela passa pelo `Styleable.toStyled()` do registro). **Bloqueia:** 34 s5 caixas 1–3 e 6; sob (a), o exemplo e o teste de contexto da `08-bpp/119` passo 1. Mesmo respondida, uma família lida em `comptime` ainda espera as linhas de toolchain "A nested-section enum value at comptime" e "emilia's dispatcher at comptime" (`language-gaps.md`).
 
 ### 134-g · Um valor-função `@Component` entregue a código genérico (354 (8))
 
@@ -978,6 +1011,8 @@ val t = async.delay(30, "a");   // bloqueia 30 ms aqui; `await t` é identidade
 
 | Id | Assunto | Recomendação | Trava | Espera também |
 |---|---|---|---|---|
+| `34-e` | O parâmetro do `#[emilia(…)]`: a 369 (1) escreve `comptime ..tokens: Token[]`, que é `comptime-param-not-expr`; `comptime ..tokens: @Expr<Token[]>` compila e resolve `.Pad.All.__4` | (a) — a 364 e a s35-c: `pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>)`, o corpo lê `tokens.value`; a 369 (1) reescrita. (b) seria exceção à 364 (4) no checker. | 34 s5 caixa 4 | 34-f; `08-bpp/119` passo 4; a linha "A nested-section enum value at comptime" (`tokens.value` dá `{badmap,'Pad'}`) |
+| `34-f` | O tipo de meta que o `#[emilia(…)]` grava (369 (2)): o `styled` não declara nenhum (`Styled`, `StyledProperty`, `StyledSheet`, `Layer`, `SheetEntry`, `Sheet`, `Holes`) | (b) — um tipo próprio no `styled`, com a camada: `pub type StyledMeta(layer: string, className: string, rules: string)`, `decl.addMeta(StyledMeta(layer: "utilities", …))`; (a) `Styled` como meta não diz a camada que o sink escreve; (c) tipo da emilia é recusado pela 113. | 34 s5 caixa 4; `08-bpp/119` passo 4 caixa 2 | meta tipada (370 (1)) com `01-compiler/130` passo 8 |
 | `67-a` | Onde as caixas de forms do lado do DOM são afirmadas | (a). As caixas rodam no gate da biblioteca dona, onde quebram primeiro, sem dependência nova; o navegador do onze 53 confere de novo. | a forma dos passos 1–3 da 67 (escritos para a (a)); o caminho de | 26; 103 s2 |
 | `03r-ab` | Front 09: stores de protocolo binário | (a) — nunca cair para ETS debaixo de uma URL do Mongo; o braço Elasticsearch sem aresta para o `rakun-client` (ver `ctr-w`; o passo 3 da 09 ainda passa por ele). A frente já segue a (a); falta só o registro. | 09 passo 5 (as células de recusa). | 09: 19 s1, 13 (grupo B, depois do 128) |
 | `ctr-p` | Confirmação `std-a` × confirmação `03r-e` | (a). Recusar é o mais restritivo (67) e mantém a lógica compartilhada no std. | os leitores do rakun 04; a varredura de consumidores da 104 (passo 5) | rakun 04: o 128; 104 s5: os donos dos arquivos consumidores (04, 65, 79, 12, 19, 22, 123, 49, 51) |
