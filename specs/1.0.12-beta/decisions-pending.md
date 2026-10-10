@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**73 questions and 6 contradictions are open, and 102 implementation choices await confirmation.**
+**74 questions and 6 contradictions are open, and 105 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -363,6 +363,27 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   ```
 - **Recommendation.** (a): one rule for a call in a body (128, unchanged by 388), no inference of intent from
   the use; (b) changes what every body's `val x = Card(…)` means.
+#### 139-a · A `bigint` where its type is no longer static: `unknown`, `is`, `comptime` (332, decision 8 §4.1)
+- **Measured.** No target tells a `bigint` from another integer at run time: erlang and beam hold one
+  integer for both, commonJS's `i64` past 2^53 is a `BigInt` as a `bigint` is (319), wasm's `bigint` is
+  the address of a block where an `i32` is a word. Decision 8 §4.1 tests a number by its range, so on the
+  parent of this front's patch `val u: unknown = 5n; u is i32` would answer `true` on erlang and beam and
+  `false` on commonJS (a `BigInt` is no `number`), and wasm could not box it. The compile-time evaluator
+  holds a 64-bit integer: `val k = comptime 99999999999999999999n * 2n` was `integer beyond 64 bits`, a
+  module-level one an unlocated `UnsupportedComptimeValue`. Built: (a) — `reject/bigint_into_unknown`
+  (`bigint-widened` at `6:22`), `reject/bigint_type_test` (`bigint-type-test`), `reject/bigint_comptime`
+  (`comptime-bigint`); `@print`'s variadic `unknown` takes a `bigint`; a union holding one stays legal
+  (only `is` / a type pattern tells its members apart, and both are refused over it).
+- **Options.** (a) ★ A `bigint`'s type stays static: it does not widen to `unknown`
+  (`val u: unknown = 5n` is `bigint-widened`), `is` neither tests for one nor tests a value holding one
+  (`x is i32` over `x: bigint`, `case x { bigint { … } }` are `bigint-type-test`), and a `comptime`
+  computing one is `comptime-bigint`. (b) §4.1 read for `bigint`: `x is bigint` is "an integer of any
+  size" on every target (`5 is bigint` and `5n is i32` are `true`), commonJS's narrow tests accept a
+  `BigInt` in range, wasm boxes a `bigint` with a kind of its own; `comptime` folds it with an
+  arbitrary-precision integer in `eval.zig` and in the BEAM and WAT comptime runtimes. (c) (a) for `is`
+  and `unknown`, (b) for `comptime` only.
+- **Recommendation.** (a): no answer differs per target, and nothing is accepted that a later answer
+  would have to take back; (b) when a program needs `bigint` in `unknown` or at compile time.
 - **Blocks.** Nothing — built as (a).
 
 ### 02-std-and-packaging
@@ -526,6 +547,7 @@ local change in the named place). Full 1.0.10 text under the same id in
 | cep-c | A comptime module's record is its untagged map, so (a) `v is Rule` and an arm naming a record test its declared keys — `is_map(V) andalso is_map_key(selector, V) andalso is_map_key(decl, V)` — and a record of another type with those keys answers `true`; (b) carry the type in the map (`#{'__bp_type' => 'Rule', selector => …}`), a change of every comptime term the evaluators read and reply; (c) refuse `is` / a record arm on the comptime runtime where two carried records share their keys. Recommended: (c), the strictest; (a) implemented, no cell has two such records | `codegen/erlang.zig` `untypedRecordTest` · `run/comptime_record_pattern` |
 | 388-b | `c.run(scope)` answers `@Task<Rendered<R>>` for every component (375's mark is not in the type), declared on `builtins.d.bp`'s `Component<R>`; std's `context` declares `pub type Rendered<R>(value: R, scope: RenderScope)` and `pub type RenderScope(frames: unknown)`, its construction refused outside std (`render-scope-construction`) since botopink has no private constructor | `infer.inferComponentRun` · std `context` · `run/component_run_root`, `reject/render_scope_construction` |
 | 388-c | 388 (4)'s "outside every body a value runs with `c.run(RenderScope.root())`" read as what `await c` means there: an `await` of a component value in a plain function, `main`, a test or a lambda runs it with `RenderScope.root()`; (b) would refuse it, naming `c.run(RenderScope.root())` — every test and `main` that awaits a component would be rewritten | `context_lower.zig` · `run/component_run_root` |
+| 139-b | `bigint`'s surface is `primitives.bp`'s `behavior BigInt`, beside every other primitive's methods, and not a `type bigint` in `builtins.d.bp` as the front's README first said: the parser refuses a `self` method in a field-less `type` (`namespace-type-self`), and a static `declare fn` there is an `@`-builtin row of `builtins.zig`. `bigint.of(n)` / `bigint.parse(text)` are associated host primitives of decision 262's form (`String.fromCodepoint`'s), written through the type's own name (the checker renames the receiver `BigInt`); `BigInt.of(n)` types too, as `String.fromCodepoint` does. (b) would teach the parser and the drift test a primitive `type` with methods | `primitives.bp` · `infer.inferPrimitiveStaticCall` |
 | 388-d | The wasm backend refuses a module the scope lowering reached, at its first component (`the wasm backend does not lower a component yet`), until 05's lowering: every component cell is a `.wasm.expect` (32 cells; `run/decl_hooks_*` among them, which ran on wasm under 354's map) | `wat.zig` `refuseScopeLowering` · `language-gaps.md` 354-wasm |
 | 388-e | A body that keeps a bare `try` runs the statements after its last `use provide` as an inner closure, whose answer (the value, or the error the `try` returns early) is the result; every other body answers `rendered(v, kids)` at each `return` | `context_lower.zig` `lowerComponentBody` · `run/component_try_in_body` |
 | 389-a | A declared function whose own return is no `@Component` answering one through its type arguments (`first<T>(cards)`) is 389's "what generic code answers": an edge with `callee: null`, the node asynchronous, no synchronous mark on the call | `infer.noteHookCall` · `run/decl_hooks_dynamic_call` |

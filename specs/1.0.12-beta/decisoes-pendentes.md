@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 73 perguntas, 6 contradições e 102 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 74 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -698,6 +698,49 @@ vezes — a thread recusa no `await`.
 **Recomendação: (a) agora** — nunca uma chamada rodando duas vezes, recusa localizada; a (b) quando um
 programa precisar. **Bloqueia:** nada.
 
+### 139-a · Um `bigint` onde o tipo deixa de ser estático: `unknown`, `is`, `comptime` (332, decisão 8 §4.1)
+
+**Trava:** nada — a 139 entrou com a (a)
+
+**Contexto.** Nenhum target distingue um `bigint` de outro inteiro em tempo de execução: o erlang e o beam
+guardam um inteiro só para os dois, o `i64` passado de 2^53 no commonJS é um `BigInt` como o `bigint` (319),
+e no wasm o `bigint` é o endereço de um bloco onde o `i32` é uma palavra. A decisão 8 §4.1 testa um número
+pela faixa, então `val u: unknown = 5n; u is i32` responderia `true` no erlang e no beam e `false` no
+commonJS, e o wasm não teria como encaixotar. O avaliador de compilação guarda 64 bits:
+`comptime 99999999999999999999n * 2n` dava `integer beyond 64 bits`, e num `val` de módulo um
+`UnsupportedComptimeValue` sem local.
+
+**Hoje:**
+```bp
+val u: unknown = 5n;                       // error: bigint-widened: a `bigint` does not widen to `unknown`
+@print(x is i32);                          // x: bigint — error: bigint-type-test
+val k = comptime 99999999999999999999n * 2n;   // error: comptime-bigint
+@print(5n);                                // o `unknown` variádico do `@print` aceita
+```
+
+- [ ] **(a) ★ como está** — o tipo de um `bigint` fica estático: não vira `unknown`, o `is` não testa um
+  nem testa quem guarda um (`case x { bigint { … } }` também), e um `comptime` não calcula um. Uma união
+  com `bigint` continua legal: só o `is` e o padrão de tipo separam os membros, e os dois são recusados
+  sobre ela.
+  ```bp
+  fn pick(c: bool) -> i32 | bigint { return if (c) 1 else 2n; }   // legal; `pick(c) is i32` recusado
+  ```
+- [ ] **(b)** A §4.1 lida para o `bigint`: `x is bigint` é "um inteiro de qualquer tamanho" em todo target,
+  os testes estreitos do commonJS aceitam um `BigInt` na faixa, o wasm encaixota com um tipo próprio, e o
+  `comptime` dobra com inteiro de precisão arbitrária no `eval.zig` e nos runtimes BEAM e WAT.
+  ```bp
+  val u: unknown = 5n;
+  @print(u is i32);      // true nos quatro targets
+  @print(5 is bigint);   // true
+  ```
+- [ ] **(c)** A (a) para `is` e `unknown`, a (b) só para o `comptime`.
+  ```bp
+  val k = comptime 99999999999999999999n * 2n;   // 199999999999999999998n, dobrado no build
+  ```
+
+**Recomendação: (a)** — nenhuma resposta muda por target, e nada é aceito que uma resposta futura teria
+de desfazer; a (b) quando um programa precisar de `bigint` em `unknown` ou no build. **Bloqueia:** nada.
+
 ---
 
 ---
@@ -777,6 +820,7 @@ Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `de
 | `cep-c` | O teste de registro no runtime comptime | (a) Um registro é o mapa sem tag do módulo comptime: `v is Rule` testa as chaves declaradas (`is_map(V) andalso is_map_key(selector, V) …`), e um registro de outro tipo com as mesmas chaves responde `true`. (b) Levar o tipo no mapa (`#{'__bp_type' => 'Rule', …}`) — muda todo termo que os avaliadores leem e respondem. (c) Recusar o `is` / o braço de registro no runtime comptime quando dois registros levados têm as mesmas chaves. | (c), a mais restritiva; (a) implementada, nenhuma célula tem dois registros assim. |
 | `388-b ★` | O que `c.run(scope)` devolve, e o `RenderScope` opaco | (a) `c.run(scope)` devolve `@Task<Rendered<R>>` para todo componente (a marca da 375 não está no tipo), declarado no `Component<R>` do `builtins.d.bp`; o `context` da std declara `Rendered<R>(value: R, scope: RenderScope)` e `RenderScope(frames: unknown)`, cuja construção fora da std é recusada (`render-scope-construction`), já que a linguagem não tem construtor privado. | (a) ★. É a grafia que a 388 (2) deixa para a frente, e um escopo feito à mão é recusado no build. |
 | `388-c ★` | `await c` fora de todo corpo | (a) O "fora de todo corpo um valor roda com `c.run(RenderScope.root())`" da 388 (4) lido como o que `await c` significa ali: num `main`, num teste, numa função comum, o `await` roda o componente com `RenderScope.root()`. (b) Recusaria o `await`, pedindo `c.run(RenderScope.root())` — todo teste e todo `main` que aguarda um componente seria reescrito. | (a) ★. É o texto da 388 (4), e a raiz é o único escopo que existe fora de uma renderização. |
+| `139-b ★` | Onde fica a superfície do `bigint` | (a) No `behavior BigInt` do `primitives.bp`, ao lado dos métodos de todo outro primitivo — não num `type bigint` do `builtins.d.bp`, como o README da frente dizia: o parser recusa método com `self` num `type` sem campos (`namespace-type-self`), e um `declare fn` estático ali é linha `@`-builtin do `builtins.zig`. `bigint.of(n)` e `bigint.parse(text)` são primitivos host associados da forma da 262 (a do `String.fromCodepoint`), escritos pelo nome do tipo; o checker renomeia o receptor para `BigInt`, e `BigInt.of(n)` também tipa. (b) ensinaria ao parser e ao teste de deriva um `type` primitivo com métodos. | (a) ★. A regra que todo primitivo já segue, sem grafia nova. |
 | `388-d ★` | O wasm recusa a baixa do escopo | (a) O wasm recusa o módulo que a baixa alcançou, no primeiro componente (`the wasm backend does not lower a component yet`), até a baixa da 05: toda célula de componente ganhou `.wasm.expect` (32 células; as `run/decl_hooks_*`, que rodavam no wasm com o mapa da 354, entre elas). | (a) ★. Recusar no build, localizado, em vez de rodar com outra semântica; a baixa é da `05-wasm`. |
 | `388-e ★` | Um `try` solto no corpo de um componente | (a) O corpo que guarda um `try` solto roda o que vem depois do último `use provide` numa closure interna, cuja resposta (o valor, ou o erro que o `try` devolve antes) é o resultado; os demais corpos respondem `rendered(v, kids)` em cada `return`. | (a) ★. O `try` continua com o significado que os backends já dão, e nada antes do último provide pode sair cedo (357). |
 | `389-a ★` | O que o código genérico responde | (a) Uma função declarada cujo retorno não é `@Component`, mas que devolve um pelos argumentos de tipo (`first<T>(cards)`), é o "o que o código genérico responde" da 389: uma aresta com `callee: null`, o nó assíncrono, sem marca de síncrono na chamada. | (a) ★. O lado seguro que a 389 pede, sem seguir o tipo de quem chama. |
