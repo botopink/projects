@@ -8,7 +8,7 @@ step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 
 box 4 on `08-bpp/119` step 4 (383's `StyledMeta` and its reader), `01-compiler/130` step 8 and the toolchain row "A nested-section enum value at comptime",
 box 5 on that row and "emilia's dispatcher at comptime", box 8 on box 1
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
-`use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
+`use context(StyledSheet)`, 352, 354, 379, so `flush()` — which provides `StyledContext` — waits on
 `01-compiler/134` step 6; step 3: the repositories `css`
 and `styled` — the components and the theme mechanism, decision 338) · `05emilia-n` (step 4, the four feature rows only).
 Nothing else:
