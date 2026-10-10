@@ -166,7 +166,7 @@ calls the checker answers, so the two coexist).
       `validate()` runs both rules, the list a build constant under `comptime`), `typeinfo-unknown-declaration`
       no longer raised for a bound type parameter
 - [ ] questions `130-s8-a`, `130-s8-c`, `130-s8-d` (decisions-pending; `130-s8-b` → 385, `130-s8-e` → 395): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
-      catalogue entry, a typed member reading its type's meta (`@typeInfo(T)` — 125 step 7's route)
+      catalogue entry
 
 ### Step 9 — a tag is a `@Decl` (decision 302)
 
