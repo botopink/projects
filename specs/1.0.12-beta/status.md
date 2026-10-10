@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `bb7e5403` (batch 16: every comptime parameter an @Expr<T> — 01-checker s35, 364)) · rakun `0e2dcd4` · jhonstart `a6ce2fb` · emilia `8f43cef`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `bb7e5403` (batch 16: every comptime parameter an @Expr<T> — 01-checker s35, 364)) · rakun `d609f8c` · jhonstart `a6ce2fb` · emilia `8f43cef`
 · onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -194,8 +194,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 103 — the action secret from rakun-app's `#[config("rakun.actions")]` record, not `rkProp` · rakun 04 s7 (299; no `#[config]` record in rakun yet)
 - [x] 128 (W3) — the nine merges, alone in rakun: 25 members → 16, 1 819 tests before and after, every starter and example building (rakun `00d4fcc`…`343a55c`, eleven commits)
 - [ ] 130 ↔ 128 — 128 does not wait on 130; no 130 rakun commit while 128 is open; after it, each is a decision-188 consumer commit · decision 339
-- [ ] rakun group A (W4–W5) — 04 (s1, the tag epoch, first) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
-- [ ] rakun group B (W5–W7) — 13 (04 s1) · 12 (04 s1, 19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
+- [ ] rakun group A (W4–W5) — 04 (s1 the tag epoch on `feat`, rakun `d609f8c`; s2 on) · 74 · 08 (s1 after 04 s4) · 15 · 79 · 81 · 93 · 73 · 19 s1 · 128 landed
+- [ ] rakun group B (W5–W7) — 13 · 12 (19 s1) · 22 (04 s5) · 17 (13 s2) · 11 (22) · 65 · 09 (19 s1, 13) · 91 (15) · 92 (74, 15) · the A step each names
 - [ ] rakun group C (W8) — 88 (81, 93, 92, 04 s4, 73) · 19 s2–5 (15 s1, 04 s4) · group B
 - [x] rakun-websocket `test/limits_test.bp:48` — the 1013 test read `rkWsSessionIds()` before the connection had registered its session (101 is written before `run/4` inserts the row: 19 of 200 handshakes under load 31 found none, so every frame went to no one and the close code was 0), then slept 3 s for the close; it now waits on the session's row and on its close-log entry (test-side Erlang helpers; chores patch, rakun test file only, rebase after 128) — 7 runs green under load 20–37 beside rakun-messaging's suite
 - [ ] rakun-websocket — `rakun_websocket.erl`'s `handshake/10` writes 101 before `run/4` registers the session, so a caller that reads the sessions right after the handshake can find none; register first, then answer 101 (a sidecar change, not a test bound) · 128 landed

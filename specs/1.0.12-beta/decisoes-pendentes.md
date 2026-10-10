@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 81 perguntas, 7 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **370**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 81 perguntas, 7 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **370**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1207,6 +1207,7 @@ Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `de
 | `03r-v ★` | O operador do builder tipado é um enum | (a) manter — operador desconhecido é variante desconhecida, erro de compilação | (a). É a única que cumpre o "erro de compilação" que a frente pede. (A coluna como `Type.Field<City>` — decisão 308 — é outra pergunta; o argumento hoje é a string da coluna SQL.) |
 | `03r-w ★` | OAuth2: endpoints são campos do provider; client credentials é uma função | (a) manter — campos no provider; `withClientToken(id, call)` busca o token, chama, e no 401 descarta o token e tenta mais uma vez | (a). (b) exige um gancho de interceptor que o rakun-client não tem. |
 | `03r-x ★` | O relay reivindica por UPDATE condicional | (a) manter — o estado durável é o que a recuperação lê | (a). (b) é otimização para o braço Postgres; recuperar depende do estado gravado, não do processo. |
+| `04-a ★` | A época por tag do núcleo (185): vida, tipo e tag vazia | (a) manter — a época só cresce (`rkResetContext` não a zera), é `i64`, e `rkBumpTag("")` / `rkTagEpoch("")` recusam (`rakun: a tag is a non-empty string (rkBumpTag)`). (b) `rkResetContext` zera: `rkBumpTag("t")` volta a dar `1` e uma resposta guardada na época 1 antes do reset é servida velha. (c) a vida da (a), `i32` como os outros contadores, e `""` uma tag comum (`rkBumpTag("") == 1`) | (a). Um contador de versão nunca volta, então nenhuma época guardada casa com um estado posterior; `i64` não tem borda alcançável; tag vazia é bug de quem chama, recusada (decisão 67). |
 
 ### Confirmações ★ — jhonstart
 
