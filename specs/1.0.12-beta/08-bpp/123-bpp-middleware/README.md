@@ -50,8 +50,8 @@ declaration — no string key — any `T`:
 ```bp
 pub val currentUser = atom<?User>(null);     // cardume's atom (296); rakun-cardume holds the request's store
 
-// middleware — a hook context: `-> @Component<RequestBase, Response>`
-val setUser = use setLocal(currentUser);      // fn(User)
+// middleware — a hook context: `-> @Component<Response>` (354)
+val setUser = use atomSetter(currentUser);    // fn(User) — cardume's hook (296)
 setUser(u);
 
 // page, component, handler, action
@@ -59,9 +59,9 @@ val user = use local(currentUser);            // ?User — null when nobody set 
 ```
 
 Values live in the request's process frame, die with it. Middleware, route handlers and actions
-return `@Component<RequestBase, Response>` (128) so they may `use`; rakun's hooks (`setLocal`,
-`cookie`, `setCookie`) anchor at `RequestBase`, jhonstart's (`local`, `cookie`) at `ElementBase`, over
-the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
+return `@Component<Response>` (354) so they may `use`; the request is the root context
+`RequestContext`, provided by rakun's pipeline (354); rakun's hooks (`atomSetter`, `cookie`,
+`setCookie`) and jhonstart's (`local`, `cookie`) act over the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
 
 A page reading a local is per-request (a request-time read is what `#[serverOnly]` marks, 186);
 until the checker capability lands, the read marks the render through `04-rakun/22` step 4's
@@ -126,9 +126,9 @@ from the action field and header onze configures (114).
 
 ### Step 7 — locals are atoms (decision 295)
 
-- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use setLocal(atom) -> fn(T)` and jhonstart's `use local(atom) -> ?T` (names: `atm-a`);
+- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use atomSetter(atom) -> fn(T)` (296) and jhonstart's `use local(atom) -> ?T` (names: `atm-a`);
       `LocalKey`, `setLocal(key, value)`, `local(key)` gone
-- [ ] `#[middleware]` functions, route handlers and actions return `@Component<RequestBase, Response>`
+- [ ] `#[middleware]` functions, route handlers and actions return `@Component<Response>` (354)
       (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`
 - [ ] two atoms of one `T` are distinct; an unset atom reads `null`; values die with the request
 - [ ] `examples/locals-and-sequence-example.bp` and `examples/src/app/orders/page.bpp` rewritten to atoms (the page reads `use local(currentUser)` through jhonstart's hook, never `import {local} from "rakun"` — 113, 295)

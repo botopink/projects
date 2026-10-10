@@ -69,7 +69,7 @@ and only emilia uses it. Stands on:
   the pure form (`06-emilia/34` step 1); a decorator calls a host function only with the cells its package's targets need (decision
   341, `01-compiler/14` step 6).
 - `q.source()` answers `Source(file, line, col)` (`libs/std/src/builtins.d.bp`, `Source`).
-- A `@Component<C, T>` body may write `use`; a template function reads a function's hooks through
+- A `@Component<T>` body (354) may write `use`; a template function reads a function's hooks through
   `@typeInfo(f).hooks` (128, 277).
 
 ## Mechanism
@@ -92,7 +92,7 @@ language's model (354, the pattern of 276's `View`):
 ```bp
 // styled/src/styled.bp
 pub type StyledSheet(…);                                  // the render's sheet, the layer
-pub val StyledContext = Context<StyledSheet>();           // provided by whoever renders (354)
+pub val StyledContext = comptime createContext(StyledSheet.missing());  // read use context(StyledSheet) (378, 379)
 pub type Styled(className: string, rules: string) implement @Renderable;
 pub type StyledView = @Component<Styled>;
 pub type StyledProperty(declarations: string);        // a value, never a component (381)
@@ -141,7 +141,7 @@ pub val code = styled """
 |---|---|
 | its `pub default fn` — what `"bpp".style` names | a template function over the section's text answering a scoped `@Component<Styled>`: scope id (module path and section line, sanitised to `[a-z0-9-]`, `components-post-card-12`), the sheet scoped through `css.scope`, the run-time holes |
 | run-time holes | a hole whose value is known at build is written into the rule; one known only at render becomes `var(--s-<n>)` in the rule and `style="--s-<n>: …"` on the template's root element, escaped by `escape.css` (a `97-std-dedupe` row) — Astro's `define:vars`, with no annotation |
-| the `StyledContext` provider | `use provide(StyledContext, …)` at the render's root: styled components computed at render write to that sheet (352, 354); at a prerender, the build's sheet |
+| the `StyledContext` provider | `use provide(createContext(<the render's StyledSheet>))` at the render's root (379): styled components computed at render write to that sheet (352, 354); at a prerender, the build's sheet |
 | the sink | writes the render's one `styled` sheet — emilia's layers, then scoped styles in render order — in the head and each boundary fill (step 3), after linked sheets; payload key `s` (`contracts.md` § 6a) |
 | `#[styled(comptime decl: @Decl, comptime ..items: Styleable[])]` | records `ClassName(names: […])` (302); takes the application's `styled` components only — emilia's tokens reach a tag through emilia's own `#[emilia(…)]` (369), whose meta, a type `styled` declares, `html` reads beside `ClassName`: `<button #[styled(btn)] #[emilia(.Pad.All.4)]>` (step 4) |
 

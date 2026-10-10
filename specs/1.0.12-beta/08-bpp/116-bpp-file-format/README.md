@@ -106,7 +106,7 @@ pub default fn (props: Props) -> View {
   (`import {components.post_card as PostCard};`). No case conversion; the importer's name is the file's,
   so a file name that is no identifier needs an alias at the importer (289). `R` (decision 275) is the `R` of the default function's declared
   `@ExprCustom<R>` — the toolchain reads it from the signature and names no library; for jhonstart
-  it is `View` (= `@Component<ElementBase, Element>`, decision 276), whether or not the header uses `use` / `await`.
+  it is `View` (= `@Component<Element>`, decision 276 as amended by 354), whether or not the header uses `use` / `await`.
 - Declarations (`import`, `type`, `pub`) module-level; statements (`val`, `use`) body ahead of
   `return` (may read `props`, call a hook). Attributes = `Props` fields (192); children via
   `children` (193). Header imports in the language's form (`import {components.card};`,
@@ -218,8 +218,8 @@ import {bpp} from "std";
 ### Step 2 — The unfold
 
 - [ ] the return type is read from the default function's signature (decision 275): the fixture
-      package's `@ExprCustom<i32>` gives `-> i32`; jhonstart's gives `-> @Component<ElementBase,
-      Element>` for a header with and without `use` / `await`; the toolchain spells no type name
+      package's `@ExprCustom<i32>` gives `-> i32`; jhonstart's gives `-> @Component<Element>`
+      for a header with and without `use` / `await`; the toolchain spells no type name
 - [ ] `tests/language/modules/bpp_*`: fixture package whose default function is **not**
       jhonstart's (answers the literal's length) — `.bpp` with `type Props` unfolds to
       `pub default fn (props: Props)`, without to `pub default fn ()`, no header = all

@@ -181,7 +181,7 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 
 - [ ] an action sets or clears a cookie through hooks over its declaration (`use setCookie(decl)` → a
       setter, `use clearCookie(decl)`; 295), the attributes from the declaration; actions return
-      `@Component<RequestBase, …>` so they may `use`
+      `@Component<…>` (354) so they may `use`
 - [ ] `typed-action-example.bp` reads the session with `use cookie(sessionCookie)` over a declared
       `Cookie<T>` (294), not `ctx.cookie("user-session")`
 
