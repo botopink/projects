@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 79 perguntas, 8 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **366**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 83 perguntas, 8 contradições e 92 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **366**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -767,6 +767,67 @@ val clearSession = use clearCookie(sessionCookie);
 - [ ] **(b)** A regra do decorator para toda função: `tag(k, 1)` é aceito, porque o corpo não lê `n.value`.
 
 **Recomendação: (a).** O parâmetro `comptime` de uma função de execução é a sua especialização.
+
+### s28-a · O default de um campo de fonte importada que nomeia algo do seu módulo (307)
+
+**Trava:** nada — implementado como (a).
+
+**Hoje.** `Type.omit(Link, .href)` sobre um `Link(…, rel: string = defaultRel())` importado copia o campo sem o default (a regra de `registerExports` para parâmetro importado, `infer.isClosedDefault`); copiá-lo fazia o erlc falhar (`function defaultRel/0 undefined`).
+
+- [ ] **(a)** Como está: o default não viaja; o campo é passado em toda construção.
+  ```bp
+  val NoHref = Type.omit(Link, .href);
+  val n = NoHref(target: null);           // erro na chamada: falta `rel`
+  ```
+- [ ] **(b)** A derivação é recusada na chamada, nomeando o campo.
+  ```bp
+  val NoHref = Type.omit(Link, .href);    // derived-type-default-not-closed: `rel`
+  ```
+- [ ] **(c)** O default viaja, chamando a função do módulo de origem (import implícito).
+
+**Recomendação: (a).** Sem import implícito, sem valor silencioso.
+
+### s28-b · `Type.required` sobre um campo com default `null` (307)
+
+**Trava:** nada — implementado como (a).
+
+- [ ] **(a)** Como está: o `?` sai e o default `null` sai junto.
+  ```bp
+  val Full = Type.required(Recipe);   // description: string, sem default
+  ```
+- [ ] **(b)** Recusado na chamada, nomeando o campo.
+- [ ] **(c)** O default `null` fica e a construção que o omite é recusada.
+
+**Recomendação: (a).** "Todo `?` sai"; `null` não tipa um campo não opcional.
+
+### s28-c · O que um tipo derivado leva além dos campos (307)
+
+**Trava:** nada — implementado como (a).
+
+- [ ] **(a)** Como está: só os campos e suas anotações; métodos e `implement` da fonte não vêm.
+  ```bp
+  val T = Type.pick(Recipe, .title);   // T(title: string), sem os métodos de Recipe
+  ```
+- [ ] **(b)** Vêm os métodos cujo corpo só lê campos mantidos.
+- [ ] **(c)** Vêm as cláusulas `implement`, recusadas quando falta um membro.
+
+**Recomendação: (a).** Tipo derivado é dado; comportamento se escreve nele.
+
+### s28-d · Registro genérico ou alias importado como fonte (307)
+
+**Trava:** nada — implementado como (a).
+
+- [ ] **(a)** Como está: recusado no argumento (`derived-type-source-not-record`).
+  ```bp
+  val P = Type.pick(Box, .item);        // Box<T>: recusado
+  ```
+- [ ] **(b)** Uma aplicação de tipo como fonte.
+  ```bp
+  val P = Type.pick(Box<i32>, .item);   // P(item: i32)
+  ```
+- [ ] **(c)** O alias importado seguido pelo seu módulo.
+
+**Recomendação: (a)** até uma frente precisar de (b) ou (c).
 
 ### s24-b · O `#[check]` do exemplo 1 põe parâmetros com default antes de `message`
 
