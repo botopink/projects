@@ -1,0 +1,241 @@
+# Track 08 — bpp: Astro's feature set on the stack
+
+**Repos:** `repository/jhonstart` · `repository/onze` · `repository/rakun` · `repository/emilia` ·
+`repository/botopink-lang` (116 only) · **Reference:** Astro docs (`/home/ericfillipe/develop/astro/astro-docs/`, 25 pages).
+**Depends on:** `00-gate`; `03-bundled-libs/125-validation-zod` steps 0–2 and 12 (the `#[validated]`
+type collections and actions take — `Schema<T>` is private, 306); the 04/05/07 fronts in § Order. **Map:** [`surface.md`](surface.md) (161 rows).
+
+## Goal
+
+onze scans an `app/` tree of eight file kinds, rakun serves/prerenders, jhonstart renders and
+hydrates `#[client]` functions, emilia styles. Of 161 rows: 59 running; 14 on disk in one library,
+unwired by onze (a 04/05/07 front owns it); 70 added here; 3 wait on the compiler (a comptime body
+cannot read a file); 15 meaningless here (adapters, other UI frameworks, CSS preprocessors, plugin host).
+
+Added, by cost:
+
+1. **Template** (118). Pages are builder calls; `html """…"""` drops static attributes, takes only
+   string holes, lowers a component tag as a plain call, emits a self-closing root tag (`jhonstart-html/src/html.bp`).
+2. **Content** (121). No Markdown renderer, frontmatter reader or collection exists.
+3. **Islands beyond "load"** (120). No hydration strategy, no server island.
+4. **Scoped CSS, view transitions, typed actions, `locals`** (119, 126, 127, 123).
+5. **Single-file look** (116) — header over markup in its own file; last.
+
+```bpp
+import {layouts.BaseLayout};
+import {components.PostCard};
+import {getCollection} from "onze-content";
+import {content.blog};
+
+val posts = await getCollection(blog());
+val title = "Blog";
+--- style ---
+ul { list-style: none; padding: 0; }
+.empty { color: gray; }
+---
+<BaseLayout title={title}>
+  <h1>{title}</h1>
+  {if (posts.isEmpty()) { <p class="empty">Nothing here yet.</p> }}
+  <ul>
+    {posts.map({ post -> <li><PostCard #[clientVisible] post={post} /></li> })}
+  </ul>
+</BaseLayout>
+```
+
+Header = from the first line to the separator, module declarations + statements of the unfolded
+function (198, 199, 212, 213); style section = CSS scoped by `jhonstart-styled`, the package
+`"bpp".style` names (338); markup = literal of jhonstart's default `html` (200); unbound names via
+jhonstart's `prelude.bp` (270); `{…}` is botopink (lambda, `if`; no arrow, no ternary);
+`<PostCard post={post} />` is a call with props field `post` (192). The `.bp` form (`return html """…""";`) compiles
+identically; fronts 117–127 are built and tested on it.
+
+## Fronts
+
+All eleven **not started**.
+
+| Front | Priority | State | What | Depends on (open) |
+|---|---|---|---|---|
+| [`118-bpp-components/`](../118-bpp-components/context.md) | **critical** — all markup goes through it | partial — the rest on 130 s9, 01-checker s34, 01-compiler/26, 26 s13 | `{expr}` of any renderable type, rendering attributes, components with props, slots, fragments, markup in `if` / `case` / lambdas, `set:html`, `class:list`, `<script>` to its sink (`<style>` in markup refused but `#[isInline]`, 338); jhonstart's `prelude.bp` and node type | — |
+| [`121-bpp-content/`](../../162-onze/121-bpp-content/context.md) | **high** — largest new code | steps 1–2, 4–5 done (4–5's boxes on 3, 9, 10, 117, 124, 125 left) · step 3 on `03-bundled-libs/142` step 2 (396) | New member `onze-content`: Markdown (CommonMark + GFM) to `Element`, frontmatter, collections typed by a `#[validated]` type (306), `getCollection` / `getEntry` / `render`, `.md` pages, RSS | `08-f` (step 3) · 118, 117 (step 6) · `07-onze/53` (step 7) |
+| [`120-bpp-islands/`](../120-bpp-islands/context.md) | **high** | not started | `#[clientIdle]` / `#[clientVisible]` / `#[clientMedia]` / `#[clientOnly]`; `#[serverDefer(fallback: …)]`, sealed props | 118 · 119 · 117 · `05-jhonstart/26` · `04-rakun/22` · `07-onze/49`, `50` |
+| [`117-bpp-routing/`](../../162-onze/117-bpp-routing/context.md) | high | not started | `.bpp` / `.md` / `.html` app files, `staticPaths` with data, `paginate`, partials, static endpoints, eight priority rules as tests | `03-bundled-libs/102` · `04-rakun/22` · `07-onze/49`, `50` · 121 steps 1–2 |
+| [`119-bpp-styling/`](../119-bpp-styling/context.md) | step 1 **high** (350: emilia on `styled` first) · steps 2–5 medium | step 1: `css` done, `styled` landed but two boxes | The repositories `css` and `styled` (`styled "…"`, `styledProperty "…"`, the theme mechanism); `jhonstart-styled` (the style section, `use`, `:global()`, run-time holes as CSS variables, `#[styled(..)]`, the one sheet); `jhonstart-emilia` deleted; cascade order (338) | 118, `05-jhonstart/26` (step 2) · `06-emilia/34` step 5 (step 5) |
+| [`127-bpp-actions/`](../../150-rakun/127-bpp-actions/context.md) | medium | not started | Action typed by a `#[validated]` record (306): JSON/form input, `ActionError`, typed client call | 125 steps 6, 12 (306) · `03-bundled-libs/103` · `04-rakun/22` · `05-jhonstart/67` · `07-onze/49` · 117 · 120 · 126 · 123 (step 4) |
+| [`122-bpp-data/`](../122-bpp-data/context.md) | medium | not started | `Astro` global mapped; holes: page-side status/headers, `rewrite`, `site` | `05-jhonstart/26` · `07-onze/49` · `03-bundled-libs/102` · 118 · 120 |
+| [`123-bpp-middleware/`](../../150-rakun/123-bpp-middleware/context.md) | medium | not started | `locals`, `sequence`, response rewritten after `next`, `actionContext` | `04-rakun/04` · `04-rakun/65` |
+| [`126-bpp-view-transitions/`](../126-bpp-view-transitions/context.md) | low | not started | `#[transitionName]` / `#[transitionAnimate]` / `#[transitionPersist]`, `navigate`, five lifecycle events, route announcer | `05-jhonstart/27` · 118 · 120 |
+| [`116-bpp-file-format/`](../../../1-botopink-lang/144-botopink-lang/116-bpp-file-format/context.md) | medium | not started | `.bpp` kind: `"bpp": {"default": "jhonstart", "style": "jhonstart-styled"}` in the app manifest; header from the first line to the separator is botopink, then an optional `--- style ---` section, then the `html` literal; the package's prelude (212, 338) | 118 · `05-jhonstart/26` step 0 · `01-compiler/26` · `01-compiler`'s prelude scope |
+| [`124-bpp-cli/`](../../162-onze/124-bpp-cli/context.md) | high — last | not started | `onze sync`, `onze create-key`, config keys, component `<script>` bundling, built style sheet, `.bpp` scaffold | `nat-f2` (which keys) · `07-onze/50`, `71` · every other front · `07-onze/53` (step 5) |
+
+## Order
+
+Waves (cross-track numbers: [`../fronts.md`](../../../fronts.md) § Execution order):
+
+- **A** (after `00-gate` → 125 steps 0–2): 118 (alone in `html.bp`, in the core after 26 step 0;
+  carve-outs before 34, 33, 26, 119 open — decision 189) · 121 steps 1–2 (alone, new member;
+  step 3 on 142's `yaml`, 396) · 119 step 1 (alone in the repositories `css` and `styled`, 338).
+- **B**: 123 ◄ `04-rakun/04` (core), `04-rakun/65` (rakun-web) · 117 ◄ `03-bundled-libs/102`,
+  `04-rakun/22`, `07-onze/49`, `50` · 120 ◄ `05-jhonstart/26`, `07-onze/50` (lazy starters), 117
+  (rakun-app) · 122 ◄ 26, 49, 120 (core) · 126 ◄ `05-jhonstart/27` (reconcile driver), 120
+  (`html.bp`) · 119 step 2 · 121 steps 4–6 · 127 · 116 ◄ 118, 26, `01-compiler/26` (decisions
+  198–200, 212, 213, 221, 270).
+- **C**: 124 ◄ `07-onze/50`, every front above; 124 step 5 = second example app, the blog as
+  `.bpp`, under 07-onze/53's acceptance script.
+
+Why: **118 first** — tag annotations (`#[clientVisible]`, `#[serverDefer]`, `#[transitionName]`,
+278) need a parsing template; Markdown needs `Element` to splice; nothing needs `.bpp`.
+**116 not first** — the compiler cannot lex HTML and emit jhonstart calls (`build.zig`'s
+lib-agnostic check fails `zig build test` when `modules/compiler-core/src` names a library) and
+need not: compiler-core gets `Module{path, source, declaration, srcPath}`, no extension. `.bpp`
+needs one manifest key, the unfold, the prelude scope, the source-extension lists of four tools —
+generic; every feature is testable without it. **124 last** — commands/keys over the others' work;
+`07-onze/50` owns `onze dev`.
+
+## Who else owns the files
+
+Every front but 121 edits files owned by another track's front; sequenced, never together (`fronts.md`).
+
+| This front edits | Also owned by | Sequence |
+|---|---|---|
+| `[name]={expr}` attributes outside `html.bp` — emilia's `attributes.bp`, `emilia.bp`, `examples/emilia-card`, the core's two files, `jhonstart-emilia`'s bridge test, `document-shell` (118 step 1) | `06-emilia/34`; `06-emilia/33`; `05-jhonstart/26`; 119 | named one-line carve-outs by 118, each landed before the owner opens (189) |
+| `jhonstart/src/prelude.bp` (new, 118) | `05-jhonstart/26` | carve-out of 26's member, by 118 (270) |
+| `jhonstart/src/{client.bp, render.bp, island_runtime.mjs}` (120) · `server.bp`, `error_boundary.bp` (122) | `05-jhonstart/26` | after 26; 120 then 122, one at a time on the member's `botopink.json`, `root.bp` |
+| `jhonstart-link/**` — new files, plus two lines of `link_runtime.mjs` (126) | `05-jhonstart/27` | after 27 |
+| `jhonstart-forms/src` — new `typed_call.bp` (127) | `05-jhonstart/67`, `03-bundled-libs/103` | after both |
+| `jhonstart-dom-test` — a test file per front (119, 120, 126, 127); `fake_dom.mjs` (120's observers, 126's `startViewTransition` double) | `05-jhonstart/26` | each front owns its test file; `fake_dom.mjs` stays 26's, after 26 one front at a time — 120, then 126 (189) |
+| `html.bp` (`jhonstart/src/html.bp` after 26 step 0) — one lowering arm each (119, 120, 126) | 118 | after 118; one at a time, that order |
+| `onze-cli/src/scan.bp` (117) · `onze-cli/**`, `onze-bundler/**` (124) | `07-onze/50`, `03-bundled-libs/102` | after both |
+| `onze/src/paginate.bp` (117) · `onze/src/config.bp` — `site` (122), other keys (124) (189) | `07-onze/49` | after 49 |
+| `onze-server/src/server.bp` — island route, content boot step | `07-onze/49` | after 49 |
+| `rakun-app/src/{static_gen,actions}.bp` (117, 127) · new `server_islands.bp` (120), `typed_action.bp` (127) | `04-rakun/22` | after 22; 117, 120, 127, one at a time on the member's `botopink.json`, `root.bp` |
+| `rakun-web/src/{middleware,filter}.bp` (123; the request store is `rakun-cardume`'s, `09-cardume/136`, 296) | `04-rakun/04` (core) · `04-rakun/65` (rakun-web) | after 04 and 65 (189) |
+| `libs/routing/src/{segment,conventions}.bp` (117) · `navigation.bp` (122) | `03-bundled-libs/102` | after 102 |
+| `libs/actions/src/outcome.bp` (127) | `03-bundled-libs/103` | after 103 |
+| `emilia/src/` — none: emilia moves onto `styled` in `06-emilia/34` step 5 (first, 350), then steps 2 and 3 | `06-emilia/34` | after 119 step 1 |
+| `compiler-cli/**`, `language-server/**` (116) | `01-compiler/26-cli-tooling` | 116 opens after 26 |
+
+## Handed to other tracks
+
+Each a **wire** row of `surface.md`.
+
+| Item | Where | Owner |
+|---|---|---|
+| Static attribute in `html """…"""` never reaches the rendered tree | `jhonstart-html/src/html.bp:138-146`, `:233-234` | 118 fixes it; reported because every DSL use is affected |
+| `data-jh-on-click` written by the server, read by nothing | `jhonstart/modules/jhonstart/src/island_runtime.mjs` — one `addEventListener`, the refresh button (`:98`) | `05-jhonstart/26` (carries front 29) |
+| `Metadata` rendered by jhonstart, onze passes `[]` | `onze-server/src/server.bp:116` | `07-onze/53` (ONZ-53-3) |
+| `serveApp`, `serveActions`, `prerenderAll`, image route: in rakun and onze-assets, not called by `bootServer` | `onze-server/src/server.bp:212-221` | `07-onze/49` · `50` · `51` |
+| Scan records a decorator's argument, never compares it with the file's directory | `onze-cli/src/scan.bp:36-56`, `:66-96` — read, not run | `07-onze/50`; 117 step 0 measures it |
+| `io.http.fetch` is GET only | `libs/std/src/io/http.bp` | `02-std-and-packaging` (the row `03-bundled-libs/README.md` names) |
+| `<Picture>`, `getImage`, remote patterns | `onze-assets` | `07-onze/51` |
+| Lib-agnostic gate greps three of five names (`rakun\|jhonstart\|erika`); `onze`, `emilia` occur in compiler-core comments | `repository/botopink-lang/build.zig`; `codegen/erlang.zig` | `01-compiler/07-residuals` (step 8) |
+
+## Rules in force
+
+Labels only; text in [`../decisions-taken.md`](../../../decisions-taken.md).
+
+| Decision | Rule | Fronts |
+|---|---|---|
+| 190 | Library decides `{expr}` types, located comptime error; compiler owes the means (`language-gaps.md` row); meanwhile raw text re-emitted through `build` | 118 step 2 |
+| 191 | Hole accepts `string`; number/`bool` as `toString()`; same-base component (`Element`, base `ElementBase`); list of them; node type | 118 step 2 |
+| 192 | Component attributes = fields of its first parameter's type; errors at the attribute | 118 steps 1, 4 |
+| 193 · 223 | Children only via a `children: Node` props field (`Node` replaces `JhonstartNode`/`Children`); else error at the tag | 118 step 4 · `05-jhonstart` |
+| 204 | `?T` hole refused | 118 step 2 |
+| 207 | Inline props type `props: type(…)` | 118 · `01-compiler/01-checker` |
+| 198 · 212 · 338 | `.bpp` = `.bp` module unfolded onto the `pub default fn` of the package in `"bpp": {"default": "<package>"}`; header from the first line (no opening `---`) to the separator, copied as written; `---` → the markup, `--- style ---` → one style section closed by `---`, then the markup; the markup is the literal; a first line `---`, a misplaced, second or unclosed style section are errors at the line; no `template.emit` / `template.slice` | 116 |
+| 199 | `type Props(…)` → `props: Props` parameter (none without it), never `pub val`; declarations (`import`, `type`, `pub`) stay module-level, statements (`val`, `use`) become the body before `return` | 116 · 118 · 120 |
+| 213 · 288 · 289 | A `.bpp` unfolds to the module's **anonymous** `pub default fn (…) -> View`; the importer names it (`import {components.PostCard};`, or an alias); `decl.name` is the file name; a module may instead mark a named function `pub default Tree;` | 116 · 118 |
+| 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": {"default": "jhonstart"}` (338) | `05-jhonstart/26` step 0 · 116 · 118 |
+| 221 · 285 | A `.bpp` decorator only when the header writes it (its last line, before the separator); a file's role (page, layout) is the framework's route table, never the toolchain's — it knows the `bpp.default` package, its `html` and its prelude, and the `bpp.style` package's default function only (338) | 116 step 2 · 117 step 1 |
+| 270 | `bpp.default` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
+| 186 · 202 | Stage is comptime: `#[page]` prerenders unless it reaches a `#[serverOnly]` hook; no `prerender` export, no `output` key | 117 step 2 · 123 · 124 |
+| 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |
+| 222 | Route handler (`route.bp`, every method) always server, never prerendered | 117 step 4 · 121 step 5 |
+| 224 | Server-island props default **sealed** (AES-256-GCM in the URL; `ONZE_KEY` or build-generated, `onze create-key`); per project `onze.json` `"islands": {"props": "sealed"}` | 120 step 4 · 124 |
+| 278 · 302 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope — since 302 the same thing as a decorator (`comptime decl: @Decl`, no return, typed meta `html` reads by type); `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
+| 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
+| 293 · 294 | A page takes no parameter: `use params<P>()`, `use pageData<D>()`; a cookie is declared once, `use cookieValue(decl)` | 116 · 117 · 120–123 · 127 |
+| 295 · 296 | Request state = cardume atoms (`rakun-cardume`'s store per request), read through `use` | 123 · 127 |
+| 306 | `#[schema]` merged into `#[validated]`; `Schema<T>` private — a library takes the type | 117 step 8 · 121 step 10 · 127 step 5 |
+
+No relative imports: same package `import {components.card};` (a `.bpp` component: its default function, 288), a package `import {x} from "pkg";`; `.bpp` headers likewise.
+
+## Tag annotations (278, 302)
+
+Every annotation this track creates. **An annotation is one thing, on a declaration or on a tag**
+(302): a function `fn name(comptime decl: @Decl, comptime …args)` that returns nothing and acts
+through `decl`. On a tag, `decl.kind` is `Element` or `Component` (`decl.component` — the component's
+own `@Decl`), and its one channel is typed meta (298): the annotation `decl.setMeta(…)` /
+`decl.addMeta(…)`, and `html` — the reader — acts on the meta types it knows (`ClassName` → the
+`class`, `Hydrate` → an island, …), as the build acts on a function's. Resolved in the caller's scope
+(the `.bpp` prelude imports the core's; `jhonstart-link`'s by name); blocks or one list (286). One
+meta of each `setMeta` type per tag; `addMeta` types repeat.
+
+| Annotation | Astro | Records (meta the reader acts on) | Declared in | Front |
+|---|---|---|---|---|
+| `#[isRaw]` | `is:raw` | `RawBody` | `jhonstart/src/html.bp` | 118 step 5 |
+| `#[isInline]` | `is:inline` | `StyleMode.Inline` | `jhonstart/src/html.bp` (119's arm) | 119 step 2 · 124 |
+| `#[clientLoad]` | `client:load` | `Hydrate.Load` | `jhonstart/src/island_strategy.bp` | 120 step 1 |
+| `#[clientIdle(timeoutMs)]` | `client:idle` | `Hydrate.Idle` | `island_strategy.bp` | 120 step 1 |
+| `#[clientVisible(rootMargin)]` | `client:visible` | `Hydrate.Visible` | `island_strategy.bp` | 120 step 1 |
+| `#[clientMedia(query)]` | `client:media` | `Hydrate.Media` | `island_strategy.bp` | 120 step 1 |
+| `#[clientOnly]` | `client:only` | `Hydrate.Only` — also decision 186's hook marker, one function (with its `fallback`, 287) | `jhonstart/src/stage.bp` | `05-jhonstart/26` step 8 (marker) · 120 step 1 (return) |
+| `#[serverDefer]` | `server:defer` | `Defer` (with its `fallback`, 287) | `jhonstart/src/deferred.bp` | 120 step 4 |
+| `#[transitionName(name)]` | `transition:name` | `TransitionName` | `jhonstart-link/src/transitions.bp` | 126 step 1 |
+| `#[transitionAnimate(a)]` | `transition:animate` | `TransitionAnimate` | `transitions.bp` | 126 step 1 |
+| `#[transitionPersist(key?)]` | `transition:persist` | `TransitionPersist` | `transitions.bp` | 126 step 1 |
+| `#[transitionPersistProps]` | `transition:persist-props` | `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
+| `#[styled(..items)]` | (none — the app's `styled` components) | `ClassName` (`addMeta`) | `jhonstart-styled` | 119 step 4 (301, 338) |
+| `#[emilia(..tokens)]` | (none — emilia's tokens, `@Expr<Token[]>`, run at build, 382) | `styled`'s `StyledMeta(layer, className, rules)` (`setMeta`, one per tag, 383), read by `html` | `emilia` | `06-emilia/34` step 5 · 119 step 4 (369) |
+| `#[reload]` | `data-astro-reload` | `LinkReload` | `transitions.bp` | 126 step 2 (292) |
+| `#[history(h)]` | `data-astro-history` | `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
+
+Not annotations — values: `set:html={s}` → `{raw(s)}`; `set:text={s}` → `{s}`; `class:list={[…]}` →
+`class={classList([…])}` (`classList` new in the core, 118 step 5). Astro's `is:global` is `:global(…)`
+and `define:vars` a run-time hole in the style section (338). The arm for each return type is
+appended to `html.bp` by the front in the last column, in 118 → 119 → 120 → 126 order. Compiler
+needs (no new row): annotation arguments are embedded expressions — the `language-gaps.md` row 118
+step 2 owns.
+
+## Decisions the maintainer owes
+
+Open: `nat-f2`
+([`../decisions-pending.md`](../../../decisions-pending.md)); `props-d` → 351 (native tags typed as React's intrinsic elements, through `prelude.bp`); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
+Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296 (request state is
+`rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277); `08-d` → 338
+(CSS in three layers — the repositories `css` and `styled`, emilia over `styled` —, `jhonstart-styled`,
+the `.bpp` style section; `jhonstart-emilia` deleted).
+
+- Answered: `props-f` → 359 (spread on a component and in a record's construction), `props-e` → 360 (slots as Astro's, `#[slot("x")]`).
+- `nat-f2` — which `onze.json` keys (`trailingSlash`, `redirects`, `markdown`, `allowedRedirects`) and how they are read. Blocks 124's key boxes.
+
+### 08-f · Where Markdown and YAML live — closed (396)
+
+Three libraries of their own — `json`, `yaml`, `markdown` (`03-bundled-libs/142`); std knows nothing of JSON; `yaml` reads one subset into `json`'s `Json`; `markdown` answers a tree of its own, which onze-content maps to `Element`.
+
+### 08-h · The config file and the commands — closed (285, 224)
+
+The config is `onze.json`, the commands `onze <command>` (`create | info | build | start`, `dev`
+`07-onze/50`'s); the toolchain knows only `"bpp"` (`default`, `style`), their default functions and the prelude (285, 338). Which keys: `nat-f2`.
+
+## Rules for this track
+
+- **The compiler knows no library.** Only 116 edits `repository/botopink-lang`: a manifest key,
+  `.bpp` in the tools' lists, the unfold (198, 338), the prelude as generic last scope (270) — no
+  library name, no syntax. Markup meaning is jhonstart's `html`; style meaning `jhonstart-styled`'s.
+- **A library front never touches `modules/**`.** A need = a [`language-gaps.md`](../../../language-gaps.md) row + nearest form.
+- **Libraries keep their concerns** (113): template jhonstart, CSS emilia — over the shared repositories `css` and `styled`, which know no `.bpp` (338) —, request/route table rakun, wiring onze. No fifth library: `jhonstart-styled` is the one place CSS meets `.bpp`.
+- **Most restrictive, no bypass** (67): an unbound annotation is the unbound-name error at its
+  span, a written `prefix:name` directive an error naming the annotation; a `Hydrate` annotation on
+  a non-`#[client]` component does not build.
+- **Astro's directives are annotations or values** (278): an instruction is `#[preName(…)]` inside
+  the tag — the Astro name joined (`client:visible` → `#[clientVisible]`) —, a value an ordinary
+  attribute or hole (`set:html` → `{raw(…)}`, `class:list` → `class={classList(…)}`). Other Astro
+  names kept where the stack has none, **replaced where it has one**: no `Astro` global — parameters,
+  hooks, navigation signals ([`122-bpp-data/`](../122-bpp-data/context.md) is the table).
+- **Examples are code.** `examples/` holds each step's target; on landing it moves into the
+  member's tests or `examples/` and must compile. An `-example.bp` is one compilable unit with its
+  tests. Page/layout/component code also sits under `examples/src/` as an app's `.bpp` tree (name
+  and directory carry meaning), compiling when 116 lands (116 step 6). `05-jhonstart` and
+  `07-onze/53` examples holding a page, layout or component carry the `.bpp` form too; `04-rakun`
+  and `06-emilia` none (services, token tests — no markup).
+- **`status.md` is the only file that carries status.**

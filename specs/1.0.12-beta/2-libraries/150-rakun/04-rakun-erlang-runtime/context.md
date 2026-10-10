@@ -1,0 +1,65 @@
+# Front 04 — rakun Erlang runtime: the core's open boxes
+
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [150-rakun](../README.md): s2 → 150 s1 · s3 → 150 s1 · s4 → 150 s1 · s5 → 150 s1 · s6 → 150 s1 · s7 → 150 s1 · s8 → 150 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+
+**Priority:** critical — waiting: 08 step 1 on step 4's eager-pass hook; 22 on step 5's `Request`
+accessors; onze 49 on the page `Request` listing query and headers (R62-3); 88's `beans` on step 4's
+injected fields; 19 on step 4's exit codes · **State:** partial (step 1)
+**Depends on:** 128 · decisions 343, 347 (R06-2's and R06-4's refusals at compile time, where the
+entry point builds the bean table) · decision 321 (qualified beans, step 6) · decision 318 (step 8) · 03r-c/e (confirmations);
+lg2-g closed by 281 (no registry key as a type's name — step 6), 03r-b and 03r-d by 299 (step 7)
+**Owns:** `modules/rakun/**` except 74's four files (`src/ssl_bundle.bp`, `src/sidecars/rakun_ssl.erl`,
+`test/ssl_bundle_test.bp`, `test/tls_listener_test.bp`), 11's `src/actuator_api/**` and 17's
+`src/logging/**` with their tests and sidecars · `test/fixtures/**` · `botopink.json`, `src/root.bp` ·
+`repository/rakun/AGENTS.md` § the core sections
+**Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp` (frozen; 130's rewrite the
+one writer — track README § Order) · 74's, 11's, 17's files · any other member ·
+`src/request_context.bp`'s cookie lookup while `03-bundled-libs/104`'s sweep holds it (after this
+front) · `src/locals.bp` (`08-bpp/123` adds it after) · `modules/rakun/test/starter_manifest_test.bp` (73's)
+
+## Goal
+
+The core's open 1.0.10 boxes: the tag epoch (decision 185), boot options and cycle stack, typed
+configuration and refusals, the context's bean list, duplicate providers, lifecycle, scopes, eager
+construction and exit codes, `rakun.d.bp` gone, an eager-pass exclusion hook, a request context
+logging `after()` failures through the core's logger and exposing headers and raw query to the page `Request`.
+
+## Mechanism
+
+- **Tag epoch (step 1, done).** The core is the one member all depend on, so what two optional
+  members share lives here (decision 185): `rkTagEpoch(tag) -> i64` / `rkBumpTag(tag) -> i64` in
+  `src/runtime.bp`, a `rakun_tag_epochs` ETS table in `rakun_runtime.erl` bumped with
+  `ets:update_counter/4` (atomic across request processes). An epoch only grows: `rkResetContext`
+  leaves it, so an epoch a reader stored never matches a later state (`04-a`). The empty tag is
+  refused in both cells. No failure seam: after 128 the logger is the core's (decision 187);
+  `after()` logs through it.
+- **`#[provides]` duplicates (R06-2).** Each decorator invocation is independent (343): the
+  duplicate is refused at compile time where the entry point builds the bean table with
+  `@TypeInfo.all(with: provides)` (256), naming both functions — "fail the build" as written.
+- **Eager by default (R06-5).** `eagerInitIn` constructs every non-`lazy` singleton; `#[value]` read
+  at construction today (the `#[config]` record of step 7 replaces it, 299), so a missing key already
+  fails in the pass — the open box asserts `Rakun.run` does not return.
+- **Eager-pass hook (for 08).** No `rkExcludeFromEager` exists. `eagerInitIn` skips `lazy`
+  registrations; gains a run-time exclusion list (`rkExcludeFromEager`, taking the type — step 6,
+  281) so 08 keeps `#[repository]` beans out under `bootstrapMode: Lazy` (08's
+  `#[config("rakun.data")]` record, 299).
+- **Page `Request` (R62-3, R64-1).** `headerNames()`, `headers()`, `queryDict()` exist on the core's
+  request (`src/request_context.bp`); the frame holds raw headers and raw query
+  (`rakun_request_context.erl`). The `Request` behavior gains those three and `rawQuery()`;
+  `rakun-app` (22) forwards them (onze-server hardcodes `[]` today).
+
+## Blast radius
+
+Step 1 (done): two `pub` functions, no behaviour change. Step 4's boot-time `#[value]` refusal may red a
+consumer relying on first-request failure — none in the repository (`grep -rn '#\[value' examples
+starters` finds keys the examples define). Removing `rakun.d.bp` removes a `Context` stub;
+`fixtures/imports` is the consumer test. `rkScannedDeps` widens the scan registry's row;
+`rakun-test`'s `contextSnapshot()` reads names only.
+
+## Notes
+
+- 03r-c (no `rakun_config.erl`), 03r-e (`decodeComponent`) implemented, await confirmation.
+  03r-b (`rkPropInt("12abc")` is `12`) reversed by 299 and 03r-d (check in `bootSequenceFor`) closed
+  by 299 — both are step 7's.
+- `examples/context-lifecycle-example.bp`: its `// LANGUAGE GAP:` (lg2-g) is closed by 281; rewritten
+  by step 6's last box.
