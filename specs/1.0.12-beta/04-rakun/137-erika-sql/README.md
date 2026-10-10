@@ -45,16 +45,16 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
 
 ### Step 1 — holes `${…}` are bound values
 
-- [ ] `erika "… where age >= ${min}"` in memory: the hole's expression is the comparison's operand,
+- [x] `erika "… where age >= ${min}"` in memory: the hole's expression is the comparison's operand,
       evaluated once at run time; any expression (`${self.minAge}`, `${limit + 1}`), type-checked against
       the field it is compared with (a mismatch is an error at the hole)
-- [ ] a hole is never text: it cannot stand for a field, a keyword or a table — a hole outside a value
+- [x] a hole is never text: it cannot stand for a field, a keyword or a table — a hole outside a value
       position is a located error
-- [ ] `docs.md` § Known gaps loses "Interpolated queries"; in-file tests on commonJS and erlang
+- [x] `docs.md` § Known gaps loses "Interpolated queries"; in-file tests on commonJS and erlang
 
 ### Step 2 — `QueryContext`, `QueryTable` and the SQL target (397)
 
-- [ ] `pub behavior QueryContext` in `erika.bp`: running a statement (SQL text and bound parameters) answering
+- [x] `pub behavior QueryContext` in `erika.bp`: running a statement (SQL text and bound parameters) answering
       `@Result<T[], E>`, the error a parameter of the behavior, so erika names no library's error (the exact
       signature in `docs.md`); `pub type QueryTable(name: string, columns: QueryColumn[])` and
       `QueryColumn(field, column)`, the meta a persistence library records on an entity
@@ -72,7 +72,7 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
 
 - [ ] an answer `?T` requires `limit 1`, an answer `T[]` (or `Array<T>`) refuses it; a mismatch is a
       compile error at the query naming the declared answer (decision 312)
-- [ ] in memory `limit n` is `take(n)`; `?T` answers `first()`
+- [x] in memory `limit n` is `take(n)`; `?T` answers `first()`
 
 ### Step 4 — the grammar grows
 
