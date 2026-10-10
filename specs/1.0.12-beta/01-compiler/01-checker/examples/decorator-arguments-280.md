@@ -62,19 +62,32 @@ pub fn check<T>(
         decl.addToCatalogue();                      // o validate do tipo encontra a regra aqui
         return;
     }
-    // forma no tipo: acrescenta a regra ao validate de T (ilustrativo)
+    // forma no tipo: grava a regra; o único `validate` é do #[validated] (404)
+    decl.addMeta(Check(message: message, rule: rule, at: at, code: code));
+}
+
+pub type Check<T>(message: @Expr<string>, rule: @Expr<fn(v: T) -> bool>, at: ?Type.Field<T>, code: Code)
+
+// um decorator só escreve o membro; dois `addMember("validate", …)` seriam
+// `decorator-member-duplicate` (216 (1), 404)
+pub fn validated<T>(comptime decl: @Decl<T>) {
     decl.addMember("validate", fn(self: T) -> Violation[] {
-        if (rule(self)) return [];
-        return [Violation(field: at?.name ?? "", code: code, message: message)];
+        var out: Violation[] = [];
+        for (comptime @typeInfo(T).metaAll(Check)) { c ->
+            if (!c.rule(self))
+                out = out.append(Violation(field: c.at?.name ?? "", code: c.code, message: c.message));
+        }
+        return out;
     });
 }
 ```
 
 ### O uso
 ```bp
-import {check, Code} from "validation";
+import {validated, check, Code} from "validation";
 
 #[
+    validated,
     check(passwordsMatch, at: .confirm, message: "As senhas não batem"),
     check(handleFree, at: .handle, message: "Esse nome já é usado", code: .Mismatch),
 ]

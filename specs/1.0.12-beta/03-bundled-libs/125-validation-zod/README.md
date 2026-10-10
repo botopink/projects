@@ -227,7 +227,7 @@ waits on:
 |---|---|---|
 | 4 | `#[tag]` on an enum whose variant has no payload record is a compile error at the annotation (today it fails where the emitted code names the record) | the **`Decl.variants`** gap row (payload fields not reflected) |
 | 5 | `derived-types-example.bp` passes; `#[validated] pub val RecipePatch = Type.partial(Recipe);` decodes with every field optional, keeps `Recipe`'s markers, and is imported and constructed by a second module | `01-checker` step 28 (`Type`'s calls answered) · 134 step 4 (`pick` / `omit`, decision 267) |
-| 7 | the type-level `#[check(rule, at: .field, message: "…", code: .Custom)]` and `#[check(message: "…")]` on the rule; a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another signature fails at that argument; one on a rule outside the type's module refused | `01-checker` step 24 (280) |
+| 7 | the type-level `#[check(rule, at: .field, message: "…", code: .Custom)]` and `#[check(message: "…")]` on the rule; a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another signature fails at that argument; one on a rule outside the type's module refused; several on one type are one `validate` — each `#[check]` an `addMeta(Check(…))`, `#[validated]` the member reading `metaAll(Check)` (404) | `01-checker` step 24 (280) |
 | 8 | `#[map(f)]`, `#[tryMap(f)]`, `#[codec(decode: f, encode: g)]` — they read `f`'s parameter type | `01-checker` step 24 (280 (2)) |
 | 11 | `#[wireName("salmon")]` on each variant | the **`Decl.variants`** gap row (annotations of variants) |
 | 12 | a located refusal for a field marker's function of the wrong signature (`#[preprocess]`, `#[check]`; `#[map]`, `#[tryMap]`, `#[codec]` with them) | `01-checker` step 24 |

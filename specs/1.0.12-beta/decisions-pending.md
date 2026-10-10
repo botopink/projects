@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**79 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -88,21 +88,6 @@ Nothing open: 138-a answered (337).
   the decorator computes goes through `.value` and a string member, or typed meta.
 - **Blocks.** Nothing — built as (a). A library that derives a member from the declaration's shape
   (`#[validated]` reading every field's markers) keeps the string form until this is answered.
-
-#### s35-h · Two annotations adding a member of one name
-- **Measured.** Built: a member name is one member (`decorator-member-duplicate` at the second, 216 (1)),
-  for `decl.addMember(name, fn…)` as for the string form. The 280 examples' `#[check(passwordsMatch, …)]`
-  and `#[check(handleFree, …)]` on one `Account` show one `validate` collecting both rules.
-- **Options.** (a) As built: one annotation per member name; two rules on one type are one member written
-  by one decorator, or typed meta (370 (1)) — each `#[check]` records `Check(message, rule)` and one
-  `validate` reads `metaAll(Check)` — once `01-compiler/130` step 8 lands. (b) Members of one name from
-  several annotations compose in annotation order when their signatures agree and they return an array:
-  `validate` returns the concatenation of each member's result. (c) A later member of one name replaces
-  the earlier.
-- **Recommendation.** (a): a decorator adds and never replaces or merges (216 (1)); collection is typed
-  meta's.
-- **Blocks.** 125 step 7's several `#[check]` on one type: typed meta is built (`01-compiler/130` step
-  8); the `validate` that reads it follows 395 (`130-s8-e`) and 384 (`s35-g`).
 
 #### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
 - **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 80 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **404**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 79 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **405**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -547,30 +547,6 @@ passo 11.
   ```
 
 **Recomendação: (a).** O membro é código do programa e lê só o que lhe é passado; um valor calculado pelo decorator vai por `.value` num membro string, ou por meta tipado.
-
-### s35-h · Duas anotações acrescentando um membro de mesmo nome
-
-**Trava:** vários `#[check]` num tipo (125 passo 7): o meta tipado existe (passo 8 da `01-compiler/130`); o `validate` que o lê segue a 395 (`130-s8-e`) e a 384 (`s35-g`).
-
-**Contexto.** Os exemplos da 280 põem `#[check(passwordsMatch, …)]` e `#[check(handleFree, …)]` no mesmo `Account`, e um `validate` junta as duas regras.
-
-**Hoje.** Um nome de membro é um membro (`decorator-member-duplicate` no segundo, 216 (1)), para `decl.addMember(nome, fn…)` como para a forma string.
-
-- [ ] **(a)** Como está: uma anotação por nome de membro; duas regras num tipo são um membro escrito por um decorator, ou meta tipado (370 (1)) quando o passo 8 da 130 entrar.
-  ```bp
-  // cada #[check] grava Check(message, rule); um validate lê metaAll(Check)
-  decl.addMeta(Check(message: message, rule: rule));
-  ```
-- [ ] **(b)** Membros de mesmo nome de várias anotações se compõem na ordem das anotações quando as assinaturas batem e devolvem array: `validate` devolve a concatenação.
-  ```bp
-  #[check(passwordsMatch, …), check(handleFree, …)]   // validate() == regra1 ++ regra2
-  ```
-- [ ] **(c)** O membro posterior substitui o anterior.
-  ```bp
-  #[check(passwordsMatch, …), check(handleFree, …)]   // só handleFree vale
-  ```
-
-**Recomendação: (a).** Um decorator acrescenta, nunca substitui nem mescla (216 (1)); juntar é papel do meta tipado.
 
 ### 130-s8-a · Um tipo de record fixado e acrescentado na mesma declaração; `meta(T)` sobre valores acrescentados (298)
 
