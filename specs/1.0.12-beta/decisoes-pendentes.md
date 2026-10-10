@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 76 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **408**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 77 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **408**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,6 +13,55 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
+
+### 388-a · Um thunk de host escrito no corpo de um componente não consegue nomear o escopo dos filhos (388 (3), (4))
+
+**Trava:** o pouso da caixa 4b do passo 6 da `01-compiler/134` (o patch do compilador e da std está verde nas próprias células; a suíte do jhonstart não) · o renderer do `05-jhonstart` · `08-bpp/119` passos 2–3
+
+**Contexto.** Construído (`front/render-scope-388`): um componente é um lambda sobre um `RenderScope`; o corpo lê
+o seu escopo só por `use context`, e o escopo dos filhos só é alcançado por `await c` (um filho posto na
+árvore) — nenhum nome do corpo o guarda. O renderer do jhonstart é escrito em corpos de componente: o
+`compose` provê o `StyledContext`, e o `caughtBelow` / `notFoundLevel` entregam a um host
+`__jhTryComponent({ -> notFoundLevel(chain, i, route, page) })` (uma fronteira de erro ou de not-found); o
+preenchimento do `Suspense` guarda `{ -> caughtBelow(…) }`.
+
+**Hoje.** Com a 388 o thunk devolve o lambda do componente, o `try` do host não roda nada e o `Ok(tree)` guarda
+um lambda onde se lê um `Element`: a suíte do jhonstart no erlang dá 173 passaram, 34 falharam
+(`streaming_test` 29, `styled_sheet_test` 1, `client_app_test` 4); no `856bbc69`, 207 / 0. A 388 (3) escreve o
+lado da biblioteca (`await __jhTryTask({ -> c.run(scope) })`, "com o escopo que guardou"), mas não como um
+corpo que já é da biblioteca entrega esse escopo. A raiz é a parte simples: o `renderWith` do `streaming.bp`
+(uma função `@Task`) entrega ao host `componentOutcome({ -> compose(chain, route, page) })`, que a 388 (3)
+reescreve como `{ -> compose(…).run(RenderScope.root()) }`; as fronteiras e os preenchimentos abaixo dela são
+corpos. (A suíte do `styled` está verde no patch.)
+
+- [ ] **(a)** A biblioteca guarda todo escopo em funções comuns: uma fronteira ou um preenchimento vira um nó
+  da árvore com um valor de componente, e o renderer — funções que recebem `scope: RenderScope`, nenhuma delas
+  componente — o roda dentro do `try` do host com o escopo que o `run` do pai respondeu.
+  ```bp
+  pub type Boundary(child: @Component<Element>, fallback: @Component<Element>)        // um nó da árvore
+  fn renderBoundary(b: Boundary, scope: RenderScope) -> @Task<string> {
+      val out = await __jhTryTask({ -> b.child.run(scope) });   // o escopo que o pai respondeu
+      …
+  }
+  ```
+- [ ] **(b)** Um hook que devolve o escopo dos filhos do corpo, para o código da biblioteca escrito num corpo
+  passá-lo adiante explicitamente.
+  ```bp
+  fn caughtBelow(…) -> @Component<Element> {
+      val scope = use scope();                                   // o escopo dos filhos, o mesmo de `await c`
+      val outcome = await __jhTryTask({ -> notFoundLevel(chain, i, route, page).run(scope) });
+      …
+  }
+  ```
+- [ ] **(c)** Um lambda escrito como argumento de uma chamada de host num corpo roda um componente com o escopo
+  dos filhos do corpo — a captura da 374 de volta, que a 388 substituiu.
+  ```bp
+  val outcome = await __jhTryComponent({ -> notFoundLevel(chain, i, route, page) });   // sem mudança
+  ```
+
+**Recomendação: (a)** — nenhuma superfície nova, e o escopo existe só onde a 388 (3) o põe: nas funções comuns da
+biblioteca. A (b) é a menor mudança no jhonstart (um `use scope()` por lugar de thunk); a (c) é a captura que a
+388 substituiu.
 
 ### 134-h · `use` como operando direito de `&&` / `||` / `??` (357 (1))
 
@@ -770,6 +819,11 @@ Já implementadas; marque "confirmo" ou a alternativa (a pergunta inteira em `de
 | `cep-a` | Caminho de seção numa função declarada depois do `comptime` | (a) O `comptime` é recusado nomeando o caminho, o `linha:coluna` e a função — `comptime label(later())` com `fn later() -> Tok { return .Pad.All.8; }` abaixo dá "declare `later` before the `comptime` in this module" —, como o passo 8 da 14 recusa uma chamada de template ali. (b) inferiria a função antes do `comptime`, de dentro do corpo que está sendo inferido. | (a). Recusa com o remédio escrito, e a mesma regra do template. |
 | `cep-b` | Função local de um decorator que escreve um caminho de seção | (a) Inferida antes do decorator rodar, uma vez, como a 371 faz com quem escreve `same`, e levada já reescrita (`fn fallback() -> Tok { return .Pad.All.8; }` alcançada por `#[mark(…)]`). (b) recusaria o decorator na anotação, nomeando o caminho. | (a). Em (b) o único remédio seria mudar a função de módulo. |
 | `cep-c` | O teste de registro no runtime comptime | (a) Um registro é o mapa sem tag do módulo comptime: `v is Rule` testa as chaves declaradas (`is_map(V) andalso is_map_key(selector, V) …`), e um registro de outro tipo com as mesmas chaves responde `true`. (b) Levar o tipo no mapa (`#{'__bp_type' => 'Rule', …}`) — muda todo termo que os avaliadores leem e respondem. (c) Recusar o `is` / o braço de registro no runtime comptime quando dois registros levados têm as mesmas chaves. | (c), a mais restritiva; (a) implementada, nenhuma célula tem dois registros assim. |
+| `388-b ★` | O que `c.run(scope)` devolve, e o `RenderScope` opaco | (a) `c.run(scope)` devolve `@Task<Rendered<R>>` para todo componente (a marca da 375 não está no tipo), declarado no `Component<R>` do `builtins.d.bp`; o `context` da std declara `Rendered<R>(value: R, scope: RenderScope)` e `RenderScope(frames: unknown)`, cuja construção fora da std é recusada (`render-scope-construction`), já que a linguagem não tem construtor privado. | (a) ★. É a grafia que a 388 (2) deixa para a frente, e um escopo feito à mão é recusado no build. |
+| `388-c ★` | `await c` fora de todo corpo | (a) O "fora de todo corpo um valor roda com `c.run(RenderScope.root())`" da 388 (4) lido como o que `await c` significa ali: num `main`, num teste, numa função comum, o `await` roda o componente com `RenderScope.root()`. (b) Recusaria o `await`, pedindo `c.run(RenderScope.root())` — todo teste e todo `main` que aguarda um componente seria reescrito. | (a) ★. É o texto da 388 (4), e a raiz é o único escopo que existe fora de uma renderização. |
+| `388-d ★` | O wasm recusa a baixa do escopo | (a) O wasm recusa o módulo que a baixa alcançou, no primeiro componente (`the wasm backend does not lower a component yet`), até a baixa da 05: toda célula de componente ganhou `.wasm.expect` (32 células; as `run/decl_hooks_*`, que rodavam no wasm com o mapa da 354, entre elas). | (a) ★. Recusar no build, localizado, em vez de rodar com outra semântica; a baixa é da `05-wasm`. |
+| `388-e ★` | Um `try` solto no corpo de um componente | (a) O corpo que guarda um `try` solto roda o que vem depois do último `use provide` numa closure interna, cuja resposta (o valor, ou o erro que o `try` devolve antes) é o resultado; os demais corpos respondem `rendered(v, kids)` em cada `return`. | (a) ★. O `try` continua com o significado que os backends já dão, e nada antes do último provide pode sair cedo (357). |
+| `389-a ★` | O que o código genérico responde | (a) Uma função declarada cujo retorno não é `@Component`, mas que devolve um pelos argumentos de tipo (`first<T>(cards)`), é o "o que o código genérico responde" da 389: uma aresta com `callee: null`, o nó assíncrono, sem marca de síncrono na chamada. | (a) ★. O lado seguro que a 389 pede, sem seguir o tipo de quem chama. |
 | `01std-e` | `actions.readEnvelope` recusa um envelope incoerente | (a) Recusar o envelope incoerente (decisão 67). | (a). É a mais restritiva: o que o escritor não produz, o leitor não aceita. |
 | `std-a` | `querystring` recusa por `Error`, nos dois sentidos | (a) Como está: recusa nos dois sentidos, dois leitores. | (a) — a leitura restritiva (decisão 67): o que não pode ser lido não é lido, e o que o próprio leitor recusaria não é escrito. A `03r-e` cai junto (ver `ctr-p`). |
 | `std-b` | `fs.exists` segue link simbólico | (a) Segue o link (`stat`). | (a). A pergunta de quem chama antes de ler é se a leitura vai achar alguma coisa. |

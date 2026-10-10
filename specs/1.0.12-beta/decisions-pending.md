@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**76 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**77 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -22,7 +22,9 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ### What blocks now (answer first)
 
-Nothing open: 138-a answered (337).
+- `388-a` (01-compiler) — a host thunk written in a component body cannot name the body's children scope:
+  box 4b of `01-compiler/134` step 6 is built and green on its cells, and lands only once jhonstart's
+  renderer runs under it.
 
 ### 01-compiler
 
@@ -313,6 +315,48 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** (a) until (b) is built by `01-checker`; (b) refuses nothing a program needs.
 - **Blocks.** Nothing — built as (a).
 
+#### 388-a · A host thunk written in a component body cannot name the body's children scope (388 (3), (4))
+- **Measured.** Built (`front/render-scope-388`, box 4b): a component is a lambda over a `RenderScope`; a body
+  reads its scope only through `use context`, and its children's scope is reachable only by `await c` (a
+  child placed in the tree) — no name of the body holds it. jhonstart's renderer is written in component
+  bodies: `compose` provides `StyledContext`, and `caughtBelow` / `notFoundLevel` hand a host
+  `__jhTryComponent({ -> notFoundLevel(chain, i, route, page) })` (an error or a not-found boundary); the
+  `Suspense` fill keeps `{ -> caughtBelow(…) }`. Under 388 the thunk answers the component's lambda, the host's
+  try runs nothing, and `Ok(tree)` holds a lambda where an `Element` is read: jhonstart's suite on erlang is
+  173 passed, 34 failed (`streaming_test` 29, `styled_sheet_test` 1, `client_app_test` 4), 207 / 0 on `856bbc69`.
+  The root is the plain part: `streaming.bp` `renderWith` (a `@Task` function) hands the host
+  `componentOutcome({ -> compose(chain, route, page) })`, which 388 (3) rewrites as `{ -> compose(…).run(
+  RenderScope.root()) }`; the boundaries and fills below it are bodies. 388 (3) writes the library's side
+  (`await __jhTryTask({ -> c.run(scope) })`, "with the scope it kept") but not how a body that is itself the
+  library's hands that scope over. (`styled`'s suite is green on the patch.)
+- **Options.**
+  (a) The library holds every scope in plain functions: a boundary or a fill becomes a node of the tree holding
+  a component value, and the renderer — functions taking `scope: RenderScope`, none of them a component — runs
+  it inside its host's try with the scope its parent's `run` answered:
+  ```bp
+  pub type Boundary(child: @Component<Element>, fallback: @Component<Element>)        // a node of the tree
+  fn renderBoundary(b: Boundary, scope: RenderScope) -> @Task<string> {
+      val out = await __jhTryTask({ -> b.child.run(scope) });   // the scope the parent answered
+      …
+  }
+  ```
+  (b) A hook answering the body's children scope, so library code written in a body passes it on explicitly:
+  ```bp
+  fn caughtBelow(…) -> @Component<Element> {
+      val scope = use scope();                                   // the children's scope, as `await c` uses it
+      val outcome = await __jhTryTask({ -> notFoundLevel(chain, i, route, page).run(scope) });
+      …
+  }
+  ```
+  (c) A lambda written as an argument of a host call in a body runs a component with the body's children
+  scope — 374's capture back, which 388 replaced: `__jhTryComponent({ -> notFoundLevel(…) })` unchanged.
+- **Recommendation.** (a): no new surface, and the scope exists only where 388 (3) puts it — the library's
+  plain functions; (b) is the smallest change to jhonstart (each thunk site gains one `use scope()`), (c) is
+  the capture 388 replaced.
+- **Blocks.** box 4b's landing (`01-compiler/134` step 6): the compiler and std patch is green on its own
+  cells, jhonstart's suite is not; `05-jhonstart`'s renderer (the rewrite under (a), one hook per site under
+  (b)) · `08-bpp/119` steps 2–3.
+
 ### 02-std-and-packaging
 
 #### 110-a · `testing.asserts` on wasm under the strict rule (146)
@@ -441,7 +485,7 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-#### 01-compiler (23)
+#### 01-compiler (28)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -468,6 +512,11 @@ local change in the named place). Full 1.0.10 text under the same id in
 | cep-a | A section path (`.Pad.All.8`) in a function of this module declared after the `comptime` that reaches it has no rewrite yet (the body is inferred later), so (a) the `comptime` is refused naming the path, its `line:col` and the function — "declare `later` before the `comptime` in this module" — as 14 step 8 refuses a template call there; (b) would infer such a function ahead of the `comptime`, inside the body being inferred. Recommended: (a) | `block_eval.unresolvedSectionPath` · `reject/comptime_section_path_declared_after` |
 | cep-b | A local decorator's function that writes a section path (`fn fallback() -> Tok { return .Pad.All.8; }`) is inferred ahead of the run, once, as 371 infers one writing `same` (`infer.sameLoweredFn`), and carried rewritten; (b) would refuse the decorator at the annotation naming the path. Recommended: (a) — no remedy exists for (b) but moving the function to another module | `infer.sameLoweredFn` · `run/comptime_decorator_section_value` |
 | cep-c | A comptime module's record is its untagged map, so (a) `v is Rule` and an arm naming a record test its declared keys — `is_map(V) andalso is_map_key(selector, V) andalso is_map_key(decl, V)` — and a record of another type with those keys answers `true`; (b) carry the type in the map (`#{'__bp_type' => 'Rule', selector => …}`), a change of every comptime term the evaluators read and reply; (c) refuse `is` / a record arm on the comptime runtime where two carried records share their keys. Recommended: (c), the strictest; (a) implemented, no cell has two such records | `codegen/erlang.zig` `untypedRecordTest` · `run/comptime_record_pattern` |
+| 388-b | `c.run(scope)` answers `@Task<Rendered<R>>` for every component (375's mark is not in the type), declared on `builtins.d.bp`'s `Component<R>`; std's `context` declares `pub type Rendered<R>(value: R, scope: RenderScope)` and `pub type RenderScope(frames: unknown)`, its construction refused outside std (`render-scope-construction`) since botopink has no private constructor | `infer.inferComponentRun` · std `context` · `run/component_run_root`, `reject/render_scope_construction` |
+| 388-c | 388 (4)'s "outside every body a value runs with `c.run(RenderScope.root())`" read as what `await c` means there: an `await` of a component value in a plain function, `main`, a test or a lambda runs it with `RenderScope.root()`; (b) would refuse it, naming `c.run(RenderScope.root())` — every test and `main` that awaits a component would be rewritten | `context_lower.zig` · `run/component_run_root` |
+| 388-d | The wasm backend refuses a module the scope lowering reached, at its first component (`the wasm backend does not lower a component yet`), until 05's lowering: every component cell is a `.wasm.expect` (32 cells; `run/decl_hooks_*` among them, which ran on wasm under 354's map) | `wat.zig` `refuseScopeLowering` · `language-gaps.md` 354-wasm |
+| 388-e | A body that keeps a bare `try` runs the statements after its last `use provide` as an inner closure, whose answer (the value, or the error the `try` returns early) is the result; every other body answers `rendered(v, kids)` at each `return` | `context_lower.zig` `lowerComponentBody` · `run/component_try_in_body` |
+| 389-a | A declared function whose own return is no `@Component` answering one through its type arguments (`first<T>(cards)`) is 389's "what generic code answers": an edge with `callee: null`, the node asynchronous, no synchronous mark on the call | `infer.noteHookCall` · `run/decl_hooks_dynamic_call` |
 
 #### 02-std-and-packaging (10)
 
