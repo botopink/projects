@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 91 perguntas, 6 contradições e 95 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **388**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 90 perguntas, 6 contradições e 95 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **389**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,36 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 134-g · Um valor-função `@Component` entregue a código genérico (354 (8))
-
-**Trava:** `01-compiler/134` passo 6, caixa 4 (o caso genérico; os casos nomeado e tipado estão construídos)
-
-**Contexto.** O mapa de contexto oculto (construído, `comptime/context_lower.zig`) é o primeiro
-parâmetro de toda função cujo tipo responde `@Component<R>`, e uma chamada o passa quando o checker
-tipa a chamada como `@Component<R>`. Código genérico não sabe que segura um:
-
-```text
-items.map(Card)    // map<U>(f: fn(T) -> U), U = @Component<Element>; `map` chama f(x) com 1 argumento
-erlang/beam: badarity · commonJS: Card recebe `undefined` como mapa e o item no lugar dele
-```
-
-- [ ] **(a)** Recusado em compilação: um valor-função `@Component` passado onde o tipo declarado do
-  parâmetro não é um `fn(…) -> @Component<…>` escrito.
-  ```bp
-  val cards = items.map(Card);                       // error[component-value-to-generic] em `Card`
-  for (items) { i -> out.push(Card(i)); }            // escrito assim, ou um parâmetro fn(T) -> @Component<Element>
-  ```
-- [ ] **(b)** O valor é embrulhado onde é passado, fechando sobre o mapa daquele ponto.
-  ```bp
-  items.map(Card)    // passa { x -> Card(<mapa aqui>, x) }: lê o contexto de onde foi entregue
-  ```
-- [ ] **(c)** Nada: a chamada é comportamento indefinido.
-  ```bp
-  items.map(Card)    // compila; badarity no erlang
-  ```
-
-**Recomendação: (a)** — recusar > aceitar (decisão 67); (b) muda em silêncio onde o contexto é lido.
 
 ### 134-h · `use` como operando direito de `&&` / `||` / `??` (357 (1))
 

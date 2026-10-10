@@ -249,7 +249,7 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] a component rendered twenty times registers its sheet once — `compose` provides
       `StyledContext` (`jhonstart/src/styled_sheet.bp`, written with step 1, held: § State); below an
       `error` / `not-found` segment and in a `Suspense` fill too, once a `@Component` thunk a host cell
-      calls captures the map where it is written (374, `01-compiler/134` step 6)
+      calls is run by jhonstart's renderer with the scope it kept (388, `01-compiler/134` step 6)
 - [ ] head order: `<link>`, emilia's layers, scoped styles
 - [ ] a run-time hole's value containing `;` or `}` is escaped in the root's `style`; the test injects one
 
@@ -259,8 +259,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 - [ ] a boundary's fill carries the scoped sheet of a component the shell did not render, as
       emilia's flush does today (`jhonstart-emilia/src/root.bp:95`)
-- [ ] the `Suspense` child is written `val child = capture({ -> caughtBelow(…) });` (387, std's
-      `context.capture`), so a fill reads `StyledContext` and every provider above the boundary
+- [ ] jhonstart's renderer keeps the boundary's scope with its child and runs it in the fill with
+      `child.run(scope)` (388), so a fill reads `StyledContext` and every provider above the boundary
 
 ### Step 4 — `#[styled(..)]` in `jhonstart-styled`, and the reader of `#[emilia(..)]`'s meta (decisions 301, 338, 369)
 
@@ -370,7 +370,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 ## Decisions
 
 Answered: `34-f` → 383 (`StyledMeta`, step 4), `34-a` → 369 (`#[emilia(…)]`'s meta and its reader, step 4), `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
-Answered since: `119-g` → 374 (a host-called `@Component` thunk captures the map, `01-compiler/134` step 6). `119-f` → 377 (a `styled` value registers where it is used, so a module `val` of one is legal; 376, 378).
+Answered since: `119-g` → 374, replaced by 388 (the renderer runs a kept component with its scope, `01-compiler/134` step 6). `119-f` → 377 (a `styled` value registers where it is used, so a module `val` of one is legal; 376, 378).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

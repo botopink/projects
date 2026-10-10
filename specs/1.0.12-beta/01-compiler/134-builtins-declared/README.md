@@ -3,9 +3,10 @@
 **Priority:** high · **State:** partial: steps 1, 3, 4 and 5 done; step 2 partial (calls, `@Result`'s
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
 `Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 (354, 357)
-partial: boxes 1, 2, 5 (357) and 6 (the codemod) done; box 4 on erlang, beam and commonJS (wasm refuses at the
-`use`; the comptime runtimes and generic code open, `134-g`); box 3 waits on `01-checker` step 23 (277)
-**Depends on:** step 6: backend fronts 02–05 and 18 for the hidden context map (354) · answered: `134-f` → 354, 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
+partial: boxes 1, 2, 5 (357) and 6 (the codemod) done; box 4's hidden map on erlang, beam and commonJS is
+rewritten by 388 (a component is a lambda over a `RenderScope`), after the measurement box; box 3 waits on
+`01-checker` step 23 (277)
+**Depends on:** step 6: backend fronts 02–05 and 18 for each lowering of 388's lambda · answered: `134-f` → 354, 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
 (`modules/compiler-core/src/comptime/builtins.zig`, `Env.builtinDecls`, `comptime.zig`
@@ -141,12 +142,20 @@ fn Button() -> @Component<Element> {
 - [x] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4)) —
       built with `01-checker` step 23 (`front/checker-s23`): `HookUse.context: ?Declared<unknown>`, the `val` that
       declares the context (`run/decl_hooks_context`; the field's name is s23-a)
-- [ ] the hidden context map: every `@Component` function takes it; `provide` builds the children's map,
-      `context` looks up, `context-unbound` at run time with none — `run/context_provide_read` and
-      `run/context_nearest_wins` alike on erlang, beam, commonJS, wasm and both comptime runtimes
-      (handed to 02–05 and 18 for each lowering) — built on erlang, beam and commonJS; open: wasm (refused at the
-      `use`, 05), the comptime runtimes (`emitComptimeModule` lowers the parsed program, 18 / 14), a `@Component`
-      value handed to generic code (`134-g`)
+- [ ] measure before the rewrite (388 (6)): onze's blog rendered 1 000 times on erlang and commonJS, today's
+      hidden map against one lambda per component call; the numbers in this README; a cost the front judges
+      too high comes back as a question before box 4b
+- [ ] box 4b, a component is a lambda over a `RenderScope` (388): `fn C(…) -> @Component<R>` lowers to a function
+      answering `(scope) => …`, a call runs nothing; std's `context` declares the opaque `RenderScope`
+      (`RenderScope.root()`) and `c.run(scope)` (the result and the children's scope; a `@Task` for a node 375
+      marks asynchronous); `use provide(ctx)` makes the children's scope, `use context(T)` reads the received
+      one or the default; `await c` in a body runs `c` with the children's scope — `run/component_is_lambda`
+      (`itens.map(Card)` answers lambdas, the template's tree runs them with `Lista`'s scope),
+      `run/context_provide_read`, `run/context_nearest_wins`, `run/component_run_root` on erlang, beam,
+      commonJS, wasm and both comptime runtimes (handed to 02–05 and 18); the built map lowering
+      (`comptime/context_lower.zig`, 374's `lowerHostArg`) replaced, not kept beside it
+- [ ] until box 4b lands, a `@Component` value handed where the parameter's declared type is not a written
+      `fn(…) -> @Component<…>` is refused at build (`component-value-to-generic`, naming the template's `for`)
 - [ ] every context declares its default, named by its value's type (378, 379): std's `context` module
       answers `createContext(value)`, `provide(ctx)`, `context(T)`, and `Context<T>()` goes; one module-level
       declaration per type (a second refused naming both), found through the catalogue; a read answers the
@@ -158,21 +167,10 @@ fn Button() -> @Component<Element> {
       value, or none — computed from the hooks list from the roots; the reading function then `Any` with build
       arguments — `run/context_read_at_build` (`corDoTema()` a constant when `Theme` is never provided),
       `run/context_read_run_time` (a provide from `use request()` keeps it at run time)
-- [ ] a `Build` / `Any` component called at build (378 (4)): the comptime runtime lowers the hidden map
-      (the open comptime-runtime half of box 4 above), its `use`s run with an empty map, a context answering
+- [ ] a `Build` / `Any` component called at build (378 (4)): the comptime runtime runs its lambda with
+      `RenderScope.root()` (388; the comptime-runtime half of box 4b), a context answering
       its providers within the tree or its default — `run/comptime_render_component`
       (`comptime renderToString(<Rodape ano={2026} />)` a constant), `reject/component_run_hook_at_build`
-- [x] a `@Component` function value handed to a host function captures the map where it is written
-      (374): no hidden parameter on a lambda that is a host call's argument, a named component wrapped as
-      `{ -> C() }`, a lambda's own parameters kept — `run/context_host_thunk` (a provider read below
-      `__jhTryComponent`-shaped host call, and below one the host calls later) on erlang, beam and
-      commonJS; a lambda handed to a botopink function unchanged (`run/context_provide_read` stays green) —
-      built on `front/ctx-async-374-375`; open: a `@Component` value that is not a lambda written at the host
-      call (a parameter, a local, a `Suspense` child stored in a record) keeps the map parameter (387)
-- [ ] std's `context.capture(f)` (387): `capture({ -> body })` lowered as `(_map) => body(<the map here>)` — the
-      lambda as a host argument (374), the answer taking the map parameter and ignoring it —
-      `run/context_capture` (a value captured in a provider's body, called later by a host with `null` and
-      by botopink with another map, reads the provider of the capture on erlang, beam and commonJS)
 - [x] the rules of hooks (357): `use` only at the top level of a `@Component` body —
       `error[use-not-top-level]` inside `if` / `else`, a `case` arm, a loop, a lambda, `try` /
       `catch`, or after a statement that may return early, naming the enclosing construct;
@@ -183,7 +181,7 @@ fn Button() -> @Component<Element> {
 
 ## Decisions
 
-`134-i` → 387 (std's `context.capture(f)`).
+`134-g` → 388 (a component is a lambda over a `RenderScope`, run by the render library); `134-i` → 387, replaced by 388.
 
 Answered: `134-f` → 354 (contexts), 329, 330 (`134-e`: a namespace type, `?T` methodless, `result` deleted,
 `Type.Field<T>` associated — step 2), 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
