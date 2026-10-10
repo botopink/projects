@@ -34,7 +34,7 @@ true in code: 74, 15, 81, 12, 65, 73 (each front says which).
 | [`19`](./19-rakun-test-utilities/README.md) | high (blocking) | not started | `rakun-test` | A (step 1) · C (steps 2–5) · step 6 → 20-snap | 128 · 15 step 1 · 04 step 4 · 03r-am |
 | [`13`](./13-rakun-http-clients/README.md) | high | partial: step 4 on `feat`; 1–3 open | `rakun-client` (not `ws/**`) | B | 04 step 1 · lg2-b · 346 (unbuilt) |
 | [`17`](./17-rakun-logging/README.md) | medium | not started | `rakun/src/logging/**` · `rakun-metrics` | B | 128 · `03-bundled-libs/106`'s package · 13 step 2 |
-| [`22`](./22-rakun-file-routing/README.md) | critical | not started | `rakun-app` | B | 04 step 5 · decision 186 · onze 50 · 53 · jhonstart 30 · 32 · lg2-q |
+| [`22`](./22-rakun-file-routing/README.md) | critical | not started | `rakun-app` | B | 04 step 5 · decision 186 · onze 50 · 53 · jhonstart 30 · 32 |
 | [`12`](./12-rakun-cache/README.md) | medium | not started (premise changed) | `rakun-cache` · `rakun-session` | B | 19 step 1 · 04 step 1 |
 | [`11`](./11-rakun-actuator/README.md) | medium | not started | `rakun-actuator` · `rakun/src/actuator_api/**` | B | 128 · 22 (R11-7) |
 | [`65`](./65-rakun-url-rules/README.md) | high | not started (rule 2 of decision 201 in code) | `rakun-web` (not `tls.bp`) · one line of `rakun-data/src/devtools/devtools.bp` | B | 128 · decision 201 |

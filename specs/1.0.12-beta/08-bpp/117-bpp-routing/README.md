@@ -33,7 +33,7 @@ The `app/` tree (decision 203) gains:
 Exists: segment grammar `[x]`, `[...x]`, `[[...x]]`, `(group)`, `@slot`, `_private`, static
 (`segment.bp`, `parseSegment`); a `.bp` page names its directory in its decorator
 (`#[page("blog/[slug]")]`, `onze/examples/blog/src/app/blog/[slug]/page.bp`) since `@Decl` has no
-source location (`language-gaps.md` lg2-q); `#[page]` emits `<fn>Params(route)` (`jhonstart/src/routes.bp`, `page`),
+source location (403: by design); `#[page]` emits `<fn>Params(route)` (`jhonstart/src/routes.bp`, `page`),
 moved by decision 236 to `paramsOf(…seg, route)` (gone by 293) (`01-compiler/130`); static generation:
 `registerStaticParams(seg, fn() -> @Task<StaticParams[]>)`, `decideKind`, `prerenderAll(strict)`,
 `prerenderPath`, `serveStatic` (stale-while-revalidate), `staticExport(outDir)` (`static_gen.bp`);

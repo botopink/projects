@@ -67,7 +67,7 @@ choices to confirm (23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-b … lg2-u**
 (`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281; `lg2-a` by 346 → 01 step 32,
 `lg2-e` by 347, `lg2-j`/`lg2-o`/`lg2-w` by 343/342/341 → 14 step 6, `lg2-v` by 344 → 26 step 6): none
-opens a front until answered, each then a step — 01 lg2-q; `lg2-l` maybe de facto (`@panic` / `@todo`
+opens a front until answered, each then a step — `lg2-l` maybe de facto (`@panic` / `@todo`
 `noreturn`, a branch ending in one narrows): maintainer confirms, row closes.
 
 Every recommendation: most restrictive behaviour, nothing configurable bypasses it (decision 67).

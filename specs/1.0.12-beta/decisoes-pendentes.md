@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 81 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **403**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 80 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **404**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -726,40 +726,6 @@ passo 11.
   ```
 
 **Recomendação: (a).** Uma regra de parâmetro para toda função (244); o exemplo segue ela.
-
-### lg2-q · Localização no fonte dentro de `@Decl`
-
-**Trava:** `01-compiler/01-checker`: a linha reduzida de `decl.loc`; fora de 00–03: rakun 22
-
-**Contexto.** Um decorator não sabe em que arquivo está a declaração: `decl.loc.file` dá `badkey`. O
-roteamento por arquivo (rakun 22, onze 53) queria deduzir a rota do caminho, como o `app/` do
-Next.js. As decisões 289 e 290 já escrevem a forma (1): o `page.bpp` de uma rota leva a rota como
-argumento do seu decorator (`#[page("blog/[slug]", paths: allPosts)]`, `#[page("blog/[slug]",
-revalidate: hours(1))]`), e a página lê os segmentos por hook (293), sem parâmetro, devolvendo `View`
-(275, 276). O segmento explícito é gerado e verificado pelo CLI da frente 50. Resta só registrar que
-`@Decl` não ganha `loc` — o `decl.name` de um default anônimo já é o nome do arquivo (289), não o
-caminho.
-
-**Hoje:**
-```bp
-fn page(comptime decl: @Decl, comptime route: string) { decl.loc.file }   // badkey
-```
-
-- [ ] **(1)** Não: o segmento é argumento explícito (a forma da 289/290).
-  ```bp
-  // app/blog/[slug]/page.bp
-  #[page("blog/[slug]")] pub fn BlogPost() -> View { val p = use params<BlogParams>(); … }
-  ```
-- [ ] **(2)** `decl.loc` (o `SourceLocation` do `@src()`): `#[page]` deduz a rota do caminho do arquivo.
-  ```bp
-  // app/blog/[slug]/page.bp
-  #[page] pub fn BlogPost() -> View { … }   // rota "blog/[slug]" lida de decl.loc.file
-  ```
-
-**Recomendação: (1).** A saída de um decorator nunca depende de onde o arquivo está; as 289/290 já
-foram escritas assim. **Bloqueia:** a linha; rakun 22 (os exemplos com `#[page("…")]` já seguem a (1)).
-
----
 
 ### 97-s16-a · Onde ficam as tabelas geradas do `unicode` *(proposta)*
 

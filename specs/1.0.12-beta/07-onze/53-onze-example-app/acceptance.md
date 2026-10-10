@@ -251,7 +251,7 @@ Rows of [`language-gaps.md`](../../language-gaps.md) biting here (proposed surfa
 | The navigation signals do not return `noreturn` (lg2-l) | every `[slug]` page: `if (found.isEmpty()) { val _gone = notFound(); }; val post = found.first().unwrapOr(missingPost(slug));` — the `unwrapOr` default is unreachable (the marker in `blog-slug-page-example.bp`) |
 | No assignment to a `self` field (by design) | `Post` is rebuilt rather than updated; the form's state is copied |
 | No byte or binary type | `app/api/posts/route.bp` refuses `multipart/form-data` with 415 rather than reading it lossily |
-| `@Decl` carries no source location (lg2-q) | the app-relative segment is the decorator's argument (the marker in `app-tree-example.bp`) |
+| `@Decl` carries no source location (403, by design) | the app-relative segment is the decorator's argument (the marker in `app-tree-example.bp`) |
 
 The 1.0.10 table's other rows (parameter defaults, `xs[0]` on the BEAM, tuple labels through
 generics, `if (a && b)`, `await` in a loop) left `language-gaps.md`; step 6's reconcile drops any

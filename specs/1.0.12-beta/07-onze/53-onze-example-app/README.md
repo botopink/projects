@@ -37,7 +37,7 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
   environment; `00-gate` decides how its absence reads), not `jhonstart-dom-test`.
 - **Markers.** Two copied examples carry a live `// LANGUAGE GAP` marker, indexed in
   `../../language-gaps.md` § Marker index (CI check 5): `examples/app-tree-example.bp` (`@Decl`
-  carries no source location — lg2-q), `examples/blog-slug-page-example.bp` (navigation signals
+  carries no source location — 403, by design), `examples/blog-slug-page-example.bp` (navigation signals
   do not return `noreturn` — lg2-l). A marker goes only with its index row, when its gap closes.
   (`lib-db-example.bp`, `app/blog/[slug]/page.bpp` mention the gap in prose; not markers.)
 

@@ -6,8 +6,8 @@ here; the member is every onze application's server half · **State:** not start
 `Request`'s `rawQuery()`, `headerNames()`, `headers()`, `queryDict()`) · `rakun-app` consumer
 commits of `03-bundled-libs/102` step 3 and `103` step 2, before 128 (decision 188) · decision 186
 (step 4; its checker capability for the final state) · onze 53 and jhonstart 30
-(R24-2) · jhonstart 32 (R64-2 and 66's two boxes — rakun owns nothing in them) · lg2-q (`@Decl`
-source location — segment stays an explicit argument) · 03r-m, n, p, q (confirmations; 03r-o closed by 290 — step 8)
+(R24-2) · jhonstart 32 (R64-2 and 66's two boxes — rakun owns nothing in them) · 403 (`@Decl` has no
+source location — the segment an argument, from the generated route table, 285) · 03r-m, n, p, q (confirmations; 03r-o closed by 290 — step 8)
 **Owns:** `modules/rakun-app/**` · `repository/rakun/AGENTS.md` § The file-convention route table,
 § SSR, § Actions
 **Does not touch:** `modules/rakun-web/**` (65's; chain consumed through its API) · `rakun-cache`

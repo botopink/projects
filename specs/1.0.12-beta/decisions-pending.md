@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**81 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**80 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -202,12 +202,6 @@ Nothing open: 138-a answered (337).
   takes a default (`= ""`) — `#[check(passwordsMatch, at: .confirm)]` is a check with no text.
 - **Recommendation.** (a): one parameter rule for every function (244); the example follows it.
 - **Blocks.** 125 s7 (`#[check]`'s signature in `repository/validation`); the example file's text.
-
-#### lg2-q · `@Decl`'s source location
-- **Measured.** `decl.loc.file` is the checker's unknown field of `Decl`, at the read (was `badkey` at the annotation). 289 and 290 already write option (1): a route file's decorator carries the route (`#[page("blog/[slug]", paths: allPosts)]`), the page reads its segments by hook (293), takes no parameter and returns `View` (275, 276). An anonymous default's `decl.name` is the file name (289), not its path.
-- **Options.** (1) None: the app-relative segment is an explicit decorator argument (`#[page("blog/[slug]")] pub fn BlogPost() -> View`). (2) A `loc` field on `@Decl` (`@src()`'s `SourceLocation`).
-- **Recommendation.** (1): a decorator's output never depends on where its file sits; 289/290 are written so.
-- **Blocks.** The row; rakun 22 (the `#[page("…")]` examples already follow (1)).
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.

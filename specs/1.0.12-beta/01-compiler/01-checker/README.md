@@ -5,7 +5,7 @@ feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open;
 `front/checker-s24` but three boxes; step 23 built on `front/checker-s23` and `front/decl-hooks-371-372` (371, 372); step 28 built on `front/checker-s28` but `Type.keys` and the run-time `Type.Field<T>`; step 6
 box 3, steps 13, 21, 22, 24–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
-constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
+constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · (lg2-q answered by 403, by design: `@Decl` carries no source location; lg2-a is step 32, decision 346;
 lg2-e answered by 347 with nothing to build: a method's `@Decl` has no `owner`).
 **Owns:** `modules/compiler-core/src/comptime/{infer,types,unify,env,transform,eval,error,diagnostics}.zig`
 · `src/parser/**`, `src/parser.zig`, `src/print.zig`, `src/lexer.zig`, `src/lexer/**` · `src/ast.zig`
