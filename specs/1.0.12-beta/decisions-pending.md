@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**76 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**73 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -29,27 +29,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
-
-#### s35-b · Whether an optional function argument was given (`rule == null`)
-- **Measured.** Built: `comptime rule: @Expr<?fn(v: T) -> bool> = null` — an optional function is a
-  function for 364 (3), so `rule.value == null` is `expr-value-of-function` at the read, and a body cannot
-  ask whether the annotation gave a rule. `run/decorator_arguments_check` and
-  `reject/decorator_check_without_rule_not_bool` tell the function form by `decl.kind == DeclKind.Fn`.
-- **Options.** (a) As built: no null test; the body reads the declaration (`decl.kind`) or the library
-  splits the decorator (`#[check("…", rule)]` on a type, `#[check("…")]` on a function, 406). (b) `rule.value == null` /
-  `!= null` is legal — the comparison calls nothing —, any other read of `rule.value` refused. (c) The
-  parameter is optional itself: `comptime rule: ?@Expr<fn(v: T) -> bool> = null`, tested `rule == null`.
-- **Recommendation.** (a): no read of a function's `@Expr` at all; (b) if example 1's spelling is wanted.
-- **Blocks.** Nothing — built as (a).
-
-#### s35-c · A `comptime` variadic's spelling
-- **Measured.** Built: `comptime ..fields: @Expr<Type.Field<T>[]>` — the wrapper over the declared type
-  (std's `Type.pick` / `Type.omit`, the cells); each argument is checked against `Type.Field<T>`, and
-  `fields.value` is the array.
-- **Options.** (a) As built, `@Expr<T[]>`: `fields.value.map({ f -> f.name })`. (b) `@Expr<T>[]`, one
-  expression per argument: `fields.map({ f -> f.value.name })`, `fields[1].fail("…")` at that argument.
-- **Recommendation.** (a): 364's `comptime x: @Expr<T>` with `T` the parameter's declared type.
-- **Blocks.** Nothing — built as (a).
 
 #### s35-d · An ordinary function's argument not known at build
 - **Measured.** Built: 364's "refused only where `.value` reads it" holds for a decorator (an unread
@@ -171,12 +150,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — the built surface stands until widened.
-
-#### 134-h · `use` as the right operand of `&&` / `||` / `??` (357 (1))
-- **Measured.** 357 (1) names `if` / `else`, a `case` arm, a loop, a lambda, `try` / `catch` and an early return; it does not name the short-circuit operators, whose right operand runs on some calls only (`ready && use state(0)`, `cached ?? use load()`). Built: refused — ``use-not-top-level: `use` inside the right operand of `&&` `` at the `use` of `val n = ready && use flag();`.
-- **Options.** (a) Refused (as built), 357 (2)'s "never under a condition": `val n = ready && use flag();` is `use-not-top-level`; written `val f = use flag(); val n = ready && f;`. (b) Accepted: only the listed constructs refuse — `val n = ready && use flag();` builds, and `flag` runs on the calls where `ready` holds.
-- **Recommendation.** (a).
-- **Blocks.** Nothing — built as (a).
 
 #### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
 - **Measured.** Built (`front/ctx-async-374-375`, `infer.zig` `noteAsyncCall`, `finishHookNode`,

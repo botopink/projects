@@ -71,7 +71,7 @@ implementation to the declarations; `docs.md` documents each from its declaratio
 - Step 6 box 5 (357) — `use-not-top-level` in the checker (`Env.useConstruct`, `Env.earlyExitLine`), the
   parser's static-prefix rule gone — `reject/use_in_if`, `reject/use_in_loop`, `reject/use_in_lambda`,
   `reject/use_after_early_return`, `run/use_conditional_argument`; `reject/use_after_return` and
-  `reject/generator_loop_use` meet it; the short-circuit operands too (`134-h`)
+  `reject/generator_loop_use` meet it; the short-circuit operands too (410)
 - Step 6 box 6 — `scripts/codemod-component-contexts.py` (`scripts/AGENTS.md`); run over botopink-lang, jhonstart,
   onze, styled, rakun and the VS Code extension (patches); no `use @getContext(T)` remained to report
 - Step 2, `Type.pick` / `Type.omit` — `types.bp` declares both `(comptime source: type T, comptime ..fields:

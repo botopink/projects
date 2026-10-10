@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 76 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **410**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 73 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **413**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -62,25 +62,6 @@ corpos. (A suíte do `styled` está verde no patch.)
 **Recomendação: (a)** — nenhuma superfície nova, e o escopo existe só onde a 388 (3) o põe: nas funções comuns da
 biblioteca. A (b) é a menor mudança no jhonstart (um `use scope()` por lugar de thunk); a (c) é a captura que a
 388 substituiu.
-
-### 134-h · `use` como operando direito de `&&` / `||` / `??` (357 (1))
-
-**Trava:** nada — construído como (a)
-
-**Contexto.** A 357 (1) nomeia `if` / `else`, braço de `case`, laço, lambda, `try` / `catch` e retorno
-antecipado; não nomeia os operadores de curto-circuito, cujo operando direito roda só em algumas chamadas.
-
-- [ ] **(a)** Recusado (como construído).
-  ```bp
-  val n = ready && use flag();     // error[use-not-top-level]: `use` inside the right operand of `&&`
-  val f = use flag(); val n = ready && f;   // a forma escrita
-  ```
-- [ ] **(b)** Aceito: só os construtos listados recusam.
-  ```bp
-  val n = ready && use flag();     // compila; `flag` roda só quando `ready` vale
-  ```
-
-**Recomendação: (a)** — a 357 (2): nunca sob uma condição.
 
 ### std-d · `io.process`: sinais e leitor de TTY
 
@@ -486,54 +467,6 @@ usos nos repositórios: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1
 **Recomendação (da thread): (1) agora**; a (2) se o wasm precisar rodar asserções — é a única que
 não espera a 05-wasm. **Bloqueia:** nada no gate; só o "std compila no wasm" do 05-wasm passo 5 / 97
 passo 11.
-
-### s35-b · Saber se um argumento função opcional foi dado (`rule == null`)
-
-**Trava:** nada — implementado como (a).
-
-**Contexto.** `comptime rule: @Expr<?fn(v: T) -> bool> = null`: uma função opcional é função para a 364 (3).
-
-**Hoje.** `rule.value == null` é `expr-value-of-function` na leitura; as células distinguem a forma da função por `decl.kind == DeclKind.Fn`.
-
-- [ ] **(a)** Como está: sem teste de nulo; o corpo lê a declaração, ou a biblioteca separa o decorator.
-  ```bp
-  if (decl.kind == DeclKind.Fn) { … }   // #[check] numa função
-  ```
-- [ ] **(b)** Comparar com `null` é permitido (não chama nada); qualquer outra leitura de `rule.value` é recusada.
-  ```bp
-  if (rule.value == null) { … }
-  ```
-- [ ] **(c)** O parâmetro em si é opcional.
-  ```bp
-  fn check<T>(comptime decl: @Decl<T>, comptime rule: ?@Expr<fn(v: T) -> bool> = null) {
-      if (rule == null) { … }
-  }
-  ```
-
-**Recomendação: (a).** Nenhuma leitura do `@Expr` de uma função; (b) se a grafia do exemplo 1 for desejada.
-
-### s35-c · A grafia de um variádico `comptime`
-
-**Trava:** nada — implementado como (a).
-
-**Contexto.** `Type.pick` / `Type.omit` da std e as células recebem os campos como variádico.
-
-**Hoje.** `comptime ..fields: @Expr<Type.Field<T>[]>`: cada argumento é conferido contra `Type.Field<T>`, e `fields.value` é o array.
-
-- [ ] **(a)** Como está, `@Expr<T[]>`.
-  ```bp
-  fn index<T>(comptime decl: @Decl<T>, comptime ..fields: @Expr<Type.Field<T>[]>) {
-      decl.setMeta("columns", fields.value.map({ f -> f.name }).join(","));
-  }
-  ```
-- [ ] **(b)** `@Expr<T>[]`, uma expressão por argumento (cada uma com seu `.fail`).
-  ```bp
-  fn index<T>(comptime decl: @Decl<T>, comptime ..fields: @Expr<Type.Field<T>>[]) {
-      decl.setMeta("columns", fields.map({ f -> f.value.name }).join(","));
-  }
-  ```
-
-**Recomendação: (a).** O `comptime x: @Expr<T>` da 364 com `T` o tipo declarado do parâmetro.
 
 ### s35-d · O argumento de uma função comum que não é conhecido no build
 
