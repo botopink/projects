@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 70 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **427**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 69 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **428**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -562,29 +562,6 @@ vezes — a thread recusa no `await`.
 programa precisar. **Bloqueia:** nada.
 
 ---
-
-### 137-a · Os parâmetros ligados de `QueryContext.run` (397 (1))
-
-**Trava:** o passo 2 da 137 (o alvo SQL) · o passo 1 da 143 (`DbContext` implementando-o)
-
-**Contexto.** O erika declara `fn run<T>(self: Self<E>, sql: string, params: Array<string>) -> @Result<Array<T>, E>`; o `SqlTemplate` do rakun-data já liga `string[]`. Um array de tipos misturados não tipa: `val ps: unknown[] = [1, "a"]` é `expected i32, got string`.
-
-**Hoje:**
-```text
-ctx.run("select * from users where id = $1", ["7"])      # cada buraco vira o texto do valor
-```
-
-- [ ] **(a)** `Array<string>`, o texto de cada buraco.
-  ```bp
-  ctx.run("select * from users where id = $1", ["7"])
-  ```
-- [ ] **(b)** Uma variante `QueryParam` (`Int`, `Text`, `Bool`, `Null`); o template não sabe o tipo do buraco, então todo buraco passa por um `param(v)` genérico.
-  ```bp
-  ctx.run("select * from users where id = $1", [QueryParam.Int(7)])
-  ```
-- [ ] **(c)** `unknown[]` — recusado hoje.
-
-**Recomendação: (a)** — a única forma que tipa hoje e a que os drivers já recebem; (b) quando um driver precisar do tipo.
 
 ---
 

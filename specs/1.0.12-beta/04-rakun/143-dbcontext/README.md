@@ -50,7 +50,7 @@ type Relatorio(db: DbContext) {
 
 - [ ] `entity(name)` and `column(name)`: record erika's `QueryTable(name, columns)` and
       `dbcontext`'s own entity meta (298); a field's column its name unless `column` says otherwise
-- [ ] `behavior Driver` (running a statement — SQL text, bound parameters — and answering rows by column
+- [ ] `behavior Driver` (running a statement — SQL text, bound parameters as erika's `QueryParam[]` (427) — and answering rows by column
       name, the error a parameter of the behavior) and `DbContext(driver: Driver) implement QueryContext`
       (erika's, 397): `self.db.query "…"` runs on it, one context for every entity
 - [ ] rows decoded into the declared answer by column name; a `?T` answer meeting more than one row is the

@@ -58,6 +58,10 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
       `@Result<T[], E>`, the error a parameter of the behavior, so erika names no library's error (the exact
       signature in `docs.md`); `pub type QueryTable(name: string, columns: QueryColumn[])` and
       `QueryColumn(field, column)`, the meta a persistence library records on an entity
+- [ ] typed parameters (427): `pub type QueryParam { Int, Float, Text, Bool, Bytes, Null }`; `QueryContext<E>` declares
+      `runMany<T>(sql, params: QueryParam[], decode)` / `runOne<T>(…) -> @Result<?T, E>` (426) and `run(sql, Array<string>)`
+      goes; each hole's variant from the field its column is (`?T` → `Null` or the variant), a `limit` hole `Int`; a hole of
+      another type an error at the hole — `reject/erika_hole_type_mismatch`, the recording context's params per variant
 - [ ] `query`, erika's template method on every `QueryContext` — `pub fn query<E>(comptime self: @Expr<QueryContext<E>>,
       comptime q: @Expr<string>) -> @Expr<@Result<unknown[], E>>` (397 (3), 415; the template method is `01-checker` step 29's): `self.db.query "select * from User where active = true"`; an `Array<T>`
       source keeps the in-memory form (`erika "…"`, today's fluent pipeline)
