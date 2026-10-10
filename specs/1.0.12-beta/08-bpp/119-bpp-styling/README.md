@@ -211,6 +211,10 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       (355, built: `styled.bp` `atBuild` over `Part.known` / `Part.value`; `repository-stages.sh` reads
       `tabRed`'s constant) — a hole naming an imported `val` stays computed at render until
       `01-compiler/14` step 8's last boxes, the same CSS
+- [ ] `styled`'s reader keeps source order (368): a declaration after a nested rule opens a new rule of
+      the class, as CSS Nesting's nested-declarations rule — `styled "${bg} &:focus { ${gray} } ${pad}"`
+      renders `.k{background:#ffffff}.k:focus{…}.k{padding:…}` on both targets (`reader.bp`
+      `readBlock`); before `06-emilia/34` step 5, which keeps emilia's CSS byte-identical through it
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none a
       compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time · row 134 (a library's template function cannot read the program's catalogue),
@@ -268,7 +272,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
       scoped styles — one `<style>` in the head; payload key `s` and the boundary fill carry it;
       `07-onze/53`'s "exactly one non-empty `<style>`" (acceptance step 2) holds
 - [ ] `modules/jhonstart-emilia/**` deleted — its flush plugin (`root.bp:95`), its annotation (moved
-      in step 4), its bridge test (the contract-4 literal `e_39b87d03` is asserted by
+      in step 4), its bridge test (the contract-4 literal `e_f51c2501`, 367, is asserted by
       `jhonstart-styled`'s test); onze registers `jhonstart-styled`'s sink, exported as `styledSink()` (`contracts.md` § 6a)
 - [ ] an application using `#[styled]` without `"bpp".style` renders emilia's sheet (the annotation
       is an ordinary import; the key is only the style section's)
@@ -328,7 +332,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Answered: `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Answered: `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
 Open: `119-f` (a `val` holding a literal computed at render), `119-g` (a provider lost below a host-called `@Component` thunk).
 
 **Gate:** standard (fronts.md § Gate), plus:

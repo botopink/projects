@@ -203,7 +203,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
-- [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes done (`AGENTS.md`, the grep), the other seven wait on 34-a · 34-b · 34-c (L5) and 119 s1 box 4 — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
+- [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes done (`AGENTS.md`, the grep), the other seven follow 366 (34-a, provisional) · 367 (34-b) · 368 (34-c) and wait on 119 s1 box 4 and the source-order reader (368) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
 
@@ -284,7 +284,6 @@ Then:
 - [ ] 03r-an — 92 s2 (boxes 1, 3)
 - [ ] 67-a — 67 s1–3 · 53's write path · only the record
 - [ ] 05emilia-n — 34 s4 (reduced: the four features; the refusal is 300)
-- [ ] 34-a · 34-b · 34-c — 34 s5 boxes 1–6 (the families as components and the async entry points; contract 4's class against 338's; a class's rule order and `flush()`'s frame) · and 119 s1 box 4
 - [ ] 50-b — 50 s2 · 53 s6
 - [ ] 08-f — 121 s3
 - [ ] snap-a — 135 s1–5 (replaces 01std-f, 03r-ag, 30-h, 05emilia-m, 53-b) · 53 s2–6 through 135 s5

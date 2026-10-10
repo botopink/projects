@@ -143,11 +143,13 @@ Consumed by fronts 26, 31, 67, 68.
 ## 4 · Class-name scheme — owned by front 48
 
 ```
-class = "e_" + hash.contentHash(encodeSheet(tokensToSheet(tokens, theme)))
+class = "e_" + hash.contentHash(<the class's rules, as styled renders them>)
 ```
 
-`contentHash` = std's djb2 fold in `hash`: lowercase hex, seed 5381, multiplier 33, masked to 32
-bits, over the encoded rule body (front 56's rule model), `tokens` in author order. emilia and onze
+Decision 367 (338's class, one rule for every component; `06-emilia/34` step 5 lands it — the code
+answers the codec form `"e_" + hash.contentHash(encodeSheet(tokensToSheet(tokens, theme)))` until
+then). `contentHash` = std's djb2 fold in `hash`: lowercase hex, seed 5381, multiplier 33, masked to
+32 bits, over the class's rules (the `e_` prefix is emilia's layer's), `tokens` in author order. emilia and onze
 68 use this one function; emilia keeps no private hasher (decision 116). Nothing else enters the
 hash — no counter, salt, request id. With a static class: `<static> + " " + <emilia class>`.
 
@@ -155,14 +157,17 @@ Five clauses, each a test:
 
 1. Pure function of the token list **and the theme** — same tokens under another `Theme` = another
    class.
-2. **Token order is class identity** → both halves build the list from one shared function.
+2. **Token order is class identity** → both halves build the list from one shared function; `styled`'s
+   reader keeps source order (368), so a selector variant between two plain tokens stays where it was
+   written and two lists that differ only there are two classes.
 3. ASCII-only rule bodies — JS cell folds UTF-16 units, erlang cell codepoints; diverge above
    U+10000. Front 48 gates payload leaves on this.
 4. Merge: static-first, one ASCII space, no sorting, no de-duplication, one implementation
    (`mergeClass`, `emilia/modules/emilia/src/attributes.bp`), nowhere else.
 5. Attribute array order fixed (`renderToString` writes attrs in array order).
 
-**Shared fixture:** `className(cardTokens(), defaultTheme()) == "e_39b87d03"` (`cardTokens()` =
+**Shared fixture:** `className(cardTokens(), defaultTheme()) == "e_f51c2501"` (367; re-derived once in 34
+step 5, every reader re-recorded in that landing — `e_39b87d03` until it lands) (`cardTokens()` =
 `[.Bg.White, .Pad.All.__4, .Text.Bold, Token.Hover([.Bg.Color.Gray.__100])]`), a **literal hex string**
 on commonJS and erlang (inline test, `emilia/modules/emilia/src/emilia.bp:16503-16516`, no HTML); the
 `jhonstart-emilia` bridge test (30, `bridge_test.bp:165-186`; the member is deleted by `08-bpp/119`, and the reader moves to `jhonstart-styled`'s test, decision 338) and 68's bundle test assert the same literal; the payload's `s` key makes it checkable at run time.

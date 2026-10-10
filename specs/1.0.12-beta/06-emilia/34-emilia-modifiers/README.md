@@ -4,7 +4,8 @@
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
 step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes done; its
-other seven wait on `34-a`, `34-b`, `34-c` and 119 step 1 box 4 (`StyledContext`)
+other seven follow 366 (34-a, provisional), 367 (34-b) and 368 (34-c), and wait on 119 step 1 box 4
+(`StyledContext`) and the source-order reader (368)
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
 `01-compiler/134` step 6; step 3: the repositories `css`
@@ -14,7 +15,11 @@ Nothing else:
 reworded by step 1 (no code uses `[name]={`).
 **Owns:** `repository/emilia/modules/emilia/src/**` (all eleven files; edited blocks named per step),
 `modules/emilia/AGENTS.md`, `docs.md`,
-`examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` · this directory
+`examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` · this directory · step 5
+only, the carve-out of 366 and 367 (the `await` on emilia's entry points and the re-recorded class):
+`repository/jhonstart/modules/jhonstart-emilia/{src/root.bp,test/bridge_test.bp}`, onze 68's
+`styleRule` reader and bundle test, `onze-cli`, `examples/emilia-card/**` and the other eleven
+examples' `src/main.bp`
 **Does not touch:** `modules/emilia-test/**`, `examples/*/README.md`, `examples/emilia-card/**`,
 `modules/emilia/test/**` (`20-snap`) · the other eleven examples' `src/main.bp` (none pins a moved
 family; if one does, report to 33) · `repository/jhonstart/**` (`html_attrs.bp` is 48's, closed) ·
@@ -23,7 +28,8 @@ family; if one does, report to 33) · `repository/jhonstart/**` (`html_attrs.bp`
 
 ## Goal
 
-Class name is std's `hash.contentHash` (decision 116), contract-4 fixture `e_39b87d03` unchanged;
+Class name is std's `hash.contentHash` (decision 116) over the class's rules, the `e_` prefix (367):
+the contract-4 fixture re-derived once in step 5, `e_f51c2501`;
 `modules/` names no other library (decision 114); five families render what Tailwind 4.3.2 renders;
 the theme is typed and declared once with `#[theme]` — the mechanism `styled`'s, the Tailwind values
 emilia's `defaultTheme()` —, a token naming a cleared breakpoint a compile error (decisions 300, 338);
@@ -55,8 +61,8 @@ the four owned examples.
   (05emilia-i's shape for `--tw-ease` / `--tw-duration` / `--tw-border-spacing-*`; `fullTheme()`
   gains no entry — per-utility variables with `@property` registrations like the transform ones; no
   new `Ns` prefix — 05emilia-a, -d, -i stand). Decision 350: a family moves whole, one helper per
-  shape. A token list using a moved family changes class-name hash (hash is over the sheet); the
-  contract-4 fixture (padding / colour / hover) uses none and does not move. jhonstart and onze
+  shape. A token list using a moved family changes class-name hash (hash is over the rules, 367); the
+  contract-4 fixture (padding / colour / hover) uses none and does not move in step 2. jhonstart and onze
   assert class names, not bodies.
 - **The refusal.** Today a cleared `--breakpoint-*` (`extendTheme` with an empty value) silently
   emits `@media (width >= )`. Decision 300: a token naming a cleared or absent breakpoint is a compile
@@ -87,8 +93,8 @@ commonJS, and every example's printed output and test log byte-identical to `a12
 ## Open
 
 Order (decision 350: the library on `styled` first): step 5 → step 2 → step 3; step 4 when
-05emilia-n is answered. Step 5 keeps today's output byte for byte, so the five families move only in
-step 2, each as its `styledProperty` literal.
+05emilia-n is answered. Step 5 keeps today's CSS byte for byte (368) — only the class names move, once
+(367) —, so the five families move only in step 2, each as its `styledProperty` literal.
 
 ### Step 5 — emilia over `styled` — first (decisions 338, 350; after `08-bpp/119` step 1)
 
@@ -123,27 +129,33 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
 - [ ] each `styledProperty` literal is the upstream `@utility`'s declarations in Tailwind's CSS
       syntax, the 4.3.2 `@utility` quoted in a comment beside it (decision 350)
 - [ ] variants (`.Hover(…)`, `.Md(…)`, `.Dark(…)`, …) wrap their inner declarations in a `styled`;
-      a token list is the composition of its tokens' components, its order the class's identity
+      a token list is the composition of its tokens' components in order, its order the class's
+      identity — `[.Bg.White, Token.Focus([.Bg.Color.Gray.__100]), .Pad.All.__4]` renders three rules,
+      the `padding` after the `:focus` (368, through `styled`'s source-order reader)
 - [ ] `Token implement Styleable`
-- [ ] `output.bp`'s sheet model deleted; `flush()` renders `styled`'s sheet with emilia's `@layer`s,
-      byte-identical to today's
-- [ ] contract-4 fixture `e_39b87d03` unchanged (`contracts.md` § 4) — emilia's layer keeps the `e_`
-      prefix; onze 68's `styleRule` reader and `jhonstart-emilia` (until `08-bpp/119` step 5) green
-      without an edit to the class names they assert
+- [ ] the entry points above `tokenToSheet` (`tokensToSheet`, `styleRule`, `emiliaWith`, `emilia`,
+      `className`, `styled`, `styledWith`, `cls`, `clsWith`, `named`, `assertAsciiBody`) answer
+      `@Task<…>`, and every consumer `await`s them in this landing — `jhonstart-emilia`, onze 68's
+      reader, `onze-cli`, the examples (366, provisional)
+- [ ] `output.bp`'s sheet model and codec (`Rule`, `Sheet`, `encodeSheet`) deleted; `flush()` writes the
+      document frame — `<style>`, the `@layer …;` statement, `:root`, the base rules, keyframes, the
+      `@property` fallback, the options — around `styled`'s `Sheet.render()`, byte-identical to today's
+      CSS (368)
+- [ ] the class is `"e_" + hash.contentHash(<rules>)` (367, `contracts.md` § 4): the fixture
+      re-derived, `className(cardTokens(), defaultTheme()) == "e_f51c2501"`, and its readers
+      re-recorded in this landing — emilia's inline test, `jhonstart-emilia`'s bridge test (until
+      `08-bpp/119` step 5), onze 68's bundle test, `emilia-card`'s three classes
 - [ ] `emilia` 734 or more on both rows; `botopink.json` lists `styled` and nothing else outside std
 - [x] `AGENTS.md`: "Not a runtime CSS engine. No selector parsing" (`:602`) reworded — emilia reads
       no author CSS; author CSS is `css`'s, components `styled`'s
 - [x] `grep -rn "bpp\|jhonstart" repository/emilia/modules` empty
 
 Waits on (measured on botopink-lang `0c544566`, styled `3ac4a07`):
-- `34-a` — a component is an `async function` on commonJS and its field is read after `await`, so
-  the first family read as a `styledProperty` turns `emilia`, `className`, `styleRule` and every
-  entry point above `tokenToSheet` into `@Task<…>`, and their consumers outside 34 (boxes 1–4).
-- `34-b` — contract 4's class is the hash of emilia's codec payload; 338's is the hash of the rules:
-  the fixture's rules in `styled`'s form hash to `e_f51c2501`, not `e_39b87d03` (boxes 5–6).
-- `34-c` — `styled`'s reader writes a block's declarations before its nested rules (token order lost
-  between plain tokens and a selector variant), and `Sheet.render()` holds none of `flush()`'s
-  document frame (boxes 3, 5).
+- `08-bpp/119` step 1's source-order reader (368) — `styled`'s reader writes a block's declarations
+  before its nested rules today, so a list with a selector variant between two plain tokens would
+  change bytes (box 3, the CSS of box 6).
+- the gap row "A `@Component` value's field is read without `await`" — worth closing in `01-checker`
+  first (366), so a missed `await` is refused at the read rather than found red on commonJS.
 - `08-bpp/119` step 1 box 4 — `styled` declares no `StyledContext` (`StyledBase` is still the phantom),
   so the per-render store has nothing to register through (box 5).
 - `Token implement Styleable` is written in `Token`'s own body (`pub type Token implement Styleable
@@ -222,5 +234,6 @@ resolving every `var(--x)` at render. (a), recommended: only `docs.md` § Deviat
       `TranslateX.Neg` / `TranslateY.Neg`, when (b) adds them, follow it
 
 **Gate:** standard (fronts.md § Gate) + `emilia` 734 or more on both rows; the fifteen examples
-green on both rows; `jhonstart-emilia` and `onze-cli` (the two fixture readers) green ·
+green on both rows; `jhonstart-emilia` and `onze-cli` (the two fixture readers) green, the class
+re-recorded (367) ·
 `grep -rn "jhonstart\|rakun\|onze" repository/emilia/modules` empty (decision 114; step 1's last box)

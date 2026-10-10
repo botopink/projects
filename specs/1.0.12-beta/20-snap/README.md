@@ -40,7 +40,7 @@ The maps are history, in `../../1.0.11-beta/`: `02-std-and-packaging/97-std-dedu
       helpers that exist stay (§ 3)
 
 ### Step 4 — emilia-test (on `snap-a`)
-- [ ] `assertClassName` under `defaultTheme()` (records `e_39b87d03`) and `assertCss(loc, tokens, th)`
+- [ ] `assertClassName` under `defaultTheme()` (records `e_f51c2501`, the class 367 re-derives in `06-emilia/34` step 5) and `assertCss(loc, tokens, th)`
       over a `pub` CSS surface (`tokensToSheet` is private today), two `.snap` (§ 4, KEEP)
 - [ ] `emilia-card`'s repeat collapse as an inline test (§ 5, CONVERT — goes with 33 step 2)
 - [ ] `repository/emilia/AGENTS.md` § Tests: the inline literals, the three readers of the
@@ -208,7 +208,7 @@ families' literals.
 
 | Helper | Verdict | Reason / re-derivation |
 |---|---|---|
-| `assertClassName` | **KEEP** | 98 check (2), contract 7 need ≥ 1 helper in `emilia-test`; records the one value a consumer reads, the contract-4 class. **Re-derive the spec:** `className(tokens, defaultTheme())`, not "`emilia(tokens)` under `fullTheme()`" — `e_39b87d03` is the `defaultTheme()` value (`emilia.bp:16503-16516`: `className(cardTokens(), defaultTheme())`) |
+| `assertClassName` | **KEEP** | 98 check (2), contract 7 need ≥ 1 helper in `emilia-test`; records the one value a consumer reads, the contract-4 class. **Re-derive the spec:** `className(tokens, defaultTheme())`, not "`emilia(tokens)` under `fullTheme()`" — the `defaultTheme()` value (`emilia.bp:16503-16516`: `className(cardTokens(), defaultTheme())`), `e_f51c2501` once 34 step 5 lands (367; `e_39b87d03` before it) |
 | `assertCss` | **KEEP** | the one CSS helper a consumer can use (former emilia question's (a)); `02-std-and-packaging/98-packaging-tail/test-helpers.md`'s emilia row (`:64`, `assertSheet` / `assertUtility`) under its 1.0.11 name. **Re-derive the spec:** map renders `tokensToSheet(tokens, fullTheme())`, but `tokensToSheet` is private (`emilia.bp:459`). Needs a `pub` CSS-of-one-list surface (render with `renderRule("e", r, defaultOptions())`), else falls back to `styleRule(tokens, th)._1` (encoded sheet, not CSS) |
 | `assertCssWith` | **CONVERT** — fold into `assertCss(loc, tokens, th)` | one helper with explicit theme; caller passes `fullTheme()` |
 | `assertUtility`, `assertVariant`, `assertTheme`, `assertRules`, `assertCascade` | **RETIRE** | no consumer, no contract; each subject asserted inline (below) |
@@ -217,7 +217,7 @@ Sketch, form (4) (`modules/emilia-test/test/helpers_test.bp`, 33 step 1, two `.s
 
 ```bp
 test "class: helpers ---- the contract-4 list" {
-    try assertClassName(@src(), cardTokens());          // records e_39b87d03
+    try assertClassName(@src(), cardTokens());          // records e_f51c2501 (367)
 }
 test "css: helpers ---- red 500 text" { try assertCss(@src(), [.Color.Red.500], fullTheme()); }
 ```
