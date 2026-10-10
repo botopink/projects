@@ -275,9 +275,10 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
       — no return (302): it records `decl.addMeta(ClassName(names: […]))`; `ClassName(names:
       string[])` is jhonstart's (the core; `html` merges every `ClassName` meta into the tag's `class`,
       after a static `class`); `html` names no emilia or `styled` (113)
-- [ ] `styled` declares the meta type `#[emilia(…)]` records (the class and its rules, 369); `html`
-      reads it beside `ClassName` and merges the class into the tag's `class` in annotation order; the
-      sink writes its rules in emilia's layer; jhonstart names no emilia (113)
+- [ ] `styled` declares `pub type StyledMeta(layer: Layer, className: string, rules: string)` (383), the
+      meta `#[emilia(…)]` sets (`setMeta`, one per tag — a second `#[emilia]` refused); `html` reads it
+      beside `ClassName` and merges `className` into the tag's `class` in annotation order; the sink
+      writes `rules` in the meta's `layer`; jhonstart names no emilia (113)
 - [ ] the item list is comptime (280): its order is the class's identity (`contracts.md` § 4) by
       construction; class and rules computed at build once `hashHex` is std's pure
       `hash.contentHash` (`06-emilia/34` step 1) — this makes `68-d` (the bundler's styleMap probe)
@@ -366,7 +367,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ## Decisions
 
-Answered: `34-a` → 369 (`#[emilia(…)]`'s meta and its reader, step 4), `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
+Answered: `34-f` → 383 (`StyledMeta`, step 4), `34-a` → 369 (`#[emilia(…)]`'s meta and its reader, step 4), `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
 Answered since: `119-g` → 374 (a host-called `@Component` thunk captures the map, `01-compiler/134` step 6). `119-f` → 377 (a `styled` value registers where it is used, so a module `val` of one is legal; 376, 378).
 
 **Gate:** standard (fronts.md § Gate), plus:

@@ -5,7 +5,7 @@ families move once, in `styled`'s literal; step 2 moves output every later snaps
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
 step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes and its class box
 (367) done; boxes 1–3 and 6 wait on 381's literal in `styled` (34-d: `styledProperty` answers the record),
-box 4 on 34-e, 34-f, `08-bpp/119` step 4 and the toolchain row "A nested-section enum value at comptime",
+box 4 on `08-bpp/119` step 4 (383's `StyledMeta` and its reader), `01-compiler/130` step 8 and the toolchain row "A nested-section enum value at comptime",
 box 5 on that row and "emilia's dispatcher at comptime", box 8 on box 1
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
@@ -136,7 +136,7 @@ fn padAllHalf(n: i32) -> StyledProperty { return styledProperty "padding: --spac
 
 fn hover(inner: StyledProperty) -> Styled { return styled "&:hover { ${inner} }"; }
 
-// the tag decorator: runs at build, records the class and the rules as `styled`'s meta (369)
+// the tag decorator: runs at build, records `decl.setMeta(StyledMeta(layer: .Utilities, className: c, rules: r))` (369, 383)
 pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>) { val list = tokens.value; … }
 ```
 
@@ -177,8 +177,9 @@ and `StyledContext` have landed):
 - 381 (34-d) in `styled` — `styledProperty "…"` answering the record `StyledProperty` (`08-bpp/119`
   step 1): until it lands, 369 (3)'s `fn padAll(n: i32) -> StyledProperty { return styledProperty "…"; }`
   is `type mismatch: expected StyledProperty, got Component` — boxes 1–3, 6, and 8 through them.
-- 34-f (no meta type in `styled`) and `08-bpp/119` step 4 — box 4 (its parameter is 382's
-  `comptime ..tokens: @Expr<Token[]>`, which compiles).
+- `08-bpp/119` step 4 (383's `StyledMeta` in `styled` and its reader in jhonstart) and typed meta
+  (`01-compiler/130` step 8) — box 4 (its parameter is 382's `comptime ..tokens: @Expr<Token[]>`,
+  which compiles).
 - The toolchain rows "A nested-section enum value at comptime" (`comptime f([.Pad.All.__4])` and a
   decorator's `tokens.value` raise `{badmap,'Pad'}`) and "emilia's dispatcher at comptime" (`comptime`
   over `tokensToSheet`: `MissingPackage`), and T19 (`contentHash` in a `comptime` block) — boxes 4

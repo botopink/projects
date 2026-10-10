@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**92 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**91 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -1050,26 +1050,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) None: the four out of scope in `docs.md` § Deviations, written with `arbSel`. (b) Negative translate and named groups / peers. (c) All four, `@theme inline` included (a second render mode).
 - **Recommendation.** (a); (b) is the feature answer if any is wanted.
 - **Blocks.** 34 step 4 (conditional).
-
-#### 34-f · The meta type `#[emilia(…)]` records (369 (2), `08-bpp/119` step 4) (*proposed*)
-- **Measured** (styled `01a5299`). `styled` declares `Styled(className, rules)` (a component's record,
-  `implement Styleable, @Renderable`), `StyledProperty`, `StyledSheet`, `Layer`, `SheetEntry`, `Sheet`,
-  `Holes` — no type is named for 369's meta, and 119 step 4's second box is open. Typed meta (298, 370
-  (1)) lands with `01-compiler/130` step 8.
-- **Options.**
-  (a) `Styled` itself is the meta:
-  ```bp
-  decl.addMeta(Styled(className: c, rules: r));
-  ```
-  (b) A type of its own in `styled`, naming the layer the sink writes it in, so jhonstart's sink needs
-  no emilia name (113):
-  ```bp
-  pub type StyledMeta(layer: string, className: string, rules: string)
-  decl.addMeta(StyledMeta(layer: "utilities", className: c, rules: r));
-  ```
-  (c) emilia's own type — refused by 369 (2): `html` cannot name emilia (113).
-- **Recommendation.** (b): the sink must know the layer, and a `Styled` meta would not say it.
-- **Blocks.** 34 step 5 box 4; `08-bpp/119` step 4 box 2 (the type and its reader).
 
 ### 07-onze
 
