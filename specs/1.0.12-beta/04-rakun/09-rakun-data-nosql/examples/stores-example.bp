@@ -13,7 +13,7 @@
 //   https://docs.spring.io/spring-boot/reference/data/nosql.html
 
 import {Request, Response} from "rakun";
-import {repository, service, restController, route, getMapping, postMapping} from "rakun";
+import {repository, service, controller, route, getMapping, postMapping} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 import {managed} from "rakun";                          // front 06
 import {raiseProblem} from "rakun-web";                 // front 07
@@ -109,7 +109,7 @@ pub type SessionStore(
 
 // ---- web layer (server) ----
 
-#[restController]
+#[controller]
 #[route("/api/profiles")]
 #[managed]
 pub type ProfileApi(
@@ -169,7 +169,7 @@ pub type DocumentStoreHealth(
 // ---- what the tests pin ----
 
 test "kv: an expiring key reports a TTL and is gone afterwards" {
-    val kv = __rkMake_KeyValueStore();
+    val kv = KeyValueStore.make();
     val _p = kv.putExpiring("s:1", "user-7", 60);
     assert kv.ttl("s:1") > 0;
     val hit = kv.get("s:1");
@@ -179,13 +179,13 @@ test "kv: an expiring key reports a TTL and is gone afterwards" {
 }
 
 test "kv: increment on an absent key starts at zero" {
-    val kv = __rkMake_KeyValueStore();
+    val kv = KeyValueStore.make();
     assert kv.increment("counter:new", 1) == 1;
     assert kv.increment("counter:new", 2) == 3;
 }
 
 test "kv: popRight on an empty list answers null, not the empty string" {
-    val kv = __rkMake_KeyValueStore();
+    val kv = KeyValueStore.make();
     val out = kv.popRight("list:empty");
     var found = false;
     if (out) { v -> found = true; };
@@ -193,7 +193,7 @@ test "kv: popRight on an empty list answers null, not the empty string" {
 }
 
 test "documents: a bound filter keeps a hostile value a value" {
-    val repo = __rkMake_ProfileRepository();
+    val repo = ProfileRepository.make();
     val _s = repo.save("p-1", "{\"email\": \"a@example.com\", \"plan\": \"pro\", \"active\": true}");
     val hit = repo.findByEmail("\" , \"active\": false, \"x\": \"");
     var found = false;

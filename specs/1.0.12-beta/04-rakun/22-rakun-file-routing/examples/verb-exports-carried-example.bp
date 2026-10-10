@@ -4,8 +4,8 @@
 // LANGUAGE GAP: nothing reflects a module's export names and `@Decl` carries no
 // source location, so `pub fn GET` in a `route.bp` cannot register itself — 25
 // spells the verb as `#[getRoute("api/posts")]` / `#[deleteRoute("api/posts/[id]")]`.
-// NOTE: `Response.json(json.stringify(posts))` — `std/json.stringify` is
-// `string -> @Result<string, string>`; 25 spells the response `HandlerResponse.json(body)`.
+// NOTE: `Response.json(json.encode(posts))` — std's `json.encode` (decision 336,
+// `json.stringify` gone); 25 spells the response `HandlerResponse.json(body)`.
 // NOTE: `await request.json()` is `bodyJson(req)` in 25; `Response(status: 204, body: "")`
 // is `HandlerResponse.noContent()`.
 
@@ -15,7 +15,7 @@ import {json} from "std";
 
 pub fn GET(request: Request) -> @Task<Response> {
     val posts = await db.post.findAll();
-    return Response.json(json.stringify(posts));
+    return Response.json(json.encode(posts));
 }
 
 // --- POST handler (app/api/posts/route.bp)
@@ -25,7 +25,7 @@ import {json} from "std";
 pub fn POST(request: Request) -> @Task<Response> {
     val body = await request.json();
     val post = await db.post.create(body);
-    return Response(status: 201, body: json.stringify(post));
+    return Response(status: 201, body: json.encode(post));
 }
 
 // --- Dynamic route handler (app/api/posts/[id]/route.bp)
@@ -38,7 +38,7 @@ pub fn GET(request: Request) -> @Task<Response> {
     if (post == null) {
         return Response.notFound();
     };
-    return Response.json(json.stringify(post));
+    return Response.json(json.encode(post));
 }
 
 pub fn DELETE(request: Request) -> @Task<Response> {

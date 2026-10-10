@@ -23,7 +23,7 @@
 //
 // Target: erlang (server). `staticPaths` runs once, at build time.
 
-import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import html, {page, PageContext, Element, renderToString} from "jhonstart";
 import {div, p} from "jhonstart";
 import {StaticPath, staticPath, pageData} from "onze";
 import {decorators.schema} from "validation";

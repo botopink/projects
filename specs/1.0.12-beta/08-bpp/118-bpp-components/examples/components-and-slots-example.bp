@@ -24,7 +24,7 @@
 //
 // Target: both.
 
-import html, {hasContent, Element, ElementBase, Node, renderToString} from "jhonstart";
+import html, {hasContent, Element, Node, renderToString} from "jhonstart";
 import {article, aside, body, div, footer, h1, h2, head, header, htmlTag, li, main, p, small, title, ul} from "jhonstart";
 
 // ── props ───────────────────────────────────────────────────────────────────

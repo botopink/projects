@@ -20,7 +20,7 @@
 // Target: both — the template expands at compile time to builder calls, which
 // render on the BEAM and re-render in an island.
 
-import html, {Element, ElementBase, renderToString} from "jhonstart";
+import html, {Element, renderToString} from "jhonstart";
 import {a, div, h1, li, p, span, ul, em, br, img} from "jhonstart";
 
 type Status { Draft, Live }

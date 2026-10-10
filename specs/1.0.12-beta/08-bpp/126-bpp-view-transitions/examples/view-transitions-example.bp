@@ -23,7 +23,7 @@
 // browser's, asserted against a `startViewTransition` double in
 // `jhonstart-dom-test`.
 
-import html, {Element, ElementBase, Node, renderToString} from "jhonstart";
+import html, {Element, Node, renderToString} from "jhonstart";
 import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "jhonstart";
 import {ViewTransitions, fade, slide, TransitionAnimation} from "jhonstart-link";
 import {transitionName, transitionAnimate, transitionPersist, reload, history} from "jhonstart-link";

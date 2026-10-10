@@ -26,7 +26,7 @@
 // Target: the description is both; the implementation is erlang; the tests run
 // the server half.
 
-import html, {Element, ElementBase, renderToString} from "jhonstart";
+import html, {Element, renderToString} from "jhonstart";
 import {button, form, input, label, p} from "jhonstart";
 import {formAction, formAttrs, actionResult} from "jhonstart-forms";
 import {action, ActionContext, runAction, formCall, rpcCall} from "rakun-app";

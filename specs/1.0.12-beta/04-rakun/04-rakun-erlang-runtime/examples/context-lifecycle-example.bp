@@ -15,7 +15,7 @@
 //   https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.application-events-and-listeners
 
 import {Rakun, App, Request, Response} from "rakun";
-import {service, repository, restController, route, getMapping, postMapping} from "rakun";
+import {service, repository, controller, route, getMapping, postMapping} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 
 // Front 06's surface.
@@ -97,7 +97,7 @@ pub type AuditListener {
 
 // ---- programmatic resolution + publishing (server) ----
 
-#[restController]
+#[controller]
 #[route("/api/orders")]
 pub type OrderController(
     // `Context` is injectable by type; front 06 emits its factory.
@@ -161,7 +161,7 @@ fn main() {
 
 test "context: a managed bean resolves to the same instance field injection gives" {
     context.bootSequence();
-    val ctx = __rkMake_Context();
+    val ctx = Context.make();
     val cache: ?OrderCache = ctx.resolve("OrderCache");
     assert ctx.has("OrderCache");
     var size = -1;
@@ -171,7 +171,7 @@ test "context: a managed bean resolves to the same instance field injection give
 
 test "context: two beans of one type are told apart by qualifier" {
     context.bootSequence();
-    val ctx = __rkMake_Context();
+    val ctx = Context.make();
     val fixed: ?Clock = ctx.resolveNamed("Clock", "fixed");
     var zone = "";
     if (fixed) { c -> zone = c.zone; };
@@ -180,7 +180,7 @@ test "context: two beans of one type are told apart by qualifier" {
 
 test "context: an unregistered type resolves to null rather than raising" {
     context.bootSequence();
-    val ctx = __rkMake_Context();
+    val ctx = Context.make();
     val missing: ?OrderCache = ctx.resolve("NoSuchBean");
     var found = false;
     if (missing) { c -> found = true; };
@@ -190,7 +190,7 @@ test "context: an unregistered type resolves to null rather than raising" {
 
 test "events: a published event reaches every registered listener" {
     context.bootSequence();
-    val ctx = __rkMake_Context();
+    val ctx = Context.make();
     val delivered = ctx.publish(Event(
         name: "OrderPlaced",
         source: "test",

@@ -27,7 +27,7 @@
 // Target: erlang (server). The swap in the browser is `island_runtime.mjs`'s,
 // asserted in `jhonstart-dom-test`.
 
-import html, {page, PageContext, Element, ElementBase, Node, renderToString} from "jhonstart";
+import html, {page, PageContext, Element, Node, renderToString} from "jhonstart";
 import {div, h1, img, p, span} from "jhonstart";
 import {cookies, pairValue, response} from "jhonstart";
 import {clientProps, deferred, serverDefer} from "jhonstart";

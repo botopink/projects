@@ -11,7 +11,7 @@
 //
 // Target: erlang (server).
 
-import {service, repository, configuration, bean, restController, route, getMapping, postMapping} from "rakun";
+import {service, repository, configuration, bean, controller, route, getMapping, postMapping} from "rakun";
 import {Request, Response, HttpMethod} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 // Provided by front 19.
@@ -47,7 +47,7 @@ pub type UserService(
     }
 }
 
-#[restController]
+#[controller]
 #[route("/api/users")]
 pub type UserController(
     users: UserService,

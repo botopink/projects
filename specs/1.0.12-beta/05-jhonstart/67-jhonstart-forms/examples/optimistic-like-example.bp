@@ -17,7 +17,7 @@
 // Both hooks are specified from upstream React: neither appears in
 // NEXTJS-DOCS.md. See the README's `Reference gaps`.
 
-import { Element, ElementBase, text, span, div, renderToString } from "jhonstart";
+import { Element, text, span, div, renderToString } from "jhonstart";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp)
 import { form, button } from "jhonstart";
 import { FormBinding, formAction, formAttrs } from "jhonstart-forms";

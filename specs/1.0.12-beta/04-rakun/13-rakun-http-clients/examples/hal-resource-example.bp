@@ -10,7 +10,7 @@
 //
 // Target: erlang (server).
 
-import {service, repository, restController, route, getMapping} from "rakun";
+import {service, repository, controller, route, getMapping} from "rakun";
 import {Request, Response} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 // Provided by front 21. #[halResource] splices `userResourceToHal` into THIS
@@ -108,7 +108,7 @@ pub type UserResources(
 // `rakun.hateoas.use-hal-as-default-json-media-type=false` serves the same body
 // as `application/json` — the negotiation changes, the bytes do not.
 
-#[restController]
+#[controller]
 #[route("/api/users")]
 pub type UserController(
     resources: UserResources,

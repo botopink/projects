@@ -15,7 +15,7 @@
 //   https://nextjs.org/docs/app/api-reference/functions/cookies
 //   https://nextjs.org/docs/app/api-reference/functions/headers
 
-import { Element, ElementBase, div, span, p, header, text, renderToString } from "jhonstart";
+import { Element, div, span, p, header, text, renderToString } from "jhonstart";
 import { RequestData, request } from "jhonstart";
 import { pairValue } from "jhonstart";          // front 26, the one pair-list decoder
 

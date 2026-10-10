@@ -26,7 +26,7 @@
 // Target: erlang (server) — loading reads files. The rendered `Element` and the
 // decoded data are plain values on both targets.
 
-import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import html, {page, PageContext, Element, renderToString} from "jhonstart";
 import {a, article, h1, li, p, timeTag, ul} from "jhonstart";
 import {notFound} from "jhonstart";
 import {

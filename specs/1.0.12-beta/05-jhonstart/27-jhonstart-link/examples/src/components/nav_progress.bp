@@ -6,7 +6,7 @@
 // `.bpp` file — placed by the page with `<NavProgress #[clientOnly] />`.
 // The return type keeps the base until front 134 step 6 drops it.
 
-import {Element, ElementBase, client, div} from "jhonstart";
+import {Element, client, div} from "jhonstart";
 import {linkStatus} from "jhonstart-link";
 
 #[client]

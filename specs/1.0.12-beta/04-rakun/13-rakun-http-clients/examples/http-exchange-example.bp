@@ -9,7 +9,7 @@
 //
 // Target: erlang (server).
 
-import {service, configuration, bean, restController, route, getMapping} from "rakun";
+import {service, configuration, bean, controller, route, getMapping} from "rakun";
 import {Request, Response} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone, rkRegisterRoute} from "rakun";
 // Provided by front 13. `#[httpExchange]` splices the generated type and its
@@ -70,7 +70,7 @@ pub type FulfillmentService(
     }
 }
 
-#[restController]
+#[controller]
 #[route("/api/fulfillment")]
 pub type FulfillmentController(
     fulfillment: FulfillmentService,

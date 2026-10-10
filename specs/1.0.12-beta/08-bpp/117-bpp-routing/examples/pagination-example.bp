@@ -18,7 +18,7 @@
 //
 // Target: erlang (server).
 
-import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";
+import html, {page, PageContext, Element, renderToString} from "jhonstart";
 import {a, h1, li, nav, ul} from "jhonstart";
 import {StaticPath, Page, PageUrls, paginate, pageOf} from "onze";
 import {decorators.schema} from "validation";

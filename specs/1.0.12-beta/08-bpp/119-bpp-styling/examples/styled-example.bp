@@ -7,8 +7,8 @@
 // works where it is CSS (`--spacing()`, `--theme()`, `@variant`); `@apply` is a
 // hole of a `StyledPropertyView`. Both answer components in the language's
 // model (`@Component<…>`), so a test reads one after `await`. One computed at
-// render registers in the render's sheet through `use context(StyledContext)`
-// (decisions 352, 354), so it runs below a provider. It knows no `.bpp` and no
+// render registers in the render's sheet through `use context(StyledSheet)`
+// (decisions 352, 354, 379), so it runs below a provider. It knows no `.bpp` and no
 // jhonstart.
 //
 // emilia is a series of components written this way (`06-emilia/34` step 5).
@@ -17,8 +17,8 @@
 // suite case is `repository/styled/test/styled_example_test.bp` (this file but
 // for the import lines).
 
-import styled, {styledProperty, StyledView, StyledPropertyView, StyledContext, StyledSheet, Styled, StyledProperty, Sheet, layer} from "styled";
-import {context.provide} from "std";
+import styled, {styledProperty, StyledView, StyledPropertyView, StyledSheet, Styled, StyledProperty, Sheet, layer} from "styled";
+import {context.provide, context.createContext} from "std";
 
 pub val tab4 = styledProperty "tab-size: 4;";
 
@@ -44,7 +44,7 @@ fn code() -> StyledView {
 // The render's root: whoever renders provides `StyledContext` — jhonstart's
 // render, emilia's `flush()` (decision 354 (7)). This one keeps nothing.
 fn Render(view: fn() -> StyledView) -> @Component<Styled> {
-    use provide(StyledContext, StyledSheet(layer: "components", add: dropped));
+    use provide(createContext(StyledSheet(layer: "components", add: dropped)));
     val out = await view();
     return out;
 }
@@ -52,7 +52,7 @@ fn Render(view: fn() -> StyledView) -> @Component<Styled> {
 fn RenderProperty(
     view: fn() -> StyledPropertyView,
 ) -> @Component<StyledProperty> {
-    use provide(StyledContext, StyledSheet(layer: "components", add: dropped));
+    use provide(createContext(StyledSheet(layer: "components", add: dropped)));
     val out = await view();
     return out;
 }
