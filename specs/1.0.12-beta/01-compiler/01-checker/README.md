@@ -85,7 +85,7 @@ four targets; `run/comptime_expression_is_block` lost its `.wasm.expect`) ·
 every `@BeamMemory` diagnostic spells `keyed: true`, and the evaluator hints name `erl` alone.
 
 
-Step 35 (364), all but the hand-over to the program (box 3, decision 370): every `comptime`
+Step 35 (364): every `comptime`
 parameter other than `@Decl` is `comptime x: @Expr<T>` — a non-template function's wrapper read off
 after the parse (`parser/expr_params.zig`, `Param.exprWrapped`; the formatter prints it back), `comptime
 x: T` refused at the parameter (`comptime-param-not-expr`, fn / method / `declare fn`); the body binds
@@ -97,7 +97,20 @@ argument not known at build refused at it only where the body reads it (`decorat
 (`template-value-not-known` for a holed one); `run/decorator_expr_{value,unread_argument}`, 9 `reject/`
 cells, `docs.md` § Generics, § Template functions, § Decorators, the builtin table and § Decided, not
 yet implemented; the codemod over std, `tests/language`, the compiler's own tests, jhonstart, rakun and
-validation; decision 370 (`s35-a`), questions `s35-b`–`s35-d`.
+validation; decision 370 (`s35-a`), questions `s35-b`–`s35-d`. Box 3 (370 (2), the typed member): a
+function expression takes typed parameters and a return (`FunctionExpr.paramTypes` / `.returnType`,
+`parser/exprs.zig`, the formatter prints them), admitted only as `decl.addMember(name, fn(self: T) -> R
+{ … })` (`fn-expr-typed` elsewhere); `infer.zig` `inferMemberFnCall` types it as program code, each
+`@Expr<T>` parameter a `T`, the handle and the body's locals refused (`decorator-member-captures`),
+untyped parameters `decorator-member-fn-untyped`, a non-literal `decorator-member-not-fn`;
+`expr_param.useOf` skips the member, `eraseFn` hands the runtime its index (prelude `addMember/3`,
+`Contribution.memberFn`); `memberFnSource` / `comptime/member_fn.zig` `render` splice each argument as
+the annotation wrote it and each type parameter as bound (`DecoratorArgValue.lexeme`,
+`Env.decoratorTypeArgs`), `decorator-member-type` for a foreign `self` or an unbound type parameter,
+`decorator-member-fn-imported-name` for a library member naming anything but its parameters (`s35-g`) —
+cells `run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime`,
+`modules/decorator_member_fn_import{,ed_name}` (four targets) and six `reject/` cells, red on `90d50ae3`;
+questions `s35-e`–`s35-h`.
 ## Open
 
 Steps 6, 10, 13 all touch `infer.zig`/`parser/**`: one commit per step, serial.
@@ -499,7 +512,7 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
       (`reject/decorator_call_expr_fn`, `reject/decorator_inspect_expr_type`); any other method of a
       parameter's `@Expr` refused (`reject/expr_param_method`); an optional function's null test is `s35-b`,
       an ordinary function's unknown argument `s35-d`
-- [ ] an `@Expr` handed to a typed member is evaluated by the program at run time (370 (2)):
+- [x] an `@Expr` handed to a typed member is evaluated by the program at run time (370 (2)):
       `decl.addMember("validate", fn(self: T) -> Violation[] { … rule(self) … message … })` — a
       function value, each parameter's `@Expr` spliced where it was written, checked like any function —
       `run/decorator_expr_rule_called` (the rule runs at validation, on the four targets),
