@@ -70,6 +70,24 @@ checkout. Work in `repository/botopink-lang` on the branch the script created (a
 library on a branch of the same name, when the task commits there). Commit in the
 submodule first, then commit the submodule bump in the meta repo.
 
+### Which model a thread runs on
+
+A coordinator that spawns a thread (a sub-agent working in its own worktree) picks
+the thread's model by what the thread must decide, not by its size:
+
+| Thread | Model |
+|---|---|
+| A compiler front that designs or changes semantics — checker, comptime, contexts, decorators, a decision's first build, a codemod tied to a new rule | `opus` |
+| A rule that reaches every backend and every library at once, when the maintainer asks for it or `opus` failed on it once | `fable` |
+| Batch integration and the cold gate — apply patches with `-3`, resolve conflicts keeping both sides, run `gate.sh --cold` and each library's own `pre-commit` runner, small fixes | `sonnet` |
+| A backend bug with a measured repro; a library or std step whose README already fixes the design | `sonnet` |
+| Mechanical work — rebasing a patch that applies, re-running a codemod or `regen.sh`, test sweeps, counts, grep audits, doc wording, CI version bumps | `haiku` |
+
+A `sonnet` or `haiku` thread that reports a judgement it was not asked to make (a new
+design, a decision, a red that needs a compiler change) has that part redone on
+`opus`. Every thread works by patch; the coordinator lands it through the hooks, so a
+thread's slip is caught at the landing.
+
 ## Build and test
 
 All Zig commands run from `repository/botopink-lang/`:
