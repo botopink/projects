@@ -1,7 +1,7 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `882adcd2` (batch 19: a decorator's typed member, Decorator.same, .hooks readers last — 370, 371, 372)) · rakun `d609f8c` · jhonstart `8cd2407` · emilia `8f43cef`
-· onze `3b36270` · erika `8f88482` · vscode-extension `f041865`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `882adcd2` (batch 19: a decorator's typed member, Decorator.same, .hooks readers last — 370, 371, 372)) · rakun `d609f8c` · jhonstart `8241e78` · emilia `9c3e24a`
+· onze `783af40` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
 
@@ -214,7 +214,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
 - [x] 01-checker — a module is its package plus its path (170, 337): two packages' `theme` modules no longer collide (`modules/two_packages_one_module_name`, four targets); jhonstart's core on `styled` compiles `jhonstart-emilia` on both rows — unblocks 119 s1 box 4 and 34 s5 (front `pkg-module-collision`)
-- [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes done (`AGENTS.md`, the grep), the other seven follow 369 (34-a: emilia at compile time, `#[emilia(…)]`) · 367 (34-b) · 368 (34-c) and wait on 119 s1 box 4 (the source-order reader, 368, done) — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
+- [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes and the class box done (367: `e_` + `contentHash` of the class's rules, fixture `e_f51c2501`, every reader re-recorded — patches of `front/emilia-34-s5b`); boxes 1–3, 6 wait on 34-d (a family answering `StyledProperty` does not compile), box 4 on 34-e, 34-f, 119 s4 and the toolchain row "A nested-section enum value at comptime", box 5 on that row and "emilia's dispatcher at comptime" (`comptime className(…)` cannot evaluate), box 8 on box 1 — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
 

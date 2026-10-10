@@ -3,9 +3,10 @@
 **Priority:** high — emilia on `styled` first (decision 350): step 5 before step 2, so the five
 families move once, in `styled`'s literal; step 2 moves output every later snapshot (`20-snap`
 step 4) would otherwise record twice · **State:** step 1 done; next step 5, after `08-bpp/119`
-step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes done; its
-other seven follow 369 (34-a: emilia at compile time), 367 (34-b) and 368 (34-c), and wait on 119 step 1 box 4
-(`StyledContext`) and the source-order reader (368)
+step 1's two open boxes; then step 2 (decision 350) and step 3 (358); step 4 on 05emilia-n · step 5's two text boxes and its class box
+(367) done; boxes 1–3 and 6 wait on 34-d (369's family answering `StyledProperty` does not compile),
+box 4 on 34-e, 34-f, `08-bpp/119` step 4 and the toolchain row "A nested-section enum value at comptime",
+box 5 on that row and "emilia's dispatcher at comptime", box 8 on box 1
 **Depends on:** `08-bpp/119` step 1 (step 5, and through it step 2 — its box 4 registers through
 `use context(StyledContext)`, 352, 354, so `flush()` — which provides `StyledContext` — waits on
 `01-compiler/134` step 6; step 3: the repositories `css`
@@ -86,6 +87,21 @@ unchanged: contract-4 fixture `e_39b87d03` and `emilia-card`'s `e_486b0b4f` / `e
 734 passed, 0 failed on commonJS and on erlang; `emilia-card` 4/0, `jhonstart-emilia` 10/0 and
 `onze-cli` 31/0 on both.
 
+Step 5, the class (367): `output.bp` `classRules(sheet)` writes the class's rules as the document does
+— layer order, plain rules before conditioned ones, runs of one context folded — with the class
+`\u{1}` (`styled`'s hashed form), and `styleRule` names the class `"e_" + hash.contentHash(classRules(sheet))`;
+the codec payload is still what the cell stores and `flush()` renders. `className(cardTokens(),
+defaultTheme())` is `e_f51c2501` and its hashed text is asserted beside it; re-recorded by running, on
+both targets: emilia's eleven pinned classes (the fixture, the eight family literals, `named`'s
+`btn`), `emilia-card`'s `e_13df5d57` / `e_41222bb0` / `e_bcdc3f6a` (main and README),
+`jhonstart-emilia`'s bridge test, onze-bundler's `entry_test` / `refusal_test` and onze-cli's
+`build_test` (whose build evaluates the class). No CSS byte moved: one document per `Token` leaf
+(6 980), per modifier and per fixture list (7 078 lists, 7 061 classes) before and after, on erlang and
+commonJS, equal once each class is renamed, the renaming one-to-one; every example's printed output
+renamed only. `emilia` 735 passed, 0 failed on erlang and on commonJS (+1: `classRules`); every example
+green on both; `jhonstart-emilia` 10/0, onze-bundler 42/0, onze-cli 31/0 on both; jhonstart's
+refusals 21/21.
+
 Step 5, the two text boxes: `AGENTS.md` § What emilia is NOT opens "Not a CSS processor — emilia reads
 no author CSS: author CSS is `css`'s, components are `styled`'s"; `grep -rn "bpp\|jhonstart"
 repository/emilia/modules` is empty. No code moved: `emilia` 734 passed, 0 failed on erlang and on
@@ -147,7 +163,7 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       document frame — `<style>`, the `@layer …;` statement, `:root`, the base rules, keyframes, the
       `@property` fallback, the options — around `styled`'s `Sheet.render()`, byte-identical to today's
       CSS (368)
-- [ ] the class is `"e_" + hash.contentHash(<rules>)` (367, `contracts.md` § 4): the fixture
+- [x] the class is `"e_" + hash.contentHash(<rules>)` (367, `contracts.md` § 4): the fixture
       re-derived, `className(cardTokens(), defaultTheme()) == "e_f51c2501"`, and its readers
       re-recorded in this landing — emilia's inline test, `jhonstart-emilia`'s bridge test (until
       `08-bpp/119` step 5), onze 68's bundle test, `emilia-card`'s three classes
@@ -156,14 +172,17 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       no author CSS; author CSS is `css`'s, components `styled`'s
 - [x] `grep -rn "bpp\|jhonstart" repository/emilia/modules` empty
 
-Waits on (measured on botopink-lang `0c544566`, styled `3ac4a07`):
-- `08-bpp/119` step 1's source-order reader (368) — `styled`'s reader writes a block's declarations
-  before its nested rules today, so a list with a selector variant between two plain tokens would
-  change bytes (box 3, the CSS of box 6).
-- `08-bpp/119` step 4's meta type — the `styled` type `#[emilia]` records and jhonstart's `html`
-  reads (369; box 4).
-- `08-bpp/119` step 1 box 4 — `styled` declares no `StyledContext` (`StyledBase` is still the phantom),
-  so the per-render store has nothing to register through (box 5).
+Waits on (measured on botopink-lang `90d50ae3`, styled `01a5299`; `119` step 1's source-order reader
+and `StyledContext` have landed):
+- 34-d — 369 (3)'s `fn padAll(n: i32) -> StyledProperty { return styledProperty "…"; }` is `type
+  mismatch: expected StyledProperty, got Component`; with `-> StyledPropertyView` a `comptime` read of
+  it fails at `propertyComputed`'s `sheet.add` (no render tree) — boxes 1–3, 6, and 8 through them.
+- 34-e (369 (1)'s `comptime ..tokens: Token[]` is `comptime-param-not-expr`; `@Expr<Token[]>`
+  compiles), 34-f (no meta type in `styled`) and `08-bpp/119` step 4 — box 4.
+- The toolchain rows "A nested-section enum value at comptime" (`comptime f([.Pad.All.__4])` and a
+  decorator's `tokens.value` raise `{badmap,'Pad'}`) and "emilia's dispatcher at comptime" (`comptime`
+  over `tokensToSheet`: `MissingPackage`), and T19 (`contentHash` in a `comptime` block) — boxes 4
+  and 5: `comptime className(.Pad.All.4)` cannot evaluate, so no caller can leave the run-time API.
 
 ### Step 2 — the five families to upstream's form, in `styled`'s literal (decision 350; after step 5)
 

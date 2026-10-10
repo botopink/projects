@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**86 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
+**89 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -953,6 +953,92 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) None: the four out of scope in `docs.md` § Deviations, written with `arbSel`. (b) Negative translate and named groups / peers. (c) All four, `@theme inline` included (a second render mode).
 - **Recommendation.** (a); (b) is the feature answer if any is wanted.
 - **Blocks.** 34 step 4 (conditional).
+
+#### 34-d · What a family answers when emilia runs at compile time (369 (3) against the `styledProperty` literal's type) (*proposed*)
+- **Measured** (front 34 step 5, `front/emilia-34-s5b`, botopink-lang `90d50ae3`, styled `01a5299`; a
+  scratch package over `styled`). 369 (3)'s family does not compile:
+  (1) `fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }` is
+  `type mismatch: expected StyledProperty, got Component` at the literal — the template answers
+  `@ExprCustom<StyledPropertyView>`, a `@Component<StyledProperty>`, whatever its holes;
+  (2) `val v = styledProperty "…"; return await v;` there is `effect-await-without-task`;
+  (3) with `-> StyledPropertyView`, `comptime` over a `@Component<string>` that awaits `padAll(4)` is
+  `the comptime block calls .add(…) with 2 argument(s) … which no primitive type and no type the block
+  reaches provides`: a hole naming a parameter makes the literal computed at render (355), and
+  `propertyComputed` reads `use context(StyledContext)` and calls `sheet.add` — a comptime evaluation
+  has no render tree (354 (3); toolchain row 354-comptime).
+  So a family with a parameter hole is a render-time component by 355, and 369 needs it a build-time
+  value.
+- **Options.**
+  (a) `styledProperty "…"` answers the record `StyledProperty` — declarations as a value, computed by a
+  pure function (no context, nothing registered; a property is only ever inlined, Tailwind's `@apply`);
+  `StyledPropertyView` goes, and `styled`'s "a property standing alone registers itself"
+  (`examples/styled-context`, `test/context_test.bp`) reverses. 369's code compiles as written:
+  ```bp
+  fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
+  pub val tab4 = styledProperty "tab-size: 4;";       // a value, at build
+  ```
+  (b) A second template function in `styled` answering the record, `styledProperty` unchanged:
+  ```bp
+  fn padAll(n: i32) -> StyledProperty { return styledDeclarations "padding: --spacing(${n});"; }
+  ```
+  (c) The families answer `StyledPropertyView` and emilia's chain runs at render, `@Task` up to every
+  consumer (366's (a), replaced by 369):
+  ```bp
+  fn padAll(n: i32) -> StyledPropertyView { return styledProperty "padding: --spacing(${n});"; }
+  val cls = await emilia([.Pad.All.__4]);
+  ```
+  (d) The families keep building strings; emilia takes from `styled` its sheet only — amends 338 (3),
+  350 and 369 (3):
+  ```bp
+  fn padAll(n: i32) -> string { return "padding:" + spacing(n); }   // as today
+  ```
+- **Recommendation.** (a): it is 369's text, one literal and one type for a declarations-only value,
+  and nothing about a property needs a render — it never stands on a tag alone (`#[styled(…)]` takes
+  it through `Styleable.toStyled()`, which the record implements today).
+- **Blocks.** 34 step 5 boxes 1–3 and 6, and through them box 8's `styled` dependency and step 2;
+  under (a), `08-bpp/119` step 1's context example and test. Even answered, a family read inside
+  `comptime` also waits on the toolchain rows "A nested-section enum value at comptime" and "emilia's
+  dispatcher at comptime" (`language-gaps.md`).
+
+#### 34-e · `#[emilia(…)]`'s parameter: 369 (1) against 364 (*proposed*)
+- **Measured** (botopink-lang `90d50ae3`). 369 (1)'s spelling `pub fn emilia(comptime decl: @Decl,
+  comptime ..tokens: Token[])` is `comptime-param-not-expr: … a comptime parameter is comptime tokens:
+  @Expr<Token[]>` (364 (4)); `comptime ..tokens: @Expr<Token[]>` compiles, and
+  `#[deco(.Pad.All.__4, .Bg.White)]` resolves the dot paths against emilia's `Token` (s35-c's form, built).
+- **Options.**
+  (a) 364 and s35-c: the parameter is an expression, its `value` the list (369 (1) reworded):
+  ```bp
+  pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>) {
+      val list = tokens.value;            // read at build — Token is data (364 (2))
+  }
+  ```
+  (b) 369's spelling, an exception to 364 (4) for a decorator's variadic (a checker change):
+  ```bp
+  pub fn emilia(comptime decl: @Decl, comptime ..tokens: Token[]) { … }
+  ```
+- **Recommendation.** (a): one rule for every `comptime` parameter (364); the dot paths resolve either way.
+- **Blocks.** Nothing alone: box 4 also waits on 34-f, on `08-bpp/119` step 4, and on the toolchain row
+  "A nested-section enum value at comptime" (`tokens.value` raises `{badmap,'Pad'}` today).
+
+#### 34-f · The meta type `#[emilia(…)]` records (369 (2), `08-bpp/119` step 4) (*proposed*)
+- **Measured** (styled `01a5299`). `styled` declares `Styled(className, rules)` (a component's record,
+  `implement Styleable, @Renderable`), `StyledProperty`, `StyledSheet`, `Layer`, `SheetEntry`, `Sheet`,
+  `Holes` — no type is named for 369's meta, and 119 step 4's second box is open. Typed meta (298, 370
+  (1)) lands with `01-compiler/130` step 8.
+- **Options.**
+  (a) `Styled` itself is the meta:
+  ```bp
+  decl.addMeta(Styled(className: c, rules: r));
+  ```
+  (b) A type of its own in `styled`, naming the layer the sink writes it in, so jhonstart's sink needs
+  no emilia name (113):
+  ```bp
+  pub type StyledMeta(layer: string, className: string, rules: string)
+  decl.addMeta(StyledMeta(layer: "utilities", className: c, rules: r));
+  ```
+  (c) emilia's own type — refused by 369 (2): `html` cannot name emilia (113).
+- **Recommendation.** (b): the sink must know the layer, and a `Styled` meta would not say it.
+- **Blocks.** 34 step 5 box 4; `08-bpp/119` step 4 box 2 (the type and its reader).
 
 ### 07-onze
 
