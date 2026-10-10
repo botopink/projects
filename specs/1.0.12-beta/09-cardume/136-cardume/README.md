@@ -9,9 +9,9 @@ in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store sha
 values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters; `01-checker` step 26), 278
 (`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · open: `atm-a`, `atm-c`, `atm-d`
 **Owns:** `repository/cardume/**` (the core: `modules/cardume/src/cardume.bp`, its tests) · new
-member `repository/rakun/modules/rakun-cardume/**` (the request store, its hooks at `RequestBase`) ·
+member `repository/rakun/modules/rakun-cardume/**` (the request store, its hooks reading rakun's root context `RequestContext`, 354) ·
 new member `repository/jhonstart/modules/jhonstart-cardume/**` (the page store, `sidecars/store_runtime.mjs`,
-its hooks at `ElementBase`) · after 120: the store hand-off lines of `jhonstart/src/island_runtime.mjs`
+its hooks reading jhonstart's root context `ElementContext`, 354) · after 120: the store hand-off lines of `jhonstart/src/island_runtime.mjs`
 (one subscription per island; 26's file, 189) · one `jhonstart-dom-test` test file
 **Does not touch:** `hooks.bp`'s five nouns (`state`, `effect`, `memo`, `ref`, `reducer`) · rakun's and
 jhonstart's other members · `http`'s `Cookie<T>` (294 — an HTTP concept, it stays there).
@@ -78,13 +78,14 @@ several values of one type (`cartItems`, `wishlist`).
 Hook names are **nouns** (`atomState`, `atomValue`, `atomSetter` — jhonstart's rule, `hooks.bp`'s
 header): `use` is the activation, the name never repeats it (no `useAtomValue`). 296 settled the
 request locals (`use setLocal` is `use atomSetter`); whether the cookie hooks (`use setCookie` /
-`use clearCookie`, 294) follow is `atm-a`. Both bridges spell the same hooks, each anchored at
-its base (128): `jhonstart-cardume`'s at `ElementBase`, `rakun-cardume`'s at `RequestBase`.
+`use clearCookie`, 294) follow is `atm-a`. Both bridges spell the same hooks, each reading the store from
+its framework's root context (296 as amended by 354): `jhonstart-cardume`'s from `ElementContext`,
+`rakun-cardume`'s from `RequestContext`.
 
 ### The stores
 
 - **In rakun, one store per request** (`rakun-cardume`): it lives in the request's process frame and
-  dies with it; middleware, route handlers and actions (`-> @Component<RequestBase, Response>`, 295)
+  dies with it; middleware, route handlers and actions (`-> @Component<Response>`, 295, 354)
   write with `use atomSetter(a)`; a page reads the request's value through jhonstart's own hook
   (`use local(a)`, `05-jhonstart/26` step 12), marked by jhonstart's `#[serverOnly]` (186, 277) — the
   store it reads is `rakun-cardume`'s (295, 296).
@@ -147,7 +148,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
       the type's implicit atom per store, `?T` unless `#[atom(default: …)]` on the type; `atomState<T>(a)`
       checked against `a`
 - [ ] `atom<T>(default: T) -> Atom<T>`; `atomValue`, `atomState`, `atomSetter`, `atomReset`, each
-      `-> @Component<ElementBase, …>` (128), the server pass reading the default
+      `-> @Component<…>` (354), the server pass reading the default
 - [ ] `atoms_runtime.mjs`: the page store; a component re-renders on a change of what it read, and only then
 - [ ] `examples/atoms-example.bp` passes (server pass on both targets; the browser half in
       `jhonstart-dom-test`: two islands sharing `cartItems`, one `atomSetter` updating both)
@@ -189,7 +190,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 ### Step 7 — `rakun-cardume`: the request store
 
 - [ ] the member: a store per request in the process frame; `use atomSetter` / `atomValue` / `atomState`
-      / `atomReset` anchored at `RequestBase`; 295's `Local<T>` is cardume's `Atom<T>`; `examples` in
+      / `atomReset` reading the store from `RequestContext` (354); 295's `Local<T>` is cardume's `Atom<T>`; `examples` in
       123 (`locals-and-sequence-example.bp`) read and write through it
 - [ ] a value set in middleware read by the page of the same request; gone at the next
 
