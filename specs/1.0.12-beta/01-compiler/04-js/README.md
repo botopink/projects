@@ -185,6 +185,18 @@ async function Post(map) { … Card(map, "x") … await Comments(map) … }
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
 
+### Step 13 — a failing task rejects (decision 432)
+
+```js
+async function buscar(id) { if (id <= 0) throw HttpError.BadId; return await http_get(…); }   // not { Error: … }
+```
+
+- [ ] a `@Task<@Result<T, E>>` lowers to an `async function` whose `Error(e)` / `throw e` rejects with `e` and whose success
+      resolves with the bare `T`; `await` under `try` / `case` reads a rejection as `Error(e)`; the `.d.ts` names `E` —
+      `run/task_result_rejects`, `run/task_result_caught_by_js` (a JS caller's `try/catch`), the `snapshots/codegen` that
+      print `{ Ok }` / `{ Error }` for a task re-recorded
+- [ ] `js/AGENTS.md`'s 179 row (no `unwrapOrThrow`) rewritten for 432
+
 ## Notes
 
 - **`typescript.zig` is inseparable from `commonJS.zig`** for snapshots: the typedef is a section of

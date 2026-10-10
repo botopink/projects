@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 67 perguntas, 6 contradições e 98 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **432**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 67 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -87,41 +87,6 @@ val r = await async.timeout({ -> slow() }, 100);                   // estourou �
 **Recomendação: (a).** Segue o guia e a suíte da frente 24, e cada forma tem um nome só.
 **Bloqueia:** nada — o README da `01-std/02-std-async-primitives` (1.0.10) já especifica o `allOf` sobre
 Tasks iniciadas.
-
-### 24-b · Os métodos de `@Task`
-
-**Trava:** `01-compiler/24` passo 2 (as confirmações); a forma de combinadores do `std/async` (`02/97`)
-
-**Contexto.** O invólucro assíncrono antigo do prelúdio tinha `map` / `flatMap` / `await`. A decisão
-120 fala em "`.map`, `.then` e afins, sem parâmetro de erro" — uma Task nunca falha, então não há
-`mapError`. A implementação ficou com uma grafia por operação. Os dois métodos estão declarados em
-`builtins.d.bp`, que pela decisão 252 é o contrato dos builtins: a checagem do 134 (passo 3) já liga as
-chamadas `@…` às declarações, mas ainda não percorre os tipos e seus métodos (passo 2 em aberto), então
-uma chamada de `map` / `then` ainda não é checada contra a declaração. Nenhum backend os baixa ainda.
-
-**Hoje:**
-```bp
-// builtins.d.bp
-pub behavior Task<T> {
-    fn map<R>(self: Self<T>, transform: fn(value: T) -> R) -> Task<R>;
-    fn then<R>(self: Self<T>, next: fn(value: T) -> Task<R>) -> Task<R>;
-}
-```
-
-- [ ] **(a) ★** `map` e `then` (o bind, com o nome que o guia usa); nenhum apelido.
-  ```bp
-  val t: @Task<i32> = load();
-  t.map({ n -> n + 1 })           // existe
-  t.then({ n -> loadMore(n) })    // existe (é o bind)
-  t.flatMap({ n -> loadMore(n) }) // não existe: uma grafia por operação
-  ```
-- [ ] **(b)** `flatMap` como apelido de `then`.
-  ```bp
-  t.flatMap({ n -> loadMore(n) }) // o mesmo que t.then(…)
-  ```
-
-**Recomendação: (a).** Uma grafia por operação (decisão 67). **Bloqueia:** o `std/async`, se ele
-quiser uma forma de combinadores.
 
 ### 24-c · `iter for` / `iter while` são um `loop` com prefixo
 

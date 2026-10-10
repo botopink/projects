@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**67 questions and 6 contradictions are open, and 98 implementation choices await confirmation.**
+**67 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -346,11 +346,10 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-#### 01-compiler (27)
+#### 01-compiler (26)
 
 | Id | Choice implemented | Where |
 |---|---|---|
-| 24-b | `@Task`'s methods are `map` and `then`; no `flatMap` alias | `builtins.d.bp` |
 | 24-c | `iter for` / `iter while` parse as prefixed `loop { for (…) { … }; break; }` (keyword kept in `LoopExpr.prefixedKeyword`); `iter loop :l` labels the generator scope, `iter for :l` the written `for` | parser |
 | 23-b | `base64`'s four functions retired, not aliased; `encoding.base64Decode` / `base64UrlDecode` answer `@Result` | `libs/std/src/encoding.bp` |
 | 01c-a | A comptime module's atom is `bp@comptime@<owner path>__tpl__<decl>__<hash>` | comptime |

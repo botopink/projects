@@ -35,9 +35,9 @@ then, named as stubs in the report). E3's three checker rows landed in 01
 ### Step 2 — the confirmations
 
 24-a (effect codes), 24-b (`@Task`'s `map` / `then`), 24-c (prefixed loop's label), 24-g
-(`std/async`'s shape) confirmed or reversed; 24-h answered (decision 179, recorded by `04-js`).
+(`std/async`'s shape) confirmed or reversed; 24-h answered (decision 179, replaced by 432).
 
-- [ ] the four ids in `../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`;
+- [ ] the four ids in `../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`; 24-b → 432, the failing task;
       `throws: true` and `attempt` are `01-checker` step 42 and `02/97` step 18)
 
 ### Step 3 — the cost of a `@Result` per item
@@ -58,4 +58,4 @@ row for 02 and 05, not edited here.
 ## Notes
 
 - Components have no propagation: a page decides what an error shows — the helper is jhonstart's.
-- botopink Promises resolve with `Error` on expected failures; JS callers read the value (decision 179).
+- A `@Task<@Result<T, E>>`'s Promise rejects with `E` and resolves with `T`; JS callers catch the rejection (decision 432, replacing 179).
