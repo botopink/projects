@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**92 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
+**91 questions and 6 contradictions are open, and 97 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -89,26 +89,6 @@ Nothing open: 138-a answered (337).
 - **Blocks.** Nothing — built as (a). A library that derives a member from the declaration's shape
   (`#[validated]` reading every field's markers) keeps the string form until this is answered.
 
-#### s35-g · Whose scope resolves a name a library decorator's member function writes
-- **Measured.** Built: the rendered member joins the annotated type in the annotated type's module, so a
-  name the member's body or signature writes (`Violation`, a helper) would resolve there — the user's scope,
-  not the library's. For a decorator declared in another module the member is refused at the annotation
-  when it names anything beyond the decorator's parameters, its own locals, primitive types and the
-  decorator's type parameters (`decorator-member-fn-imported-name`,
-  `modules/decorator_member_fn_imported_name`); one that does not is accepted
-  (`modules/decorator_member_fn_import`). A decorator of the same module has one scope and is not refused.
-- **Options.** (a) Decision 112's hygiene for members: each name the library wrote resolves in the
-  decorator's module (bound under an alias no source can spell and imported, as a template's), each
-  argument's names in the annotation's module — `validation`'s member writes `Violation(…)` and reaches
-  `validation`'s `Violation` whatever the user imports. (b) Every name resolves in the annotated type's
-  module: the user imports `Violation` beside `check` (`import {check, Violation} from "validation"`), and
-  a user `Violation` of their own would be captured. (c) As built: such a member is refused; a library
-  member reads only its parameters.
-- **Recommendation.** (a): each name resolves where it was written — the arguments where the annotation
-  wrote them (370 (2)), the library's names in the library (112); no silent capture.
-- **Blocks.** Every library migration to the member channel (125 step 7's `#[check]`, rakun, jhonstart):
-  their members name their own types and helpers.
-
 #### s35-h · Two annotations adding a member of one name
 - **Measured.** Built: a member name is one member (`decorator-member-duplicate` at the second, 216 (1)),
   for `decl.addMember(name, fn…)` as for the string form. The 280 examples' `#[check(passwordsMatch, …)]`
@@ -122,7 +102,7 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** (a): a decorator adds and never replaces or merges (216 (1)); collection is typed
   meta's.
 - **Blocks.** 125 step 7's several `#[check]` on one type: typed meta is built (`01-compiler/130` step
-  8); the `validate` that reads it waits on `130-s8-e` and `s35-g`.
+  8); the `validate` that reads it waits on `130-s8-e` and `s35-g` (→ 384).
 
 #### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
 - **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
@@ -149,7 +129,7 @@ Nothing open: 138-a answered (337).
   the read (`modules/meta_expr_read_elsewhere`), and a `@TypeInfo.all` query whose entries carry such a
   value is refused the same way at the query. 370 (1) says "built in the reading program with each
   expression spliced where it was written" — the place, not whose scope resolves its names elsewhere;
-  `s35-g` asks the same for a member's names.
+  `s35-g` (→ 384) asks the same for a member's names.
 - **Options.** (a) As built: refused outside the annotation's module.
   ```bp
   // main.bp
@@ -163,7 +143,7 @@ Nothing open: 138-a answered (337).
   ```
   (c) The reader's scope: the expression's names resolve in the reading module — `passwordsMatch` must
   be imported there, and a same-named function of the reader is captured.
-- **Recommendation.** (a) until `s35-g` is answered, then the same answer for both (112's: every name
+- **Recommendation.** (a) until `s35-g` (→ 384) is answered, then the same answer for both (112's: every name
   resolves where it was written).
 - **Blocks.** An entry point or a library reading `@Expr` meta of another module's declarations (a
   catalogue of `#[check]`s); not 125 step 7's own type-level `#[check]`, read in the type's module.
@@ -218,7 +198,7 @@ Nothing open: 138-a answered (337).
   there). (c) A member reads its own type as `@typeInfo(Self)`, answered in the rendered member only.
 - **Recommendation.** (a) as the strictest; (b) is what the route needs — the read is checked in both
   places, and nothing a decorator's body cannot know is answered there.
-- **Blocks.** 125 step 7's typed-member route (`#[validated]` from `metaAll(Check)`), with `s35-g`.
+- **Blocks.** 125 step 7's typed-member route (`#[validated]` from `metaAll(Check)`), with `s35-g` (→ 384).
 
 #### s28-a · An imported source's field default that names a binding of its module (307)
 - **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`

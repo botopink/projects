@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 92 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **384**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 91 perguntas, 6 contradições e 97 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **385**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -796,33 +796,9 @@ val clearSession = use clearCookie(sessionCookie);
 
 **Recomendação: (a).** O membro é código do programa e lê só o que lhe é passado; um valor calculado pelo decorator vai por `.value` num membro string, ou por meta tipado.
 
-### s35-g · Em que escopo resolve um nome que o membro-função de um decorator de biblioteca escreve
-
-**Trava:** toda migração de biblioteca para o canal de membro (125 passo 7 `#[check]`, rakun, jhonstart).
-
-**Contexto.** O membro entra no tipo anotado, no módulo do tipo anotado: um nome que o corpo ou a assinatura do membro escreve (`Violation`, um helper) resolveria lá — no escopo do usuário, não no da biblioteca.
-
-**Hoje.** Para decorator declarado em outro módulo, o membro é recusado na anotação quando nomeia algo além dos parâmetros, dos próprios locais, de tipos primitivos e dos parâmetros de tipo do decorator (`decorator-member-fn-imported-name`, `modules/decorator_member_fn_imported_name`); sem isso é aceito (`modules/decorator_member_fn_import`). Decorator do mesmo módulo tem um escopo só e não é recusado.
-
-- [ ] **(a)** A higiene da decisão 112 para membros: cada nome que a biblioteca escreveu resolve no módulo do decorator (alias que nenhum fonte soletra, importado como no template), os nomes de cada argumento no módulo da anotação.
-  ```bp
-  // validation: decl.addMember("validate", fn(self: T) -> Violation[] { … Violation(…) … })
-  import {check} from "validation";   // Violation da validation, seja o que for que o usuário importe
-  ```
-- [ ] **(b)** Todo nome resolve no módulo do tipo anotado: o usuário importa `Violation` junto.
-  ```bp
-  import {check, Violation} from "validation";   // sem isso: unbound; um Violation próprio seria capturado
-  ```
-- [ ] **(c)** Como está: esse membro é recusado; membro de biblioteca só lê os parâmetros.
-  ```bp
-  #[check(passwordsMatch)]   // decorator-member-fn-imported-name: names `Violation`
-  ```
-
-**Recomendação: (a).** Cada nome resolve onde foi escrito — os argumentos onde a anotação os escreveu (370 (2)), os da biblioteca na biblioteca (112); nenhuma captura silenciosa.
-
 ### s35-h · Duas anotações acrescentando um membro de mesmo nome
 
-**Trava:** vários `#[check]` num tipo (125 passo 7): o meta tipado existe (passo 8 da `01-compiler/130`); o `validate` que o lê espera a `130-s8-e` e a `s35-g`.
+**Trava:** vários `#[check]` num tipo (125 passo 7): o meta tipado existe (passo 8 da `01-compiler/130`); o `validate` que o lê espera a `130-s8-e` e a `s35-g` (→ 384).
 
 **Contexto.** Os exemplos da 280 põem `#[check(passwordsMatch, …)]` e `#[check(handleFree, …)]` no mesmo `Account`, e um `validate` junta as duas regras.
 
@@ -873,7 +849,7 @@ val clearSession = use clearCookie(sessionCookie);
 
 **Trava:** entry point ou biblioteca que lê meta `@Expr` de declarações de outro módulo (um catálogo de `#[check]`); não o `#[check]` de tipo do 125 passo 7, lido no módulo do tipo.
 
-**Contexto.** A 370 (1) diz "construído no programa que lê, cada expressão colada onde foi escrita" — o lugar, não o escopo que resolve os nomes em outro módulo; a `s35-g` pergunta o mesmo para membro.
+**Contexto.** A 370 (1) diz "construído no programa que lê, cada expressão colada onde foi escrita" — o lugar, não o escopo que resolve os nomes em outro módulo; a `s35-g` (→ 384) pergunta o mesmo para membro.
 
 **Hoje.** Lido no módulo da anotação, roda (`run/meta_expr_field`); lido em outro — `@typeInfo(Signup).metaAll(Check)` no `main`, onde `passwordsMatch` (privada de `signup`) não está no escopo — é `typeinfo-meta-expr-elsewhere` na leitura (`modules/meta_expr_read_elsewhere`), e uma consulta `@TypeInfo.all` cujas entradas carregam esse valor é recusada igual.
 
@@ -891,7 +867,7 @@ val clearSession = use clearCookie(sessionCookie);
   import {signup.passwordsMatch};    // senão unbound
   ```
 
-**Recomendação: (a)** até a `s35-g` ser respondida; depois a mesma resposta para os dois (a da 112: cada nome resolve onde foi escrito).
+**Recomendação: (a)** até a `s35-g` (→ 384) ser respondida; depois a mesma resposta para os dois (a da 112: cada nome resolve onde foi escrito).
 
 ### 130-s8-c · Leitura de meta tipado de declaração que um leitor de `.hooks` do mesmo módulo anota (298, 372)
 
@@ -938,7 +914,7 @@ val clearSession = use clearCookie(sessionCookie);
 
 ### 130-s8-e · Membro tipado lendo o meta tipado do próprio tipo (298, 370)
 
-**Trava:** a rota de membro tipado do 125 passo 7 (`#[validated]` a partir de `metaAll(Check)`), junto com a `s35-g`.
+**Trava:** a rota de membro tipado do 125 passo 7 (`#[validated]` a partir de `metaAll(Check)`), junto com a `s35-g` (→ 384).
 
 **Contexto.** O membro tipado é conferido no corpo do decorator com os parâmetros de tipo do decorator em escopo (`inferMemberFnCall`) e renderizado no módulo do tipo anotado com cada um ligado.
 

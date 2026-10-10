@@ -107,7 +107,7 @@ untyped parameters `decorator-member-fn-untyped`, a non-literal `decorator-membe
 `Contribution.memberFn`); `memberFnSource` / `comptime/member_fn.zig` `render` splice each argument as
 the annotation wrote it and each type parameter as bound (`DecoratorArgValue.lexeme`,
 `Env.decoratorTypeArgs`), `decorator-member-type` for a foreign `self` or an unbound type parameter,
-`decorator-member-fn-imported-name` for a library member naming anything but its parameters (`s35-g`) —
+`decorator-member-fn-imported-name` for a library member naming anything but its parameters (until 384) —
 cells `run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime`,
 `modules/decorator_member_fn_import{,ed_name}` (four targets) and six `reject/` cells, red on `90d50ae3`;
 questions `s35-e`–`s35-h`.
@@ -538,6 +538,11 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
       source text spliced into a string output stays refused (`rule.text()` is `expr-param-method`)
 - [x] `x.fail("…")` located at the argument (`reject/decorator_expr_fail_at_argument`; the prelude's
       `'__bp_failArg'/2`)
+- [ ] a library member's names resolve where they were written (384, 112's hygiene): the decorator's names in
+      its module, bound under an unspellable alias and imported into the annotated module (a private helper as
+      `templatePrivateKey`), the annotation's arguments in the annotated module; `decorator-member-fn-imported-name`
+      goes — `modules/decorator_member_fn_imported_name` turns `run` (`validation`'s `Violation` and a private
+      helper reached, a user `Violation` not captured)
 - [x] the codemod: every `comptime` parameter in std (`builtins.d.bp`, `types.bp`), jhonstart (4), rakun (73,
       20 files), validation (46) and styled (none — its templates were already `@Expr<string>`, its
       decorators `@Decl` alone) takes `@Expr<T>` and its body reads `.value`; cardume is not a repository yet;
