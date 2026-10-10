@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**72 questions and 6 contradictions are open, and 100 implementation choices await confirmation.**
+**73 questions and 6 contradictions are open, and 102 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -338,6 +338,32 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   stored, then the `await`.
 - **Recommendation.** (a) now — never a call run twice, the refusal located; (b) when a program needs it.
 - **Blocks.** Nothing.
+
+#### 414-a · A component call in a body: rendered (128) or the lambda (414's example)
+- **Measured.** 128's chain, kept by 388 (4) ("inside a component body `await c` runs `c` with the body's
+  children scope"), renders a component call written in a component body: the checker splices `await` around
+  it (`inferComponentCall`), so `val inner = notFoundLevel(chain, i, route, page);` RUNS `notFoundLevel` with
+  the children's scope and `inner` is its `Element`. 414's example writes the same line with the comment "the
+  lambda, not run". Built (`front/render-scope-388`): the splice stands; a body gets an unrun component value
+  by naming the function (`itens.map(Card)`) or through a lambda — jhonstart's `ErrorBoundaryNode` /
+  `NotFoundBoundaryNode` hold `child: fn() -> @Component<Element>` (`{ -> notFoundLevel(…) }`), as
+  `suspense.Boundary` already did.
+- **Options.** (a) As built: a call in a body renders; a value is a name or a lambda:
+  ```bp
+  fn caughtBelow(…) -> @Component<Element> {
+      return nodePlaceholder(TreeNode.Errors(ErrorBoundaryNode(id: …, child: { -> notFoundLevel(chain, i, route, page) }, …)));
+  }
+  ```
+  (b) A call in a body makes the lambda wherever its value is not read as `R`, and renders only where the
+  checker reads it as `R` (a field read, an argument typed `R`) — `val inner = notFoundLevel(…);` a lambda,
+  `inner.tag` refused without `await`:
+  ```bp
+  val inner = notFoundLevel(chain, i, route, page);          // @Component<Element>, not run
+  return ErrorBoundaryNode(id: …, child: inner, …);
+  ```
+- **Recommendation.** (a): one rule for a call in a body (128, unchanged by 388), no inference of intent from
+  the use; (b) changes what every body's `val x = Card(…)` means.
+- **Blocks.** Nothing — built as (a).
 
 ### 02-std-and-packaging
 

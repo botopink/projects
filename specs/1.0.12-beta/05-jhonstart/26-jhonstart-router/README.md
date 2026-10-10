@@ -268,17 +268,24 @@ fn renderErrorBoundary(b: ErrorBoundary, scope: RenderScope) -> @Task<string> {
 }
 ```
 
-- [ ] `ErrorBoundary` and `NotFoundBoundary` beside `suspense.Boundary`, the tree's `Node` taking them;
-      `caughtBelow`, `notFoundLevel`, `errorLevel`, `composeAt` answer nodes and call no host try
-      (`__jhTryComponent` goes)
-- [ ] the renderer's plain functions — `renderComponent`, `renderErrorBoundary`, `renderNotFound`,
-      `renderSuspense` — run each value with the scope its parent's `run` answered; a signal re-raised,
-      only `notFoundReason()` caught at a not-found level; the error view rendered with the boundary's scope
-- [ ] `streaming.bp` keeps `(child, scope)` per hole and fills with it, the chunk order unchanged;
+- [x] `ErrorBoundaryNode` and `NotFoundBoundaryNode` (`render.bp`; `error_boundary.ErrorBoundary`, front 31's
+      record over a `@Result` thunk, keeps the plain name) beside `suspense.Boundary`, in the tree as a
+      `#node` placeholder whose `TreeNode` is registered per render (`pushNode` / `nodeAt`, both rows);
+      `caughtBelow` and `notFoundLevel` answer them and call no host try (`__jhTryComponent` gone); each node's
+      child is a thunk, since a component call in a body runs (128's render, as `await`) — the views stay
+      `UiSegment`'s plain `fn(…) -> Element`
+- [x] the renderer's plain functions — `renderComponent` (answering `Walked(tree, fills)`),
+      `renderErrorBoundary`, `renderNotFound` — run each value with the scope its parent's `run` answered; a
+      signal re-raised, only `notFoundReason()` stashed at a not-found level; a `Suspense` boundary a run
+      registered kept as `Fill(boundary, scope)` (no `renderSuspense` of its own)
+- [x] `streaming.bp` keeps `(child, scope)` per hole (`Fill`) and fills with it, the chunk order unchanged;
       `renderWith` runs `compose(…)` with `RenderScope.root()`; `client_app.bp` the same
-- [ ] `<ErrorBoundary fallback={…}>…</ErrorBoundary>` exported for applications; `docs.md` § Error boundaries
-- [ ] the suite at 207 / 0 on erlang and its counts on commonJS (`streaming_test`, `styled_sheet_test`,
-      `client_app_test` green)
+- [x] an application's boundary exported as `errorBoundaryNode(id, child, fallback)` (the tag spelling
+      `<ErrorBoundary fallback={…}>` waits on `jhonstart-html` naming it; front 31's `ErrorBoundary` holds the
+      name); `docs.md` § Error boundaries — `render_test`'s "an error boundary node runs its child with the
+      scope its parent answered, and catches a failure"
+- [x] the suite at 208 / 0 on erlang and on commonJS (`streaming_test`, `styled_sheet_test`,
+      `client_app_test` green) — patch `jhonstart.patch` of `front/render-scope-388`, landing with 134 s6 box 4b
 
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun

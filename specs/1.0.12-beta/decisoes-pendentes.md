@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 72 perguntas, 6 contradições e 100 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 73 perguntas, 6 contradições e 102 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **433**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -13,6 +13,32 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
+
+### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
+
+**Trava:** nada — construído como (a)
+
+**Contexto.** A cadeia da 128, mantida pela 388 (4) ("dentro de um corpo de componente `await c` roda `c` com o
+escopo dos filhos"), renderiza uma chamada de componente escrita num corpo de componente: o checker põe um
+`await` em volta dela, então `val inner = notFoundLevel(chain, i, route, page);` RODA o `notFoundLevel` com o
+escopo dos filhos e `inner` é o seu `Element`. O exemplo da 414 escreve a mesma linha com o comentário "o
+lambda, não rodado". Construído: o `await` implícito continua; um corpo obtém um valor de componente não
+rodado nomeando a função (`itens.map(Card)`) ou por um lambda — os nós do jhonstart guardam
+`child: fn() -> @Component<Element>`, como o `suspense.Boundary` já fazia.
+
+- [ ] **(a)** Como construído: uma chamada num corpo renderiza; um valor é um nome ou um lambda.
+  ```bp
+  return nodePlaceholder(TreeNode.Errors(ErrorBoundaryNode(id: …, child: { -> notFoundLevel(chain, i, route, page) }, …)));
+  ```
+- [ ] **(b)** Uma chamada num corpo faz o lambda onde o valor não é lido como `R`, e renderiza só onde o checker
+  o lê como `R` (leitura de campo, argumento tipado `R`).
+  ```bp
+  val inner = notFoundLevel(chain, i, route, page);          // @Component<Element>, não rodado
+  return ErrorBoundaryNode(id: …, child: inner, …);
+  ```
+
+**Recomendação: (a)** — uma regra só para a chamada num corpo (a 128, que a 388 não mudou), sem adivinhar a
+intenção pelo uso; a (b) muda o que todo `val x = Card(…)` de corpo significa.
 
 ### std-d · `io.process`: sinais e leitor de TTY
 

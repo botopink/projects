@@ -3,9 +3,9 @@
 **Priority:** high · **State:** partial: steps 1, 3, 4 and 5 done; step 2 partial (calls, `@Result`'s
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
 `Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 (354, 357)
-partial: boxes 1, 2, 5 (357) and 6 (the codemod) done; box 4's hidden map on erlang, beam and commonJS is
-rewritten by 388 (a component is a lambda over a `RenderScope`), after the measurement box; box 3 waits on
-`01-checker` step 23 (277)
+partial: boxes 1, 2, 3, 5 (357), 6 (the codemod), the measurement and 4b (388: a component is a lambda over
+a `RenderScope`, with 389's edges; erlang, beam, commonJS — wasm refuses, 354-wasm) done, 4b as a patch
+(`front/render-scope-388`) that lands with `05-jhonstart/26` step 14 (414)
 **Depends on:** step 6: backend fronts 02–05 and 18 for each lowering of 388's lambda · answered: `134-f` → 354, 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations
@@ -146,10 +146,24 @@ fn Button() -> @Component<Element> {
 - [x] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4)) —
       built with `01-checker` step 23 (`front/checker-s23`): `HookUse.context: ?Declared<unknown>`, the `val` that
       declares the context (`run/decl_hooks_context`; the field's name is s23-a)
-- [ ] measure before the rewrite (388 (6)): onze's blog rendered 1 000 times on erlang and commonJS, today's
-      hidden map against one lambda per component call; the numbers in this README; a cost the front judges
-      too high comes back as a question before box 4b
-- [ ] box 4b, a component is a lambda over a `RenderScope` (388): `fn C(…) -> @Component<R>` lowers to a function
+- [x] measure before the rewrite (388 (6)): onze's blog could not render on the lambda before jhonstart's
+      renderer moved (414), so the stand-in is a render of its shape — 25 component calls per page (a root,
+      three levels each providing a context, seven leaves each reading it: the blog's `/blog` chain of layouts,
+      templates, boundaries and the page), 1 000 renders per batch, the median of 15 batches after 3 to warm
+      up, the same source built by botopink-lang `856bbc69` (the hidden map) and by box 4b (one lambda per
+      call): erlang 1 829 µs → 1 966 µs (+7.5 %, +5.5 ns a component call), commonJS 462 µs → 755 µs (+63 %,
+      +12 ns a component call) — under half a microsecond a page on either target, against a page render that
+      escapes and joins its markup; judged acceptable, no question raised
+- [x] box 4b, a component is a lambda over a `RenderScope` (388) — patch `front/render-scope-388`:
+      `comptime/context_lower.zig` rewritten (the map and 374's capture gone), `c.run(scope)` typed by
+      `inferComponentRun` (`Component.run` in `builtins.d.bp`), `RenderScope(…)` refused
+      (`reject/render_scope_construction`), a function typed by an alias of `@Component` no component body (118,
+      `run/component_alias_answers_value`), a bare `try` in a body (`run/component_try_in_body`), 389's edges
+      (`run/decl_hooks_component_value`, `run/decl_hooks_dynamic_call`), the renderer-held scope
+      `run/render_scope_library` replacing `run/context_host_thunk`; erlang, beam and commonJS green, wasm
+      refusing a module the lowering reached at its first component (354-wasm, every component cell's
+      `.wasm.expect`), the comptime runtimes 18's (354-comptime); jhonstart 208 / 0 on both rows with
+      `05-jhonstart/26` step 14 (414). The box as written: `fn C(…) -> @Component<R>` lowers to a function
       answering `(scope) => …`, a call runs nothing; std's `context` declares the opaque `RenderScope`
       (`RenderScope.root()`) and `c.run(scope)` (the result and the children's scope; a `@Task` for a node 375
       marks asynchronous); `use provide(ctx)` makes the children's scope, `use context(T)` reads the received
@@ -160,8 +174,9 @@ fn Button() -> @Component<Element> {
       (`comptime/context_lower.zig`, 374's `lowerHostArg`) replaced, not kept beside it; lands with jhonstart's
       renderer under 414 (`05-jhonstart/26` step 14: boundaries and fills as nodes the renderer runs with the scope —
       the suite back at 207 / 0 on erlang from 173 / 34)
-- [ ] until box 4b lands, a `@Component` value handed where the parameter's declared type is not a written
+- [x] until box 4b lands, a `@Component` value handed where the parameter's declared type is not a written
       `fn(…) -> @Component<…>` is refused at build (`component-value-to-generic`, naming the template's `for`)
+      — never built: box 4b makes it moot (`itens.map(Card)` answers lambdas)
 - [ ] every context declares its default, named by its value's type (378, 379): std's `context` module
       answers `createContext(value)`, `provide(ctx)`, `context(T)`, and `Context<T>()` goes; one module-level
       declaration per type (a second refused naming both), found through the catalogue; a read answers the

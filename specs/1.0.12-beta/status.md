@@ -78,7 +78,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 363 (a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending`) — 27 s1–3 · 26 (island cells) · 120 · 126
 - [ ] decision 364 (every `comptime` parameter is `comptime x: @Expr<T>` — decorators, annotations, templates, functions, builtins: passed on to outputs, `.value` read at build for data, a function or a type never run at build) — 01-checker s35 (built but box 3, the hand-over to the program: 370 — the typed member now, the typed meta with 130 s8) · 130 · 125 s7 · 281's ten fronts · the codemod over std, builtins, jhonstart, rakun, validation (done; cardume when it exists)
 - [ ] decision 365 (a deferred `after()` failure through the core's logger is 17's step 4, not 128's) — rakun 17 s4 · after 128
-- [ ] decision 388 (a `@Component` at run time is a lambda over an opaque `RenderScope`; the render library runs it, when and with which scope — replaces 354 (8), 374, 387; answers 134-g) — 134 s6: measurement, then box 4b replacing the built map lowering (`front/ctx-async-374-375`'s capture goes with it) · 02–05, 18 · jhonstart's renderer (414: boundaries and fills as nodes, `05-jhonstart/26` step 14) · 119 s2–3
+- [ ] decisions 388, 389, 414 (a `@Component` at run time is a lambda over an opaque `RenderScope`, the render library runs it — replaces 354 (8), 374, 387; a component named as a value is a reached node, a value the checker cannot follow an edge with `callee: null`; boundaries and fills are nodes the renderer runs with the scope) — 134 s6 measurement and box 4b, 01-checker s23's 389 box and `05-jhonstart/26` step 14 built as one patch set (`front/render-scope-388`: botopink-lang + jhonstart; erlang, beam, commonJS green, wasm refused at the first component — 354-wasm; jhonstart 208 / 0 on both rows), waiting for the integration · 02–05, 18 · 119 s2–3
 - [ ] decision 375 (`HookNode.async`; commonJS emits a synchronous component as a plain `function`) — 01-checker s23 and 04-js s12 (top-level functions): built as a patch (`front/ctx-async-374-375`); open `s23-j`, `04s12-a`
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
@@ -167,7 +167,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [x] 134 s5 — the `Decorator` type for `with:` (268)
 - [x] 134 s4 — the variadic parameter `..name: T[]` and the print builtins declared with it (267)
-- [ ] 134 s6 — contexts (354), rules of hooks (357): built on `front/134-s6-contexts` (patches) — `@Component<R>` / `@Renderable`, std `context`, `use` refused outside a render tree, `use-not-top-level`, the codemod and the libraries migrated; the hidden map runs on erlang, beam, commonJS, to be rewritten as 388's lambda over a `RenderScope` after the measurement; `Decl.hooks` waits on `01-checker` s23 (277) · 02–05, 18 for the rest of the lowerings
+- [ ] 134 s6 — contexts (354), rules of hooks (357): built on `front/134-s6-contexts` (patches) — `@Component<R>` / `@Renderable`, std `context`, `use` refused outside a render tree, `use-not-top-level`, the codemod and the libraries migrated; the hidden map runs on erlang, beam, commonJS, and 388's lambda over a `RenderScope` replaces it as a patch (`front/render-scope-388`, with 26 s14); `Decl.hooks` waits on `01-checker` s23 (277) · 02–05, 18 for the rest of the lowerings
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
 - [ ] 07-residuals s1, s2, s4 — the codegen and comptime report waves, three renames · 02–05 landed · 01 landed
 - [ ] 07-residuals s9 · s10 · s11 — `->` arms · erika's C-13 migration · the pointers' sweep (last) · C-14 · 16 s1–2 · every library merged
@@ -278,7 +278,7 @@ Wave numbers are [`fronts.md`](./fronts.md) § Waves.
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](./decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open after the answers through 389: 90 questions, 6 contradictions, 94 implementation choices (the
+last section. Open after the answers through 430 and 414-a raised: 68 questions, 6 contradictions, 99 implementation choices (the
 counts live at the top of `decisions-pending.md`).
 
 **First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
