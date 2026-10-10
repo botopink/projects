@@ -215,6 +215,14 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       the class, as CSS Nesting's nested-declarations rule — `styled "${bg} &:focus { ${gray} } ${pad}"`
       renders `.k{background:#ffffff}.k:focus{…}.k{padding:…}` on both targets (`reader.bp`
       `readBlock`); before `06-emilia/34` step 5, which keeps emilia's CSS byte-identical through it
+- [ ] a literal with render holes is built at build into a template with slots (377): parsed and checked,
+      its known holes — an `Any` call with build arguments included (376) — written in, the render filling
+      the slots, hashing, registering; a hole's mark (`p.hole.known`, `p.hole.why`) is the compiler's
+- [ ] a `styled` value registers in the render's sheet where it is used — `use x`, `#[styled(x)]` —, never
+      where it is made (377): `pub val codigo = styled "${padAll(2)}";` legal (a constant), and every path
+      that writes a class on a tag measured to pass through one of the two; `StyledContext` declared
+      `comptime createContext(StyledSheet, StyledSheet.missing())` (378), `missing().add` panicking with
+      the provider's text
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none a
       compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
       at compile time · row 134 (a library's template function cannot read the program's catalogue),
@@ -354,7 +362,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 ## Decisions
 
 Answered: `34-a` → 369 (`#[emilia(…)]`'s meta and its reader, step 4), `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
-Answered since: `119-g` → 374 (a host-called `@Component` thunk captures the map, `01-compiler/134` step 6). Open: `119-f` (a `val` holding a literal computed at render).
+Answered since: `119-g` → 374 (a host-called `@Component` thunk captures the map, `01-compiler/134` step 6). `119-f` → 377 (a `styled` value registers where it is used, so a module `val` of one is legal; 376, 378).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

@@ -533,6 +533,27 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
       decorators `@Decl` alone) takes `@Expr<T>` and its body reads `.value`; cardume is not a repository yet;
       `botopink check` of every library member clean
 
+### Step 36 — every function's stage: `Build`, `Run`, `Any` (decision 376)
+
+```bp
+fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }   // Any
+fn agora() -> i64 { return clock.nowMs(); }                                                    // Run
+fn campos(comptime t: type) -> string[] { return @typeInfo(t).fields.map({ f -> f.name }); }   // Build
+fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + agora().toString(); }   // Run
+```
+
+- [ ] each function's stage from its resources (376 (1)) and its calls (376 (2)); `use h(…)` takes `h`'s;
+      `provide` / `context` `Any`; a host function `Run` unless std (or its library) declares it `Any`;
+      `HookNode.stage` published with the module's nodes — `run/stage_of_functions`,
+      `modules/stage_imported`
+- [ ] `build-and-run` at the second resource, naming the first; a `comptime { … }` block separates them —
+      `reject/stage_build_and_run`, `run/stage_comptime_block_in_run`
+- [ ] a body that runs at build (decorator, template, `comptime`) calls `Build` / `Any` functions, a
+      program's helper included, and refuses a `Run` one at the call (`run-in-build`) —
+      `run/decorator_calls_any_helper`, `reject/decorator_calls_run`; `language-gaps.md`'s sibling-fn row
+      closes
+- [ ] std declares `Any` on its pure host primitives (`string`, `math`), every other host binding `Run`
+
 ### Rows other fronts found
 
 - [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the
