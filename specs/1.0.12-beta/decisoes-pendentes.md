@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 86 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **395**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 85 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **396**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -685,7 +685,7 @@ val clearSession = use clearCookie(sessionCookie);
 
 ### s35-h · Duas anotações acrescentando um membro de mesmo nome
 
-**Trava:** vários `#[check]` num tipo (125 passo 7): o meta tipado existe (passo 8 da `01-compiler/130`); o `validate` que o lê espera a `130-s8-e` e a `s35-g` (→ 384).
+**Trava:** vários `#[check]` num tipo (125 passo 7): o meta tipado existe (passo 8 da `01-compiler/130`); o `validate` que o lê segue a 395 (`130-s8-e`) e a 384 (`s35-g`).
 
 **Contexto.** Os exemplos da 280 põem `#[check(passwordsMatch, …)]` e `#[check(handleFree, …)]` no mesmo `Account`, e um `validate` junta as duas regras.
 
@@ -774,35 +774,6 @@ val clearSession = use clearCookie(sessionCookie);
   ```
 
 **Recomendação: (a).**
-
-### 130-s8-e · Membro tipado lendo o meta tipado do próprio tipo (298, 370)
-
-**Trava:** a rota de membro tipado do 125 passo 7 (`#[validated]` a partir de `metaAll(Check)`), junto com a `s35-g` (→ 384).
-
-**Contexto.** O membro tipado é conferido no corpo do decorator com os parâmetros de tipo do decorator em escopo (`inferMemberFnCall`) e renderizado no módulo do tipo anotado com cada um ligado.
-
-**Hoje.** `@typeInfo(T).metaAll(Check)`, `T` parâmetro de tipo do decorator, não nomeia declaração quando o corpo é conferido: `typeinfo-unknown-declaration` em `T`. A rota que a 370 traçou para o 125 passo 7 não compila:
-```bp
-fn validated<T>(comptime decl: @Decl<T>) {
-    decl.addMember("validate", fn(self: T) -> Violation[] {
-        var out: Violation[] = [];
-        for (@typeInfo(T).metaAll(Check)) { c -> if (!c.rule(self)) out.push(Violation(message: c.message)); }
-        return out;
-    });
-}
-```
-
-- [ ] **(a)** Como está: membro não lê meta do seu tipo; `#[validated]` lê as checagens de outro jeito (membro string que nomeia o tipo, ou cada `#[check]` com seu próprio membro — a `s35-h` (a) recusa dois de mesmo nome).
-- [ ] **(b)** Num membro tipado, `@typeInfo(T)` com `T` ligado pela anotação é tipado no corpo do decorator como o tipo das leituras (`Check<T>[]`) e respondido quando o membro é renderizado no módulo do tipo anotado, `T` trocado pelo tipo (conferido de novo lá).
-  ```bp
-  for (@typeInfo(T).metaAll(Check)) { … }   // no membro de Signup: @typeInfo(Signup).metaAll(Check)
-  ```
-- [ ] **(c)** O membro lê o próprio tipo como `@typeInfo(Self)`, respondido só no membro renderizado.
-  ```bp
-  for (@typeInfo(Self).metaAll(Check)) { … }
-  ```
-
-**Recomendação: (a)** como a mais restritiva; **(b)** é o que a rota precisa — a leitura é conferida nos dois lugares e nada que o corpo do decorator não sabe é respondido lá.
 
 ### s28-a · O default de um campo de fonte importada que nomeia algo do seu módulo (307)
 

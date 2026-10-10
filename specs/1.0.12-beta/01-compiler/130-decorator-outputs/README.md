@@ -159,7 +159,13 @@ calls the checker answers, so the two coexist).
       (385): imported into the reader under an unspellable alias, a private one as `templatePrivateKey`;
       `typeinfo-meta-expr-elsewhere` goes — `modules/meta_expr_read_elsewhere` turns `run` (`main` reads
       `signup`'s `Check` and calls its private `passwordsMatch`), and the `@TypeInfo.all` route the same
-- [ ] questions `130-s8-a`, `130-s8-c`…`130-s8-e` (decisions-pending; `130-s8-b` → 385): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
+- [ ] a typed member reads its own type's typed meta (395): pre-comptime, `@typeInfo(T).metaAll(Check)` with `T`
+      the decorator's type parameter accepted and typed `Check<T>[]` in the decorator's body, the body checked
+      against it; post-comptime, the member rendered into the annotated type's module with `T` the type, the read
+      answered and the member checked again — `run/member_reads_own_meta` (`#[validated]` over two `#[check]`s:
+      `validate()` runs both rules, the list a build constant under `comptime`), `typeinfo-unknown-declaration`
+      no longer raised for a bound type parameter
+- [ ] questions `130-s8-a`, `130-s8-c`, `130-s8-d` (decisions-pending; `130-s8-b` → 385, `130-s8-e` → 395): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
       catalogue entry, a typed member reading its type's meta (`@typeInfo(T)` — 125 step 7's route)
 
 ### Step 9 — a tag is a `@Decl` (decision 302)

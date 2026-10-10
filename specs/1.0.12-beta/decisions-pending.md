@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**86 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**85 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -102,7 +102,7 @@ Nothing open: 138-a answered (337).
 - **Recommendation.** (a): a decorator adds and never replaces or merges (216 (1)); collection is typed
   meta's.
 - **Blocks.** 125 step 7's several `#[check]` on one type: typed meta is built (`01-compiler/130` step
-  8); the `validate` that reads it waits on `130-s8-e` and `s35-g` (→ 384).
+  8); the `validate` that reads it follows 395 (`130-s8-e`) and 384 (`s35-g`).
 
 #### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
 - **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
@@ -146,32 +146,6 @@ Nothing open: 138-a answered (337).
   through `unknown`.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — built as (a).
-
-#### 130-s8-e · A typed member reading its own type's typed meta (298, 370)
-- **Measured.** Built: a decorator's typed member is checked in the decorator's body with the
-  decorator's type parameters in scope (`inferMemberFnCall`), and rendered into the annotated type's
-  module with each bound. `@typeInfo(T).metaAll(Check)` there, `T` the decorator's type parameter, names
-  no declaration while the body is checked: `typeinfo-unknown-declaration` at `T`. So the route 370 laid
-  out for 125 step 7 — `#[check]` records `Check`, `#[validated]` gives one `validate` reading
-  `metaAll(Check)` — does not compile:
-  ```bp
-  fn validated<T>(comptime decl: @Decl<T>) {
-      decl.addMember("validate", fn(self: T) -> Violation[] {
-          var out: Violation[] = [];
-          for (@typeInfo(T).metaAll(Check)) { c -> if (!c.rule(self)) out.push(Violation(message: c.message)); }
-          return out;
-      });
-  }
-  ```
-- **Options.** (a) As built: a member reads no meta of its type; `#[validated]` reads the checks
-  another way (a string member naming the type, or each `#[check]` adding its own member — `s35-h` (a)
-  refuses two of one name). (b) In a typed member, `@typeInfo(T)` with `T` a type parameter the
-  annotation binds is typed in the decorator's body as the reads' types (`Check<T>[]`), and answered
-  when the member is rendered into the annotated type's module, `T` replaced by the type (checked again
-  there). (c) A member reads its own type as `@typeInfo(Self)`, answered in the rendered member only.
-- **Recommendation.** (a) as the strictest; (b) is what the route needs — the read is checked in both
-  places, and nothing a decorator's body cannot know is answered there.
-- **Blocks.** 125 step 7's typed-member route (`#[validated]` from `metaAll(Check)`), with `s35-g` (→ 384).
 
 #### s28-a · An imported source's field default that names a binding of its module (307)
 - **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
