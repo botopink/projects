@@ -13,7 +13,7 @@ no snapshot or test directory**, except by a carve-out a README names together w
 ## Rules for a front
 
 1. **A library front never touches `repository/botopink-lang/modules/**`.** It files a row in
-   [`language-gaps.md`](./language-gaps.md) and works around the gap. The named exceptions:
+   [`language-gaps.md`](./language-gaps.md) and pauses on the fix (rule 9). The named exceptions:
    `01-compiler`; `00-gate/114` for its files; `02-std-and-packaging/97` for `libs/std/**` (a
    compiler front hands its std half to 97, except the named carve-outs: 17's `beam.bp` primitives,
    130's and 134's parts of `builtins.d.bp`); `08-bpp/116`, a toolchain front that names no
@@ -32,6 +32,11 @@ no snapshot or test directory**, except by a carve-out a README names together w
 7. **The front's README stays current**: a landed step becomes one line under `## Done` in the
    landing commit; `status.md` is the only file that says where the milestone stands.
 8. **Landing is § Gate.**
+9. **A structural fix comes first** (decision 430): a defect or gap of the compiler, std or a shared layer
+   that a front would otherwise work around opens at once as a step of its owning front, ahead of that
+   owner's other steps; the fronts that would build on a workaround pause on it, no new workaround is
+   written, and an existing one is removed in the fix's landing — unless the maintainer chooses a
+   workaround for a named case.
 
 ## Ownership, by track
 
