@@ -135,8 +135,9 @@ typed arguments. `decl.kind` says what it receives — `Element` (a native tag: 
 attributes) or `Component` (`decl.component` the component's own `@Decl`); an annotation that takes only
 one refuses the other at the annotation ("`div` is an element"). `html` reads the **meta the annotation
 records**, by type, never the name: `RawBody` (this front), `isInline`'s style meta (119; `isGlobal` and `defineVars` went with 338), `Hydrate` / `Defer`
-(120), the transition types (126) — each arm appended by its front —, `void` a check only; any other
-type is an error at the annotation, two results of one type on one tag an error at the second.
+(120), the transition types (126), `styled`'s `StyledMeta` (383) — each reader appended by its front —; an
+annotation that records nothing is a check only; a meta type no reader knows is another reader's (302),
+two `setMeta` of one type on one tag an error at the second.
 Values are not annotations: `set:html={s}` is `{raw(s)}`, `set:text={s}` is `{s}`, `class:list` is
 `class={classList([…])}`. Arguments are embedded expressions — the same compiler need as holes.
 This front: `isRaw`, `classList` (no `Tag` type — 302); 119 `isInline` (`isGlobal`, `defineVars` gone, 338); 120
