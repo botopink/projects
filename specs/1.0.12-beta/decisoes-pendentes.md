@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 81 perguntas, 7 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **370**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 80 perguntas, 7 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **371**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -678,30 +678,6 @@ val clearSession = use clearCookie(sessionCookie);
 
 **Recomendação: (a)** — uma regra só, que já é a do jhonstart e a do cardume.
 **Bloqueia:** 123; 127; 104 passo 6; `07-onze/53` (os sites de cookie).
-
-### s35-a · Como o corpo de um decorator entrega o `@Expr` de um parâmetro ao programa (364 (1))
-
-**Trava:** `01-checker` s35, caixa 3 (as células `run/decorator_expr_rule_called` e `run/decorator_expr_message_runtime`); o `#[check]` da 125 s7 chegar à validação em tempo de execução.
-
-**Contexto.** A 364 (1) diz que o corpo entrega o `@Expr` a uma saída — meta tipado (298), um membro, código emitido — e o programa o avalia em tempo de execução: `rule` é chamada como `passwordsMatch`, `message` pode ser `t("signup.mismatch")`.
-
-**Hoje.** Toda saída recebe string (`@emit(source: string)`, `decl.addMember(source: string)`, `decl.setMeta(key, value)`); o meta tipado (`decl.addMeta`) é da 130 s8 e não existe. Um parâmetro só chega ao corpo como `x.value` (ou `x.fail`); `message.text()` é `expr-param-method`.
-
-- [ ] **(a)** O meta tipado leva o `@Expr`: o registro é montado no programa que o lê, cada expressão no lugar em que foi escrita.
-  ```bp
-  pub type Check<T>(message: @Expr<string>, rule: @Expr<fn(v: T) -> bool>)
-  decl.addMeta(Check(message: message, rule: rule));   // espera a 130 s8
-  ```
-- [ ] **(b)** O texto da fonte: `.text()` responde o argumento como foi escrito, colado numa saída de string.
-  ```bp
-  decl.addMember("pub fn rule(self: Self) -> bool { return " + rule.text() + "(self); }");
-  ```
-- [ ] **(c)** Um membro tipado (a forma ilustrativa do exemplo 1): o fechamento usa o argumento.
-  ```bp
-  decl.addMember("validate", fn(self: T) -> bool { return rule(self); });
-  ```
-
-**Recomendação: (a)**, com (c) como forma de membro — tipado e localizado; (b) cola texto sem tipo.
 
 ### s35-b · Saber se um argumento função opcional foi dado (`rule == null`)
 

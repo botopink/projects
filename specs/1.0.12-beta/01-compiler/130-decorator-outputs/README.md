@@ -114,6 +114,10 @@ the call —; `Decl.addMeta(value: T)` for what repeats; read `@typeInfo(X).meta
 - [ ] `run/meta_typed` — `#[entity("cities")]` sets `Entity(table: "cities")`, `meta(Entity)?.table ==
       "cities"`; two `#[index]` add two `Index`, `metaAll(Index).length == 2`; `meta(Other)` is `null`
 - [ ] `reject/meta_twice` — two `setMeta(Entity(…))` on one declaration, at the second
+- [ ] a meta record may hold `@Expr<T>` fields (370 (1)): `decl.addMeta(Check(message: message, rule:
+      rule))` built in the reading program with each expression spliced where it was written —
+      `run/meta_expr_field` (the reader calls `rule` and evaluates `message` at run time, on the four
+      targets)
 - [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`)
 
 ### Step 9 — a tag is a `@Decl` (decision 302)

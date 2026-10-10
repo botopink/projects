@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**81 questions and 7 contradictions are open, and 93 implementation choices await confirmation.**
+**80 questions and 7 contradictions are open, and 93 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -27,25 +27,6 @@ Nothing open: 138-a answered (337).
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
-
-#### s35-a · How a decorator body hands a parameter's `@Expr` on to the program (364 (1))
-- **Measured.** Every output a decorator body has takes a string: `@emit(source: string)`,
-  `decl.addMember(source: string)`, `decl.setMeta(key: string, value: string)`; typed meta
-  (`decl.addMeta(Check(…))`, 298) is `01-compiler/130` step 8, not built. A parameter's `@Expr` where a
-  `string` is expected is a type mismatch, and `message.text()` on a decorator parameter is
-  `expr-param-method` (built: a parameter answers `.value` and `.fail`). So 364 (1) has no channel:
-  `#[check(passwordsMatch, message: t("signup.mismatch"))]` checks both arguments, and neither reaches
-  the program (`run/decorator_expr_rule_called`, `run/decorator_expr_message_runtime` are not written).
-- **Options.** (a) Typed meta carries it: `decl.addMeta(Check(message: message, rule: rule))`, `Check`'s
-  fields `@Expr<string>` / `@Expr<fn(v: T) -> bool>`, the record built in the reading program with each
-  expression spliced where it was written — waits for 130 s8. (b) The source text: `.text()` answers a
-  decorator parameter's argument as written, spliced into a string output —
-  `decl.addMember("pub fn rule(self: Self) -> bool { return " + rule.text() + "(self); }")` — resolved in
-  the annotated module, where the argument was written. (c) A typed member: `decl.addMember("validate",
-  fn(self: T) -> bool { return rule(self); })` (example 1's illustrative form), the closure's `rule` the
-  argument spliced in.
-- **Recommendation.** (a), with (c) as the member form: typed and located; (b) splices untyped text.
-- **Blocks.** `01-checker` s35 box 3 (the two `run/` cells); 125 s7's `#[check]` reaching validation at run time.
 
 #### s35-b · Whether an optional function argument was given (`rule == null`)
 - **Measured.** Built: `comptime rule: @Expr<?fn(v: T) -> bool> = null` — an optional function is a
