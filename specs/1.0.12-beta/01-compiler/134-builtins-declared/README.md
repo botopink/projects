@@ -109,15 +109,15 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
 ```bp
 import {context.createContext} from "std";
 
-pub val ThemeContext = createContext(Theme, Theme(mode: .Light));   // the default is required (378)
+pub val themeContext = comptime createContext(Theme(mode: .Light));   // declares Theme's default (378, 379)
 
 fn App() -> @Component<Element> {
-    use provide(ThemeContext, Theme(mode: .Dark));   // for everything App renders below it
+    use provide(createContext(Theme(mode: .Dark)));   // for everything App renders below it
     return <Page />;
 }
 
 fn Button() -> @Component<Element> {
-    val theme = use context(ThemeContext);           // the nearest provider above
+    val theme = use context(Theme);                    // the nearest Theme above, else the default
     …
 }
 ```
@@ -137,11 +137,17 @@ fn Button() -> @Component<Element> {
       (handed to 02–05 and 18 for each lowering) — built on erlang, beam and commonJS; open: wasm (refused at the
       `use`, 05), the comptime runtimes (`emitComptimeModule` lowers the parsed program, 18 / 14), a `@Component`
       value handed to generic code (`134-g`)
-- [ ] every context declares its default (378): std's `context` module answers `createContext(T,
-      default)` and `Context<T>()` goes; a read answers the nearest provider or the default on every target
-      (`context-unbound` goes, `run/context_default` replacing `styled-context-unbound`'s shape); `comptime
-      createContext(…)` needs a build default (a `Run` one refused at it), without `comptime` the default is
-      computed by its stage (376); the codemod over `tests/language` (20 cells), `styled`, jhonstart
+- [ ] every context declares its default, named by its value's type (378, 379): std's `context` module
+      answers `createContext(value)`, `provide(ctx)`, `context(T)`, and `Context<T>()` goes; one module-level
+      declaration per type (a second refused naming both), found through the catalogue; a read answers the
+      nearest context of its type or the declared default on every target (`context-unbound` goes,
+      `run/context_default`), a type with no declaration refused at the read (`reject/context_undeclared_type`);
+      `comptime createContext(…)` refuses a run-time argument; the codemod over `tests/language` (20 cells),
+      `styled`, jhonstart
+- [ ] a context read known at build (379 (6)): every `createContext` that can reach it of build and of one
+      value, or none — computed from the hooks list from the roots; the reading function then `Any` with build
+      arguments — `run/context_read_at_build` (`corDoTema()` a constant when `Theme` is never provided),
+      `run/context_read_run_time` (a provide from `use request()` keeps it at run time)
 - [ ] a `Build` / `Any` component called at build (378 (4)): the comptime runtime lowers the hidden map
       (the open comptime-runtime half of box 4 above), its `use`s run with an empty map, a context answering
       its providers within the tree or its default — `run/comptime_render_component`

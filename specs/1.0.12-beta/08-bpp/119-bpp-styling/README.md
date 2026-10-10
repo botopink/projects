@@ -221,7 +221,7 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] a `styled` value registers in the render's sheet where it is used — `use x`, `#[styled(x)]` —, never
       where it is made (377): `pub val codigo = styled "${padAll(2)}";` legal (a constant), and every path
       that writes a class on a tag measured to pass through one of the two; `StyledContext` declared
-      `comptime createContext(StyledSheet, StyledSheet.missing())` (378), `missing().add` panicking with
+      `comptime createContext(StyledSheet.missing())`, read `use context(StyledSheet)` (378, 379), `missing().add` panicking with
       the provider's text
 - [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none a
       compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused

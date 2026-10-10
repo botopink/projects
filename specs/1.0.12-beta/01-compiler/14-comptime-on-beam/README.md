@@ -129,6 +129,10 @@ pub val code = styled "${tab4} color: red;";   // styledConstant("s_…", ".s_�
       by the comptime runtime — in a hole (`styled "${padAll(2)}"`, `padAll(ESPACO)`) and in a `val`'s
       initializer; a raise refused at the hole (14s8-c); `padAll(n)` with `n` a parameter stays at render —
       `run/hole_any_call_at_build`, `reject/hole_any_call_raises`
+- [ ] every expression with build inputs and `Any` functions computed at build wherever it is written (380):
+      a body's `val raio = ESPACO * 2 + 4;` emitted as `12`; no step or time budget — a raise an error at the
+      expression (`reject/fold_raises_at_build`); `@panic` / `throw` computed only under a written `comptime`
+      (`run/fold_keeps_dead_panic`)
 - [ ] `contentHash` at comptime (T19; with step 6's host cells) — `comptime padAll(2).rules` is refused
       naming `.contentHash(…)` (a run-time hole reaches `propertyComputed`)
 
