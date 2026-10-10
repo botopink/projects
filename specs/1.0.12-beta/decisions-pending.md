@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**72 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**71 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -22,9 +22,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ### What blocks now (answer first)
 
-- `388-a` (01-compiler) — a host thunk written in a component body cannot name the body's children scope:
-  box 4b of `01-compiler/134` step 6 is built and green on its cells, and lands only once jhonstart's
-  renderer runs under it.
+- Nothing blocks now: `388-a` answered by 414.
 
 ### 01-compiler
 
@@ -257,48 +255,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) Refused, naming the call and the remedy (as built). (b) The checker infers the body of every function a `comptime` reaches before the `comptime` is evaluated, so the order of declarations does not matter.
 - **Recommendation.** (a) until (b) is built by `01-checker`; (b) refuses nothing a program needs.
 - **Blocks.** Nothing — built as (a).
-
-#### 388-a · A host thunk written in a component body cannot name the body's children scope (388 (3), (4))
-- **Measured.** Built (`front/render-scope-388`, box 4b): a component is a lambda over a `RenderScope`; a body
-  reads its scope only through `use context`, and its children's scope is reachable only by `await c` (a
-  child placed in the tree) — no name of the body holds it. jhonstart's renderer is written in component
-  bodies: `compose` provides `StyledContext`, and `caughtBelow` / `notFoundLevel` hand a host
-  `__jhTryComponent({ -> notFoundLevel(chain, i, route, page) })` (an error or a not-found boundary); the
-  `Suspense` fill keeps `{ -> caughtBelow(…) }`. Under 388 the thunk answers the component's lambda, the host's
-  try runs nothing, and `Ok(tree)` holds a lambda where an `Element` is read: jhonstart's suite on erlang is
-  173 passed, 34 failed (`streaming_test` 29, `styled_sheet_test` 1, `client_app_test` 4), 207 / 0 on `856bbc69`.
-  The root is the plain part: `streaming.bp` `renderWith` (a `@Task` function) hands the host
-  `componentOutcome({ -> compose(chain, route, page) })`, which 388 (3) rewrites as `{ -> compose(…).run(
-  RenderScope.root()) }`; the boundaries and fills below it are bodies. 388 (3) writes the library's side
-  (`await __jhTryTask({ -> c.run(scope) })`, "with the scope it kept") but not how a body that is itself the
-  library's hands that scope over. (`styled`'s suite is green on the patch.)
-- **Options.**
-  (a) The library holds every scope in plain functions: a boundary or a fill becomes a node of the tree holding
-  a component value, and the renderer — functions taking `scope: RenderScope`, none of them a component — runs
-  it inside its host's try with the scope its parent's `run` answered:
-  ```bp
-  pub type Boundary(child: @Component<Element>, fallback: @Component<Element>)        // a node of the tree
-  fn renderBoundary(b: Boundary, scope: RenderScope) -> @Task<string> {
-      val out = await __jhTryTask({ -> b.child.run(scope) });   // the scope the parent answered
-      …
-  }
-  ```
-  (b) A hook answering the body's children scope, so library code written in a body passes it on explicitly:
-  ```bp
-  fn caughtBelow(…) -> @Component<Element> {
-      val scope = use scope();                                   // the children's scope, as `await c` uses it
-      val outcome = await __jhTryTask({ -> notFoundLevel(chain, i, route, page).run(scope) });
-      …
-  }
-  ```
-  (c) A lambda written as an argument of a host call in a body runs a component with the body's children
-  scope — 374's capture back, which 388 replaced: `__jhTryComponent({ -> notFoundLevel(…) })` unchanged.
-- **Recommendation.** (a): no new surface, and the scope exists only where 388 (3) puts it — the library's
-  plain functions; (b) is the smallest change to jhonstart (each thunk site gains one `use scope()`), (c) is
-  the capture 388 replaced.
-- **Blocks.** box 4b's landing (`01-compiler/134` step 6): the compiler and std patch is green on its own
-  cells, jhonstart's suite is not; `05-jhonstart`'s renderer (the rewrite under (a), one hook per site under
-  (b)) · `08-bpp/119` steps 2–3.
 
 ### 02-std-and-packaging
 

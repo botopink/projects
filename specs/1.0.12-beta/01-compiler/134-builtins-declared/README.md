@@ -153,7 +153,9 @@ fn Button() -> @Component<Element> {
       (`itens.map(Card)` answers lambdas, the template's tree runs them with `Lista`'s scope),
       `run/context_provide_read`, `run/context_nearest_wins`, `run/component_run_root` on erlang, beam,
       commonJS, wasm and both comptime runtimes (handed to 02–05 and 18); the built map lowering
-      (`comptime/context_lower.zig`, 374's `lowerHostArg`) replaced, not kept beside it
+      (`comptime/context_lower.zig`, 374's `lowerHostArg`) replaced, not kept beside it; lands with jhonstart's
+      renderer under 414 (`05-jhonstart/26` step 14: boundaries and fills as nodes the renderer runs with the scope —
+      the suite back at 207 / 0 on erlang from 173 / 34)
 - [ ] until box 4b lands, a `@Component` value handed where the parameter's declared type is not a written
       `fn(…) -> @Component<…>` is refused at build (`component-value-to-generic`, naming the template's `for`)
 - [ ] every context declares its default, named by its value's type (378, 379): std's `context` module

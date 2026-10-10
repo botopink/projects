@@ -251,6 +251,35 @@ pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf
       commit per library (188); the `(children, attrs:)` form gone, `el(…)` the escape hatch
 - [ ] 118 step 1's handed box closed against this step
 
+### Step 14 — the renderer holds the scope; boundaries are nodes (decisions 388, 414)
+
+With `01-compiler/134` step 6 box 4b (one landing: the box's patch is green on its own cells, jhonstart's
+suite is 173 / 34 on erlang under it, 207 / 0 on `856bbc69`):
+
+```bp
+fn caughtBelow(…) -> @Component<Element> {
+    val inner = notFoundLevel(chain, i, route, page);           // the lambda, not run
+    if (segmentOf(chain, i).hasError == false) return inner;
+    return ErrorBoundary(id: errorId(seg), child: inner, view: seg.errorView, wrapped: seg.hasLoading == false);
+}
+fn renderErrorBoundary(b: ErrorBoundary, scope: RenderScope) -> @Task<string> {
+    val out = await __jhTryTask({ -> renderComponent(b.child, scope) });   // the try around the run
+    …
+}
+```
+
+- [ ] `ErrorBoundary` and `NotFoundBoundary` beside `suspense.Boundary`, the tree's `Node` taking them;
+      `caughtBelow`, `notFoundLevel`, `errorLevel`, `composeAt` answer nodes and call no host try
+      (`__jhTryComponent` goes)
+- [ ] the renderer's plain functions — `renderComponent`, `renderErrorBoundary`, `renderNotFound`,
+      `renderSuspense` — run each value with the scope its parent's `run` answered; a signal re-raised,
+      only `notFoundReason()` caught at a not-found level; the error view rendered with the boundary's scope
+- [ ] `streaming.bp` keeps `(child, scope)` per hole and fills with it, the chunk order unchanged;
+      `renderWith` runs `compose(…)` with `RenderScope.root()`; `client_app.bp` the same
+- [ ] `<ErrorBoundary fallback={…}>…</ErrorBoundary>` exported for applications; `docs.md` § Error boundaries
+- [ ] the suite at 207 / 0 on erlang and its counts on commonJS (`streaming_test`, `styled_sheet_test`,
+      `client_app_test` green)
+
 **Gate:** standard (fronts.md § Gate) + every jhonstart member at its count or above on both rows
 (core 204; `jhonstart-dom-test` commonJS only, structural — 101) · `grep -rni rakun
 modules/jhonstart/src` empty and `grep -i emilia modules/jhonstart/src` still empty · `dom_test.bp`
