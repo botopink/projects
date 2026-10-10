@@ -1086,8 +1086,17 @@ No general rule (283): each case below is its own question, (a) the language's o
 #### 141-a · How a decision that retires a spelling keeps the specs from drifting (*proposed*)
 - **Measured.** 354 retired `@Component<C, R>`; the compiler refuses it and 134's codemod rewrote the libraries (`01-compiler/134` step 6 boxes 1, 6), but about 280 spec lines in 71 files still write retired spellings (`10-specs/141-specs-sweep/inventory.md`, nine families), and 25 rows of `decisions-taken.md` still state the text an amendment replaced. Nothing ties a decision to the spec lines it retires.
 - **Options.** (a) The commit that writes such a decision also rewrites the class S lines of `specs/<current>/**` that write the old form, and adds its row to 141's `inventory.md` — a duty of whoever writes the decision, no tool. (b) A meta CI check 6: a list of retired spellings and the files allowed to name them, red on any other hit — a list that excuses lines, which decision 67's spirit refuses, and a check that cannot tell an S line from an R line. (c) Nothing: 141's sweep re-runs at each milestone close.
+- **Examples.** A decision retiring `Context<T>()` for `createContext(value)` (379): (a) its commit also rewrites `08-bpp/119/README.md`'s `pub val StyledContext = Context<StyledSheet>();` to `comptime createContext(StyledSheet.missing())` and adds an F1 row to `inventory.md` — `grep -rn 'Context<StyledSheet>()' specs/1.0.12-beta` is empty when it lands; (b) `scripts/retired-spellings.txt` gains `Context<[A-Z][A-Za-z]*>\(\)` with `01-compiler/134/README.md` allowed, and check 6 turns red on the 119 line until someone rewrites it — and stays green on a box that names the form as what it removes only because that file is on the list; (c) the 119 line keeps `Context<StyledSheet>()` until the milestone closes, and a front opening 119 meanwhile reads the retired form.
 - **Recommendation.** (a): the drift is born in the decision's commit, so it is closed there; (b) only if (a) is measured failing.
 - **Blocks.** 141 step 6.
+
+#### Overtaken by a later decision (front 141 step 5)
+
+Listed for the maintainer, not closed here; each keeps its own entry and id.
+
+| Id | Overtaken by | Closing recommended |
+|---|---|---|
+| 24-a (confirmation, 01-compiler) — its last clause, "`effect-wrapper-mismatch` only for a component whose `T` implements `@Context<B>` with `B` other than its `C`" | 354: the base parameter and the marker `@Context<C>` went, and `effect-wrapper-mismatch` with them (`01-compiler/134` step 6 box 1) | confirm 24-a's other clauses and drop the last one as moot |
 
 ### From the maintainer's Portuguese record (`decisoes-pendentes.md`)
 

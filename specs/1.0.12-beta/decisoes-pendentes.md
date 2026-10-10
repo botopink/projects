@@ -295,6 +295,11 @@ for (s) { x -> … }        // sobre um @Stream: error[for-over-stream] (era for
 **Recomendação: (a).** As duas recusas têm a mesma causa e a mesma correção (pôr `@Result` no
 retorno); o guia já escreve assim, e reverter é renomear constantes. **Bloqueia:** nada.
 
+**Superada em parte (frente 141, passo 5):** a cláusula do `effect-wrapper-mismatch` perdeu o
+objeto com a 354 — o `@Context<C>` e o próprio código saíram com a base (`01-compiler/134` passo 6
+caixa 1). Recomendação de fechamento: confirmar o resto da (a) e largar essa cláusula. Fica para você;
+a 141 não fecha nada.
+
 ### 24-b · Os métodos de `@Task`
 
 **Trava:** `01-compiler/24` passo 2 (as confirmações); a forma de combinadores do `std/async` (`02/97`)
@@ -1224,7 +1229,7 @@ toda função que alcança uma das quatro células é recusada no wasm (146); o 
 | `17-c` | O que mais pode nomear um var `keyed: true` | (a): `at`, `insert` e o `bump` da 340. Uma grafia por operação de linha. | nada — o que está construído vale até ser ampliado. |
 | `ctr-l` | A terceira recusa da 186 × decisão 202 | (a). Sob a 202 nenhuma página se declara pré-renderizada; a recusa é letra morta, e a 202 é a mais restritiva (não há como forçar estágio). | nada nas frentes; só o registro. |
 | `ctr-v` | Decisão 189 (org-3) × as frentes da emilia abrindo antes da 118 | (a). Um comentário não muda comportamento; segurar duas frentes da emilia por ele não protege nada. | nada nas frentes; só o registro. |
-| `141-a` | Como uma decisão que aposenta uma grafia impede as specs de ficarem para trás | (a) — o commit que escreve a decisão reescreve as linhas das specs vigentes que ainda usam a forma antiga e acrescenta a linha dela no `inventory.md` da 141; (b) um check 6 no CI com lista de grafias e arquivos permitidos; (c) nada, a varredura da 141 roda de novo em cada fechamento | o passo 6 da 141 |
+| `141-a` | Como uma decisão que aposenta uma grafia impede as specs de ficarem para trás | (a) — o commit que escreve a decisão reescreve as linhas das specs vigentes que ainda usam a forma antiga e acrescenta a linha dela no `inventory.md` da 141; (b) um check 6 no CI com lista de grafias e arquivos permitidos; (c) nada, a varredura da 141 roda de novo em cada fechamento. Exemplo, a 379 aposentando `Context<T>()`: em (a) o mesmo commit troca `pub val StyledContext = Context<StyledSheet>();` no README da 119 por `comptime createContext(StyledSheet.missing())`; em (b) o check 6 fica vermelho nessa linha até alguém reescrevê-la; em (c) a linha fica com a forma antiga até o fechamento | o passo 6 da 141 |
 | `own-a` | Quem é dono dos scripts de teste | (a) — um dono só, a frente que já herdou o passo aberto da 25. | nada |
 | `07-b` | "Uma lib, várias cópias divergentes" também justifica pacote? | (a). Pacote bundled novo continua exigindo dois consumidores; a cópia de uma lib só se resolve dentro dela, sem abrir pacote (decisão 67: a regra mais restritiva). |  |
 | `07-h` | Bundled, ou um repositório compartilhado à parte? | (a). Fios que dois frameworks precisam concordar byte a byte saem com o compilador que os embute; um membro de repositório já se instala por `subdir` (344). | nada hoje — a trilha |
