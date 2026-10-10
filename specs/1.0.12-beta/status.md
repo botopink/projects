@@ -1,6 +1,6 @@
 # Status — 1.0.12-beta
 
-**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `882adcd2` (batch 19: a decorator's typed member, Decorator.same, .hooks readers last — 370, 371, 372)) · rakun `d609f8c` · jhonstart `8241e78` · emilia `9c3e24a`
+**Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `beda9073` (batch 20: a host-called component captures the context map, HookNode.async — 374, 375)) · rakun `d609f8c` · jhonstart `50514f1` · emilia `9c3e24a`
 · onze `783af40` · erika `8f88482` · vscode-extension `f041865`
 
 **Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
@@ -78,6 +78,8 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] decision 363 (a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending`) — 27 s1–3 · 26 (island cells) · 120 · 126
 - [ ] decision 364 (every `comptime` parameter is `comptime x: @Expr<T>` — decorators, annotations, templates, functions, builtins: passed on to outputs, `.value` read at build for data, a function or a type never run at build) — 01-checker s35 (built but box 3, the hand-over to the program: 370 — the typed member now, the typed meta with 130 s8) · 130 · 125 s7 · 281's ten fronts · the codemod over std, builtins, jhonstart, rakun, validation (done; cardume when it exists)
 - [ ] decision 365 (a deferred `after()` failure through the core's logger is 17's step 4, not 128's) — rakun 17 s4 · after 128
+- [ ] decision 374 (a `@Component` lambda handed to a host function captures the context map where it is written; a named one wrapped) — 134 s6 box 4: built as a patch (`front/ctx-async-374-375`, `run/context_host_thunk`); open `134-i` (a value; the `Suspense` child) · 119 s2–3 · 26
+- [ ] decision 375 (`HookNode.async`; commonJS emits a synchronous component as a plain `function`) — 01-checker s23 and 04-js s12 (top-level functions): built as a patch (`front/ctx-async-374-375`); open `s23-j`, `04s12-a`
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
 - [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
