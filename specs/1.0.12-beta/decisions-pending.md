@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**71 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**70 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -552,12 +552,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) `Array<string>`, each hole's text: `ctx.run("select * from users where id = $1", ["7"])`. (b) A `QueryParam` variant (`Int`, `Text`, `Bool`, `Null`) built by the hole's lowering: `ctx.run(sql, [QueryParam.Int(7)])`; the template does not know a hole's type, so every hole goes through a generic `param(v)`. (c) `unknown[]` — refused today.
 - **Recommendation.** (a): the only form that types today and the one the drivers already take; (b) when a driver needs the type.
 - **Blocks.** 137 step 2 (the SQL target), 143 s1 (`DbContext` implementing it).
-
-#### 137-c · How the query learns its declared answer (312, step 3)
-- **Measured.** `val n: i32 = erika "select name from cities";` is accepted: the call is typed by the template's free `T`, the expansion is checked apart and never unified with it (`infer.zig` `finishExpansion` skips a `typeVar` bound). Today the query decides: `limit 1` answers `?T`, anything else an array.
-- **Options.** (a) The compiler unifies the expansion's type with the expected type: `val u: ?User = erika "select * from users"` is then `expected ?User, got Array<User>`. (b) The template reads the expected type (`q.expected()`) and fails itself: `erika: an answer ?User requires 'limit 1'`. (c) The annotation form of step 29 carries the method's declared answer, the body form stays as it is.
-- **Recommendation.** (a): one rule for every template, no new template API.
-- **Blocks.** 137 step 3's first box.
 
 #### 137-e · The restrictions of aggregates in erika's grammar (312, step 4)
 - **Measured.** Built: `count` takes only `*` (`count(pop)` is a located error), `sum` takes an `i32` field (the existing `Query.sum`), `avg` an `f64` field, `min` / `max` answer `?F`; an aggregate without `group by` takes neither `order by` nor `limit` and answers one value (a tuple for several); a field beside an aggregate needs `group by` on it; with `group by` the selected fields are the group field and `order by` names it; `select *` with `group by` is refused.

@@ -638,6 +638,20 @@ decl.setMeta(…);                                                    // ❌ the
       (372's pattern) — `modules/template_lookup_meta_other_module`, `run/template_lookup_meta_same_module`
 - [ ] `docs.md` § Template functions documents `lookup`'s handle; `comptime/AGENTS.md` states the order
 
+### Step 40 — a template call is typed by the code it built (decision 426)
+
+```bp
+val n: i32 = erika "select name from cities";     // ❌ expected i32, got Array<string> — compiles today
+val nomes = erika "select name from cities";      // nomes: Array<string>
+```
+
+- [ ] `finishExpansion` types the call by the expansion: no free `T` survives a template call; the built type is
+      checked against the signature's answer (a bound) at the template's `build`, then unified with the expected type
+      at the call — `run/template_call_typed_by_expansion`, `reject/template_call_expected_mismatch`,
+      `reject/template_build_outside_bound`
+- [ ] `q.note(message)` attached to an error reported at the call — `reject/template_note_on_mismatch` (the note
+      in the expected text); `docs.md` § Template functions
+
 ### Rows other fronts found
 
 - [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the

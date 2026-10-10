@@ -113,6 +113,8 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
 - [ ] [`examples/types.bp`](./examples/types.bp) — the whole `Type` surface, signatures and results —
       compiles and passes on the four targets; its "does not compile" lines are `01-checker` step 28's
       `reject/` cells; `Type.merge` with a field on both sides is an error, `Type.required` drops every `?`
+- [ ] `Expr`'s surface for 415 and 426: `lookup(name)` answers `?Decl<unknown>` (the `Binding` record goes), `build<R>`'s
+      `R` is the type the built code infers to, `note(message)` declared — the drift test follows
 - [ ] `docs.md` § Builtins generated from or checked against the declarations
 
 ### Step 6 — contexts: `@Component<R>`, `use provide` / `use context` (decision 354, replaces 269)

@@ -71,7 +71,9 @@ reads its own `QueryTable` meta, never `#[entity]`, `SqlTemplate` or rakun (397)
 ### Step 3 — the number of rows is written
 
 - [ ] an answer `?T` requires `limit 1`, an answer `T[]` (or `Array<T>`) refuses it; a mismatch is a
-      compile error at the query naming the declared answer (decision 312)
+      compile error at the query naming the declared answer (decision 312) — `query` builds `runOne` (`@Result<?Row, E>`)
+      under `limit 1`, `runMany` (`@Result<Row[], E>`) otherwise, and the call's type is the built code's (426), with
+      `q.note("query answers a list — add limit 1 for ?User")` on the list branch
 - [x] in memory `limit n` is `take(n)`; `?T` answers `first()`
 
 ### Step 4 — the grammar grows

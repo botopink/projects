@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 71 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **426**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 70 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **427**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -589,29 +589,6 @@ ctx.run("select * from users where id = $1", ["7"])      # cada buraco vira o te
 ---
 
 ---
-
-### 137-c · Como a consulta sabe a resposta declarada (312, passo 3)
-
-**Trava:** a primeira caixa do passo 3 da 137
-
-**Contexto.** A chamada é tipada pelo `T` livre do template; a expansão é checada à parte e nunca unificada com ele. Hoje a consulta decide: `limit 1` responde `?T`, o resto um array.
-
-**Hoje:**
-```bp
-val n: i32 = erika "select name from cities";    // aceito
-```
-
-- [ ] **(a)** O compilador unifica o tipo da expansão com o esperado.
-  ```bp
-  val u: ?User = erika "select * from users";    // expected ?User, got Array<User>
-  ```
-- [ ] **(b)** O template lê o tipo esperado e falha ele mesmo.
-  ```bp
-  // erika: an answer ?User requires 'limit 1'
-  ```
-- [ ] **(c)** A forma de anotação do passo 29 carrega a resposta declarada do método; a forma de corpo fica como está.
-
-**Recomendação: (a)** — uma regra para todo template, sem API nova.
 
 ---
 
