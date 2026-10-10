@@ -234,9 +234,9 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       matches the other's element — asserted on the rendered document with a `jhonstart-dom-test` selector matcher
 - [ ] a parent's style does not reach a child component's own elements
 - [ ] a component rendered twenty times registers its sheet once — `compose` provides
-      `StyledContext` (`jhonstart/src/styled_sheet.bp`, written with step 1, held: § State); a provider
-      is lost below a `@Component` thunk a host cell calls (an `error` / `not-found` segment, a
-      `Suspense` child — `119-g`)
+      `StyledContext` (`jhonstart/src/styled_sheet.bp`, written with step 1, held: § State); below an
+      `error` / `not-found` segment and in a `Suspense` fill too, once a `@Component` thunk a host cell
+      calls captures the map where it is written (374, `01-compiler/134` step 6)
 - [ ] head order: `<link>`, emilia's layers, scoped styles
 - [ ] a run-time hole's value containing `;` or `}` is escaped in the root's `style`; the test injects one
 
@@ -354,7 +354,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 ## Decisions
 
 Answered: `34-a` → 369 (`#[emilia(…)]`'s meta and its reader, step 4), `34-c` → 368 (the reader's source order, step 1), `05emilia-e` → 358, `119-e` → 356, `119-c` → 355, `08-d` → 338, `119-b` → 352, `134-f` → 354, `119-d` → 353 (box 5 waits on `01-compiler/130` step 10).
-Open: `119-f` (a `val` holding a literal computed at render), `119-g` (a provider lost below a host-called `@Component` thunk).
+Answered since: `119-g` → 374 (a host-called `@Component` thunk captures the map, `01-compiler/134` step 6). Open: `119-f` (a `val` holding a literal computed at render).
 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`

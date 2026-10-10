@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
+**79 questions and 6 contradictions are open, and 92 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -917,36 +917,6 @@ No general rule (283): each case below is its own question, (a) the language's o
   refusing the build-time constants `styled` emits for a `val` today.
 - **Blocks.** Nothing in 119 step 1 (built as functions). `06-emilia/34` step 5 (emilia's `val`
   families) and any library `val` of a computed component.
-
-#### 119-g · A `@Component` thunk a host cell calls loses every provider above it (decision 354 (8)) (*proposed*)
-- **Measured** (front 119 step 1, jhonstart's `compose` providing `StyledContext`). A lambda answering
-  `@Component<R>` takes the hidden map as its first parameter, and "a host that calls one passes the
-  map first (`null` when it has none)" (`context_lower.zig`). jhonstart's `__jhTryComponent` /
-  `componentOutcome` (`signal_runtime.mjs` `tryTask(f)` → `f()`) and a `Suspense` boundary's child
-  are such thunks: below an `error` or `not-found` segment, or in a boundary fill, the map is gone. A
-  page under `withError(segment("/"), …)` whose component is a `styled` literal computed at render
-  renders the segment's error view (`<div data-jh-e="/">caught</div>`) and writes no sheet — its
-  `use context(StyledContext)` was `context-unbound` — on erlang and commonJS.
-- **Options.**
-  (a) The compiler: a `@Component` lambda handed to a host function captures the map where it is
-  written (it takes no hidden parameter), so the host's call keeps the providers:
-  ```bp
-  val outcome = await __jhTryComponent({ -> notFoundLevel(chain, i, route, page) });
-  // lowered: { -> notFoundLevel(bpContextKids__0, chain, i, route, page) } — the map captured
-  ```
-  (b) jhonstart: every thunk it hands a host is a `fn() -> @Task<Element>` (no hidden parameter; a
-  component call in its body takes the enclosing body's map), `__jhTryComponent` goes:
-  ```bp
-  val outcome = await __jhTryTask({ -> notFoundLevel(chain, i, route, page) });
-  ```
-  (c) A host cell that calls a `@Component` thunk declares the map as a parameter, and the caller
-  passes its own (`declare fn __jhTryComponent(map: unknown, f: …)` — a program names the map, which
-  354 (8) says it never does).
-- **Recommendation.** (a): a provider cannot be lost by the shape of a call — no library has to know
-  which of its thunks a host calls.
-- **Blocks.** 119 step 2's "rendered twenty times" box under an `error` / `not-found` / `loading`
-  segment, step 3 (a boundary's fill), and every context read below one (`ElementContext`,
-  `05-jhonstart/26`).
 
 ### 09-cardume
 

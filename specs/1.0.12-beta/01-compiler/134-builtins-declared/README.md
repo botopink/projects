@@ -137,6 +137,11 @@ fn Button() -> @Component<Element> {
       (handed to 02–05 and 18 for each lowering) — built on erlang, beam and commonJS; open: wasm (refused at the
       `use`, 05), the comptime runtimes (`emitComptimeModule` lowers the parsed program, 18 / 14), a `@Component`
       value handed to generic code (`134-g`)
+- [ ] a `@Component` function value handed to a host function captures the map where it is written
+      (374): no hidden parameter on a lambda that is a host call's argument, a named component wrapped as
+      `{ -> C() }`, a lambda's own parameters kept — `run/context_host_thunk` (a provider read below
+      `__jhTryComponent`-shaped host call, and below one the host calls later) on erlang, beam and
+      commonJS; a lambda handed to a botopink function unchanged (`run/context_provide_read` stays green)
 - [x] the rules of hooks (357): `use` only at the top level of a `@Component` body —
       `error[use-not-top-level]` inside `if` / `else`, a `case` arm, a loop, a lambda, `try` /
       `catch`, or after a statement that may return early, naming the enclosing construct;
