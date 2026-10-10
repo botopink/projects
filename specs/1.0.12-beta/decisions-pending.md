@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**71 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**72 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -371,6 +371,12 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Rules.** `std-a`: `querystring.parse` / `parseForm` "refuse … an escape that decodes to a control character", and rakun's `splitQuery` moves onto them. `03r-e`: a cookie or query component that would decode to a control character "stays exactly as written". 196 moves rakun's cookie readers into `http`.
 - **Recommendation.** Confirm `std-a`; `03r-e` lapses when rakun reads queries via `querystring` and cookies via `http`.
 - **Blocks.** rakun 04's readers; 104's consumer sweep.
+
+#### 396-a · onze-content: "a node rendered by a component of the page's own where the page asks"
+- **Measured.** 142 step 3 built `element.toElement(doc: MdDoc) -> Element` (every `MdNode` to one fixed element, as the old `toElement`); 396 (3) and the step's box say a page may render a node with a component of its own, and fix no form. Components are functions of a props record (192/193), `Element`s are values.
+- **Options.** (a) `toElementWith(doc, render: fn(node: MdNode, kids: Array<Element>) -> ?Element)` — one function, `null` keeps the default element, the page matches the node kinds it wants (`Heading`, `Link`, `CodeBlock`, …). (b) A record of optional per-kind functions, `Components(heading: ?fn(depth, id, kids) -> Element, link: ?fn(href, title, kids) -> Element, …)`, one field per node kind. (c) Walk `MdDoc` in the page and call `toElement` for the nodes it does not render (no hook; the tree is public).
+- **Recommendation.** (a): one reading, no field per kind to keep in step with the tree; (c) needs no code and is available today.
+- **Blocks.** `142` step 3's second box (only the hook; the default mapping is built).
 
 #### 07-g · OTP release rendering
 - **Measured.** `rakun-release/release.bp` (into `rakun-cli` under 187) and `onze-release/otp.bp` render the same `.rel` / `vm.args` / `sys.config` / boot script / Dockerfile; onze cannot reuse rakun's (rakun erlang-only, onze-release also commonJS).

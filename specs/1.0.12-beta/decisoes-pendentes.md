@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 71 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 72 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -592,6 +592,26 @@ import {unicode_tables as tables};
 - [ ] **(b)** Fica como a thread fez: um irmão privado `unicode_tables.bp` na raiz da std.
 
 **Recomendação (da thread): (b)** — nenhuma mudança de API, um arquivo gerado e privado. **Bloqueia:** nada.
+
+---
+
+### 396-a · Como uma página renderiza um nó do Markdown com um componente seu (142 passo 3)
+
+**Trava:** a segunda caixa do `03-bundled-libs/142` passo 3 (só o gancho; o mapeamento padrão está construído)
+
+**Contexto.** O passo 3 levou o leitor de Markdown do `onze-content` para a biblioteca `markdown`, que responde uma árvore própria (`MdDoc`, `MdNode`: `Heading`, `Paragraph`, `CodeBlock`, `Link`, `Image`, …). O `onze-content` mapeia a árvore para `Element` (`element.toElement(doc)`). A 396 (3) diz que uma página pode renderizar um nó com um componente seu, mas não fixa a forma.
+
+- [ ] **(a)** Uma função só, `null` mantém o elemento padrão:
+  ```bp
+  val page = toElementWith(doc, { node, kids -> case node { Heading(depth, id, _) -> <MeuTitulo nivel={depth} id={id}>{kids}</MeuTitulo>, _ -> null } });
+  ```
+- [ ] **(b)** Um record com uma função opcional por tipo de nó:
+  ```bp
+  val page = toElementWith(doc, Components(heading: { depth, id, kids -> <MeuTitulo nivel={depth} id={id}>{kids}</MeuTitulo> }));
+  ```
+- [ ] **(c)** Nenhum gancho: a página percorre o `MdDoc` (que é público) e chama `toElement` nos nós que não renderiza.
+
+**Recomendação: (a)** — uma leitura só, sem um campo por tipo de nó para manter em dia com a árvore; a (c) não pede código e já funciona hoje.
 
 ---
 
