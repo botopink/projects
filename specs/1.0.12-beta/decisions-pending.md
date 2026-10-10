@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**83 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
+**86 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -207,6 +207,89 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) Refused (as built), 357 (2)'s "never under a condition": `val n = ready && use flag();` is `use-not-top-level`; written `val f = use flag(); val n = ready && f;`. (b) Accepted: only the listed constructs refuse — `val n = ready && use flag();` builds, and `flag` runs on the calls where `ready` holds.
 - **Recommendation.** (a).
 - **Blocks.** Nothing — built as (a).
+
+#### 134-i · A `@Component` value handed to a host that is not a lambda written there (374)
+- **Measured.** 374 is built (`front/ctx-async-374-375`, `comptime/context_lower.zig` `lowerHostArg`): a
+  `@Component` lambda written as an argument of a host call takes no hidden map and reads the map of the body
+  it is written in, and a declared component named as one is wrapped (`hostNow(Plain)` → `{ -> Plain(<map>) }`)
+  — `run/context_host_thunk` on erlang, beam and commonJS. 374 does not say what a `@Component` **value** handed
+  to a host is — a parameter, a local, a record field. Built: it keeps the hidden map as its first parameter
+  and the host passes `null` (jhonstart's `jhonstart_signal.erl` `call/1`). Three jhonstart sites meet it:
+  `componentOutcome(f)` hands its parameter to `__jhTryComponent(f)`; `jhRegisterPage(record, render)` stores a
+  parameter that `__jhRoutesLookup` hands back typed `fn(route: PageContext) -> @Component<Element>`, which
+  botopink then calls with the map; and a loading segment's `Suspense` child (`render.bp` `errorLevel`: `val
+  child: fn() -> @Component<Element> = { -> caughtBelow(…) }`, stored in `Boundary(child:)`) is run by
+  `streaming.bp` `resolveIn` → `componentOutcome(child)` outside every body, so a provider above it
+  (`StyledContext`) is lost in a boundary fill — the case 374's text names ("a `Suspense` fill … reads the same
+  captured map") and its rule does not reach, the lambda being a `val`'s initializer, not a host argument.
+- **Options.**
+  (a) As built: only a lambda written as the host argument and a declared component name capture; any other
+  value keeps the map parameter. jhonstart moves the `Suspense` child's lambda into a host call where it is
+  written (a host identity cell), so it captures there:
+  ```bp
+  val child = __jhKeep({ -> caughtBelow(chain, i, route, page) });   // the lambda captures errorLevel's map
+  // a value: componentOutcome(f) → __jhTryComponent(f) still hands the host f(map, …), which it calls with null
+  ```
+  (b) Every `@Component` value handed to a host is wrapped where it is handed over, `{ -> f(<map here>) }`:
+  ```bp
+  __jhTryComponent(f)          // lowered: __jhTryComponent({ -> f(<componentOutcome's map: null>) })
+  jhRegisterPage(line, render) // lowered: the stored function takes no map; a lookup typed
+                               // fn(route) -> @Component<Element> is then called with one — erlang badarity
+  ```
+  (c) A lambda answering `@Component` captures wherever it is not an argument of a botopink call — a `val`'s
+  initializer and a record field included:
+  ```bp
+  val child: fn() -> @Component<Element> = { -> caughtBelow(chain, i, route, page) };  // captures here
+  // the type `fn() -> @Component<Element>` then holds values of two arities (a parameter's takes the map)
+  ```
+- **Recommendation.** (a): (b) breaks the registry round trip and gains nothing at `componentOutcome` (its map
+  is `null`), (c) makes one function type stand for two calling conventions. The loss under a `Suspense` fill
+  is closed where the lambda is written, which is 374's own reading.
+- **Blocks.** `08-bpp/119` step 3 (a boundary's fill keeps `StyledContext`), `05-jhonstart/26`'s `Suspense`
+  child.
+
+#### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
+- **Measured.** Built (`front/ctx-async-374-375`, `infer.zig` `noteAsyncCall`, `finishHookNode`,
+  `markHookAsync`): (1) a call of a function value or a method makes the node asynchronous only when the call's
+  type resolves to `@Component<R>` or stays an open type variable — `xs.length()`, a record constructor and a
+  method answering `string` do not (s23-d's "a `@Component` called through a function value or a method");
+  (2) a `use` of a host hook and a call of a host function answering `@Component` count as a host answering
+  `@Task` (`Component<R> extends Task`) — `run/decl_hooks_direct`'s `Page` (`use session()`, `declare fn
+  session() -> @Component<string>`) is `async`; (3) a call of a botopink function answering `@Task` with no
+  written `await` does not count (`val t = loadComments();` keeps a Task value); (4) an `await` or `async { … }`
+  written inside a lambda in the body counts for the node (the node holds its lambdas, 277); (5) a target with
+  no published node (a declaration the session did not publish) is asynchronous.
+- **Options.** (a) As built. (b) Any call of a function value or a method makes the node asynchronous, whatever
+  it answers:
+  ```bp
+  fn Card(xs: string[]) -> @Component<Element> { val n = xs.length(); return Element(text: n.toString()); }
+  // (a): Card sync, `function Card(map, xs)`; (b): Card async — every component reading a method is async
+  ```
+  (c) A host answering `@Component` is synchronous (only a host answering `@Task` is named):
+  ```bp
+  declare fn session() -> @Component<string>;        // #[@External.Node("""Promise.resolve("alice")""")]
+  fn Page() -> @Component<Element> { val u = use session(); … }
+  // (c): Page sync, `const u = session()` — a Promise where a string is read
+  ```
+- **Recommendation.** (a): a mark that is never false where commonJS needs an `await`, and true no wider than
+  the types say.
+- **Blocks.** Nothing — built as (a).
+
+#### 04s12-a · A `@Component` method, lambda or `default fn` has no hooks node (375 (2), 04-js step 12)
+- **Measured.** 04-js step 12 asks a method, a lambda and a `default fn` to follow the mark "alike", but 277's
+  nodes are the module's top-level functions only. Built: each stays an `async function` / `async` arrow on
+  commonJS, and a call of one keeps its `await` (a call the checker cannot follow, s23-j (1)).
+- **Options.** (a) As built. (b) The checker marks every `@Component` body — a method, a `default fn`, a lambda —
+  by 375's rule (a node of its own, not listed in `decl.hooks`), commonJS emits each by its mark:
+  ```bp
+  type Menu(items: string[]) { fn render(self: Self) -> @Component<Element> { return Element(…); } }
+  // (a): `async render(map) {…}`, `await menu.render(map)`; (b): `render(map) {…}`, no `await`
+  ```
+  (c) (b), and a method's node enters `decl.hooks` (277 amended: a method call followed through its receiver's
+  type).
+- **Recommendation.** (b): the rule is the body's, wherever the body is written; (c) changes what a `.hooks`
+  reader sees and is 277's question.
+- **Blocks.** 04-js step 12 box 1's method, lambda and `default fn`.
 
 #### s23-a · Two field names of decision 277's records (contradiction with the reserved words)
 - **Measured.** 277 writes `HookNode(fn: Declared<unknown>, …)`; every keyword is reserved in every position
