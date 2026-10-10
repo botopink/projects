@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**67 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**67 questions and 6 contradictions are open, and 98 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -346,11 +346,10 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-#### 01-compiler (28)
+#### 01-compiler (27)
 
 | Id | Choice implemented | Where |
 |---|---|---|
-| 24-a | Annotation-only effect codes deleted; `effect-throw-without-fallible-channel` merges into `effect-try-without-fallible-channel`; `effect-wrapper-mismatch` only for a component whose `T` implements `@Context<B>` with `B` other than its `C`; `for-over-stream` / `for-await-expects-stream` are the renamed generator codes | `comptime/diagnostics.zig` |
 | 24-b | `@Task`'s methods are `map` and `then`; no `flatMap` alias | `builtins.d.bp` |
 | 24-c | `iter for` / `iter while` parse as prefixed `loop { for (…) { … }; break; }` (keyword kept in `LoopExpr.prefixedKeyword`); `iter loop :l` labels the generator scope, `iter for :l` the written `for` | parser |
 | 23-b | `base64`'s four functions retired, not aliased; `encoding.base64Decode` / `base64UrlDecode` answer `@Result` | `libs/std/src/encoding.bp` |
@@ -819,7 +818,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 
 | Id | Overtaken by | Closing recommended |
 |---|---|---|
-| 24-a (confirmation, 01-compiler) — its last clause, "`effect-wrapper-mismatch` only for a component whose `T` implements `@Context<B>` with `B` other than its `C`" | 354: the base parameter and the marker `@Context<C>` went, and `effect-wrapper-mismatch` with them (`01-compiler/134` step 6 box 1) | confirm 24-a's other clauses and drop the last one as moot |
 
 ### From the maintainer's Portuguese record (`decisoes-pendentes.md`)
 

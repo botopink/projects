@@ -671,6 +671,20 @@ val quadrados = erika "select label from boxes where w = h";                  //
       consumer commit each —, their three `// LANGUAGE GAP` markers go and `language-gaps.md`'s row closes;
       erika-test and erika-linq green on erlang without it
 
+### Step 42 — a host binding that throws answers a `@Result` (decision 431)
+
+```bp
+#[@External.Node("JSON.parse($0)", throws: true), @External.Erlang("json:decode($0)", throws: true)]
+declare fn jsParse(s: string) -> @Result<Json, HostError>;
+val doc = try jsParse(texto);                      // a JS SyntaxError / an erlang raise is Error(HostError(…))
+```
+
+- [ ] `throws: true` on every `@External` variant, a `bool` at the last position (as `inline:`); refused unless the
+      declared return is `@Result<…, HostError>` or `@Task<@Result<…, HostError>>` — `reject/external_throws_return`
+- [ ] each backend wraps the cell (commonJS `try/catch`, a rejected Promise; erlang and beam `try … catch Class:Reason`;
+      wasm the `wasi:` adapter's error) — handed to 02–05 —, `run/external_throws_host_error` on the four targets
+- [ ] `effect-try-without-fallible-channel`'s message names `try … catch` and `throws: true`; `docs.md` § Results, § Host bindings
+
 ### Rows other fronts found
 
 - [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the

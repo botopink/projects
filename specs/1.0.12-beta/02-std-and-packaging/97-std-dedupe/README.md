@@ -197,6 +197,15 @@ and beam, 2 on wasm.
       `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
 - [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
 
+### Step 18 — `failure`: `HostError`, `Failure`, `attempt` (decision 431; with `01-checker` step 42)
+
+- [ ] `libs/std/src/failure.bp`: `pub type HostError(message: string, kind: string)`, `pub type Failure(message: string,
+      kind: string)` (`panic` / `host` / `crash`), `pub fn attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task`
+      form — a cell per target; `root.bp` gains `pub mod failure;`
+- [ ] `testing.asserts`' `throws` / `throwsWith` over `attempt`, the private `tryCatch` cell gone; jhonstart's
+      `__jhTryValue` / `__jhTryTask` replaced by `attempt` in `05-jhonstart/26` step 14 (a consumer row below)
+- [ ] `run/std_failure_attempt` (a panic, a host raise, a value) on the four targets; `libs/std/AGENTS.md`'s table
+
 ## Consumers — "consume std X" rows handed to the library fronts
 
 Each row is a step of the named front; deletion measured by the grep.

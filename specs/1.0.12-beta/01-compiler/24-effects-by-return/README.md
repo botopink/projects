@@ -37,7 +37,8 @@ then, named as stubs in the report). E3's three checker rows landed in 01
 24-a (effect codes), 24-b (`@Task`'s `map` / `then`), 24-c (prefixed loop's label), 24-g
 (`std/async`'s shape) confirmed or reversed; 24-h answered (decision 179, recorded by `04-js`).
 
-- [ ] the four ids in `../../decisions-taken.md`; a reversal's step named in the owning front
+- [ ] the four ids in `../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`;
+      `throws: true` and `attempt` are `01-checker` step 42 and `02/97` step 18)
 
 ### Step 3 — the cost of a `@Result` per item
 

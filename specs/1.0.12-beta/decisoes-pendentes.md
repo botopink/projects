@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 67 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **431**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 67 perguntas, 6 contradições e 98 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **432**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -87,44 +87,6 @@ val r = await async.timeout({ -> slow() }, 100);                   // estourou �
 **Recomendação: (a).** Segue o guia e a suíte da frente 24, e cada forma tem um nome só.
 **Bloqueia:** nada — o README da `01-std/02-std-async-primitives` (1.0.10) já especifica o `allOf` sobre
 Tasks iniciadas.
-
-### 24-a · Os códigos de diagnóstico de efeito que sobraram
-
-**Trava:** `01-compiler/24` passo 2 (as confirmações)
-
-**Contexto.** Desde a frente 24 (decisão 118), uma função ganha um efeito escrevendo o invólucro no
-tipo de retorno (`-> @Result<…>`, `-> @Task<…>`) e mais nada; não há mais anotação de efeito. Os
-códigos que falavam da anotação (`effect-missing-annotation`, `effect-missing-wrapper`,
-`effect-duplicate-annotation`, `effect-on-declare-forbidden`, `effect-on-behavior-method-forbidden`)
-ficaram sem assunto, e `for-over-fallible-generator` aplicava uma regra que a decisão 122 apaga. O
-guia já escrevia a recusa de um `throw` com o código do `try`, e a implementação seguiu o guia. Os
-sobreviventes estão em `comptime/diagnostics.zig`.
-
-**Hoje:**
-```bp
-fn f() { try g(); }       // error[effect-try-without-fallible-channel]
-fn h() { throw "x"; }     // error[effect-try-without-fallible-channel] — o do `throw` foi fundido nele
-for (s) { x -> … }        // sobre um @Stream: error[for-over-stream] (era for-over-future-generator)
-```
-
-- [ ] **(a) ★** Um código só para "não há camada `@Result` no retorno", seja `try` ou `throw`;
-  `effect-wrapper-mismatch` fica só para o componente cujo `T` implementa `@Context<B>` com um `B`
-  diferente do `C` escrito; `for-over-stream` / `for-await-expects-stream` são os nomes novos.
-  ```bp
-  fn h() { throw "x"; }     // error[effect-try-without-fallible-channel]
-  ```
-- [ ] **(b)** Um código separado para o `throw`.
-  ```bp
-  fn h() { throw "x"; }     // error[effect-throw-without-fallible-channel]
-  ```
-
-**Recomendação: (a).** As duas recusas têm a mesma causa e a mesma correção (pôr `@Result` no
-retorno); o guia já escreve assim, e reverter é renomear constantes. **Bloqueia:** nada.
-
-**Superada em parte (frente 141, passo 5):** a cláusula do `effect-wrapper-mismatch` perdeu o
-objeto com a 354 — o `@Context<C>` e o próprio código saíram com a base (`01-compiler/134` passo 6
-caixa 1). Recomendação de fechamento: confirmar o resto da (a) e largar essa cláusula. Fica para você;
-a 141 não fecha nada.
 
 ### 24-b · Os métodos de `@Task`
 
