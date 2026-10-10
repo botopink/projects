@@ -1,9 +1,8 @@
 # Front 142 — data formats: `json`, `yaml` and `markdown`, one repository each (decision 396)
 
 **Priority:** medium — `08-bpp/121` step 3 (frontmatter) waits on `yaml`; every other consumer works
-today against std's `json` · **State:** not started
-**Depends on:** decision 396 · step 0: `botopink/json`, `botopink/yaml`, `botopink/markdown` created on
-GitHub (an organisation action, as 138 step 1 and 135 step 0) · step 2's rakun commit: `04-rakun/128`
+today against std's `json` · **State:** step 0 done (the three repositories scaffolded, submodules); steps 1–3 open
+**Depends on:** decision 396 · step 2's rakun commit: `04-rakun/128`
 landed (rakun rows target post-128 paths, decision 339)
 **Owns:** `repository/{json,yaml,markdown}/**` (new repositories, decision 326's rule), their
 `.gitmodules` entries, `AGENTS.md` § Layout row and CI check 4's list in the commit that adds each ·
@@ -36,7 +35,7 @@ val doc = markdown.parse(body);                     // Heading, Paragraph, Link,
 
 ### Step 0 — the three repositories
 
-- [ ] `botopink/json`, `botopink/yaml`, `botopink/markdown` scaffolded on `feat` (the shared hooks
+- [x] `botopink/json`, `botopink/yaml`, `botopink/markdown` scaffolded on `feat`, its default branch (the shared hooks
       byte-identical, `.gitignore` naming `*.snap.new` / `*.snap.md.new`, `AGENTS.md` naming
       `core.hooksPath`), each a submodule with its `.gitmodules` entry, `AGENTS.md` § Layout row and CI
       check 4's list in the commit that adds it (CI checks 1, 2, 4)

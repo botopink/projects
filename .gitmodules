@@ -51,3 +51,15 @@
 	path = repository/snap
 	url = git@github.com:botopink/snap.git
 	branch = feat
+[submodule "repository/json"]
+	path = repository/json
+	url = git@github.com:botopink/json.git
+	branch = feat
+[submodule "repository/yaml"]
+	path = repository/yaml
+	url = git@github.com:botopink/yaml.git
+	branch = feat
+[submodule "repository/markdown"]
+	path = repository/markdown
+	url = git@github.com:botopink/markdown.git
+	branch = feat
