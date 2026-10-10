@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**72 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
+**75 questions and 6 contradictions are open, and 99 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -255,6 +255,55 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) Refused, naming the call and the remedy (as built). (b) The checker infers the body of every function a `comptime` reaches before the `comptime` is evaluated, so the order of declarations does not matter.
 - **Recommendation.** (a) until (b) is built by `01-checker`; (b) refuses nothing a program needs.
 - **Blocks.** Nothing — built as (a).
+
+#### 140-d · How a task adapter is spelled: 393's `wasi: .Delay` against 238's one string
+- **Measured.** 393 writes `#[@External.Wasm(wasi: .Delay)]`; 238's closed vocabulary (and every std
+  binding today) is one string, `#[@External.Wasm("wasi:random_f64")]`, and `builtins.d.bp` declares
+  `Wasm(template: string)` (+ step 2's `host:`). Built (front 140 step 4): the string form — `"wasi:delay"`,
+  `"wasi:race"`, `"wasi:race_of"`, `"wasi:spawn_all"` in `host_binding.zig`'s one list, checked by shape at
+  the annotation (`run/external_wasm_task_adapter_shape`).
+- **Options.** (a) ★ 238's one string: `#[@External.Wasm("wasi:delay")]`, adapter names in the list's
+  snake_case. (b) 393's spelling: a labelled enum argument `#[@External.Wasm(wasi: .Delay)]` beside the
+  string forms — a second spelling of the same binding, a `builtins.d.bp` change and a checker arm.
+- **Recommendation.** (a) — one spelling for a binding; 393's example reads as `"wasi:delay"`.
+- **Blocks.** Nothing — built as (a); `02/97` step 17 writes std's bindings in the chosen spelling.
+
+#### 140-e · An `await` of a task inside a `@Component` body on wasm (392 (2) against 375 (3))
+- **Measured.** 392 (2): "a function 375 marks asynchronous compiles to a resumable state machine". Built: a
+  `-> @Task` function, a method answering one and an `async { }` block are state machines; a `@Component`
+  body stays eager (as 375 (2) left wasm), because a component value has one representation for every caller:
+  375 (3) keeps `await` legal on a synchronous component (a no-op) and a component reached through a function
+  value (`slot.view(c)`) is awaited without the caller knowing which it is — a task's address and an
+  `Element` are both one `i32` word, not told apart at run time. An `await` of a TASK in a component body
+  runs the ready tasks until it settles (`$__task_block_on`) and traps, on both hosts, when the task still
+  waits on the host (`run/effect_context_await`, `component_call_awaited` and the other component cells
+  pass on both hosts).
+- **Options.** (a) Every `@Component` on wasm is a state machine answering a task — a synchronous one
+  settles when made; `await` / `use` of a component always reads a task (what commonJS did before 375's code
+  half). (b) Only the components 375 marks are state machines; a call through a function value is
+  asynchronous (375's conservative answer), so a synchronous component passed as a value must be wrapped in
+  a settled task where it becomes a value. (c) As built: components eager, an `await` of a host-pending task
+  there traps.
+- **Recommendation.** (a) — one representation of `@Component<R>` on wasm, no trap; 375's mark stays a
+  commonJS optimisation. Not built: it changes every component cell's lowering on wasm (front 140 step 4,
+  a follow-up thread).
+- **Blocks.** 140 step 4 box 1 for `@Component` bodies; nothing else (no cell awaits a host task in a
+  component).
+
+#### 140-f · A call before an `await` in the same statement, on wasm (392 (2))
+- **Measured.** A state machine resumes an `await` by entering its statement again, reading back what it
+  passed (conditions, `case` subjects, loop starts are kept in the frame) and skipping the statements
+  before it; an operand evaluated before the `await` in its own statement runs again. Built: a call there is
+  refused at the `await` — `@print(pair(label("x"), await answer(21)))` is ``the wasm backend resumes an
+  `await` by entering its statement again, and a call evaluated before it in that statement would run
+  twice`` at `21:29` (`run/task_await_after_call_refused_on_wasm`, `wasm.expect`); commonJS, erlang and beam
+  run it. Constructors and `Ok`/`Error` (an allocation) are not counted as calls.
+- **Options.** (a) ★ Refused where written (as built): `val l = label("x"); @print(pair(l, await answer(21)));`
+  builds everywhere. (b) The backend binds each operand evaluated before an `await` to a frame local
+  (A-normal form), so the statement runs as written: `pair(label("x"), await answer(21))` → `label("x")`
+  stored, then the `await`.
+- **Recommendation.** (a) now — never a call run twice, the refusal located; (b) when a program needs it.
+- **Blocks.** Nothing.
 
 ### 02-std-and-packaging
 

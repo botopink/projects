@@ -1,7 +1,9 @@
 # Front 140 — a wasm build binds to its runtime: wasmtime (WASI preview 2) and the browser, together
 
 **Priority:** high — `io/http` and `async` stay refused on wasm until it lands (97-a, 97-b → 334) ·
-**State:** partial: steps 1–3 built, step 6 built but for `@Task`; 4, 5 and 6's `@Task` follow 392–394 (a Promise's behaviour, the state machine and its scheduler)
+**State:** partial: steps 1–3 built; step 4 built but for `@Component` bodies (140-e) and `fetch`'s
+records (with `io/http`); step 5's `run/wasm_host_async` and step 6's adapter list built; `run/wasm_host_http`,
+`async_block_all_of`'s wasm column and std's bindings wait on `02/97` step 17 ·
 **Depends on:** decision 334 · `05-wasm` step 5 (std on wasm, groups 1–2) · front 18 (the binary
 emitter, for the component wrapping) · `02-std-and-packaging/98` (the manifest model, for the
 `"wasm"` key)
@@ -20,8 +22,8 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/` unless t
 
 Decision 334: a wasm build names the runtime it runs on, and std binds a cell to what that runtime
 offers. The default profile is **`wasi`** — wasmtime and the runtimes that follow WASI preview 2
-(`wasi:http`, `wasi:clocks`, `wasi:io/poll`); the **`browser`** profile (JS imports: `fetch`, timers,
-`Promise` through JSPI) lands **with it**: a cell bound on one host is bound on the other, and every
+(`wasi:http`, `wasi:clocks`, `wasi:io/poll`); the **`browser`** profile (JS imports: `fetch`, timers;
+the same task state machines driven by the JS event loop, decisions 392–394) lands **with it**: a cell bound on one host is bound on the other, and every
 wasm cell runs on both.
 
 ```jsonc
@@ -59,39 +61,57 @@ declare fn fetch(req: Request) -> @Task<@Result<Response, HttpError>>;
   wasm cell on both hosts, one `.out`, a disagreement failing the cell (372/372 agree);
   `modules/wasm_host_browser_runs`.
 
+- Step 4 (decisions 392, 393) — `@Task<T>` on wasm is a task record (`wat_prelude.zig` § decision 392's
+  scheduler) and a `-> @Task<T>` fn, each specialisation, a method answering one and an `async { }` block
+  are resumable state machines (`wat.zig` § decision 392: `$f` makes the task and runs it to its first
+  `await`, `$f__body` re-entered at the frame's resume index with every local restored, `$f__step` settles
+  it; statements, `if` conditions, `case` subjects and loop starts guarded on re-entry, so loops, `try`,
+  `try … catch` and `if` arms resume in place; `return t` of a task adopts it); a synchronous function is
+  unchanged. The scheduler: a ready queue, settle-once wake-ups, `_start` draining it and waiting on the
+  host's pollables (`wasi:io/poll` through the component's `bp_host` adapter, `component_host_*`).
+  Adapters answering `@Task<T>` over a generic `T`, checked by shape at the annotation (393; 140-d: the
+  string spelling ★): `wasi:delay` (`(i32, T) -> @Task<T>`, `subscribe-duration` on the monotonic
+  clock), `wasi:race`, `wasi:race_of`, `wasi:spawn_all`; a float or `i64` `T` refused at the call; each a
+  row of `docs.md` § Host bindings. A call evaluated before an `await` in its statement is refused on wasm
+  (140-f ★). Cells: `run/task_starts_when_made`, `run/task_resumes_in_place`,
+  `run/task_await_after_call_refused_on_wasm`, `run/external_wasm_task_adapter_shape`; every async cell
+  green on commonJS, erlang, beam and both wasm hosts.
+- Step 4 — the cost, measured (wasmtime 45, precompiled component; node 25 for `browser`): 200 000 rounds
+  of two `@Task` calls that never suspend (`mid` awaiting `leaf`) take 0.019 s eager (botopink-lang
+  `856bbc69`) and 0.040 s as state machines on `wasi` (0.05 s / 0.07 s on `browser`) — about 50 ns and
+  one frame (8 + 8 bytes per local) plus a 40-byte task per asynchronous call, nothing for a
+  synchronous one. 2 000 sequential `await delay(0, i)` take 0.012 s on `wasi` and 2.4 s on `browser`,
+  the same as commonJS (node's `setTimeout` floor of about 1 ms).
+- Step 5, `run/wasm_host_async` — `delay`, `race`, `raceOf` (`"b"`: the block awaiting 30 ms loses to the
+  10 ms delay) and `spawnAll` (input order) declared in the cell with std's Node / BEAM templates and the
+  `wasi:` adapters; one `.out` on commonJS, erlang, beam, wasmtime and node.
+- Step 6, box 1 — one adapter list for both hosts (394): the `browser` loader implements `bp_host.delay`
+  with `setTimeout` (re-armed against `performance.now()`) and, after `_start`, waits on the event loop and
+  hands each answer to the module's `__bp_ready(id)` — the same state machines, no JSPI.
+
 ## Open
 
 ### Step 4 — `@Task` on `wasi`
 
-Decisions 392 (a Promise's behaviour), 393 (an adapter answering `@Task<T>`).
-
-- [ ] an asynchronous function (375's mark) compiles to a resumable state machine in `wat.zig`: the state
-      index and the locals that live across an `await` in a heap frame; loops, `try` and closures holding an
-      `await` transformed with it; a synchronous function unchanged
-- [ ] the prelude's scheduler waits on the pending pollables (`wasi:io/poll`) and resumes the task owning the
-      one ready; `delay(ms)` a pollable on the monotonic clock; `race` answers the first to settle, `raceOf`
-      runs its thunks concurrently, `spawnAll` keeps the order of the answers —
-      `raceOf([{ -> async { await delay(30, ()); "a" } }, { -> delay(10, "b") }])` is `"b"` as on node and erlang
-- [ ] a host adapter answering `@Task<T>` over a generic `T` (393): its signature checked by shape at the
-      annotation, the host's pollable wrapped into the pending task; `fetch`'s `Request` / `Response` in the
-      compiler's layout; each adapter's row in `docs.md`
-- [ ] the cost measured: a frame per asynchronous call against today's eager lowering, on a `delay` / `fetch`
-      benchmark, in this README
-- [ ] the `async_block_*` cells gain the wasm column (`.targets` widened)
+- [ ] `@Component` bodies (375's mark) as state machines — 140-e (recommended: every `@Component` a
+      state machine on wasm); today they stay eager and an `await` of a task there runs the ready tasks,
+      trapping on both hosts when the task still waits on the host
+- [ ] `fetch`'s `Request` / `Response` in the compiler's layout (393), with `wasi:http` (`io/http`, `02/97`
+      step 17)
+- [ ] `async_block_all_of` gains the wasm column (`.targets` widened) — waits on std's `async` bindings
+      (`02/97` step 17: `std/async` is refused on wasm for want of `delay`, `race`, `raceOf`)
 
 ### Step 5 — the cells
 
-Waits on step 4 and on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
+Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 
-- [ ] `run/wasm_host_http` (a request to a local HTTP double, its status and body) and `run/wasm_host_async`
-      (`delay`, `race`) under wasmtime; the commonJS and erlang answers equal
+- [ ] `run/wasm_host_http` (a request to a local HTTP double, its status and body) under wasmtime; the
+      commonJS and erlang answers equal
 - [ ] `05-wasm`'s `wat/AGENTS.md` § Where this backend refuses to answer loses `io/http` and `async`
 
 ### Step 6 — the `browser` profile (with 3–5, never after)
 
-- [ ] one adapter list for both hosts (394): each `wasi:` adapter's JavaScript implementation in the loader
-      (`fetch`, `setTimeout`), the same state machine (392) suspending on the JS event loop — no JSPI; the
-      emitted `.wasm` and its loader are built (§ Done)
+- [ ] `fetch`'s JavaScript implementation in the loader (394), with `io/http`
 - [ ] parity: std's check refuses a cell bound on one host only (std's, `02/97` step 17); `test-libs` runs
       the wasm column on both hosts once `botopink test` runs wasm (335 (3)) — `test-language`'s does (§ Done)
 

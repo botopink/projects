@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 72 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 75 perguntas, 6 contradições e 99 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **415**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -612,6 +612,100 @@ import {unicode_tables as tables};
 - [ ] **(c)** Nenhum gancho: a página percorre o `MdDoc` (que é público) e chama `toElement` nos nós que não renderiza.
 
 **Recomendação: (a)** — uma leitura só, sem um campo por tipo de nó para manter em dia com a árvore; a (c) não pede código e já funciona hoje.
+
+---
+
+### 140-d · A grafia de um adaptador de task: `wasi: .Delay` da 393 contra a string única da 238
+
+**Trava:** nada — a 140 passo 4 entrou com a (a) · o `02/97` passo 17 escreve os bindings da std na grafia escolhida
+
+**Contexto.** A 393 escreve `#[@External.Wasm(wasi: .Delay)]`, mas o vocabulário fechado da 238 (e todo
+binding da std hoje) é uma string só, e o `builtins.d.bp` declara `Wasm(template: string)`. A thread
+seguiu a 238: os adaptadores novos estão na lista única do `host_binding.zig`, conferidos pela forma na
+anotação (`run/external_wasm_task_adapter_shape`).
+
+**Hoje:**
+```bp
+#[@External.Wasm("wasi:delay")]
+declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+```
+
+- [ ] **(a) ★ como está** — a string da 238, nomes em snake_case da lista (`wasi:delay`, `wasi:race`, `wasi:race_of`, `wasi:spawn_all`).
+  ```bp
+  #[@External.Wasm("wasi:race_of")]
+  declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>;
+  ```
+- [ ] **(b)** A grafia da 393: argumento rotulado com enum, ao lado das formas em string — duas grafias para o mesmo binding.
+  ```bp
+  #[@External.Wasm(wasi: .Delay)]
+  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+  ```
+
+**Recomendação: (a)** — uma grafia só; o exemplo da 393 se lê `"wasi:delay"`. **Bloqueia:** nada.
+
+### 140-e · Um `await` de task dentro de um corpo `@Component` no wasm (392 (2) contra 375 (3))
+
+**Trava:** a caixa 1 da 140 passo 4 para corpos `@Component` · nada mais
+
+**Contexto.** A 392 (2) diz que uma função que a 375 marca assíncrona vira máquina de estados no wasm. A
+thread fez isso para `-> @Task`, método que responde `@Task` e `async { }`; o corpo `@Component` ficou
+ansioso, porque um valor componente tem uma representação só para todo chamador: a 375 (3) mantém `await`
+legal num componente síncrono, e um componente chamado por valor de função (`slot.view(c)`) é aguardado
+sem o chamador saber qual é — no wasm o endereço de uma task e um `Element` são a mesma palavra `i32`.
+
+**Hoje:**
+```bp
+fn page(n: i32) -> @Component<i32> {
+    val v = await answer(n);   // answer -> @Task<i32>: roda as tasks prontas até ela assentar
+    return v;                  // uma task esperando o host aqui: trap nos dois hosts
+}
+```
+
+- [ ] **(a)** Todo `@Component` no wasm vira máquina de estados que responde uma task; um síncrono assenta ao ser criado.
+  ```bp
+  val page = await Page(slot);   // sempre lê uma task — como o commonJS fazia antes da 375
+  ```
+- [ ] **(b)** Só os que a 375 marca; uma chamada por valor de função é assíncrona (a resposta conservadora), então um componente síncrono passado como valor é embrulhado numa task já assentada.
+  ```bp
+  val wrapped = await view(Title());   // view: valor de função — sempre uma task
+  ```
+- [ ] **(c)** Como está: componentes ansiosos; `await` de task presa no host dentro deles dá trap.
+  ```bp
+  fn Widget() -> @Component<i32> { return await delay(5, 1); }   // trap nos dois hosts
+  ```
+
+**Recomendação: (a)** — uma representação de `@Component<R>` no wasm, sem trap; a marca da 375 fica
+otimização do commonJS. Não implementada (muda a descida de toda célula de componente no wasm; thread
+seguinte). **Bloqueia:** só a caixa 1 da 140 passo 4 para componentes.
+
+### 140-f · Uma chamada antes de um `await` no mesmo statement, no wasm (392 (2))
+
+**Trava:** nada — a 140 passo 4 entrou com a (a)
+
+**Contexto.** A máquina de estados retoma um `await` entrando de novo no seu statement: o que passou
+(condições, sujeito de `case`, início de laço) é lido do frame e os statements anteriores são pulados, mas
+um operando avaliado antes do `await` no próprio statement roda outra vez. Uma chamada ali rodaria duas
+vezes — a thread recusa no `await`.
+
+**Hoje:**
+```bp
+@print(pair(label("x"), await answer(21)));
+// wasm: error: the wasm backend resumes an `await` by entering its statement again, and a call
+//       evaluated before it in that statement would run twice … --> src/main.bp:21:29
+```
+
+- [ ] **(a) ★ como está** — recusado onde está escrito; ligando a chamada a um `val` antes, roda em todo target.
+  ```bp
+  val l = label("x");
+  @print(pair(l, await answer(21)));
+  ```
+- [ ] **(b)** O backend guarda cada operando avaliado antes de um `await` num local do frame (forma A-normal), e o statement roda como escrito.
+  ```bp
+  @print(pair(label("x"), await answer(21)));   // wasm: label("x") guardado, depois o await
+  ```
+
+**Recomendação: (a) agora** — nunca uma chamada rodando duas vezes, recusa localizada; a (b) quando um
+programa precisar. **Bloqueia:** nada.
 
 ---
 
