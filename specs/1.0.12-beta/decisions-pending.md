@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**91 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**92 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -10,7 +10,7 @@
 
 - **Part 1** — what blocks `00-gate`, `01-compiler`, `02-std-and-packaging` and `03-bundled-libs`, by track, then
   those tracks' implementation choices awaiting confirmation.
-- **Part 2** — the rest (tracks 04–09, 20, ownership, contradictions that block no 00–03 step).
+- **Part 2** — the rest (tracks 04–10, 20, ownership, contradictions that block no 00–03 step).
 - **Part 3** — the implementation choices of tracks 04–09.
 
 The Portuguese record (`decisoes-pendentes.md`) follows the same order, with examples for Part 1 and one line per item for
@@ -1183,6 +1183,14 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) None in the first cut. (b) `persistLocal("cart")` only. (c) `persistLocal` and a search-param sync (`syncSearchParam("tab")`).
 - **Recommendation.** (a): land the store first; effects as their own step after a measured need.
 - **Blocks.** 136 step 8.
+
+### 10-specs
+
+#### 141-a · How a decision that retires a spelling keeps the specs from drifting (*proposed*)
+- **Measured.** 354 retired `@Component<C, R>`; the compiler refuses it and 134's codemod rewrote the libraries (`01-compiler/134` step 6 boxes 1, 6), but about 280 spec lines in 71 files still write retired spellings (`10-specs/141-specs-sweep/inventory.md`, nine families), and 25 rows of `decisions-taken.md` still state the text an amendment replaced. Nothing ties a decision to the spec lines it retires.
+- **Options.** (a) The commit that writes such a decision also rewrites the class S lines of `specs/<current>/**` that write the old form, and adds its row to 141's `inventory.md` — a duty of whoever writes the decision, no tool. (b) A meta CI check 6: a list of retired spellings and the files allowed to name them, red on any other hit — a list that excuses lines, which decision 67's spirit refuses, and a check that cannot tell an S line from an R line. (c) Nothing: 141's sweep re-runs at each milestone close.
+- **Recommendation.** (a): the drift is born in the decision's commit, so it is closed there; (b) only if (a) is measured failing.
+- **Blocks.** 141 step 6.
 
 ### From the maintainer's Portuguese record (`decisoes-pendentes.md`)
 

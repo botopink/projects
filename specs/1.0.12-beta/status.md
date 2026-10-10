@@ -3,7 +3,7 @@
 **Date:** 2026-10-09 · **Base** (each repository's `feat`): botopink-lang `beda9073` (batch 20: a host-called component captures the context map, HookNode.async — 374, 375)) · rakun `d609f8c` · jhonstart `50514f1` · emilia `9c3e24a`
 · onze `783af40` · erika `8f88482` · vscode-extension `f041865`
 
-**Fronts:** 71 — **0 done** · **23 partial** · **48 not started**.
+**Fronts:** 72 — **0 done** · **23 partial** · **49 not started**.
 
 | Track | Done | Partial | Not started |
 |---|---|---|---|
@@ -13,7 +13,7 @@
 | `03-bundled-libs` | — | 102 · 103 · 104 · 106 · 125 | 105 · 107 |
 | `04-rakun` | — | 13 · 92 | the other 18 |
 | `06-emilia` | — | 33 | 34 |
-| `05-jhonstart` · `07-onze` · `08-bpp` · `09-cardume` · `20-snap` | — | — | all (3 · 5 · 11 · 1 · 1) |
+| `05-jhonstart` · `07-onze` · `08-bpp` · `09-cardume` · `10-specs` · `20-snap` | — | — | all (3 · 5 · 11 · 1 · 1 · 1) |
 
 **Gate:** `scripts/gate.sh --cold` green on botopink-lang `576c8d17` (batch 3: every stage; test-libs
 123 passed, 0 failed; language tests 2431 passed, 0 failed) — 7m54s wall against the 7m30s budget
@@ -220,6 +220,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 
 ## L3 — ready to open now
 
+- [ ] 141 (`10-specs`) — the retired spellings out of the specs: `decisions-taken.md`'s 25 amended rows stated as in force, then the central files, the fronts' READMEs and examples track by track (about 280 lines, 71 files) · none (s6: `141-a`)
 - [ ] 129 s1–4 (337) — `mod m;` binds the namespace `m`; the shorthand `import {x};` refused (`shorthand-import`, fix written); about 75 items migrated in botopink-lang, rakun, jhonstart · before 138 s3 deletes `libs/<pkg>` or after, either — a consumer commit per library (188)
 - [ ] 118 — the template language, tag annotations (278), `prelude.bp`, the node type · none (s1: 351's html-side rules; native props handed to 26 s13 (362); s4's slots are 360; s1's component spread is 359, on 01-checker s34; ctr-r closed: 118 goes first, org-3 holds)
 - [x] 121 s1–2 — Markdown to `Element` in `onze-content` (onze `584f64a`, on `feat`): 714 / 714 on both rows at onze `05b7005`

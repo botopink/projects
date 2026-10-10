@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 91 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **384**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 92 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **384**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -1305,6 +1305,7 @@ toda função que alcança uma das quatro células é recusada no wasm (146); o 
 | `17-c` | O que mais pode nomear um var `keyed: true` | (a): `at`, `insert` e o `bump` da 340. Uma grafia por operação de linha. | nada — o que está construído vale até ser ampliado. |
 | `ctr-l` | A terceira recusa da 186 × decisão 202 | (a). Sob a 202 nenhuma página se declara pré-renderizada; a recusa é letra morta, e a 202 é a mais restritiva (não há como forçar estágio). | nada nas frentes; só o registro. |
 | `ctr-v` | Decisão 189 (org-3) × as frentes da emilia abrindo antes da 118 | (a). Um comentário não muda comportamento; segurar duas frentes da emilia por ele não protege nada. | nada nas frentes; só o registro. |
+| `141-a` | Como uma decisão que aposenta uma grafia impede as specs de ficarem para trás | (a) — o commit que escreve a decisão reescreve as linhas das specs vigentes que ainda usam a forma antiga e acrescenta a linha dela no `inventory.md` da 141; (b) um check 6 no CI com lista de grafias e arquivos permitidos; (c) nada, a varredura da 141 roda de novo em cada fechamento | o passo 6 da 141 |
 | `own-a` | Quem é dono dos scripts de teste | (a) — um dono só, a frente que já herdou o passo aberto da 25. | nada |
 | `07-b` | "Uma lib, várias cópias divergentes" também justifica pacote? | (a). Pacote bundled novo continua exigindo dois consumidores; a cópia de uma lib só se resolve dentro dela, sem abrir pacote (decisão 67: a regra mais restritiva). |  |
 | `07-h` | Bundled, ou um repositório compartilhado à parte? | (a). Fios que dois frameworks precisam concordar byte a byte saem com o compilador que os embute; um membro de repositório já se instala por `subdir` (344). | nada hoje — a trilha |

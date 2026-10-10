@@ -49,6 +49,7 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 | `06-emilia` | `modules/emilia/src/**` and its comment carve-outs from 118 (34); `examples/emilia-card/**` and the fifteen example READMEs (33) | jhonstart; `jhonstart-emilia/**`, `jhonstart-styled/**`, `repository/css/**`, `repository/styled/**` (`08-bpp/119`) |
 | `07-onze` | `onze/**` + `onze-server/**` + `onze-test`'s root and group files (49); `onze-cli/**` + `onze-bundler/**` (50); `onze-assets/**` + `onze-og/**` (51); `onze-release/**` + `examples/static-site/**` (71); `examples/blog/**` (53) | rakun, jhonstart; the lines 102 names in `types.bp`, `scan.bp`, `chunk.bp`, 104's in `server.bp` and `image_handler.bp`, 107's in `otp.bp` / `docker.bp` / `spec.bp`, while that front is open |
 | `08-bpp` | `jhonstart-html/**` (118; after 26 step 0, `jhonstart/src/html.bp`, to which 119, 120 and 126 each append one arm), the core's `src/prelude.bp` (118, decision 270); the new member `onze-content` (121); the new member `jhonstart-styled`, the deletion of `jhonstart-emilia/**` and the repositories `css` and `styled` (119, decision 338); new files and named lines in the jhonstart core, `jhonstart-link`, `jhonstart-forms`, rakun, `rakun-app`, `libs/actions`, `onze`, `onze-cli`, `onze-bundler` (117 · 120 · 122 · 123 · 124 · 126 · 127, each README § Owns); in botopink-lang, **116 only**: the manifest key, the extension lists and the unfold in `compiler-cli` / `language-server` / `lib-test-runner`, and `vscode-extension` | `modules/compiler-core/**`, every `codegen/*.zig`; a file a front of track 03–07 owns, until it has landed ([`08-bpp/README.md`](./08-bpp/README.md) § Who else owns the files) |
+| `10-specs` (141) | the text of `specs/1.0.12-beta/**` for the retired spellings its `inventory.md` lists — class S lines of another front's README, topic files and examples only while that front is not in a worktree, one commit per track (its README § Ownership); the text of `decisions-taken.md`'s amended rows (the wording, never the rule) | every repository under `repository/`; the closed milestones; a line another front holds a box to rewrite |
 | `20-snap` (135) | the snapshot steps of 97 s7, 19 s6, 26 s7, 33 s1/s3/s4, 50 s8, 51 s7, 53's runner, 71 s6; `modules/emilia-test/**` (s4) and the helper it names in `rakun-test`; onze's E2E runner `onze-test/src/e2e.bp` (s5) | every test and `.snap` that exists today |
 | meta repo | `.github/` (114); `specs/**` — a front's README is that front's, the top-level files the coordinator's | — |
 
@@ -109,6 +110,10 @@ that must edit one names it as a carve-out in its commit, and no two open fronts
   after 02–05 land; 16 step 3 after every tree is migrated.
 - **The dynamic mark** (decision 186): 22 step 4 and 49 step 5 land the run-time bridge; 26 step 8
   replaces it when `01-checker` lands the hooks capability.
+- **141 against every track**: it edits a front's spec text only while that front is not in a
+  worktree, one commit per track; a front that opens while 141 is on its track takes 141's commit
+  first, or receives its lines as a hand-off. It shares no source, test or snapshot file with any
+  front, so it runs in any wave, taking a free thread.
 - **135**: step 5 (onze's E2E runner) lands before 53 steps 2–6, which run on it; step 4 after 34
   (it records what 34 moves); steps 1–4 follow the owning fronts' other steps, one library at a
   time, last.
