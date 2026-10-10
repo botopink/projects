@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**77 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**76 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -434,6 +434,12 @@ Nothing open: 138-a answered (337).
 - **Options.** (a) A bundled `release` of pure renderers. (b) A `botopink` CLI feature (02). (c) Leave both.
 - **Recommendation.** (a); the CLI may adopt the package later.
 - **Blocks.** `107-release` (a conditional front: answer it or defer 107).
+
+### Implementation choices of tracks 00–03
+
+Each implemented with its recommended option; the maintainer confirms or reverses (a reversal is a
+local change in the named place). Full 1.0.10 text under the same id in
+[`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
 #### 01-compiler (23)
 
@@ -914,13 +920,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Blocks.** Nothing; 102, 103 and 104 already chose free names.
 
 ### 20-snap
-
-#### 135-a · How `import {testing.snapshots} from "std"` names `snap` (*proposed*)
-- **Measured.** With `testing/snapshots.bp` gone, the checker (`infer.zig`, `markStdImports`) refuses the import with `unknown "std" module 'testing' in import` and the hint "Only the leaf of an import path enters scope…"; nothing names `snap`. 135 step 0 asks for "an unknown-module error naming `snap`". No std module has ever left with a replacement hint, and the compiler names no library (`no lib-specific in core`).
-- **Options.** (a) Leave the message as it is; `libs/std/AGENTS.md` § Importable modules and `snap`'s `AGENTS.md` say where the module went. (b) A small table in the checker of std modules that moved out — `testing/snapshots` -> `snap` — whose entry extends the message with the library and the `dependencies` line. (c) The same in botopink: std's `testing/mod.bp` keeps a marker `pub mod snapshots;` over a file that only holds a compile-time `@panic`-style notice naming `snap`.
-- **Examples.** The import in a scratch project: (a) `error: unknown "std" module 'testing' in import`; (b) `error: std has no module 'testing/snapshots'; the snapshot engine is the 'snap' library — declare it in botopink.json "dependencies" and write import {assertAs} from "snap"`; (c) a build error from inside std, at a file that exists only to say so — a module that still resolves, so `import {testing.snapshots}` succeeds and the first call fails.
-- **Recommendation.** (a): a moved-modules table is a lib-specific rule in core, and (c) keeps a dead module; the AGENTS rows already carry the pointer. (b) only if the maintainer wants the message to teach.
-- **Blocks.** 135 step 0, its last box.
 
 ### Ownership
 

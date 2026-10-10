@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 77 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **407**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 76 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **408**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -704,33 +704,6 @@ import {unicode_tables as tables};
 - [ ] **(b)** Fica como a thread fez: um irmão privado `unicode_tables.bp` na raiz da std.
 
 **Recomendação (da thread): (b)** — nenhuma mudança de API, um arquivo gerado e privado. **Bloqueia:** nada.
-
-### 135-a · Como `import {testing.snapshots} from "std"` aponta para o `snap` *(proposta)*
-
-**Trava:** `20-snap/135` passo 0, a última caixa (o resto do passo está construído, em patches)
-
-**Contexto.** O motor de snapshot saiu do std para a biblioteca `snap` (391). O passo 0 pede que o import antigo seja "um erro de módulo desconhecido que nomeia `snap`".
-
-**Hoje** (medido nos patches da thread `snap-135-s0`):
-```text
-error: unknown "std" module 'testing' in import
-```
-nada nomeia o `snap`; nenhum módulo do std saiu antes com aviso de substituto, e o compilador não nomeia biblioteca.
-
-- [ ] **(a)** A mensagem fica como está; o `libs/std/AGENTS.md` e o `AGENTS.md` do `snap` dizem para onde o módulo foi.
-  ```text
-  error: unknown "std" module 'testing' in import
-  ```
-- [ ] **(b)** Uma tabela pequena no checker de módulos do std que saíram (`testing/snapshots` → `snap`), que estende a mensagem.
-  ```text
-  error: std has no module 'testing/snapshots'; the snapshot engine is the 'snap' library — declare it in botopink.json "dependencies" and write import {assertAs} from "snap"
-  ```
-- [ ] **(c)** O std mantém um `pub mod snapshots;` sobre um arquivo que só falha com um aviso nomeando o `snap` — o import resolve, e a primeira chamada falha.
-  ```bp
-  import {testing.snapshots} from "std";   // aceito; o build falha dentro do std
-  ```
-
-**Recomendação: (a)** — a (b) põe uma regra de biblioteca no core, e a (c) mantém um módulo morto; os `AGENTS.md` já levam o aviso.
 
 ---
 

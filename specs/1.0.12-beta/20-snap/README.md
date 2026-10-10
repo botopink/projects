@@ -44,7 +44,7 @@ test "release: text ---- the vm.args file" {
 - [ ] `std/testing/snapshots.bp` moves whole to `snap` — the path rule and its slugifier, the `botopink-snap 1`
       format, the check and the `<path>.new` flow, `assertText`, `assertAs`, `assertNamed`, `assertNamedAs` —
       with std's four `__snapshots__/` files and the tests that read them; `testing.snapshots` leaves std,
-      no re-export (`import {testing.snapshots} from "std"` an unknown-module error naming `snap`)
+      no re-export (`import {testing.snapshots} from "std"` the plain unknown-module error; `libs/std/AGENTS.md` and `snap`'s `AGENTS.md` name `snap` — 407)
 - [ ] std gains, as generic text methods, what the engine keeps privately today: newline normalisation,
       trailing-newline trimming, the first differing line of two texts (117); `io/fs` answers a directory made
       with its parents; `snap` declares no host cell
