@@ -240,8 +240,8 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] new member `jhonstart-styled`: its `pub default fn` over the section text → scoped
       `StyledView`; the scope id from `q.source()`; constant and run-time holes as § Mechanism
 - [ ] `html.bp`: a `use` of a scoped style in the function's hooks → `data-s` on every element the
-      function's template writes; two `use`s → two attributes; `<style>` refused but
-      `<style #[isInline]>`, the error naming the style section
+      function's template writes; two `use`s → two attributes; `<style #[isInline]>` accepted —
+      the arm before 118's refusal of every other `<style>` (`refusals/html_style_element`)
 - [ ] `examples/scoped-style-example.bp` passes on both targets
 - [ ] two components both writing `.title` render two rules and two attributes; neither rule
       matches the other's element — asserted on the rendered document with a `jhonstart-dom-test` selector matcher

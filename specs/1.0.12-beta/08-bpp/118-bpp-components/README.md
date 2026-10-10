@@ -1,7 +1,8 @@
 # Front 118 — bpp components: the template language
 
 **Priority:** critical — every other front writes markup through it; none is testable without it.
-· **State:** not started · ready to open
+· **State:** partial — what it builds alone is done; the rest on `01-compiler/130` step 9,
+`01-checker` step 34 and its `View` rows, `01-compiler/26`, `05-jhonstart/26` step 13 (§ Open)
 **Depends on:** nothing open (`00-gate/101-gate-jhonstart` done). Written against decisions 190,
 191, 192, 193 and 223, 204, 207, 200, 270, 189, 278.
 **Owns:** `repository/jhonstart/modules/jhonstart-html/**` (`src/html.bp`, `src/root.bp`,
@@ -189,6 +190,9 @@ core's `node.bp`, `prelude.bp` and `element.bp`'s `View`; green on commonJS and 
   `hasContent`; `#[isRaw]` makes the body text, a second one refused; an unbound annotation fails at
   its name; `class:list`, `set:html`, `set:text` and any `prefix:name` refused naming their form;
   the spec example landed without `#[mustBeBox]` as `test/directives_example_test.bp`.
+- Decision 338's html side: `<style>` in markup refused at the tag, naming the `--- style ---`
+  section and `use styled """…""";` (`refusals/html_style_element`); `<style #[isInline]>`, the one
+  form kept, is 119 step 2's arm (`isInline` is 119's annotation, unbound until then).
 - Step 6 (part): the overlay carries a component's and an annotation's `Binding`, attribute names as
   `property`; a mismatched close fails at the tag (`refusals/html_mismatched_close`); core `node.bp`
   declares `Node` as a union — a `children: Node` field takes a list, an `Element`, a string without
