@@ -117,7 +117,7 @@ Order (decision 350: the library on `styled` first): step 5 → step 2 → step 
 
 emilia is the third layer: `css` the base for building CSS, `styled` the base for building CSS
 components, emilia a compile-time library written with `styled`'s literal, applied to a tag with its
-own decorator `#[emilia(…)]` (`<h1 #[emilia(.Text.Bold)]>`, 369: the parameter is `..tokens: Token[]`,
+own decorator `#[emilia(…)]` (`<h1 #[emilia(.Text.Bold)]>`, 369, 382: the parameter is `..tokens: @Expr<Token[]>`,
 so the leading-dot path resolves — the reader of its meta is `08-bpp/119` step 4). emilia's own sheet model — `Rule`, `Sheet`, `Variant`, `renderRule`,
 `renderDocument` (`output.bp:44-593`) and the per-render store `flush()` drains
 (`emilia.bp:227-235`) — is what `css` and `styled` now hold. Each family is a compile-time function
@@ -137,7 +137,7 @@ fn padAllHalf(n: i32) -> StyledProperty { return styledProperty "padding: --spac
 fn hover(inner: StyledProperty) -> Styled { return styled "&:hover { ${inner} }"; }
 
 // the tag decorator: runs at build, records the class and the rules as `styled`'s meta (369)
-pub fn emilia(comptime decl: @Decl, comptime ..tokens: Token[]) { … }
+pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>) { val list = tokens.value; … }
 ```
 
 emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 338).
@@ -151,7 +151,7 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       a token list is the composition of its tokens' components in order, its order the class's
       identity — `[.Bg.White, Token.Focus([.Bg.Color.Gray.__100]), .Pad.All.__4]` renders three rules,
       the `padding` after the `:focus` (368, through `styled`'s source-order reader)
-- [ ] `#[emilia(…)]`: `pub fn emilia(comptime decl: @Decl, comptime ..tokens: Token[])`, no return
+- [ ] `#[emilia(…)]`: `pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>)` (382), no return
       (302) — `<div #[emilia(.Pad.All.4, .Bg.White)]>` resolves the dot paths against `Token`, computes
       the class and the rules at build and records them as `styled`'s meta (369, the type named by
       `08-bpp/119` step 4); no family answers a `@Component`, no function of emilia answers `@Task`
@@ -177,8 +177,8 @@ and `StyledContext` have landed):
 - 381 (34-d) in `styled` — `styledProperty "…"` answering the record `StyledProperty` (`08-bpp/119`
   step 1): until it lands, 369 (3)'s `fn padAll(n: i32) -> StyledProperty { return styledProperty "…"; }`
   is `type mismatch: expected StyledProperty, got Component` — boxes 1–3, 6, and 8 through them.
-- 34-e (369 (1)'s `comptime ..tokens: Token[]` is `comptime-param-not-expr`; `@Expr<Token[]>`
-  compiles), 34-f (no meta type in `styled`) and `08-bpp/119` step 4 — box 4.
+- 34-f (no meta type in `styled`) and `08-bpp/119` step 4 — box 4 (its parameter is 382's
+  `comptime ..tokens: @Expr<Token[]>`, which compiles).
 - The toolchain rows "A nested-section enum value at comptime" (`comptime f([.Pad.All.__4])` and a
   decorator's `tokens.value` raise `{badmap,'Pad'}`) and "emilia's dispatcher at comptime" (`comptime`
   over `tokensToSheet`: `MissingPackage`), and T19 (`contentHash` in a `comptime` block) — boxes 4

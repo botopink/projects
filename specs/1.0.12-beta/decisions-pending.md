@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**93 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**92 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -1050,26 +1050,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) None: the four out of scope in `docs.md` § Deviations, written with `arbSel`. (b) Negative translate and named groups / peers. (c) All four, `@theme inline` included (a second render mode).
 - **Recommendation.** (a); (b) is the feature answer if any is wanted.
 - **Blocks.** 34 step 4 (conditional).
-
-#### 34-e · `#[emilia(…)]`'s parameter: 369 (1) against 364 (*proposed*)
-- **Measured** (botopink-lang `90d50ae3`). 369 (1)'s spelling `pub fn emilia(comptime decl: @Decl,
-  comptime ..tokens: Token[])` is `comptime-param-not-expr: … a comptime parameter is comptime tokens:
-  @Expr<Token[]>` (364 (4)); `comptime ..tokens: @Expr<Token[]>` compiles, and
-  `#[deco(.Pad.All.__4, .Bg.White)]` resolves the dot paths against emilia's `Token` (s35-c's form, built).
-- **Options.**
-  (a) 364 and s35-c: the parameter is an expression, its `value` the list (369 (1) reworded):
-  ```bp
-  pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>) {
-      val list = tokens.value;            // read at build — Token is data (364 (2))
-  }
-  ```
-  (b) 369's spelling, an exception to 364 (4) for a decorator's variadic (a checker change):
-  ```bp
-  pub fn emilia(comptime decl: @Decl, comptime ..tokens: Token[]) { … }
-  ```
-- **Recommendation.** (a): one rule for every `comptime` parameter (364); the dot paths resolve either way.
-- **Blocks.** Nothing alone: box 4 also waits on 34-f, on `08-bpp/119` step 4, and on the toolchain row
-  "A nested-section enum value at comptime" (`tokens.value` raises `{badmap,'Pad'}` today).
 
 #### 34-f · The meta type `#[emilia(…)]` records (369 (2), `08-bpp/119` step 4) (*proposed*)
 - **Measured** (styled `01a5299`). `styled` declares `Styled(className, rules)` (a component's record,
