@@ -128,7 +128,7 @@ they recorded — the same function shape as a declaration's decorator, named by
 - [ ] `DeclKind` gains `Element`, `Component`; `Decl.component: ?Decl` (a component tag's function);
       a tag's static attributes readable (`decl.attr(name) -> ?string`)
 - [ ] `@Expr`/`@ExprCustom` capture: a template function constructs a tag's `@Decl`, calls an annotation
-      with it (the `Decorator` of 268, `Decorator.is` for identity), reads `meta(T)` / `metaAll(T)` (298)
+      with it (the `Decorator` of 268, `Decorator.same` for identity, 371), reads `meta(T)` / `metaAll(T)` (298)
 - [ ] on a tag `addMember`, `addType` refused at the call; `setMeta` of one type twice refused at the second
 - [ ] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
       template function; the same annotation function also accepted on a declaration

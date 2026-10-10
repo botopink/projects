@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**80 questions and 7 contradictions are open, and 93 implementation choices await confirmation.**
+**80 questions and 6 contradictions are open, and 93 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -154,21 +154,6 @@ Nothing open: 138-a answered (337).
   (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
 - **Recommendation.** (a): the words the decisions use for them, no exception to the reserved words.
 - **Blocks.** Nothing — built as (a); a rename touches `builtins.d.bp`, `comptime.zig`'s mirror, `hooks.zig` and the cells.
-
-#### s23-b · `Decorator.is(other)` — `is` is a keyword (contradiction)
-- **Measured.** 277 declares `extend Decorator { pub fn is(self, other: Decorator) -> bool; }` and reads
-  `a.decorator.is(serverOnly)`. `is` is a keyword: `fn is(self, …)` and `a.is(b)` do not parse (`unexpected `is``),
-  nor does any keyword as a method name (`type`, `case`, `in`, `as`, `match`, `loop` measured). Separately, a
-  decorator's name written in a decorator body (`serverOnly`) lowers on the comptime runtime as an unbound
-  variable, so whichever form is chosen the compiler writes the name's identity there. Built: every
-  `DeclAnnotation` carries `decorator` (the declaration's identity — an alias and a namespace resolved); the
-  comparison is not built.
-- **Options.** (a) `is` admitted as a method name after `.` and in a declaration: `if (a.decorator.is(serverOnly)) …`.
-  (b) A name that is no keyword: `if (a.decorator.same(serverOnly)) …` (`extend Decorator { pub fn same(self,
-  other: Decorator) -> bool; }`). (c) `==` on two `Decorator`s, no method: `if (a.decorator == serverOnly) …`.
-- **Recommendation.** (b): one reserved-word rule with no exception; a method states the identity comparison.
-- **Blocks.** `01-checker` step 23 box `run/decorator_is_identity`; `05-jhonstart/26` step 8 (`#[page]` / `#[client]`
-  testing a hook's markers).
 
 #### s23-c · What a reached declaration's `Declared` holds in a decorator body
 - **Measured.** `HookUse.hook`, `HookCall.callee` and `HookNode.function` are `Declared<unknown>`. Built: `value` is

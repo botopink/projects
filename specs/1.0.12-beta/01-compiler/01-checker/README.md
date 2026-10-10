@@ -2,7 +2,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 24 built on
-`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` but `Decorator.is` (s23-b); step 6
+`front/checker-s24` but three boxes; step 23 built on `front/checker-s23` but `Decorator.same` (371); step 6
 box 3, steps 13, 21, 22, 24–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · decision-gated row lg2-q — a step here only once answered (lg2-a is step 32, decision 346;
@@ -213,8 +213,8 @@ item of another package, an activation, default function's name bound by the hea
 `libs/std/src/builtins.d.bp`: `DeclAnnotation` gains `decorator: Decorator`; new `HookUse(hook:
 ?Declared<unknown>, annotations: DeclAnnotation[], at: string)`, `HookCall(callee:
 Declared<unknown>, at: string)`, `HookNode(fn: Declared<unknown>, uses: HookUse[], calls:
-HookCall[])`; `Decl` gains `val hooks: HookNode[]`; `extend Decorator { pub fn is(self, other:
-Decorator) -> bool; }`. The checker (`comptime/infer.zig`, `env.zig`) computes, once per function:
+HookCall[])`; `Decl` gains `val hooks: HookNode[]`; `extend Decorator { pub fn same(self, other:
+Decorator) -> bool; }` (371). The checker (`comptime/infer.zig`, `env.zig`) computes, once per function:
 its node — each `use h(…)` written in it (with `h`'s annotations), each call of a `@Component`
 function (the calls `html` generates from tags included); `hooks` = that node then every node
 reachable through `calls`, breadth-first in body order, each function once; a cycle is an edge
@@ -241,9 +241,9 @@ for a function one of whose decorators reads it (questions s23-a – s23-f).
       an alias with its own annotations
 - [x] `DeclAnnotation` gains `decorator: Decorator` — the declaration's identity, an alias and a namespace resolved
       (every handle's annotations, a field key's included); `HookNode`'s `fn` is `function` (`fn` is reserved, s23-a)
-- [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.is(serverOnly)`;
-      a same-named decorator of another package → false — `is` is a keyword (s23-b)
-- [x] `docs.md` § Decorators documents `decl.hooks` and `HookNode` (`Decorator.is` with s23-b); `comptime/AGENTS.md`
+- [ ] `run/decorator_is_identity` — `#[srv]` with `import {serverOnly as srv}` → `a.decorator.same(serverOnly)`;
+      a same-named decorator of another package → false (371: `same`, `is` stays a keyword)
+- [x] `docs.md` § Decorators documents `decl.hooks` and `HookNode` (`Decorator.same` with 371); `comptime/AGENTS.md`
       states the computation; `language-gaps.md`'s row "A function's `@Decl` does not say which hooks it activates"
       closes
 

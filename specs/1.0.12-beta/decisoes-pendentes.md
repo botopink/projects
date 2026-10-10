@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 80 perguntas, 7 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **371**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 80 perguntas, 6 contradições e 93 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **372**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -62,31 +62,6 @@ antecipado; não nomeia os operadores de curto-circuito, cujo operando direito r
   ```
 
 **Recomendação: (a)** — a 357 (2): nunca sob uma condição.
-
-### s23-b · `Decorator.is(other)` — `is` é palavra reservada (contradição)
-
-**Trava:** a caixa `run/decorator_is_identity` do passo 23 do `01-checker`; o passo 8 do `05-jhonstart/26`
-
-**Contexto.** A 277 declara `extend Decorator { pub fn is(self, other: Decorator) -> bool; }` e lê
-`a.decorator.is(serverOnly)`. `is` é palavra-chave: nem `fn is(self, …)` nem `a.is(b)` passam no parser
-(nenhuma palavra-chave serve de nome de método). O passo 23 construiu o campo `decorator` de todo
-`DeclAnnotation` (a identidade da declaração, alias e namespace resolvidos); a comparação não.
-
-- [ ] **(a)** `is` admitido como nome de método depois do `.` e na declaração.
-  ```bp
-  if (a.decorator.is(serverOnly)) decl.fail("…");
-  ```
-- [ ] **(b)** Um nome que não é palavra-chave.
-  ```bp
-  extend Decorator { pub fn same(self, other: Decorator) -> bool; }
-  if (a.decorator.same(serverOnly)) decl.fail("…");
-  ```
-- [ ] **(c)** `==` entre dois `Decorator`, sem método.
-  ```bp
-  if (a.decorator == serverOnly) decl.fail("…");
-  ```
-
-**Recomendação: (b)** — uma regra de palavras reservadas, sem exceção.
 
 ### 08-f · Onde moram Markdown e YAML
 

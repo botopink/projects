@@ -91,7 +91,7 @@ declaration it records nothing. A `#[clientOnly]` tag lowers to the mount withou
 the server, so the component's nodes do not enter the page's `hooks` (277).
 
 **Checks by type, in `html`** — every `Hydrate`, whoever declared the annotation:
-- the component carries `#[client]` (`a.decorator.is(client)`, 277) — else "`Footer` is not a
+- the component carries `#[client]` (`a.decorator.same(client)`, 277, 371) — else "`Footer` is not a
   `#[client]` component";
 - `pathsTo(decl.hooks, clientOnly)` (26 step 8) non-empty: refused under any `Hydrate` but `Only`,
   and on a tag with no `Hydrate` — "`Map` reaches `geolocation` (#[clientOnly]) via …; use
@@ -175,7 +175,7 @@ The variable is always `ONZE_KEY` (decision 271).
 
 - [ ] `examples/hydration-directives-example.bp` passes
 - [ ] `#[clientVisible]` on an element fails at the annotation (its first parameter is `@Decl`); on
-      a component without `#[client]` fails at the annotation, checked by `Decorator.is`; an unseen
+      a component without `#[client]` fails at the annotation, checked by `Decorator.same` (371); an unseen
       island fails the build in the bundler's island check (`entry.bp`) with its name — never a
       mount that starts nothing
 - [ ] two `Hydrate` annotations on one tag fail at the second
