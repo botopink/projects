@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 78 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **406**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 77 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **407**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -676,32 +676,6 @@ passo 11.
 - [ ] **(c)** O alias importado seguido pelo seu módulo.
 
 **Recomendação: (a)** até uma frente precisar de (b) ou (c).
-
-### s24-b · O `#[check]` do exemplo 1 põe parâmetros com default antes de `message`
-
-**Trava:** 125 s7 (a assinatura do `#[check]` em `repository/validation`); o texto do arquivo de exemplos.
-
-**Contexto.** O exemplo 1 declara `check<T>(…, comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null, comptime message: string, comptime code: Code = .Custom)`. A decisão 244 recusa no parse um parâmetro com default seguido de um obrigatório, em toda função (`fn-param-default-trailing-only`).
-
-**Hoje.** A declaração do exemplo não compila; as células do passo 24 declaram `message` primeiro.
-
-- [ ] **(a)** A 244 vale: `message` primeiro.
-  ```bp
-  pub fn check<T>(comptime decl: @Decl<T>, comptime message: string,
-      comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null,
-      comptime code: Code = .Custom) { … }
-  #[check("As senhas não batem", passwordsMatch, at: .confirm)]
-  ```
-- [ ] **(b)** Um decorator pode ter default antes de um obrigatório, que então vai sempre por rótulo — o exemplo compila como está; emenda a 244 só para decorators.
-  ```bp
-  #[check(passwordsMatch, at: .confirm, message: "As senhas não batem")]
-  ```
-- [ ] **(c)** `message` ganha default `""`.
-  ```bp
-  #[check(passwordsMatch, at: .confirm)]   // uma regra sem texto
-  ```
-
-**Recomendação: (a).** Uma regra de parâmetro para toda função (244); o exemplo segue ela.
 
 ### 97-s16-a · Onde ficam as tabelas geradas do `unicode` *(proposta)*
 

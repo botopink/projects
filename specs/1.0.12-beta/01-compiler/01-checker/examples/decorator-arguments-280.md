@@ -44,11 +44,13 @@ pub type Violation(field: string, code: Code, message: string)
 // No tipo: T = o tipo anotado.
 // Na função: sem `rule`, a própria função anotada é a regra; o T desta chamada é o tipo da função,
 // e o tipo validado é o do parâmetro dela.
+// `message` primeiro e obrigatória: um default só é seguido de outros (244, 406);
+// num campo a regra é `#[refine(rule)]`, cujo texto vem de `#[message]` como em todo marcador
 pub fn check<T>(
     comptime decl: @Decl<T>,
+    comptime message: string,
     comptime rule: ?fn(v: T) -> bool = null,
     comptime at: ?Type.Field<T> = null,
-    comptime message: string,
     comptime code: Code = .Custom,
 ) {
     if (rule == null) {
@@ -88,8 +90,8 @@ import {validated, check, Code} from "validation";
 
 #[
     validated,
-    check(passwordsMatch, at: .confirm, message: "As senhas não batem"),
-    check(handleFree, at: .handle, message: "Esse nome já é usado", code: .Mismatch),
+    check("As senhas não batem", passwordsMatch, at: .confirm),
+    check("Esse nome já é usado", handleFree, at: .handle, code: .Mismatch),
 ]
 pub type Account(handle: string, password: string, confirm: string)
 
@@ -97,7 +99,7 @@ fn passwordsMatch(a: Account) -> bool { return a.password == a.confirm; }
 fn handleFree(a: Account) -> bool { return a.handle != "admin"; }
 
 // a regra pode ficar na própria função (no mesmo módulo de Account)
-#[check(message: "A senha não pode conter o nome")]
+#[check("A senha não pode conter o nome")]
 fn passwordNotHandle(a: Account) -> bool { return !a.password.contains(a.handle); }
 
 test "senhas diferentes" {
@@ -122,11 +124,13 @@ pub fn validate(self: Account) -> Violation[] {
 
 ### O que não compila
 ```bp
-#[check(passwordMatch, message: "…")]                  // ❌ nome `passwordMatch` não existe       — no argumento
-#[check(passwordsMatch, at: .confrim, message: "…")]   // ❌ `Account` não tem o campo `confrim`   — no `.confrim`
-#[check(orderTotal, message: "…")]                     // ❌ esperado fn(Account) -> bool, recebido fn(Order) -> bool
-#[check(passwordsMatch, message: env("MSG"))]          // ❌ `env(...)` não é conhecido em comptime — no argumento
-#[check(message: "…")] fn bad(a: Account) -> string    // ❌ #[check] sem `rule` vai numa `fn(x) -> bool`
+#[check("…", passwordMatch)]                           // ❌ nome `passwordMatch` não existe       — no argumento
+#[check("…", passwordsMatch, at: .confrim)]            // ❌ `Account` não tem o campo `confrim`   — no `.confrim`
+#[check("…", orderTotal)]                              // ❌ esperado fn(Account) -> bool, recebido fn(Order) -> bool
+#[check(env("MSG"), passwordsMatch)]                   // ❌ `env(...)` não é conhecido em comptime — no argumento
+#[check("…")] fn bad(a: Account) -> string             // ❌ #[check] sem `rule` vai numa `fn(x) -> bool`
+#[check(passwordsMatch, at: .confirm)]                  // ❌ falta `message` — um check sem texto não compila (406)
+type T(#[check("…", isEven)] n: i32)                    // ❌ num campo a regra é `#[refine(isEven)]` (406)
 ```
 
 ---

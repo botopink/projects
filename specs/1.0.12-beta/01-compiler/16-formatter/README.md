@@ -108,8 +108,8 @@ untouched — separate blocks stay separate, a list stays a list — and a list 
 166/243's trailing comma.
 
 ```bp
-#[check(passwordsMatch, .password, .confirm)]
-#[check(noReusedHandle)]
+#[check("As senhas não batem", passwordsMatch, at: .confirm)]
+#[check("Esse nome já é usado", noReusedHandle)]
 pub type Account(…)                     // stays two blocks
 
 #[

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**78 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
+**77 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -34,7 +34,7 @@ Nothing open: 138-a answered (337).
   ask whether the annotation gave a rule. `run/decorator_arguments_check` and
   `reject/decorator_check_without_rule_not_bool` tell the function form by `decl.kind == DeclKind.Fn`.
 - **Options.** (a) As built: no null test; the body reads the declaration (`decl.kind`) or the library
-  splits the decorator (`#[check(rule)]` on a type, `#[check]` on a function). (b) `rule.value == null` /
+  splits the decorator (`#[check("…", rule)]` on a type, `#[check("…")]` on a function, 406). (b) `rule.value == null` /
   `!= null` is legal — the comparison calls nothing —, any other read of `rule.value` refused. (c) The
   parameter is optional itself: `comptime rule: ?@Expr<fn(v: T) -> bool> = null`, tested `rule == null`.
 - **Recommendation.** (a): no read of a function's `@Expr` at all; (b) if example 1's spelling is wanted.
@@ -171,22 +171,6 @@ Nothing open: 138-a answered (337).
   fields substituted. (c) An imported alias followed through its module.
 - **Recommendation.** (a) until a front needs (b) or (c).
 - **Blocks.** Nothing — built as (a).
-
-#### s24-b · Example 1's `#[check]` puts defaulted parameters before `message`
-- **Measured.** `01-checker/examples/decorator-arguments-280.md` example 1 declares `check<T>(comptime decl:
-  @Decl<T>, comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null, comptime message: string,
-  comptime code: Code = .Custom)`. Decision 244 (`01-checker` step 17) refuses a defaulted parameter followed by a
-  required one at the parse, for every function (`fn-param-default-trailing-only`) — the declaration does not
-  compile, so `#[check(passwordsMatch, at: .confirm, message: "…")]` and the function form `#[check(message: "…")]`
-  cannot be written as the example writes them. Step 24's cells declare `message` first.
-- **Options.** (a) 244 holds: `message` first — `check<T>(comptime decl: @Decl<T>, comptime message: string,
-  comptime rule: ?fn(v: T) -> bool = null, comptime at: ?Type.Field<T> = null, comptime code: Code = .Custom)`,
-  used `#[check("As senhas não batem", passwordsMatch, at: .confirm)]` and `#[check("A senha não pode conter o
-  nome")]`; the example is rewritten. (b) A decorator may put a default before a required parameter, the required
-  one then always given by label — the example compiles as written; amends 244 for decorators only. (c) `message`
-  takes a default (`= ""`) — `#[check(passwordsMatch, at: .confirm)]` is a check with no text.
-- **Recommendation.** (a): one parameter rule for every function (244); the example follows it.
-- **Blocks.** 125 s7 (`#[check]`'s signature in `repository/validation`); the example file's text.
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.

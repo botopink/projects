@@ -1,7 +1,7 @@
 // Front 125 — validation: Zod's feature set · examples/transform-and-codec-example.bp
 //
 //   z.preprocess(fn, z.int())                         -> #[preprocess(fn)]
-//   z.int().refine(isEven)                            -> #[check(isEven)]
+//   z.int().refine(isEven)                            -> #[refine(isEven)]
 //   z.array(z.email())                                -> #[each("email")]
 //   z.array(z.string().toLowerCase())                 -> #[each("lowercased")]
 //   schema.encode(value)                              -> T.encode(value)
@@ -53,7 +53,7 @@ pub type Invite(
     // can take (`Decorator` is unknown there), so the marker is named as text.
     #[each("email")] #[each("lowercased")] guests: Array<string>,
     #[preprocess(digitsToNumber)] seats: i32,
-    #[check(isEven)] tables: i32,
+    #[refine(isEven)] tables: i32,
 )
 
 fn codes(r: @Result<Invite, ValidationReport>) -> string {

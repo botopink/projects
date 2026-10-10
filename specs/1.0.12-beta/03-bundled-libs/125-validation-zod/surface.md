@@ -261,8 +261,8 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| `.refine(fn, { error })` | field: `#[check(rule)]` (`rule: fn(v: T) -> bool`, have) · `#[constraint("name")]` (have) · type: `#[check(rule, at: .field, message: "…", code: .Custom)]` | have · add · 7 | the type-level form takes typed arguments (280) — `01-checker` step 24 |
-| `.refine(…, { path })` | `#[check(rule, at: .field)]` | add · 7 | `01-checker` step 24 (280) |
+| `.refine(fn, { error })` | field: `#[refine(rule)]` (`rule: fn(v: T) -> bool`; built as `#[check(rule)]`, renamed by 406) · `#[constraint("name")]` (have) · type: `#[check("…", rule, at: .field, code: .Custom)]` | have · add · 7 | the type-level form takes typed arguments (280) — `01-checker` step 24 |
+| `.refine(…, { path })` | `#[check("…", rule, at: .field)]` | add · 7 | `01-checker` step 24 (280) |
 | `.refine(…, { abort: true })` | `#[stopOnFirst]` on the field | have | default stays "every check runs" |
 | `.refine(…, { when })` | the type-level `#[check]` runs only when the fields it names have no violation | add · 7 | `01-checker` step 24 (280) |
 | `.refine(async …)` | — | n/a (306) | `refineAsync` was a combinator; a declared type's checks are synchronous |

@@ -86,7 +86,7 @@ pub type Invite(
     #[each(email, lowercased)] guests: Array<string>,            // was emails() + #[with("emails")]
     #[codec(decode: isoToMillis, encode: formatIso)] startsAt: i64,  // was schemas.codec(…)
     #[preprocess(digitsToNumber)] seats: i32,                    // was schemas.preprocess(…)
-    #[check(isEven)] tables: i32,                                // was schemas.int().refine(…)
+    #[refine(isEven)] tables: i32,                               // was schemas.int().refine(…)
 )
 
 #[validated(transparent)]                                        // encoded as its one field: "a@b.c"
@@ -192,7 +192,7 @@ compiler rows in `language-gaps.md`):
   `test/message_order_test.bp`. `refine_and_messages_example_test.bp` (all but the type-level
   `#[check]`)
 - Step 8 — `T.encode` (runs `validate()` first) and `T.__json`, every field type decode reads;
-  `#[preprocess(f)]`, `#[check(rule)]` on a field, `#[each("marker")]` (checks and transforms on
+  `#[preprocess(f)]`, `#[refine(rule)]` on a field (406; was `#[check(rule)]`), `#[each("marker")]` (checks and transforms on
   items, at `field[i]`); `codecs.bp`, Zod's twelve recipes as decode / encode pairs, each an inverse
   over five values and five canonical texts (`codecs_test.bp`). `transform_and_codec_example_test.bp`
 - Step 9 — `report.flatten()`, `.tree()`, `.pretty()`; `#[title]`, `#[describe]`, `#[example]`,
@@ -227,7 +227,7 @@ waits on:
 |---|---|---|
 | 4 | `#[tag]` on an enum whose variant has no payload record is a compile error at the annotation (today it fails where the emitted code names the record) | the **`Decl.variants`** gap row (payload fields not reflected) |
 | 5 | `derived-types-example.bp` passes; `#[validated] pub val RecipePatch = Type.partial(Recipe);` decodes with every field optional, keeps `Recipe`'s markers, and is imported and constructed by a second module | `01-checker` step 28 (`Type`'s calls answered) · 134 step 4 (`pick` / `omit`, decision 267) |
-| 7 | the type-level `#[check(rule, at: .field, message: "…", code: .Custom)]` and `#[check(message: "…")]` on the rule; a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another signature fails at that argument; one on a rule outside the type's module refused; several on one type are one `validate` — each `#[check]` an `addMeta(Check(…))`, `#[validated]` the member reading `metaAll(Check)` (404) | `01-checker` step 24 (280) |
+| 7 | the type-level `#[check("…", rule, at: .field, code: .Custom)]` and `#[check("…")]` on the rule (406: `message` first, required; `#[check]` on a field refused, naming `#[refine]`); a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another signature fails at that argument; one on a rule outside the type's module refused; several on one type are one `validate` — each `#[check]` an `addMeta(Check(…))`, `#[validated]` the member reading `metaAll(Check)` (404) | `01-checker` step 24 (280) |
 | 8 | `#[map(f)]`, `#[tryMap(f)]`, `#[codec(decode: f, encode: g)]` — they read `f`'s parameter type | `01-checker` step 24 (280 (2)) |
 | 11 | `#[wireName("salmon")]` on each variant | the **`Decl.variants`** gap row (annotations of variants) |
 | 12 | a located refusal for a field marker's function of the wrong signature (`#[preprocess]`, `#[check]`; `#[map]`, `#[tryMap]`, `#[codec]` with them) | `01-checker` step 24 |

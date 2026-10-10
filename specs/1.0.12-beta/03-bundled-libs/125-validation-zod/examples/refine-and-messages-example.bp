@@ -12,7 +12,7 @@
 // which `01-checker` step 24 brings:
 //
 //   #[validated]
-//   #[check(passwordsMatch, at: .confirm, message: "Passwords don't match", code: .Custom)]
+//   #[check("Passwords don't match", passwordsMatch, at: .confirm, code: .Custom)]
 //   pub type Account(…)
 //
 //   fn passwordsMatch(a: Account) -> bool { return a.password == a.confirm; }

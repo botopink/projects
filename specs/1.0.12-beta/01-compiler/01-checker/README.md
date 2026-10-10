@@ -327,7 +327,7 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front
       cell with its caret — examples 1–6 green on the four targets
       (`run/decorator_{arguments_check,decl_pattern,type_argument,function_arguments,record_argument,field_keys}`,
       `run/decorator_argument_values`, `modules/decorator_typed_arguments_import`), 19 `reject/` cells
-      (`comptime_default_outside_decorator` among them: a `comptime` default outside a decorator); example 1's signature is `s24-b`; example 7
+      (`comptime_default_outside_decorator` among them: a `comptime` default outside a decorator); example 1's signature is 406's (`message` first; a field's rule `#[refine]`); example 7
       (`#[onClick(like)]` in a tag) is the html template's (`08-bpp/118`, `05-jhonstart/26`)
 - [x] `docs.md` § Decorators documents the four rules; `comptime/AGENTS.md` states how a comptime
       argument reaches the decorator body; `language-gaps.md`'s lg2-f and lg2-i rows marked built (they
