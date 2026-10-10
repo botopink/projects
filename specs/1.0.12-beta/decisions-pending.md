@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**90 questions and 6 contradictions are open, and 95 implementation choices await confirmation.**
+**90 questions and 6 contradictions are open, and 94 implementation choices await confirmation.**
 
 - An answer goes into [`decisions-taken.md`](./decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -316,18 +316,6 @@ Nothing open: 138-a answered (337).
   (a). (c) (b), and `meta` holds only the entries of the decorator reading the list (`path`), as a catalogue entry
   holds `d`'s.
 - **Recommendation.** (b): refuse > accept; a `null` that type-checks as the function hides that nothing is there.
-- **Blocks.** Nothing — built as (a).
-
-#### s23-d · A `@Component` called through a function value or a method
-- **Measured.** `HookCall.callee` is `Declared<unknown>`, not optional. Built: a call whose callee names no
-  declaration — a parameter (`fn Page(render: fn() -> @Component<Element>) { val r = render(); … }`), a local, a
-  method (`menu.render()`) — enters no `HookCall`; a `use` over one enters with `hook: null` (277).
-- **Options.** (a) As built: `Page`'s node has `calls: []`. (b) `HookCall(callee: ?Declared<unknown>, at)`, such a
-  call entered with `callee: null`, reaching nothing — `Page`'s node has `calls: [HookCall(callee: null, at:
-  "main:3:13")]`, so a reader sees an edge it cannot follow (a `use`'s rule). (c) Refused at build in a function whose
-  list a decorator reads: `val r = render();` is `hooks-dynamic-call` at the call.
-- **Recommendation.** (b): what the reader cannot see is reported, as `hook: null` is; the reader decides (277: a
-  `use` with `hook: null` makes a page per-request).
 - **Blocks.** Nothing — built as (a).
 
 #### s23-f · A type argument's `TypeInfo` in a `HookUse`

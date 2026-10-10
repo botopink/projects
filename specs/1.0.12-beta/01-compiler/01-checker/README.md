@@ -256,6 +256,11 @@ phases (questions s23-g – s23-i).
 - [x] `run/decl_hooks_custom_hook` — `use user()` where `user` uses `session()`: the user's node has
       `user`, `user`'s node has `session`
 - [x] `run/decl_hooks_cycle` — `A → B → A`: two nodes, `B`'s call goes back to `A`
+- [ ] a component named as a value is a reached node (389): `itens.map(Card)`, a `val` or a field holding
+      `Card`, a lambda answering a component — `run/decl_hooks_component_value` (a `#[page]` over `itens.map(Card)`
+      with `Card` using `request()` is per-request); a call the checker cannot follow (a parameter called, a method)
+      enters `HookCall(callee: null, at)` (`HookCall.callee: ?Declared<unknown>` in `builtins.d.bp`) —
+      `run/decl_hooks_dynamic_call`
 - [x] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
 - [x] `HookUse` carries the `use`'s explicit type arguments (`typeArgs: TypeInfo<unknown>[]` — `use
       params<BlogParams>()` → `[BlogParams]`, its fields with their types), so `#[page]` checks them (293);
