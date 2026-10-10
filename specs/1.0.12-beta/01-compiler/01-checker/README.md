@@ -84,6 +84,20 @@ four targets; `run/comptime_expression_is_block` lost its `.wasm.expect`) ·
 `std-unsupported-on-target` names `#[@External.<Member>]` and the `--target` spelling (`commonJS`),
 every `@BeamMemory` diagnostic spells `keyed: true`, and the evaluator hints name `erl` alone.
 
+
+Step 35 (364), all but the hand-over to the program (box 3, question `s35-a`): every `comptime`
+parameter other than `@Decl` is `comptime x: @Expr<T>` — a non-template function's wrapper read off
+after the parse (`parser/expr_params.zig`, `Param.exprWrapped`; the formatter prints it back), `comptime
+x: T` refused at the parameter (`comptime-param-not-expr`, fn / method / `declare fn`); the body binds
+`x` as `Expr<T>`, `x.value` is `T`, refused for a function (`expr-value-of-function`) or a type
+(`expr-value-of-type`), any other method of a parameter's `@Expr` `expr-param-method`; a decorator's
+argument not known at build refused at it only where the body reads it (`decorator-value-not-comptime`,
+`decorator-arg-not-comptime` gone), `x.fail` at the argument (`'__bp_failArg'/2`); `x.value` erased to
+`x` for what runs (`comptime/expr_param.zig`); a template's `q.value` of a hole-less literal
+(`template-value-not-known` for a holed one); `run/decorator_expr_{value,unread_argument}`, 9 `reject/`
+cells, `docs.md` § Generics, § Template functions, § Decorators, the builtin table and § Decided, not
+yet implemented; the codemod over std, `tests/language`, the compiler's own tests, jhonstart, rakun and
+validation; questions `s35-a`–`s35-d`.
 ## Open
 
 Steps 6, 10, 13 all touch `infer.zig`/`parser/**`: one commit per step, serial.
@@ -450,20 +464,31 @@ fn page(comptime decl: @Decl, comptime pattern: @Expr<string>) {
 }
 ```
 
-- [ ] every `comptime` parameter other than `@Decl` — a decorator's, a tag annotation's, a template
+- [x] every `comptime` parameter other than `@Decl` — a decorator's, a tag annotation's, a template
       function's, any function's, a builtin's in `builtins.d.bp` — is `comptime x: @Expr<T>`; `comptime x: T`
-      refused at the declaration naming `@Expr<T>` (`reject/comptime_param_not_expr`)
-- [ ] the argument checked against `T` at the argument, as s24; `x.value` answers it when known at build
-      and `T` is data; `.value` of an argument not known at build refused at the argument
-      (`reject/decorator_value_not_comptime`); an `@Expr` of a function or a type has no `.value`
-      (`reject/decorator_call_expr_fn`, `reject/decorator_inspect_expr_type`)
+      refused at the declaration naming `@Expr<T>` (`reject/comptime_param_not_expr`,
+      `reject/comptime_param_not_expr_function`; a method, a `declare fn` too) — the parser reads a
+      non-template function's wrapper off (`Param.exprWrapped`, `parser/expr_params.zig`), a variadic is
+      `comptime ..xs: @Expr<T[]>` (`s35-c`)
+- [x] the argument checked against `T` at the argument, as s24; `x.value` answers it when known at build
+      and `T` is data (`run/decorator_expr_value`: a string, a number, a `bool`, a variant, a record, a field
+      key, an array; an ordinary function's `n.value` specialised; a template's `q.value` of a literal without
+      holes, `reject/template_value_not_known`); `.value` of an argument not known at build refused at the
+      argument (`reject/decorator_value_not_comptime`), and accepted where the body never reads it
+      (`run/decorator_expr_unread_argument`); an `@Expr` of a function or a type has no `.value`
+      (`reject/decorator_call_expr_fn`, `reject/decorator_inspect_expr_type`); any other method of a
+      parameter's `@Expr` refused (`reject/expr_param_method`); an optional function's null test is `s35-b`,
+      an ordinary function's unknown argument `s35-d`
 - [ ] an `@Expr` passed into typed meta, a member or emitted code is evaluated by the program at run
       time — `run/decorator_expr_rule_called` (the rule runs at validation, on the four targets),
-      `run/decorator_expr_message_runtime` (a message from a function call)
-- [ ] `x.fail("…")` located at the argument
-- [ ] the codemod: every `comptime` parameter in std, `builtins.d.bp`, jhonstart, rakun, validation,
-      cardume and styled takes `@Expr<T>` and its body reads `.value`; `botopink check` of every
-      library member clean
+      `run/decorator_expr_message_runtime` (a message from a function call) — no output takes an `@Expr`
+      (every one a string; typed meta is 130 s8): question `s35-a`
+- [x] `x.fail("…")` located at the argument (`reject/decorator_expr_fail_at_argument`; the prelude's
+      `'__bp_failArg'/2`)
+- [x] the codemod: every `comptime` parameter in std (`builtins.d.bp`, `types.bp`), jhonstart (4), rakun (73,
+      20 files), validation (46) and styled (none — its templates were already `@Expr<string>`, its
+      decorators `@Decl` alone) takes `@Expr<T>` and its body reads `.value`; cardume is not a repository yet;
+      `botopink check` of every library member clean
 
 ### Rows other fronts found
 
