@@ -153,8 +153,8 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       the `padding` after the `:focus` (368, through `styled`'s source-order reader)
 - [ ] `#[emilia(…)]`: `pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>)` (382), no return
       (302) — `<div #[emilia(.Pad.All.4, .Bg.White)]>` resolves the dot paths against `Token`, computes
-      the class and the rules at build and records them as `styled`'s meta (369, the type named by
-      `08-bpp/119` step 4); no family answers a `@Component`, no function of emilia answers `@Task`
+      the class and the rules at build and sets them as `styled`'s `StyledMeta(layer: .Utilities,
+      className, rules)` (369, 383; one per tag); no family answers a `@Component`, no function of emilia answers `@Task`
 - [ ] no run-time entry point: `emilia(tokens)`, `emiliaWith`, `className`, emilia's `styled` /
       `styledWith`, `cls`, `clsWith`, `named` leave the run-time API; every caller moves in this
       landing — `jhonstart-emilia` (until `08-bpp/119` step 5), onze 68's reader, `onze-cli`, the
