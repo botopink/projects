@@ -1,11 +1,11 @@
 # Front 135 — snap: the second test layer, re-evaluated case by case
 
-**Priority:** low — last · **State:** evaluated; no step started
-**Depends on:** `snap-a` ([`decisions-pending.md`](../decisions-pending.md)) · step 4: `06-emilia/34` landed (it moves the output the helpers record)
+**Priority:** low — last, but step 0 first (every later step writes through `snap`) · **State:** evaluated; answered by 390 (the maps closed) and 391 (the `snap` library); no step started
+**Depends on:** step 0: `botopink/snap` created on GitHub (a first `feat` commit before it becomes a submodule, CI check 1) · step 4: `06-emilia/34` landed (it moves the output the helpers record)
 **Owns:** the snapshot steps other fronts carried — `02-std-and-packaging/97` step 7 ·
 `04-rakun/19` step 6 · `05-jhonstart/26` step 7 · `06-emilia/33` steps 1, 3, 4 (helper and
 suite parts) · `07-onze/50` step 8 · `51` step 7 · `71` step 6 · the helpers named below in
-`emilia-test`, `rakun-test`, onze's harness
+`emilia-test`, `rakun-test`, onze's harness · step 0: `repository/snap/**` (the new repository, its `.gitmodules` entry, the `AGENTS.md` § Layout row and CI check 4's list, in its first commit), the removal of `libs/std/src/testing/snapshots.bp` and std's four `__snapshots__/` files (moved), the generic text methods std gains (391 (2)), and the consumers' import lines (`import {assertAs} from "snap";`, one commit per library, 188)
 **Does not touch:** any existing test or `.snap` — evidence; changes only with its test
 
 ## Goal
@@ -27,19 +27,45 @@ The maps are history, in `../../1.0.11-beta/`: `02-std-and-packaging/97-std-dedu
 
 ## Open
 
-### Step 1 — std (on `snap-a`)
+### Step 0 — the `snap` library (391)
+
+```bp
+import {assertAs} from "snap";
+
+test "release: text ---- the vm.args file" {
+    try assertAs(@src(), "vm.args", releaseText(app));   // __snapshots__/release/text_the_vm_args_file.snap
+}
+```
+
+- [ ] `botopink/snap` at `repository/snap` (326's rule): manifest `["erlang", "commonJS"]`, std only, no host cell;
+      the meta `.gitmodules` entry, `AGENTS.md` § Layout row and CI check 4's list in the commit that adds it
+      (the hooks byte-identical, `.gitignore` naming `*.snap.new` / `*.snap.md.new`, `AGENTS.md` naming
+      `core.hooksPath`)
+- [ ] `std/testing/snapshots.bp` moves whole to `snap` — the path rule and its slugifier, the `botopink-snap 1`
+      format, the check and the `<path>.new` flow, `assertText`, `assertAs`, `assertNamed`, `assertNamedAs` —
+      with std's four `__snapshots__/` files and the tests that read them; `testing.snapshots` leaves std,
+      no re-export (`import {testing.snapshots} from "std"` an unknown-module error naming `snap`)
+- [ ] std gains, as generic text methods, what the engine keeps privately today: newline normalisation,
+      trailing-newline trimming, the first differing line of two texts (117); `io/fs` answers a directory made
+      with its parents; `snap` declares no host cell
+- [ ] the consumers import from `snap`, one commit per library (188): jhonstart (`jhonstart-test`, five
+      examples), onze (`onze`, `onze-assets`, `onze-bundler`, `onze-cli`, `onze-og`, `onze-release`,
+      `onze-test`); every `.snap` byte-identical before and after (the engine's text unchanged)
+- [ ] `contracts.md` § 7 owned by `snap` (its snapshot half; `SourceLocation` stays std's)
+
+### Step 1 — std (390)
 - [ ] `mocks.verify`'s message pinned with `throwsWith` on both targets (§ 1, CONVERT)
 - [ ] `libs/std/AGENTS.md`: the inline literals and the four `__snapshots__/` path-rule files are the evidence
 
-### Step 2 — rakun-test (on `snap-a`)
+### Step 2 — rakun-test (390)
 - [ ] `assertResponse(loc, res)` over `MockMvc.perform`, one `.snap` (§ 2, KEEP — contract 7, 98 check (2))
 - [ ] `rakun-test/AGENTS.md` states the member ships that helper only
 
-### Step 3 — jhonstart (on `snap-a`)
+### Step 3 — jhonstart (390)
 - [ ] `AGENTS.md` paragraph: 204 inline asserts and the 39 existing `.snap` are the evidence; the
       helpers that exist stay (§ 3)
 
-### Step 4 — emilia-test (on `snap-a`)
+### Step 4 — emilia-test (390)
 - [ ] `assertClassName` under `defaultTheme()` (records `e_f51c2501`, the class 367 re-derives in `06-emilia/34` step 5) and `assertCss(loc, tokens, th)`
       over a `pub` CSS surface (`tokensToSheet` is private today), two `.snap` (§ 4, KEEP)
 - [ ] `emilia-card`'s repeat collapse as an inline test (§ 5, CONVERT — goes with 33 step 2)
@@ -47,7 +73,7 @@ The maps are history, in `../../1.0.11-beta/`: `02-std-and-packaging/97-std-dedu
       contract-4 literal and the two helper `.snap` are the evidence; the 1.0.10 suites and eight
       examples are retired (33 steps 3–4)
 
-### Step 5 — onze (on `snap-a`)
+### Step 5 — onze (390)
 - [ ] onze-release: the release tree as a path table in `package_test.bp` (§ 8, CONVERT)
 - [ ] onze 53's runner: written by `07-onze/53` step 1 in the plain form § 9 gives (no snapshot writers)
 - [ ] `repository/onze/AGENTS.md`: the inline literals and the existing `__snapshots__/` (onze-cli
@@ -84,7 +110,7 @@ fits. RETIRE cites the existing test, no sketch. KEEP/CONVERT say whether the va
    said `helpers_test.bp` holds 21 tests, it holds 20 (7 `.snap`). Correct: std ~40 files (4
    existing), jhonstart 32 example snapshots, emilia 610 inline tests in `emilia.bp`.
 
-## 1 · `02-std-and-packaging/97-std-dedupe/test-snap.md` (14.1 KB) — `snap-a`, 97 step 7
+## 1 · `02-std-and-packaging/97-std-dedupe/test-snap.md` (14.1 KB) — 390, 97 step 7
 
 No std `-test` member; map calls `snapshots.assertText` directly. 40 `.snap` + 7 engine tests
 (plain asserts). 97 step 7: (b) writes ~40 files; (a) one `AGENTS.md` line.
@@ -117,7 +143,7 @@ test "mocks: verify message ---- expected exactly one call" {
 Byte-identical templates are a separate choice (one-line Node change; test becomes `equals` over
 a caught message).
 
-## 2 · `04-rakun/19-rakun-test-utilities/test-snap-helpers.md` (12.7 KB) — `snap-a`, 19 step 6
+## 2 · `04-rakun/19-rakun-test-utilities/test-snap-helpers.md` (12.7 KB) — 390, 19 step 6
 
 Map: 60 `assert<Subject>(loc, …)` helpers in `rakun-test`, each with a rendering rule, ~1 900
 `.snap`; case lists stayed in the closed 1.0.10 record. `rakun-test/src` today: `assertions.bp`
@@ -167,7 +193,7 @@ Alternative: amend 98 check (2) to "a `-test` member that exposes a snapshot hel
 `snapshots.`", and contract 7 / rule 3 to match — free in rakun, weakens a shared rule.
 Recommended: the helper.
 
-## 3 · `05-jhonstart/26-jhonstart-router/test-snap.md` (61.6 KB) — `snap-a`, 26 step 7
+## 3 · `05-jhonstart/26-jhonstart-router/test-snap.md` (61.6 KB) — 390, 26 step 7
 
 Map: § 0.2 helpers (11 helper files, exist) and 92 cases, one `.snap` each (76 code blocks + 17
 table rows in render and bridge), under `modules/*/test/__snapshots__/`. Exists: ~204 inline tests
@@ -193,7 +219,7 @@ in member suites; `jhonstart-test` helpers with 20 tests and 7 `.snap` in `helpe
 | J11 § 32 metadata | 9 | `metadata_test.bp` (16), one for one incl. both viewport cases and escaping | **RETIRE** | |
 | J12 § 67 forms | 8 | `jhonstart-forms/test/form_test.bp` (15); `form/` helper `.snap`; forms example (7 `.snap`) | **RETIRE** | |
 
-## 4 · `06-emilia/33-emilia-color-palette/test-snap.md` (95.3 KB) — `snap-a`, 33 steps 1 and 3
+## 4 · `06-emilia/33-emilia-color-palette/test-snap.md` (95.3 KB) — 390, 33 steps 1 and 3
 
 Map: 8 helpers in `emilia-test/src/asserts.bp`, 185 shown cases over 21 per-front suites; 1.0.10
 text implies ~600 files ("one `css:` per leaf in the real file"). Exists: `emilia-test/src/root.bp`
@@ -248,7 +274,7 @@ Retired groups' form: (1), and (3) where a family already runs as one table
 (`palette — red, eleven shades`). 34 step 2 needs nothing from the map: its moved families have inline literals, no
 snapshot to re-record.
 
-## 5 · `06-emilia/33-emilia-color-palette/test-snap-examples.md` (34.3 KB) — `snap-a`, 33 steps 2 and 4
+## 5 · `06-emilia/33-emilia-color-palette/test-snap-examples.md` (34.3 KB) — 390, 33 steps 2 and 4
 
 Map: 39 cases over 9 example projects (`emilia-card` exists, 8 do not), each with its own
 `__snapshots__/` through `assertCss`, `assertCascade`, `assertClassName`. 33 step 2: `emilia-card`
@@ -271,7 +297,7 @@ test "card: a repeated list is one class even with another between" {
 }
 ```
 
-## 6 · `07-onze/50-onze-cli/test-snap.md` (8.4 KB) — `snap-a`, 50 step 8
+## 6 · `07-onze/50-onze-cli/test-snap.md` (8.4 KB) — 390, 50 step 8
 
 Map: 11 cases through 7 `onze-test` helpers (`assertScan`, `assertGeneratedTree`,
 `assertTreeCheck`, `assertScaffold`, `assertBuildOutput`, `assertDevServer`, `assertInfo`), none
@@ -294,7 +320,7 @@ existing; `onze-test/src/core.bp` holds `assertConfig`, `assertAppFiles`, `asser
 No KEEP, no CONVERT. Same decision 218 (outside these maps): `onze-test`'s `assertAlias` and its
 two `alias/` `.snap` in both `onze` and `onze-test` go too.
 
-## 7 · `07-onze/51-onze-image/test-snap.md` (14.6 KB) — `snap-a`, 51 step 7
+## 7 · `07-onze/51-onze-image/test-snap.md` (14.6 KB) — 390, 51 step 7
 
 Map: 12 cases (image 5, font 3, og 4). **All 12 realised in 10 existing `.snap`** (`-` slugs
 recorded as `_`; three image markup cases merged into one). 51 step 7 struck under (a)/(c).
@@ -309,7 +335,7 @@ recorded as `_`; three image markup cases merged into one). 51 step 7 struck und
 
 No rewrite: thinning into inline asserts costs 10 edits, gains nothing.
 
-## 8 · `07-onze/71-onze-release-packaging/test-snap.md` (5.6 KB) — `snap-a`, 71 step 6
+## 8 · `07-onze/71-onze-release-packaging/test-snap.md` (5.6 KB) — 390, 71 step 6
 
 Map: 6 cases through `assertReleaseText` / `assertReleaseTree` (do not exist; tests call
 `snapshots.assertAs` directly). **Five realised:** `release/{build_id_…,
@@ -318,7 +344,7 @@ static_export_three_routes…}.snap`. 71 step 6 (c): "five `.snap` files … `10
 
 | Group | Cases | In code | Verdict | Rewrite as |
 |---|---|---|---|---|
-| L1 release text (`.rel`, `sys.config`, `vm.args`, `bin/onze`, the no-erts line) | 1 | `release_text_test.bp:22-37` with the `.snap` | **KEEP** (exists): the byte-for-byte text `03-bundled-libs/107-release` must reproduce (`snap-a` (3)); 107 step 1/2 extracts the renderers. **No re-derivation**; current | (5): multi-file text whose exact bytes are another package's contract |
+| L1 release text (`.rel`, `sys.config`, `vm.args`, `bin/onze`, the no-erts line) | 1 | `release_text_test.bp:22-37` with the `.snap` | **KEEP** (exists): the byte-for-byte text `03-bundled-libs/107-release` must reproduce (390 (3)); 107 step 1/2 extracts the renderers. **No re-derivation**; current | (5): multi-file text whose exact bytes are another package's contract |
 | L2 Dockerfile and `.dockerignore` | 1 | `release_text_test.bp:40-55` with the `.snap` | **KEEP** (exists): 107 also extracts `dockerfile(spec)`, same contract | (5) existing |
 | L3 build id / shutdown / static export | 3 | `build_id_test.bp:10`, `package_test.bp:66`, `:129`, each with its `.snap` | **RETIRE** (existing `.snap`; no other library reads them) | (5) existing, no work |
 | L4 release tree: the standalone layout plus `scanForSecrets` | 1 | `package_test.bp:87-128` (secrets refusal, manifest chunks present, `packageAssets` copies); no test lists the tree. `includeErts` and `bin/onze` open (ONZ-71-2) | **CONVERT**. **Re-derive:** map's `erts-16.0/`, `lib/*-0.0.1/`, `b7f2a1` are illustrative | (3) table of paths a release must hold, in `package_test.bp`, replaces 1 snapshot — sketch L4 |
@@ -334,7 +360,7 @@ test "release: tree ---- the standalone layout" {
 }
 ```
 
-## 9 · `07-onze/53-onze-example-app/test-snap-examples.md` (31.5 KB) — `snap-a`, 53 steps 1–6
+## 9 · `07-onze/53-onze-example-app/test-snap-examples.md` (31.5 KB) — 390, 53 steps 1–6
 
 Map: E2E runner — 5 harness functions (`bootApp`, `stopApp`, `buildApp`, `request`,
 `requestChunks`), 7 snapshot writers (`assertResponse`, `assertResponseStream`, `assertBundle`,

@@ -28,7 +28,7 @@ integers, lists, tuples, maps — replacing the `rkRelTerm` sidecar cell), `boot
 `dockerfile(spec)`, `appup(from, to)`.
 
 - [ ] each renderer byte-identical to rakun's release output for one fixed spec, both rows
-- [ ] onze-release's two recorded snapshots reproduced byte for byte (`snap-a` (3)):
+- [ ] onze-release's two recorded snapshots reproduced byte for byte (390 (3)):
       `modules/onze-release/test/__snapshots__/release/text_rel_sys_config_vm_args_and_the_boot_script.snap`
       (`.rel`, `sys.config`, `vm.args`, boot script) and
       `dockerfile_two_stages_non_root_erts_bundled_and_not.snap` (Dockerfile with and without ERTS) —

@@ -497,7 +497,7 @@ val site = app(plugins: [styledSink()]);             // {app} from "jhonstart"; 
 - The sink's `payload()` returns `#("s", <the class names it flushed>)` — the payload's `s` — checked
   by 68's entry with `checkStyles(payload.s)`. jhonstart names no plugin key.
 
-## 7 · Test and snapshot contract — owned by std, consumed by every `-test` submodule
+## 7 · Test and snapshot contract — owned by `snap` (391; `SourceLocation` std's), consumed by every `-test` submodule
 
 Specified by [`src-builtin.md`](../1.0.10-beta/01-std/src-builtin.md),
 [`snapshots.md`](../1.0.10-beta/01-std/snapshots.md),
@@ -512,13 +512,13 @@ test "css: modifiers ---- hover on md breakpoint" {
 }
 ```
 
-- `snapshots.path(loc)` = `<dir of loc.file>/__snapshots__/<suite>/<slug>.snap`; `suite` = text
+- `snap`'s `path(loc)` (`import {path} from "snap"`, 391) = `<dir of loc.file>/__snapshots__/<suite>/<slug>.snap`; `suite` = text
   before the first `": "` of the test name, `slug` = slugified rest. Same literal path asserted by
-  std's inline tests and one test per `-test` submodule.
+  `snap`'s inline tests and one test per `-test` submodule.
 - Mismatch or missing file → writes `<path>.new`, fails the test. Only a person renaming `.new`
   accepts a snapshot; **there is no update flag**, no `-test` submodule adds one.
 - Every library, module, submodule, example owns the `__snapshots__/` beside its tests and exposes,
   from `<lib>-test`, the `assert<Subject>(loc, …) -> @Result<void, string>` helpers writing them. A
-  `-test` helper never re-implements `snapshots.path` or an `asserts.*` predicate.
+  `-test` helper never re-implements `snap`'s `path` or an `asserts.*` predicate.
 - `@src()` is a compiler builtin — the one contract with a compiler half: the `SourceLocation`
   record is asserted by std on every target the tests run on.

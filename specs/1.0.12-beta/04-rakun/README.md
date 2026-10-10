@@ -67,7 +67,7 @@ B  04 step 1 ──► 13 · 12
    65 (waits on nothing in the track after 128: its relay streams through `httpc`, not 13)
    │
 C  81 · 93 · 92 · 04 step 4 ──► 88
-   15 step 1 · 04 step 4 ──► 19 steps 2–5      (19 step 6 is 20-snap's, on snap-a)
+   15 step 1 · 04 step 4 ──► 19 steps 2–5      (19 step 6 is 20-snap's, on 390)
 ```
 
 Concurrency and other tracks: [`../fronts.md`](../fronts.md) § Execution order of tracks 03–08. A
@@ -203,7 +203,7 @@ started. Each member's contract is asserted by its own `test/**`.
 **Recommendation.** (a).
 **Blocks.** 73 step 3.
 
-The snapshot layer is [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 2.
+The snapshot layer is decision 390 (390), worked by [`20-snap`](../20-snap/README.md) step 2.
 
 ### 03r-ak · CycloneDX: a `required` / `type` validator over the checked-in schema
 
@@ -261,7 +261,7 @@ member edge (decision 185). (c) retire the WebSocket transport: R92-1's two boxe
 | RX-1 | `??`-with-a-dummy-record workarounds (`if (x == null)` narrowing exists) | 11 (`rakun-actuator/src/endpoint_host.bp:136,152`) · 79 (`rakun-security/test/basic_test.bp:137,174`) · 04 (`rakun/test/config_test.bp:569`) |
 | RX-2 | "declared parameter defaults are never applied" (decorator-argument case) — re-measured in the owning member's tests, result recorded | 04 (14, 72) · 08 (78) · 12 · 15 (15, 86, 90) · 22 (60, 61, 64, 66); 21's corrected by 13 step 4 |
 | RX-4 | the closed `status.md` L82 rows (static root, `Request` query/headers) | 65 (R82-4) · 04 (R62-3) |
-| RX-5 | the snapshot layer | `20-snap` step 2 (`snap-a`) |
+| RX-5 | the snapshot layer | `20-snap` step 2 (390) |
 | RX-6 | the seven example projects | 73 (03r-af) |
 | RX-7 | `modules.md` vs the tree | 128 (the nine merges) |
 | RX-10 | "consume std" (`02-std-and-packaging/97` § Consumers): `config.parseDuration` (`rakun/src/config.bp`) and `jwt.skewOf` (`rakun-security/src/jwt.bp`) → `clock.parseDuration` (one unit, digits only — not ISO `PT…`); number parsers answering a `@Result` (`rakun-metrics/src/registry.bp`, `rakun-scheduling/src/cron.bp`, `rakun/src/config.bp`) → `parseInt` / `parseFloat`; `Json` accessors (`jwt.bp`, `rakun/src/autoconfig_registry.bp`) → the `Json` methods; `rakun_security.erl`'s `pbkdf2` → `hash.pbkdf2Sha256` (salt as text, decision 175) | 04 (`config.bp`, `autoconfig_registry.bp`) · 79 (`jwt.bp`, `rakun_security.erl`) · 17 (`rakun-metrics`) · 15 (`cron.bp`) |

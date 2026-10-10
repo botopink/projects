@@ -9,7 +9,7 @@ is exercised at once; last by construction · **State:** not started
 dispatcher, `Origin` / `Host` 403), 25 (route handlers), 60 (static generation), 66 (OG
 discovery), the middleware (`rakun-web`, erlang); `12-rakun-cache` (`revalidateTag`);
 `65-rakun-url-rules` (decision 201) · maintainer `50-b` (step 6) · `20-snap` step 5 (E2E runner,
-`snap-a`)
+390)
 **Owns:** `repository/onze/examples/blog/**` (`README.md`, `test/serve.sh` included) · this
 directory (`modules/onze-test/src/e2e.bp`, the group file 49 stubs, is `20-snap` step 5's)
 **Does not touch:** anything else — read-only elsewhere; a needed change is reported to its owner
@@ -28,7 +28,7 @@ both `onze dev` and `onze build && onze start`, browser rows in a real browser, 
   `components/{nav,post_card,like_button}.bp`, `lib/db.bp`; tests `db_test`, `render_test`,
   `tags_test` (both rows). Absent: `middleware.bp`, `lib/actions.bp`, `app/api/posts/route.bp`,
   `loading.bp` / `error.bp`, `README.md`, `test/serve.sh`; `onze-test` has no `e2e.bp`.
-- **E2E runner** (`20-snap` step 5, `snap-a` (5)): five harness functions — `bootApp(dir,
+- **E2E runner** (`20-snap` step 5, 390 (5)): five harness functions — `bootApp(dir,
   mode) -> @Task<RunningApp>` (mode `dev` or `start`, over 50's commands), `stopApp`, `buildApp`,
   `request(app, method, path, headers, body)`, `requestChunks` — no snapshot writers. Suites
   assert status, headers, body over `request(…)`; dev-vs-start gate = equality property (`dev`

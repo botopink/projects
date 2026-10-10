@@ -50,7 +50,7 @@ Paths in `repository/rakun` are the tree `04-rakun/128` leaves (decision 187;
 | `07-onze` | `onze/**` + `onze-server/**` + `onze-test`'s root and group files (49); `onze-cli/**` + `onze-bundler/**` (50); `onze-assets/**` + `onze-og/**` (51); `onze-release/**` + `examples/static-site/**` (71); `examples/blog/**` (53) | rakun, jhonstart; the lines 102 names in `types.bp`, `scan.bp`, `chunk.bp`, 104's in `server.bp` and `image_handler.bp`, 107's in `otp.bp` / `docker.bp` / `spec.bp`, while that front is open |
 | `08-bpp` | `jhonstart-html/**` (118; after 26 step 0, `jhonstart/src/html.bp`, to which 119, 120 and 126 each append one arm), the core's `src/prelude.bp` (118, decision 270); the new member `onze-content` (121); the new member `jhonstart-styled`, the deletion of `jhonstart-emilia/**` and the repositories `css` and `styled` (119, decision 338); new files and named lines in the jhonstart core, `jhonstart-link`, `jhonstart-forms`, rakun, `rakun-app`, `libs/actions`, `onze`, `onze-cli`, `onze-bundler` (117 · 120 · 122 · 123 · 124 · 126 · 127, each README § Owns); in botopink-lang, **116 only**: the manifest key, the extension lists and the unfold in `compiler-cli` / `language-server` / `lib-test-runner`, and `vscode-extension` | `modules/compiler-core/**`, every `codegen/*.zig`; a file a front of track 03–07 owns, until it has landed ([`08-bpp/README.md`](./08-bpp/README.md) § Who else owns the files) |
 | `10-specs` (141) | the text of `specs/1.0.12-beta/**` for the retired spellings its `inventory.md` lists — class S lines of another front's README, topic files and examples only while that front is not in a worktree, one commit per track (its README § Ownership); the text of `decisions-taken.md`'s amended rows (the wording, never the rule) | every repository under `repository/`; the closed milestones; a line another front holds a box to rewrite |
-| `20-snap` (135) | the snapshot steps of 97 s7, 19 s6, 26 s7, 33 s1/s3/s4, 50 s8, 51 s7, 53's runner, 71 s6; `modules/emilia-test/**` (s4) and the helper it names in `rakun-test`; onze's E2E runner `onze-test/src/e2e.bp` (s5) | every test and `.snap` that exists today |
+| `20-snap` (135) | `repository/snap/**` and the move of `std/testing/snapshots.bp` into it (s0, 391); the snapshot steps of 97 s7, 19 s6, 26 s7, 33 s1/s3/s4, 50 s8, 51 s7, 53's runner, 71 s6; `modules/emilia-test/**` (s4) and the helper it names in `rakun-test`; onze's E2E runner `onze-test/src/e2e.bp` (s5) | every test and `.snap` that exists today |
 | meta repo | `.github/` (114); `specs/**` — a front's README is that front's, the top-level files the coordinator's | — |
 
 **Open item — the runners have no owner.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (beyond
@@ -190,7 +190,7 @@ unblocks the last column. Compiler fronts are in [`01-compiler/README.md`](./01-
 | **116** | 118 · 26 s0 · `01-compiler/26` · with `01-checker` s22 · decisions 198–200, 212, 213, 221, 270, 285, 288, 289, 338 · s2: `01-checker` s25 · s6: 119 s2 | 124 s5 |
 | **124** | 50 · 71 · every other `08` front · s5: 116, 53 | — |
 | **98** | every library track's `-test` and README steps · s3: 95-f · s4: `subdir` (344) | — |
-| **135** | snap-a · s4: 34 · s1–4: the owning fronts' other steps | s5: 53 s2–6 |
+| **135** | s0: `botopink/snap` created (391) · s4: 34 · s1–4: s0 and the owning fronts' other steps | s5: 53 s2–6 |
 
 ### Waves
 
@@ -208,11 +208,11 @@ for the carve-outs named above.
 | 4 | 04 (s1 first) · 19 s1 · 15 · 74 · 81 · 67 | 128 landed (rakun); 26 and 103 s2 (67) |
 | 5 | 08 · 79 · 93 · 73 · 13 · 12; 116 at the earliest | 128; 04 s4 (08 s1); 04 s1 (13, 12); 19 s1 (12); 118, 26 s0, `01-compiler/26` (116) |
 | 6 | 22 · 65 · 17 · 09 · 92 · 91 | 04 s5 (22); 13 s2 (17); 19 s1 and 13 (09); 74 and 15 (92); 15 (91) |
-| 7 | 11 · 123 · 117 · 49 s3–5 · 51 s2–6 · 71 s3–4 · 27 s1 box 2 · 135 s5 | 22 (11, 117, 51, 49 s5, 71 s4, 27); 04 and 65 (123); 26 s4 and 17 (49 s3); 65 s1 (49 s4); 11, 04, 81 (71 s3); snap-a (135 s5, before 53) |
+| 7 | 11 · 123 · 117 · 49 s3–5 · 51 s2–6 · 71 s3–4 · 27 s1 box 2 · 135 s5 | 22 (11, 117, 51, 49 s5, 71 s4, 27); 04 and 65 (123); 26 s4 and 17 (49 s3); 65 s1 (49 s4); 11, 04, 81 (71 s3); 135 s0 (391; s5 before 53) |
 | 8 | 88 · 19 s2–5 · 120 · 53 · 104 s5 · 106 s2 · 50 s5–6 | 81, 93, 92, 04 s4, 73 (88); 15 s1, 04 s4 (19); 117, 119 (120); every front 53 names; every owner of 104's consumer files; 65, 17, 26 s4 (106); 71 s2, 27 s1 (50) |
 | 9 | 122 · 126 · 121 s3–6 · 105 · 107 | 120 (122, 126); 08-f, 117 (121); 104 s5 (105); 07-g, 71, 81 (107) |
 | 10 | 127 · 71 s5 · 121 s7 · 124 s1–4 | 125 s6, 126, 123 (127); 50 and 53 (71 s5, 121 s7); every other `08` front but 116 (124) |
-| 11 | 124 s5 · 98 · 135 s1–4 | 116 and 53 (124 s5); every library track (98); snap-a, 34 and the owning fronts (135, last) |
+| 11 | 124 s5 · 98 · 135 s1–4 | 116 and 53 (124 s5); every library track (98); 135 s0 (391), 34 and the owning fronts (135, last) |
 
 The chains that set the pace: 102 / 103 pushed → 102 s3 + 103 s2 → 128 → 04 → 22 → 49 → 53;
 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124.

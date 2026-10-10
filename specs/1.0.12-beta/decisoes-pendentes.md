@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 90 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **390**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 94 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **392**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: uma linha por pergunta, com o que mais o passo espera.
@@ -70,62 +70,6 @@ title: Hello
 
 **Recomendação: (b).** O frontmatter é o segundo consumidor do YAML; o Markdown tem um só (115).
 **Bloqueia:** 121 passo 3; uma linha para a 97.
-
-### snap-a · Os mapas de snapshot — aposentados; ficam os snapshots que existem ou que um contrato lê
-
-**Trava:** `03/107` (a caixa dos dois snapshots do `onze-release`); fora de 00–03: a frente 135 inteira (`20-snap`) e, por ela, 97 passo 7, 19 passo 6, 26 passo 7, 33, 50 passo 8, 51 passo 7, 53 e 71 passo 6
-
-**Contexto.** Substitui as cinco perguntas antigas (`01std-f`, `03r-ag`, `30-h`, `05emilia-m`, `53-b`).
-Um "mapa de snapshot" é uma lista, herdada da 1.0.10, dos casos que cada biblioteca deveria gravar como
-arquivo `.snap` (a saída esperada guardada em disco). Os nove mapas foram reavaliados caso a caso na
-trilha `20-snap` (frente 135): **473 casos** — 27 obsoletos (renomeados, apagados ou mudados pelas
-decisões 186, 194, 200, 218, pelo 34 passo 2, pela 50-a, ou adiados pela 274), 418 já verificados
-hoje por um teste inline ou por um `.snap` que existe, e 21 que nada verifica e valem um teste simples.
-Os literais gravados nos mapas são anteriores ao código (separador de slug, ordem do `_links`,
-`normalize`, classes da emilia) e não servem de valor esperado. O contrato 7, a regra 3 do
-`snapshots.md` e a checagem (2) da 98 exigem pelo menos um `assert<Assunto>(loc, …)` em cada `<lib>-test`.
-
-**Hoje:**
-```bp
-// cada caso já é afirmado por um literal inline, nos dois targets:
-assert tokenDeclarations(.Border.Rounded.Md) == "border-radius:var(--radius-md)";   // emilia.bp:10615
-// e os .snap que existem: std 4, jhonstart 39, onze 51 (24 deles via snapshots.assertAs)
-```
-
-- [ ] **(a)** Como proposto: os mapas viram registro fechado; os `.snap` que existem ficam (std 4,
-  jhonstart 39, onze 51) e só mudam junto com o seu teste; um `.snap` novo só onde os bytes exatos são
-  contrato de outro pacote (os `text_…` e `dockerfile_…` do onze-release, já em disco, para a
-  `107-release`); helpers só os que um consumidor usa — `emilia-test`: `assertClassName` (sob
-  `defaultTheme()`, gravando `e_f51c2501`, 367) e `assertCss(loc, tokens, th)`; `rakun-test`:
-  `assertResponse(loc, res)` sobre `MockMvc.perform`; os do jhonstart e do onze como estão (o
-  `assertAlias` do onze sai com a 218). Os 21 valores sem verificação viram testes simples, e 97 passo 7,
-  26 passo 7, 33 passos 3–4, 50 passo 8, 51 passo 7 fecham com uma linha no `AGENTS.md`. Só **3** `.snap`
-  novos (emilia-test 2, rakun-test 1).
-  ```bp
-  try asserts.throwsWith({ -> val _v = verify(repo, times(1)).find(eq(7)); 0; },
-      "mocks.verify: find - expected exactly 1 matching call(s), got 2");       // std, nos dois targets
-  assertClassName(loc, cardTokens(), defaultTheme());                           // emilia-test → e_f51c2501 (367)
-  // AGENTS.md: "os literais inline e os __snapshots__/ existentes são a evidência"
-  ```
-- [ ] **(b)** Construir a camada inteira: todos os helpers e `.snap` dos mapas (~2 500 arquivos), com os
-  literais recalculados primeiro — muitos arquivos novos para valores que já têm um teste inline.
-  ```text
-  modules/emilia-test/test/__snapshots__/rounded_md.snap
-  modules/emilia-test/test/__snapshots__/rounded_lg.snap
-  …                                            # ~2 500 arquivos, cada literal do mapa recalculado
-  ```
-- [ ] **(c)** Manter os mapas abertos por biblioteca: cada uma responde a sua pergunta antiga e guarda o
-  seu mapa até lá — cinco respostas separadas, regras possivelmente diferentes.
-  ```text
-  05emilia-m (aberta): a emilia grava os casos do seu mapa?   → resposta só para a emilia
-  03r-ag     (aberta): o rakun grava os casos do seu mapa?    → resposta só para o rakun
-  ```
-
-**Recomendação: (a).** Uma regra para todas as bibliotecas, cada valor verificado uma vez, e só três
-`.snap` novos; é a opção mais restritiva que ainda prova tudo. **Bloqueia:** a frente 135 inteira
-(`20-snap`, passos 1–5), que é dona de 97 passo 7 · 19 passo 6 · 26 passo 7 · 33 passos 1, 3, 4 · 50
-passo 8 · 51 passo 7 · o runner do passo 1 da 53 e o texto dos passos 2–6 · 71 passo 6; a checagem (2)
-da 98 fica como está.
 
 ### 05emilia-n · As linhas do Tailwind sem dono
 

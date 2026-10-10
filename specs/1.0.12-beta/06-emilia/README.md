@@ -20,8 +20,8 @@ test member plus examples.
 | EM-8 | five families out of parity with 4.3.2 (decision 350 moves them) — table in [34 § Mechanism](./34-emilia-modifiers/README.md): transition presets, `backdrop-opacity-*`, `border-spacing-*`, backdrop filters' `-webkit-backdrop-filter`, `divide-*`'s `border-*-style:var(--tw-border-style)` | `emilia.bp` blocks 44 · 42 · 43 · 40; `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` where they pin the output | 34 step 2 (after step 5, 350) |
 | EM-9 | unplaced rows of `34-emilia-modifiers/reference-rows.md`, category (c): named `:has()` / `:not()` / ARIA / data-attribute / `in-[…]` forms; named `group/name` / `peer/name`; a cleared `--breakpoint-*` emits `@media (width >= )` instead of refusing; `@theme inline`; negative translate (`tokens.bp:2259-2279` has no `Neg`) | `tokens.bp`, `emilia.bp` blocks 34 · 54 · 45 | 34 steps 3 (the refusal, decision 300) and 4 (the four feature rows, on 05emilia-n) |
 | EM-12 | emilia's own sheet model (`Rule`, `Sheet`, `renderRule`, `renderDocument`, the per-render store) and string-built families become `styled` components (`styledProperty "…"`); the theme mechanism moves to `styled`, `defaultTheme()` stays (decision 338) | `modules/emilia/src/{output,emilia,spacing,theme}.bp`, `botopink.json` | 34 steps 3, 5 |
-| EM-3 | `emilia-test` exposes no `assert<Subject>` — `root.bp` holds one resolve test (PK-4) | `modules/emilia-test/src/**` | `20-snap` step 4 (`snap-a`) |
-| EM-4 · EM-5 | per-front snapshot suites and the eight cross-front examples of the 1.0.10 maps — the 610 inline tests in `emilia.bp` are today's evidence | `modules/emilia/test/**`, `examples/<new>/**` | `20-snap` step 4 (`snap-a`) |
+| EM-3 | `emilia-test` exposes no `assert<Subject>` — `root.bp` holds one resolve test (PK-4) | `modules/emilia-test/src/**` | `20-snap` step 4 (390) |
+| EM-4 · EM-5 | per-front snapshot suites and the eight cross-front examples of the 1.0.10 maps — the 610 inline tests in `emilia.bp` are today's evidence | `modules/emilia/test/**`, `examples/<new>/**` | `20-snap` step 4 (390) |
 
 ## Fronts
 
@@ -56,7 +56,7 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 |---|---|---|
 | 05emilia-a … 05emilia-k (e → 358) | the filter chain inline; `BackdropFilter`; `drop-shadow-none`; snap strictness fallback; `fullOptions()`; `--inset-shadow-*`; `space-*` / `divide-*` selector; siblings never import `from "emilia"` (05emilia-h → 206: `from "<module of this package>"` is an error, a sibling imports by path); `@property` blocks; selector-list modifiers; `spacingNegHalf` | — |
 
-Snapshot suites and the eight cross-front examples: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 4.
+Snapshot suites and the eight cross-front examples: decision 390 (390), worked by [`20-snap`](../20-snap/README.md) step 4.
 
 ### 05emilia-n · The unplaced Tailwind rows — declare them, or leave them to `arbSel` (reduced: only the four features)
 

@@ -24,7 +24,7 @@ front-number order.
 `README.md` (PK-2). Only `emilia-card` depends on another library (`"jhonstart": { "path":
 "../../../jhonstart/modules/jhonstart" }`), retired by decision 114 (front 33 step 2); CI checks
 jhonstart out for it (`.github/workflows/test.yml:94-99`, `00-gate`'s file). The eight cross-front
-examples of the 1.0.10 map do not exist (`20-snap` step 4, `snap-a`).
+examples of the 1.0.10 map do not exist (`20-snap` step 4, 390).
 
 ## Front → files
 

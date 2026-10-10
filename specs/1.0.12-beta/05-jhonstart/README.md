@@ -21,7 +21,7 @@ marker). Left: a tail of code and spec items, three fronts by the member each ed
 | JH-29-doc | `docs.md:371,393` say "front 23" for the payload envelope (jhonstart 30's since decision 117); 29-a's starter-table row; `islandAttr` wording | `docs.md` | 26 step 5 |
 | JH-28-ex | `request-scope-example.bp` (escaping) and `blog-post-page-example.bp` (sequential awaits) break the README's own rules | `26/examples/` | 26 step 6 |
 | PK-2 | the eight example members have no `README.md` | `examples/*/` | 26 step 6 |
-| JH-SNAP | module-level snapshot layer (`snap-a`) | every member's `test/` | `20-snap` step 3 |
+| JH-SNAP | module-level snapshot layer (390) | every member's `test/` | `20-snap` step 3 |
 | JH-27-3b | `reconcile(current, target)` has no driver: a shared layout's islands re-hydrate on every transition; route-kind flag unread | `jhonstart-link` | 27 step 1 |
 | JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<Element>` untested | `jhonstart-link` | 27 step 2 |
 | JH-67-dom | five DOM-side forms boxes (1.0.10's 3a, 3b, 4, 5): `fieldError` after `__jhFormState`, `ok: false` envelope re-rendering in place, `pending` / `actionId` for two forms at once, optimistic commit and roll-back, `push` after the envelope | `jhonstart-forms` | 67 steps 1–3 |
@@ -86,7 +86,7 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 | 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`, `compose` taking the page as a thunk (a page is `fn() -> View`, no `route` parameter — 293); `Suspense(b)` registers its `Boundary(id, fallback, child)` with the render (`child` the unstarted thunk); `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |
 
-Module-level snapshot map: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 3.
+Module-level snapshot map: decision 390 (390), worked by [`20-snap`](../20-snap/README.md) step 3.
 
 ### 67-a · Where the DOM-side forms boxes are asserted
 

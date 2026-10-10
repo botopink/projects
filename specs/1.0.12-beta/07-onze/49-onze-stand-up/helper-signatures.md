@@ -4,7 +4,7 @@ Front 49 owns `onze-test/src/root.bp`, `core.bp`, `fixtures.bp` (exist) and stub
 (README step 6). The 1.0.10 map's other groups
 ([`06-onze/test-snap.md`](../../../1.0.10-beta/06-onze/test-snap.md) § Helper signatures) — `cli`,
 `bundler`, `assets`, `og`, `release` — are the snapshot layer → 20-snap (front 135) step 5. Under
-`snap-a` (a): none written, `e2e` holds the five harness functions, `assertAlias` goes with
+390: none written, `e2e` holds the five harness functions, `assertAlias` goes with
 decision 218 (`50` step 9).
 
 ## Helper signatures (`modules/onze-test/src/`)

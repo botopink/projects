@@ -17,7 +17,7 @@ by carve-out: `modules/rakun-messaging/src/broker_double.bp`,
 `rakun-test` ships a RESP2 Redis double on a loopback port; `resetContext()`, `contextSnapshot()`
 cover listener and task registries; a broker double drives a `#[listener]` with no broker
 configured; `bootAndExit` boots an app binding nothing, exits with a code; `#[mock]` pairing and the
-example current; the snapshot layer is front 135's (`20-snap`, on `snap-a`).
+example current; the snapshot layer is front 135's (`20-snap`, 390).
 
 ## Mechanism
 

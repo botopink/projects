@@ -67,7 +67,7 @@ Same shape per track:
 | E onze | `onze-test` | `assertManifest(loc, m)` · `assertPayload(loc, p)` | `manifest` · `payload` | `formatManifest(m)` (contract 6) · the payload JSON (contract 2, `globals.payload`) |
 | the compiler, written in botopink | — | `assertJsSingle(loc, source)` | `js` | the JavaScript the source lowers to — the `.bp` twin of `codegen/tests/helpers.zig` `assertJsSingle` |
 
-Shape only; which helpers each library writes is `snap-a` (4) in
+Shape only; which helpers each library writes is 390 (4) in
 [`../../decisions-pending.md`](../../decisions-pending.md), worked by [`20-snap`](../../20-snap/README.md):
 `emilia-test`'s `assertClassName` · `assertCss`, `rakun-test`'s `assertResponse`, jhonstart's and
 onze's existing helpers.

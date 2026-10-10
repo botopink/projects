@@ -51,7 +51,7 @@ pages read. 51, 71: independent members. 53: read-only against every other membe
 ## Decisions
 
 Ids kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../1.0.10-beta/decisions-pending.md) § Track E); new questions continue
-each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`), `snap-a`;
+each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`); `snap-a` → 390, 391;
 from the naturalness review ([`decisions-pending.md`](../decisions-pending.md) § nat): `nat-f2`
 (`onze.json`'s planned keys — 49, 50), `nat-f4` (the `ONZE_PUBLIC_` prefix — 50, 53; a client
 module's unprefixed `env.read` is already refused at build, `onze-bundler/src/refusal.bp`),
@@ -76,4 +76,4 @@ Recommendation (a): restart the node per change (`build` + `start` over a file w
 `onze-cli/src/main.bp:101`'s "not available yet" text describes (b) (reload into the running node)
 and cites "front 50 step 6" — 1.0.10's numbering; here it is 50 step 2, which removes the text.
 
-Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: [`decisions-pending.md`](../decisions-pending.md) `snap-a`, worked by [`20-snap`](../20-snap/README.md) step 5.
+Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: decision 390 (390), worked by [`20-snap`](../20-snap/README.md) step 5.
