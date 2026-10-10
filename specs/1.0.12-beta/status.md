@@ -203,6 +203,7 @@ the libraries' critical path · **L3** ready to open now · **L4** later, in the
 - [ ] rakun track — latent `i32` clocks: `migration_host.cellNowMs`, the test-only monotonic `nowMs` in `rakun-mail`, `rakun-rsocket` and `tls_listener_test`, `Duration.millis` · `04-rakun` RX-15
 - [ ] rakun track — stale `__rkMake_` text in rakun's `AGENTS.md` · `04-rakun` RX-16
 - [x] rakun track — the server test measures `Content-Length` in bytes (320's follow-up) · `04-rakun` RX-17
+- [x] 01-checker — a module is its package plus its path (170, 337): two packages' `theme` modules no longer collide (`modules/two_packages_one_module_name`, four targets); jhonstart's core on `styled` compiles `jhonstart-emilia` on both rows — unblocks 119 s1 box 4 and 34 s5 (front `pkg-module-collision`)
 - [ ] emilia on `styled` first (decision 350) — 34 s5: the two text boxes done (`AGENTS.md`, the grep), the other seven wait on 34-a · 34-b · 34-c (L5) and 119 s1 box 4 — 119 s1's two open boxes (a component with no run-time hook computed at build; the theme mechanism, 300) → 34 s5 (emilia over `styled`, output byte-identical) → 34 s2 (the five families in `styled`'s literal) · through 352 / 354 (registration by `use context(StyledContext)`), 134 s6 (box 4), box 5 on `01-compiler/130` s10 (353, row 134) — measured on `d7c71405`, see L5 (`css` done, `styled` landed)
 
 ## L3 — ready to open now
