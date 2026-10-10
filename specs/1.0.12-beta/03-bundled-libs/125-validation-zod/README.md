@@ -3,7 +3,7 @@
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done;
 steps 4–12 landed in 306's shape but for the boxes that wait on `01-checker` steps 24 / 28, 134 step 4,
-`@typeInfo(T).fields`, the `Decl.variants` gap and step 9's vendored validator (399, § Open)
+`@typeInfo(T).fields` and the `Decl.variants` gap (step 9's meta-schema check, decision 399, is built: Ajv vendored under `test/tools/`)
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · decision 325 (07-j: every step, 306's shape). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
@@ -229,7 +229,6 @@ waits on:
 | 5 | `derived-types-example.bp` passes; `#[validated] pub val RecipePatch = Type.partial(Recipe);` decodes with every field optional, keeps `Recipe`'s markers, and is imported and constructed by a second module | `01-checker` step 28 (`Type`'s calls answered) · 134 step 4 (`pick` / `omit`, decision 267) |
 | 7 | the type-level `#[check(rule, at: .field, message: "…", code: .Custom)]` and `#[check(message: "…")]` on the rule; a `#[check]` naming a missing function, a missing field (`.confrim`) or a rule of another signature fails at that argument; one on a rule outside the type's module refused | `01-checker` step 24 (280) |
 | 8 | `#[map(f)]`, `#[tryMap(f)]`, `#[codec(decode: f, encode: g)]` — they read `f`'s parameter type | `01-checker` step 24 (280 (2)) |
-| 9 | the emitted document validates against the 2020-12 meta-schema: Ajv's standalone 2020 build vendored under `test/tools/` (`check-schema.js`), run by `test/json_schema_test.bp` through `io.process.run("node", …)` on commonJS for every emitted document; its version and hash in `AGENTS.md`; tests only — never in `src/`, `files` or a consumer (399) | nothing — 399 answers it |
 | 11 | `#[wireName("salmon")]` on each variant | the **`Decl.variants`** gap row (annotations of variants) |
 | 12 | a located refusal for a field marker's function of the wrong signature (`#[preprocess]`, `#[check]`; `#[map]`, `#[tryMap]`, `#[codec]` with them) | `01-checker` step 24 |
 | 12 | reflection reads the type — `@typeInfo(T).fields`, `@typeInfo(T).meta(Validated)` — and a library takes the type (`comptime source: type T`) | `@typeInfo(T).fields` (`typeinfo-unknown-member`, `01-checker`) · 298 |
