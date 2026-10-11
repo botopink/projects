@@ -28,28 +28,6 @@ número livre, que é **484**.
 
 `00-gate` não tem pergunta aberta: os passos da 114 não esperam nenhuma decisão.
 
-#### 485-a · O que uma célula de recusa afirma sobre o texto sob o circunflexo (475 (2))
-- **Medido.** Ao mover `tests/language` para `conformance/` (144 B-29 passo H), quatro antigas células de `reject/`
-  (`case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name`, `reserved_word_param_name`) afirmavam o
-  rótulo impresso sob o circunflexo; o `.snap` da decisão 475 registra `refused <message>` e `at <file>:<line>:<column>`,
-  e nenhum registro guarda o rótulo, então as quatro estão vermelhas.
-- **Opções.** (a) ★ A célula afirma a linha `refused` inteira do compilador (o código e a mensagem), sem rótulo: o
-  rótulo é apresentação, o código e o local são a afirmação. (b) Um registro `label <text>` entra no formato de 475 (2),
-  depois de `at`, permitido só num arquivo de recusa.
-  Exemplo (a) (o `snapshot/output/main.snap` de `case_bare_name_arm`, a resposta do compilador hoje):
-  ```text
-  botopink-cell 1
-  refused error: case-bare-name-arm: a name alone is not a pattern
-  at src/main.bp:7:9
-  ```
-  Exemplo (b):
-  ```text
-  botopink-cell 1
-  refused error: case-bare-name-arm: a name alone is not a pattern
-  at src/main.bp:7:9
-  label use _ { n -> … } to bind the matched value
-  ```
-
 #### s29-a · Como uma anotação de template recebe a declaração anotada, e se ela também é um template de ponto de chamada (311)
 - **Medido.** A 311 deixa a grafia do `@Decl` para o `01-checker` passo 29 e diz "uma função é ao mesmo tempo
   o template e a anotação (`erika "…"` e `#[erika "…"]`)". Uma função de template é chamada só com

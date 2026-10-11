@@ -2837,7 +2837,7 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       the step's base, green or each red named
 - [ ] what the move left: `generic-loader-binding` into erika once B-45 lands; the decorator `random.float()` cell once
       B-46 lands; the four caret-label cells (`case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name`,
-      `reserved_word_param_name`) once `decisions-pending.md` 485-a is answered; the reds B-43 and B-44 found
+      `reserved_word_param_name`) with B-47; the reds B-43 and B-44 found
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
@@ -3265,13 +3265,14 @@ refuses it (found in rakun's `constraint` cell, which registers inside `main` in
 `botopink cell check` / `cell new` read and write `<cell>/targets`; decision 475 (1) puts a cell's narrowing in its own
 manifest, as any project's.
 
-- [ ] `cell.zig` reads the cell's `botopink.json` `"targets"` through the manifest module (absent → every target);
+- [x] `cell.zig` reads the cell's `botopink.json` `"targets"` through the manifest module (absent → every target);
       the refusals kept (an unknown target, one named twice, an empty list, a list naming every target narrows nothing)
-- [ ] a `<cell>/targets` file is refused, located, naming the move into `botopink.json` (67) — no fallback reading it
-- [ ] `botopink cell new` writes the narrowing into the manifest; CLI tests and `cli_contract.sh` rows red on the parent
-- [ ] `conformance/docs.md`, `AGENTS.md` and `docs.md` name the manifest field, not the file
-- [ ] jhonstart's 18 and rakun's 35 cells moved: the file's targets into `botopink.json`, the file deleted; each
+- [x] a `<cell>/targets` file is refused, located, naming the move into `botopink.json` (67) — no fallback reading it
+- [x] `botopink cell new` writes the narrowing into the manifest; CLI tests and `cli_contract.sh` rows red on the parent
+- [x] `conformance/docs.md`, `AGENTS.md` and `docs.md` name the manifest field, not the file
+- [x] jhonstart's 18 and rakun's 35 cells moved: the file's targets into `botopink.json`, the file deleted; each
       library's hook green
+- [x] emilia's 79 cells declare beam too: beam builds them, so leaving it out fails the audit (475 (1))
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-41 — a library's abort reads the same on every target (structural, decision 430)
@@ -3340,6 +3341,18 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [ ] a cell red on the parent: a decorator body calling a function of a nested std namespace
 - [ ] the comptime's environment holds the nested namespaces; the `random.float()` cell written (refused unseeded at
       build, decision 447, or the seeded answer)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-47 — a refusal cell claims the label under the caret (decision 485)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+- [ ] the `.snap` format reads and writes `label <text>` after `at` in a refusal file (refused elsewhere, located);
+      `cell check` compares it and `cell new` writes it when the compiler prints a label beside the caret
+- [ ] CLI tests red on the parent: a label that changes, a label that disappears, a `label` record in an output file
+- [ ] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
+      their whole refusal and label, green; every other refusal cell whose caret carries a label gains its record
+- [ ] `conformance/docs.md` states the record
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)

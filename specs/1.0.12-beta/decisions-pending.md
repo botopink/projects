@@ -28,28 +28,6 @@ number, which is **484**.
 
 `00-gate` has no open question: 114's steps wait on no decision.
 
-#### 485-a · What a refusal cell claims about the text under the caret (475 (2))
-- **Measured.** Moving `tests/language` into `conformance/` (144 B-29 step H), four former `reject/` cells
-  (`case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name`, `reserved_word_param_name`) claimed the
-  label printed under the caret; decision 475's `.snap` records `refused <message>` and `at <file>:<line>:<column>`,
-  and no record holds the label, so the four are red.
-- **Options.** (a) ★ The cell claims the compiler's whole `refused` line (the code and the message), no label: the
-  label is presentation, the code and the location are the claim. (b) A `label <text>` record joins 475 (2)'s
-  format, after `at`, allowed only in a refusal file.
-  (a) example (`case_bare_name_arm`'s `snapshot/output/main.snap`, the compiler's answer today):
-  ```text
-  botopink-cell 1
-  refused error: case-bare-name-arm: a name alone is not a pattern
-  at src/main.bp:7:9
-  ```
-  (b) example:
-  ```text
-  botopink-cell 1
-  refused error: case-bare-name-arm: a name alone is not a pattern
-  at src/main.bp:7:9
-  label use _ { n -> … } to bind the matched value
-  ```
-
 #### s29-a · How a template annotation receives the annotated declaration, and whether it is also a call-site template (311)
 - **Measured.** 311 leaves the `@Decl`'s spelling to `01-checker` step 29 and says "one function is both
   the template and the annotation (`erika "…"` and `#[erika "…"]`)". A template function is called with
