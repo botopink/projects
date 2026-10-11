@@ -21,18 +21,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ## Part 1 — What blocks tracks 00–03
 
-### 144 B-00g (wat_prelude split, decisions 442, 443, 445)
-
-#### 442-c · std-wasm's two tables: bindable exports and program-only helpers (442 (2))
-- **Measured.** B-00g split std-wasm's table into `exports` (bound by a `std:` cell on a std declaration, with a
-  comptime face) and `program` (functions only the wasm codegen calls — `joinInts` beside `joinFloats`, code-point
-  bounds — which no std declaration names). Built as (a).
-- **Options.** (a) Two tables, as built. (b) One table: every function bindable by `std:` and given a term-level
-  comptime face, each with a std declaration.
-- **Recommendation.** (a): a helper the codegen chooses by type is not a std function; declaring one per type would
-  add std API nobody calls.
-- **Blocks.** nothing (built as (a)).
-
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.

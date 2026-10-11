@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **454**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **455**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -13,16 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 442-c · As duas tabelas do std-wasm: exports ligáveis e helpers só do programa
-
-O B-00g separou `exports` (ligados por `std:` a uma declaração do std, com face de comptime) de `program` (helpers que
-só o codegen chama, como `joinInts` ao lado de `joinFloats`, sem declaração no std).
-
-**(a)** Duas tabelas, como construído. **(b)** Uma tabela só: toda função ligável por `std:`, cada uma com declaração
-no std e face de comptime.
-
-**Recomendação: (a)** — um helper que o codegen escolhe por tipo não é função do std. Não trava nada.
 
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 
