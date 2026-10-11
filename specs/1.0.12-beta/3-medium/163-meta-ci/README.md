@@ -164,3 +164,15 @@ change how every library's gate and CI run, not what a library answers: the step
 - [ ] the reference (480): no library's `conformance/docs.md` or `AGENTS.md` contradicts how its gate now runs the cells
 - [ ] the GitHub pipeline read (474, `gh` read only): every repository s7 and s8 changed, its runs on `feat` since the
       front's base, green or each red named and fixed or filed; the pipeline's state in the step's report
+
+### 163 s10 — each repository's generated `decisions-taken.md` (decision 482)
+
+**Repository:** every repository under `repository/` and the meta repository (a full worktree) · **Model:** sonnet
+
+- [ ] `scripts/decisions-split.py`: reads the meta `decisions-taken.md`, maps each row's Binds (front numbers, old ids
+      through the fronts' alias tables) to repositories, writes `repository/<repo>/decisions-taken.md` (the header line
+      of 482, the rows as in the source, English only); a row it cannot map is reported, never guessed
+- [ ] every repository commits its generated file; its `AGENTS.md` names it ("generated — edit in the meta repository")
+- [ ] a meta CI check (and the meta `scripts/gate.sh`) fails when a repository's file differs from the script's output
+- [ ] the meta `AGENTS.md` § CI and § Layout name the script and the check
+

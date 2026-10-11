@@ -37,6 +37,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-00c last box — each library repository's own hook run on this compiler, `scripts/gate.sh libs` (473); `test-libs` green · the seventh step of the conformance order: after the step gate, the hook's `--no-conformance`, B-29 steps H and I, 163 s7 and each library's move into `conformance/`, so the hooks include it; it closes B-00
 - [ ] 163 s8 — jhonstart, onze, rakun red on GitHub (`dependency 'snap' was not found`): each library's CI fetches its dependencies (`bpmp install`); the libraries with no run or no workflow get one (read by 474) · the eighth step of the conformance order, after closing B-00 (the seventh)
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
+- [ ] 163 s10 — each repository's `decisions-taken.md` generated from the meta one by Binds (482), checked in CI · nothing
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
 - [ ] 144 B-29 step J — botopink-lang's gate drops the lock and takes a total of jobs; the pool and scheduling are the meta repository's `scripts/gate.sh` (163 s7) (468, 469) · after the step gate (460)
 
