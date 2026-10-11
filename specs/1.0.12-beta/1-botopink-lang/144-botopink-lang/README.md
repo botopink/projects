@@ -2183,6 +2183,10 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
 
 - [ ] measured first: `test-language`'s jobs and CPU-s by kind (`run/`, `reject/`, `modules/`, `test/`) and by
       target; an audit of the cells a compiler-core snapshot already covers — recorded in `tests/language/AGENTS.md`
+- [ ] every cell in decision 457's shape: `<cell>/src/<module>.bp`, `snapshot/output/<module>.snap` (one answer
+      for every target), `snapshot/targets/<target>/<module>.snap` (a target's departure only), `targets` (when
+      narrowed) — `run/`, `reject/` and `modules/` migrated by a codemod, each cell's claims byte for byte the same
+      (every `.out`, `.exit`, `<target>.expect`, `<target>.stderr`, `.targets` mapped, none lost)
 - [ ] `reject/` cells checked in process by a compiler-core test that reads `tests/language/reject/*.bp` and its
       `.expect` (message line and `line:col`), no `botopink` process per cell
 - [ ] single-file `run/` cells compiled in process and run on the four targets through the snapshot executors
