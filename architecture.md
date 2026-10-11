@@ -1,48 +1,41 @@
-# Arquitetura: avaliação comptime na VM Erlang
+# Arquitetura: avaliação comptime no runtime wasm
 
 Visão geral de como o compilador (`repository/botopink-lang/modules/compiler-core/src/`)
 executa código em tempo de compilação. Detalhes de cada arquivo ficam nos `AGENTS.md`
-das pastas citadas; o trabalho pendente está em [`specs/1.0.5-beta/`](specs/1.0.5-beta/overview.md).
+das pastas citadas; o trabalho pendente está em [`specs/1.0.12-beta/`](specs/1.0.12-beta/README.md).
 
 ## O que roda onde
 
 | Código comptime | Onde |
 |---|---|
 | `val x = comptime …` | Dobrado em Zig por `comptime/eval.zig` (literais, aritmética inteira, `@TypeOf`, valor de `break`). Nenhum runtime. Snapshots mostram a seção `COMPTIME VALUES` (`ct_N = literal`). |
-| Corpos de decorator (`comptime/decorator_eval.zig`) | Módulo Erlang gerado por `erlang.emitComptimeModule` — **um módulo por declaração, não por avaliação** — executado no runtime do alvo (decisão 84, `comptime/runtime/runtime.zig`): alvo `erlang`/`beam` (ou nenhum alvo, como no LSP) no **runtime BEAM** — o `erl` persistente, que recebe o módulo já como bytes `.beam` montados em Zig (o texto Erlang lido de volta, baixado a instruções BEAM por `comptime/runtime/beam/` e montado por `codegen/beam/beam_file.zig`; nenhum `compile:file`, nenhum `.erl` em disco); alvo `commonJS`/`wasm` no **runtime wat** — o mesmo texto Erlang lido de volta, baixado a wasm, ligado à biblioteca de termos embutida (`wat/rt.zig`) e executado no wasm3 dentro do processo do compilador, sem spawn. No build do navegador o executor do runtime wat é o motor da página (`bp_host`). |
-| Corpos de template (`comptime/template_eval.zig`) | Idem. |
+| Corpos de decorator (`comptime/decorator_eval.zig`) | Módulo Erlang gerado por `erlang.emitComptimeModule` — **um módulo por declaração, não por avaliação** — executado no **runtime wasm**, para todo alvo (decisão 434, `comptime/runtime/runtime.zig`): o texto Erlang lido de volta, baixado a wasm, ligado à biblioteca de termos embutida (`wat/rt.zig`, com `modules/std-wasm` compilado junto) e executado no wasm3 dentro do processo do compilador, sem spawn. No build do navegador o executor é o motor da página (`bp_host`). |
+| Corpos de template (`comptime/template_eval.zig`) e blocos `comptime` (`comptime/block_eval.zig`) | Idem. |
 
-Os dois runtimes rodam o mesmo programa — o Erlang que o modo não tipado de `erlang.zig` gerou, baixado uma vez a BEAM e uma vez a wasm; a igualdade das respostas é verificada em todo fixture
-(`runtime.parity`) e registrada na árvore dobrada `snapshots/codegen/{beam,wat}/`, auditada par a par
-(`snap_audit.sh --mode=runtime-parity`). Não há runtime Node para comptime.
+Um só runtime: compilar não sobe `erl` e construir o compilador não roda `erlc` (decisão 434). Os
+alvos erlang e beam não mudam — `erl` / `erlc` servem só aos testes desses alvos. Os snapshots de
+codegen ficam numa árvore só, `snapshots/codegen/<alvo>/`. Não há runtime Node para comptime.
 
-**Duas coisas mudaram em 2026-09-18** (frente `14-comptime-on-beam`, passos 1 e 2), e a tabela acima
-já as reflete:
+Uma função de host alcançada em comptime responde, nesta ordem (decisão 434 (4)): a implementação
+em `modules/std-wasm` (as funções de host da std em Zig, compiladas para wasm); senão a tradução
+por `modules/beam-to-wasm` da sua célula `@External.Erlang` / `@External.Beam` (o `.beam` montado
+pelo próprio compilador, `comptime/runtime/wat/cells.zig` — um subconjunto medido de opcodes e
+BIFs, decisão 435); senão a sua célula `@External.Wasm("fn:…")`; nenhuma → recusada na chamada.
 
-- **a cola de host é residente**: ela é compilada uma vez no warmup do servidor e cada módulo a
-  alcança por `-import`, em vez de ser reemitida em toda avaliação;
+**Duas coisas mudaram em 2026-09-18** (frente `14-comptime-on-beam`, passos 1 e 2):
+
+- **a cola de host é residente**: os dois prelúdios (`comptime/runtime/prelude.zig`) são lidos uma
+  vez por processo e cada módulo os alcança por `-import`, em vez de reemiti-los em toda avaliação;
 - **a captura viaja como termo ETF**, argumento de `main/1`, em vez de ser um mapa embutido no texto
   do módulo. Como o corpo deixa de depender do valor capturado, **um** módulo serve todos os sítios
   de chamada de uma declaração.
 
 O efeito medido por `repository/botopink-lang/scripts/comptime_bench.sh`: com N=200 avaliações, 200
-módulos e 2,8 MB de `.erl` viraram **1 módulo e 875 bytes**, e o lado erl do `erika-linq`
-(compilar + carregar) caiu de 1 039 ms para **49 ms**.
+módulos e 2,8 MB de `.erl` viraram **1 módulo e 875 bytes**.
 
-**Passo 3 (2026-09-26)**: o módulo chega ao nó como bytes BEAM (cmd 4) e não como fonte — a
-compilação do módulo do `erika-linq` caiu de 49,1 ms (`compile:file`) + 1,4 ms (load) para 2,9 ms
-em Zig (ReleaseSafe) + 0,6 ms de `code:load_binary`. O que a descida não aceita é erro de compilação
-nomeando a construção, como no runtime wat.
-
-## `erl` persistente
-
-`comptime/runtime/persistent_beam.zig` sobe o `erl` (servidor `botopink_comptime_server`)
-sob demanda, um por processo do compilador. Protocolo binário com frames `<u32 BE len>`
-nos dois sentidos: o cmd 4 carrega bytes `.beam`, o cmd 3 chama `main/1` com o argumento ETF.
-`main/1` roda num processo monitorado com timeout de 10s. `evalBeamWithArg` devolve `ok` /
-`compile_error` / `runtime_error` com a mensagem. O stderr do `erl` vai para
-`.botopinkbuild/tmp/persistent_beam/erl.<id>.stderr.log` (herdar o stderr do pai trava o
-`zig build test`).
+Até a decisão 434 havia um segundo runtime, o BEAM (um `erl` persistente que recebia o módulo como
+bytes `.beam` montados em Zig); ele foi apagado com seus prelúdios compilados por `erlc`. A descida
+Erlang → BEAM dele vive como o compilador de templates do alvo beam (`codegen/beam/erl_lower.zig`).
 
 ## Camada BEAM compartilhada (`codegen/beam/`)
 

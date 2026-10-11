@@ -41,10 +41,11 @@ reformatted; submodule pointers bumped in one sweep.
   helpers carry `@src()` into the trace, `scripts/snap_audit.sh --mode=orphans`.
 - **Review worksheet.** `scripts/snap_audit.sh --mode=review`: one TSV row per unique snapshot, test
   `file:line`, verdict seeded from the reports by header cell.
-- **Snapshot layout.** `snapshots/codegen/<runtime>/<target>/` per comptime runtime (`beam`, `wat`),
-  equal by `--mode=runtime-parity`; `snapshots/comptime/{ast,errors,runtime,templates}/`;
-  `snapshots/parser/`; `modules/language-server/snapshots/lsp/`. A test rename in
-  `src/codegen/tests/**` moves one file per target per runtime tree; elsewhere one.
+- **Snapshot layout.** `snapshots/codegen/<target>/` and `snapshots/codegen/errors/<target>/` — one
+  tree, comptime running on wasm for every target (decision 434; the doubled `{beam,wat}` tree is
+  gone); `snapshots/comptime/{ast,errors,runtime,templates}/`; `snapshots/parser/`;
+  `modules/language-server/snapshots/lsp/`. A test rename in `src/codegen/tests/**` moves one file
+  per target; elsewhere one.
 - **Reports.** Each has a `**Status (1.0.1-beta close)**` block (re-derive every row at HEAD) — not
   the status line steps 1–2 append. Never trust a cited line. 3.11 `parser.md`, 3.12 `lsp.md`
   closed; 3.3, 3.6 worked.

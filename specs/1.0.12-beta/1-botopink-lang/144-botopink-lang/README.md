@@ -173,12 +173,12 @@ implements std's host functions directly in Zig, compiled to wasm and served to 
 341's host cells call at build — so a std function reached at comptime needs no per-binding `@External.Wasm`
 cell. Measure first which ones comptime reaches today.
 
-- [ ] measured: every std function a comptime evaluation reaches today (the decorator, template and `comptime`
+- [x] measured: every std function a comptime evaluation reaches today (the decorator, template and `comptime`
       cells of `tests/language`, `comptime/tests/**`, every library repository's build — `hash.contentHash`,
       `unicode`, `string`, `json` …), each with its host cell per runtime; the list in `modules/std-wasm/AGENTS.md`
-- [ ] `modules/std-wasm/` scaffolded: a `build.zig` step compiling it to the `.wasm` the comptime runtime links,
+- [x] `modules/std-wasm/` scaffolded: a `build.zig` step compiling it to the `.wasm` the comptime runtime links,
       root `AGENTS.md` and `build.zig` naming it, a Zig unit test per function
-- [ ] each listed function implemented and served to the wat comptime runtime; one answer for every target:
+- [x] each listed function implemented and served to the wat comptime runtime; one answer for every target:
       a comptime result is std-wasm's answer, whatever `--target` says (434 (3))
 
 **Impacted tests:** `modules/std-wasm` unit tests (new); `comptime/tests/**`; `runtime/wat/**` tests.
@@ -194,14 +194,14 @@ std-wasm lacks, or an opcode it does not convert, is a located refusal. It knows
 AST, manifest, `bpmp` or diagnostic type — botopink's comptime is one caller, handing it the `.beam` of the cells it
 reaches and reporting its refusal at the call site.
 
-- [ ] measured: every `@External.Erlang` / `@External.Beam` cell and `.erl` sidecar a comptime evaluation
+- [x] measured: every `@External.Erlang` / `@External.Beam` cell and `.erl` sidecar a comptime evaluation
       reaches today (std, rakun, jhonstart, erika, styled, emilia …), with the opcodes and OTP calls each uses —
       the list in `modules/beam-to-wasm/AGENTS.md`
-- [ ] `modules/beam-to-wasm/` scaffolded: the `.beam` chunk reader, the measured opcode subset lowered to wasm,
+- [x] `modules/beam-to-wasm/` scaffolded: the `.beam` chunk reader, the measured opcode subset lowered to wasm,
       the BIFs bound to std-wasm; a Zig unit test per opcode family
-- [ ] a call or opcode it does not convert refused at the call site, naming the function, the module and what is
+- [x] a call or opcode it does not convert refused at the call site, naming the function, the module and what is
       missing — `reject/comptime_beam_call_not_converted`
-- [ ] each measured cell answers at comptime through the translation, `COMPTIME REPLY` byte-identical to the
+- [x] each measured cell answers at comptime through the translation, `COMPTIME REPLY` byte-identical to the
       BEAM runtime's answer on the parent
 - [ ] whole modules (438): the `.beam` files it is given translated module by module, a call from one to another
       followed — a cell of erika or jhonstart that calls a function of another of its modules answers at comptime;
@@ -224,9 +224,9 @@ call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `
 / `erlc` stay needed for those targets' own tests, never for compiling. comptime-14 built 341's host cells on the BEAM runtime
 (a decorator's Erlang cell): that code is transitional, deleted in B-00d; 434 amends 341 to this order.
 
-- [ ] `comptime/runtime` selects the wat runtime for every `--target`; a compile spawns no `erl` (a build with
+- [x] `comptime/runtime` selects the wat runtime for every `--target`; a compile spawns no `erl` (a build with
       no `erl` on `PATH` compiles a decorator-, template- and `comptime`-bearing project on all four targets)
-- [ ] the resolution order std-wasm → beam-to-wasm → `@External.Wasm` → refused at the call naming the function
+- [x] the resolution order std-wasm → beam-to-wasm → `@External.Wasm` → refused at the call naming the function
       and the three sources tried — `reject/comptime_host_cell_unavailable`
 - [ ] an Erlang cell beam-to-wasm does not convert refused at the call even with an `@External.Wasm("fn:…")` cell
       after it (439) — `reject/comptime_beam_call_not_converted`; the fall-through B-00c built removed
@@ -245,15 +245,15 @@ comptime-14 built for 341 are transitional and are deleted here. The codegen sna
 level: `snapshots/codegen/{beam,wat}/<target>/` becomes `snapshots/codegen/<target>/`, every target's snapshots
 kept. 18's audit of the doubled tree pair by pair (its § Mechanism) and 14 step 2's BEAM budget are moot.
 
-- [ ] the BEAM comptime runtime and its tests deleted; `zig build test` green with no `erl` started by a compile
-- [ ] `modules/compiler-core/snapshots/codegen/{beam,wat}/<target>/` moved to `snapshots/codegen/<target>/`
+- [x] the BEAM comptime runtime and its tests deleted; `zig build test` green with no `erl` started by a compile
+- [x] `modules/compiler-core/snapshots/codegen/{beam,wat}/<target>/` moved to `snapshots/codegen/<target>/`
       (`git mv`, byte-identical); `src/codegen/snapshot.zig` and `src/utils/snap.zig` select the one directory;
       every `AGENTS.md` naming the two trees and `07-residuals`' rename note rewritten; the erlang and beam
       targets' snapshots and tests unchanged
-- [ ] `scripts/snap_audit.sh --mode=runtime-parity` and every "under both runtimes" gate clause retired; root
+- [x] `scripts/snap_audit.sh --mode=runtime-parity` and every "under both runtimes" gate clause retired; root
       `AGENTS.md` ("`erl`/`erlc` must be on `PATH`" — for the erlang/beam targets' tests only), `compiler-core`,
       `comptime`, `codegen` `AGENTS.md`, `docs.md` and the meta `architecture.md` say comptime runs on wasm only
-- [ ] the wat runtime's limits (`limit 1`…`4`, the core-module subset, `i64` overflow) stated as the only
+- [x] the wat runtime's limits (`limit 1`…`4`, the core-module subset, `i64` overflow) stated as the only
       runtime's limits in `runtime/wat/AGENTS.md`
 
 **Impacted tests:** the whole `snapshots/codegen/**` tree (moved, not re-recorded); `comptime/tests/**`; the
@@ -292,9 +292,9 @@ E-2 is the in-compiler stage split (`runtime/stages.zig`), one more build of the
 - [ ] a table with the open's row (above); the close's row added by the last front to land
 
 
-**Gate:** standard (fronts.md § Gate) + `zig build test` green under both runtimes ·
-`scripts/snap_audit.sh --mode=runtime-parity` green · `zig build compiler-web` and `test-web` green
-within budget
+**Gate:** standard (fronts.md § Gate) + `zig build compiler-web` and `test-web` green within budget
+(the "under both runtimes" clause and the runtime-parity audit retired with the BEAM comptime
+runtime, 434)
 
 ### B-00e — std-wasm in the user's `--target wasm` output (decision 434 (2))
 

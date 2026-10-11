@@ -26,7 +26,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 
 ### First — comptime on wasm (434, 144 B-00)
 
-- [ ] **144 B-00a → B-00g (434, 437, 442)** — comptime on wasm only, the first thing the milestone does: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442) · opens before any other step of any front; B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438)
+- [ ] **144 B-00a → B-00g (434, 437, 442)** — comptime on wasm only, the first thing the milestone does: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442) · opens before any other step of any front; B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · **in flight** (worktree `comptime-wasm-b00`): B-00a, B-00d built; B-00b built for 435's subset, 438's boxes open (whole modules, a foreign `.beam`, standalone); B-00c built with 439 (no fall to `fn:`), its library-hook box open on jhonstart-html's red (`shorthand-import: isRaw`, import-129 fallout, on the parent too); B-00e open (440, 441); B-00f open (437)
 
 ### 144 botopink-lang
 
