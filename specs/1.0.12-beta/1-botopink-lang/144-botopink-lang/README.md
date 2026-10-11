@@ -2338,15 +2338,15 @@ each track rewrites its own tree.
 After B-00g, before B-30 (whose collection needs the terms' layout). `comptime/runtime/wat/rt.zig` (the term
 representation and the OTP functions and BIFs it serves) moves into `modules/std-wasm`; one wasm runtime remains.
 
-- [ ] `modules/std-wasm/src/term.zig` (atoms, tuples, lists, maps, binaries) and `otp/*.zig` (`lists`, `maps`,
+- [x] `modules/std-wasm/src/term.zig` (atoms, tuples, lists, maps, binaries) and `otp/*.zig` (`lists`, `maps`,
       `string`, `erlang:` BIFs) hold what `rt.zig` holds, with Zig unit tests; `rt.zig` deleted
-- [ ] allocation is the caller's (450 (5)): the comptime's arena when the comptime calls a term function, the
+- [x] allocation is the caller's (450 (5)): the comptime's arena when the comptime calls a term function, the
       current process's heap in translated code
-- [ ] the comptime runtime links `std_wasm.wasm`; `bp_wat_rt.wasm` and its `build.zig` step gone (the compiler-web
+- [x] the comptime runtime links `std_wasm.wasm`; `bp_wat_rt.wasm` and its `build.zig` step gone (the compiler-web
       build too); every `COMPTIME REPLY` byte-identical
-- [ ] beam-to-wasm imports std-wasm's OTP table (no caller-passed table); it still imports std-wasm alone (438)
-- [ ] one face per function: `string:titlecase` and any other function with a face in both deleted from one side
-- [ ] `modules/std-wasm/AGENTS.md` names its two value representations (the codegen's typed layout, the Erlang
+- [x] beam-to-wasm imports std-wasm's OTP table (no caller-passed table); it still imports std-wasm alone (438)
+- [x] one face per function: `string:titlecase` and any other function with a face in both deleted from one side
+- [x] `modules/std-wasm/AGENTS.md` names its two value representations (the codegen's typed layout, the Erlang
       terms), each in its own file; `comptime/runtime/wat/AGENTS.md` and `modules/beam-to-wasm/AGENTS.md` updated
 
 **Impacted tests:** `comptime` tests (every `COMPTIME REPLY`), `modules/std-wasm` and `modules/beam-to-wasm` unit
