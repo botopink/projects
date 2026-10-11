@@ -683,6 +683,7 @@ number, which is **484**.
 - **Blocks.** 144 B-05 (wasm), B-07 (`attempt`'s wasm cell).
 
 #### 431-g · `Failure`'s kinds (144 B-04)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), `host` exact.** `panic`: `@panic`, `@todo`, `x!`, an overflow (264), a division by zero. `host`: a raise from a binding without `result: true` (431-e) — exact on every target, commonJS wrapping each such call. `crash`: a VM or emitted-code fault, a wasm trap. The per-call cost is measured in B-05; if it is high, the question returns to the maintainer.
 - **Measured.** 431 (3) names `panic` / `host` / `crash`; which faults fall in which is not written. JS cannot tell a raise of a host binding from any other `throw` without a marker per call.
 - **Options.**
   (a) `panic` (`@panic`, `@todo`, `x!`, an overflow 264, a division by zero), `host` (a raise from a binding without `throws:`), `crash` (a VM / emitted-code fault, a wasm trap); `host` exact on every target (commonJS wraps each such call).

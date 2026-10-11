@@ -682,6 +682,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-05 (wasm), B-07 (a célula wasm do `attempt`).
 
 #### 431-g · Os kinds de `Failure` (144 B-04)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), `host` exato.** `panic`: `@panic`, `@todo`, `x!`, um overflow (264), uma divisão por zero. `host`: um raise de um binding sem `result: true` (431-e) — exato em todo alvo, o commonJS embrulhando cada chamada assim. `crash`: uma falha da VM ou do código emitido, um trap do wasm. O custo por chamada é medido no B-05; se for alto, a pergunta volta ao mantenedor.
 - **Medido.** A 431 (3) nomeia `panic` / `host` / `crash`; quais falhas caem em qual não está escrito. O JS não distingue um raise de um binding de host de qualquer outro `throw` sem um marcador por chamada.
 - **Opções.**
   (a) `panic` (`@panic`, `@todo`, `x!`, um overflow 264, uma divisão por zero), `host` (um raise de um binding sem `throws:`), `crash` (uma falha de VM / código emitido, um trap do wasm); `host` exato em todo alvo (o commonJS embrulha cada chamada dessas).
