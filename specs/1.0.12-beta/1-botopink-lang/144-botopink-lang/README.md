@@ -2453,6 +2453,20 @@ in this array"); erlang and commonJS answer `5.0!` / the array. 441's `"${5.0}"`
 - [ ] `run/interpolation_single_float_hole`: a `val`, an array element and a concatenation, four targets, red on the
       parent on wasm, green after (458)
 
+### B-32 — structural equality at build is iterative; an arithmetic error at build reads as Erlang's (decisions 471, 472)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (both decisions fix the design)
+
+Found by B-00k: `comptime same(2000000)` traps (wasm3 stack overflow) on every target; a float division by zero at
+build prints the raw `{error,badarith}`.
+
+- [ ] std-wasm's term equality and term order walk an explicit work list, no recursion (471): `comptime same(2000000)`
+      answers `true` on the four targets — `run/comptime_deep_structure_equality`, red on the parent, green after
+- [ ] a `badarith` at build is `comptime-badarith: an error occurred when evaluating an arithmetic expression — <the
+      expression> (division by zero)` at the expression's `line:column` (472) —
+      `reject/comptime_float_division_by_zero`, red on the parent, green after
+- [ ] every `COMPTIME REPLY` otherwise unchanged
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 After the B-00 group, B-00i included (the collection knows the terms' layout, 450). botopink's values are immutable; on erlang each process's heap is collected and released
