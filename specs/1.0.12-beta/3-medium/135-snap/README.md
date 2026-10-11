@@ -2,6 +2,8 @@
 
 **Priority:** medium (decision 433) — opens after the library tier, or in a free thread when nothing it needs
 is open.
+**Repository:** none of its own — each step runs in the front that owns its repository (144 B-27, 150 s24, 149 s10, 154 s4, 162 s10), with that front's worktree and Conformance step
+**Model:** haiku — coordination only: the order of the snapshot steps (`AGENTS.md` § Which model a thread runs on)
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 **Owns:** the order of the snapshot steps; the evaluation in [`20-snap/README.md`](20-snap/context.md).
 **Depends on:** 135 s0 (done, 391).

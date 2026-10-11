@@ -2,6 +2,8 @@
 
 **Priority:** medium (decision 433) — opens after the library tier, or in a free thread when nothing it needs
 is open.
+**Repository:** none changed — the closing check runs `scripts/check-packaging.sh` (botopink-lang's, 144 B-27) in the main checkout; a red it finds is a row of the owning front
+**Model:** haiku — a check to run (`AGENTS.md` § Which model a thread runs on)
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 **Owns:** the closing check only; the check's files are botopink-lang's (144 B-27).
 **Depends on:** every library front's `-test` and README steps.

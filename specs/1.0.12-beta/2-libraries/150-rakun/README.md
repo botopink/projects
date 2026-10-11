@@ -1,6 +1,8 @@
 # Front 150 — rakun: the 16 members' fronts, middleware and typed actions
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `rakun` — worktree `--repo rakun` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/rakun/**` (the tree 128 left; `04-rakun/README.md` § Where a merged member's front works)
 **Depends on:** 144 B-11 (318 wrappers, 12 s5), B-12 (13, 15, 22, 91, 92, 93), B-13 (08 s6, 09 s6, 65 s4), B-17, B-19 (281 sites, 130 s5); decision 299 config records; pending 03r-ab, 03r-ae, 03r-af, 03r-ak, 03r-al, 03r-am, 03r-an, erk-b, lg2-b, 04-a
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -137,6 +139,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 150 s1 — the core's open boxes (04)
 
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
+
 #### Step 2 — Boot options and the cycle stack (R04-1, R04-2) (was `04-rakun-erlang-runtime` s2)
 
 - [ ] `erlang_runtime_test.bp`: scratch project, `banner.txt` with `${application.version}`, `${rakun.version}`, `${otp.version}`, booted headless; captured output starts with the substituted banner, once, before any log line
@@ -218,6 +222,8 @@ A bean, an event or a condition is named by its type or its function, never its 
 
 ### 150 s2 — the rows handed in: the action secret, `codepointIndex`, the `Json` copies, the `@BeamMemory` migration
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 Each waits on the step it names: the action secret on 150 s1 (04 step 7, 299); the copies on std's methods (on
 `feat`).
 
@@ -247,6 +253,8 @@ Each waits on the step it names: the action secret on 150 s1 (04 step 7, 299); t
 
 ### 150 s3 — TLS and SSL bundles (74)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 1 — Client verification (R74-1, R74-2) (was `74-rakun-tls-ssl-bundles` s1)
 
 - [ ] `ssl_bundle_test.bp`: a loopback server presenting a certificate for `other.test`, a `verify=full` client bundle for `localhost`: connect fails, the failure names the hostname mismatch
@@ -264,6 +272,8 @@ green in `modules/rakun` and `modules/rakun-web`.
 Blast radius: none outside the owned files; 13, 92, 93 consume the unchanged registry API.
 
 ### 150 s4 — SQL data access (08)
+
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
 #### Step 1 — Lazy bootstrap (R08-1, R08-2; after 04 step 4) (was `08-rakun-data-sql` s1)
 
@@ -343,6 +353,8 @@ Kept for open markers: `examples/city-entity-example.bp`, `examples/audit-and-re
 
 ### 150 s5 — messaging (15)
 
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
+
 #### Step 1 — Registries on the reset hook (R19-1/2, this member's half) (was `15-rakun-messaging` s1)
 
 - [ ] `registry_test.bp`: after `resetContext()` (through `rkOnReset`) the listener registry is empty and `rakun_listener_names` answers `[]`; a later registration visible in both
@@ -402,6 +414,8 @@ green in `rakun-messaging` (`test/stream/` in the run), `rakun-data` (`test/tx/`
 
 ### 150 s6 — OAuth2 and SSO (79)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 1 — The manager seam (R79-1, RX-1) (was `79-rakun-oauth2-sso` s1)
 
 - [ ] `basic_test.bp`: with the LDAP manager installed, a reachable directory double authenticates a Basic request; an unreachable one answers 503 with a problem detail naming `ldap`, not 401
@@ -433,6 +447,8 @@ rules and `rakun-websocket` call `security_filter.bp`, signature unchanged. Step
 sidecar and fixtures only.
 
 ### 150 s7 — packaging and release (81)
+
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
 #### Step 1 — The tarball boots (R81-1) (was `81-rakun-packaging-release` s1)
 
@@ -466,6 +482,8 @@ artefact is front 81's tarball, and exit 0" re-runs unchanged. Boot cell adds ~1
 
 ### 150 s8 — SOAP web services (93)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 2 — The generator (R93-1) (was `93-rakun-soap-webservices` s2)
 
 - [ ] `test/ws/generate_test.bp`: `fixtures/wsdl/targeted.wsdl` (every targeted construct) generates; the tree compiles with `botopink build --target erlang`, its generated tests pass with no hand edit
@@ -497,6 +515,8 @@ Blast radius: new files under `rakun-client/src/ws/` only. 88 adds `ws generate`
 
 ### 150 s9 — starters and examples (73)
 
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
+
 #### Step 1 — The starters (was `73-rakun-starters` s1)
 
 - [ ] `starters/rakun-starter-app/{botopink.json,src/root.bp}` exist; `starter_manifest_test.bp` asserts the nine starters and their `brings` lists
@@ -525,6 +545,8 @@ of their own, named here.
 
 ### 150 s10 — the Redis double (19 s1)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 1 — The Redis double (decision 160) (was `19-rakun-test-utilities` s1)
 
 - [ ] `test/redis_double_test.bp`: `redisDoubleStart(0)` answers a port; `PING` → `PONG`; `SET`/`GET`/`DEL`/`INCRBY`/`HSET`/`HGET`/`LPUSH`/`RPOP`/`TTL`/`EXPIRE`/`SETEX` behave as Redis documents (one cell per command, asserting reply bytes)
@@ -534,6 +556,8 @@ of their own, named here.
 - [ ] `AGENTS.md` § Test utilities documents the double, its command set and limits ("not Redis: no `SCAN`, no pipelines, no pub/sub")
 
 ### 150 s11 — HTTP clients (13)
+
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
 
 #### Step 1 — Tags (R13-1) (was `13-rakun-http-clients` s1)
 
@@ -575,6 +599,8 @@ consumer asserting accept count per request re-records to per origin — 17's ex
 that wanted it.
 
 ### 150 s12 — cache and session (12)
+
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
 
 #### Step 1 — The session Redis arm (R18-1) (was `12-rakun-cache` s1)
 
@@ -627,6 +653,8 @@ Blast radius: none on consumers — provider and arm unchanged, their tests chan
 per revalidation verb; `rakun-client` reads it in 13.
 
 ### 150 s13 — the app router (22)
+
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
 #### Step 1 — The page `Request` and the scan hand-off (R62-3, R22-1) (was `22-rakun-file-routing` s1)
 
@@ -694,6 +722,8 @@ green in `modules/rakun-app`; `examples/rakun-ssr` still builds.
 
 ### 150 s14 — logging and metrics (17)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 1 — Correlation and the failure line (R17-3, R75-2, decision 187) (was `17-rakun-logging` s1)
 
 - [ ] `logging/correlation_test.bp`: a request with no `traceparent`, no `X-Request-Id`, inside an edge span, gets `traceId()` as correlation id; with a `traceparent` that header's trace id (existing cell)
@@ -729,6 +759,8 @@ appear in the log at `error`, not on standard error.
 
 ### 150 s15 — actuator (11)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 1 — Inventory endpoints (R11-1, R11-2, R11-3) (was `11-rakun-actuator` s1)
 
 - [ ] `registry_endpoints_test.bp`: `configprops` lists every registered key with `value` and `source` (`application.yaml`, `env`, `default`), one entry per key
@@ -760,6 +792,8 @@ read `POST /actuator/shutdown`, unaffected. If R11-2 needs the registrar tag, 04
 `registerRoute`, every registrar passes it — a signature change 04 sequences.
 
 ### 150 s16 — URL rules and static assets (65)
+
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
 
 #### Step 1 — The fall-through (R82-4, decision 201) (was `65-rakun-url-rules` s1)
 
@@ -794,6 +828,8 @@ Blast radius: step 1 turns a static-matched miss from 404 into the router's answ
 ONZ-49-4.3's third box closes on onze's side.
 
 ### 150 s17 — document and key-value stores (09)
+
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
 #### Step 1 — The two behaviors and the ETS arm (was `09-rakun-data-nosql` s1)
 
@@ -853,6 +889,8 @@ existing test changes. `rakun-session`, `rakun-cache` keep their own Redis wires
 
 ### 150 s18 — Pulsar (91)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 1 — The refusal and the deferred row (decision 274) (was `91-rakun-pulsar` s1)
 
 - [ ] `test/pulsar/refusal_test.bp` asserts the boot refusal's text for a `pulsar://` listener; the
@@ -875,6 +913,8 @@ Blast radius: none outside `rakun-messaging`; `rakun-starter-messaging` unchange
 `examples/pulsar-listener-example.bp` kept for its open marker (the byte gap — 346 — and the bitwise rule).
 
 ### 150 s19 — RSocket (92)
+
+**Repository:** `rakun`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
 
 #### Step 2 — Transports (R92-1, R92-2, R92-7) (was `92-rakun-rsocket` s2)
 
@@ -901,6 +941,8 @@ under (b) the core gains the extension point, `rakun-websocket` one registration
 `examples/rsocket-service-example.bp` kept for open markers (the byte gap — 346 —, lg2-b, the `await`-in-lambda rule by design).
 
 ### 150 s20 — the CLI (88)
+
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
 #### Step 1 — `rakun run` (R88-1) (was `88-rakun-cli` s1)
 
@@ -944,6 +986,8 @@ Blast radius: manifest gains `rakun-client` (nothing depends on `rakun-cli`; upd
 
 ### 150 s21 — test utilities' rest (19 s2–s7)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 2 — Context control (R19-1, R19-2; after 15 step 1) (was `19-rakun-test-utilities` s2)
 
 - [ ] `context_test.bp`: `resetContext()` empties listener and task registries (via `contextSnapshot()`); a later dispatch is 404
@@ -980,6 +1024,8 @@ Blast radius: step 1 adds a sidecar and `pub` functions, nothing existing change
 manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only.
 
 ### 150 s22 — middleware: `locals`, `sequence`, `actionContext` (123)
+
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
 #### Step 0 — Measure (was `123-bpp-middleware` s0)
 
@@ -1036,6 +1082,8 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 ### 150 s23 — actions typed by a schema (127)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 0 — Measure (was `127-bpp-actions` s0)
 
 - [ ] how the browser learns an action's id — payload `a` key (`jhonstart/src/render.bp:479-523`)
@@ -1088,6 +1136,8 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 ### 150 s24 — rakun-test's `assertResponse` (135 s2)
 
+**Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
+
 #### Step 2 — rakun-test (390) (was `20-snap` s2)
 
 - [ ] `assertResponse(loc, res)` over `MockMvc.perform`, one `.snap` (§ 2, KEEP — contract 7, 98 check (2))
@@ -1127,13 +1177,16 @@ After 163 s7 (the shared hook checks `conformance/`).
 
 **Repository:** rakun (`--repo rakun`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `rakun/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `rakun/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

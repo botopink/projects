@@ -1,6 +1,8 @@
 # Front 146 — validation: Zod's feature set — the residue
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `validation` — worktree `--repo validation` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/validation/**`
 **Depends on:** 144 B-10 G1 (12 markers go), B-16 (derived types, `Type.Field<T>`), B-19 (298, `@typeInfo(T).fields`)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -28,6 +30,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 ## Steps
 
 ### 146 s1 — what is left of 125's steps 4–12, and the examples as suite cases
+
+**Repository:** `validation`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
 
 - [ ] 125 step 7's typed-member route lands in validation (decisions 370, 384, 385, 395, 404, 406): a type-level
       `#[check("…", rule)]` records `Check<T>(message, rule)` as typed meta, `#[validated]` hands on the member
@@ -71,6 +75,8 @@ green and `botopink format --check src test` clean in `repository/validation`
 
 ### 146 s2 — no `Json` accessor copy left (97 s2 residue)
 
+**Repository:** `validation`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
+
 #### Step 2 residue — no `Json` accessor copy left in the library repositories — part (was `97-std-dedupe` s2 residue box 1)
 
 The copies left the compiler with their libraries (138); each is its owner's step (§ Consumers):
@@ -87,13 +93,16 @@ The copies left the compiler with their libraries (138); each is its owner's ste
 
 **Repository:** validation (`--repo validation`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `validation/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `validation/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

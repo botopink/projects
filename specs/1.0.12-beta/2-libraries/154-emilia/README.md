@@ -1,6 +1,8 @@
 # Front 154 — emilia: emilia over `styled`, the five families, the theme
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `emilia` — worktree `--repo emilia` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/emilia/**`
 **Depends on:** 148 s1 (119 s1) · 148 s2 (119 s4) · 144 B-00c / B-12 (`contentHash` as a host function at build), B-17 (379), B-19 (353)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -24,6 +26,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 ## Steps
 
 ### 154 s1 — emilia over `styled` — first (34 s5)
+
+**Repository:** `emilia` (`--repo emilia`) · **Model:** sonnet
 
 #### Open (was `34-emilia-modifiers` open)
 
@@ -104,6 +108,8 @@ and `StyledContext` have landed):
 
 ### 154 s2 — the five families in `styled`'s literal (34 s2)
 
+**Repository:** `emilia` (`--repo emilia`) · **Model:** sonnet
+
 #### Step 2 — the five families to upstream's form, in `styled`'s literal (decision 350; after step 5) (was `34-emilia-modifiers` s2)
 
 - [ ] `transition` / `transition-*` presets render upstream's `var(--tw-ease, …)` /
@@ -121,6 +127,8 @@ and `StyledContext` have landed):
       byte-identical (test-file diff shows only the five families)
 
 ### 154 s3 — the theme (34 s3)
+
+**Repository:** `emilia` (`--repo emilia`) · **Model:** sonnet
 
 #### Step 3 — the theme: Tailwind's values over `styled`'s mechanism (decisions 300, 338; after `08-bpp/119` step 1) (was `34-emilia-modifiers` s3)
 
@@ -162,6 +170,8 @@ first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; em
 
 ### 154 s4 — `emilia-test`'s asserts (135 s4, after 154 s1–s3)
 
+**Repository:** `emilia` (`--repo emilia`) · **Model:** sonnet
+
 #### Step 4 — emilia-test (390) (was `20-snap` s4)
 
 - [ ] `assertClassName` under `defaultTheme()` (records `e_f51c2501`, the class 367 re-derives in `06-emilia/34` step 5) and `assertCss(loc, tokens, th)`
@@ -186,13 +196,16 @@ After 163 s7 (the shared hook checks `conformance/`).
 
 **Repository:** emilia (`--repo emilia`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `emilia/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `emilia/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

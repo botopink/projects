@@ -1,6 +1,8 @@
 # Front 162 — onze: stand-up, CLI, image, release, Astro's routing, content, data, CLI — and the example app, last
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `onze` — worktree `--repo onze` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/onze/**`
 **Depends on:** every other library front (53 needs them); 144 B-17 (293), B-19 (281), B-27 (116); 146 (306); 150 s13 / s1 / s16; 149 s1 / s2 / s3; pending std-d, 50-b, 52-a, 49-e, 49-g, nat-f2
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -92,6 +94,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 162 s1 — stand-up tail (49)
 
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
+
 #### Step 2 — the query, the headers, the dispatcher (was `49-onze-stand-up` s2)
 
 - [ ] `requestData` fills `query` from `queryDict(req.query)` (malformed component → the `Error`
@@ -155,6 +159,8 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
 - [ ] `grep -rn "flush()" modules/onze modules/onze-server` empty (no style sink)
 
 ### 162 s2 — CLI tail (50)
+
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
 
 #### Step 2 — `onze dev` (50-b (a)) (was `50-onze-cli` s2)
 
@@ -237,6 +243,8 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
 
 ### 162 s3 — image, font and image response (51)
 
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
+
 #### Step 2 — single flight, and the route (was `51-onze-image` s2)
 
 - [ ] `image_test.bp`: two concurrent identical requests (two spawned `imageResponse` calls over
@@ -291,6 +299,8 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
 
 ### 162 s4 — release packaging (71)
 
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
+
 #### Step 1 — `includeErts` copies the runtime (was `71-onze-release-packaging` s1)
 
 - [ ] `package_test.bp`: `includeErts: true` → release holds `erts-<vsn>/bin/erl`; `false` → not
@@ -342,6 +352,8 @@ environment (container runtime present).
 - [ ] `zig build test-libs` — `onze-release` 9+ on both rows; `static-site` green
 
 ### 162 s5 — Astro's routing, onze's and rakun-app's half (117)
+
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
 
 #### Step 0 — Measure — part (was `117-bpp-routing` s0 box 1)
 
@@ -397,6 +409,8 @@ Per decision 202 (no `prerender` export).
       `pagination-example.bp`, `static-paths-example.bp` and the two `page.bpp` rewritten
 
 ### 162 s6 — content: frontmatter, collections, Markdown pages (121)
+
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
 
 #### Step 3 — Frontmatter (396: through the `yaml` library, `03-bundled-libs/142` step 2) (was `121-bpp-content` s3)
 
@@ -463,6 +477,8 @@ Per decision 202 (no `prerender` export).
 
 ### 162 s7 — the `Astro` global, onze's half (122)
 
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
+
 #### Step 0 — Measure — part (was `122-bpp-data` s0 box 1)
 
 - [ ] what a page gets for `request().query`, `.headers` in `onze/examples/blog` (expected `[]`, `onze-server/src/server.bp:76-77`)
@@ -472,6 +488,8 @@ Per decision 202 (no `prerender` export).
 - [ ] `site()` is `""` when unset, and `absoluteUrl(path)` then refuses rather than emit a relative canonical link
 
 ### 162 s8 — the CLI: config keys, `sync`, `create-key`, scripts, the scaffold (124)
+
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
 
 #### Step 1 — The config keys (after `nat-f2`) (was `124-bpp-cli` s1)
 
@@ -511,6 +529,8 @@ Per decision 202 (no `prerender` export).
 - [ ] `onze/docs.md` § Configuration, § CLI
 
 ### 162 s9 — the example app — the proof (53)
+
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
 
 #### Step 1 — the runner and the README (was `53-onze-example-app` s1)
 
@@ -662,6 +682,8 @@ Per decision 202 (no `prerender` export).
 
 ### 162 s10 — the E2E runner (135 s5, before 162 s9's steps 2–6)
 
+**Repository:** `onze` (`--repo onze`) · **Model:** sonnet
+
 #### Step 5 — onze (390) (was `20-snap` s5)
 
 - [ ] onze-release: the release tree as a path table in `package_test.bp` (§ 8, CONVERT)
@@ -687,13 +709,16 @@ After 163 s7 (the shared hook checks `conformance/`).
 
 **Repository:** onze (`--repo onze`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `onze/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `onze/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

@@ -1,6 +1,8 @@
 # Front 156 — log: the consumers and the wasm column
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `log` — worktree `--repo log` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/log/**`; rakun-web's `problem_digest` commit
 **Depends on:** 150 s16 (65) · s2: 144 B-25 / B-00e (G4)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -22,6 +24,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 156 s1 — consumers (106 s2)
 
+**Repository:** `log`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
+
 #### Step 2 — consumers (was `106-log` s2)
 
 Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own commit, after `04-rakun/65`.
@@ -33,6 +37,8 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
       for `errorDigest`
 
 ### 156 s2 — the sinks' wasm column (106 s3)
+
+**Repository:** `log` (`--repo log`) · **Model:** sonnet
 
 #### Step 3 — the sinks and the runtime-report capture (decision 349) (was `106-log` s3)
 
@@ -57,13 +63,16 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
 
 **Repository:** log (`--repo log`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `log/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `log/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

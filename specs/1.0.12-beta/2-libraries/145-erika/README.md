@@ -1,6 +1,8 @@
 # Front 145 — erika: the database target, `erika-test`, the `;` migration
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `erika` — worktree `--repo erika` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/erika/**`
 **Depends on:** 144 B-18 (311 / 397: 01-checker s29 and s41, landing) · B-28 (s3)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -25,6 +27,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 ## Steps
 
 ### 145 s1 — erika queries a database (137)
+
+**Repository:** `erika` (`--repo erika`) · **Model:** sonnet
 
 #### Step 2 — `QueryContext`, `QueryTable` and the SQL target (397) (was `137-erika-sql` s2)
 
@@ -82,6 +86,8 @@ commonJS and erlang, `botopink build` of `examples/erika-linq`, erika's pre-comm
 
 ### 145 s2 — `erika-test`'s first helper and `erika-linq`'s README (98)
 
+**Repository:** `erika` (`--repo erika`) · **Model:** sonnet
+
 #### Step 1 — `erika-test`'s first helper and `erika-linq`'s README (was `98-packaging-tail` s1)
 
 `modules/erika-test/src/asserts.bp`: `assertRows(loc: SourceLocation, q: Query<T>) ->
@@ -94,6 +100,8 @@ text)`; `test/asserts_test.bp`, one accepted snapshot per target-shared file.
 - [ ] `repository/erika/AGENTS.md` names the helper
 
 ### 145 s3 — erika's C-13 migration and C-12 reformat (after 144 B-28)
+
+**Repository:** `erika` (`--repo erika`) · **Model:** sonnet
 
 #### Step 10 — erika's C-13 migration and C-12 reformat (was `07-residuals` s10)
 
@@ -118,13 +126,16 @@ After 163 s7 (the shared hook checks `conformance/`).
 
 **Repository:** erika (`--repo erika`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `erika/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `erika/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

@@ -1,8 +1,13 @@
 # Front 144 — botopink-lang: every open step that changes the compiler, std and the toolchain
 
 **Priority:** maximum — the one front that edits `repository/botopink-lang` (decision 433). Its first
-group, comptime on wasm (decision 434), is **the first thing the milestone does**: it opens before any
-other step of any front; until it lands, other fronts only finish what is already in flight.
+group, comptime on wasm (decision 434), was **the first thing the milestone did**, before any other
+step of any front; it is done but for B-00c's last box, the seventh step of the conformance order (fronts.md
+§ Execution order).
+**Repository:** botopink-lang — worktree `--lang` (a step with consumer commits: a full worktree, the library halves
+each a commit in its library, rule 10)
+**Model:** by step (each group names its own, `AGENTS.md` § Which model a thread runs on); opus for a group that
+designs or changes semantics
 **Depends on:** nothing open — the fronts in flight when 434 was taken have landed (checker-s41, checker-s29,
 render-scope-388, bigint-139, comptime-14, import-129, typed-member-395's compiler half).
 **Owns:** all of `repository/botopink-lang` — `modules/{compiler-core,compiler-cli,language-server,
@@ -22,14 +27,16 @@ then the error contract of 431 / 432 (B-01–B-09), then the structural fixes th
 ## First — comptime on wasm (decision 434)
 
 The maintainer: "a primeira coisa: deixar de usar o beam em comptime, deixando só o wasm com essa função". Every
-target's comptime evaluation moves to the wasm runtime; the erlang and beam targets are unchanged. Five steps, in
-order, before any other step of this front or any other front:
+target's comptime evaluation moves to the wasm runtime; the erlang and beam targets are unchanged. Eleven steps, in
+the order below, before any other step of this front or any other front. **The group is done but for B-00c's last
+box**: each library repository's own hook run on this compiler — `scripts/gate.sh libs`, the seventh step of the
+conformance order (fronts.md § Execution order).
 
 | Step | What | Model |
 |---|---|---|
 | B-00a | `modules/std-wasm/`: std's host functions in Zig, compiled to wasm, served to the comptime runtime | opus, then sonnet |
 | B-00b | `modules/beam-to-wasm/`: a standalone utility, any `.beam` translated to wasm module by module, on std-wasm (OTP and BIFs), nothing of botopink; an unconverted call refused located (decisions 435, 438) | opus |
-| B-00c | the comptime driver on wasm for every target; host cells resolve std-wasm → beam-to-wasm → `@External.Wasm` → refused | opus |
+| B-00c | the comptime driver on wasm for every target; a host function reached at build answers by its `std:` cell, else its `fn:` cell, else is refused (452: the comptime never calls beam-to-wasm, never runs an Erlang cell) | opus |
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
 | B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
@@ -230,10 +237,10 @@ call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `
 
 - [x] `comptime/runtime` selects the wat runtime for every `--target`; a compile spawns no `erl` (a build with
       no `erl` on `PATH` compiles a decorator-, template- and `comptime`-bearing project on all four targets)
-- [x] the resolution order std-wasm → beam-to-wasm → `@External.Wasm` → refused at the call naming the function
-      and the three sources tried — `reject/comptime_host_cell_unavailable`
-- [x] an Erlang cell beam-to-wasm does not convert refused at the call even with an `@External.Wasm("fn:…")` cell
-      after it (439) — `reject/comptime_beam_call_not_converted`; the fall-through B-00c built removed
+- [x] the resolution order in force (452, amending 434 (4)): a host function reached at build answers by its `std:`
+      cell, else its `fn:` cell, else is refused at the call naming both — `reject/comptime_host_cell_unavailable`
+- [x] an Erlang cell never runs at build (452; 439 no longer applies — no Erlang cell is translated):
+      `reject/comptime_expression_erlang_cell_never_runs`; the fall-through B-00c built removed
 - [ ] every decorator, template and `comptime` cell of `tests/language` green on the four targets with one
       `COMPTIME REPLY`; every library repository's hook green on this compiler
 
@@ -416,6 +423,8 @@ with a located message, recorded as the design; or (b) restructured so no host c
 
 ### B-01 — 431 (1): the effect messages and docs
 
+**Repository:** botopink-lang (`--lang`)
+
 431's clause (1) is built in code (`effect-try-without-fallible-channel` absorbs `throw`'s code, no implicit
 `try`, `for-over-stream` / `for-await-expects-stream`); left: the two messages (`infer.zig`
 `fallibleChannelRefusal`, `error.zig`) and the docs. 24-a is answered by 431 and 24-b by 432 (B-27 records them).
@@ -427,7 +436,27 @@ with a located message, recorded as the design; or (b) restructured so no host c
 
 - [ ] `effect-try-without-fallible-channel`'s message names `try … catch` and `throws: true`; `docs.md` § Results, § Host bindings
 
+#### B-01 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-02 — 305: labelled annotation arguments (`fn:`, `op:`, `wasi:`, `keyed:`)
+
+**Repository:** botopink-lang, with consumer commits in rakun, jhonstart, log, validation, onze, markdown (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 The prerequisite of `throws:` (B-03): flags read by label, `inline:` and `throws:` in any order.
 
@@ -464,7 +493,27 @@ each, in the landing.
 - [ ] `keyed: true` (decision 305) in every cell and diagnostic of this front; `keyed = true` is the
       parser's located error (`01-checker` step 27)
 
+#### B-02 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-03 — 431 (2): `throws:` on every `@External` variant, checked
+
+**Repository:** botopink-lang (`--lang`)
 
 `builtins.d.bp`'s External variants gain `throws: bool = false`; `refuseThrowsReturn` (`throws: true` only on
 `@Result<…, failure.HostError>` or `@Task` of one); `ast.externalRefOf` trims every bool flag. Questions
@@ -484,7 +533,27 @@ val doc = try jsParse(texto);                      // a JS SyntaxError / an erla
 - [ ] `throws: true` on every `@External` variant, a `bool` at the last position (as `inline:`); refused unless the
       declared return is `@Result<…, HostError>` or `@Task<@Result<…, HostError>>` — `reject/external_throws_return`
 
+#### B-03 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-04 — 431: std `failure` — `HostError`, `Failure`
+
+**Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** `test-libs --lib std`; `run/std_failure_attempt` (with B-07). **Model:** sonnet. Question
 `431-g` (the kinds). **Consumer commits:** none.
@@ -495,7 +564,27 @@ val doc = try jsParse(texto);                      // a JS SyntaxError / an erla
       kind: string)` (`panic` / `host` / `crash`), `pub fn attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task`
       form — a cell per target; `root.bp` gains `pub mod failure;`
 
+#### B-04 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-05 — 431 (2): each backend wraps a `throws: true` cell
+
+**Repository:** botopink-lang (`--lang`)
 
 commonJS: a sync binding in a `try/catch` answering `{ok}` / `{error: HostError(e.message, kind)}`, a `@Task`
 binding's rejection a `HostError` rejection, `__bp_host_task` only under `throws: true` (`431-e`); erlang and
@@ -512,7 +601,27 @@ for the shape, sonnet per backend. **Consumer commits:** none.
 - [ ] each backend wraps the cell (commonJS `try/catch`, a rejected Promise; erlang and beam `try … catch Class:Reason`;
       wasm the `wasi:` adapter's error) — handed to 02–05 —, `run/external_throws_host_error` on the four targets
 
+#### B-05 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-06 — 432: a failing task rejects, on four targets
+
+**Repository:** botopink-lang, with consumer commits in jhonstart, rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 - [ ] erlang and beam end a failing task's process with `{error, E}`; the wasm scheduler settles the task with
       the error — `run/task_result_rejects` on the four targets
@@ -540,7 +649,27 @@ async function buscar(id) { if (id <= 0) throw HttpError.BadId; return await htt
 - [ ] `Task`'s surface for 432: `map`, `then` on every `@Task<T>`; `mapError`, `catch` on `@Task<@Result<T, E>>` (a
       second declaration over the nested form); no `flatMap` — the drift test follows
 
+#### B-06 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-07 — 431: `attempt`, and the asserts over it
+
+**Repository:** botopink-lang, with consumer commits in jhonstart (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 Then jhonstart's `__jhTryValue` / `__jhTryTask` go, in jhonstart's consumer commit (its renderer, 388 / 414, landed). Questions `431-h`,
 `431-i`; wasm `431-f`.
@@ -555,7 +684,27 @@ replacement).
       `__jhTryValue` / `__jhTryTask` replaced by `attempt` in `05-jhonstart/26` step 14 (a consumer row below)
 - [ ] `run/std_failure_attempt` (a panic, a host raise, a value) on the four targets; `libs/std/AGENTS.md`'s table
 
+#### B-07 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-08 — 431: std's hand-written catches become `throws: true`
+
+**Repository:** botopink-lang, with consumer commits in onze, rakun, snap, validation, jhonstart, log, http, routing (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 std's hand-written try/catch templates are boundaries by hand (fs 11 Node + 2 Erlang, json 3+3, encoding 1+3,
 hash 1+1, regex 1, async 3, primitives 1, http 1, process 1, clock 1, asserts 1+1 — measured on botopink-lang
@@ -572,7 +721,27 @@ Sequence with 142 s1 (`json` leaves std, B-27).
 **Model:** opus for the policy, haiku for the codemod. **Consumer commits:** onze (158 sites), rakun (121),
 snap (17), validation (17), jhonstart (12), log (5), http (1), routing (1) — one per repository, in the landing.
 
+#### B-08 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-09 — 431 / 432: the error contract in the docs and the AGENTS files
+
+**Repository:** botopink-lang (`--lang`)
 
 - [ ] `docs.md` § Results, § Host bindings, § Effects state 431 and 432 as one contract (`throws: true`,
       `HostError`, `Failure`, `attempt`, a failing task rejects); `libs/std/AGENTS.md`'s `failure` row; each
@@ -580,7 +749,27 @@ snap (17), validation (17), jhonstart (12), log (5), http (1), routing (1) — o
 
 **Impacted tests:** `zig build test-docs`. **Model:** haiku. **Consumer commits:** none.
 
+#### B-09 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-10 — 430: the compiler gaps a library works around today
+
+**Repository:** botopink-lang, with consumer commits in validation, styled, emilia, jhonstart, onze (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 Decision 430: a gap a library front works around opens here, ahead of the steps that would build on the
 workaround; the workaround is removed in the fix's landing (a consumer commit) and its `language-gaps.md` row
@@ -621,7 +810,27 @@ sonnet for a backend row with its repro. **Consumer commits:** validation, style
 - [ ] package module namespace in type and value position (`import {report} from "validation"`, then
       `report.X`) as for std modules — exports known only to `comptime.zig`'s `resolveImports`
 
+#### B-10 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-11 — 316: `decl.wrapWith(f)`
+
+**Repository:** botopink-lang, with consumer commits in rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/decorator_wraps_function`, its `reject/` cells. **Model:** opus.
 **Consumer commits:** rakun — rakun-cache's two `LANGUAGE GAP` markers go; unblocks rakun 12 s5 and the 318
@@ -658,7 +867,27 @@ pub fn posts() -> string { return loadPosts(); }
       `language-gaps.md`'s row "A decorator cannot rewrite or wrap the body it annotates" closes once
       its marker (rakun 15's `publish-reliability-example.bp`) is rewritten
 
+#### B-11 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-12 — 346, 342: `Bytes`, `@embedFile` / `@embedBytes`
+
+**Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** `run/bytes_round_trip`, the `reject/` cells; the embed cells. **Model:** opus.
 **Consumer commits:** none here; unblocks rakun 13, 15, 22, 91, 92, 93 (`rakun ws generate`'s checked-in `.bp`),
@@ -700,7 +929,27 @@ every host cell marshals through `string`.
 re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·
 `scripts/beam_export_audit.sh` green (comptime listings included)
 
+#### B-12 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-13 — 304: a method declared `-> @Result` lowered as a `@Result` on erlang
+
+**Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** the `run/` cell of the step, erlang and commonJS. **Model:** sonnet (a measured repro).
 **Consumer commits:** none; unblocks rakun 08 s6, 09 s6, 65 s4.
@@ -715,7 +964,27 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 - [ ] the same cell on js (no change expected; asserted)
 - [ ] a behavior method (`KeyValueStore.get`) declared `-> @Result` dispatches and wraps the same
 
+#### B-13 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-14 — 359: a spread copies a record's fields
+
+**Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** `run/record_spread`, `reject/record_spread_*`, `reject/call_spread`. **Model:** opus.
 **Consumer commits:** none; heads two critical chains (jhonstart 118 s1 → 26 → 67 → 127 and 118 → 119 → 120).
@@ -738,7 +1007,27 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
       `reject/record_spread_other_type`, `reject/record_spread_partial`, `reject/record_spread_missing_field`
 - [ ] a plain function call takes no spread (267): `reject/call_spread`
 
+#### B-14 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-15 — 302: a tag is a `@Decl`
+
+**Repository:** botopink-lang, with consumer commits in jhonstart (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/tag_decl_meta`. **Model:** opus. **Consumer commits:** jhonstart (`html.bp`'s marker
 goes); unblocks jhonstart's 118 s4–s5 residue and 119.
@@ -756,7 +1045,27 @@ they recorded — the same function shape as a declaration's decorator, named by
 - [ ] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
       template function; the same annotation function also accepted on a declaration
 
+#### B-15 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-16 — 280, 307, 308: typed decorator arguments' rest, derived types' rest, `Type.Field<T>`
+
+**Repository:** botopink-lang, with consumer commits in rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/field_key_runtime`, `examples/types.bp` on four targets, the seven 280 examples.
 **Model:** opus. **Consumer commits:** rakun-data (`orm/entity.bp` to `Type.Field<unknown>`); unblocks validation
@@ -857,7 +1166,27 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
       `reject/` cells; `Type.merge` with a field on both sides is an error, `Type.required` drops every `?`
 - [ ] `docs.md` § Builtins generated from or checked against the declarations
 
+#### B-16 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-17 — 277, 376, 354–388: hooks, stages, contexts
+
+**Repository:** botopink-lang, with consumer commits in jhonstart, styled, rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 `decl.hooks`' rest (389, 386), every function's stage (376), the holes known at build (355), the synchronous
 component (375), contexts' rest (388's box 4b with jhonstart's renderer, 416, 379 (6), 378 (4) — question
@@ -1086,7 +1415,27 @@ fn Button() -> @Component<Element> {
 - [x] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
       `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
 
+#### B-17 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-18 — 311, 415, 426, 429: templates
+
+**Repository:** botopink-lang, with consumer commits in erika, jhonstart (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 The template annotation, the template method, `lookup`, a call typed by its expansion, built code located by
 its expansion. Steps 29 and 41 landed (checker-s29, checker-s41); what step 29 leaves stays here, step 41 is done.
@@ -1175,7 +1524,27 @@ val nomes = erika "select name from cities";      // nomes: Array<string>
 - [ ] `Expr`'s surface for 415 and 426: `lookup(name)` answers `?Decl<unknown>` (the `Binding` record goes), `build<R>`'s
       `R` is the type the built code infers to, `note(message)` declared — the drift test follows
 
+#### B-18 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-19 — 216, 281, 298, 353, 356: decorator outputs
+
+**Repository:** botopink-lang, with consumer commits in rakun, jhonstart, validation, styled (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `tests/language` `@emit` cells (become `reject/`), `run/meta_*`, `run/template_reads_program_catalogue`.
 **Model:** opus. **Consumer commits:** rakun (the remaining `@emit` sites, typed meta — each a decision-188
@@ -1309,7 +1678,27 @@ if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 
+#### B-19 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-20 — 330: the optional operators' rest and their codemod
+
+**Repository:** botopink-lang, with consumer commits in actions, http, log, routing, validation, jhonstart, rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 129 landed (import-129); its steps are done.
 
@@ -1350,7 +1739,27 @@ type's body is a parse error.
 - [ ] erlang: `a ?? ns.f()` with a package-module namespace call as the default (std's own
       `os.tmpdir()`) lowers as a method call on `ns`; std reads it into a `val` first
 
+#### B-20 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-21 — 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value
+
+**Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** `modules/decorator_member_fn_imported_name`, `run/fn_expr_typed_anywhere`, `run/fn_tail_value`
 and its siblings. **Model:** opus. **Consumer commits:** none.
@@ -1400,7 +1809,27 @@ fn semi(x: i32) -> i32 { x + 1; }       // ❌ as today: the body falls off its 
 second pass moves nothing · `zig build test-libs` at baseline after step 3 (every library compiles
 under the refusal)
 
+#### B-21 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-22 — The backends' and the checker's residue rows
+
+**Repository:** botopink-lang (`--lang`)
 
 Each row re-measured at the step that takes it. The `throw` in a `case` arm (01 s6, 04 s6, 12 s2) lands as one
 cell on four targets.
@@ -1545,7 +1974,27 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 Residual 4 breaks nothing today (no rakun module naming `RetryPolicy` imports `std/async`); a rakun
 step meets it if it imports both before deleting its copy.
 
+#### B-22 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-23 — 247, 255, 310 and the checker's rows
+
+**Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** `run/wide_literal_past_js_safe_integer`, `modules/import_two_types_one_name`, the rows' cells.
 **Model:** opus. **Consumer commits:** none.
@@ -1624,7 +2073,27 @@ never deleted here · `botopink check` of every package of the seven repositorie
 parent binary, `zig build test-libs` at baseline (a library that reds gets a migration plan in the
 commit)
 
+#### B-23 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-24 — 319, 320, 332: numbers and strings exact everywhere
+
+**Repository:** botopink-lang, with consumer commits in rakun, jhonstart, onze (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 `bigint`'s rest (139 landed as bigint-139; its two open boxes) then `Decimal` and `Json`'s numbers. Questions `97-s13-a`, `97-s13-b`,
 `97-s15-a` (whether 142 s1 goes first and the `Int` / `BigInt` / `Dec` arms land in the json repository).
@@ -1731,7 +2200,27 @@ and beam, 2 on wasm.
 - [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
       repository; `run/json_numbers_exact` one `.out` for the four targets
 
+#### B-24 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-25 — 333 (B), 334, 335: the wasm host
+
+**Repository:** botopink-lang, with consumer commits in log (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 After B-00e (std-wasm in the wasm output may absorb some `wasi:` bindings these steps write). Questions
 `140-d`, `140-e`, `140-f`, `110-a`. Unblocks log 106 s3 (the wasm column; G4: a wasm binding cannot reach the
@@ -1802,7 +2291,27 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
 - [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/wasm_library_binding`
       one answer on commonJS and wasm
 
+#### B-25 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-26 — 340: the keyed `Dict`'s per-row increment
+
+**Repository:** botopink-lang, with consumer commits in rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/beam_memory_ets`. **Model:** sonnet. Question `17-c`. **Consumer commits:** rakun
 (`rakun_runtime.erl`'s registry, through 150).
@@ -1815,7 +2324,27 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
       cell with concurrent bumps of one key losing none; `counts.insert(k, (counts.at(k) ?? 0) + n)`
       stays refused (no pattern recognised); `docs.md`'s `keyed` sentence names `bump`
 
+#### B-26 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-27 — Tooling, std residue, `.bpp` in the toolchain, `json` out of std
+
+**Repository:** botopink-lang, with consumer commits in jhonstart and the `json` consumers (through 151) (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 116's botopink-lang half (the vscode-extension box is 161's) with 01-checker step 22's prelude scope;
 26 s9; std purity (23) and effects by return (24 — 24-a answered by 431, 24-b by 432; 24-c, 24-g open); std's
@@ -2039,7 +2568,27 @@ Under `95-f` (1): one `repository/onze` entry in `.gitmodules`, workspace `onze`
       repository/onze` is the orchestrator's commit; `docs/botopink-json.md` says in one line the
       orchestrator repository carries the mocking library as tagged history
 
+#### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-28 — The formatter: the `;` after a braced block, C-12, the trailing comma, annotations as written
+
+**Repository:** botopink-lang, with consumer commits in every library repository (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `format/tests/**`, `scripts/format-check.sh` over every tree. **Model:** sonnet; haiku for
 the migration runs. **Consumer commits:** every library repository (the `;` migration, then the C-12 reformat —
@@ -2143,7 +2692,27 @@ fn mix(…) -> …                          // stays one list, one per line (tra
 - [ ] the trees of `scripts/format-check.sh` measured: no file moves but the lists the old split had
       broken up (reported to the tracks)
 
+#### B-28 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-29 — The gate, CI and the residual sweep
+
+**Repository:** botopink-lang, with consumer commits in emilia, jhonstart, rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 - [ ] `codegen/runtime.zig`'s own `test` blocks run: `codegen/tests.zig` imports the file (`runtimeTrapLog`,
       `compileFailureLog`, the duplicate-atom refusals found by `-Dtest-filter`) — from status.md L1
@@ -2172,7 +2741,9 @@ still took 3m17).
 - [x] the step gate (decision 460): on a `front/*` branch the hook runs formatting, the build, `zig build test`,
       `test-cli`, and the `test-language` cells and `test-libs` libraries the staged change reaches by the backend
       partition (249) — a shared file reaches all; on `feat` and at a front's Conformance step the full gate; the
-      branch decides, no flag or variable; measured: a one-backend step's gate time against the full gate's
+      branch decides, no flag or variable; measured: a one-backend step's gate time against the full gate's.
+      Since decision 470 the hook's step gate runs without the conformance cells (`--no-conformance`), and the full
+      gate with conformance is `feat`'s GitHub pipeline, which a front's Conformance step reads (477)
 - [x] measured again, one gate alone: cold and warm wall times and CPU-s per stage recorded in
       `scripts/AGENTS.md` § Where the gate's time goes, against this step's numbers; no stage, cell or check
       dropped and no verdict changed (decision 67)
@@ -2182,7 +2753,25 @@ split 8 / 4 / 1 / 1 by the stages' measured CPU share. Still over the 7m30 cold 
 threads (the `botopink` child and its `erl` / `node`), so load still peaks near 28–30; `test-language` (7m12) is the
 pole and runs alone for its last ~1.5 min. Under heavier splits rakun's timing tests went red (`rakun·erlang` 503
 over max-connections, `rakun-messaging·erlang` dlq, `rakun-data·erlang` devtools watcher: 1 red in 4 cold runs at
-8 / 4 / 1 / 1) — a 150-rakun row. What remains: the step gate (box above) and step H.
+8 / 4 / 1 / 1) — a 150-rakun row (150 s25). What remains: step H.
+
+#### B-29 step G Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+      the step's base, green or each red named
 
 #### Step H — `tests/language` cells run in process where no CLI path is under test (after step G)
 
@@ -2218,8 +2807,8 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `result_store.sh`, `backend_exec.sh`'s `wasm --invoke main`); every assertion of today has a home — none lost
 - [ ] botopink-lang's `examples/` becomes cells (decisions 457, 461): `hello`, `stdlib-tour` (its `test {}` blocks
       a `test/` suite), `modules` (the `mod` / `pub mod` tree) and `yamlconf` (the labelled tuple and the located
-      `cfg.server.prot` refusal) as `tests/language/modules/<name>/` cells with their checked output, reaching
-      `botopink/conformance` through the mirror (163 s4); `generic-loader-binding` (three `from "erika"` forms — a
+      `cfg.server.prot` refusal) as cells with their checked output, landing in `conformance/modules/<name>/` with the move (decision 466: no mirror,
+      the `botopink/conformance` repository deleted, 467); `generic-loader-binding` (three `from "erika"` forms — a
       library, not the language) moves to `repository/erika/examples/` as a consumer commit (rule 10);
       `examples/` deleted; `test-libs.sh`, `tsc-check.sh`, `backend_exec.sh`, `cli_contract.sh`,
       `comptime_bench.sh` and `format-check` pointed at the cells or a fixture of their own, no check lost (458)
@@ -2228,6 +2817,24 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `NaN` / `Infinity` (erlang and beam abort), and an unseeded `random.float()` reached from a decorator body
 - [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
       manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
+
+#### B-29 step H Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+      the step's base, green or each red named
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
@@ -2242,10 +2849,29 @@ After step H (the cells in `conformance/`).
       `conformance/modules/<cell>/docs.md` beside each cell (462); `docs.md`, `docs/` (the manifest schema) and the
       language part of `README.md` moved there — no copy left; `test-docs` checks that every reference names a cell
 - [x] `scripts/gate.sh --no-conformance` (470): the commit hook's gate — every stage but the conformance cells;
-      the Conformance step and the GitHub pipeline run `scripts/gate.sh` with them
+      the GitHub pipeline runs `scripts/gate.sh` with them on `feat`, which a front's Conformance step reads (477);
+      conformance runs locally only to reproduce a red
 - [ ] `.github/workflows/test.yml` calls `scripts/gate.sh` with conformance on a push to `feat` (477: a front's
       Conformance step reads that run), not its own list of stages
 - [ ] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
+
+#### B-29 step I Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+      the step's base, green or each red named
 
 #### Step J — botopink-lang's gate drops the lock and takes a total of jobs (decisions 468, 469)
 
@@ -2256,9 +2882,27 @@ After the step gate of decision 460 lands (both change `scripts/gate.sh`). The p
 
 - [ ] `scripts/gate.sh` takes one total of jobs (a leading argument; default the machine's, as step G computes) and
       splits it among its stages as today; the gate lock removed (`scripts/AGENTS.md` § Gate lock rewritten)
-- [ ] `--no-conformance` stays by hand only (466 (3), step I)
+- [ ] `--no-conformance` stays: the commit hook's gate (470, step I), never a verdict
 - [ ] a library's `test-out` written under a per-run directory and removed after (botopink-lang's `test-libs` writes
       into the linked siblings); the result store shared
+
+#### B-29 step J Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+      the step's base, green or each red named
 
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 
@@ -2279,7 +2923,8 @@ do it and restore the row hard with every ubuntu stage (`erlef/setup-beam` suppo
 #### Step 7 — a cold gate recorded on the current tip (was `114-gate-docs-and-ci` s7)
 
 No cold verdict on any tree containing `gate-integration-7…14`; no ~7m30s cold run recorded (133's
-last full cold: 9m31s, loaded).
+last full cold: 9m31s, loaded). A time measurement: it runs in 163 s9, the measurements at the end of the
+conformance order (fronts.md § Execution order), on a quiet machine — no step before it spends time measuring.
 - [ ] `scripts/gate.sh --cold` green on botopink-lang `feat`, every sibling library at its `feat`
       tip; record tip, each stage's count vs `--list` plan, wall clock, CPU-s, machine load
 - [ ] wall clock ≤ 450 s on 16 cores, or the over-budget line recorded as printed (yellow — decision 265)
@@ -2366,6 +3011,24 @@ is the transition guard beside `test/case_arms.bp`. Needs the maintainer's word 
 each track rewrites its own tree.
 
 - [ ] maintainer's answer recorded; if removed, §5.1 arms rewritten in emilia, jhonstart, rakun by the tracks, cells green; `docs.md` § Case re-measured for both forms
+
+#### B-29 (rest) Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
 
 ### B-00i — The Erlang term library and the OTP functions in std-wasm (decision 450)
 
@@ -2454,6 +3117,24 @@ in this array"); erlang and commonJS answer `5.0!` / the array. 441's `"${5.0}"`
 - [ ] `run/interpolation_single_float_hole`: a `val`, an array element and a concatenation, four targets, red on the
       parent on wasm, green after (458)
 
+#### B-31 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-32 — structural equality at build is iterative; an arithmetic error at build reads as Erlang's (decisions 471, 472)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (both decisions fix the design)
@@ -2468,7 +3149,27 @@ build prints the raw `{error,badarith}`.
       `reject/comptime_float_division_by_zero`, red on the parent, green after
 - [ ] every `COMPTIME REPLY` otherwise unchanged
 
+#### B-32 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
+
+**Repository:** botopink-lang (`--lang`)
 
 After the B-00 group, B-00i included (the collection knows the terms' layout, 450). botopink's values are immutable; on erlang each process's heap is collected and released
 when it dies. The wasm target's bump heap never frees; this step gives the wasm target and beam-to-wasm's translated
@@ -2491,3 +3192,21 @@ code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
 **Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `modules/std-wasm` and
 `modules/beam-to-wasm` unit tests; `test-libs` wasm column. **Model:** opus (a design the decision leaves to
 measurement). **Consumer commits:** none.
+
+#### B-30 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named

@@ -3,6 +3,8 @@
 **Priority:** medium — no page needs it to render; every app with two islands that must agree
 (a cart badge and a cart drawer) needs it to be correct, and rakun's request locals are its atoms (295) ·
 **State:** not started · `repository/cardume` is a submodule `03-bundled-libs/138` adds (326): `botopink/cardume` exists, empty; the scaffold (0.0.1: the model's types, no store) is not in any checkout yet — 138 adds the submodule once it is pushed
+**Repository:** `cardume` — worktree `--repo cardume`; the steps that add `rakun-cardume` (7) or `jhonstart-cardume` (1, 5, 6) also change rakun or jhonstart — a full worktree, one commit per repository (decision 188); step 9 the meta repository (full)
+**Model:** sonnet — the README fixes the design (Recoil's model, decisions 295, 296, 400; `AGENTS.md` § Which model a thread runs on); a step that meets `atm-c` or `atm-d` waits on the answer; the Conformance step opus
 **Depends on:** `26-jhonstart-router` (the core and its client runtime — `state` / `effect` rebinding
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
 `03-bundled-libs/125` (a `#[validated]` type's `encode` member, 306 — `T.encode(v)`, 327 — for the
@@ -144,12 +146,16 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ### Step 0 — Measure
 
+**Repository:** jhonstart, read only (a measurement, reported) · **Model:** sonnet
+
 - [ ] how `client_runtime.mjs` re-renders after a `state` cell's `set` today (the subscription a store
       can hook into); whether two islands of one page share a JS realm and a microtask queue
 - [ ] the island payload's encoding of a `#[clientProps]` record (120 step 0) — the shape the atoms'
       starting values reuse
 
 ### Step 1 — Atoms and their four hooks
+
+**Repository:** `cardume`, the meta repository's submodule and `jhonstart-dom-test`'s browser half (a full worktree) · **Model:** sonnet
 
 - [ ] `repository/cardume` on GitHub, `feat` pushed, the submodule `repository/cardume` added here;
       the scaffold's model (`Atom`, `Selector`, `Getter`, `AtomFamily`, `Loadable`, `Tx`) compiled and its
@@ -165,6 +171,8 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ### Step 2 — Selectors
 
+**Repository:** `cardume` (`--repo cardume`) · **Model:** sonnet
+
 - [ ] `selector<T>(get: fn(get: Getter) -> T) -> Selector<T>`; dependency tracking, memoisation; a
       cycle refused at run time naming the chain
 - [ ] a component reading a selector re-renders when, and only when, one of its dependencies changes
@@ -172,10 +180,14 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ### Step 3 — Families
 
+**Repository:** `cardume` (`--repo cardume`) · **Model:** sonnet
+
 - [ ] `atomFamily<P, T>(default: fn(p: P) -> T)` and `selectorFamily`; `todo(5)` the same atom on every
       call with `5`; `P` comparable by value; `examples/families-example.bp` passes
 
 ### Step 4 — Async selectors and `loadable`
+
+**Repository:** `cardume` (`--repo cardume`) · **Model:** sonnet
 
 - [ ] `selector({ get -> await … })`: `atomValue` suspends to the nearest `Suspense`; `loadable` answers
       `Loading` → `Value` / `Failed` without suspending; a dependency change re-runs it, a stale answer dropped
@@ -183,6 +195,8 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
       `errorSelector`, `selectorRefresher`; `examples/async-example.bp` passes
 
 ### Step 5 — Transactions, callbacks, snapshots
+
+**Repository:** `cardume`, and `jhonstart-dom-test`'s undo case (a full worktree) · **Model:** sonnet
 
 - [ ] `examples/transaction-example.bp` passes: a card moved between two columns in one transaction —
       both columns change in one notification; a read after a write sees it; a failing body applies nothing
@@ -193,11 +207,15 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ### Step 6 — The server seed and the island hand-off
 
+**Repository:** `cardume` and jhonstart (`jhonstart-cardume`, the island hand-off; a full worktree) · **Model:** sonnet
+
 - [ ] `<AtomRoot initialize={seed}>` (`fn(set: Setter)`) seeds the request's values; the atoms each
       island read travel in its payload and start the browser store; an atom no island read sends
       nothing; a non-encodable `T` in an island's read set refused at build (`atm-c`)
 
 ### Step 7 — `rakun-cardume`: the request store
+
+**Repository:** rakun (`rakun-cardume`; `--repo rakun`) · **Model:** sonnet
 
 - [ ] the member: a store per request in the process frame; `use atomSetter` / `atomValue` / `atomState`
       / `atomReset` reading the store from `RequestContext` (354); 295's `Local<T>` is cardume's `Atom<T>`; `examples` in
@@ -206,9 +224,13 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ### Step 8 — Effects (after `atm-d`)
 
+**Repository:** `cardume` and jhonstart (`jhonstart-dom-test`; a full worktree) · **Model:** sonnet
+
 - [ ] the effects `atm-d` keeps, each with a `jhonstart-dom-test` case
 
 ### Step 9 — the `cardume` repository and its submodule (138's residue)
+
+**Repository:** the meta repository and `botopink/cardume` (a full worktree; the GitHub repository the maintainer's) · **Model:** haiku
 
 `botopink/cardume` holds its scaffold first; then the submodule, the layout row and CI check 4's entry land
 in one meta patch (138 § Notes, Landing).
@@ -231,6 +253,24 @@ in one meta patch (138 § Notes, Landing).
       (CI check 2 needs every path on disk — this lands with the submodules, never before)
 - [ ] `AGENTS.md` § CI check 4 and `hook-integrity.yml` cover every library repository, the six new ones
       included
+
+### Conformance — the front's last step (decisions 465, 474, 477, 478, 479, 480)
+
+**Repository:** `cardume`, rakun, jhonstart (a full worktree: the core and its two bridges) · **Model:** opus
+
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the front landed, in each repository it changed (477): `scripts/gate.sh` with
+      conformance — `botopink cell check conformance/` over `cardume/conformance/`, and over rakun's and jhonstart's for
+      the bridges' cells; a red reproduced locally, fixed at once (430), pushed again; no cell edited to match the code
+- [ ] the front's changes to the libraries' behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+- [ ] the reference updated (480): `cardume/conformance/docs.md`, the bridges' entries in rakun's and jhonstart's, and
+      the `docs.md` of each cell written or whose answer changed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` of cardume, rakun and jhonstart since the
+      front's base, after it landed, green or each red named and fixed or filed; the pipeline's state in the step's report
+- [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 
 ## Decisions
 

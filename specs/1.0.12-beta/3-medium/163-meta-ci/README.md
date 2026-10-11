@@ -2,6 +2,8 @@
 
 **Priority:** medium (decision 433) — opens after the library tier, or in a free thread when nothing it needs
 is open.
+**Repository:** the meta repository — a full worktree; s7 and s8 change every library repository too (one commit per repository, decision 188), s6 a new `botopink/tour`, s9 measures botopink-lang and the libraries
+**Model:** by step — sonnet for the CI and gate steps whose README fixes the design, opus where a choice is left (s6), haiku for the sweep (`AGENTS.md` § Which model a thread runs on); the Conformance step opus
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 **Owns:** the meta `.github/workflows/**`, `scripts/{worktree-add.sh,language-gap-markers.sh}`, `AGENTS.md`
 § Layout and § CI, the submodule pointers' sweep, `specs/**`'s drift rule.
@@ -28,6 +30,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 163 s1 — the reds the gate can meet (114 s9)
 
+**Repository:** rakun (`--repo rakun`; the test files only) · **Model:** sonnet (a red with a measured repro)
+
 #### Step 9 — a red the gate can meet (was `114-gate-docs-and-ci` s9)
 
 - [ ] `repository/rakun/modules/rakun-websocket/test/limits_test.bp:48` (load-dependent cap): bound
@@ -41,6 +45,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 163 s2 — the pointers' sweep — last (07 s11)
 
+**Repository:** the meta repository (a full worktree: the pointers) · **Model:** haiku
+
 #### Step 11 — the pointers' sweep (last) (was `07-residuals` s11)
 
 Five library pointers bumped in one sweep after each library's branch merges into its `feat`.
@@ -50,6 +56,8 @@ jhonstart's "always name the module" rule (`repository/jhonstart/AGENTS.md`) del
 - [ ] the five pointers bumped in one meta commit
 
 ### 163 s3 — the rule that keeps the specs from drifting (141 s6, on `141-a`)
+
+**Repository:** the meta repository (`specs/**`; a full worktree) · **Model:** haiku (the rule is `141-a`'s answer)
 
 #### Step 6 — The rule that keeps it from drifting (on `141-a`) (was `141-specs-sweep` s6)
 
@@ -92,8 +100,8 @@ yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one
 
 A short, ordered, teaching path through the language (as *A Tour of Go*): a curated selection of cells with
 teaching text, published as a site. Nothing duplicated — each lesson names its cells and its reference section
-in `botopink/conformance`, rendered from them. The conformance repository keeps its name: it states what it
-guarantees, the contract every implementation passes.
+in `botopink-lang/conformance/`, rendered from them (decisions 466, 467: the suite and the reference live there; no
+`botopink/conformance` repository).
 
 - [ ] the lesson order and the cell each lesson shows, chosen from `botopink-lang/conformance/`
 - [ ] a generator renders the lessons from the cells and the reference, with no copied text or code
@@ -138,3 +146,21 @@ On a quiet machine (load below 3, nothing else running):
 - [ ] two gates through the meta repository's scheduler against one after the other (decisions 468, 469, 473)
 - [ ] each library's gate (`scripts/gate.sh libs`), per library
 
+
+### 163 Conformance — the front's last step (decisions 465, 474, 477, 478, 479, 480)
+
+**Repository:** the meta repository and every library repository s7 and s8 changed (a full worktree) · **Model:** opus
+
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479). s7 and s8
+change how every library's gate and CI run, not what a library answers: the step audits that change.
+
+- [ ] each library's GitHub pipeline green on `feat` after s7 and s8 landed (477), every workflow calling
+      `scripts/gate.sh` with conformance, and the meta `hook-integrity` green; a red reproduced locally, fixed at once
+      (430), pushed again; no cell edited to match the code
+- [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478) — a check of the
+      meta `scripts/gate.sh` or CI check 4 for a gate script — or why none can
+- [ ] the change analysed: each repository's gate stages and conformance cells before and after s7, none dropped
+      (decision 67); a cell the libraries' gate now reaches for the first time and is red, fixed in its library's front
+- [ ] the reference (480): no library's `conformance/docs.md` or `AGENTS.md` contradicts how its gate now runs the cells
+- [ ] the GitHub pipeline read (474, `gh` read only): every repository s7 and s8 changed, its runs on `feat` since the
+      front's base, green or each red named and fixed or filed; the pipeline's state in the step's report

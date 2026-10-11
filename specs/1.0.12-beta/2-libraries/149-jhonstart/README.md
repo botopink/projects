@@ -1,6 +1,8 @@
 # Front 149 — jhonstart: the core, link, forms, and Astro's template, styling, islands, data and transitions
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `jhonstart` — worktree `--repo jhonstart` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/jhonstart/**`
 **Depends on:** 144 B-07 (26 s14), B-14 (118 s1), B-15 (118 s4–5, 119), B-16 (26 s13), B-17 (26 s8, s11), B-27 (116), B-10 G3
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -68,6 +70,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 ## Steps
 
 ### 149 s1 — the core (26)
+
+**Repository:** `jhonstart`, and the consumer commits it names in their repositories (a full worktree, decision 188) · **Model:** sonnet
 
 #### Step 0 — `jhonstart-html` merges into the core (decision 200) (was `26-jhonstart-router` s0)
 
@@ -252,6 +256,8 @@ pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf
 
 ### 149 s2 — link: the reconciler driver (27)
 
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
+
 #### Step 1 — the driver (was `27-jhonstart-link` s1)
 
 `reconcile.bp`'s `applyTransition(current, target, dom: DomOps) -> @Task<@Result<Navigation,
@@ -279,6 +285,8 @@ activates").
       (186's check, 363)
 
 ### 149 s3 — forms: the DOM-side boxes (67)
+
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
 
 #### Step 1 — `actionState` in the document (was `67-jhonstart-forms` s1)
 
@@ -325,6 +333,8 @@ carries a `// LANGUAGE GAP` marker.
 four re-recorded snapshots
 
 ### 149 s4 — the template language's residue (118)
+
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
 
 What 118 built alone is done; each item below waits on the 144 step it names: s1's component spread (B-14),
 s4's slots and s5's 302 arm (B-15), s6's `-> @ExprCustom<View>` and the `@Component` alias (B-10 G3), the
@@ -375,6 +385,8 @@ s4's slots and s5's 302 arm (B-15), s6's `-> @ExprCustom<View>` and the `@Compon
 - [ ] `zig build test-libs`: jhonstart, emilia, erika, onze — the 12 DSL files — green
 
 ### 149 s5 — `jhonstart-styled`, the template arm, one sheet (119, jhonstart's half)
+
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
 
 #### Step 2 — `jhonstart-styled` and the template arm (was `119-bpp-styling` s2)
 
@@ -429,6 +441,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
       is an ordinary import; the key is only the style section's)
 
 ### 149 s6 — islands (120)
+
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
 
 #### Step 0 — Measure (was `120-bpp-islands` s0)
 
@@ -513,6 +527,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ### 149 s7 — the `Astro` global, jhonstart's half (122)
 
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
+
 #### Step 0 — Measure — part (was `122-bpp-data` s0 box 2)
 
 - [ ] `redirect()` raised after the first chunk: the response
@@ -547,6 +563,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] `contracts.md` for the new signal
 
 ### 149 s8 — view transitions (126)
+
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
 
 #### Step 1 — `transitions.bp` and the stylesheet (was `126-bpp-view-transitions` s1)
 
@@ -587,6 +605,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 ### 149 s9 — a project of `.bpp` files (116 s6, after 149 s5)
 
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
+
 #### Step 6 — A project of `.bpp` files (a page reads its route by hook: 293) (was `116-bpp-file-format` s6)
 
 - [ ] this front's `examples/` and every track front's `examples/src/` compile as an onze test
@@ -601,6 +621,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
       both render the same markup on both targets
 
 ### 149 s10 — jhonstart's snapshot paragraph (135 s3)
+
+**Repository:** `jhonstart` (`--repo jhonstart`) · **Model:** sonnet
 
 #### Step 3 — jhonstart (390) (was `20-snap` s3)
 
@@ -622,13 +644,16 @@ After 163 s7 (the shared hook checks `conformance/`).
 
 **Repository:** jhonstart (`--repo jhonstart`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `jhonstart/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `jhonstart/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

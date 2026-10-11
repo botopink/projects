@@ -2,6 +2,8 @@
 
 **Priority:** medium (decision 433) — opens after the library tier, or in a free thread when nothing it needs
 is open.
+**Repository:** `release` (`botopink/release`, born in s1) — worktree `--repo release`; s2's consumer commits (rakun, onze) run in a full worktree, producer first (decision 188)
+**Model:** sonnet — the README fixes the design (`AGENTS.md` § Which model a thread runs on); the Conformance step opus
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 **Owns:** `repository/release/**` when born (`botopink/release`), the consumer lines step 2 names.
 **Depends on:** `07-g` (a) · rakun 150 s7 (81) · onze 162 s4 (71). Goal: [`03-bundled-libs/107-release`](107-release/context.md).
@@ -20,6 +22,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 107 s1 — the package
 
+**Repository:** `release` (`--repo release`) · **Model:** sonnet
+
 #### Step 1 — the package (was `107-release` s1)
 
 `rel(spec)`, `vmArgs(spec)`, `sysConfig(props)` (a `.bp` Erlang-term writer — strings, atoms,
@@ -36,8 +40,27 @@ integers, lists, tuples, maps — replacing the `rkRelTerm` sidecar cell), `boot
 
 ### 107 s2 — consumers
 
+**Repository:** rakun, onze — the consumer commits, a full worktree (decision 188) · **Model:** sonnet
+
 #### Step 2 — consumers (was `107-release` s2)
 
 - [ ] rakun-cli's release imports the package; `rkRelTerm` deleted; its tests green
 - [ ] onze-release imports the package; `otp.bp` / `docker.bp` / `spec.bp` keep only onze's spec
       shape; onze-release's 9 tests green on both rows
+
+### 107 Conformance — the front's last step (decisions 465, 474, 477, 478, 479, 480)
+
+**Repository:** release (`--repo release`) · **Model:** opus
+
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `release/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+- [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
+- [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can

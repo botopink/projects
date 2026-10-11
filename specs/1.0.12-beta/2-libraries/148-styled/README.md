@@ -1,6 +1,8 @@
 # Front 148 — styled: the base for CSS components — `styled`'s half of 119
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
+**Repository:** `styled` — worktree `--repo styled` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
+**Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/styled/**`
 **Depends on:** 144 B-10 G2 (8 markers), B-17 (355 holes at build, 14 s8), B-19 (353 / 356 catalogue)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
@@ -24,6 +26,8 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 ## Steps
 
 ### 148 s1 — `styled`: records, holes at build, the sheet, the theme (119 s1)
+
+**Repository:** `styled` (`--repo styled`) · **Model:** sonnet
 
 #### Step 1 — the repositories `css` and `styled` (was `119-bpp-styling` s1)
 
@@ -73,6 +77,8 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 
 ### 148 s2 — `StyledMeta` and the cleared breakpoint (119 s4, `styled`'s half)
 
+**Repository:** `styled` (`--repo styled`) · **Model:** sonnet
+
 #### Step 4 — `#[styled(..)]` in `jhonstart-styled`, and the reader of `#[emilia(..)]`'s meta (decisions 301, 338, 369) — part (was `119-bpp-styling` s4 boxes 2, 4)
 
 ```bpp
@@ -101,13 +107,16 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 
 **Repository:** styled (`--repo styled`) · **Model:** opus
 
-After every other step of this front has landed.
+After every other step of this front has landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `botopink cell check conformance/` — every cell of `styled/conformance/` green on the targets the manifests declare
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance — `botopink cell
+      check conformance/` over every cell of `styled/conformance/` on the targets the manifests declare; a red reproduced
+      locally, fixed at once (430), pushed again; no cell edited to match the code
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
 - [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` since the front's base, after it landed, green
+      or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 
