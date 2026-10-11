@@ -722,6 +722,7 @@ number, which is **484**.
 - **Blocks.** 144 B-07.
 
 #### 431-j · A binding that raises without catching (144 B-08)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** Every std binding is audited: one whose host call can fail gains `result: true` (431-e) and its module's error enum (431-a); one that cannot is listed in `libs/std/AGENTS.md` as promising no failure. The audit runs in B-08's pass with 431-a's variant lists.
 - **Measured.** 431 (2): a binding without `throws: true` promises no raise, and one is a crash. std holds bindings whose host call can raise and that catch nothing (net, `process.run`, `clock.parseIso8601` on erlang …); no audit lists them.
 - **Options.** (a) Audit every std binding: one that can raise gains `throws: true`; one that cannot is documented as promising no raise (the list in `libs/std/AGENTS.md`). (b) Only the bindings a test shows raising.
   ```bp

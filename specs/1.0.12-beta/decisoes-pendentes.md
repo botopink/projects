@@ -721,6 +721,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-07.
 
 #### 431-j · Um binding que lança sem capturar (144 B-08)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Todo binding do std é auditado: um cuja chamada ao host pode falhar ganha `result: true` (431-e) e o enum de erro do seu módulo (431-a); um que não pode é listado em `libs/std/AGENTS.md` como prometendo não falhar. A auditoria roda na passada do B-08 com as listas de variantes da 431-a.
 - **Medido.** 431 (2): um binding sem `throws: true` promete nenhum raise, e um é um crash. O std guarda bindings cuja chamada de host pode lançar e que não capturam nada (net, `process.run`, `clock.parseIso8601` no erlang …); nenhuma auditoria os lista.
 - **Opções.** (a) Auditar todo binding do std: um que pode lançar ganha `throws: true`; um que não pode é documentado como prometendo nenhum raise (a lista em `libs/std/AGENTS.md`). (b) Só os bindings que um teste mostra lançando.
   ```bp
