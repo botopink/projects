@@ -94,10 +94,10 @@ Three rules make it safe:
    language feature is a `language-gaps.md` row and waits on its 144 step.
 3. **The full worktree** (no `--repo`) is for a task that edits the meta specs or more
    than one repository.
-4. **The hook runs `scripts/gate.sh --no-conformance`; the Conformance step's verdict is the GitHub
-   pipeline's** (decisions 470, 476): a step's commit checks the build, the unit tests and what it reaches,
-   fast; the front's last step pushes `front/<name>` and lands on the pipeline's green run of
-   `scripts/gate.sh` with conformance; conformance runs locally only to reproduce a red.
+4. **The hook runs `scripts/gate.sh --no-conformance`; conformance is `feat`'s pipeline's** (decisions
+   470, 477): a step's commit checks the build, the unit tests and what it reaches, fast; the front lands on
+   `feat` without waiting for conformance; its Conformance step reads `feat`'s pipeline run of
+   `scripts/gate.sh` with conformance — a red is reproduced locally and fixed at once.
 4b. **No `gate.sh --cold` inside a `--repo` / `--lang` worktree.** Its gate is the commit
    hook's (`--staged`, warm). `--cold` deletes every sibling library's cache, and the
    siblings there are the main checkout's: a cold gate, when a landing calls for one,

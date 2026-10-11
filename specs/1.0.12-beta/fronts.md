@@ -52,10 +52,10 @@ milestone (three when the console is closed).
     `botopink cell check conformance/` over the whole `<lib>/conformance/`, the front's library changes
     analysed against the cells, the cells written, the missing ones proposed. An earlier step keeps green
     the cells of the member it changes.
-14. **A front's Conformance step takes its verdict from the GitHub pipeline** (decisions 474, 476): it pushes
-    `front/<name>` to GitHub and waits on the run of `scripts/gate.sh` with conformance — green on every row,
-    the front lands on that very commit; red, it is reproduced locally, fixed and pushed again. It also reads
-    `feat`'s runs since the front's base (474). Conformance runs locally only to reproduce a red.
+14. **A front lands on `feat` without waiting for conformance; its Conformance step reads `feat`'s pipeline**
+    (decisions 474, 476, 477): the steps land once their hook gate passed; the pipeline runs `scripts/gate.sh` with
+    conformance on that `feat` push; green on every row, the front is done; red, it is reproduced locally, fixed
+    at once ahead of every other step (430) and pushed again. Conformance runs locally only to reproduce a red.
 
 ## Ownership, by repository
 
@@ -242,8 +242,8 @@ boxes after it on that line are the front's own.
 
 - [ ] The repository's own hook, through `git commit` in the step's worktree (never `--no-verify`):
       `scripts/gate.sh --no-conformance` (decision 470: on a `front/*` branch the step gate of 460 without the
-      conformance cells); the front's Conformance step pushes `front/<name>` and lands on the GitHub pipeline's green
-      run of `scripts/gate.sh` with conformance (476) — locally only to reproduce a red; a library's `runner-standalone.sh` on the main
+      conformance cells); the front lands on `feat` once its hook gates passed, and its Conformance step reads `feat`'s
+      pipeline run with conformance (477) — locally only to reproduce a red; a library's `runner-standalone.sh` on the main
       checkout's compiler, every row its manifests declare. A cold gate, when a landing calls for one, runs
       in the main checkout (`AGENTS.md` § Worktrees, rule 4).
 - [ ] A botopink-lang step: the conformance suite green and the cells of the behaviour it lands written; a

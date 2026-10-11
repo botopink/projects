@@ -245,9 +245,9 @@ recommend one with its trade-off.>
 After every other step of the front has landed.
 
 **Acceptance:**
-- [ ] the GitHub pipeline green on the front's branch (476): `front/<name>` pushed, `scripts/gate.sh` with
-      conformance green on every row — botopink-lang's whole `conformance/`, a library's `<lib>/conformance/`; a red
-      reproduced locally, fixed, pushed again; no cell edited to match the code
+- [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance on every row —
+      botopink-lang's whole `conformance/`, a library's `<lib>/conformance/`; a red reproduced locally, fixed at once
+      (430), pushed again; no cell edited to match the code
 - [ ] the front's changes analysed together: every behaviour it added, changed or refused, every target that
       departs, against the cells that cover it — the table in the front's README
 - [ ] the cells that behaviour calls for written in decision 457's shape, each red on the front's base and green
@@ -261,7 +261,7 @@ After every other step of the front has landed.
 
 - [ ] the repository's own hook, through `git commit` (never `--no-verify`): `scripts/gate.sh --no-conformance`
       (decision 470) — botopink-lang's step gate on a `front/*` branch, a library's runner on the main checkout's
-      compiler; the Conformance step lands on the GitHub pipeline's green run with conformance (476), locally only to reproduce a red
+      compiler; the front lands once its hook gates passed; its Conformance step reads `feat`'s pipeline run with conformance (477), locally only to reproduce a red
 - [ ] <the front's own check: a validator run, a library that must compile, snapshots
       byte-identical for a refactor front, every RUN LOG unchanged>
 - [ ] a botopink-lang step (decision 458): every `tests/language` cell green; the cells of the behaviour it
