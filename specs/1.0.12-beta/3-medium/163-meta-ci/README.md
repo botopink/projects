@@ -96,5 +96,8 @@ After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/ga
       red; absent only structurally (no `conformance/` directory)
 - [ ] `--no-conformance` by hand only (466 (3)): `not a gate verdict`, no stored pass; the hook and CI never pass it
 - [ ] the meta repository's `scripts/gate.sh` runs `hook-integrity.yml`'s checks locally, and the workflow calls it
+- [ ] the libraries' and the meta repository's `scripts/gate.sh` take their jobs from the machine-wide pool of
+      decision 468, the protocol 144 B-29 step J writes in botopink-lang's `scripts/AGENTS.md` — no lock, no dependency
+      on botopink-lang's scripts; a library's `test-out` per run
 - [ ] copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names `scripts/gate.sh`
       and its `conformance/`

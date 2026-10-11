@@ -2243,6 +2243,21 @@ After step H (the cells in `conformance/`).
 - [ ] `.github/workflows/test.yml` calls `scripts/gate.sh` (the full gate on `feat`), not its own list of stages
 - [ ] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
 
+#### Step J — a machine-wide job pool replaces the gate lock (decision 468)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+After the step gate of decision 460 lands (both change `scripts/gate.sh`).
+
+- [ ] `scripts/gate.sh` draws every stage's jobs from the machine-wide pool of 468 (a fixed per-machine path, a
+      token per job, a job counted as its runnable threads) instead of taking the gate lock; the pool's protocol
+      written once in `scripts/AGENTS.md` so the libraries' and the meta repository's gates (163 s7) implement the
+      same one
+- [ ] a library's `test-out` written under a per-run directory and removed after; the result store shared
+- [ ] measured: two gates started together (a one-backend step gate and a full gate) finish sooner in total than one
+      after the other, load near the CPU count, no timing red; recorded in `scripts/AGENTS.md`
+- [ ] a measurement of a gate's time waits for an empty pool (the measurer's rule, written in `scripts/AGENTS.md`)
+
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 
 Row deleted until capture normalises CRLF/separators (known gap, `../../status.md`). To restore: run
