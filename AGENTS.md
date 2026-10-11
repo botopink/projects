@@ -193,6 +193,10 @@ zig build test-libs / test-backends / test-vscode / test-bpmp
 - Code, comments, commit messages and compiler docs are in English. Planning documents
   (`todo.md`, `specs/1.0.0-beta/01-test-green/`, `02-type-system.md`, `architecture.md`)
   are in Portuguese — keep each file in its current language.
+- **A document kept in English and in Portuguese** (today `specs/1.0.12-beta/decisions-pending.md` and
+  `decisoes-pendentes.md`): the English text holds the meaning; the Portuguese one is its most direct
+  translation — the prose translated, ids, code, examples, messages, paths and recommendations kept as
+  in English, nothing reworded, summarised or added. A change is written in English first and translated.
 - Any code or layout change updates the matching `AGENTS.md` in the same commit.
 - Specs describe current state and remaining work; do not keep status narratives,
   commit hashes or superseded approaches in them.
