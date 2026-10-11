@@ -29,3 +29,15 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 - [ ] rakun's `config.bp` reads `.yaml` / `.yml` through it and deletes its own subset (after
       `04-rakun/128`); its config tests unchanged
 - [ ] `08-bpp/121` step 3's frontmatter reads through it (no copy in onze-content)
+
+### 152 Conformance — the front's last step (decision 465)
+
+**Repository:** yaml (`--repo yaml`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `yaml/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

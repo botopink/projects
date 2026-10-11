@@ -24,3 +24,15 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 #### Step 4 — The span mapping and the editor — part (was `116-bpp-file-format` s4 box 3)
 
 - [ ] `vscode-extension`: `.bpp` registered; `zig build test-vscode` green
+
+### 161 Conformance — the front's last step (decision 465)
+
+**Repository:** vscode-extension (`--repo vscode-extension`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `vscode-extension/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

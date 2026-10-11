@@ -82,3 +82,15 @@ The copies left the compiler with their libraries (138); each is its owner's ste
   `fieldOf(r: LogRecord, …)`, `rakun-app/test/navigation_test.bp`'s `kindName(out: NavOutcome)`; the
   kind tests std's `Json` does not carry (`onze/src/config.bp` `isString`, rakun's `isArray` /
   `isText` / `isNum`) wait on step 15's readers
+
+### 146 Conformance — the front's last step (decision 465)
+
+**Repository:** validation (`--repo validation`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `validation/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

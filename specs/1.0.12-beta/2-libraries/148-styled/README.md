@@ -96,3 +96,15 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] `botopink test` green on both targets in `repository/css`, `repository/styled` and `jhonstart-styled`
 - [ ] `zig build test-libs`: emilia, jhonstart, onze green
 - [ ] `grep -rn "bpp\|jhonstart" repository/css repository/styled repository/emilia/modules` empty (338)
+
+### 148 Conformance — the front's last step (decision 465)
+
+**Repository:** styled (`--repo styled`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `styled/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

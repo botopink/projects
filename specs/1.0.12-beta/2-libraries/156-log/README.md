@@ -52,3 +52,15 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
       `std/io/clock`'s `systemTimeWithUnit` / `toCivil`), then at the two gap rows above
 
 **Gate:** standard (fronts.md § Gate), for step 2's own commit and step 3
+
+### 156 Conformance — the front's last step (decision 465)
+
+**Repository:** log (`--repo log`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `log/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

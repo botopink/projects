@@ -28,3 +28,15 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 - [ ] the consumers declare `{ "json": { "git": "https://github.com/botopink/json.git", "branch": "feat" } }`
       and import `from "json"`, one commit per library (188): validation, actions, log, jhonstart, onze,
       rakun (after `04-rakun/128`); each library's suite green unchanged
+
+### 151 Conformance — the front's last step (decision 465)
+
+**Repository:** json (`--repo json`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `json/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

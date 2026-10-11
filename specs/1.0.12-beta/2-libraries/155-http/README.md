@@ -48,3 +48,15 @@ One commit per member, after the member's owning front has landed.
 - [ ] every consumer file above imports `http`; `grep -rn
       "cookieFromHeader\|rangeQ\|qMillis\|qPerMille" repository/{rakun,onze}/modules` is empty
 - [ ] each touched member's `AGENTS.md` updated in its commit
+
+### 155 Conformance — the front's last step (decision 465)
+
+**Repository:** http (`--repo http`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `http/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

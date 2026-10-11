@@ -238,15 +238,16 @@ recommend one with its trade-off.>
 - [ ] <objective condition — a command and its expected result, not "works">
 - [ ] <the regression test that would have caught it>
 
-### Step N — Conformance (decisions 458, 459) — always the last step of a front that changes botopink-lang
+### Step N — Conformance (decisions 458, 459, 465) — always the last step of a front that changes botopink-lang or a library
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus (what the front's change calls for is a judgement)
+**Repository:** the front's (`--lang` or `--repo <lib>`) · **Model:** opus (what the front's change calls for is a judgement)
 
 After every other step of the front has landed.
 
 **Acceptance:**
-- [ ] the whole `tests/language` suite green on every target it declares (and `repository/conformance` in step
-      once 163 s4 has landed); no cell edited to match the compiler
+- [ ] botopink-lang: the whole `tests/language` suite green on every target it declares (and
+      `repository/conformance` in step once 163 s4 has landed); a library: `botopink cell check conformance/` over
+      the whole `<lib>/conformance/` (465); no cell edited to match the code
 - [ ] the front's changes analysed together: every behaviour it added, changed or refused, every target that
       departs, against the cells that cover it — the table in the front's README
 - [ ] the cells that behaviour calls for written in decision 457's shape, each red on the front's base and green

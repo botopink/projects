@@ -48,3 +48,15 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 **Gate:** standard (fronts.md § Gate), plus:
 - [ ] `botopink test` green on both targets in `repository/routing`, on erlang in `rakun-app`
 - [ ] `zig build test-libs`: rakun, jhonstart, onze green; `onze/examples/blog` builds unchanged
+
+### 157 Conformance — the front's last step (decision 465)
+
+**Repository:** routing (`--repo routing`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `routing/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

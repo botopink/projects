@@ -683,3 +683,14 @@ After 163 s7 (the shared hook checks `conformance/`).
       is not a program given its context or turned into ` ```text `
 - [ ] every cell green on the targets the library's manifests declare, through the library's own hook
 
+### 162 Conformance — the front's last step (decision 465)
+
+**Repository:** onze (`--repo onze`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `onze/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

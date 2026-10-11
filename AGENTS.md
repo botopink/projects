@@ -104,6 +104,8 @@ Three rules make it safe:
    shape; a front that changes botopink-lang **ends with its "Conformance" step** (459): the whole
    suite green, the front's changes analysed against the cells, the cells written, the missing ones
    proposed. The coordinator checks the cells at landing and files the proposals.
+   A library front ends the same way (465): its "Conformance" step runs `botopink cell check
+   conformance/` over the whole `<lib>/conformance/`.
 
 The thread commits in its repository only; the coordinator writes the specs and the
 pointer bump at landing, then removes it with `git -C repository/<repo> worktree remove

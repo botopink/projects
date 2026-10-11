@@ -34,3 +34,15 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 **Gate:** standard (fronts.md § Gate) + every consumer's suite green on both rows after its import
 commit · `grep -rn "pub mod json" repository/botopink-lang/libs/std/src/root.bp` empty
+
+### 158 Conformance — the front's last step (decision 465)
+
+**Repository:** markdown (`--repo markdown`) · **Model:** opus
+
+After every other step of this front has landed.
+
+- [ ] `botopink cell check conformance/` — every cell of `markdown/conformance/` green on the targets the manifests declare
+- [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
+- [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows
+

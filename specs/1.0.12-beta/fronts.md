@@ -48,6 +48,10 @@ milestone (three when the console is closed).
     the cells, the cells its behaviour calls for written in decision 457's shape (red on the front's base,
     green on its tip), and the missing cells it found proposed as rows. Each earlier step keeps the suite
     green and writes the cells of a behaviour it lands. A cell is never edited to match the compiler.
+13. **A library front ends with its "Conformance" step** (decision 465): after its other steps land,
+    `botopink cell check conformance/` over the whole `<lib>/conformance/`, the front's library changes
+    analysed against the cells, the cells written, the missing ones proposed. An earlier step keeps green
+    the cells of the member it changes.
 
 ## Ownership, by repository
 
