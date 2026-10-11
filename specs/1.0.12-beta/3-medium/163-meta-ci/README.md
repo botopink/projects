@@ -70,6 +70,22 @@ spelling rewrites the class S lines of `specs/<current>/**` that write it, and a
 - [ ] the commits are on the front's branch; landing is the maintainer's, who reviews step 1's
       rows line by line
 
+### 163 s8 — first: each library's CI fetches its dependencies (structural, decision 430; measured by decision 474)
+
+**Repository:** every library repository with a `botopink.json` (a full worktree) · **Model:** sonnet
+
+Measured 2026-10-11 reading the pipelines (474): jhonstart, onze and rakun are red on `feat` — `dependency 'snap' was
+not found under any library root` — because each library's `test.yml` checks out only itself and botopink-lang, and
+the libraries that became repositories of their own (`snap`, decision 391; `styled`, `css`, …) are never fetched;
+actions, http, log, routing, validation, css and styled have a `test.yml` that has never run on `feat`; snap, json,
+yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one is green: the siblings are there.
+
+- [ ] each library's `test.yml` fetches the library's dependencies from its manifests' `dependencies` (the `git`
+      entries) — `bpmp install`, which already clones and links them — before it runs; jhonstart, onze and rakun green
+- [ ] a library with a `botopink.json` and no `test.yml` gets one, the same shape as the others; every library's
+      workflow runs on a push to `feat`, and each has at least one green run there
+- [ ] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
+
 ### 163 s6 — a language tour generated from `botopink-lang/conformance/` (after 144 B-29 step I)
 
 **Repository:** a new `botopink/tour` (created when this step opens) · **Model:** opus
