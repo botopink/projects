@@ -28,10 +28,11 @@ order, before any other step of this front or any other front:
 | Step | What | Model |
 |---|---|---|
 | B-00a | `modules/std-wasm/`: std's host functions in Zig, compiled to wasm, served to the comptime runtime | opus, then sonnet |
-| B-00b | `modules/beam-to-wasm/`: `.beam` bytecode translated to wasm, BIFs from std-wasm, an unconverted call refused located (decision 435: a named subset) | opus |
+| B-00b | `modules/beam-to-wasm/`: a standalone utility, any `.beam` translated to wasm module by module, on std-wasm (OTP and BIFs), nothing of botopink; an unconverted call refused located (decisions 435, 438) | opus |
 | B-00c | the comptime driver on wasm for every target; host cells resolve std-wasm → beam-to-wasm → `@External.Wasm` → refused | opus |
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
+| B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
 
 ## Lanes
 
@@ -41,7 +42,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–e, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–f, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -184,10 +185,13 @@ cell. Measure first which ones comptime reaches today.
 
 ### B-00b — `modules/beam-to-wasm`: `.beam` bytecode translated to wasm (decision 434)
 
-A new module `repository/botopink-lang/modules/beam-to-wasm/` reads the `.beam` erlc produces — an `.erl`
-sidecar, an `@External.Erlang` / `@External.Beam` cell — and translates a BEAM-opcode subset to wasm, BIFs
-served by std-wasm, so code that exists only as BEAM runs at comptime on the wasm runtime. A call it does not
-convert is refused at the call site, located. It converts a named subset first (decision 435): the opcodes, BIFs and OTP functions B-00b's measurement lists, each served by std-wasm; any other call refused located.
+A new module `repository/botopink-lang/modules/beam-to-wasm/`: a standalone utility, `.beam` in, wasm out (decision
+438, amending 435). It takes any `.beam` — erlc's output of a botopink cell or sidecar, or a module any BEAM compiler
+produced (Erlang, Elixir, Gleam …) — and translates it to wasm, whole module by module, following the calls between
+the modules it is given. Its one dependency is std-wasm, which serves the BIFs and OTP functions; an OTP function
+std-wasm lacks, or an opcode it does not convert, is a located refusal. It knows nothing of botopink the language: no
+AST, manifest, `bpmp` or diagnostic type — botopink's comptime is one caller, handing it the `.beam` of the cells it
+reaches and reporting its refusal at the call site.
 
 - [ ] measured: every `@External.Erlang` / `@External.Beam` cell and `.erl` sidecar a comptime evaluation
       reaches today (std, rakun, jhonstart, erika, styled, emilia …), with the opcodes and OTP calls each uses —
@@ -198,6 +202,13 @@ convert is refused at the call site, located. It converts a named subset first (
       missing — `reject/comptime_beam_call_not_converted`
 - [ ] each measured cell answers at comptime through the translation, `COMPTIME REPLY` byte-identical to the
       BEAM runtime's answer on the parent
+- [ ] whole modules (438): the `.beam` files it is given translated module by module, a call from one to another
+      followed — a cell of erika or jhonstart that calls a function of another of its modules answers at comptime;
+      each OTP function they reach served by std-wasm or refused located
+- [ ] a `.beam` botopink did not generate (an Erlang module compiled by `erlc` outside botopink, as a fixture)
+      translated and run: the utility reads bytecode, never the source language
+- [ ] standalone: `modules/beam-to-wasm` imports Zig's `std` and std-wasm only — no `compiler-core`, `manifest` or
+      `bpmp` — checked in `build.zig`'s module graph
 
 **Impacted tests:** `modules/beam-to-wasm` unit tests (new); `comptime/tests/decorator_eval*`, the host-cell
 tests comptime-14 adds. **Model:** opus. **Consumer commits:** none (a sidecar that needs an opcode outside the
@@ -207,8 +218,8 @@ subset is a row here, never a library workaround).
 
 Every target's comptime evaluation runs on the wasm runtime (wasm3 in-process, `persistent_wat.zig`,
 `runtime/wat/**`). A host function reached at build resolves, in order: the std-wasm implementation, else the
-beam-to-wasm translation of its `@External.Erlang` / `@External.Beam` cell, else its `@External.Wasm` cell;
-none → refused at the call. The erlang and beam targets are unchanged — only the comptime runtime moves; `erl`
+beam-to-wasm translation of its `@External.Erlang` cell, else its `@External.Wasm` cell; none → refused at the
+call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `fn:` cell not tried (decision 439). The erlang and beam targets are unchanged — only the comptime runtime moves; `erl`
 / `erlc` stay needed for those targets' own tests, never for compiling. comptime-14 built 341's host cells on the BEAM runtime
 (a decorator's Erlang cell): that code is transitional, deleted in B-00d; 434 amends 341 to this order.
 
@@ -216,6 +227,8 @@ none → refused at the call. The erlang and beam targets are unchanged — only
       no `erl` on `PATH` compiles a decorator-, template- and `comptime`-bearing project on all four targets)
 - [ ] the resolution order std-wasm → beam-to-wasm → `@External.Wasm` → refused at the call naming the function
       and the three sources tried — `reject/comptime_host_cell_unavailable`
+- [ ] an Erlang cell beam-to-wasm does not convert refused at the call even with an `@External.Wasm("fn:…")` cell
+      after it (439) — `reject/comptime_beam_call_not_converted`; the fall-through B-00c built removed
 - [ ] every decorator, template and `comptime` cell of `tests/language` green on the four targets with one
       `COMPTIME REPLY`; every library repository's hook green on this compiler
 
@@ -287,13 +300,35 @@ within budget
 std-wasm is linked into the wasm target's output too, replacing the `wat_prelude` helpers and the `wasi:`
 bindings it implements — after the comptime switch (B-00c). The std-on-wasm steps it absorbs move here.
 
-- [ ] the wasm target links std-wasm; each `wat_prelude` helper and `wasi:` binding it implements leaves the
-      prelude and the binding list; every `run/` cell's `.out` unchanged on the four targets
+- [ ] the wasm target transpiles std-wasm into the program (440 (2)): its functions decoded from `std_wasm.wasm`
+      into `wat_ast`, one module; each `wat_prelude` helper and `wasi:` binding it implements leaves the prelude and
+      the binding list; a wasm program prints std-wasm's text (441) — each `run/` cell whose wasm `.out`
+      changes (float interpolation, `toString`, exponent forms, `trim`) re-read one by one, the other targets' unchanged
+- [ ] the `std:` binding (440 (3)): `#[@External.Wasm("std:<module>.<function>")]` on each std function std-wasm
+      implements, serving the wasm codegen and the comptime; `stdWasmSymbol`'s implicit name match removed; a `std:`
+      naming no export, or with other types, refused at the annotation; the `fn:` bodies it replaces deleted
 - [ ] the size an emitted module gains or loses measured (a hello world, onze's blog page, std's test module)
       and recorded in `wat/AGENTS.md`
 
 **Impacted tests:** every wasm `RUN LOG` snapshot (re-read, not bulk-accepted); `run/std_*` cells on wasm;
 `test-libs --lib std` wasm column. **Model:** opus. **Consumer commits:** none.
+
+### B-00f — `@External.Beam` deleted; `@External.Erlang` binds erlang and beam (decision 437)
+
+The beam target reads a declaration's `@External.Erlang` cell; `@External.Beam` is refused at the annotation.
+
+- [ ] `@External.Beam` is a located error at the annotation naming `@External.Erlang`
+      (`` `@External.Beam` binds no host — the beam target reads `@External.Erlang` ``); a `reject` fence in `docs.md`
+- [ ] std's 31 `@External.Beam` cells deleted (`libs/std/src/**`); the 4 assembly cells of `primitives.bp` leave only their
+      `@External.Erlang` pair; `grep -rn '@External.Beam' libs ../*/src` empty outside the refusal's test
+- [ ] `hostFnBinding.zig`'s `beam` reads `External.Erlang` only; `beam_asm.zig`'s `External.Beam` assembly read deleted;
+      `inline = true` accepted on `External.Erlang` alone; `docs.md` (§ host functions, `fn:` on every target) and the
+      codegen `AGENTS.md` files name one BEAM annotation
+- [ ] every beam `RUN LOG` and `run/` cell's `.out` unchanged
+
+**Impacted tests:** `codegen/tests/externals.zig`, `features.zig`, `std_package.zig`; beam codegen snapshots (re-read);
+`beam_export_audit`; `test-libs --lib std` beam column; `test-docs`. **Model:** sonnet (437 fixes the design).
+**Consumer commits:** none (no library writes `@External.Beam`).
 
 #### Step 5 — the rest of std on wasm (decisions 262, 241) (was `05-wasm` s5)
 
