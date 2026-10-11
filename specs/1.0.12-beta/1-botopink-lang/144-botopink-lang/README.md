@@ -228,7 +228,7 @@ call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `
       no `erl` on `PATH` compiles a decorator-, template- and `comptime`-bearing project on all four targets)
 - [x] the resolution order std-wasm → beam-to-wasm → `@External.Wasm` → refused at the call naming the function
       and the three sources tried — `reject/comptime_host_cell_unavailable`
-- [ ] an Erlang cell beam-to-wasm does not convert refused at the call even with an `@External.Wasm("fn:…")` cell
+- [x] an Erlang cell beam-to-wasm does not convert refused at the call even with an `@External.Wasm("fn:…")` cell
       after it (439) — `reject/comptime_beam_call_not_converted`; the fall-through B-00c built removed
 - [ ] every decorator, template and `comptime` cell of `tests/language` green on the four targets with one
       `COMPTIME REPLY`; every library repository's hook green on this compiler
