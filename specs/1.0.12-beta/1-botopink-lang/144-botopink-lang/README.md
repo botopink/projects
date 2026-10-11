@@ -319,14 +319,14 @@ bindings it implements — after the comptime switch (B-00c). The std-on-wasm st
 
 The beam target reads a declaration's `@External.Erlang` cell; `@External.Beam` is refused at the annotation.
 
-- [ ] `@External.Beam` is a located error at the annotation naming `@External.Erlang`
+- [x] `@External.Beam` is a located error at the annotation naming `@External.Erlang`
       (`` `@External.Beam` binds no host — the beam target reads `@External.Erlang` ``); a `reject` fence in `docs.md`
-- [ ] std's 31 `@External.Beam` cells deleted (`libs/std/src/**`); the 4 assembly cells of `primitives.bp` leave only their
+- [x] std's 31 `@External.Beam` cells deleted (`libs/std/src/**`); the 4 assembly cells of `primitives.bp` leave only their
       `@External.Erlang` pair; `grep -rn '@External.Beam' libs ../*/src` empty outside the refusal's test
-- [ ] `hostFnBinding.zig`'s `beam` reads `External.Erlang` only; `beam_asm.zig`'s `External.Beam` assembly read deleted;
+- [x] `hostFnBinding.zig`'s `beam` reads `External.Erlang` only; `beam_asm.zig`'s `External.Beam` assembly read deleted;
       `inline = true` accepted on `External.Erlang` alone; `docs.md` (§ host functions, `fn:` on every target) and the
       codegen `AGENTS.md` files name one BEAM annotation
-- [ ] every beam `RUN LOG` and `run/` cell's `.out` unchanged
+- [x] every beam `RUN LOG` and `run/` cell's `.out` unchanged
 
 **Impacted tests:** `codegen/tests/externals.zig`, `features.zig`, `std_package.zig`; beam codegen snapshots (re-read);
 `beam_export_audit`; `test-libs --lib std` beam column; `test-docs`. **Model:** sonnet (437 fixes the design).
