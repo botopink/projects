@@ -706,6 +706,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-07.
 
 #### 431-i · A forma `@Task` do `attempt` (144 B-07)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Uma segunda função, `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>` — um nome por forma, como `allOf` / `runAll` da 24-g.
 - **Opções.** (a) Uma segunda função `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>`. (b) Um só `attempt` sobrecarregado pelo tipo do corpo (a linguagem não tem sobrecarga). (c) `attempt(f).task()`.
   Exemplo de (a):
   ```bp

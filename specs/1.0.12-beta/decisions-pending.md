@@ -707,6 +707,7 @@ number, which is **484**.
 - **Blocks.** 144 B-07.
 
 #### 431-i · `attempt`'s `@Task` form (144 B-07)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** A second function, `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>` — one name per shape, as 24-g's `allOf` / `runAll`.
 - **Options.** (a) A second function `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>`. (b) One `attempt` overloaded on the body's type (the language has no overloading). (c) `attempt(f).task()`.
   (a) example:
   ```bp
