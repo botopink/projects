@@ -2186,7 +2186,7 @@ over max-connections, `rakun-messaging·erlang` dlq, `rakun-data·erlang` devtoo
 
 #### Step H — `tests/language` cells run in process where no CLI path is under test (after step G)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus (which cells still need the CLI is a judgement)
+**Repository:** botopink-lang, and erika for `generic-loader-binding` (a full worktree) · **Model:** opus (which cells still need the CLI is a judgement)
 
 `test-language` is the gate's critical path (9m02 cold alone, 2707 jobs, 1468 CPU-s): a `botopink` process per cell
 per target, then `node` / `escript` / `wasmtime`. compiler-core's tests check thousands of cases and ~1400 snapshots
@@ -2210,6 +2210,13 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `assert cond, "msg"` and of `try` in a `test` block as `test/` cells. The scripts keep what is the CLI's
       contract (`cli_contract.sh`, `test_tooling.sh`'s `--filter` / totals / `*.snap.new` listing,
       `result_store.sh`, `backend_exec.sh`'s `wasm --invoke main`); every assertion of today has a home — none lost
+- [ ] botopink-lang's `examples/` becomes cells (decisions 457, 461): `hello`, `stdlib-tour` (its `test {}` blocks
+      a `test/` suite), `modules` (the `mod` / `pub mod` tree) and `yamlconf` (the labelled tuple and the located
+      `cfg.server.prot` refusal) as `tests/language/modules/<name>/` cells with their checked output, reaching
+      `botopink/conformance` through the mirror (163 s4); `generic-loader-binding` (three `from "erika"` forms — a
+      library, not the language) moves to `repository/erika/examples/` as a consumer commit (rule 10);
+      `examples/` deleted; `test-libs.sh`, `tsc-check.sh`, `backend_exec.sh`, `cli_contract.sh`,
+      `comptime_bench.sh` and `format-check` pointed at the cells or a fixture of their own, no check lost (458)
 - [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
       manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
 - [ ] measured again (one gate alone, cold and warm) in `scripts/AGENTS.md`; no cell, target or check dropped, no
