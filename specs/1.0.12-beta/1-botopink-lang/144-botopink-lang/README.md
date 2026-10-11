@@ -207,9 +207,9 @@ reaches and reporting its refusal at the call site.
 - [ ] whole modules (438): the `.beam` files it is given translated module by module, a call from one to another
       followed — a cell of erika or jhonstart that calls a function of another of its modules answers at comptime;
       each OTP function they reach served by std-wasm or refused located
-- [ ] a `.beam` botopink did not generate (an Erlang module compiled by `erlc` outside botopink, as a fixture)
+- [x] a `.beam` botopink did not generate (an Erlang module compiled by `erlc` outside botopink, as a fixture)
       translated and run: the utility reads bytecode, never the source language
-- [ ] standalone: `modules/beam-to-wasm` imports Zig's `std` and std-wasm only — no `compiler-core`, `manifest` or
+- [x] standalone: `modules/beam-to-wasm` imports Zig's `std` and std-wasm only — no `compiler-core`, `manifest` or
       `bpmp` — checked in `build.zig`'s module graph
 
 **Impacted tests:** `modules/beam-to-wasm` unit tests (new); `comptime/tests/decorator_eval*`, the host-cell
