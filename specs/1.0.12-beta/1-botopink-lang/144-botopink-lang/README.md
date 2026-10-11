@@ -3205,6 +3205,18 @@ Found moving erika's examples into its `conformance/` (463): `the wasm backend h
       the parent, green after; a codegen snapshot case (478)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-36 — styled's hook red on `feat`: "tab4's class is not a constant of the emitted module" (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`), styled if the cause is there · **Model:** opus (the cause is not yet known)
+
+Found by 163 s7: styled's `repository-stages.sh` fails with `erlang: tab4's class is not a constant of the emitted
+module` with the compiler on `feat`; styled's own runner at its `feat` fails the same way — a red on `feat`, likely
+since the B-00 group (the comptime on wasm, std-wasm's text). Measure first: the last compiler commit on which it was green.
+
+- [ ] the cause found (a compiler change or a styled assumption), fixed where it lives; styled's hook green
+- [ ] the cheap test the hook runs that would have caught it (478)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)

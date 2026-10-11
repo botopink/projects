@@ -48,6 +48,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
 - [ ] 144 B-34 — the BEAM assembler rejects `styled` (`make_fun3 … {unassigned,{y,3}}`): every jhonstart cell refused on beam — a structural fix (430) · nothing
 - [ ] 144 B-35 — `@println` has no wasm lowering: erika's cells refused on wasm — a structural fix (430) · nothing
+- [ ] **first:** 144 B-36 — styled's hook red on `feat` (`tab4's class is not a constant of the emitted module`), likely since B-00 — a structural fix (430) · nothing
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
 
 ### 144 botopink-lang
