@@ -99,3 +99,15 @@ After 163 s4 and 144 B-29 step H (the cells in decision 457's shape, the mirror 
 - [ ] botopink-lang's `AGENTS.md` (§ Conventions: "README.md and docs.md stay in sync") rewritten to name the
       reference's new home
 
+### 163 s6 — a language tour generated from `botopink/conformance` (after 163 s5)
+
+**Repository:** a new `botopink/tour` (created when this step opens) · **Model:** opus
+
+A short, ordered, teaching path through the language (as *A Tour of Go*): a curated selection of cells with
+teaching text, published as a site. Nothing duplicated — each lesson names its cells and its reference section
+in `botopink/conformance`, rendered from them. The conformance repository keeps its name: it states what it
+guarantees, the contract every implementation passes.
+
+- [ ] the lesson order and the cell each lesson shows, chosen from `botopink/conformance`
+- [ ] a generator renders the lessons from the cells and the reference, with no copied text or code
+
