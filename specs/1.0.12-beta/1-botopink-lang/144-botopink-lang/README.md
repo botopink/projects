@@ -3222,11 +3222,13 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (it changes the library resolution of 143)
 
-- [ ] `libs.zig`: a `git` dependency resolves first from `<project>/.botopinkbuild/deps/<name>/`, then the walk-up as a
+- [x] `libs.zig`: a `git` dependency resolves first from `<project>/.botopinkbuild/deps/<name>/`, then the walk-up as a
       fallback; `BOTOPINK_LIB_ROOTS` first when set; the language server the same (`manifest.findCacheRoot` / roots)
-- [ ] `bpmp link [<checkout>]`: `.botopinkbuild/deps/<name>` → `<checkout>/repository/<name>` for each dependency of
+- [x] `bpmp link [<checkout>]`: `.botopinkbuild/deps/<name>` → `<checkout>/repository/<name>` for each dependency of
       every manifest of the project (a workspace's members included); a missing local repository named, never guessed
-- [ ] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
+- [x] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
+- [ ] the lib-test-runner's result store keeps a tree whose dependencies come through `.botopinkbuild/deps/` links
+      (today a symlink or a `.botopinkbuild/deps/` in the tree makes it re-run every cell) — with 163 s11
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-38 — `botopink cell check`: a full run that drops a cell; a `path` dependency inside a cell (found moving rakun's reference)
