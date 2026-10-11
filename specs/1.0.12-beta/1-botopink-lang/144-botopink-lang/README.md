@@ -353,9 +353,11 @@ the design). **Consumer commits:** none.
 After B-00e (std-wasm transpiled into the program, its `std:` binding, 441's text). `codegen/wat/wat_prelude.zig`
 keeps what defines a value's representation or talks to the host; what only computes over values is Zig.
 
-- [ ] every helper 442 (2) lists for std leaves `wat_prelude`: implemented in `modules/std-wasm` (Zig unit tests per
+- [x] every helper 442 (2) lists for std leaves `wat_prelude`: implemented in `modules/std-wasm` (Zig unit tests per
       function), bound by `#[@External.Wasm("std:…")]` on its std declaration (`primitives.bp` and the std modules),
       transpiled into the program where called; the `HelperGroup` members and their `wat_ast` nodes deleted
+      — a helper the codegen picks by type (`joinInts` / `joinFloats` / `joinStrings`) sits in std-wasm's `program`
+      table with no `std:` cell (454)
 - [x] case mapping over all of Unicode in std-wasm (443): `toUpper` / `toLower` bound by `std:`, `$__str_case`
       deleted, the comptime's limit 3 gone; `run/` cells with non-ASCII letters (`é`, `ß`, `Σ`) on the four targets,
       each place JS and OTP differ measured and answered as OTP on wasm
