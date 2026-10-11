@@ -2151,6 +2151,27 @@ fn mix(…) -> …                          // stays one list, one per line (tra
 reports. **Model:** haiku for the sweeps, sonnet for the cold gate. **Consumer commits:** emilia, jhonstart, rakun
 (07 s9, `->` arms, if C-14 removes them).
 
+#### Step G — one job budget for the gate (measured 2026-10-11)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+Measured on the tip of the B-00 group, one cold gate alone on the 16-core machine: **12m27s wall, 5680 CPU-s**,
+load rising from 4.7 to 26 — the gate's own doing. The serial head is `zig build` ReleaseSafe 3m17 (820 CPU-s)
+then `zig build test` 1m52; the side-by-side stages are `test-language` 9m02 (1468 CPU-s), `test-libs` 8m21
+(2540 CPU-s), `test-cli` 4m42 (273 CPU-s), each sizing its own pool to the whole machine — three pools of ~16 jobs
+on 16 cores. 5680 CPU-s fit in ~6 min on 16 cores. A warm (`--staged`) gate measured 9m37. A shared `.zig-cache`
+does not help: compiler-core is one Zig module, recompiled whole on any change (the main checkout's warm cache
+still took 3m17).
+
+- [ ] one job budget for the whole gate: the side-by-side stages (`test-libs`, `test-language`, `test-cli`,
+      `test-docs`, `tsc-check`, `test-web`) draw from one pool sized to the machine (CPUs, bounded by memory), never
+      a pool each; the order of each stage's report unchanged
+- [ ] `zig build test` (Debug) runs beside `zig build -Doptimize=ReleaseSafe` instead of after it, when the
+      machine has the memory for both; a red in either still stops the gate before the side-by-side stages
+- [ ] measured again, one gate alone: cold and warm wall times and CPU-s per stage recorded in
+      `scripts/AGENTS.md` § Where the gate's time goes, against this step's numbers; no stage, cell or check
+      dropped and no verdict changed (decision 67)
+
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 
 Row deleted until capture normalises CRLF/separators (known gap, `../../status.md`). To restore: run
