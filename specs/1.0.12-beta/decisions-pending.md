@@ -600,7 +600,7 @@ number, which is **484**.
 - **Blocks.** 144 B-08; the consumer commits in eight repositories.
 
 #### 431-b · `throws:` beside `inline:` (144 B-03)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** `throws:` and `inline:` are both labelled and read by label, in any order; a bare positional `bool` is refused.
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), with the flag renamed by 431-e:** `result:` and `inline:` are both labelled and read by label, in any order; a bare positional `bool` is refused.
 - **Measured.** `inline` must be the last argument today: `hasExternalInline` (`erlang.zig`, `beam_asm.zig`) reads only the last one and `ast.externalRefOf` trims one trailing bool.
 - **Options.**
   (a) Both labelled, any order, read by label (on 305's labels, B-02); a bare positional `bool` refused.
@@ -616,7 +616,7 @@ number, which is **484**.
 - **Blocks.** 144 B-03 (after B-02).
 
 #### 431-c · What counts as `HostError` (144 B-03)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** Only std's `failure.HostError`, by module identity (as `Decorator.same`, 371): a user type named `HostError` is refused under `throws: true`.
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** Only std's `failure.HostError`, by module identity (as `Decorator.same`, 371): a user type named `HostError` is refused under `result: true` (431-e's name for 431's `throws: true`).
 - **Measured.** 431 writes `@Result<…, HostError>`; nothing says whether a user type named `HostError` qualifies.
 - **Options.** (a) Only std's `failure.HostError`, by module identity (as `Decorator.same`, 371): `type HostError(message: string)` in a user module is refused under `throws: true`. (b) Any record with `message: string` and `kind: string`.
   ```bp
@@ -655,7 +655,7 @@ number, which is **484**.
 - **Blocks.** 144 B-05.
 
 #### 431-e · 126's implicit conversion of a rejecting Node Promise (144 B-05)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a) — only explicit conversion.** A rejecting Node Promise enters as `Error` only through `throws: true`; 126's `__bp_host_task` conversion is retired and `run/host_node_task_result` is rewritten. An erlang host *returning* `{ok, V}` / `{error, R}` keeps being read as `@Result` without `throws:` (e1): it is a value, not a raise.
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **Only explicit conversion, under one flag — amends 431's `throws: true` to `result: true`.** A binding answers a `@Result` from its host only when it writes `result: true`, and then its return is `@Result<…, HostError>` or `@Task<@Result<…, HostError>>` — any other return is refused, so the flag has one reading. The backend turns every way the host fails into `Error(HostError(…))`: a raise (JS `throw`; erlang `error` / `throw` / `exit`), a rejecting Promise, and an erlang host *returning* `{error, R}` (`message` = `R` by `~tp`, `name: Error`); `{ok, V}` or a plain value is `Ok(V)`. Without the flag a binding returns no `@Result` and promises no failure; one is a crash, contained by `attempt`. 126's `__bp_host_task` conversion is retired and `run/host_node_task_result` is rewritten; `effect-try-without-fallible-channel`'s message names `result: true`. A typed error (`FsError`, `HttpError` …) is a public function's mapping of `HostError` (431-a).
 - **Measured.** Every Node binding declared `-> @Task<@Result<T, E>>` is wrapped in `__bp_host_task` (`js_prelude.zig`, decision 126), which turns any rejection into `Error(<message>)` without `throws: true` — under 431 (2) a raise not announced is a crash, and `run/host_node_task_result` relies on the conversion.
 - **Options.**
   (a) Retire it: a Node `@Task<@Result<…>>` binding writes `throws: true` with `E = HostError`, else it is refused; an erlang host answering `{ok, V}` / `{error, R}` stays as is (a value, not a raise).

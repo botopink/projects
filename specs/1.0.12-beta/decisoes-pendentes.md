@@ -599,7 +599,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-08; os commits de consumidores em oito repositórios.
 
 #### 431-b · `throws:` ao lado de `inline:` (144 B-03)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** `throws:` e `inline:` são ambos rotulados e lidos pelo rótulo, em qualquer ordem; um `bool` posicional sem nome é recusado.
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), com o flag renomeado pela 431-e:** `result:` e `inline:` são ambos rotulados e lidos pelo rótulo, em qualquer ordem; um `bool` posicional sem nome é recusado.
 - **Medido.** `inline` deve ser o último argumento hoje: `hasExternalInline` (`erlang.zig`, `beam_asm.zig`) lê só o último e `ast.externalRefOf` apara um bool final.
 - **Opções.**
   (a) Os dois rotulados, em qualquer ordem, lidos pelo rótulo (nos rótulos da 305, B-02); um `bool` posicional puro recusado.
@@ -615,7 +615,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-03 (depois de B-02).
 
 #### 431-c · O que conta como `HostError` (144 B-03)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Só o `failure.HostError` do std, pela identidade do módulo (como `Decorator.same`, 371): um tipo do usuário chamado `HostError` é recusado sob `throws: true`.
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Só o `failure.HostError` do std, pela identidade do módulo (como `Decorator.same`, 371): um tipo do usuário chamado `HostError` é recusado sob `result: true` (o nome da 431-e para o `throws: true` da 431).
 - **Medido.** A 431 escreve `@Result<…, HostError>`; nada diz se um tipo do usuário chamado `HostError` qualifica.
 - **Opções.** (a) Só o `failure.HostError` do std, por identidade de módulo (como `Decorator.same`, 371): `type HostError(message: string)` num módulo do usuário é recusado sob `throws: true`. (b) Qualquer record com `message: string` e `kind: string`.
   ```bp
@@ -654,7 +654,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-05.
 
 #### 431-e · A conversão implícita da 126 de uma Promise do Node que rejeita (144 B-05)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a) — só conversão explícita.** Uma Promise do Node que rejeita entra como `Error` só por `throws: true`; a conversão `__bp_host_task` da 126 é retirada e `run/host_node_task_result` é reescrito. Um host erlang que *devolve* `{ok, V}` / `{error, R}` continua lido como `@Result` sem `throws:` (e1): é um valor, não um raise.
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Só conversão explícita, sob um flag — amenda o `throws: true` da 431 para `result: true`.** Um binding responde um `@Result` do seu host só quando escreve `result: true`, e então seu retorno é `@Result<…, HostError>` ou `@Task<@Result<…, HostError>>` — qualquer outro retorno é recusado, então o flag tem uma leitura. O backend transforma todo jeito de o host falhar em `Error(HostError(…))`: um raise (`throw` do JS; `error` / `throw` / `exit` do erlang), uma Promise que rejeita, e um host erlang que *devolve* `{error, R}` (`message` = `R` por `~tp`, `name: Error`); `{ok, V}` ou um valor simples é `Ok(V)`. Sem o flag um binding não devolve `@Result` e promete não falhar; uma falha é um crash, contido por `attempt`. A conversão `__bp_host_task` da 126 é retirada e `run/host_node_task_result` é reescrito; a mensagem de `effect-try-without-fallible-channel` nomeia `result: true`. Um erro tipado (`FsError`, `HttpError` …) é o mapeamento de `HostError` feito por uma função pública (431-a).
 - **Medido.** Todo binding do Node declarado `-> @Task<@Result<T, E>>` é embrulhado em `__bp_host_task` (`js_prelude.zig`, decisão 126), que transforma qualquer rejeição em `Error(<message>)` sem `throws: true` — sob a 431 (2) um raise não anunciado é um crash, e `run/host_node_task_result` depende da conversão.
 - **Opções.**
   (a) Aposentá-la: um binding Node `@Task<@Result<…>>` escreve `throws: true` com `E = HostError`, senão é recusado; um host erlang que responde `{ok, V}` / `{error, R}` fica como está (um valor, não um raise).
