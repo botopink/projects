@@ -97,8 +97,8 @@ yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one
       `BOTOPINK_LIB_ROOTS`, which a cell's scratch copy also reads
 - [ ] the meta `scripts/gate.sh check` holds every library's `test.yml` dependency step and `BOTOPINK_LIB_ROOTS` to
       one text (the cheap test of 478: the "not found" reds appear only on a runner with no sibling library)
-- [ ] actions, css, http, log, routing, styled and validation: their workflow has never fired on any push (Actions
-      enabled, the file active) — the cause found (an organisation or repository setting is the maintainer's)
+- [x] actions, css, http, log, routing, styled and validation: their workflow never fired (no check suite of GitHub
+      Actions on any push, though enabled and active); turning Actions off and on in each made every push fire it
 - [ ] every library's workflow has at least one green run on `feat` — read with `gh` (474); erika's red waits on
       144 B-35 (`@println` on wasm) and jhonstart's on B-34 (styled's `spliced/2` on beam)
 - [x] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
