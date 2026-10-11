@@ -82,6 +82,15 @@ with the compiler change they prove; this repository is their mirror for any imp
 - [ ] a CI check fails when the mirror differs from the pinned `tests/language` (no hand edit survives)
 - [ ] `repository/conformance/AGENTS.md` and `README.md` say how a cell is read (the `.out` / `.expect` shapes, the
       `.targets` narrowing) without naming botopink-lang's runner as the only way to run them
+- [ ] `repository/conformance/.github/workflows/conformance.yml`, against **the newest botopink-lang**: it checks
+      out botopink-lang at the head of `feat` (never a pinned ref), builds the compiler and runs two jobs, every
+      row hard (no `continue-on-error`, no row that cannot fail), as the libraries' `test.yml` does:
+      `cells` — every cell on commonJS (node), erlang and beam (OTP 28, the release the compiler emits for) and
+      wasm (wasmtime), on linux and macos; `mirror` — the cells equal botopink-lang's `tests/language` at that head
+- [ ] it runs on a push to `conformance` and **whenever botopink-lang's `feat` moves**: botopink-lang's
+      `test.yml`, green on `feat`, sends a `repository_dispatch` to `botopink/conformance` (a token with that one
+      scope, a repository secret), so a compiler change is measured against the suite without a conformance commit
+
 
 ### 163 s5 — the language reference moves to `botopink/conformance`, every example a cell (decision 461)
 
@@ -98,6 +107,10 @@ After 163 s4 and 144 B-29 step H (the cells in decision 457's shape, the mirror 
       the cells); `docs/botopink-json.md` and the tool docs stay in botopink-lang
 - [ ] botopink-lang's `AGENTS.md` (§ Conventions: "README.md and docs.md stay in sync") rewritten to name the
       reference's new home
+- [ ] `conformance.yml` gains `reference`: every `<!-- example: … -->` names an existing cell, the reference
+      rendered with its examples and published on GitHub Pages — on the same triggers, so the published reference
+      always shows the newest compiler's answers
+
 
 ### 163 s6 — a language tour generated from `botopink/conformance` (after 163 s5)
 
