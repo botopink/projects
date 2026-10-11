@@ -99,6 +99,10 @@ Three rules make it safe:
    hook's (`--staged`, warm). `--cold` deletes every sibling library's cache, and the
    siblings there are the main checkout's: a cold gate, when a landing calls for one,
    runs in the main checkout's `repository/botopink-lang` on the commit being landed.
+5. **A botopink-lang task proves itself in the conformance suite** (decision 458): every
+   `tests/language` cell green, its change analysed against the cells, the cells its behaviour
+   calls for written in decision 457's shape, and the missing cells it found proposed in its report;
+   the coordinator checks the cells at landing and files the proposals.
 
 The thread commits in its repository only; the coordinator writes the specs and the
 pointer bump at landing, then removes it with `git -C repository/<repo> worktree remove

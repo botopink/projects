@@ -40,6 +40,8 @@ Write the steps so that most of them change **one repository**:
 
 - a step that needs the compiler and a library together is split — the compiler step (front 144)
   lands first, the library step follows on the main checkout's rebuilt compiler;
+- a botopink-lang step proves itself in the conformance suite (decision 458): its behaviour gets its cells in
+  the same commit, never in a later front;
 - a library step never edits `repository/botopink-lang` (decision 433): a missing language feature
   is a `language-gaps.md` row naming the 144 step that fixes it, and the library step waits on it;
 - spec updates (ticks, `status.md`, decisions) are the coordinator's at landing, never a reason to
@@ -241,6 +243,10 @@ recommend one with its trade-off.>
       `scripts/gate.sh --staged`, a library's `runner-standalone.sh` on the main checkout's compiler
 - [ ] <the front's own check: a validator run, a library that must compile, snapshots
       byte-identical for a refactor front, every RUN LOG unchanged>
+- [ ] a botopink-lang step (decision 458): every `tests/language` cell green; the change analysed against the
+      cells; the cells its behaviour calls for written in decision 457's shape (red on the parent, green on the
+      step); the missing cells found beyond the change proposed in the report — or, for a step that changes no
+      behaviour, every cell's answer shown unchanged
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit
 - [ ] Commit on `front/<name>`; no push, no merge — the coordinator lands it, writes the specs
       and the pointer bump, and removes the worktree
