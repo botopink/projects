@@ -97,6 +97,9 @@ After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/ga
 - [ ] the libraries' pre-commit hook runs `scripts/gate.sh --no-conformance` (470); the Conformance step and the GitHub
       pipeline run it with conformance
 - [ ] the meta repository's `scripts/gate.sh` runs `hook-integrity.yml`'s checks locally, and the workflow calls it
+- [ ] the meta repository's `scripts/gate.sh` orchestrates (decision 473): `run <repository|task> …`, `tasks`, `libs`,
+      `status`; tasks found by `git worktree list` of the meta repository and the submodules, a task's own repository
+      told from its linked siblings; each run's log kept as scratch
 - [ ] the meta repository's `scripts/gate.sh` is the machine's scheduler (decision 469): it owns the job pool,
       runs several repositories' gates together and hands each its share of jobs; the coordinator runs every full
       gate through it; measured: two gates together finish sooner in total than one after the other, no timing red
