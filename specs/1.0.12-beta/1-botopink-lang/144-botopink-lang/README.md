@@ -37,6 +37,7 @@ order, before any other step of this front or any other front:
 | B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
 | B-00i | the Erlang term library (`rt.zig`) and the OTP functions move into std-wasm; `bp_wat_rt.wasm` goes; beam-to-wasm reads std-wasm's OTP table (decision 450) — before B-30 | opus |
 | B-00j | the comptime stops calling beam-to-wasm: a host function answers by `std:` or `fn:`, never an Erlang cell; `cells.zig` and the Erlang-cell translation deleted from compiler-core (decision 452); the package name `std` reserved (453) | sonnet |
+| B-00k | **Conformance** — the B-00 group's last step (459): the suite green, the group's changes analysed against the cells, the cells written, the missing ones proposed | opus |
 
 ## Lanes
 
@@ -46,7 +47,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–j, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–k, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -2344,6 +2345,23 @@ After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; n
 
 **Impacted tests:** `comptime` host-cell tests, `tests/language` reject and decorator cells, `test-docs`.
 **Model:** sonnet (452 fixes the design). **Consumer commits:** none.
+
+### B-00k — Conformance: the B-00 group's last step (decisions 458, 459)
+
+After B-00i. The B-00 group changed what the language answers on wasm and at comptime: one comptime runtime (434),
+std-wasm's text on wasm (441: `5.0`, `1.0e21`, a NBSP kept by `trim`), Unicode case mapping (443: `É`, `STRASSE`,
+the final sigma), `NaN` / `Infinity` words (444), refusals (`std:` outside std 445, the package name `std` 453, an
+unseeded draw at build 451 / 456, an Erlang cell never run at build 452, `@External.Beam` 437), a stack overflow that
+traps (447).
+
+- [ ] the whole `tests/language` suite green on every target it declares; no cell edited to match the compiler
+- [ ] the table of the group's behaviour changes (the list above, measured) against the cells that cover each, in
+      this README
+- [ ] the cells each uncovered behaviour calls for, in decision 457's shape, red on the group's base (before
+      B-00a) and green on its tip
+- [ ] the missing cells found beyond the group's change proposed as rows
+
+**Model:** opus. **Consumer commits:** none.
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 

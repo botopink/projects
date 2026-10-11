@@ -41,7 +41,8 @@ Write the steps so that most of them change **one repository**:
 - a step that needs the compiler and a library together is split — the compiler step (front 144)
   lands first, the library step follows on the main checkout's rebuilt compiler;
 - a botopink-lang step proves itself in the conformance suite (decision 458): its behaviour gets its cells in
-  the same commit, never in a later front;
+  the same commit; and a front that changes botopink-lang **ends with its "Conformance" step** (459), the
+  whole front's change audited against the cells;
 - a library step never edits `repository/botopink-lang` (decision 433): a missing language feature
   is a `language-gaps.md` row naming the 144 step that fixes it, and the library step waits on it;
 - spec updates (ticks, `status.md`, decisions) are the coordinator's at landing, never a reason to
@@ -237,16 +238,30 @@ recommend one with its trade-off.>
 - [ ] <objective condition — a command and its expected result, not "works">
 - [ ] <the regression test that would have caught it>
 
+### Step N — Conformance (decisions 458, 459) — always the last step of a front that changes botopink-lang
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (what the front's change calls for is a judgement)
+
+After every other step of the front has landed.
+
+**Acceptance:**
+- [ ] the whole `tests/language` suite green on every target it declares (and `repository/conformance` in step
+      once 163 s4 has landed); no cell edited to match the compiler
+- [ ] the front's changes analysed together: every behaviour it added, changed or refused, every target that
+      departs, against the cells that cover it — the table in the front's README
+- [ ] the cells that behaviour calls for written in decision 457's shape, each red on the front's base and green
+      on its tip
+- [ ] the missing cells found beyond the front's change proposed as rows (the coordinator files them)
+
 ## Gate
 
 - [ ] the repository's own hook, through `git commit` (never `--no-verify`): botopink-lang's
       `scripts/gate.sh --staged`, a library's `runner-standalone.sh` on the main checkout's compiler
 - [ ] <the front's own check: a validator run, a library that must compile, snapshots
       byte-identical for a refactor front, every RUN LOG unchanged>
-- [ ] a botopink-lang step (decision 458): every `tests/language` cell green; the change analysed against the
-      cells; the cells its behaviour calls for written in decision 457's shape (red on the parent, green on the
-      step); the missing cells found beyond the change proposed in the report — or, for a step that changes no
-      behaviour, every cell's answer shown unchanged
+- [ ] a botopink-lang step (decision 458): every `tests/language` cell green; the cells of the behaviour it
+      lands written in decision 457's shape (red on the parent, green on the step) — or, for a step that changes
+      no behaviour, every cell's answer shown unchanged
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit
 - [ ] Commit on `front/<name>`; no push, no merge — the coordinator lands it, writes the specs
       and the pointer bump, and removes the worktree

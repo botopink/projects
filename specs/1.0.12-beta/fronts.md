@@ -43,10 +43,11 @@ milestone (three when the console is closed).
     change over as a row in that front instead, and the two never share a wave.
 11. **Comptime on wasm first** (decision 434): front 144's B-00 group opens before any other step of any
     front; until it lands, other fronts only finish what was already in flight when 434 was taken.
-12. **A botopink-lang step proves itself in the conformance suite** (decision 458): it ends with every
-    `tests/language` cell green, its change analysed against the cells, the cells its behaviour calls for
-    written in decision 457's shape (red on the parent, green on the step), and the missing cells it found
-    beyond its change proposed in its report. A cell is never edited to match the compiler.
+12. **A front that changes botopink-lang ends with a "Conformance" step** (decisions 458, 459): after every
+    other step lands, the whole `tests/language` suite green, the front's changes analysed together against
+    the cells, the cells its behaviour calls for written in decision 457's shape (red on the front's base,
+    green on its tip), and the missing cells it found proposed as rows. Each earlier step keeps the suite
+    green and writes the cells of a behaviour it lands. A cell is never edited to match the compiler.
 
 ## Ownership, by repository
 
@@ -235,8 +236,8 @@ boxes after it on that line are the front's own.
       botopink-lang's `scripts/gate.sh --staged`, every stage; a library's `runner-standalone.sh` on the main
       checkout's compiler, every row its manifests declare. A cold gate, when a landing calls for one, runs
       in the main checkout (`AGENTS.md` § Worktrees, rule 4).
-- [ ] A botopink-lang step: the conformance suite green, the change analysed, its cells written and the
-      missing ones proposed (rule 12, decision 458).
+- [ ] A botopink-lang step: the conformance suite green and the cells of the behaviour it lands written; a
+      front's last step is its "Conformance" step (rule 12, decisions 458, 459).
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit.
 - [ ] The commit is on `front/<name>` in the repository the step changes (`--repo` / `--lang`, or each
       submodule of a full worktree); the coordinator lands it: reads the diff against the boxes, re-measures,
