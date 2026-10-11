@@ -1171,7 +1171,40 @@ After 163 s7 (the shared hook checks `conformance/`).
 - [ ] `rakun/docs.md` moved to `rakun/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
       `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
       is not a program given its context or turned into ` ```text `
-- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+- [x] every cell green on the targets the library's manifests declare, through the library's own hook (35 cells;
+      the rakun-web cells on erlang alone, `routing/segment` having no beam external)
+
+### 150 s26 — `conformance/docs.md` agrees with its cells (found moving the reference, decision 480)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** opus (each item is "the text or the code is wrong")
+
+The cells answer the code; where the prose says otherwise, either the prose is rewritten or the code is a defect of this
+front (a row, then a cell red until it lands). Each item decided and recorded:
+
+- [ ] the server-side rendering section (`renderNode`, `ElementView`, `compose`, `document`, `RenderHooks`,
+      `beginRender`, `searchParam`, `renderAll`, `streamChunks`) and the file router's `#[layout]` / `#[page]` fence
+      describe what lives in onze (or nowhere): the section moved to onze's reference or deleted; the ` ```text `
+      fences left by the move go with it
+- [ ] the Usage and `CpfConstraint` examples write `pub type X()`: `pub type X { … }` is a namespace type, which the
+      beam backend refuses a `self` in
+- [ ] the fences' import lists name what the emitted wiring needs (`rkResolve`, `rkRegisterBean`,
+      `rkConfigCheckRegister`, `rkRegisterListener`, `rkValueOr`, …), or the wiring stops needing them imported
+- [ ] `rkResolveNamed` / `__rkMake_Context` in the text are `rkFindNamed` / `rkFind`; `rkResolve` answers the value
+      (not an optional); `Context` comes from `rootContext()`
+- [ ] "`resolve<Foo>("Bar")` answers `null`": a named lookup bound to `?Clock` answered a non-null value — the text or
+      the lookup fixed, a cell pinning the answer
+- [ ] rakun-web's decorators are `convention.filter` / `convention.order`, `Chain` and `WebRequest` in the `filter`
+      module; `import {filter, order} from "rakun-web"` resolves `filter` to the module and registers no filter — the
+      text fixed, and that import refused or warned at build rather than silently registering nothing (67)
+- [ ] `#[provides] fn corsPolicy()` shadows the constructor it calls: the example renamed, and the shadowing refused
+      at build or documented
+- [ ] `validateCreateUserRequest(…)` / `constraintsOfCreateUserRequest()` are `#[validated]`'s members `validate()` /
+      `constraints()`; the validation imports module-qualified (`decorators.validated`, `import {derived} from
+      "validation"`)
+- [ ] `#[imports("Wallet")]` of a type with only a `#[bean]` factory does not compile (`Wallet` has no `make`): the
+      text or the decorator fixed
+- [ ] `newRequestId()`, an event payload from `req.body()` under `rkDispatch` (empty), `draftMode()` marking the request
+      dynamic when read: each in the text as the code answers it, or the code fixed
 
 ### 150 Conformance — the front's last step (decision 465)
 

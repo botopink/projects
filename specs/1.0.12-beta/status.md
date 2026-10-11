@@ -50,6 +50,9 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-34 — the BEAM assembler rejects `styled` (`make_fun3 … {unassigned,{y,3}}`): every jhonstart cell refused on beam — a structural fix (430) · nothing
 - [ ] 144 B-35 — `@println` has no wasm lowering: erika's cells refused on wasm — a structural fix (430) · nothing
 - [ ] 144 B-37 then 163 s11 — dependencies from `.botopinkbuild/deps/` first and `bpmp link`; a library task holds its repository alone (483) · nothing
+- [ ] 144 B-38 — `botopink cell check` reports every cell of a directory (a cell went missing in rakun's run) and resolves a cell's `path` dependency · nothing
+- [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
+- [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
 
 ### 144 botopink-lang

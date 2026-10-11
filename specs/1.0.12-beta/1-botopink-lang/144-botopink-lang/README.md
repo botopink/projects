@@ -3229,6 +3229,29 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 - [ ] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-38 — `botopink cell check`: a full run that drops a cell; a `path` dependency inside a cell (found moving rakun's reference)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+- [ ] `botopink cell check conformance/` over rakun's 35 cells reported 34 in two runs of three, a different cell
+      missing each time (each passes alone): every cell found is reported, a cell that cannot run is a red naming it,
+      never absent; a CLI test with a directory of cells counts them
+- [ ] a cell's `{"path": "…"}` dependency relative to the cell fails, because the cell runs from a scratch copy: the
+      check resolves it against the cell's own directory (or, after B-37, the cell's `.botopinkbuild/deps/`), so a
+      library's cells drop their per-cell `deps/` workspaces of symlinks
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-39 — a module-level `val` read by the next one is unbound on erlang (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`val a = X(); val b = f(a.m())` at module level emits an erlang module that refers to `a` unbound; the OTP compiler
+refuses it (found in rakun's `constraint` cell, which registers inside `main` instead).
+
+- [ ] a cell red on the parent: two module-level `val`s, the second reading the first, on every target
+- [ ] the erlang emission binds the first before the second reads it; the cell green on every target
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
