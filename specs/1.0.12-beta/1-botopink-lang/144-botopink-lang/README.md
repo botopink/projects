@@ -3167,6 +3167,20 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
+### B-33 — `@External.Wasm`'s cells as labelled arguments (decision 481)
+
+**Repository:** botopink-lang, and every library with an `@External.Wasm` cell (a full worktree) · **Model:** opus (a
+codemod tied to a new rule)
+
+Today std writes the cells as prefixed strings (50 `"fn:…"`, 28 `"std:…"`, 6 `"op:…"`); 305 already made them labels.
+
+- [ ] the checker reads `fn: <identifier>` (resolved, typed), `op: "<opcode>"`, `wasi: .<Adapter>`, `std: "<module>.<fn>"`
+      (checked against std-wasm's `exports` and the declaration's types); a prefixed string refused, located, naming
+      the labelled form — `reject/` cells for each
+- [ ] a codemod rewrites every cell in std and the libraries; every `.out`, RUN LOG and snapshot otherwise unchanged
+- [ ] `docs.md` and the `AGENTS.md` files name only the labelled forms
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
