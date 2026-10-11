@@ -43,7 +43,7 @@ milestone (three when the console is closed).
     change over as a row in that front instead, and the two never share a wave.
 11. **Comptime on wasm first** (decision 434): front 144's B-00 group opens before any other step of any
     front; until it lands, other fronts only finish what was already in flight when 434 was taken.
-12. **A front that changes botopink-lang ends with a "Conformance" step** (decisions 458, 459): after every
+12. **A front that changes botopink-lang lands whole and ends with a "Conformance" step** (decisions 458, 459): after every
     other step lands, the whole `tests/language` suite green, the front's changes analysed together against
     the cells, the cells its behaviour calls for written in decision 457's shape (red on the front's base,
     green on its tip), and the missing cells it found proposed as rows. Each earlier step keeps the suite
@@ -233,7 +233,9 @@ Every front README's `**Gate:** standard (fronts.md § Gate)` line means all of 
 boxes after it on that line are the front's own.
 
 - [ ] The repository's own hook, through `git commit` in the step's worktree (never `--no-verify`):
-      botopink-lang's `scripts/gate.sh --staged`, every stage; a library's `runner-standalone.sh` on the main
+      botopink-lang's step gate on a `front/*` branch (decision 460: the build, `zig build test`, `test-cli`,
+      and the cells and libraries the step reaches), the full gate at the front's Conformance step and at
+      landing; a library's `runner-standalone.sh` on the main
       checkout's compiler, every row its manifests declare. A cold gate, when a landing calls for one, runs
       in the main checkout (`AGENTS.md` § Worktrees, rule 4).
 - [ ] A botopink-lang step: the conformance suite green and the cells of the behaviour it lands written; a
