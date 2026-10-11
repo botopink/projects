@@ -2197,6 +2197,12 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
 - [ ] single-file `run/` cells compiled in process and run on the four targets through the snapshot executors
       (`executeJavaScript`, `executeErlang`, `executeBeamAsm`, `executeWat`) and their runtime cache, each `.out`
       byte for byte; a `.targets` narrowing still audited against the host-binding refusal
+- [ ] the language half of `test-cli` becomes cells (decision 457's shape): `backend_exec.sh`'s programs (numeric —
+      `55` on the four targets —, records with enum / `case` / lambda, the multi-folder `mod` / `pub mod` package)
+      and `mutual_recursion.sh`'s forward reference and `isEven` ↔ `isOdd`; `test_tooling.sh`'s semantics of
+      `assert cond, "msg"` and of `try` in a `test` block as `test/` cells. The scripts keep what is the CLI's
+      contract (`cli_contract.sh`, `test_tooling.sh`'s `--filter` / totals / `*.snap.new` listing,
+      `result_store.sh`, `backend_exec.sh`'s `wasm --invoke main`); every assertion of today has a home — none lost
 - [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
       manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
 - [ ] measured again (one gate alone, cold and warm) in `scripts/AGENTS.md`; no cell, target or check dropped, no
