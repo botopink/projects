@@ -2243,20 +2243,18 @@ After step H (the cells in `conformance/`).
 - [ ] `.github/workflows/test.yml` calls `scripts/gate.sh` (the full gate on `feat`), not its own list of stages
 - [ ] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
 
-#### Step J — a machine-wide job pool replaces the gate lock (decision 468)
+#### Step J — botopink-lang's gate drops the lock and takes a total of jobs (decisions 468, 469)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-After the step gate of decision 460 lands (both change `scripts/gate.sh`).
+After the step gate of decision 460 lands (both change `scripts/gate.sh`). The pool itself is the meta repository's
+(163 s7); this gate knows nothing of it.
 
-- [ ] `scripts/gate.sh` draws every stage's jobs from the machine-wide pool of 468 (a fixed per-machine path, a
-      token per job, a job counted as its runnable threads) instead of taking the gate lock; the pool's protocol
-      written once in `scripts/AGENTS.md` so the libraries' and the meta repository's gates (163 s7) implement the
-      same one
-- [ ] a library's `test-out` written under a per-run directory and removed after; the result store shared
-- [ ] measured: two gates started together (a one-backend step gate and a full gate) finish sooner in total than one
-      after the other, load near the CPU count, no timing red; recorded in `scripts/AGENTS.md`
-- [ ] a measurement of a gate's time waits for an empty pool (the measurer's rule, written in `scripts/AGENTS.md`)
+- [ ] `scripts/gate.sh` takes one total of jobs (a leading argument; default the machine's, as step G computes) and
+      splits it among its stages as today; the gate lock removed (`scripts/AGENTS.md` § Gate lock rewritten)
+- [ ] `--no-conformance` stays by hand only (466 (3), step I)
+- [ ] a library's `test-out` written under a per-run directory and removed after (botopink-lang's `test-libs` writes
+      into the linked siblings); the result store shared
 
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 

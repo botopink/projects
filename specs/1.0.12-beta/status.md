@@ -31,7 +31,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 - [ ] 144 B-29 step G — one job budget landed (cold gate alone 12m27 → 10m24–10m36, warm 1m35); left: the step gate of decision 460 · nothing
 - [ ] 144 B-29 step H — `tests/language/` becomes `conformance/`, every cell in decision 457's shape; `reject/` and single-file `run/` cells run in process; the language half of `test-cli` (`backend_exec`, `mutual_recursion`, `assert` / `try`) becomes cells; `modules/` and `test/` stay on the CLI; measured first · after step G
 - [ ] 144 B-29 step I — the reference into `botopink-lang/conformance/` (every `docs.md` example a cell), `--no-conformance` by hand only, `test.yml` calling `scripts/gate.sh` (461, 462, 466) · after step H
-- [ ] 144 B-29 step J — a machine-wide job pool replaces the gate lock, the protocol shared by every repository's `scripts/gate.sh` (468) · after the step gate (460)
+- [ ] 144 B-29 step J — botopink-lang's gate drops the lock and takes a total of jobs; the pool and scheduling are the meta repository's `scripts/gate.sh` (163 s7) (468, 469) · after the step gate (460)
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
 - [ ] 163 s7 — `scripts/gate.sh` in every repository (hook, CI and hand; `--no-conformance` by hand only, never a verdict), the libraries' gate running `<lib>/conformance/` (463, 466) · after 144 B-29 steps H and I; then each library moves its `docs.md` and examples into `conformance/`
 
