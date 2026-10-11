@@ -21,7 +21,7 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.12-beta/1-botopink-lang/144-botopink-lang/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
+| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5; `decisions-split.py [--check]` (decision 482) — writes `repository/<repo>/decisions-taken.md` from the newest milestone's `decisions-taken.md` (each row to the repositories its Binds column names, old ids through the fronts' alias tables; a row it cannot map is printed to stderr, never guessed); `--check` fails when a file differs; CI check 6 |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
 
@@ -43,6 +43,9 @@ closest `AGENTS.md` in each directory you touch.
    milestone's `language-gaps.md`: each file that holds one is a row of its `## Marker index` with
    the file's marker count and the gap rows it names, and a missing row, a count that differs, a
    named gap row that is gone and a row for a file with no marker each fail the check.
+6. `scripts/decisions-split.py --check` exits 0 — every `repository/<repo>/decisions-taken.md` is exactly what
+   the script writes from the milestone's `decisions-taken.md` (decision 482); a repository's file is generated and
+   never edited there.
 
 A red check names the repository and the front that owns the fix; nothing here is soft.
 
@@ -53,7 +56,7 @@ machine's gate scheduler. A repository's gate — a library's `scripts/gate.sh`,
 nothing of it.
 
 ```sh
-scripts/gate.sh [check]          # the five checks of § CI, locally
+scripts/gate.sh [check]          # the six checks of § CI, locally
 scripts/gate.sh run <target>…    # those gates together under the pool; --no-conformance is handed on
 scripts/gate.sh tasks            # every open task's gate (its own repositories)
 scripts/gate.sh libs             # every library's gate, on the main checkout's compiler

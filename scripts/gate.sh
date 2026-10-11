@@ -180,6 +180,12 @@ check5() {
     bash scripts/language-gap-markers.sh
 }
 
+# 6. each repository's decisions-taken.md is what scripts/decisions-split.py writes (decision 482).
+check6() {
+    [ -f scripts/decisions-split.py ] || { echo "  ✗ scripts/decisions-split.py is missing (163 s10)"; return 1; }
+    python3 scripts/decisions-split.py --check
+}
+
 runChecks() {
     local titles=(
         "1. every submodule pointer is on its remote feat"
@@ -187,9 +193,10 @@ runChecks() {
         "3. no snapshot candidate or todo.md is tracked anywhere"
         "4. the library repositories' guards, runner and gate are one text"
         "5. every LANGUAGE GAP marker has a row"
+        "6. every repository's decisions-taken.md is what decisions-split.py writes"
     )
     local i red=""
-    for i in 1 2 3 4 5; do
+    for i in 1 2 3 4 5 6; do
         echo "── ${titles[$((i - 1))]}"
         if "check$i"; then :; else red="$red $i"; fi
     done
@@ -197,7 +204,7 @@ runChecks() {
         echo -e "${RED}✗ meta gate: check(s)$red red${NC}"
         return 1
     fi
-    echo -e "${GREEN}✓ meta gate: all five checks green${NC}"
+    echo -e "${GREEN}✓ meta gate: all six checks green${NC}"
 }
 
 # ═════════════════════════════════════════════════════════════════════════════

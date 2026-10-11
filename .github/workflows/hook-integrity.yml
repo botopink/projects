@@ -29,7 +29,7 @@
 #   5. `scripts/language-gap-markers.sh` (113 step 4c) exits 0 — every
 #      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md.
 #
-# The five checks are the meta repository's `scripts/gate.sh` (front 163 s7,
+# The six checks are the meta repository's `scripts/gate.sh` (front 163 s7,
 # decision 473): this workflow calls it, and `scripts/gate.sh` from the meta root
 # runs the same checks locally. The same script is the machine's gate scheduler
 # (`run`, `tasks`, `libs`, `status`); CI uses only its checks.
@@ -56,6 +56,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: scripts/gate.sh — the five checks
+      - name: scripts/gate.sh — the six checks
         shell: bash
         run: bash scripts/gate.sh check
