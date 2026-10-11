@@ -31,6 +31,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 - [ ] 144 B-29 step G — one job budget landed (cold gate alone 12m27 → 10m24–10m36, warm 1m35); left: the step gate of decision 460 · nothing
 - [ ] 144 B-29 step H — every cell in decision 457's shape; `reject/` and single-file `run/` cells run in process; the language half of `test-cli` (`backend_exec`, `mutual_recursion`, `assert` / `try`) becomes cells; `modules/` and `test/` stay on the CLI; measured first · after step G
 - [ ] 163 s4 — `repository/conformance` (public, scaffold) mirrors `tests/language`: a generator from the pinned botopink-lang and a CI check against hand edits · after 144 B-29 step H
+- [ ] 163 s5 — the language reference moves to `botopink/conformance` only (461): every `docs.md` example a cell, referenced, never inline; botopink-lang keeps no copy · after 163 s4 and 144 B-29 step H
 
 ### 144 botopink-lang
 

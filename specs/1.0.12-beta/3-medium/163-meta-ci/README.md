@@ -83,3 +83,19 @@ with the compiler change they prove; this repository is their mirror for any imp
 - [ ] `repository/conformance/AGENTS.md` and `README.md` say how a cell is read (the `.out` / `.expect` shapes, the
       `.targets` narrowing) without naming botopink-lang's runner as the only way to run them
 
+### 163 s5 — the language reference moves to `botopink/conformance`, every example a cell (decision 461)
+
+**Repository:** conformance and botopink-lang (a full worktree: two repositories) · **Model:** opus
+
+After 163 s4 and 144 B-29 step H (the cells in decision 457's shape, the mirror running).
+
+- [ ] each of `docs.md`'s 141 botopink fences becomes a cell in botopink-lang's `tests/language` (or names an
+      existing cell showing the same thing): the 89 compiled-only and 13 `body` with their output, the 24
+      `project` as multi-module cells, the 15 `reject` with their refusal — red on the parent, green after
+- [ ] the reference written in `repository/conformance/` with `<!-- example: <cell> -->` references, rendered
+      from the mirrored cells; botopink-lang's `docs.md` and the language part of its `README.md` deleted — no copy
+- [ ] `test-docs` becomes a check that every reference names an existing cell (the fences' compile check moves to
+      the cells); `docs/botopink-json.md` and the tool docs stay in botopink-lang
+- [ ] botopink-lang's `AGENTS.md` (§ Conventions: "README.md and docs.md stay in sync") rewritten to name the
+      reference's new home
+
