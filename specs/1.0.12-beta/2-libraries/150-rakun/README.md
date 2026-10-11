@@ -1092,3 +1092,23 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 - [ ] `assertResponse(loc, res)` over `MockMvc.perform`, one `.snap` (§ 2, KEEP — contract 7, 98 check (2))
 - [ ] `rakun-test/AGENTS.md` states the member ships that helper only
+
+### 150 s25 — rakun's timing tests on a controlled clock, never the wall clock (measured 2026-10-11)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** sonnet
+
+Measured under the botopink-lang gate's load (one job budget 8 / 4 / 1 / 1, load 28–30 on 16 cores), three rakun
+tests go red that pass alone — a verdict that depends on the machine's load, not on the code (decision 67):
+
+| Test | Where | What waits on time |
+|---|---|---|
+| watcher: "one touched file is one reload" | `rakun/modules/rakun-data/test/devtools/devtools_test.bp` | a 40 ms poll and a 200 ms sleep; 1 red in 4 cold gates |
+| "over max-connections answered 503" | `rakun`, erlang | the response's timing |
+| the dlq test | `rakun-messaging`, erlang | the redelivery's timing |
+
+- [ ] each test drives a controlled clock the test advances (a test clock source behind `io.clock` and the timers
+      the code under test reads), never a real sleep or poll; its assertions unchanged
+- [ ] measured: each test green in every run of the botopink-lang gate at its busiest split and alone
+- [ ] if std offers no controllable clock source, a `language-gaps.md` row naming the 144 step that adds one, and
+      this step pauses on it (rule 9, decision 430) — no rakun-local workaround
+
