@@ -99,6 +99,8 @@ Three rules make it safe:
    `feat` without waiting for conformance; its Conformance step reads `feat`'s pipeline run of
    `scripts/gate.sh` with conformance — a red is reproduced locally and fixed at once, and the cheap
    test the hook runs that would have caught it is written beside the fix (478).
+   A front's Conformance step holds back no other front (479): the fronts that need its change open
+   once its other steps have landed.
 4b. **No `gate.sh --cold` inside a `--repo` / `--lang` worktree.** Its gate is the commit
    hook's (`--staged`, warm). `--cold` deletes every sibling library's cache, and the
    siblings there are the main checkout's: a cold gate, when a landing calls for one,

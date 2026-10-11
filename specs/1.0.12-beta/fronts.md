@@ -58,6 +58,9 @@ milestone (three when the console is closed).
     at once ahead of every other step (430) and pushed again. Conformance runs locally only to reproduce a red.
     For each red, the step asks which cheap test the hook already runs would have caught it, and writes it
     (decision 478) — red on the breaking commit, green on the fix — so the next one is caught at the commit.
+15. **A Conformance step holds back no front** (decision 479): a front that needs another's change opens as soon
+    as that front's other steps have landed on `feat`, without waiting for its Conformance step; a red found
+    later is fixed first (430) and the building front rebases on the fix.
 
 ## Ownership, by repository
 
