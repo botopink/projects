@@ -599,6 +599,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-08; os commits de consumidores em oito repositórios.
 
 #### 431-b · `throws:` ao lado de `inline:` (144 B-03)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** `throws:` e `inline:` são ambos rotulados e lidos pelo rótulo, em qualquer ordem; um `bool` posicional sem nome é recusado.
 - **Medido.** `inline` deve ser o último argumento hoje: `hasExternalInline` (`erlang.zig`, `beam_asm.zig`) lê só o último e `ast.externalRefOf` apara um bool final.
 - **Opções.**
   (a) Os dois rotulados, em qualquer ordem, lidos pelo rótulo (nos rótulos da 305, B-02); um `bool` posicional puro recusado.
@@ -614,6 +615,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-03 (depois de B-02).
 
 #### 431-c · O que conta como `HostError` (144 B-03)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Só o `failure.HostError` do std, pela identidade do módulo (como `Decorator.same`, 371): um tipo do usuário chamado `HostError` é recusado sob `throws: true`.
 - **Medido.** A 431 escreve `@Result<…, HostError>`; nada diz se um tipo do usuário chamado `HostError` qualifica.
 - **Opções.** (a) Só o `failure.HostError` do std, por identidade de módulo (como `Decorator.same`, 371): `type HostError(message: string)` num módulo do usuário é recusado sob `throws: true`. (b) Qualquer record com `message: string` e `kind: string`.
   ```bp
@@ -635,6 +637,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-03.
 
 #### 431-d · `kind` e `message` do `HostError` por backend (144 B-05)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Nenhuma opção como escrita; amenda o `HostError(message, kind)` da 431.** `enum HostErrorName { Error, Throw, Exit }` e `type HostError(message: string, kind: string, name: HostErrorName, detail: ?string)`. `kind` é sempre `"host"`. `name` tem os mesmos valores em todo alvo: commonJS, um `Error` → `Error` e qualquer outro valor lançado → `Throw`; erlang / beam, a classe `error` / `throw` / `exit`. `message` é o texto do host (`e.message`, senão `String(e)`; a razão por `~tp` sem o stack). `detail` é o stack do host, opcional — um backend pode deixá-lo vazio. Sem campo `target`: o programa conhece seu alvo.
 - **Medido.** Um throw de JS pode ser qualquer valor; um raise do erlang tem uma classe (`error` / `throw` / `exit`) e um termo de razão.
 - **Opções.**
   (a) commonJS: `kind` = `e.name` (`"throw"` para um valor que não é `Error`), `message` = `e.message`, senão `String(e)`; erlang / beam: `kind` = o átomo da classe, `message` = `~tp` da razão sem a pilha.
@@ -651,6 +654,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-05.
 
 #### 431-e · A conversão implícita da 126 de uma Promise do Node que rejeita (144 B-05)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a) — só conversão explícita.** Uma Promise do Node que rejeita entra como `Error` só por `throws: true`; a conversão `__bp_host_task` da 126 é retirada e `run/host_node_task_result` é reescrito. Ainda aberto: se um host erlang que *devolve* `{ok, V}` / `{error, R}` continua lido como `@Result` — (e1) sim, é um valor e não um raise (recomendado) — ou também precisa de uma forma explícita (e2).
 - **Medido.** Todo binding do Node declarado `-> @Task<@Result<T, E>>` é embrulhado em `__bp_host_task` (`js_prelude.zig`, decisão 126), que transforma qualquer rejeição em `Error(<message>)` sem `throws: true` — sob a 431 (2) um raise não anunciado é um crash, e `run/host_node_task_result` depende da conversão.
 - **Opções.**
   (a) Aposentá-la: um binding Node `@Task<@Result<…>>` escreve `throws: true` com `E = HostError`, senão é recusado; um host erlang que responde `{ok, V}` / `{error, R}` fica como está (um valor, não um raise).
