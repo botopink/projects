@@ -27,10 +27,9 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 ### First — comptime on wasm (434, 144 B-00)
 
 - [ ] **144 B-00a → B-00h (434, 437, 442, 446)** — comptime on wasm only, the first thing the milestone does: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442) · opens before any other step of any front; B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · landed: B-00a, B-00d, B-00f (437), B-00h (446); B-00b for 435's subset, a foreign `.beam` and standalone (438), its whole-modules box open (the utility translates a set and follows its calls; no library comptime module reaches a cell or sidecar — how the comptime hands a library's modules over is 438-a); B-00c with 439 (no fall to `fn:`), its last box open (each library repository's own hook not yet run on this compiler; `test-libs` green); B-00e (440, 441: std-wasm transpiled into the wasm program, the `std:` binding, std-wasm's text, sizes in `wat/AGENTS.md`); B-00g (442, 443, 445: std's helpers and `bigint` in std-wasm, Unicode case mapping, `std:` std's alone), three boxes open: the stack (447: overflow traps, size from the frame path), 442-b (the seeded random)
+- [ ] 144 B-30 (448) — wasm memory as erlang's: a heap per `@Task`, collected by copying, freed whole when the task ends; measured first · after B-00
 
 ### 144 botopink-lang
-
-- [ ] 144 B-30 (448) — wasm memory as erlang's: a heap per `@Task`, collected by copying, freed whole when the task ends; measured first · after B-00
 
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
 - [x] 114 s6 box 1 — vscode-extension workflow installs the compiler's OTP 28 (vscode-extension `f041865`)
