@@ -14,6 +14,40 @@
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
 
+### 438-a · Como o comptime entrega os módulos de uma lib ao beam-to-wasm (438 (1))
+
+O beam-to-wasm traduz um conjunto de `.beam` inteiros. Medido: nenhuma célula host, sidecar ou módulo de lib é
+alcançado no comptime hoje (350 módulos de comptime de todas as libs).
+
+**(a)** A lib publica o `.beam` dos sidecars, gerado pelo `erlc` no build/publicação da lib, nunca ao compilar:
+```text
+jhonstart publica priv/beam/jhonstart_render.beam
+@External.Erlang("jhonstart_render", "render") no comptime → translateSet([célula, jhonstart_render.beam])
+```
+**(b)** O compilador monta o `.erl` do sidecar ele mesmo; record ou macro que não lê é recusado.
+**(c)** Uma chamada a sidecar no comptime continua recusada, com local, até haver necessidade medida:
+```text
+error: comptime-beam-call-not-converted: beam-to-wasm does not convert `jhonstart_render:render/1` — …
+```
+**Recomendação: (c) agora e (a) quando houver necessidade medida** — mantém o `erlc` fora da compilação. Trava: a
+caixa 1 do 144 B-00b (com (c), ela vira a metade do utilitário, já construída).
+
+### 438-b · Onde ficam as funções OTP de termos (438 (2))
+
+A 438 (2) diz que BIFs e funções OTP são do std-wasm. Hoje `lists:*`, `maps:*` e os BIFs de termo do `erlang:` estão
+no `rt.zig` do compiler-core; o std-wasm tem texto e número.
+
+**(a)** Mover a biblioteca de termos para o std-wasm. **(b)** O std-wasm declara a tabela OTP (cada
+`módulo:função/aridade` e o export que a serve); as implementações ficam onde estão:
+```zig
+// modules/std-wasm/src/otp.zig
+.{ .mfa = "lists:reverse/1", .export_name = "rt_lists_reverse" },
+```
+**(c)** Manter a tabela passada por quem chama; o `rt.zig` conta como host do std-wasm.
+
+**Recomendação: (b)**, no B-00g ou depois — um lugar só nomeia o que é servido, sem mover a biblioteca de termos em
+que o runtime de comptime se apoia. Não trava nada hoje.
+
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 
 **Trava:** nada — construído como (a)
