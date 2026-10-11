@@ -3207,15 +3207,16 @@ Found moving erika's examples into its `conformance/` (463): `the wasm backend h
 
 ### B-36 — styled's hook red on `feat`: "tab4's class is not a constant of the emitted module" (structural, decision 430)
 
-**Repository:** botopink-lang (`--lang`), styled if the cause is there · **Model:** opus (the cause is not yet known)
+**Repository:** styled (front 148's) · **Model:** opus
 
-Found by 163 s7: styled's `repository-stages.sh` fails with `erlang: tab4's class is not a constant of the emitted
-module` with the compiler on `feat`; styled's own runner at its `feat` fails the same way — a red on `feat`, likely
-since the B-00 group (the comptime on wasm, std-wasm's text). Measure first: the last compiler commit on which it was green.
+The cause was styled's: its `repository-stages.sh` read the calls in 354 (8)'s form, a hidden context map first
+(`undefined` / `null`, `BpContextMap__`); decision 388 made a component a lambda over its `RenderScope` and dropped that
+argument. The compiler's output is the intended one, so no compiler-core test can catch it.
 
-- [ ] the cause found (a compiler change or a styled assumption), fixed where it lives; styled's hook green
-- [ ] the cheap test the hook runs that would have caught it (478)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [x] the cause found and fixed where it lives: styled's stage reads the class and the rules as the calls' literals, no
+      hidden argument; styled's hook green
+- [x] the cheap test (478): none in botopink-lang — the check that catches a lowering change reaching every library is
+      the libraries' own stages run against the compiler change, which is 163 s7's `scripts/gate.sh libs`
 
 ### B-37 — dependencies from `.botopinkbuild/deps/` first; `bpmp link` (decision 483)
 
