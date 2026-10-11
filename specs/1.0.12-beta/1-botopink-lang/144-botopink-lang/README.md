@@ -2281,19 +2281,19 @@ tests, `test-web`, decorator/template/comptime cells of `tests/language`. **Mode
 
 After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; nothing in botopink calls it.
 
-- [ ] a host function reached at build answers by its `std:` cell, else its `@External.Wasm("fn:…")` cell; none →
+- [x] a host function reached at build answers by its `std:` cell, else its `@External.Wasm("fn:…")` cell; none →
       `comptime-host-cell-unavailable` naming both; an `@External.Erlang` cell never runs at build
-- [ ] `comptime/runtime/wat/cells.zig` and `host_cells.zig`'s `erlangCellOf` / `callingCell` deleted; compiler-core
+- [x] `comptime/runtime/wat/cells.zig` and `host_cells.zig`'s `erlangCellOf` / `callingCell` deleted; compiler-core
       imports nothing of `modules/beam-to-wasm` (`build.zig` wires it to its own tests only)
-- [ ] `reject/comptime_beam_call_not_converted*` become `comptime-host-cell-unavailable` cells (renamed, their
+- [x] `reject/comptime_beam_call_not_converted*` become `comptime-host-cell-unavailable` cells (renamed, their
       `.expect` re-read); `comptime-beam-call-not-converted` leaves `diagnostics.zig`
-- [ ] `docs.md` (§ host functions at compile time), `comptime/AGENTS.md`, `comptime/runtime/wat/AGENTS.md` and
+- [x] `docs.md` (§ host functions at compile time), `comptime/AGENTS.md`, `comptime/runtime/wat/AGENTS.md` and
       `modules/beam-to-wasm/AGENTS.md` say beam-to-wasm is standalone and unused by botopink; every `COMPTIME REPLY`
       unchanged
-- [ ] a package named `std` that is not the bundled `libs/std` refused at its manifest (453) — a CLI contract case
+- [x] a package named `std` that is not the bundled `libs/std` refused at its manifest (453) — a CLI contract case
       and an LSP diagnostic; the bundled std still builds as itself
-- [ ] `str_slice` and `mem_eq` deleted from `wat_prelude` (455); `codegen/wat/AGENTS.md`'s staying list without them
-- [ ] `random.float()` bound by `std:random.float` (456): the host's entropy in a wasm program, 451's refusal at
+- [x] `str_slice` and `mem_eq` deleted from `wat_prelude` (455); `codegen/wat/AGENTS.md`'s staying list without them
+- [x] `random.float()` bound by `std:random.float` (456): the host's entropy in a wasm program, 451's refusal at
       comptime — the unseeded `float()` cell refuses with it, never `comptime-host-cell-unavailable`
 
 **Impacted tests:** `comptime` host-cell tests, `tests/language` reject and decorator cells, `test-docs`.
