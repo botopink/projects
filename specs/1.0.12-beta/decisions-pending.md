@@ -21,6 +21,50 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ## Part 1 — What blocks tracks 00–03
 
+### 144 B-00 (comptime on wasm, std-wasm in the wasm program)
+
+#### 440-b · `toUpper` / `toLower` on wasm and at comptime (440, 441)
+- **Measured.** B-00e bound `hash.contentHash`, `trim*` and `Float.toString` to std-wasm by `std:`, not the case
+  methods: std-wasm's `caseMap` maps ASCII only and refuses any other letter, while wasm's `$__str_case` leaves a
+  non-ASCII letter unchanged at exit 0. commonJS and erlang map Unicode. The comptime's limit 3 is the same gap.
+- **Options.**
+  (a) Leave it: wasm keeps its helper; `"é".toUpper()` answers `é` on wasm, `É` on commonJS and erlang.
+  ```text
+  @print("é".toUpper())   // wasm: é   commonJS: É   erlang: É
+  ```
+  (b) Bind to `caseMap` now: a non-ASCII letter traps on wasm (and refuses at comptime) instead of answering wrong.
+  ```text
+  @print("é".toUpper())   // wasm: trap — case mapping of U+00E9 is not implemented
+  ```
+  (c) Full Unicode case mapping in std-wasm (the tables `unicode` already generates): `É` on every target and at
+  comptime; limit 3 goes away.
+- **Recommendation.** (c), with (b) until it lands — a wrong answer at exit 0 is the one outcome decision 67 rules out.
+- **Blocks.** 144 B-00g (the case helpers leave `wat_prelude`).
+
+#### 440-c · `NaN` and `±Infinity` as text (441)
+- **Measured.** OTP has no such floats (`badarith`), so `float_to_binary` gives no text to copy. B-00e made std-wasm
+  answer `NaN`, `Infinity`, `-Infinity` — what wasm printed before; commonJS prints the same words.
+- **Options.** (a) Keep the words: `@print(0.0 / 0.0)` prints `NaN` on wasm and commonJS, erlang raises.
+  (b) Trap, as erlang raises: no target prints a value erlang cannot hold.
+  ```text
+  @print(1.0 / 0.0)   // (a) wasm: Infinity     (b) wasm: trap — badarith, as erlang
+  ```
+- **Recommendation.** (a): the value exists on wasm and commonJS, and its text is not erlang's to decide; erlang's
+  raise is the arithmetic's, not the formatting's.
+- **Blocks.** nothing (built as (a)).
+
+#### 440-d · `std:` outside std (440 (3))
+- **Measured.** 440 does not say who may write `@External.Wasm("std:…")`; B-00e accepts it in any module.
+- **Options.** (a) Any module may bind its own declaration to a std-wasm export.
+  ```bp
+  #[@External.Wasm("std:hash.contentHash")]
+  declare fn myHash(value: string) -> string;   // a user module, accepted
+  ```
+  (b) Only std: a user module calls std's function instead; `std:` elsewhere is refused at the annotation.
+- **Recommendation.** (b), the strictest: one declaration per std-wasm export keeps the `std:` table auditable, and a
+  user has std's function to call.
+- **Blocks.** nothing (built as (a)).
+
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
