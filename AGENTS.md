@@ -21,31 +21,69 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.12-beta/1-botopink-lang/144-botopink-lang/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own tools: `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
-| `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
+| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
 
 ## CI
 
-`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs/1.0.12-beta/3-medium/163-meta-ci`), every check hard, plain bash over a checkout with submodules:
+`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs/1.0.12-beta/3-medium/163-meta-ci`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the five checks locally, every red listed), and the checks are:
 
 1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never
    points at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD FETCH_HEAD`);
 2. every path in § Layout above exists on disk (the first backticked path of each row, `{a,b}`
    expanded; the git-ignored `todo.md` row is excluded);
 3. no `*.snap.new`, `*.snap.md.new` or `todo.md` is tracked in this repository or any submodule;
-4. the library repositories' pre-commit guards are one text — `scripts/git-hooks/pre-commit` and
-   `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across emilia, erika, jhonstart,
+4. the library repositories' pre-commit guards are one text — `scripts/git-hooks/pre-commit`,
+   `scripts/git-hooks/lib/runner-standalone.sh` and `scripts/gate.sh` byte-identical across emilia, erika, jhonstart,
    onze, rakun, actions, http, log, routing, validation, css, styled, snap, json, yaml, markdown and dbcontext, each `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
    `scripts/known-broken-examples.txt`, each `AGENTS.md` naming `git config core.hooksPath
-   scripts/git-hooks`;
+   scripts/git-hooks`, `scripts/gate.sh` and `conformance/`;
 5. `scripts/language-gap-markers.sh` exits 0 — every `// LANGUAGE GAP` marker has a row in the
    milestone's `language-gaps.md`: each file that holds one is a row of its `## Marker index` with
    the file's marker count and the gap rows it names, and a missing row, a count that differs, a
    named gap row that is gone and a row for a file with no marker each fail the check.
 
 A red check names the repository and the front that owns the fix; nothing here is soft.
+
+## Gate orchestrator
+
+`scripts/gate.sh` (decisions 468, 469, 473; front 163 s7) is the meta repository's own gate and the
+machine's gate scheduler. A repository's gate — a library's `scripts/gate.sh`, botopink-lang's — knows
+nothing of it.
+
+```sh
+scripts/gate.sh [check]          # the five checks of § CI, locally
+scripts/gate.sh run <target>…    # those gates together under the pool; --no-conformance is handed on
+scripts/gate.sh tasks            # every open task's gate (its own repositories)
+scripts/gate.sh libs             # every library's gate, on the main checkout's compiler
+scripts/gate.sh status           # what runs and what waits: name, jobs, time, current stage
+```
+
+- **A library's `scripts/gate.sh`** (one text in every library, CI check 4): `[--staged] [--no-conformance]
+  [--jobs <N>]`, running the shared `scripts/git-hooks/lib/runner-standalone.sh` — the stages, then
+  `botopink cell check conformance/` when the repository has that directory. The commit hook runs it with
+  `--staged --no-conformance` (470); CI on a push to `feat` and a front's Conformance step run it whole.
+  `--jobs` is the total of its cell pools (default the machine's); it keeps no pool and no lock.
+- **A `<target>`** is a repository of the checkout (`repository/<name>/` with a `scripts/gate.sh`), or
+  `task:<name>` (a bare name that is no repository also resolves to a task). Tasks are found by
+  `git worktree list` of the meta repository and of every submodule of the main checkout: a task is a
+  `.tasks/<name>` worktree; its **own** repositories are the checkouts on its branch `front/<name>`, the
+  others (symlinks of a `--repo` / `--lang` task, checkouts left on the pointer) are linked siblings and
+  are not gated by it.
+- **The pool** is one directory at a fixed per-machine path, `$XDG_RUNTIME_DIR/botopink-gate-pool` (else
+  `/tmp/botopink-gate-pool-<uid>`); not a flag or a variable (decision 67). The machine's jobs are one per
+  CPU bounded by `MemAvailable / 768 MiB`, a job counted as ~2 runnable threads, so `capacity = max(1,
+  jobs / 2)`. Each running gate owns a `lease.<id>` file (owner pid, child pid, jobs, name, start, log),
+  each waiting one a `wait.<id>`; a `mkdir` lock serialises changes and a lease whose owner and child are
+  both dead is reaped. A gate is admitted when at least one job is free and takes `min(share, free)`
+  jobs, `share = max(1, capacity / gates of the run)`, returned when it ends; a library receives them as
+  `--jobs`. botopink-lang's gate takes no total of jobs yet (it sizes itself to the machine), so a run of
+  it holds the whole pool. Measuring a gate's time waits for the pool to be empty (`status`) — that is
+  the measurer's rule, not a lock on every gate. The commit hook's gate runs outside the pool (470).
+- **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
+  for a task; the report names each one. Specs never name them.
+- It runs and reports; landing stays the coordinator's.
 
 ## Worktrees
 

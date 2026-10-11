@@ -88,11 +88,12 @@ the libraries that became repositories of their own (`snap`, decision 391; `styl
 actions, http, log, routing, validation, css and styled have a `test.yml` that has never run on `feat`; snap, json,
 yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one is green: the siblings are there.
 
-- [ ] each library's `test.yml` fetches the library's dependencies from its manifests' `dependencies` (the `git`
+- [x] each library's `test.yml` fetches the library's dependencies from its manifests' `dependencies` (the `git`
       entries) — `bpmp install`, which already clones and links them — before it runs; jhonstart, onze and rakun green
-- [ ] a library with a `botopink.json` and no `test.yml` gets one, the same shape as the others; every library's
-      workflow runs on a push to `feat`, and each has at least one green run there
-- [ ] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
+- [x] a library with a `botopink.json` and no `test.yml` gets one, the same shape as the others (dbcontext, json and
+      yaml hold no `botopink.json` yet; each gets its workflow with its first manifest)
+- [ ] every library's workflow has at least one green run on `feat` — read with `gh` (474) after the landing
+- [x] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
 
 ### 163 s6 — a language tour generated from `botopink-lang/conformance/` (after 144 B-29 step I)
 
@@ -112,24 +113,24 @@ in `botopink-lang/conformance/`, rendered from them (decisions 466, 467: the sui
 
 After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/gate.sh` as hook and CI entry).
 
-- [ ] each library gets `scripts/gate.sh`, one text identical across the libraries (CI check 4 extended to it): it
+- [x] each library gets `scripts/gate.sh`, one text identical across the libraries (CI check 4 extended to it): it
       runs the shared `runner-standalone.sh` and the repository's `repository-stages.sh`; the pre-commit hook and
       the library's `test.yml` call it — the workflow on a push to `feat` (477)
-- [ ] `runner-standalone.sh` gains a stage: `botopink cell check conformance/` (464) — every
+- [x] `runner-standalone.sh` gains a stage: `botopink cell check conformance/` (464) — every
       `conformance/modules/*/` cell on the targets the manifests declare, a mismatch a `.snap.new` candidate and a
       red; absent only structurally (no `conformance/` directory)
-- [ ] the libraries' pre-commit hook runs `scripts/gate.sh --no-conformance` (470); the Conformance step and the GitHub
+- [x] the libraries' pre-commit hook runs `scripts/gate.sh --no-conformance` (470); the Conformance step and the GitHub
       pipeline run it with conformance
-- [ ] the meta repository's `scripts/gate.sh` runs `hook-integrity.yml`'s checks locally, and the workflow calls it
-- [ ] the meta repository's `scripts/gate.sh` orchestrates (decision 473): `run <repository|task> …`, `tasks`, `libs`,
+- [x] the meta repository's `scripts/gate.sh` runs `hook-integrity.yml`'s checks locally, and the workflow calls it
+- [x] the meta repository's `scripts/gate.sh` orchestrates (decision 473): `run <repository|task> …`, `tasks`, `libs`,
       `status`; tasks found by `git worktree list` of the meta repository and the submodules, a task's own repository
       told from its linked siblings; each run's log kept as scratch
-- [ ] the meta repository's `scripts/gate.sh` is the machine's scheduler (decision 469): it owns the job pool,
+- [x] the meta repository's `scripts/gate.sh` is the machine's scheduler (decision 469): it owns the job pool,
       runs several repositories' gates together and hands each its share of jobs; the coordinator runs every full
       gate through it
-- [ ] each library's `scripts/gate.sh` knows no pool and no lock: it takes a total of jobs (default the machine's)
+- [x] each library's `scripts/gate.sh` knows no pool and no lock: it takes a total of jobs (default the machine's)
       and offers `--no-conformance` (the hook's, 470); a library's `test-out` per run
-- [ ] copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names `scripts/gate.sh`
+- [x] copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names `scripts/gate.sh`
       and its `conformance/`
 
 ### 163 s9 — the measurements, at the end (after 163 s8)
