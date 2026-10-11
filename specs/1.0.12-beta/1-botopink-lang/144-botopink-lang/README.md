@@ -35,6 +35,7 @@ order, before any other step of this front or any other front:
 | B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
 | B-00h | wasm codegen snapshots show a transpiled std-wasm function as one line with its hash (decision 446) — before B-00g | sonnet |
 | B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
+| B-00i | the Erlang term library (`rt.zig`) and the OTP functions move into std-wasm; `bp_wat_rt.wasm` goes; beam-to-wasm reads std-wasm's OTP table (decision 450) — before B-30 | opus |
 
 ## Lanes
 
@@ -44,7 +45,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–h, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–i, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -2251,9 +2252,28 @@ each track rewrites its own tree.
 
 - [ ] maintainer's answer recorded; if removed, §5.1 arms rewritten in emilia, jhonstart, rakun by the tracks, cells green; `docs.md` § Case re-measured for both forms
 
+### B-00i — The Erlang term library and the OTP functions in std-wasm (decision 450)
+
+After B-00g, before B-30 (whose collection needs the terms' layout). `comptime/runtime/wat/rt.zig` (the term
+representation and the OTP functions and BIFs it serves) moves into `modules/std-wasm`; one wasm runtime remains.
+
+- [ ] `modules/std-wasm/src/term.zig` (atoms, tuples, lists, maps, binaries) and `otp/*.zig` (`lists`, `maps`,
+      `string`, `erlang:` BIFs) hold what `rt.zig` holds, with Zig unit tests; `rt.zig` deleted
+- [ ] allocation is the caller's (450 (5)): the comptime's arena when the comptime calls a term function, the
+      current process's heap in translated code
+- [ ] the comptime runtime links `std_wasm.wasm`; `bp_wat_rt.wasm` and its `build.zig` step gone (the compiler-web
+      build too); every `COMPTIME REPLY` byte-identical
+- [ ] beam-to-wasm imports std-wasm's OTP table (no caller-passed table); it still imports std-wasm alone (438)
+- [ ] one face per function: `string:titlecase` and any other function with a face in both deleted from one side
+- [ ] `modules/std-wasm/AGENTS.md` names its two value representations (the codegen's typed layout, the Erlang
+      terms), each in its own file; `comptime/runtime/wat/AGENTS.md` and `modules/beam-to-wasm/AGENTS.md` updated
+
+**Impacted tests:** `comptime` tests (every `COMPTIME REPLY`), `modules/std-wasm` and `modules/beam-to-wasm` unit
+tests, `test-web`, decorator/template/comptime cells of `tests/language`. **Model:** opus. **Consumer commits:** none.
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
-After the B-00 group. botopink's values are immutable; on erlang each process's heap is collected and released
+After the B-00 group, B-00i included (the collection knows the terms' layout, 450). botopink's values are immutable; on erlang each process's heap is collected and released
 when it dies. The wasm target's bump heap never frees; this step gives the wasm target and beam-to-wasm's translated
 code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
 

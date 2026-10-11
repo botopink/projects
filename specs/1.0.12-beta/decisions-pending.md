@@ -44,23 +44,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   is measured: it keeps `erlc` out of compiling and is 438's "erlc's output of a sidecar".
 - **Blocks.** 144 B-00b box 1 (with (c), the box is the utility half, built).
 
-#### 438-b · Where the term-level OTP functions live (438 (2))
-- **Measured.** 438 (2) says BIFs and OTP functions are std-wasm's. Today `lists:*`, `maps:*` and the `erlang:` term
-  BIFs are implemented in compiler-core's `comptime/runtime/wat/rt.zig`; std-wasm holds the text and number
-  algorithms. beam-to-wasm takes the caller's BIF table and imports `std` alone.
-- **Options.**
-  (a) Move the term library and its OTP functions into std-wasm; beam-to-wasm imports std-wasm's table.
-  (b) std-wasm declares the OTP table (each `module:function/arity` and the export serving it); the implementations
-  stay where they are.
-  ```zig
-  // modules/std-wasm/src/otp.zig
-  .{ .mfa = "lists:reverse/1", .export_name = "rt_lists_reverse" },
-  ```
-  (c) Keep the caller-passed table; `rt.zig` counts as std-wasm's host.
-- **Recommendation.** (b), within B-00g or after it: one place names what is served, without moving the term library
-  the comptime runtime is built on.
-- **Blocks.** nothing today.
-
 ### 144 B-00g (wat_prelude split, decisions 442, 443, 445)
 
 #### 442-b · The seeded random (442 (2), `io/random`)

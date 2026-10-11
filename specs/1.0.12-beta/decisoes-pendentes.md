@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **450**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **451**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -31,22 +31,6 @@ error: comptime-beam-call-not-converted: beam-to-wasm does not convert `jhonstar
 ```
 **Recomendação: (c) agora e (a) quando houver necessidade medida** — mantém o `erlc` fora da compilação. Trava: a
 caixa 1 do 144 B-00b (com (c), ela vira a metade do utilitário, já construída).
-
-### 438-b · Onde ficam as funções OTP de termos (438 (2))
-
-A 438 (2) diz que BIFs e funções OTP são do std-wasm. Hoje `lists:*`, `maps:*` e os BIFs de termo do `erlang:` estão
-no `rt.zig` do compiler-core; o std-wasm tem texto e número.
-
-**(a)** Mover a biblioteca de termos para o std-wasm. **(b)** O std-wasm declara a tabela OTP (cada
-`módulo:função/aridade` e o export que a serve); as implementações ficam onde estão:
-```zig
-// modules/std-wasm/src/otp.zig
-.{ .mfa = "lists:reverse/1", .export_name = "rt_lists_reverse" },
-```
-**(c)** Manter a tabela passada por quem chama; o `rt.zig` conta como host do std-wasm.
-
-**Recomendação: (b)**, no B-00g ou depois — um lugar só nomeia o que é servido, sem mover a biblioteca de termos em
-que o runtime de comptime se apoia. Não trava nada hoje.
 
 ### 442-b · O random com semente (`io/random`)
 
