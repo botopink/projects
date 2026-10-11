@@ -176,3 +176,14 @@ change how every library's gate and CI run, not what a library answers: the step
 - [ ] a meta CI check (and the meta `scripts/gate.sh`) fails when a repository's file differs from the script's output
 - [ ] the meta `AGENTS.md` § CI and § Layout name the script and the check
 
+### 163 s11 — a library task holds its repository alone (decision 483)
+
+**Repository:** every library repository and the meta repository (a full worktree) · **Model:** sonnet
+
+After 144 B-37 (`bpmp link`, `.botopinkbuild/deps/` first).
+
+- [ ] the shared `runner-standalone.sh`'s `locateBotopink` tries `<project>/.botopinkbuild/bin/botopink` first
+      (byte-identical across the libraries, CI check 4)
+- [ ] `scripts/worktree-add.sh --repo <lib>` makes `.tasks/<name>/<lib>` alone, runs `bpmp link` against the main
+      checkout, links `.botopinkbuild/bin/botopink` to the main checkout's compiler; `AGENTS.md` § Worktrees rewritten
+

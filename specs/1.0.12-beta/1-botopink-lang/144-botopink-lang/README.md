@@ -3217,6 +3217,17 @@ since the B-00 group (the comptime on wasm, std-wasm's text). Measure first: the
 - [ ] the cheap test the hook runs that would have caught it (478)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-37 — dependencies from `.botopinkbuild/deps/` first; `bpmp link` (decision 483)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (it changes the library resolution of 143)
+
+- [ ] `libs.zig`: a `git` dependency resolves first from `<project>/.botopinkbuild/deps/<name>/`, then the walk-up as a
+      fallback; `BOTOPINK_LIB_ROOTS` first when set; the language server the same (`manifest.findCacheRoot` / roots)
+- [ ] `bpmp link [<checkout>]`: `.botopinkbuild/deps/<name>` → `<checkout>/repository/<name>` for each dependency of
+      every manifest of the project (a workspace's members included); a missing local repository named, never guessed
+- [ ] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
