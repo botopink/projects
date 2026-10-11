@@ -336,11 +336,11 @@ The beam target reads a declaration's `@External.Erlang` cell; `@External.Beam` 
 
 Before B-00g, so the helpers B-00g moves into std-wasm do not grow every wasm snapshot that links them.
 
-- [ ] the wasm codegen snapshot's module text writes each function transpiled from `std_wasm.wasm` as one line
+- [x] the wasm codegen snapshot's module text writes each function transpiled from `std_wasm.wasm` as one line
       `;; std:<module>.<function> — from std_wasm.wasm (sha256 <12 hex>)`, its body omitted; the snapshot helper
       (`codegen/snapshot.zig`) does it, never the emitter — `botopink build --target wasm` still writes the whole `.wat`
-- [ ] the binary the RUN LOG runs unchanged; every RUN LOG byte-identical
-- [ ] the nine snapshots B-00e grew back to their size before it plus one line per linked function (re-read, not
+- [x] the binary the RUN LOG runs unchanged; every RUN LOG byte-identical
+- [x] the nine snapshots B-00e grew back to their size before it plus one line per linked function (re-read, not
       bulk-accepted); a change in one std-wasm function changes one line in each snapshot that links it (a test)
 
 **Impacted tests:** wasm codegen snapshots that link std-wasm; `codegen/tests/wat.zig`. **Model:** sonnet (446 fixes
