@@ -2245,7 +2245,7 @@ After step H (the cells in `conformance/`).
 - [ ] the reference written in `conformance/docs.md` (the index, the text no cell owns) and
       `conformance/modules/<cell>/docs.md` beside each cell (462); `docs.md`, `docs/` (the manifest schema) and the
       language part of `README.md` moved there — no copy left; `test-docs` checks that every reference names a cell
-- [ ] `scripts/gate.sh --no-conformance` (470): the commit hook's gate — every stage but the conformance cells;
+- [x] `scripts/gate.sh --no-conformance` (470): the commit hook's gate — every stage but the conformance cells;
       the Conformance step and the GitHub pipeline run `scripts/gate.sh` with them
 - [ ] `.github/workflows/test.yml` calls `scripts/gate.sh` (the full gate on `feat`), not its own list of stages
 - [ ] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
