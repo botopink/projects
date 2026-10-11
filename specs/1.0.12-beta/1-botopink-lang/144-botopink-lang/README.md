@@ -3338,8 +3338,8 @@ example's move into erika's `conformance/`.
 A decorator body calling `random.float()` fails at build: `unbound variable '__bp_ns_io_random'`; the B-00k cell of
 `random.float` at build cannot be written.
 
-- [ ] a cell red on the parent: a decorator body calling a function of a nested std namespace
-- [ ] the comptime's environment holds the nested namespaces; the `random.float()` cell written (refused unseeded at
+- [x] a cell red on the parent: a decorator body calling a function of a nested std namespace
+- [x] the comptime's environment holds the nested namespaces; the `random.float()` cell written (refused unseeded at
       build, decision 447, or the seeded answer)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
@@ -3353,6 +3353,30 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [ ] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
       their whole refusal and label, green; every other refusal cell whose caret carries a label gains its record
 - [ ] `conformance/docs.md` states the record
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-48 — a raise inside a decorator body is located at the raising call (decision 451 (3))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`decorator_random_float_unseeded` is refused at the annotation that runs the decorator (`#[drawn]`), and
+`comptime_random_float_unseeded` at the `comptime` expression; 451 (3) locates the refusal at the call.
+
+- [ ] both cells claim the location of the raising call (`io.random.float()`), red on the parent
+- [ ] a raise inside a decorator or comptime body is located at the call that raised, the annotation or the
+      `comptime` expression named as the frame that ran it
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-49 — std's `io/random` sidecar ships with a module whose decorator uses it, on commonJS (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+A cell whose main module keeps a decorator calling `io.random.seed` or `seededFloat` is refused on commonJS:
+`module 'std/io/random' requires "./sidecars/random.mjs", but its library 'std' resolves to no package directory — the
+sidecar cannot be shipped`.
+
+- [ ] a cell red on the parent: a decorator using `io.random` in a module built for commonJS
+- [ ] std's sidecars resolved from the bundled std; the cell green on commonJS
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
