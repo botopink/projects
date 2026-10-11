@@ -698,6 +698,7 @@ number, which is **484**.
 - **Blocks.** 144 B-04, B-07.
 
 #### 431-h · `asserts.throws`' signature (144 B-07)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** Generic: `throws<T>(body: fn() -> T)`, over `attempt`; `T` is inferred from the body.
 - **Options.** (a) Generic: `throws<T>(body: fn() -> T)` over `attempt`. (b) `throws(body: fn() -> unknown)`.
   ```bp
   asserts.throws({ -> parse("x") })      // (a) T inferred: @Result<Json, HostError>

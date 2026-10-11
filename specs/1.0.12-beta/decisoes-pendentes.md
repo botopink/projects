@@ -697,6 +697,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-04, B-07.
 
 #### 431-h · A assinatura do `asserts.throws` (144 B-07)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Genérica: `throws<T>(body: fn() -> T)`, sobre o `attempt`; `T` é inferido do corpo.
 - **Opções.** (a) Genérica: `throws<T>(body: fn() -> T)` sobre `attempt`. (b) `throws(body: fn() -> unknown)`.
   ```bp
   asserts.throws({ -> parse("x") })      // (a) T inferred: @Result<Json, HostError>
