@@ -2,7 +2,7 @@
 
 **88 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
-contradictions; a row of a choices table).
+contradictions; a row of a choices table, or a `#####` entry beside it).
 
 - An answer goes into [`decisions-taken.md`](decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -954,8 +954,6 @@ local change in the named place). Full 1.0.10 text under the same id in
 
 | Id | Choice implemented | Where |
 |---|---|---|
-| 24-c | `iter for` / `iter while` parse as prefixed `loop { for (…) { … }; break; }` (keyword kept in `LoopExpr.prefixedKeyword`); `iter loop :l` labels the generator scope, `iter for :l` the written `for` | parser |
-| 23-b | `base64`'s four functions retired, not aliased; `encoding.base64Decode` / `base64UrlDecode` answer `@Result` | `libs/std/src/encoding.bp` |
 | 01c-a | A comptime module's atom is `bp@comptime@<owner path>__tpl__<decl>__<hash>` | comptime |
 | 01c-b | A section leaf takes the leading-dot shorthand where the position's type is that section; with no expectation refused naming its section | checker |
 | ck2-a | `@module()` refused at the call (`builtin-not-lowered`) until a rule says what a module value is | `builtins.d.bp` · `reject/builtin_module_not_lowered` |
@@ -983,20 +981,105 @@ local change in the named place). Full 1.0.10 text under the same id in
 | 389-a | A declared function whose own return is no `@Component` answering one through its type arguments (`first<T>(cards)`) is 389's "what generic code answers": an edge with `callee: null`, the node asynchronous, no synchronous mark on the call | `infer.noteHookCall` · `run/decl_hooks_dynamic_call` |
 | s29-c | A template annotation's outputs name a hole by its expression as written (the part's `code` placeholder `__bp_hole_q_0` becomes `id` in a recorded meta or member source); `q.fail` / `q.failAt` / `decl.fail` and a `lookup` of a name not in the text are reported at the annotation (the literal has no span map there); its `DeclAnnotation.args` is the literal as written; `decl.params` lists `self` | `infer.unplaceholderContributions` · `decorator_eval.annotationPlans` · `run/template_annotation` |
 
+##### 24-c · `iter for` / `iter while` are a prefixed `loop` (*implemented as (a)*)
+- **Measured.** The front's README asked for a new node `GenLoop { kind, loop }`; but each of the four backends already lowers one form of annotated loop (22-loops' `loop`), and decision 125 itself says `iter for (xs) { … }` means `iter loop { for (xs) { … }; break; }`. The parser reads it so and keeps the written keyword in `LoopExpr.prefixedKeyword`, for the formatter to give it back. The label stays where decision 105 writes it, after the loop's word.
+  Today:
+  ```bp
+  iter for (xs) { x -> yield x * 2; }      // read as: iter loop { for (xs) { x -> yield x * 2; }; break; }
+  iter loop :l { yield :l 1; }             // the label names the generator
+  iter for :l (xs) { x -> break :l; }      // the label names the written `for`
+  iter for :l (xs) { x -> yield :l x; }    // error[yield-label-not-generator]
+  ```
+- **Options.** (a) ★ Syntactic sugar over the prefixed `loop`; the label of `iter for :l` names the `for` (so `break :l` / `continue :l` keep their usual meaning).
+  ```bp
+  iter for :l (xs) { x -> if (x < 0) { continue :l; }; yield x; }   // continue of the `for`
+  ```
+  (b) A new `GenLoop` node, with a lowering of its own in each of the four backends — the same source, four more paths to keep in agreement.
+  ```bp
+  iter for (xs) { x -> yield x * 2; }      // becomes GenLoop { kind: For, loop: … } down to the backend
+  ```
+  (c) As (a), but the label of a prefixed `for` also names the generator — the parser only moves the label to the outer node.
+  ```bp
+  iter for :l (xs) { x -> yield :l x; }    // compiles: `:l` is the generator's scope
+  ```
+- **Recommendation.** (a). It is the equivalence decision 125 already writes, with no new backend.
+- **Blocks.** Nothing (`01-compiler/24` step 2's confirmations).
+
+##### 23-b · `base64`'s four functions retired, not aliased (*implemented as (a)*)
+- **Measured.** `base64.decode` answered a `string`; its replacement `encoding.base64Decode` answers `@Result<string, string>` because front 01 validates the input before `Buffer.from` truncates it (likewise `decodeUrlSafe` → `base64UrlDecode`). No library imported `base64`. `base64.bp` was deleted and its four tests rewritten with the `encoding` names (std keeps 417 tests). Decision 106 and `01-std/modules.md` already name the replacements.
+  Today:
+  ```bp
+  val s = try encoding.base64Decode(text);     // @Result<string, string>: validates before decoding
+  base64.decode(text)                          // no longer exists
+  ```
+- **Options.** (a) ★ Retire the four (`encode` / `decode` / `encodeUrlSafe` / `decodeUrlSafe`).
+  ```bp
+  val raw = try encoding.base64UrlDecode(token);
+  ```
+  (b) Keep the four in `encoding` as aliases answering `string` (they hide the refusal).
+  ```bp
+  val s = encoding.decode("not base64!");   // answers a truncated string, no error
+  ```
+- **Recommendation.** (a). Two spellings of one codec, one of them hiding the refusal, is what front 01 removed.
+- **Blocks.** Nothing (`01-compiler/23` step 2's confirmations).
+
 #### 02-std-and-packaging (10)
 
 | Id | Choice implemented | Where |
 |---|---|---|
-| 24-g | `std/async`: started `allOf` over `@Task<@Result<T, E>>` (stops at the first `Error` in input order), `all`, `race`; unstarted `runAll`, `raceOf`, `timeout(task, millis) -> @Task<@Result<T, string>>` (`Error("timeout")`); `failed(message)` answers `Error`; `allSettled`, `settleOf`, `unwrapAll`, `attempt` removed | `libs/std/src/async.bp` |
 | 01std-a | A bundled library loaded by CLI and LSP (`appendBundled`), not `expandStdImports`; compiler-core names no package but `std` | `build.zig` `bundled_packages` |
 | 01std-c | `routing.pattern`'s empty pattern matches only `/`; rakun-web keeps "empty runs everywhere" at its call site (`matcherAdmits`) | `routing` |
 | 01std-e | `actions.readEnvelope` refuses a `redirect` disagreeing with `n` | `actions` |
 | std-a | `querystring.parse` / `parseForm` answer `@Result`, refuse a malformed escape, non-UTF-8 and a control character raw or decoded; `stringify` refuses a control character; `parse` is RFC 3986 (`+` stays), `parseForm` the form flavour (`ctr-p`) | `libs/std/src/querystring.bp` |
 | std-b | `fs.exists` follows a symbolic link (dangling link is `false`) | `io/fs.bp` |
-| std-c | Decision 110's folder namespace is a rewrite of the parsed program | `comptime/std_namespace.zig` |
 | 95-a | Front 95 relocated `jhonstart-link` and `rakun-app` as moves with no behaviour | jhonstart · rakun |
 | 95-b | `rakun-app` declares its own `"targets": ["erlang"]`, as all 36 rakun manifests do (option (b); 1.0.10's "inherits the workspace" is not what the code does) | `rakun-app` manifest |
 | 95-c | `erika-test` exists | erika |
+
+##### 24-g · The shape of `std/async` with a Task that never fails (*implemented as (a)*)
+- **Measured.** Before front 24, `std/async` had a surface of thunks (`allOf`, `settleOf`, `raceOf`, `timeout`) and one of already-started Tasks (`all`, `allSettled`, `race`), both built on "rejected Task = failure". Now a Task never fails (decisions 120 and 121): the error goes INSIDE, `@Task<@Result<T, E>>`. The guide writes `try await async.allOf([fetchUser(1), fetchUser(2)])` — already-started Tasks whose value is a `@Result` — and front 24's suite follows the guide; the `beam_memory_*` cells, though, need unstarted thunks, because on erlang an eager Task has already run when the combinator receives it. The implementation gave the guide's form the name `allOf` and the thunks other names.
+  Today:
+  ```bp
+  val users = try await async.allOf([fetchUser(1), fetchUser(2)]);   // started Tasks of @Result: stops at the first Error
+  val xs = await async.runAll([{ -> work(1) }, { -> work(2) }]);     // thunks: this is where the concurrency is
+  val r = await async.timeout({ -> slow() }, 100);                   // timed out → Error("timeout"), a string
+  ```
+- **Options.** (a) ★ Started: `allOf`, `all`, `race`; unstarted: `runAll`, `raceOf`, `timeout`; `failed(message)` answers `Error(message)`; `allSettled`, `settleOf`, `unwrapAll` and `attempt` were removed (there is no rejection to "settle"). A crash inside a task is re-raised.
+  ```bp
+  val users = try await async.allOf([fetchUser(1), fetchUser(2)]);
+  async.allSettled([…])          // no longer exists
+  ```
+  (b) `allOf` over thunks, as the README of `01-std/02` wrote it — the guide's example is rewritten with thunks.
+  ```bp
+  val users = try await async.allOf([{ -> fetchUser(1) }, { -> fetchUser(2) }]);
+  ```
+  (c) One `allOf` overloaded for both element forms — needs overloading by type, which the language does not have.
+  ```bp
+  async.allOf([fetchUser(1)])            // started
+  async.allOf([{ -> fetchUser(1) }])     // thunks — same name, another signature
+  ```
+- **Recommendation.** (a). It follows the guide and front 24's suite, and each form has one name.
+- **Blocks.** Nothing — the README of `01-std/02-std-async-primitives` (1.0.10) already specifies `allOf` over started Tasks (`02/97` step 5 — the `RetryPolicy` built on `std/async`, a residue — and `01-compiler/24` step 2).
+
+##### std-c · Decision 110's folder namespace is a rewrite of the parsed program (*implemented as (a)*)
+- **Measured.** Decision 110 allows `import {io} from "std"` and then `io.fs.readText(…)`. The implementation (`comptime/std_namespace.zig`) rewrites the already-read program to the leaf forms the checker and the four backends already lower: `io.fs.f()` becomes the namespace of `io/fs` (the item `io.fs as __bp_ns_io_fs` is added), and `collections.Dict` becomes `Dict`. Only the modules reached are imported. Limits: a missing member is `unbound variable 'io'`; a module declaring its own top-level `Dict` keeps `collections.Dict` unrewritten (refused all the same); a local named like the folder (`fn f(io: …)`) is not told apart from it. (23-a's alternative came in through here.)
+  Today:
+  ```bp
+  import {io} from "std";
+  io.fs.readText(path)       // rewritten to the leaf import `io.fs`; only the modules reached are imported
+  io.nope.f()                // unbound variable 'io'
+  ```
+- **Options.** (a) ★ The rewrite: one file, no backend touched.
+  ```bp
+  import {collections} from "std";
+  val d = collections.Dict.empty();   // runs on the four targets
+  ```
+  (b) A namespace type in the checker and a lowering of `a.b.f()` in the four backends, so the diagnostic names the folder.
+  ```bp
+  io.nope.f()                // error: std folder `io` has no module `nope`
+  ```
+- **Recommendation.** (a). (b) only if the diagnostic naming the folder is wanted.
+- **Blocks.** Nothing (`01-compiler/23` step 2's confirmations); a reversal opens a step in `01-checker`.
 
 #### Choices made by the 00-gate threads and the consolidation (5)
 
