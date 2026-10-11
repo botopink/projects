@@ -256,9 +256,9 @@ After every other step of the front has landed.
 
 ## Gate
 
-- [ ] the repository's own hook, through `git commit` (never `--no-verify`): botopink-lang's step gate on a
-      `front/*` branch (decision 460) and the full gate at the Conformance step and at landing; a library's
-      `runner-standalone.sh` on the main checkout's compiler
+- [ ] the repository's own hook, through `git commit` (never `--no-verify`): `scripts/gate.sh --no-conformance`
+      (decision 470) — botopink-lang's step gate on a `front/*` branch, a library's runner on the main checkout's
+      compiler; the Conformance step runs `scripts/gate.sh` with conformance before the front lands
 - [ ] <the front's own check: a validator run, a library that must compile, snapshots
       byte-identical for a refactor front, every RUN LOG unchanged>
 - [ ] a botopink-lang step (decision 458): every `tests/language` cell green; the cells of the behaviour it

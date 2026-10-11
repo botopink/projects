@@ -94,12 +94,13 @@ After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/ga
 - [ ] `runner-standalone.sh` gains a stage: `botopink cell check conformance/` (464) — every
       `conformance/modules/*/` cell on the targets the manifests declare, a mismatch a `.snap.new` candidate and a
       red; absent only structurally (no `conformance/` directory)
-- [ ] `--no-conformance` by hand only (466 (3)): `not a gate verdict`, no stored pass; the hook and CI never pass it
+- [ ] the libraries' pre-commit hook runs `scripts/gate.sh --no-conformance` (470); the Conformance step and the GitHub
+      pipeline run it with conformance
 - [ ] the meta repository's `scripts/gate.sh` runs `hook-integrity.yml`'s checks locally, and the workflow calls it
 - [ ] the meta repository's `scripts/gate.sh` is the machine's scheduler (decision 469): it owns the job pool,
       runs several repositories' gates together and hands each its share of jobs; the coordinator runs every full
       gate through it; measured: two gates together finish sooner in total than one after the other, no timing red
 - [ ] each library's `scripts/gate.sh` knows no pool and no lock: it takes a total of jobs (default the machine's)
-      and offers `--no-conformance` by hand only (`not a gate verdict`); a library's `test-out` per run
+      and offers `--no-conformance` (the hook's, 470); a library's `test-out` per run
 - [ ] copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names `scripts/gate.sh`
       and its `conformance/`

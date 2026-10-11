@@ -237,9 +237,9 @@ Every front README's `**Gate:** standard (fronts.md § Gate)` line means all of 
 boxes after it on that line are the front's own.
 
 - [ ] The repository's own hook, through `git commit` in the step's worktree (never `--no-verify`):
-      botopink-lang's step gate on a `front/*` branch (decision 460: the build, `zig build test`, `test-cli`,
-      and the cells and libraries the step reaches), the full gate at the front's Conformance step and at
-      landing; a library's `runner-standalone.sh` on the main
+      `scripts/gate.sh --no-conformance` (decision 470: on a `front/*` branch the step gate of 460 without the
+      conformance cells); the front's Conformance step runs `scripts/gate.sh` with conformance, green before the
+      front lands; the GitHub pipeline re-checks after, and nothing waits on it; a library's `runner-standalone.sh` on the main
       checkout's compiler, every row its manifests declare. A cold gate, when a landing calls for one, runs
       in the main checkout (`AGENTS.md` § Worktrees, rule 4).
 - [ ] A botopink-lang step: the conformance suite green and the cells of the behaviour it lands written; a
