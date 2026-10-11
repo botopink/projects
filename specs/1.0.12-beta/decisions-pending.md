@@ -16,8 +16,9 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 - **Part 2** — the rest (tracks 04–10, 20, ownership, contradictions that block no 00–03 step).
 - **Part 3** — the implementation choices of tracks 04–09.
 
-The Portuguese record (`decisoes-pendentes.md`) follows the same order, with examples for Part 1 and one line per item for
-Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answers and the next free number.
+The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
+(meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
+number, which is **481**.
 
 ---
 

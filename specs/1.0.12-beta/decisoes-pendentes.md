@@ -16,8 +16,9 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 - **Parte 2** — o resto (trilhas 04–10, 20, propriedade, contradições que não bloqueiam nenhum passo 00–03).
 - **Parte 3** — as escolhas de implementação das trilhas 04–09.
 
-O registro em português (`decisoes-pendentes.md`) segue a mesma ordem, com exemplos para a Parte 1 e uma linha por item para
-as Partes 2 e 3. Os ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo número livre.
+A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
+(`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
+número livre, que é **481**.
 
 ---
 
