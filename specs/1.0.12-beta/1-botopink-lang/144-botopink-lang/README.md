@@ -3203,7 +3203,7 @@ Found moving jhonstart's examples into its `conformance/` (463): every jhonstart
 Found moving erika's examples into its `conformance/` (463): `the wasm backend has no lowering for the builtin
 `@println``. Its two cells answer on commonJS, erlang and beam.
 
-- [ ] `@println` lowered on wasm as `@print` is, with its newline; erika's `conformance/` cells green on wasm — red on
+- [x] `@println` lowered on wasm as `@print` is, with its newline; erika's `conformance/` cells green on wasm — red on
       the parent, green after; a codegen snapshot case (478)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
