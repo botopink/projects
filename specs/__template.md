@@ -248,6 +248,9 @@ After every other step of the front has landed.
 - [ ] `feat`'s GitHub pipeline green after the front landed (477): `scripts/gate.sh` with conformance on every row —
       botopink-lang's whole `conformance/`, a library's `<lib>/conformance/`; a red reproduced locally, fixed at once
       (430), pushed again; no cell edited to match the code
+- [ ] for each red: the cheap test the hook already runs that would have caught it (a unit or snapshot test, a CLI
+      test, a member's `test` block) written, red on the breaking commit, green on the fix (478) — or the report
+      says why none can
 - [ ] the front's changes analysed together: every behaviour it added, changed or refused, every target that
       departs, against the cells that cover it — the table in the front's README
 - [ ] the cells that behaviour calls for written in decision 457's shape, each red on the front's base and green

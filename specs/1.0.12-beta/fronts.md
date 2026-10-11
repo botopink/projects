@@ -56,6 +56,8 @@ milestone (three when the console is closed).
     (decisions 474, 476, 477): the steps land once their hook gate passed; the pipeline runs `scripts/gate.sh` with
     conformance on that `feat` push; green on every row, the front is done; red, it is reproduced locally, fixed
     at once ahead of every other step (430) and pushed again. Conformance runs locally only to reproduce a red.
+    For each red, the step asks which cheap test the hook already runs would have caught it, and writes it
+    (decision 478) — red on the breaking commit, green on the fix — so the next one is caught at the commit.
 
 ## Ownership, by repository
 
