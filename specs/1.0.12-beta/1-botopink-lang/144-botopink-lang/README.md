@@ -33,7 +33,7 @@ order, before any other step of this front or any other front:
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
 | B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
-| B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (decision 442) | opus |
+| B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
 
 ## Lanes
 
@@ -339,6 +339,10 @@ keeps what defines a value's representation or talks to the host; what only comp
 - [ ] every helper 442 (2) lists for std leaves `wat_prelude`: implemented in `modules/std-wasm` (Zig unit tests per
       function), bound by `#[@External.Wasm("std:…")]` on its std declaration (`primitives.bp` and the std modules),
       transpiled into the program where called; the `HelperGroup` members and their `wat_ast` nodes deleted
+- [ ] case mapping over all of Unicode in std-wasm (443): `toUpper` / `toLower` bound by `std:`, `$__str_case`
+      deleted, the comptime's limit 3 gone; `run/` cells with non-ASCII letters (`é`, `ß`, `Σ`) on the four targets,
+      each place JS and OTP differ measured and answered as OTP on wasm
+- [ ] `std:` refused outside `libs/std` (445), at the annotation, naming std's function — a `reject/` cell
 - [ ] `bigint` (`bn_*`) leaves `wat_prelude` for Zig beside std-wasm, its limbs internal; Zig unit tests and a
       property test against a reference (carry, `divmod`, text round-trip); the codegen calls it by pointer
 - [ ] transpiled Zig uses the program's `$__alloc` and the codegen's string / array layout — no second heap, no

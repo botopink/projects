@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **443**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **446**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -13,47 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 440-b · `toUpper` / `toLower` no wasm e no comptime (440, 441)
-
-O `caseMap` do std-wasm só mapeia ASCII e recusa as outras letras; o `$__str_case` do wasm deixa uma letra não ASCII
-como está, com exit 0. commonJS e erlang mapeiam Unicode.
-
-**(a)** Deixar como está:
-```text
-@print("é".toUpper())   // wasm: é   commonJS: É   erlang: É
-```
-**(b)** Ligar ao `caseMap` já: uma letra não ASCII vira trap no wasm (e recusa no comptime), em vez de resposta errada.
-```text
-@print("é".toUpper())   // wasm: trap — case mapping of U+00E9 is not implemented
-```
-**(c)** Mapeamento Unicode completo no std-wasm (as tabelas que o `unicode` já gera): `É` em todo target e no comptime.
-
-**Recomendação: (c), com (b) até ela pousar** — resposta errada com exit 0 é o que a decisão 67 proíbe. Trava: 144 B-00g.
-
-### 440-c · `NaN` e `±Infinity` como texto (441)
-
-O OTP não tem esses floats, então o std-wasm não tinha texto para eles; o B-00e respondeu `NaN`, `Infinity`,
-`-Infinity` (o que o wasm já imprimia, e o commonJS imprime).
-
-**(a)** Manter as palavras. **(b)** Trap, como o erlang levanta `badarith`.
-```text
-@print(1.0 / 0.0)   // (a) wasm: Infinity     (b) wasm: trap — badarith, como no erlang
-```
-**Recomendação: (a)** — o valor existe no wasm e no commonJS; o `badarith` do erlang é da aritmética, não da formatação.
-Não trava nada (construído como (a)).
-
-### 440-d · `std:` fora do std (440 (3))
-
-**(a)** Qualquer módulo pode ligar uma declaração sua a um export do std-wasm:
-```bp
-#[@External.Wasm("std:hash.contentHash")]
-declare fn myHash(value: string) -> string;   // módulo do usuário, aceito
-```
-**(b)** Só o std; fora dele `std:` é recusado na anotação, e o usuário chama a função do std.
-
-**Recomendação: (b)**, a mais restritiva: uma declaração por export mantém a tabela `std:` auditável. Não trava nada
-(construído como (a)).
 
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 
