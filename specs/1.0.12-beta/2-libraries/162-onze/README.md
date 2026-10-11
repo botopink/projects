@@ -671,3 +671,15 @@ Per decision 202 (no `prerender` export).
       (50 step 8, 51 step 7)
 
 **Gate:** standard (fronts.md § Gate) · no `.snap` recorded that this README does not name
+
+### 162 conformance — `onze/docs.md` and its examples into `onze/conformance/` (decision 463)
+
+**Repository:** onze (`--repo onze`) · **Model:** sonnet
+
+After 163 s7 (the shared hook checks `conformance/`).
+
+- [ ] `onze/docs.md` moved to `onze/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
+      `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
+      is not a program given its context or turned into ` ```text `
+- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+

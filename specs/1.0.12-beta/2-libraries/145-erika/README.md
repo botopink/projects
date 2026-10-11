@@ -102,3 +102,15 @@ step 1 re-counts), then `botopink format` at C-12's rules once `16-formatter` st
 
 - [ ] erika's `;` sites migrated by the script, cells green before/after, `botopink format --check` exit 0; reformat token-identical, idempotent
 - [ ] erika's gate (`scripts/git-hooks/pre-commit`: `botopink test` per member, `botopink build` per example) green; `zig build test-libs -- --lib erika` / `--lib erika-linq` green in the meta worktree
+
+### 145 conformance — `erika/docs.md` and its examples into `erika/conformance/` (decision 463)
+
+**Repository:** erika (`--repo erika`) · **Model:** sonnet
+
+After 163 s7 (the shared hook checks `conformance/`).
+
+- [ ] `erika/docs.md` moved to `erika/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
+      `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
+      is not a program given its context or turned into ` ```text `
+- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+

@@ -129,3 +129,15 @@ guarantees, the contract every implementation passes.
 - [ ] the lesson order and the cell each lesson shows, chosen from `botopink/conformance`
 - [ ] a generator renders the lessons from the cells and the reference, with no copied text or code
 
+### 163 s7 — the shared library hook checks `conformance/` (decision 463)
+
+**Repository:** every library repository (a full worktree: the one shared runner text) · **Model:** sonnet
+
+After 144 B-29 step H (the cells' runner, the 457 shape).
+
+- [ ] `scripts/git-hooks/lib/runner-standalone.sh` gains a stage: every `conformance/modules/*/` cell of the repository
+      run on the targets its manifest declares and compared with its `snapshot/` (a mismatch writes a `.snap.new`
+      candidate and fails; never overwritten); absent only structurally (no `conformance/` directory)
+- [ ] the runner copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names its
+      `conformance/` directory
+

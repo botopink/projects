@@ -33,6 +33,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 - [ ] 163 s4 — `repository/conformance` (public, scaffold) mirrors `tests/language`: a generator from the pinned botopink-lang and a CI check against hand edits · after 144 B-29 step H
 - [ ] 163 s5 — botopink-lang's `docs.md` and `docs/` move to `botopink/conformance` only (461, 462): a root `docs.md` and a `docs.md` beside each cell it explains; botopink-lang keeps no copy · after 163 s4 and 144 B-29 step H
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink/conformance`'s cells and reference, nothing duplicated · after 163 s5
+- [ ] 163 s7 — the shared library hook runs each library's `conformance/` cells (463) · after 144 B-29 step H; then each library moves its `docs.md` and ` ```bp ` examples into `conformance/` (145, 149, 150, 154, 162)
 
 ### 144 botopink-lang
 

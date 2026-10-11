@@ -606,3 +606,15 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 - [ ] `AGENTS.md` paragraph: 204 inline asserts and the 39 existing `.snap` are the evidence; the
       helpers that exist stay (§ 3)
+
+### 149 conformance — `jhonstart/docs.md` and its examples into `jhonstart/conformance/` (decision 463)
+
+**Repository:** jhonstart (`--repo jhonstart`) · **Model:** sonnet
+
+After 163 s7 (the shared hook checks `conformance/`).
+
+- [ ] `jhonstart/docs.md` moved to `jhonstart/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
+      `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
+      is not a program given its context or turned into ` ```text `
+- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+

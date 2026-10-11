@@ -1112,3 +1112,14 @@ tests go red that pass alone — a verdict that depends on the machine's load, n
 - [ ] if std offers no controllable clock source, a `language-gaps.md` row naming the 144 step that adds one, and
       this step pauses on it (rule 9, decision 430) — no rakun-local workaround
 
+### 150 conformance — `rakun/docs.md` and its examples into `rakun/conformance/` (decision 463)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** sonnet
+
+After 163 s7 (the shared hook checks `conformance/`).
+
+- [ ] `rakun/docs.md` moved to `rakun/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
+      `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
+      is not a program given its context or turned into ` ```text `
+- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+

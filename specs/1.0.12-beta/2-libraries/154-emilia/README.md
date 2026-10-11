@@ -170,3 +170,15 @@ first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; em
 - [ ] `repository/emilia/AGENTS.md` § Tests: the inline literals, the three readers of the
       contract-4 literal and the two helper `.snap` are the evidence; the 1.0.10 suites and eight
       examples are retired (33 steps 3–4)
+
+### 154 conformance — `emilia/docs.md` and its examples into `emilia/conformance/` (decision 463)
+
+**Repository:** emilia (`--repo emilia`) · **Model:** sonnet
+
+After 163 s7 (the shared hook checks `conformance/`).
+
+- [ ] `emilia/docs.md` moved to `emilia/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
+      `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
+      is not a program given its context or turned into ` ```text `
+- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+
