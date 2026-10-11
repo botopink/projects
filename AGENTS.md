@@ -101,6 +101,8 @@ Three rules make it safe:
    test the hook runs that would have caught it is written beside the fix (478).
    A front's Conformance step holds back no other front (479): the fronts that need its change open
    once its other steps have landed.
+   It also updates the reference (480): the `docs.md` beside each cell it writes or changes, and the
+   root `conformance/docs.md` where the change is not one cell's.
 4b. **No `gate.sh --cold` inside a `--repo` / `--lang` worktree.** Its gate is the commit
    hook's (`--staged`, warm). `--cold` deletes every sibling library's cache, and the
    siblings there are the main checkout's: a cold gate, when a landing calls for one,

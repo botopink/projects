@@ -1133,6 +1133,7 @@ After every other step of this front has landed.
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
+- [ ] the reference updated (480): `conformance/docs.md` and the `docs.md` of each cell written or whose answer changed
 - [ ] the GitHub pipeline read (474, 477): the runs on `feat` since the front's base green, or each red named and fixed or filed
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 

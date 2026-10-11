@@ -61,6 +61,9 @@ milestone (three when the console is closed).
 15. **A Conformance step holds back no front** (decision 479): a front that needs another's change opens as soon
     as that front's other steps have landed on `feat`, without waiting for its Conformance step; a red found
     later is fixed first (430) and the building front rebases on the fix.
+16. **A front's Conformance step updates the reference** (decision 480): the `docs.md` beside each cell it writes
+    or whose answer changed, and the root `conformance/docs.md` where the change is not one cell's — in
+    botopink-lang or the library the behaviour belongs to; a text that contradicts a cell is a red of the step.
 
 ## Ownership, by repository
 
