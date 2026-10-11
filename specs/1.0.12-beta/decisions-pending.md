@@ -21,28 +21,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ## Part 1 — What blocks tracks 00–03
 
-### What blocks now (answer first)
-
-The first group of the milestone (434, front 144 B-00) waits on one answer:
-
-#### 434-a · Which BEAM code `beam-to-wasm` converts first (434 (3))
-- **Measured.** Not measured whole yet: 144 B-00b's first box lists every `@External.Erlang` / `@External.Beam` cell and `.erl` sidecar a comptime evaluation reaches. A first count on botopink-lang `feat`: of std's Erlang templates that open with a module call, the module is `erlang` (5), `lists` (4), `string` (2), `os` (2), `uri_string`, `unicode`, `math`, `binary` (1 each); 32 more are `fn:` botopink bodies (no BEAM code). The libraries' sidecars (rakun's `rakun_*.erl`, jhonstart's `jhonstart_render.erl`, styled's `hash.bp` cell) are reached at comptime only where a decorator or template calls them. The comptime-14 landing builds BEAM host cells for 341 (a decorator's Erlang cell on the BEAM runtime): that code is transitional and is deleted in 144 B-00d.
-- **Options.**
-  (a) A named subset: the BEAM opcodes and BIFs B-00b's measurement lists, plus the OTP functions those cells call, each implemented by std-wasm (`lists:reverse/1`, `string:uppercase/1`, `unicode:characters_to_list/1` …); any other call refused at the call site.
-  ```text
-  error: beam-to-wasm does not convert `re:run/3` — reached at comptime from regex.matches (src/regex.bp:41)
-  ```
-  (b) Whole OTP modules on demand: `lists`, `maps`, `string`, `unicode`, `binary` translated from OTP's own `.beam` files (their opcodes, their BIFs), so a cell calling any function of those five runs.
-  ```bp
-  #[@External.Erlang("lists:keysort(2, $0)")] declare fn byAge(xs: …) -> …;   // runs at comptime: lists.beam translated whole
-  ```
-  (c) No OTP at all: only the opcodes of the cell's own `.beam`; every remote call refused.
-  ```text
-  error: beam-to-wasm converts no remote call — `lists:reverse/1` in rakun_scheduling.erl:12
-  ```
-- **Recommendation.** (a): the subset is what a test proves, a call outside it is a located refusal (67), and a module grows by a measured need, not by OTP's size.
-- **Blocks.** 144 B-00b (the first group of the milestone).
-
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.

@@ -26,7 +26,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 
 ### First — comptime on wasm (434, 144 B-00)
 
-- [ ] **144 B-00a → B-00e (434)** — comptime on wasm only, the first thing the milestone does: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output · opens before any other step of any front; B-00b on `434-a`
+- [ ] **144 B-00a → B-00e (434)** — comptime on wasm only, the first thing the milestone does: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output · opens before any other step of any front; B-00b converts a named subset (435)
 
 ### 144 botopink-lang
 
@@ -381,7 +381,6 @@ last section. Open: 88 questions, 6 contradictions, 105 implementation choices (
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 434-a — which BEAM code `beam-to-wasm` converts first · 144 B-00b (the first group)
 - [ ] 05w-i → 333 (A): 97 s16 · 05w-j → 336: 97 s15
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):

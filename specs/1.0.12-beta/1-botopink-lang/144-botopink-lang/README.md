@@ -28,7 +28,7 @@ order, before any other step of this front or any other front:
 | Step | What | Model |
 |---|---|---|
 | B-00a | `modules/std-wasm/`: std's host functions in Zig, compiled to wasm, served to the comptime runtime | opus, then sonnet |
-| B-00b | `modules/beam-to-wasm/`: `.beam` bytecode translated to wasm, BIFs from std-wasm, an unconverted call refused located (`434-a`) | opus |
+| B-00b | `modules/beam-to-wasm/`: `.beam` bytecode translated to wasm, BIFs from std-wasm, an unconverted call refused located (decision 435: a named subset) | opus |
 | B-00c | the comptime driver on wasm for every target; host cells resolve std-wasm → beam-to-wasm → `@External.Wasm` → refused | opus |
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
@@ -187,7 +187,7 @@ cell. Measure first which ones comptime reaches today.
 A new module `repository/botopink-lang/modules/beam-to-wasm/` reads the `.beam` erlc produces — an `.erl`
 sidecar, an `@External.Erlang` / `@External.Beam` cell — and translates a BEAM-opcode subset to wasm, BIFs
 served by std-wasm, so code that exists only as BEAM runs at comptime on the wasm runtime. A call it does not
-convert is refused at the call site, located. Which OTP modules it covers first is question `434-a`.
+convert is refused at the call site, located. It converts a named subset first (decision 435): the opcodes, BIFs and OTP functions B-00b's measurement lists, each served by std-wasm; any other call refused located.
 
 - [ ] measured: every `@External.Erlang` / `@External.Beam` cell and `.erl` sidecar a comptime evaluation
       reaches today (std, rakun, jhonstart, erika, styled, emilia …), with the opcodes and OTP calls each uses —

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 88 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **435**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 87 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **436**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -42,43 +42,6 @@ intenção pelo uso; a (b) muda o que todo `val x = Card(…)` de corpo signific
 
 **Primeiro de tudo — a decisão 434** (comptime só no wasm, front 144 grupo B-00) abre antes de qualquer outro
 passo de qualquer frente; ela espera esta resposta:
-
-### 434-a · O que o `beam-to-wasm` converte primeiro (434 (3))
-
-**Trava:** front 144 passo B-00b — o primeiro grupo do milestone (comptime só no wasm)
-
-**Contexto.** Pela 434 o comptime de todo target roda no runtime wasm; código que só existe como BEAM (uma
-célula `@External.Erlang` / `@External.Beam`, um sidecar `.erl`) passa pelo `modules/beam-to-wasm/`, que lê o
-`.beam` do erlc e traduz um subconjunto dos opcodes, com as BIFs servidas pelo std-wasm. Uma chamada que ele
-não converte é recusada no ponto da chamada. A pergunta é quanto do OTP ele cobre primeiro. Contagem inicial
-no `feat` da botopink-lang: dos templates Erlang do std que começam por uma chamada de módulo, o módulo é
-`erlang` (5), `lists` (4), `string` (2), `os` (2), `uri_string`, `unicode`, `math`, `binary` (1 cada); 32 são
-corpos `fn:` em botopink (sem BEAM). A medição inteira é a primeira caixa do B-00b. A frente comptime-14, ao pousar, constrói células host BEAM para a 341: esse código é transitório e sai no B-00d.
-
-**Hoje:**
-```text
-# comptime de um build erlang roda no BEAM (persistent_beam.zig); de um build commonJS, no wat
-```
-
-- [ ] **(a)** Um subconjunto nomeado: os opcodes e BIFs que a medição do B-00b lista, mais as funções do OTP
-  que essas células chamam, cada uma implementada pelo std-wasm; qualquer outra chamada recusada no ponto.
-  ```text
-  error: beam-to-wasm does not convert `re:run/3` — reached at comptime from regex.matches (src/regex.bp:41)
-  ```
-- [ ] **(b)** Módulos do OTP inteiros, sob demanda: `lists`, `maps`, `string`, `unicode`, `binary`
-  traduzidos dos próprios `.beam` do OTP.
-  ```bp
-  #[@External.Erlang("lists:keysort(2, $0)")] declare fn byAge(xs: …) -> …;   // roda no comptime: lists.beam traduzido inteiro
-  ```
-- [ ] **(c)** Nada do OTP: só os opcodes do próprio `.beam` da célula; toda chamada remota recusada.
-  ```text
-  error: beam-to-wasm converts no remote call — `lists:reverse/1` in rakun_scheduling.erl:12
-  ```
-
-**Recomendação: (a)** — o subconjunto é o que um teste prova, o resto é recusa localizada (67), e cresce por
-necessidade medida. **Bloqueia:** front 144 B-00b.
-
----
 
 ### std-d · `io.process`: sinais e leitor de TTY
 
