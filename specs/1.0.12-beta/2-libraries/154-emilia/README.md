@@ -187,10 +187,22 @@ first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; em
 
 After 163 s7 (the shared hook checks `conformance/`).
 
-- [ ] `emilia/docs.md` moved to `emilia/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
+- [x] `emilia/docs.md` moved to `emilia/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
       `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
       is not a program given its context or turned into ` ```text `
-- [ ] every cell green on the targets the library's manifests declare, through the library's own hook
+- [ ] every cell green (79 cells: green on commonJS, erlang and beam; wasm waits on B-40 — the manifest's `"targets"` read — and B-42) on the targets the library's manifests declare, through the library's own hook
+
+### 154 s5 — `conformance/docs.md` agrees with its cells (found moving the reference, decision 480)
+
+**Repository:** emilia (`--repo emilia`) · **Model:** opus (each item is "the text or the code is wrong")
+
+- [ ] `.Effect.InsetShadow.*`: the text says `box-shadow:inset var(--inset-shadow-xs)`; the code emits
+      `--tw-inset-shadow:inset var(--inset-shadow-xs);` and the five-channel `box-shadow` reader — the text rewritten
+      ("same property as Shadow" is stale) or the code fixed
+- [ ] the stable-hashes example names `Token.BgWhite`, which does not exist (`.Bg.White` → `background:#ffffff`)
+- [ ] the quickstart calls `flush()` without `await`; it answers a task
+- [ ] `.GroupNamed(…)` / `.PeerNamed(…)` compile as written, against the text's claim that a leading-dot call does not
+      carry the typed-array context: the text or the checker fixed
 
 ### 154 Conformance — the front's last step (decision 465)
 

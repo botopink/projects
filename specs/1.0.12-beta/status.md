@@ -32,7 +32,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 
 - [ ] 144 B-29 step H — `botopink cell new` / `check` landed (464, 475), the third step of the conformance order; left — step H2, in flight: `tests/language/` becomes `conformance/`, every cell in decision 457's shape with its own `botopink.json`; `reject/` and single-file `run/` cells run in process; the language half of `test-cli` (`backend_exec`, `mutual_recursion`, `assert` / `try`) becomes cells; `modules/` and `test/` stay on the CLI · after step G (landed)
 - [ ] 144 B-29 step I — the commit hook runs `gate.sh --no-conformance` (470, landed: a one-backend step 4m20 cold, 1m28 warm); left: the reference into `botopink-lang/conformance/` (every `docs.md` example a cell), `test.yml` calling `scripts/gate.sh` (461, 462, 466) · the fourth step of the conformance order, after step H2
-- [ ] emilia's `docs.md` and examples into `emilia/conformance/` (463) — jhonstart, erika, onze and rakun done · the sixth step of the conformance order
+- [ ] emilia's 79 cells green on wasm — after 144 B-40 and B-42 (the move into `emilia/conformance/` landed; jhonstart, erika, onze and rakun done) · the sixth step of the conformance order
 - [ ] 144 B-00c last box — each library repository's own hook run on this compiler, `scripts/gate.sh libs` (473); `test-libs` green · the seventh step of the conformance order: after the step gate, the hook's `--no-conformance`, B-29 steps H and I, 163 s7 and each library's move into `conformance/`, so the hooks include it; it closes B-00
 - [ ] 163 s8 last box — every library's workflow (now `bpmp install` then `scripts/gate.sh`) with a green run on `feat`, read with `gh` (474) · nothing
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
@@ -52,6 +52,9 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-38 — `botopink cell check` reports every cell of a directory (a cell went missing in rakun's run) and resolves a cell's `path` dependency · nothing
 - [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
 - [ ] 144 B-40 — a cell's targets in its `botopink.json`'s `"targets"`, the `targets` file refused (475 (1)); jhonstart's and rakun's cells moved · nothing
+- [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · nothing
+- [ ] 144 B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (`join/1`) · nothing
+- [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
 

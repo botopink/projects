@@ -3270,6 +3270,31 @@ manifest, as any project's.
       library's hook green
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-41 — a library's abort reads the same on every target (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+emilia's `theme-unknown-namespace` cell aborts with `emilia theme: '--gutter' is in no known namespace` on commonJS;
+erlang and beam word the same abort differently, so the cell cannot claim its `stderr` in `output/` (458: no departure
+for a defect).
+
+- [ ] the abort's text measured on each target; the library's message reaches stderr unchanged on every target (the
+      runtime's frame around it the same, or none); the cell's `stderr` claim in `output/`, green on every target
+- [ ] a compiler-core test red on the parent (a `@panic` with a library's message, every backend)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+Found moving emilia's reference (79 cells): on wasm, any cell with a `path` dependency prints nothing, a bare
+`@print("hello")` included; emilia's `arbitrary.bp` does not build on wasm (`join/1` does not resolve).
+
+- [ ] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
+      dependency on wasm
+- [ ] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
