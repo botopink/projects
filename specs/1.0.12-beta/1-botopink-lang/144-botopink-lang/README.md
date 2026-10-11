@@ -3254,6 +3254,22 @@ refuses it (found in rakun's `constraint` cell, which registers inside `main` in
 - [ ] the erlang emission binds the first before the second reads it; the cell green on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-40 — a cell's targets are its `botopink.json`'s `"targets"`, never a `targets` file (decision 475 (1))
+
+**Repository:** botopink-lang, then jhonstart and rakun (a full worktree) · **Model:** sonnet
+
+`botopink cell check` / `cell new` read and write `<cell>/targets`; decision 475 (1) puts a cell's narrowing in its own
+manifest, as any project's.
+
+- [ ] `cell.zig` reads the cell's `botopink.json` `"targets"` through the manifest module (absent → every target);
+      the refusals kept (an unknown target, one named twice, an empty list, a list naming every target narrows nothing)
+- [ ] a `<cell>/targets` file is refused, located, naming the move into `botopink.json` (67) — no fallback reading it
+- [ ] `botopink cell new` writes the narrowing into the manifest; CLI tests and `cli_contract.sh` rows red on the parent
+- [ ] `conformance/docs.md`, `AGENTS.md` and `docs.md` name the manifest field, not the file
+- [ ] jhonstart's 18 and rakun's 35 cells moved: the file's targets into `botopink.json`, the file deleted; each
+      library's hook green
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)

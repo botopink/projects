@@ -52,6 +52,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers; the result store keeps a linked tree · nothing
 - [ ] 144 B-38 — `botopink cell check` reports every cell of a directory (a cell went missing in rakun's run) and resolves a cell's `path` dependency · nothing
 - [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
+- [ ] 144 B-40 — a cell's targets in its `botopink.json`'s `"targets"`, the `targets` file refused (475 (1)); jhonstart's and rakun's cells moved · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
 
