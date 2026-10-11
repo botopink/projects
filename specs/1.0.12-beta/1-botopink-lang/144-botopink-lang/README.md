@@ -2221,6 +2221,9 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       library, not the language) moves to `repository/erika/examples/` as a consumer commit (rule 10);
       `examples/` deleted; `test-libs.sh`, `tsc-check.sh`, `backend_exec.sh`, `cli_contract.sh`,
       `comptime_bench.sh` and `format-check` pointed at the cells or a fixture of their own, no check lost (458)
+- [ ] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
+      (`"${5.0}"`, `1.0e21`, `1.0e-7` — commonJS departs), `trim` keeping a NBSP, the final sigma (commonJS `ς`),
+      `NaN` / `Infinity` (erlang and beam abort), and an unseeded `random.float()` reached from a decorator body
 - [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
       manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
 - [ ] measured again (one gate alone, cold and warm) in `scripts/AGENTS.md`; no cell, target or check dropped, no
@@ -2436,6 +2439,19 @@ traps (447).
 too); `run/comptime_erlang_cell_never_runs_at_build` is the cell that does.
 
 **Model:** opus. **Consumer commits:** none.
+
+### B-31 — a template whose only part is a float hole is a string on wasm (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+Found by B-00k, present before the B-00 group: on wasm `val s = "${5.0}"; @print(s + "!")` emits invalid wasm
+(`type mismatch: expected f64, found i32`) and `val xs: string[] = ["${2.5}", "a"]` is refused ("cannot place a float
+in this array"); erlang and commonJS answer `5.0!` / the array. 441's `"${5.0}"` works on wasm only passed straight to
+`@print`.
+
+- [ ] a template is a `string` on wasm whatever its parts — a single float hole included
+- [ ] `run/interpolation_single_float_hole`: a `val`, an array element and a concatenation, four targets, red on the
+      parent on wasm, green after (458)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
