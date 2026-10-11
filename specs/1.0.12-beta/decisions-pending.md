@@ -44,6 +44,24 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   as `?@Decl`, `null` at a call site, one function for both:
   `fn erika(comptime q: @Expr<string>, comptime decl: ?@Decl) -> @Expr<Q> { if (decl != null) decl.setMeta(…); return q.build(…); }`.
   (c) No parameter: the handle is a capture method, `q.decl()` answering `?@Decl`.
+  (a) example:
+  ```bp
+  fn query(comptime q: @Expr<string>, comptime decl: @Decl) -> @Expr<string> { … }
+  #[query "select * from users where id = ${id}"]
+  fn find(id: i32) -> string { … }
+  val x = query "select 1";      // template-annotation-only
+  ```
+  (b) example:
+  ```bp
+  fn erika(comptime q: @Expr<string>, comptime decl: ?@Decl) -> @Expr<Q> {
+      if (decl != null) decl.setMeta(…);
+      return q.build(…);
+  }
+  ```
+  (c) example:
+  ```bp
+  fn erika(comptime q: @Expr<string>) -> @Expr<Q> { val d = q.decl(); … }
+  ```
 - **Recommendation.** (a): the signature says which form a function takes, a call site never meets a
   handle it cannot have, and 398 already writes the two forms as two functions; (b) if a library must
   serve both forms from one name.
@@ -65,6 +83,20 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   `@typeInfo(Users).method("find").meta(Query)`, the order of decorators unchanged. (c) No method meta:
   the owner's decorator re-reads the method's annotation literal from `m.annotations[i].args[0]` and
   parses it itself.
+  (a) example:
+  ```bp
+  fn repository(comptime decl: @Decl) {
+      for (decl.methods) { m -> val q = m.meta(Query); … }
+  }
+  ```
+  (b) example:
+  ```bp
+  val q = @typeInfo(Users).method("find").meta(Query);
+  ```
+  (c) example:
+  ```bp
+  val sql = m.annotations[0].args[0];   // "\"select …\"" — every owner redoes the template's work
+  ```
 - **Recommendation.** (a): the read is where the owner's decorator already walks its methods, typed as
   `@typeInfo(X).meta(T)` is, and a member's facts exist before its owner reads them; (c) duplicates the
   template's work in every owner.
@@ -83,6 +115,20 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   `addMeta` is read only with `metaAll` — `meta(Index)` refused even over one `Index`
   (`typeinfo-meta-repeated`). (c) The two mix: `setMeta` holds one value among the added ones, and
   `meta(T)` answers the set one.
+  (a) example:
+  ```bp
+  decl.setMeta(Entity(table: "a"));
+  decl.addMeta(Entity(table: "b"));            // decorator-meta-twice
+  @typeInfo(City).meta(Index)                  // typeinfo-meta-several with two Index
+  ```
+  (b) example:
+  ```bp
+  @typeInfo(City).meta(Index)                  // typeinfo-meta-repeated, even with one Index
+  ```
+  (c) example:
+  ```bp
+  decl.setMeta(Entity(table: "a")); decl.addMeta(Entity(table: "b"));   // meta(Entity) == "a"
+  ```
 - **Recommendation.** (a): a key with two meanings at once is refused where it is written; (b) if a
   reader must not depend on how many decorators added a type.
 - **Blocks.** Nothing — built as (a).
@@ -97,6 +143,15 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   `.hooks`, is `typeinfo-meta-hooks-pending`. (b) Deferred like the string read: typed as `?Route` at the
   read, the value written and typed when the reader ran — a type error in an `@Expr` field then located
   in the second phase.
+  (a) example:
+  ```bp
+  // #[route] reads .hooks
+  @typeInfo(Page).meta(Route)   // typeinfo-meta-hooks-pending in Page's module
+  ```
+  (b) example:
+  ```bp
+  @typeInfo(Page).meta(Route)   // answered after #[route]
+  ```
 - **Recommendation.** (a).
 - **Blocks.** Nothing — built as (a); `05-jhonstart/26`'s `#[page]` reads its meta from the entry point.
 
@@ -110,6 +165,18 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) As built. (b) The read writes the arguments, `d.metaAll(Check<Signup>)`, and answers
   the values recorded with exactly those. (c) The read answers `Check<unknown>[]`, its fields typed
   through `unknown`.
+  (a) example:
+  ```bp
+  for (@TypeInfo.all(with: mark)) { d -> d.metaAll(Check) }   // typeinfo-meta-type
+  ```
+  (b) example:
+  ```bp
+  d.metaAll(Check<Signup>)
+  ```
+  (c) example:
+  ```bp
+  d.metaAll(Check)              // Check<unknown>[]
+  ```
 - **Recommendation.** (a).
 - **Blocks.** Nothing — built as (a).
 
@@ -123,6 +190,15 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) As built: the default does not travel, the field is supplied at every construction.
   (b) The derivation is refused at the call naming the field (`derived-type-default-not-closed`).
   (c) The default travels, the deriving module calling the source module's function (an implicit import).
+  (a) example:
+  ```bp
+  val NoHref = Type.omit(Link, .href);
+  val n = NoHref(target: null);           // error at the call: `rel` is missing
+  ```
+  (b) example:
+  ```bp
+  val NoHref = Type.omit(Link, .href);    // derived-type-default-not-closed: `rel`
+  ```
 - **Recommendation.** (a): no implicit import, no silent value; (b) if a derived type must keep every default.
 - **Blocks.** Nothing — built as (a).
 
@@ -132,6 +208,10 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   default stays.
 - **Options.** (a) As built. (b) Refused at the call, naming the field. (c) The `null` default stays and
   the field is refused at the constructor when omitted.
+  (a) example:
+  ```bp
+  val Full = Type.required(Recipe);   // description: string, without a default
+  ```
 - **Recommendation.** (a): "every `?` goes" (types.bp), a `null` cannot type a non-optional field.
 - **Blocks.** Nothing — built as (a).
 
@@ -141,6 +221,10 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   the `val`'s own annotations go on the type. Decision 307 names "the source fields' markers" only.
 - **Options.** (a) As built: fields and their annotations. (b) The methods whose bodies read only kept
   fields come too. (c) The `implement` clauses come, refused when a member they need is gone.
+  (a) example:
+  ```bp
+  val T = Type.pick(Recipe, .title);   // T(title: string), without Recipe's methods
+  ```
 - **Recommendation.** (a): a derived type is data; behaviour is written on it.
 - **Blocks.** Nothing — built as (a).
 
@@ -150,6 +234,14 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   its own module's scope). A local alias of a record is that record.
 - **Options.** (a) As built. (b) A type application as the source, `Type.pick(Box<i32>, .item)`, the
   fields substituted. (c) An imported alias followed through its module.
+  (a) example:
+  ```bp
+  val P = Type.pick(Box, .item);        // Box<T>: refused
+  ```
+  (b) example:
+  ```bp
+  val P = Type.pick(Box<i32>, .item);   // P(item: i32)
+  ```
 - **Recommendation.** (a) until a front needs (b) or (c).
 - **Blocks.** Nothing — built as (a).
 
@@ -318,6 +410,21 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Options.** (a) ★ 238's one string: `#[@External.Wasm("wasi:delay")]`, adapter names in the list's
   snake_case. (b) 393's spelling: a labelled enum argument `#[@External.Wasm(wasi: .Delay)]` beside the
   string forms — a second spelling of the same binding, a `builtins.d.bp` change and a checker arm.
+  Today:
+  ```bp
+  #[@External.Wasm("wasi:delay")]
+  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+  ```
+  (a) example:
+  ```bp
+  #[@External.Wasm("wasi:race_of")]
+  declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>;
+  ```
+  (b) example:
+  ```bp
+  #[@External.Wasm(wasi: .Delay)]
+  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
+  ```
 - **Recommendation.** (a) — one spelling for a binding; 393's example reads as `"wasi:delay"`.
 - **Blocks.** Nothing — built as (a); `02/97` step 17 writes std's bindings in the chosen spelling.
 
@@ -337,6 +444,25 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   asynchronous (375's conservative answer), so a synchronous component passed as a value must be wrapped in
   a settled task where it becomes a value. (c) As built: components eager, an `await` of a host-pending task
   there traps.
+  Today:
+  ```bp
+  fn page(n: i32) -> @Component<i32> {
+      val v = await answer(n);   // answer -> @Task<i32>: runs the ready tasks until it settles
+      return v;                  // a task waiting on the host here: trap on both hosts
+  }
+  ```
+  (a) example:
+  ```bp
+  val page = await Page(slot);   // always reads a task — as commonJS did before 375
+  ```
+  (b) example:
+  ```bp
+  val wrapped = await view(Title());   // view: a function value — always a task
+  ```
+  (c) example:
+  ```bp
+  fn Widget() -> @Component<i32> { return await delay(5, 1); }   // trap on both hosts
+  ```
 - **Recommendation.** (a) — one representation of `@Component<R>` on wasm, no trap; 375's mark stays a
   commonJS optimisation. Not built: it changes every component cell's lowering on wasm (front 140 step 4,
   a follow-up thread).
@@ -355,6 +481,21 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   builds everywhere. (b) The backend binds each operand evaluated before an `await` to a frame local
   (A-normal form), so the statement runs as written: `pair(label("x"), await answer(21))` → `label("x")`
   stored, then the `await`.
+  Today:
+  ```bp
+  @print(pair(label("x"), await answer(21)));
+  // wasm: error: the wasm backend resumes an `await` by entering its statement again, and a call
+  //       evaluated before it in that statement would run twice … --> src/main.bp:21:29
+  ```
+  (a) example:
+  ```bp
+  val l = label("x");
+  @print(pair(l, await answer(21)));
+  ```
+  (b) example:
+  ```bp
+  @print(pair(label("x"), await answer(21)));   // wasm: label("x") stored, then the await
+  ```
 - **Recommendation.** (a) now — never a call run twice, the refusal located; (b) when a program needs it.
 - **Blocks.** Nothing.
 
@@ -401,6 +542,27 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   `BigInt` in range, wasm boxes a `bigint` with a kind of its own; `comptime` folds it with an
   arbitrary-precision integer in `eval.zig` and in the BEAM and WAT comptime runtimes. (c) (a) for `is`
   and `unknown`, (b) for `comptime` only.
+  Today:
+  ```bp
+  val u: unknown = 5n;                       // error: bigint-widened: a `bigint` does not widen to `unknown`
+  @print(x is i32);                          // x: bigint — error: bigint-type-test
+  val k = comptime 99999999999999999999n * 2n;   // error: comptime-bigint
+  @print(5n);                                // @print's variadic `unknown` accepts it
+  ```
+  (a) example:
+  ```bp
+  fn pick(c: bool) -> i32 | bigint { return if (c) 1 else 2n; }   // legal; `pick(c) is i32` refused
+  ```
+  (b) example:
+  ```bp
+  val u: unknown = 5n;
+  @print(u is i32);      // true on all four targets
+  @print(5 is bigint);   // true
+  ```
+  (c) example:
+  ```bp
+  val k = comptime 99999999999999999999n * 2n;   // 199999999999999999998n, folded at build
+  ```
 - **Recommendation.** (a): no answer differs per target, and nothing is accepted that a later answer
   would have to take back; (b) when a program needs `bigint` in `unknown` or at compile time.
 - **Blocks.** Nothing — built as (a).
@@ -460,6 +622,15 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   type HostError(message: string, kind: string);                 // user's own
   declare fn q(s: string) -> @Result<Json, HostError>;          // (a): refused — throws: true answers std's failure.HostError
   ```
+  (a) example:
+  ```bp
+  type HostError(message: string, kind: string);            // the user's
+  declare fn q(s: string) -> @Result<Json, HostError>;     // refused: throws: true answers std's failure.HostError
+  ```
+  (b) example:
+  ```bp
+  declare fn q(s: string) -> @Result<Json, HostError>;     // accepted with the user's HostError
+  ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-03.
 
@@ -472,6 +643,10 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   json:decode(<<"{">>)     → HostError(message: "{invalid_json,{unexpected_end,1}}", kind: "error")
   ```
   (b) One `kind` for all (`"host"`), the message only.
+  (b) example:
+  ```text
+  JSON.parse("{")          → HostError(message: "Unexpected end of JSON input", kind: "host")
+  ```
 - **Recommendation.** (a): the kind a caller can test, the same field names on every target.
 - **Blocks.** 144 B-05.
 
@@ -490,9 +665,13 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 #### 431-f · `throws:` and `attempt` on wasm (144 B-05, B-07)
 - **Measured.** A wasm binding is `op:`, `fn:` (botopink bodies, no raise) or `wasi:` (an adapter answering an error code); a trap cannot be caught inside the module today.
 - **Options.** `throws:` refused on `op:` / `fn:` in every option. `attempt`: (a) wasm exception handling (`try_table` / `throw`), measured on wasmtime and node first; (b) an unwinding return flag the emitter threads through every call; (c) `attempt` refused on wasm, located.
+  (a) example:
   ```text
-  (a) attempt({ -> @panic("x") })   → Error(Failure(message: "x", kind: "panic"))   on wasm as elsewhere
-  (c) error: `attempt` has no wasm form — std/failure.bp:12, reached from main.bp:4
+  attempt({ -> @panic("x") })   → Error(Failure(message: "x", kind: "panic"))   on wasm as on the others
+  ```
+  (c) example:
+  ```text
+  error: `attempt` has no wasm form — std/failure.bp:12, reached from main.bp:4
   ```
 - **Recommendation.** (a) if the measurement passes on both hosts, else ask again; never (b) (a cost on every call).
 - **Blocks.** 144 B-05 (wasm), B-07 (`attempt`'s wasm cell).
@@ -503,9 +682,10 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   (a) `panic` (`@panic`, `@todo`, `x!`, an overflow 264, a division by zero), `host` (a raise from a binding without `throws:`), `crash` (a VM / emitted-code fault, a wasm trap); `host` exact on every target (commonJS wraps each such call).
   (b) As (a), `host` best-effort: on commonJS any `throw` not from botopink is `host`.
   (c) `panic` only for `@panic` / `@todo` / `x!`; compiler-emitted aborts (overflow, `case_clause`, division by zero) are `crash`, carrying a tag; anything else `host`.
+  (c) example:
   ```text
-  attempt({ -> 1 / zero() })   (a) Failure(kind: "panic")   (c) Failure(kind: "crash")
-  attempt({ -> jsonHost("{") }) (a) Failure(kind: "host")   (b) Failure(kind: "host")
+  attempt({ -> 1 / zero() })    (a) Failure(kind: "panic")   (c) Failure(kind: "crash")
+  attempt({ -> jsonHost("{") }) (a) Failure(kind: "host")    (b) Failure(kind: "host")
   ```
 - **Recommendation.** (a) with `host` exact — the kind is a contract or it is nothing (67); the per-call cost measured in B-05.
 - **Blocks.** 144 B-04, B-07.
@@ -520,8 +700,13 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 #### 431-i · `attempt`'s `@Task` form (144 B-07)
 - **Options.** (a) A second function `attemptTask(f: fn() -> @Task<T>) -> @Task<@Result<T, Failure>>`. (b) One `attempt` overloaded on the body's type (the language has no overloading). (c) `attempt(f).task()`.
+  (a) example:
   ```bp
-  val r = await attemptTask({ -> render(page) });   // (a)
+  val r = await attemptTask({ -> render(page) });
+  ```
+  (c) example:
+  ```bp
+  val r = await attempt({ -> render(page) }).task();
   ```
 - **Recommendation.** (a): one name per shape, as 24-g's `allOf` / `runAll`.
 - **Blocks.** 144 B-07.
@@ -541,12 +726,55 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Measured.** A wasm program importing `testing.asserts` is refused: 4 of its 27 functions reach host cells with no wasm binding (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); uses: throwsWith ~290, throws 4, deepEquals 2, matches 1; 140 files import the module.
 - **Rules.** 230: front 110 closes on "a std module wasm cannot build is a located refusal"; `02/97` step 11 offers (a) out of a wasm build or (b) restructured, a question per module. 146's last clause ("`testing.asserts` is restructured so nothing without a wasm binding is reachable from it on wasm") asks for (2)/(3); answering (1) amends it.
 - **Options.** (1) ★ As is: not importable on wasm. (2) The four move to their own module; the other 23 import on wasm (changes decision 74's API). (3) The three cells gain wasm versions (a regex engine in the wasm prelude; a catchable `@panic`).
+  Today:
+  ```bp
+  import {testing.asserts} from "std";      // --target wasm
+  // error: `canonical` has no `#[@External.<Target>(…)]` for the wasm backend — in `std/testing/asserts`, which this import links
+  ```
+  Today:
+  ```
+  deepEquals → canonical        matches → regexMatches        throws, throwsWith → tryCatch
+  uses in the repositories: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1 · 140 files import the module
+  ```
+  (1) example:
+  ```bp
+  // --target wasm: the import is refused (error above); a wasm program checks by hand
+  if (soma(1, 2) != 3) @panic("soma(1, 2) != 3");
+  ```
+  (2) example:
+  ```bp
+  import {testing.asserts} from "std";            // equals, isTrue, contains… — imports on wasm
+  import {testing.asserts_host} from "std";       // deepEquals, matches, throws, throwsWith — illustrative name
+  ```
+  (3) example:
+  ```bp
+  import {testing.asserts} from "std";            // --target wasm: compiles
+  try asserts.matches("abc", "a.c");              // the wasm prelude's regex
+  try asserts.throwsWith({ -> parse("x") }, "bad");  // catchable @panic on wasm
+  ```
 - **Recommendation.** (1) now; (2) if wasm must run asserts.
 - **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
 
 #### 97-s13-a · `abs()` of an integer type's minimum (264, 319)
 - **Measured.** `fn lo64() -> i64 { return -9223372036854775807l - 1l; }` then `@print(lo64().abs())` prints `9223372036854775808` on commonJS, erlang and beam — a value outside `i64`; `lo32().abs()` (`-2147483647 - 1`) prints `2147483648`, outside `i32`; wasm refuses the `i64` call (its integer methods are `i32`'s). `abs` is a host call (`erlang:abs`, `Math.abs` / a `BigInt` negation), not one of 264's operators, so no range check runs. `Signed` declares one `abs` for `I32` and `I64` together, so a template does not know the width.
 - **Options.** (a) ★ `abs` aborts past its type as unary `-` does (`integer overflow: abs on i64`): `abs` moves from `Signed` to `I32` and `I64`, each with its own bound in its forms (`lo64().abs()` aborts on every target). (b) As is: `abs` answers the mathematical value even outside the type (`lo64().abs()` is `9223372036854775808` typed `i64`). (c) `abs` answers the unsigned type (`i64.abs() -> u64`; `lo64().abs()` is `9223372036854775808ul`).
+  Today:
+  ```bp
+  fn lo64() -> i64 { return -9223372036854775807l - 1l; }
+  @print(lo64().abs());   // 9223372036854775808 — outside i64 (commonJS, erlang, beam)
+  ```
+  (a) example:
+  ```bp
+  @print(lo64().abs());   // aborts: integer overflow: abs on i64 — on all four targets
+  ```
+  (b) example:
+  ```bp
+  @print(lo64().abs());   // 9223372036854775808, typed i64
+  ```
+  (c) example:
+  ```bp
+  val m: u64 = lo64().abs();   // 9223372036854775808ul
+  ```
 - **Recommendation.** (a): a value outside its declared type never exists (264), and the cost is two declarations.
 - **Blocks.** Nothing in the gate; the `abs` half of `02/97` step 13 (the cell `run/i64_number_methods_past_js_safe` stays off the minimum).
 
@@ -564,6 +792,12 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   (c) ★ As is: each host's range and answer (`NaN` fields on commonJS, a date on erlang).
   ```bp
   @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
+  ```
+  Today:
+  ```bp
+  @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
+  clock.toCivil(9007199254740993l);                // commonJS: TypeError: Cannot convert a BigInt value to a number
+  clock.formatIso8601(8640000000000000l);          // "+275760-09-13T00:00:00.000Z" on commonJS; erlang aborts (badarg after year 9999)
   ```
 - **Recommendation.** (a): no target answers `NaN` or a date another target refuses, and RFC 3339 — the text `formatIso8601` and `parseIso8601` promise — has four-digit years.
 - **Blocks.** The three templates of `02/97` step 13's `io/clock` row (the rest of the row landed: the readings are `number`s by construction, `wide` / `largestExactMillis` botopink).
@@ -617,12 +851,36 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   mod tables;            // → libs/std/src/unicode/tables.bp
   import {unicode.tables};
   ```
+  (b) in the `unicode/mod.bp` form:
+  ```bp
+  // libs/std/src/unicode/mod.bp
+  mod tables;
+  pub fn normalize(s: string, form: Form) -> string { … tables.ccc(cp) … }
+  ```
 - **Recommendation.** (a): no compiler change, one module more in the registry; residual 11 makes the privacy real whichever is chosen.
 - **Blocks.** Nothing (a move of one generated file and the generator's output path under (b)).
 
 #### std-d · `io.process` signals and a TTY reader
 - **Measured.** `io/process.bp` neither registers nor forwards a signal; std has no TTY line reader; `onze start` waits on `process.run` → `SIGTERM` leaves the node running; `onze create` without `--yes` has no prompt to fall back to.
 - **Options.** (a) `process.onSignal(name, fn)`, `process.forwardSignals(child)`, `io.stdin.readLine()` — three host cells on two targets. (b) No std change: `onze start` execs the node (71's `bin/onze` is PID 1); `onze create` without `--yes` refused naming the flags it needs.
+  Today:
+  ```text
+  $ onze start &  ;  kill -TERM %1
+  # bin/onze exits; the erl node keeps running
+  $ onze create
+  # without --yes: there is no TTY reader to ask for the project name
+  ```
+  (a) example:
+  ```bp
+  process.forwardSignals(child);
+  val name = io.stdin.readLine();           // `onze create` asks for the project name
+  ```
+  (b) example:
+  ```text
+  $ onze start            # execs the erl node (71's bin/onze): the VM is PID 1 and receives SIGTERM directly
+  $ onze create           # no name and no --yes:
+  error: `onze create` needs <name> (or --yes)    # the name is positional; the flags are --example, --port, …
+  ```
 - **Recommendation.** (b).
 - **Blocks.** onze 50 steps 4 and 7; 97 step 6 (conditional).
 
@@ -669,6 +927,14 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 #### 396-a · onze-content: "a node rendered by a component of the page's own where the page asks"
 - **Measured.** 142 step 3 built `element.toElement(doc: MdDoc) -> Element` (every `MdNode` to one fixed element, as the old `toElement`); 396 (3) and the step's box say a page may render a node with a component of its own, and fix no form. Components are functions of a props record (192/193), `Element`s are values.
 - **Options.** (a) `toElementWith(doc, render: fn(node: MdNode, kids: Array<Element>) -> ?Element)` — one function, `null` keeps the default element, the page matches the node kinds it wants (`Heading`, `Link`, `CodeBlock`, …). (b) A record of optional per-kind functions, `Components(heading: ?fn(depth, id, kids) -> Element, link: ?fn(href, title, kids) -> Element, …)`, one field per node kind. (c) Walk `MdDoc` in the page and call `toElement` for the nodes it does not render (no hook; the tree is public).
+  (a) example:
+  ```bp
+  val page = toElementWith(doc, { node, kids -> case node { Heading(depth, id, _) -> <MeuTitulo nivel={depth} id={id}>{kids}</MeuTitulo>, _ -> null } });
+  ```
+  (b) example:
+  ```bp
+  val page = toElementWith(doc, Components(heading: { depth, id, kids -> <MeuTitulo nivel={depth} id={id}>{kids}</MeuTitulo> }));
+  ```
 - **Recommendation.** (a): one reading, no field per kind to keep in step with the tree; (c) needs no code and is available today.
 - **Blocks.** `142` step 3's second box (only the hook; the default mapping is built).
 
