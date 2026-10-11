@@ -2169,7 +2169,7 @@ still took 3m17).
       a pool each; the order of each stage's report unchanged
 - [x] `zig build test` (Debug) runs beside `zig build -Doptimize=ReleaseSafe` instead of after it, when the
       machine has the memory for both; a red in either still stops the gate before the side-by-side stages
-- [ ] the step gate (decision 460): on a `front/*` branch the hook runs formatting, the build, `zig build test`,
+- [x] the step gate (decision 460): on a `front/*` branch the hook runs formatting, the build, `zig build test`,
       `test-cli`, and the `test-language` cells and `test-libs` libraries the staged change reaches by the backend
       partition (249) — a shared file reaches all; on `feat` and at a front's Conformance step the full gate; the
       branch decides, no flag or variable; measured: a one-backend step's gate time against the full gate's
