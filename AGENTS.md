@@ -94,6 +94,10 @@ Three rules make it safe:
    language feature is a `language-gaps.md` row and waits on its 144 step.
 3. **The full worktree** (no `--repo`) is for a task that edits the meta specs or more
    than one repository.
+4. **No `gate.sh --cold` inside a `--repo` / `--lang` worktree.** Its gate is the commit
+   hook's (`--staged`, warm). `--cold` deletes every sibling library's cache, and the
+   siblings there are the main checkout's: a cold gate, when a landing calls for one,
+   runs in the main checkout's `repository/botopink-lang` on the commit being landed.
 
 The thread commits in its repository only; the coordinator writes the specs and the
 pointer bump at landing, then removes it with `git -C repository/<repo> worktree remove
