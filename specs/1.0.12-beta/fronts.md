@@ -7,9 +7,12 @@ and § Gate, the standard landing every front README cites. Where each front sta
 [`status.md`](status.md). The old track fronts keep their numbers; their ids resolve through each new
 README's alias table.
 
-A front is one worktree (`scripts/worktree-add.sh <NN-name>` → `.tasks/<NN-name>`), one branch
-`front/<NN-name>` in the meta repo and in every submodule it edits, one `todo.md` (never committed), one
-owner. Front 144 runs as up to three lanes (its README § Lanes), each a worktree of its own. Two worktrees
+A front is one worktree of the kind its **Repository** line names (`../__template.md` § Worktree strategy,
+decision 433: `scripts/worktree-add.sh --lang <name>` for botopink-lang alone, `--repo <lib> <name>` for one
+library alone, the full `scripts/worktree-add.sh <name>` for the meta specs or more than one repository), one
+`front/<name>` branch in each repository it edits — local only, never pushed (decision 477) —, one `todo.md`
+(never committed), one owner, and the model its **Model** line names (`AGENTS.md` § Which model a thread runs
+on). Front 144 runs as up to three lanes (its README § Lanes), each a worktree of its own. Two worktrees
 run at the same time only when they share **no source file and no snapshot or test directory**, except by a
 carve-out a README names together with its sequence. **At most six worktrees run at once** across the
 milestone (three when the console is closed).
@@ -41,17 +44,22 @@ milestone (three when the console is closed).
     per repository it changes, in the same landing, producer first; a package's consumer halves stay with the
     package's front. When the consumer repository's own front holds the same files, the step hands the
     change over as a row in that front instead, and the two never share a wave.
-11. **Comptime on wasm first** (decision 434): front 144's B-00 group opens before any other step of any
-    front; until it lands, other fronts only finish what was already in flight when 434 was taken.
-12. **A front that changes botopink-lang lands whole and ends with a "Conformance" step** (decisions 458, 459): after every
-    other step lands, the whole `tests/language` suite green, the front's changes analysed together against
-    the cells, the cells its behaviour calls for written in decision 457's shape (red on the front's base,
-    green on its tip), and the missing cells it found proposed as rows. Each earlier step keeps the suite
-    green and writes the cells of a behaviour it lands. A cell is never edited to match the compiler.
-13. **A library front ends with its "Conformance" step** (decision 465): after its other steps land,
-    `botopink cell check conformance/` over the whole `<lib>/conformance/`, the front's library changes
-    analysed against the cells, the cells written, the missing ones proposed. An earlier step keeps green
-    the cells of the member it changes.
+11. **Comptime on wasm first** (decision 434): front 144's B-00 group opened before any other step of any
+    front, and is done but for B-00c's last box — each library's own hook on this compiler (`scripts/gate.sh libs`),
+    the seventh step of the conformance order (§ Execution order).
+12. **A front that changes botopink-lang ends with a "Conformance" step** (decisions 458, 459, 477): after every
+    other step lands on `feat`, `feat`'s pipeline runs the whole suite (`tests/language`, `conformance/` once 144
+    B-29 step H lands) green, the front's changes analysed together against the cells, the cells its behaviour
+    calls for written in decision 457's shape (red on the front's base, green on its tip), and the missing cells
+    it found proposed as rows. Each earlier step writes the cells of a behaviour it lands (458 (3)); its commit
+    runs the step gate without the cells (460, 470), and the whole suite is the Conformance step's. A cell is
+    never edited to match the compiler. In front 144 each group of steps run as one (B-00 … B-32, each B-29
+    step) has its own Conformance step.
+13. **A library front ends with its "Conformance" step** (decisions 465, 477): after its other steps land on
+    `feat`, `feat`'s pipeline runs `botopink cell check conformance/` over the whole `<lib>/conformance/` green,
+    the front's library changes analysed against the cells, the cells written, the missing ones proposed. An
+    earlier step writes the cells of the member it changes. A medium front that changes a repository's
+    behaviour (105, 107, 136, 163) ends the same way.
 14. **A front lands on `feat` without waiting for conformance; its Conformance step reads `feat`'s pipeline**
     (decisions 474, 476, 477): the steps land once their hook gate passed; the pipeline runs `scripts/gate.sh` with
     conformance on that `feat` push; green on every row, the front is done; red, it is reproduced locally, fixed
@@ -154,8 +162,21 @@ Written with the old front ids (alias tables); they bind the new fronts holding 
 
 ## Execution order
 
-1. **144 B-00a → B-00e — comptime on wasm (434), first and alone.** Nothing else opens before it; the fronts
-   in flight when 434 was taken have landed (checker-s41, checker-s29, render-scope-388, bigint-139, comptime-14,
+0. **The conformance order — worked now, in this order.** 144's B-00 group (comptime on wasm, 434) is done but
+   for its last box, the seventh step below.
+   1. the step gate (decision 460, 144 B-29 step G) — landed;
+   2. the commit hook's `scripts/gate.sh --no-conformance` (470, step I's first box) — landed;
+   3. `botopink cell new` / `check` (464, 475) — landed; and 144 B-29 step H2 (step H's rest: `tests/language/`
+      becoming `conformance/`, every cell in decision 457's shape with its own `botopink.json`) — in flight;
+   4. 144 B-29 step I's rest: the reference into `conformance/`, `test.yml` calling `scripts/gate.sh` (461, 462, 466);
+   5. 163 s7: `scripts/gate.sh` in every repository, the meta one the scheduler (463, 466, 469, 473);
+   6. each library moves its `docs.md` and examples into `<lib>/conformance/` (the `conformance` steps of 145, 149,
+      150, 154, 162);
+   7. closing B-00: B-00c's last box, each library's own hook on this compiler — `scripts/gate.sh libs` (473);
+   8. 163 s8: each library's CI fetches its dependencies (474);
+   9. 163 s9: the measurements, at the end, on a quiet machine — no step before it spends time measuring.
+1. **144 B-00 — comptime on wasm (434), first and alone.** Done but for the seventh step above; the fronts in
+   flight when 434 was taken have landed (checker-s41, checker-s29, render-scope-388, bigint-139, comptime-14,
    import-129, typed-member-395's compiler half; its validation half waits in 146 s1 on B-10 G1).
 2. **144's lanes**, in its README's order: the error contract (B-01–B-09), then the structural fixes the
    libraries wait on (B-10–B-19), then the rest (B-20–B-29). Lane A (checker) is serial; lanes B and C run
@@ -254,8 +275,8 @@ boxes after it on that line are the front's own.
       pipeline run with conformance (477) — locally only to reproduce a red; a library's `runner-standalone.sh` on the main
       checkout's compiler, every row its manifests declare. A cold gate, when a landing calls for one, runs
       in the main checkout (`AGENTS.md` § Worktrees, rule 4).
-- [ ] A botopink-lang step: the conformance suite green and the cells of the behaviour it lands written; a
-      front's last step is its "Conformance" step (rule 12, decisions 458, 459).
+- [ ] A botopink-lang step: the cells of the behaviour it lands written (458 (3)); the whole suite is `feat`'s
+      pipeline's, read by the front's last step, its "Conformance" step (rules 12–16, decisions 459, 470, 477).
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit.
 - [ ] The commit is on `front/<name>` in the repository the step changes (`--repo` / `--lang`, or each
       submodule of a full worktree); the coordinator lands it: reads the diff against the boxes, re-measures,
@@ -268,7 +289,8 @@ Every line is a command and the output it must print; nothing is read from a spe
 
 1. `scripts/gate.sh --cold` in `repository/botopink-lang`: every stage green, each stage's count
    equal to its `--list` plan; no ledger file on disk (00-gate rule 2).
-2. `tests/language/run.sh --target all` includes beam: `N passed, 0 failed`.
+2. `tests/language/run.sh --target all` includes beam: `N passed, 0 failed` (`botopink cell check conformance/`
+   once 144 B-29 step H moves the cells).
 3. `zig build test-libs`: every visible library, member and manifest target `N passed, 0 failed`;
    a cell reporting `skipped` is red.
 4. Each repository's own CI (`emilia`, `erika`, `jhonstart`, `onze`, `rakun`, `vscode-extension`,

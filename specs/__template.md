@@ -269,9 +269,10 @@ After every other step of the front has landed.
       compiler; the front lands once its hook gates passed; its Conformance step reads `feat`'s pipeline run with conformance (477), locally only to reproduce a red
 - [ ] <the front's own check: a validator run, a library that must compile, snapshots
       byte-identical for a refactor front, every RUN LOG unchanged>
-- [ ] a botopink-lang step (decision 458): every `tests/language` cell green; the cells of the behaviour it
+- [ ] a botopink-lang step (decision 458): the cells of the behaviour it
       lands written in decision 457's shape (red on the parent, green on the step) — or, for a step that changes
-      no behaviour, every cell's answer shown unchanged
+      no behaviour, every cell's answer shown unchanged; the whole suite is `feat`'s pipeline's, read by the
+      front's Conformance step (decisions 460 (4), 470, 477)
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit
 - [ ] Commit on `front/<name>`; no push, no merge — the coordinator lands it, writes the specs
       and the pointer bump, and removes the worktree

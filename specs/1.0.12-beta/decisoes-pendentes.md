@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **481**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Nesta página: 63 perguntas, 3 contradições e 96 escolhas ★ para confirmar** (contadas das entradas abaixo). Ainda só em `decisions-pending.md`, sem texto aqui: 25 perguntas (`s23-g`, `s23-i`, `95-f`, `nat-d6`–`nat-d9`, `nat-f2`–`nat-f4`, `07-g`, `erk-b`, `03r-ab`, `03r-ae`, `03r-af`, `03r-ak`, `03r-al`, `03r-am`, `03r-an`, `04-a`, `67-a`, `50-b`, `116-a`, `atm-c`, `atm-d`), 3 contradições (`ctr-p`, `ctr-w`, `119-a`) e 4 confirmações (`03r-q`, `29-a`, `49-e`, `52-a`) — no total, 88 perguntas, 6 contradições e 100 escolhas. O que já foi respondido está em `decisions-taken.md` (próximo número livre: **481**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.

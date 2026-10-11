@@ -1,6 +1,8 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**88 questions and 6 contradictions are open, and 105 implementation choices await confirmation.**
+**88 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
+contradictions; a row of a choices table).
 
 - An answer goes into [`decisions-taken.md`](decisions-taken.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
@@ -682,7 +684,7 @@ Each implemented with its recommended option; the maintainer confirms or reverse
 local change in the named place). Full 1.0.10 text under the same id in
 [`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
 
-#### 01-compiler (29)
+#### 01-compiler (28)
 
 | Id | Choice implemented | Where |
 |---|---|---|
@@ -1202,7 +1204,7 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 
 ## Part 3 — Implementation choices of tracks 04–09
 
-### 04-rakun (22)
+### 04-rakun (21)
 
 | Id | Choice implemented | Where |
 |---|---|---|
