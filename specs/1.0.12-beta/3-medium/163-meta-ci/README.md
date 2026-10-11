@@ -106,7 +106,7 @@ After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/ga
 
 - [ ] each library gets `scripts/gate.sh`, one text identical across the libraries (CI check 4 extended to it): it
       runs the shared `runner-standalone.sh` and the repository's `repository-stages.sh`; the pre-commit hook and
-      the library's `test.yml` call it
+      the library's `test.yml` call it — the workflow on a push to `feat` and to `front/**` (476)
 - [ ] `runner-standalone.sh` gains a stage: `botopink cell check conformance/` (464) — every
       `conformance/modules/*/` cell on the targets the manifests declare, a mismatch a `.snap.new` candidate and a
       red; absent only structurally (no `conformance/` directory)
