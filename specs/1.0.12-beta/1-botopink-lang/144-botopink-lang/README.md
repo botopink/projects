@@ -2782,7 +2782,7 @@ per target, then `node` / `escript` / `wasmtime`. compiler-core's tests check th
 in process in 327 CPU-s. The cells stay the language's description — the same `.bp`, `.out`, `.expect` files, in
 botopink-lang, landing in the compiler's commit (red on the parent, green after); only how they run changes.
 
-- [ ] `tests/language/` becomes `conformance/` (decision 466) and every cell is in decision 457's shape: `<cell>/src/<module>.bp`, `snapshot/output/<module>.snap` (one answer
+- [x] `tests/language/` becomes `conformance/` (decision 466) and every cell is in decision 457's shape: `<cell>/src/<module>.bp`, `snapshot/output/<module>.snap` (one answer
       for every target), `snapshot/targets/<target>/<module>.snap` (a target's departure only), `targets` (when
       narrowed) — `run/`, `reject/` and `modules/` migrated by a codemod, each cell's claims byte for byte the same
       (every `.out`, `.exit`, `<target>.expect`, `<target>.stderr`, `.targets` mapped, none lost)
@@ -2790,7 +2790,7 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       compiler-core's executors: run on every declared target, compare with `snapshot/output/` and
       `snapshot/targets/`, a mismatch a `.snap.new` candidate and exit 1, a new cell's candidates by agreement /
       majority / one per target; no update flag; CLI contract cases in `cli_contract.sh`
-- [ ] every cell has its own `botopink.json` (decision 475 (1)): `botopink cell new` writes one, `botopink cell check`
+- [x] every cell has its own `botopink.json` (decision 475 (1)): `botopink cell new` writes one, `botopink cell check`
       refuses a cell without one, the migration writes one per cell (its `name`, its `"targets"` from today's
       `.targets` sidecar, its path dependencies); an answer that names the package (an erlang atom, a host template)
       measured and re-read cell by cell, never bulk-accepted
@@ -2799,7 +2799,7 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
 - [ ] single-file `run/` cells compiled in process and run on the four targets through the snapshot executors
       (`executeJavaScript`, `executeErlang`, `executeBeamAsm`, `executeWat`) and their runtime cache, each `.out`
       byte for byte; a `.targets` narrowing still audited against the host-binding refusal
-- [ ] the language half of `test-cli` becomes cells (decision 457's shape): `backend_exec.sh`'s programs (numeric —
+- [x] the language half of `test-cli` becomes cells (decision 457's shape): `backend_exec.sh`'s programs (numeric —
       `55` on the four targets —, records with enum / `case` / lambda, the multi-folder `mod` / `pub mod` package)
       and `mutual_recursion.sh`'s forward reference and `isEven` ↔ `isOdd`; `test_tooling.sh`'s semantics of
       `assert cond, "msg"` and of `try` in a `test` block as `test/` cells. The scripts keep what is the CLI's
@@ -2835,6 +2835,9 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
+- [ ] what the move left: `generic-loader-binding` into erika once B-45 lands; the decorator `random.float()` cell once
+      B-46 lands; the four caret-label cells (`case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name`,
+      `reserved_word_param_name`) once `decisions-pending.md` 485-a is answered; the reds B-43 and B-44 found
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
@@ -3294,6 +3297,49 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 - [ ] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
       dependency on wasm
 - [ ] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-43 — a `Set` of structurally equal records keeps one on every target (decision 210)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`stdlib-tour`'s Set test keeps 3 members on commonJS where two are structurally equal (2 on erlang); the same on wasm.
+
+- [ ] a cell red on the parent: a `Set` of records, two structurally equal, its size on every target
+- [ ] commonJS and wasm compare members structurally (210); the cell and `test/stdlib-tour` green on every target
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-44 — wasm prints a lifted `bool` as `1` (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+The `yamlconf` cell prints `1` on wasm where every other target prints `true`.
+
+- [ ] a cell red on the parent: a `bool` that crosses a host value printed on wasm
+- [ ] wasm prints `true` / `false`; `yamlconf` green on wasm
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-45 — erlang: `lib.member()` through a library's default handle is unbound (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`erika.of(…)` in the `generic-loader-binding` example fails on erlang: `variable 'Erika' is unbound`; it blocks the
+example's move into erika's `conformance/`.
+
+- [ ] a cell red on the parent: a local `path` library whose default handle's member is called, on every target
+- [ ] the erlang lowering binds the handle; the example moves into `erika/conformance/`
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-46 — a decorator body reaches a nested std namespace (`io.random`) (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the comptime's module environment)
+
+A decorator body calling `random.float()` fails at build: `unbound variable '__bp_ns_io_random'`; the B-00k cell of
+`random.float` at build cannot be written.
+
+- [ ] a cell red on the parent: a decorator body calling a function of a nested std namespace
+- [ ] the comptime's environment holds the nested namespaces; the `random.float()` cell written (refused unseeded at
+      build, decision 447, or the seeded answer)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
