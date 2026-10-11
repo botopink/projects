@@ -33,6 +33,7 @@ order, before any other step of this front or any other front:
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
 | B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
+| B-00h | wasm codegen snapshots show a transpiled std-wasm function as one line with its hash (decision 446) — before B-00g | sonnet |
 | B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
 
 ## Lanes
@@ -43,7 +44,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–g, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–h, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -330,6 +331,20 @@ The beam target reads a declaration's `@External.Erlang` cell; `@External.Beam` 
 **Impacted tests:** `codegen/tests/externals.zig`, `features.zig`, `std_package.zig`; beam codegen snapshots (re-read);
 `beam_export_audit`; `test-libs --lib std` beam column; `test-docs`. **Model:** sonnet (437 fixes the design).
 **Consumer commits:** none (no library writes `@External.Beam`).
+
+### B-00h — A transpiled std-wasm function is one line in a snapshot (decision 446)
+
+Before B-00g, so the helpers B-00g moves into std-wasm do not grow every wasm snapshot that links them.
+
+- [ ] the wasm codegen snapshot's module text writes each function transpiled from `std_wasm.wasm` as one line
+      `;; std:<module>.<function> — from std_wasm.wasm (sha256 <12 hex>)`, its body omitted; the snapshot helper
+      (`codegen/snapshot.zig`) does it, never the emitter — `botopink build --target wasm` still writes the whole `.wat`
+- [ ] the binary the RUN LOG runs unchanged; every RUN LOG byte-identical
+- [ ] the nine snapshots B-00e grew back to their size before it plus one line per linked function (re-read, not
+      bulk-accepted); a change in one std-wasm function changes one line in each snapshot that links it (a test)
+
+**Impacted tests:** wasm codegen snapshots that link std-wasm; `codegen/tests/wat.zig`. **Model:** sonnet (446 fixes
+the design). **Consumer commits:** none.
 
 ### B-00g — `wat_prelude` keeps only representation, operators, output and runtime (decision 442)
 
