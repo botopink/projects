@@ -3,8 +3,7 @@
 > **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../README.md): open → B-24. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** medium — `Json` (decision 332 (4)) and every exact integer past `i64` stand on it; no
-library needs it to compile today · **State:** steps 1–5 built on `front/bigint-139` (patch, lands
-through the coordinator); open: 139-a's alternatives, the wasm union row
+library needs it to compile today · **State:** steps 1–5 landed (405208fd); open: 139-a's alternatives, the wasm union row
 **Depends on:** decision 332 · `04-js` step 9 (319's hybrid number, the commonJS pattern this front
 extends) · `05-wasm` step 8 (the integer checks this front's wasm library sits beside)
 **Owns:** the `bigint` arms of `src/lexer.zig` / `src/lexer/**` (the `n` suffix), `src/parser/**`,

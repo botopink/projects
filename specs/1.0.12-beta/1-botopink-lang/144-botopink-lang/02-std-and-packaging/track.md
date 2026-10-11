@@ -56,7 +56,7 @@ Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../../../
 > **Measured.** `repository/onze` is the orchestrator's workspace (`"name": "onze"`,
 > `"workspaces": ["modules/*", "examples/*"]`, eight members with `files`), built on tag
 > `mocking-lib-final` in the **same** history and remote — not the orphan branch
-> `front/95-onze-orchestrator` of decision 79 / 95-d; nothing archived or renamed. `.gitmodules` has
+> of decision 79 / 95-d; nothing archived or renamed. `.gitmodules` has
 > one `repository/onze` entry; `grep -rn '"onze"' --include=botopink.json repository/` finds only the
 > orchestrator's members.
 > **Options.** (1) confirm the tree: a new decision amends 79 — the old library is the tagged history

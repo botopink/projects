@@ -712,8 +712,8 @@ they recorded — the same function shape as a declaration's decorator, named by
 #### Step 24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (decision 280) (was `01-checker` s24)
 
 The cases are [`examples/decorator-arguments-280.md`](01-checker/examples/decorator-arguments-280.md) — each
-example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front/checker-s24`
-(botopink-lang patch; the library halves are patches of their own, below).
+example a `run/` cell, its "não compila" lines `reject/` cells. Landed in 106c84b3
+(botopink-lang; the library halves are separate changes, below).
 
 - [x] a decorator parameter without `comptime` refused at the parameter (`decorator-param-not-comptime`,
       `reject/decorator_param_not_comptime`); a `comptime` parameter takes a default; the decorators of
@@ -748,7 +748,7 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Built on `front
 
 #### Step 28 — a derived type: a compile-time function answering a new type (decision 307) (was `01-checker` s28)
 
-`pub val RecipeTitle = Type.pick(Recipe, .title);` — built on `front/checker-s28`
+`pub val RecipeTitle = Type.pick(Recipe, .title);` — landed in 80083c16
 (`comptime/derived_types.zig`): the `val` is rewritten, before the checker, into the record declaration
 it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questions `s28-a`–`s28-d`
 (built as their recommendation, confirmed by 421–424).
@@ -829,10 +829,10 @@ back; a `use` over a function value enters with `hook: null`; a host function ge
 shared across the compilation. No backend, no codegen snapshot changes; the compiler names no stage
 or library.
 
-Built on `front/checker-s23` (botopink-lang patch): `comptime/hooks.zig`, the node recorded as `inferFnDecl`
+Landed in 6582cdf1 (botopink-lang): `comptime/hooks.zig`, the node recorded as `inferFnDecl`
 infers a top-level function's body and published to the session (`Reflection.hookFns`); `decl.hooks` computed
-for a function one of whose decorators reads it (questions s23-a – s23-f). 371 and 372 built on
-`front/decl-hooks-371-372` (botopink-lang patch): `comptime/decorator_same.zig`, `infer.zig`'s two decorator
+for a function one of whose decorators reads it (questions s23-a – s23-f). 371 and 372 landed in
+882adcd2 (botopink-lang): `comptime/decorator_same.zig`, `infer.zig`'s two decorator
 phases (questions s23-g – s23-i).
 
 - [x] `run/decl_hooks_direct` — `use session()` (a host hook) → one node, `Page(uses: [session], calls: [])`
@@ -846,8 +846,8 @@ phases (questions s23-g – s23-i).
       `Card`, a lambda answering a component — `run/decl_hooks_component_value` (`Lista` over `itens.map(Card)`
       reaches `Card`'s `use session()`); a call the checker cannot follow (a parameter called, a method, what
       generic code answers) enters `HookCall(callee: null, at)` (`HookCall.callee: ?Declared<unknown>` in
-      `builtins.d.bp`) — `run/decl_hooks_dynamic_call` — patch `front/render-scope-388` (`infer.zig`
-      `noteComponentValue`, `noteHookCall`), landing with `01-compiler/134` s6 box 4b
+      `builtins.d.bp`) — `run/decl_hooks_dynamic_call` — landed in d3a2493a (`infer.zig`
+      `noteComponentValue`, `noteHookCall`), with `01-compiler/134` s6 box 4b
 - [x] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
 - [x] `HookUse` carries the `use`'s explicit type arguments (`typeArgs: TypeInfo<unknown>[]` — `use
       params<BlogParams>()` → `[BlogParams]`, its fields with their types), so `#[page]` checks them (293);
@@ -869,8 +869,7 @@ phases (questions s23-g – s23-i).
       `@Task`, or calls what the checker cannot follow (a function value, a method, `hook: null`); a cycle
       asynchronous when any node in it is; published with the module's nodes; `builtins.d.bp` declares the
       field — `run/decl_hooks_async` (a page over a synchronous `Card` and an awaiting `Comments`: `Card`
-      `false`, `Comments` and the page `true`), `modules/decl_hooks_async_imported` — built on
-      `front/ctx-async-374-375`: `Builder.is_async` / `dynamicCalls`, `noteAsyncCall`, `markHookAsync` before the
+      `false`, `Comments` and the page `true`), `modules/decl_hooks_async_imported` — landed in beda9073: `Builder.is_async` / `dynamicCalls`, `noteAsyncCall`, `markHookAsync` before the
       `.hooks` readers; the reading of "cannot follow" and of a host `@Component` is `s23-j`
 - [x] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
       read no `.hooks` first, then the bodies, then the `.hooks` readers, which may only `setMeta` /
@@ -935,8 +934,7 @@ async function Post(map) { … Card(map, "x") … await Comments(map) … }
 
 - [ ] a `@Component` function or hook whose node is synchronous emits `function` (a method, a lambda and a
       `default fn` alike); an asynchronous one `async function`; a call of a synchronous one emits no
-      `await`, written or not; a call the checker cannot follow keeps the `await` — built on
-      `front/ctx-async-374-375` for a top-level function (`Emitter.fnShape`, `SyncMarks` from `OkData.sync_fns` /
+      `await`, written or not; a call the checker cannot follow keeps the `await` — landed in beda9073 for a top-level function (`Emitter.fnShape`, `SyncMarks` from `OkData.sync_fns` /
       `sync_calls`, `useHookExpr`, the `.await_` arm); a method, a lambda and a `default fn` have no node and stay
       `async` (`04s12-a`)
 - [ ] the TypeScript typedef answers the value, not a `Promise`, for a synchronous one; `tsc-check.sh` green —
@@ -973,7 +971,7 @@ fn Button() -> @Component<Element> {
       as hooks (`use` only); `use` inside a decorator body, a template body or a `comptime { … }` refused,
       located (354 (3))
 - [x] `Decl.hooks` (277) carries each `provide` / `context` with its object, for the frameworks' build check (354 (4)) —
-      built with `01-checker` step 23 (`front/checker-s23`): `HookUse.context: ?Declared<unknown>`, the `val` that
+      landed with `01-checker` step 23 (6582cdf1): `HookUse.context: ?Declared<unknown>`, the `val` that
       declares the context (`run/decl_hooks_context`; the field's name is s23-a)
 - [x] measure before the rewrite (388 (6)): onze's blog could not render on the lambda before jhonstart's
       renderer moved (414), so the stand-in is a render of its shape — 25 component calls per page (a root,
@@ -983,7 +981,7 @@ fn Button() -> @Component<Element> {
       call): erlang 1 829 µs → 1 966 µs (+7.5 %, +5.5 ns a component call), commonJS 462 µs → 755 µs (+63 %,
       +12 ns a component call) — under half a microsecond a page on either target, against a page render that
       escapes and joins its markup; judged acceptable, no question raised
-- [x] box 4b, a component is a lambda over a `RenderScope` (388) — patch `front/render-scope-388`:
+- [x] box 4b, a component is a lambda over a `RenderScope` (388) — landed in d3a2493a:
       `comptime/context_lower.zig` rewritten (the map and 374's capture gone), `c.run(scope)` typed by
       `inferComponentRun` (`Component.run` in `builtins.d.bp`), `RenderScope(…)` refused
       (`reject/render_scope_construction`), a function typed by an alias of `@Component` no component body (118,

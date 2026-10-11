@@ -83,7 +83,7 @@ $ onze create
 `raceOf`, `timeout`) e uma de Tasks já iniciadas (`all`, `allSettled`, `race`), as duas construídas
 sobre "Task rejeitada = falha". Agora uma Task nunca falha (decisões 120 e 121): o erro vai DENTRO,
 `@Task<@Result<T, E>>`. O guia escreve `try await async.allOf([fetchUser(1), fetchUser(2)])` — Tasks
-já iniciadas cujo valor é `@Result` — e a suíte `front/24-cells` segue o guia; já as células
+já iniciadas cujo valor é `@Result` — e a suíte da front 24 segue o guia; já as células
 `beam_memory_*` precisam de thunks não iniciados, porque no erlang uma Task ansiosa já rodou quando o
 combinador a recebe. A implementação deu o nome `allOf` à forma do guia e outros nomes aos thunks.
 

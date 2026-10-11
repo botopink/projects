@@ -4,7 +4,7 @@
 
 **Priority:** high — segment grammar hand-walked in seven places outside `routing`, two disagreeing
 on what an app file is; 128 and rakun group A wait on step 3 · **State:** steps 1–2 done (the
-package); step 3 done as patches, one per member (`.tasks/102s3-103s2-b/patches/`), to land in
+package); step 3 done as patches, one per member, not landed yet, to land in
 fronts.md's order
 **Depends on:** decision 323 (49-d confirmed as amended: "onze imports nothing from routing"
 reversed) (step 3)

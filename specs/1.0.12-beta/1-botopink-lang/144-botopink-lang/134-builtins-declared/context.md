@@ -6,8 +6,8 @@
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
 `Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 (354, 357)
 partial: boxes 1, 2, 3, 5 (357), 6 (the codemod), the measurement and 4b (388: a component is a lambda over
-a `RenderScope`, with 389's edges; erlang, beam, commonJS — wasm refuses, 354-wasm) done, 4b as a patch
-(`front/render-scope-388`) that lands with `05-jhonstart/26` step 14 (414)
+a `RenderScope`, with 389's edges; erlang, beam, commonJS — wasm refuses, 354-wasm) done, 4b landed
+(d3a2493a; `05-jhonstart/26` step 14 landed in f306dbc (414))
 **Depends on:** step 6: backend fronts 02–05 and 18 for each lowering of 388's lambda · answered: `134-f` → 354, 134-e → 329, 330, 134-d → 322, 134-a → 267, 134-b → 268, 134-c → 269
 **Owns:** `libs/std/src/builtins.d.bp`, `libs/std/src/builtins_fns.d.bp` (with 130 for the `Decl`
 surface) · compiler's builtin table and the check tying it to the declarations

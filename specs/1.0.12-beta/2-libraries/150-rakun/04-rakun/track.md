@@ -47,7 +47,7 @@ true in code: 74, 15, 81, 12, 65, 73 (each front says which).
 
 **critical** blocks another track (128 every rakun front; 22 onze 49/53 and jhonstart 27/32; 04
 onze 49 via R62-3, and 13 and 12 via its tag epoch). **high** closes a member's contract or a gate
-stance. **medium/low** breadth. Branch `front/<NN-name>` (e.g. `front/128-rakun-consolidation`);
+stance. **medium/low** breadth. Branch `front/<NN-name>`;
 landing is the maintainer's.
 
 ## Order

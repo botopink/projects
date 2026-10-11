@@ -67,5 +67,5 @@ spelling rewrites the class S lines of `specs/<current>/**` that write it, and a
 - [ ] `git diff --stat` on the meta branch touches `specs/1.0.12-beta/**` only (plus `AGENTS.md` if a
       § Layout row's text names a retired spelling)
 - [ ] every step's § Measure acceptance re-run on the tip that lands
-- [ ] the commits are on `front/141-specs-sweep`; landing is the maintainer's, who reviews step 1's
+- [ ] the commits are on the front's branch; landing is the maintainer's, who reviews step 1's
       rows line by line

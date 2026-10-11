@@ -164,7 +164,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Blocks.** Nothing — the built surface stands until widened.
 
 #### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
-- **Measured.** Built (`front/ctx-async-374-375`, `infer.zig` `noteAsyncCall`, `finishHookNode`,
+- **Measured.** Built and landed (beda9073, `infer.zig` `noteAsyncCall`, `finishHookNode`,
   `markHookAsync`): (1) a call of a function value or a method makes the node asynchronous only when the call's
   type resolves to `@Component<R>` or stays an open type variable — `xs.length()`, a record constructor and a
   method answering `string` do not (s23-d's, answered by 389: "a `@Component` called through a function value or a method");
@@ -244,7 +244,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Measured.** 371 writes `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` in `builtins.d.bp`. An
   `extend` is always named (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` is
   parsed by the drift test (`comptime/builtins.zig` `collectTypes`), and that test holds a builtin type's instance
-  methods inside its declaration. Built (`front/decl-hooks-371-372`): a member of the behavior, mirrored in
+  methods inside its declaration. Built and landed (882adcd2): a member of the behavior, mirrored in
   `comptime.zig`'s `decl_reflection_src` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
   `a.decorator.same(serverOnly)` reads the same either way.
 - **Options.** (a) As built: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) A named
@@ -270,7 +270,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Blocks.** Nothing — built as (a).
 
 #### 14s8-a · How a template reads a hole's build value (355; `01-compiler/14` step 8 box 1)
-- **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built (`front/fourteen-s8`): each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
+- **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built and landed (0c544566): each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
 - **Options.** (a) As built: `for (q.parts()) { p -> if (p.kind == "Interp" && p.known) built = built + p.value; }`; `p.value` is `null` for a hole computed at render. (b) `q.lookup(p.code)` answers `Binding(name, kind, value)` for a hole that names a `val`: `val b = q.lookup(p.code); if (b?.value != null) …` — a literal or a `comptime` hole is never known. (c) 364's `@Expr<T>.value` on each hole: `if (p.known) built = built + p.hole.value;`, `.value` of a hole not known at build an error at the read, located — one spelling with every other `comptime` parameter, the hole typed `@Expr<T>`.
 - **Recommendation.** (c) — one spelling, typed, a read of an unknown value refused (decision 67); (a) stands until `01-checker` s24 builds `@Expr.value`, and either way `Part` in `builtins.d.bp` (02's) declares what the part carries.
 - **Blocks.** Nothing — built as (a).
@@ -292,8 +292,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   `contentHash` carried (step 6, 341) the run now reaches styled's `styledPropertyComputed`, whose body
   is `val sheet = use context(StyledContext); … sheet.add(sheet.layer, …)` — a `comptime` has no render
   tree (354 (3)), so nothing provides `StyledContext`, and the run stopped at ``the comptime block calls
-  `.add(…)` with 2 argument(s) at 144:11, which no primitive type … provides`` (botopink-lang
-  `front/comptime-14`, styled `feat`). 376 (3) makes `context` `Any`, and 355 / 376 (5) compute
+  `.add(…)` with 2 argument(s) at 144:11, which no primitive type … provides`` (botopink-lang, styled `feat`). 376 (3) makes `context` `Any`, and 355 / 376 (5) compute
   `styled "${padAll(2)}"` at build — yet at build there is no provider to read.
 - **Options.** (a) ★ A `comptime` (or a hole computed at build) that reaches a `use` in a function it
   carries is refused at the `comptime`, naming the `use` and its function: ``the comptime reaches `use
@@ -362,7 +361,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   children scope"), renders a component call written in a component body: the checker splices `await` around
   it (`inferComponentCall`), so `val inner = notFoundLevel(chain, i, route, page);` RUNS `notFoundLevel` with
   the children's scope and `inner` is its `Element`. 414's example writes the same line with the comment "the
-  lambda, not run". Built (`front/render-scope-388`): the splice stands; a body gets an unrun component value
+  lambda, not run". Built and landed (d3a2493a): the splice stands; a body gets an unrun component value
   by naming the function (`itens.map(Card)`) or through a lambda — jhonstart's `ErrorBoundaryNode` /
   `NotFoundBoundaryNode` hold `child: fn() -> @Component<Element>` (`{ -> notFoundLevel(…) }`), as
   `suspense.Boundary` already did.
@@ -957,7 +956,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 ### 05-jhonstart
 
 #### 27-b · The driver's inputs: where the markup comes from, and who sets `data-jh-pending` (*proposed* ★)
-- **Measured** (front 27 step 1 box 1 and step 2 box 3, `front/jhonstart-27`). The README fixes
+- **Measured** (front 27 step 1 box 1 and step 2 box 3). The README fixes
   `applyTransition(current, target, dom: DomOps) -> Navigation` and `DomOps` as four functions
   (`replaceSubtree(depth, html)`, `startIslands(depth)`, `mountCount(name)`, `scrollTo`). Two of its
   own boxes do not fit that shape: `replaceSubtree` takes the target's `html`, and neither
@@ -1045,7 +1044,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 ### 08-bpp
 
 #### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
-- **Measured** (front 116 step 1, `front/decision-361`). 361 puts the prelude's marker in the prelude
+- **Measured** (front 116 step 1). 361 puts the prelude's marker in the prelude
   module — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — so the module must import std's
   `bpp` (jhonstart's `src/prelude.bp` now ends `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
   prelude = bpp.Prelude();`). 270 says "that module's imports are the prelude" and refuses, at the
@@ -1103,7 +1102,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** Nothing — (a) is built; (b) would remove one call.
 
 #### 116-c · A decorator on a module `var` (decision 356 names a `val`) (*proposed* ★)
-- **Measured** (`front/decision-361`, 01-compiler/130 step 10 box 1). Before 356 every user decorator
+- **Measured** (01-compiler/130 step 10 box 1). Before 356 every user decorator
   on a module binding was dropped silently. 356 makes one on a `val` run (`DeclKind.Val`). A module
   `var` is the same AST node (`ValDecl.mutable`); built: a user decorator on a `var` is refused at the
   annotation, `` `#[mark]` annotates the module `var` `count`, and a decorator runs on a `val`, never on
