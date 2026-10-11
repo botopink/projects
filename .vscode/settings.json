@@ -1,3 +1,24 @@
 {
-    "zig.path": ""
+  "zig.path": "",
+  // Generated trees: hundreds of thousands of .erl/.beam/.js files written by builds and tests.
+  // `search.exclude` is what the Erlang extension's language server (pgourlain.erlang) skips when
+  // it indexes the workspace — it does not read .gitignore.
+  "search.exclude": {
+    "**/.botopinkbuild": true,
+    "**/.zig-cache": true,
+    "**/zig-cache": true,
+    "**/zig-out": true,
+    "**/out": true,
+    "**/node_modules": true,
+    ".tasks": true
+  },
+  "files.watcherExclude": {
+    "**/.botopinkbuild/**": true,
+    "**/.zig-cache/**": true,
+    "**/zig-cache/**": true,
+    "**/zig-out/**": true,
+    "**/out/**": true,
+    "**/node_modules/**": true,
+    ".tasks/**": true
+  }
 }
