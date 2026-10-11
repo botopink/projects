@@ -29,10 +29,12 @@ from pathlib import Path
 
 PATTERNS = [
     ("tasks-path", re.compile(r"\.tasks/(?!<)[A-Za-z0-9._-]+")),
-    ("tmp-path", re.compile(r"(?<![A-Za-z0-9_.])/tmp/|scratchpad")),
+    # `/tmp/` alone in backticks names the rule, not a location.
+    ("tmp-path", re.compile(r"(?<![A-Za-z0-9_.`])/tmp/(?!`)|scratchpad")),
     # `front/step` is status.md's legend (a front and its step), not a branch.
     ("task-branch", re.compile(r"(?<![A-Za-z0-9_/.-])front/(?!<|step\b)[a-z0-9][a-z0-9._-]*[a-z0-9](?=[`\s,;:)]|$)")),
-    ("worktree", re.compile(r"\bworktree `(?!<)[^`]+`")),
+    # worktree `--lang` / `--repo …` names a mode of worktree-add.sh, not a worktree.
+    ("worktree", re.compile(r"\bworktree `(?!<|-)[^`]+`")),
 ]
 
 TEXT_SUFFIXES = {".md", ".txt", ".bp", ".json", ".yml", ".yaml", ".sh", ".py"}

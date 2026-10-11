@@ -2,7 +2,9 @@
 
 A milestone is a directory of **fronts**. A front is the unit of work: one worktree, one branch,
 one owner, one `todo.md`. Fronts are cut so that several can run at the same time, and the cut is
-by **ownership of files and of snapshot directories** — not by topic.
+by **repository first, then by ownership of files and of snapshot directories** — not by topic
+(decision 433): a front that changes one repository runs in a light worktree of that repository
+alone, so the cut decides the cost of every task.
 
 Copy the skeletons below; delete what does not apply. English, in every file.
 
@@ -19,9 +21,31 @@ specs/<version>/
 └── …
 ```
 
-Why a directory per front: the front is what becomes `.tasks/<front-name>` and `fix/<front-name>`,
+Why a directory per front: the front is what becomes a task worktree and its `front/<name>` branch,
 so the document a worker opens is the document that owns their branch. A deep dive that would bury
 the steps goes in its own file next to the README.
+
+## Worktree strategy — decide it when the front is written
+
+Every front, and every step that runs as its own task, states **which repository it changes**,
+because that picks the worktree (`AGENTS.md` § Worktrees) and what a task costs:
+
+| The step changes | Worktree | Compiler it runs | Who writes the specs |
+|---|---|---|---|
+| `repository/botopink-lang` alone | `scripts/worktree-add.sh --lang <name>` | its own build | the coordinator, at landing |
+| one library alone (`repository/<lib>`) | `scripts/worktree-add.sh --repo <lib> <name>` | **the main checkout's** (no build per task) | the coordinator, at landing |
+| the meta specs, or more than one repository | `scripts/worktree-add.sh <name>` (full) | its own build | the task |
+
+Write the steps so that most of them change **one repository**:
+
+- a step that needs the compiler and a library together is split — the compiler step (front 144)
+  lands first, the library step follows on the main checkout's rebuilt compiler;
+- a library step never edits `repository/botopink-lang` (decision 433): a missing language feature
+  is a `language-gaps.md` row naming the 144 step that fixes it, and the library step waits on it;
+- spec updates (ticks, `status.md`, decisions) are the coordinator's at landing, never a reason to
+  open a full worktree;
+- the main checkout's compiler stays at remote `feat` and built; the coordinator rebuilds it after
+  each compiler landing, so library steps after it measure the compiler in force.
 
 ---
 
@@ -99,7 +123,7 @@ analysis count for their ticked steps)
 - [x] `<NN>-<front>` — <what landed, one clause>
 
 ## In analysis
-- [ ] `<NN>-<front>` — <step k of n> · worktree `.tasks/<name>` · <what is being worked, one clause>
+- [ ] `<NN>-<front>` — <step k of n> · <what is being worked, one clause> · <what blocks the rest>
 
 ## Pending
 - [ ] `<NN>-<front>` — ready to start · waiting on <front, decision or maintainer step>
@@ -175,7 +199,9 @@ that bypasses it.>
 # Front <NN> — <name>
 
 **Priority:** <critical | high | medium | low> — <why, in one clause>
-**Depends on:** <front(s) or none>
+**Repository:** <`botopink-lang` | `<lib>` | meta> — worktree `--lang` / `--repo <lib>` / full (§ Worktree strategy)
+**Model:** <opus | sonnet | haiku> — by `AGENTS.md` § Which model a thread runs on
+**Depends on:** <front(s), the 144 steps a library waits on, or none>
 **Owns:** <source paths> · <snapshot directories>
 **Does not touch:** <the paths other fronts own — name them, so a worker knows to stop and report>
 
@@ -200,6 +226,8 @@ If the answer is long, this becomes `<topic>.md` and this section is its summary
 
 ### Step 1 — <what>
 
+**Repository:** <one repository, when the step runs as its own task> · **Model:** <tier>
+
 <What to change, and the shape of the change. Where there is a choice, state the options and
 recommend one with its trade-off.>
 
@@ -209,11 +237,13 @@ recommend one with its trade-off.>
 
 ## Gate
 
-- [ ] `zig build test` from a **cold** runtime cache, green, in this front's worktree
+- [ ] the repository's own hook, through `git commit` (never `--no-verify`): botopink-lang's
+      `scripts/gate.sh --staged`, a library's `runner-standalone.sh` on the main checkout's compiler
 - [ ] <the front's own check: a validator run, a library that must compile, snapshots
-      byte-identical for a refactor front>
+      byte-identical for a refactor front, every RUN LOG unchanged>
 - [ ] `AGENTS.md` of every directory touched, updated in the same commit
-- [ ] Commit on `fix/<front-name>`; no push, no merge — landing is the maintainer's step
+- [ ] Commit on `front/<name>`; no push, no merge — the coordinator lands it, writes the specs
+      and the pointer bump, and removes the worktree
 
 ## Blast radius
 
@@ -242,15 +272,17 @@ One per deep dive. The README stays readable; the analysis lives here. Typical t
 
 ## Working a front
 
-1. `git worktree add .tasks/<front-name> -b fix/<front-name>` from the submodule that owns the
-   code; write `todo.md` at the worktree root from the front's README (steps as a checklist,
-   owned and forbidden paths, the gate). `todo.md` is git-ignored and never committed.
+1. Open the worktree the step's **Repository** line names (§ Worktree strategy): `--lang`,
+   `--repo <lib>` or full; write `todo.md` at the worktree root from the front's README (steps as
+   a checklist, owned and forbidden paths, the gate). `todo.md` is git-ignored and never committed.
 2. Work only inside the worktree, only on owned files. **A front that needs a file it does not
    own stops and reports it** — that is how a mirrored bug is found instead of papered over.
 3. Verify by running, not by reading: execute the emitted code, drive the server, run the CLI.
    Re-record a snapshot only for a value that was verified.
-4. Land: merge into `feat`, suite green in the main checkout, push, submodule bump in the meta
-   repo, then delete the worktree and the branch.
+4. Land (the coordinator): read the diff against the boxes and re-measure, push the repository's
+   commit to its `feat` (fast-forward), bump the pointer and tick the specs in the meta repo, push,
+   rebuild the main checkout's compiler when the step was a compiler step, then remove the worktree
+   and the branch.
 
 ## Conventions
 
@@ -260,4 +292,6 @@ One per deep dive. The README stays readable; the analysis lives here. Typical t
   `status.md`, the milestone's living checklist (done · in analysis · pending · open · rough %), which is
   updated in the same commit as the work it reflects.
 - Cite `file:line` at HEAD and say when a number was measured, because both drift.
+- A spec never names a scratch location — a `.tasks/…` path, `/tmp/`, a task branch, a worktree
+  by name (`scripts/scratch-refs.py` finds them) — and never invents an example value.
 - A table beats a paragraph. A reproduction beats a description.
