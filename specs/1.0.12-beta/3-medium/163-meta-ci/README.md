@@ -118,8 +118,23 @@ After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/ga
       told from its linked siblings; each run's log kept as scratch
 - [ ] the meta repository's `scripts/gate.sh` is the machine's scheduler (decision 469): it owns the job pool,
       runs several repositories' gates together and hands each its share of jobs; the coordinator runs every full
-      gate through it; measured: two gates together finish sooner in total than one after the other, no timing red
+      gate through it
 - [ ] each library's `scripts/gate.sh` knows no pool and no lock: it takes a total of jobs (default the machine's)
       and offers `--no-conformance` (the hook's, 470); a library's `test-out` per run
 - [ ] copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names `scripts/gate.sh`
       and its `conformance/`
+
+### 163 s9 — the measurements, at the end (after 163 s8)
+
+**Repository:** botopink-lang and the meta repository · **Model:** sonnet
+
+Every time measurement of the conformance order waits for its end — no step in between spends time measuring.
+On a quiet machine (load below 3, nothing else running):
+
+- [ ] the full gate (cold and warm), the step gate (a one-backend and a shared change) and the hook's
+      `--no-conformance` gate, per stage, in `scripts/AGENTS.md`
+- [ ] `conformance/` by kind and by target (in-process cells against the CLI-run ones), with the cells a snapshot
+      already covers named
+- [ ] two gates through the meta repository's scheduler against one after the other (decisions 468, 469, 473)
+- [ ] each library's gate (`scripts/gate.sh libs`), per library
+

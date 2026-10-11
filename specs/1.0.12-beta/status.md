@@ -35,6 +35,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 - [ ] 144 B-29 step I — the commit hook runs `gate.sh --no-conformance` (470, landed: a one-backend step 4m20 cold, 1m28 warm); left: the reference into `botopink-lang/conformance/` (every `docs.md` example a cell), `test.yml` calling `scripts/gate.sh` (461, 462, 466) · after step H
 - [ ] 144 B-29 step J — botopink-lang's gate drops the lock and takes a total of jobs; the pool and scheduling are the meta repository's `scripts/gate.sh` (163 s7) (468, 469) · after the step gate (460)
 - [ ] 163 s8 — jhonstart, onze, rakun red on GitHub (`dependency 'snap' was not found`): each library's CI fetches its dependencies (`bpmp install`); the libraries with no run or no workflow get one (read by 474) · the eighth step of the conformance order, after closing B-00
+- [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · after 163 s8
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
 - [ ] 163 s7 — the meta repository's `scripts/gate.sh` orchestrating `repository/*` and the tasks (`run`, `tasks`, `libs`, `status`, 473); `scripts/gate.sh` in every repository (hook, CI and hand; `--no-conformance` by hand only, never a verdict), the libraries' gate running `<lib>/conformance/` (463, 466) · after 144 B-29 steps H and I; then each library moves its `docs.md` and examples into `conformance/`
 

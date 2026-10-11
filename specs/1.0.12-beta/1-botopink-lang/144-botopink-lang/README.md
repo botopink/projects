@@ -2193,8 +2193,6 @@ per target, then `node` / `escript` / `wasmtime`. compiler-core's tests check th
 in process in 327 CPU-s. The cells stay the language's description — the same `.bp`, `.out`, `.expect` files, in
 botopink-lang, landing in the compiler's commit (red on the parent, green after); only how they run changes.
 
-- [ ] measured first: `test-language`'s jobs and CPU-s by kind (`run/`, `reject/`, `modules/`, `test/`) and by
-      target; an audit of the cells a compiler-core snapshot already covers — recorded in `tests/language/AGENTS.md`
 - [ ] `tests/language/` becomes `conformance/` (decision 466) and every cell is in decision 457's shape: `<cell>/src/<module>.bp`, `snapshot/output/<module>.snap` (one answer
       for every target), `snapshot/targets/<target>/<module>.snap` (a target's departure only), `targets` (when
       narrowed) — `run/`, `reject/` and `modules/` migrated by a codemod, each cell's claims byte for byte the same
@@ -2230,8 +2228,6 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `NaN` / `Infinity` (erlang and beam abort), and an unseeded `random.float()` reached from a decorator body
 - [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
       manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
-- [ ] measured again (one gate alone, cold and warm) in `scripts/AGENTS.md`; no cell, target or check dropped, no
-      verdict changed (decision 67); a cell duplicated by a snapshot is named in the audit, never silently removed
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
