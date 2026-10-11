@@ -2412,12 +2412,28 @@ the final sigma), `NaN` / `Infinity` words (444), refusals (`std:` outside std 4
 unseeded draw at build 451 / 456, an Erlang cell never run at build 452, `@External.Beam` 437), a stack overflow that
 traps (447).
 
-- [ ] the whole `tests/language` suite green on every target it declares; no cell edited to match the compiler
-- [ ] the table of the group's behaviour changes (the list above, measured) against the cells that cover each, in
+- [x] the whole `tests/language` suite green on every target it declares; no cell edited to match the compiler
+- [x] the table of the group's behaviour changes (the list above, measured) against the cells that cover each, in
       this README
-- [ ] the cells each uncovered behaviour calls for, in decision 457's shape, red on the group's base (before
+- [x] the cells each uncovered behaviour calls for, in decision 457's shape, red on the group's base (before
       B-00a) and green on its tip
-- [ ] the missing cells found beyond the group's change proposed as rows
+- [x] the missing cells found beyond the group's change proposed as rows
+
+| Behaviour (decision) | Cells |
+|---|---|
+| one comptime runtime, one answer on every target (434 (5)) | `run/comptime_text_one_answer`, `run/comptime_random_seeded`, `run/decorator_host_cells`, `run/comptime_std_host_function` |
+| std-wasm's text in a wasm program (441), `trim` keeping a NBSP | at comptime `run/comptime_text_one_answer`; at run time pinned only in `codegen/tests/wat.zig` — a per-target answer waits on step H's `snapshot/targets/` |
+| Unicode case mapping, OTP's answer (443) | `run/string_case_unicode`, `run/comptime_text_one_answer` (the final sigma at comptime) |
+| `NaN` / `Infinity` words on wasm (444) | `codegen/tests/wat.zig` only — waits on step H |
+| `std:` outside std refused (445) | `reject/external_wasm_std_outside_std` |
+| the package name `std` reserved (453) | `modules/package_named_std` |
+| an unseeded draw at build refused (451, 456); a seeded one the same every build | `reject/comptime_random_unseeded`, `reject/comptime_random_float_unseeded`, `run/comptime_random_seeded` |
+| an `@External.Erlang` cell never run at build (452) | `run/comptime_erlang_cell_never_runs_at_build`, `reject/comptime_expression_erlang_cell_never_runs`, `reject/comptime_host_cell_unavailable{,_erlang_only}` |
+| `@External.Beam` refused (437) | `reject/external_beam_removed` |
+| a std-wasm frame past the stack's end traps (447) | not reachable from botopink code; `codegen/tests/wat.zig` |
+
+`run/comptime_erlang_cell_ignored_fn_serves` cannot tell its Erlang cell from its `fn:` body (green on the group's base
+too); `run/comptime_erlang_cell_never_runs_at_build` is the cell that does.
 
 **Model:** opus. **Consumer commits:** none.
 
