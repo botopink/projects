@@ -70,11 +70,11 @@ spelling rewrites the class S lines of `specs/<current>/**` that write it, and a
 - [ ] the commits are on the front's branch; landing is the maintainer's, who reviews step 1's
       rows line by line
 
-### 163 s8 — first: each library's CI fetches its dependencies (structural, decision 430; measured by decision 474)
+### 163 s8 — each library's CI fetches its dependencies — the eighth step of the conformance order (decision 474 measured it)
 
 **Repository:** every library repository with a `botopink.json` (a full worktree) · **Model:** sonnet
 
-Measured 2026-10-11 reading the pipelines (474): jhonstart, onze and rakun are red on `feat` — `dependency 'snap' was
+After the seventh step (`scripts/gate.sh libs`, closing B-00). Measured 2026-10-11 reading the pipelines (474): jhonstart, onze and rakun are red on `feat` — `dependency 'snap' was
 not found under any library root` — because each library's `test.yml` checks out only itself and botopink-lang, and
 the libraries that became repositories of their own (`snap`, decision 391; `styled`, `css`, …) are never fetched;
 actions, http, log, routing, validation, css and styled have a `test.yml` that has never run on `feat`; snap, json,
