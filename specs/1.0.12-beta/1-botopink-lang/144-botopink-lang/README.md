@@ -2251,20 +2251,26 @@ each track rewrites its own tree.
 
 - [ ] maintainer's answer recorded; if removed, §5.1 arms rewritten in emilia, jhonstart, rakun by the tracks, cells green; `docs.md` § Case re-measured for both forms
 
-### B-30 — wasm memory managed as erlang's: a heap per `@Task`, collected (decision 448)
+### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 After the B-00 group. botopink's values are immutable; on erlang each process's heap is collected and released
-when it dies. The wasm target's bump heap never frees; this step gives it erlang's model.
+when it dies. The wasm target's bump heap never frees; this step gives the wasm target and beam-to-wasm's translated
+code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
 
 - [ ] measured first: how far a program grows without collection — a long loop building strings, a request loop of
       a server, onze's pages on wasm — recorded in `codegen/wat/AGENTS.md` before any design is written
-- [ ] a heap per `@Task`: each task allocates on its own heap; a value passed between tasks is copied, as an erlang
-      message is; a task that ends releases its heap whole
-- [ ] collection by copying the live values of one heap; no write barrier but on the mutable cells a `var` holds;
-      the roots named (the task's frames, the scheduler's queues, the cells)
+- [ ] `modules/std-wasm/src/heap.zig`: a heap per process (a `@Task`; a BEAM process in translated code), `alloc` on
+      the current process's heap, collection by copying the live values (no write barrier but on the mutable cells
+      a `var` holds), a value copied between heaps as an erlang message is, a heap released whole when its process
+      ends; unit, property and stress tests in Zig; in std-wasm's `program` table, no comptime face
+- [ ] `alloc` leaves `wat_prelude` (449 (2)); the wasm codegen names its roots (the task's frames, the scheduler's
+      queues, the cells) at each collection point; a program that allocates nothing renders byte for byte as before
+- [ ] beam-to-wasm (449 (3)): translated code allocates on the current process's heap; `test_heap` / `allocate` are
+      collection points with their live registers as roots; beam-to-wasm still imports std-wasm alone (438)
 - [ ] a run that exhausts memory traps, never answers with damaged data; std-wasm's frames stay on the one stack (447)
 - [ ] every `run/` cell's `.out` on wasm unchanged; a long-running cell whose memory stays bounded where the bump heap
-      grew without limit
+      grew without limit; `modules/std-wasm/AGENTS.md` names std-wasm botopink's wasm runtime (std, stack, heap)
 
-**Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `test-libs` wasm
-column. **Model:** opus (a design the decision leaves to measurement). **Consumer commits:** none.
+**Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `modules/std-wasm` and
+`modules/beam-to-wasm` unit tests; `test-libs` wasm column. **Model:** opus (a design the decision leaves to
+measurement). **Consumer commits:** none.
