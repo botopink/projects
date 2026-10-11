@@ -33,6 +33,7 @@ order, before any other step of this front or any other front:
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
 | B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
+| B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (decision 442) | opus |
 
 ## Lanes
 
@@ -42,7 +43,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–f, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–g, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -329,6 +330,28 @@ The beam target reads a declaration's `@External.Erlang` cell; `@External.Beam` 
 **Impacted tests:** `codegen/tests/externals.zig`, `features.zig`, `std_package.zig`; beam codegen snapshots (re-read);
 `beam_export_audit`; `test-libs --lib std` beam column; `test-docs`. **Model:** sonnet (437 fixes the design).
 **Consumer commits:** none (no library writes `@External.Beam`).
+
+### B-00g — `wat_prelude` keeps only representation, operators, output and runtime (decision 442)
+
+After B-00e (std-wasm transpiled into the program, its `std:` binding, 441's text). `codegen/wat/wat_prelude.zig`
+keeps what defines a value's representation or talks to the host; what only computes over values is Zig.
+
+- [ ] every helper 442 (2) lists for std leaves `wat_prelude`: implemented in `modules/std-wasm` (Zig unit tests per
+      function), bound by `#[@External.Wasm("std:…")]` on its std declaration (`primitives.bp` and the std modules),
+      transpiled into the program where called; the `HelperGroup` members and their `wat_ast` nodes deleted
+- [ ] `bigint` (`bn_*`) leaves `wat_prelude` for Zig beside std-wasm, its limbs internal; Zig unit tests and a
+      property test against a reference (carry, `divmod`, text round-trip); the codegen calls it by pointer
+- [ ] transpiled Zig uses the program's `$__alloc` and the codegen's string / array layout — no second heap, no
+      second stack pointer; a module that calls no moved helper renders byte for byte as before
+- [ ] what stays is exactly 442 (1): `alloc`, `mem_eq`, `box_*`, `arr_at_box`, `arr_new`, `arr_push`, `arr_at`,
+      `str_concat`, `str_eq`, `str_slice`, `int_chk`, `u64_chk`, `*_range_chk`, `i32_abs` / `min` / `max`, the print
+      family (the number's text from std-wasm, the I/O here), the `@Task` scheduler, `unknown`, `assert_fail`; the
+      rule of 442 (3) written in `codegen/wat/AGENTS.md`
+- [ ] every wasm `.out` and RUN LOG unchanged except where 441 changes the text; the size an emitted module gains
+      or loses measured (a hello world, a `bigint` program, onze's blog page) and recorded in `codegen/wat/AGENTS.md`
+
+**Impacted tests:** every wasm RUN LOG snapshot (re-read, never bulk-accepted); `run/` cells on wasm, `bigint_*`
+first; `test-libs` wasm column; `modules/std-wasm` unit tests. **Model:** opus. **Consumer commits:** none.
 
 #### Step 5 — the rest of std on wasm (decisions 262, 241) (was `05-wasm` s5)
 
