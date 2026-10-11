@@ -36,7 +36,7 @@ order, before any other step of this front or any other front:
 | B-00h | wasm codegen snapshots show a transpiled std-wasm function as one line with its hash (decision 446) — before B-00g | sonnet |
 | B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
 | B-00i | the Erlang term library (`rt.zig`) and the OTP functions move into std-wasm; `bp_wat_rt.wasm` goes; beam-to-wasm reads std-wasm's OTP table (decision 450) — before B-30 | opus |
-| B-00j | the comptime stops calling beam-to-wasm: a host function answers by `std:` or `fn:`, never an Erlang cell; `cells.zig` and the Erlang-cell translation deleted from compiler-core (decision 452) | sonnet |
+| B-00j | the comptime stops calling beam-to-wasm: a host function answers by `std:` or `fn:`, never an Erlang cell; `cells.zig` and the Erlang-cell translation deleted from compiler-core (decision 452); the package name `std` reserved (453) | sonnet |
 
 ## Lanes
 
@@ -2275,7 +2275,7 @@ representation and the OTP functions and BIFs it serves) moves into `modules/std
 **Impacted tests:** `comptime` tests (every `COMPTIME REPLY`), `modules/std-wasm` and `modules/beam-to-wasm` unit
 tests, `test-web`, decorator/template/comptime cells of `tests/language`. **Model:** opus. **Consumer commits:** none.
 
-### B-00j — The comptime stops calling beam-to-wasm (decision 452)
+### B-00j — The comptime stops calling beam-to-wasm (decision 452); the name `std` reserved (453)
 
 After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; nothing in botopink calls it.
 
@@ -2288,6 +2288,8 @@ After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; n
 - [ ] `docs.md` (§ host functions at compile time), `comptime/AGENTS.md`, `comptime/runtime/wat/AGENTS.md` and
       `modules/beam-to-wasm/AGENTS.md` say beam-to-wasm is standalone and unused by botopink; every `COMPTIME REPLY`
       unchanged
+- [ ] a package named `std` that is not the bundled `libs/std` refused at its manifest (453) — a CLI contract case
+      and an LSP diagnostic; the bundled std still builds as itself
 
 **Impacted tests:** `comptime` host-cell tests, `tests/language` reject and decorator cells, `test-docs`.
 **Model:** sonnet (452 fixes the design). **Consumer commits:** none.

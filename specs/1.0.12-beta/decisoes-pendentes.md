@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **453**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **454**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -23,20 +23,6 @@ só o codegen chama, como `joinInts` ao lado de `joinFloats`, sem declaração n
 no std e face de comptime.
 
 **Recomendação: (a)** — um helper que o codegen escolhe por tipo não é função do std. Não trava nada.
-
-### 445-a · Que pacote conta como std (445)
-
-Hoje: o std embutido, o prelude e um pacote raiz cujo manifesto se chama `std`. Nada impede um pacote do usuário de
-se chamar `std`.
-
-**(a)** Como está. **(b)** Um pacote chamado `std` que não é o `libs/std` embutido é recusado pelo nome:
-```text
-// botopink.json do usuário: { "name": "std" }
-error: the package name `std` is the bundled standard library's — choose another name
-```
-**(c)** O std é identificado pelo diretório `libs/std` embutido, nunca pelo nome.
-
-**Recomendação: (b)**, a mais restritiva. Não trava nada.
 
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 

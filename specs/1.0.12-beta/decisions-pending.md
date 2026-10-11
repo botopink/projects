@@ -33,18 +33,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   add std API nobody calls.
 - **Blocks.** nothing (built as (a)).
 
-#### 445-a · Which package counts as std (445)
-- **Measured.** B-00g marks std's modules explicitly (`Module.std_member`): the embedded std, the prelude, and a root
-  package whose manifest is named `std` (to build std itself). Nothing stops a user package from naming itself `std`.
-- **Options.** (a) As built. (b) A package named `std` that is not the bundled `libs/std` is refused (by name, at
-  the manifest). (c) std is identified by the bundled `libs/std` directory, never by name.
-  ```text
-  // (b) a user's botopink.json { "name": "std" }
-  error: the package name `std` is the bundled standard library's — choose another name
-  ```
-- **Recommendation.** (b), the strictest: the name stays unambiguous everywhere (imports, `std:`, `bpmp`).
-- **Blocks.** nothing (built as (a)).
-
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
