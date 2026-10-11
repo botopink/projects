@@ -63,22 +63,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ### 144 B-00g (wat_prelude split, decisions 442, 443, 445)
 
-#### 442-a · The program's stack pointer (442 (4))
-- **Measured.** The wasm codegen has no stack of its own. std-wasm's Zig needs a shadow stack (`$__std_sp`, a region
-  sized from its frames, placed below the heap): Ryu's float text, `u128` math and `std.mem.indexOf`'s 1 KB table all
-  use frames. The heap is already the program's `$__alloc`; the stack is the open half of B-00g's box.
-- **Options.**
-  (a) `$__std_sp` is the program's one stack pointer — the codegen has none, so there is no second one.
-  ```wat
-  (global $__std_sp (mut i32) (i32.const 66560))   ;; one stack, below the heap
-  ```
-  (b) The transpiler rewrites each Zig frame into a `$__alloc`: no stack pointer at all, but every call leaks its
-  frame on the bump heap (about 1 KB per `split`).
-  (c) Write std-wasm's program face so nothing reached has a frame, and refuse `__stack_pointer` — `floatToString`
-  rewritten without `std.fmt`.
-- **Recommendation.** (a): 442 (4) forbids a *second* stack; with the codegen stackless, std-wasm's is the only one.
-- **Blocks.** 144 B-00g box "no second heap, no second stack pointer".
-
 #### 442-b · The seeded random (442 (2), `io/random`)
 - **Measured.** The seeded stream (Mulberry32) is still in `wat_prelude`: its first draw before any seed is the
   host's (`$__wasi_random_f64`). With `std:` cells on `io/random.bp`'s `seed` / `seededFloat`, the comptime must answer

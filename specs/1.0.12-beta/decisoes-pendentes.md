@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **447**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **448**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -47,18 +47,6 @@ no `rt.zig` do compiler-core; o std-wasm tem texto e número.
 
 **Recomendação: (b)**, no B-00g ou depois — um lugar só nomeia o que é servido, sem mover a biblioteca de termos em
 que o runtime de comptime se apoia. Não trava nada hoje.
-
-### 442-a · O ponteiro de pilha do programa (442 (4))
-
-O codegen wasm não tem pilha. O Zig do std-wasm precisa de uma (`$__std_sp`, abaixo do heap) para o texto de float
-(Ryu), contas em `u128` e a tabela de 1 KB do `indexOf`. O heap já é o `$__alloc` do programa.
-
-**(a)** O `$__std_sp` é a única pilha do programa — o codegen não tem outra, então não há uma "segunda".
-**(b)** O transpilador troca cada frame do Zig por um `$__alloc`: sem pilha, mas cada chamada vaza o frame no heap
-(~1 KB por `split`). **(c)** Reescrever o std-wasm sem frames (o `floatToString` sem `std.fmt`) e recusar
-`__stack_pointer`.
-
-**Recomendação: (a).** Trava: a caixa "sem segundo heap, sem segundo ponteiro de pilha" do B-00g.
 
 ### 442-b · O random com semente (`io/random`)
 

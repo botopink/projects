@@ -362,6 +362,9 @@ keeps what defines a value's representation or talks to the host; what only comp
       property test against a reference (carry, `divmod`, text round-trip); the codegen calls it by pointer
 - [ ] transpiled Zig uses the program's `$__alloc` and the codegen's string / array layout — no second heap, no
       second stack pointer; a module that calls no moved helper renders byte for byte as before
+      — 447: `$__std_sp` the one stack, std-wasm's frames only (no botopink value on it); laid out or checked so an
+      overflow traps, never writes over data or heap (a test drives one past its end); its size the deepest frame
+      path the program links
 - [ ] what stays is exactly 442 (1): `alloc`, `mem_eq`, `box_*`, `arr_at_box`, `arr_new`, `arr_push`, `arr_at`,
       `str_concat`, `str_eq`, `str_slice`, `int_chk`, `u64_chk`, `*_range_chk`, `i32_abs` / `min` / `max`, the print
       family (the number's text from std-wasm, the I/O here), the `@Task` scheduler, `unknown`, `assert_fail`; the
