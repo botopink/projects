@@ -69,3 +69,17 @@ spelling rewrites the class S lines of `specs/<current>/**` that write it, and a
 - [ ] every step's § Measure acceptance re-run on the tip that lands
 - [ ] the commits are on the front's branch; landing is the maintainer's, who reviews step 1's
       rows line by line
+
+### 163 s4 — `repository/conformance` mirrors `tests/language` (after 144 B-29 step H)
+
+**Repository:** conformance (the generator in the meta repository's `scripts/`) · **Model:** sonnet
+
+`botopink/conformance` holds its scaffold only. The cells are edited in botopink-lang's `tests/language/`, landing
+with the compiler change they prove; this repository is their mirror for any implementation of botopink.
+
+- [ ] a generator (`scripts/`) copies `run/`, `reject/`, `modules/` and `test/` from the botopink-lang pointer the
+      meta repository pins, byte for byte, with the commit it came from recorded in the mirror's commit message
+- [ ] a CI check fails when the mirror differs from the pinned `tests/language` (no hand edit survives)
+- [ ] `repository/conformance/AGENTS.md` and `README.md` say how a cell is read (the `.out` / `.expect` shapes, the
+      `.targets` narrowing) without naming botopink-lang's runner as the only way to run them
+

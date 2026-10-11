@@ -30,6 +30,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; measured first · after B-00
 - [ ] 144 B-29 step G — one job budget for the gate (a cold gate alone: 12m27s, three pools of ~16 jobs on 16 cores); `zig build test` beside the ReleaseSafe build · nothing
 - [ ] 144 B-29 step H — `tests/language`'s `reject/` and single-file `run/` cells run in process (the same files; `modules/` and `test/` stay on the CLI); measured first · after step G
+- [ ] 163 s4 — `repository/conformance` (public, scaffold) mirrors `tests/language`: a generator from the pinned botopink-lang and a CI check against hand edits · after 144 B-29 step H
 
 ### 144 botopink-lang
 
