@@ -2172,6 +2172,27 @@ still took 3m17).
       `scripts/AGENTS.md` § Where the gate's time goes, against this step's numbers; no stage, cell or check
       dropped and no verdict changed (decision 67)
 
+#### Step H — `tests/language` cells run in process where no CLI path is under test (after step G)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (which cells still need the CLI is a judgement)
+
+`test-language` is the gate's critical path (9m02 cold alone, 2707 jobs, 1468 CPU-s): a `botopink` process per cell
+per target, then `node` / `escript` / `wasmtime`. compiler-core's tests check thousands of cases and ~1400 snapshots
+in process in 327 CPU-s. The cells stay the language's description — the same `.bp`, `.out`, `.expect` files, in
+botopink-lang, landing in the compiler's commit (red on the parent, green after); only how they run changes.
+
+- [ ] measured first: `test-language`'s jobs and CPU-s by kind (`run/`, `reject/`, `modules/`, `test/`) and by
+      target; an audit of the cells a compiler-core snapshot already covers — recorded in `tests/language/AGENTS.md`
+- [ ] `reject/` cells checked in process by a compiler-core test that reads `tests/language/reject/*.bp` and its
+      `.expect` (message line and `line:col`), no `botopink` process per cell
+- [ ] single-file `run/` cells compiled in process and run on the four targets through the snapshot executors
+      (`executeJavaScript`, `executeErlang`, `executeBeamAsm`, `executeWat`) and their runtime cache, each `.out`
+      byte for byte; a `.targets` narrowing still audited against the host-binding refusal
+- [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
+      manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
+- [ ] measured again (one gate alone, cold and warm) in `scripts/AGENTS.md`; no cell, target or check dropped, no
+      verdict changed (decision 67); a cell duplicated by a snapshot is named in the audit, never silently removed
+
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 
 Row deleted until capture normalises CRLF/separators (known gap, `../../status.md`). To restore: run
