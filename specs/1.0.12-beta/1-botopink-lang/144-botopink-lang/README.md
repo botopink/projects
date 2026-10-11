@@ -2199,10 +2199,14 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       for every target), `snapshot/targets/<target>/<module>.snap` (a target's departure only), `targets` (when
       narrowed) — `run/`, `reject/` and `modules/` migrated by a codemod, each cell's claims byte for byte the same
       (every `.out`, `.exit`, `<target>.expect`, `<target>.stderr`, `.targets` mapped, none lost)
-- [ ] `botopink cell new <path>` and `botopink cell check <cell|directory>` (decision 464) in `compiler-cli`, over
+- [x] `botopink cell new <path>` and `botopink cell check <cell|directory>` (decision 464) in `compiler-cli`, over
       compiler-core's executors: run on every declared target, compare with `snapshot/output/` and
       `snapshot/targets/`, a mismatch a `.snap.new` candidate and exit 1, a new cell's candidates by agreement /
       majority / one per target; no update flag; CLI contract cases in `cli_contract.sh`
+- [ ] every cell has its own `botopink.json` (decision 475 (1)): `botopink cell new` writes one, `botopink cell check`
+      refuses a cell without one, the migration writes one per cell (its `name`, its `"targets"` from today's
+      `.targets` sidecar, its path dependencies); an answer that names the package (an erlang atom, a host template)
+      measured and re-read cell by cell, never bulk-accepted
 - [ ] `reject/` cells checked in process by a compiler-core test that reads `tests/language/reject/*.bp` and its
       `.expect` (message line and `line:col`), no `botopink` process per cell
 - [ ] single-file `run/` cells compiled in process and run on the four targets through the snapshot executors
