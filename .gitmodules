@@ -67,7 +67,3 @@
 	path = repository/dbcontext
 	url = git@github.com:botopink/dbcontext.git
 	branch = feat
-[submodule "repository/conformance"]
-	path = repository/conformance
-	url = git@github.com:botopink/conformance.git
-	branch = feat
