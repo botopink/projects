@@ -654,7 +654,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-05.
 
 #### 431-e · A conversão implícita da 126 de uma Promise do Node que rejeita (144 B-05)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a) — só conversão explícita.** Uma Promise do Node que rejeita entra como `Error` só por `throws: true`; a conversão `__bp_host_task` da 126 é retirada e `run/host_node_task_result` é reescrito. Ainda aberto: se um host erlang que *devolve* `{ok, V}` / `{error, R}` continua lido como `@Result` — (e1) sim, é um valor e não um raise (recomendado) — ou também precisa de uma forma explícita (e2).
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a) — só conversão explícita.** Uma Promise do Node que rejeita entra como `Error` só por `throws: true`; a conversão `__bp_host_task` da 126 é retirada e `run/host_node_task_result` é reescrito. Um host erlang que *devolve* `{ok, V}` / `{error, R}` continua lido como `@Result` sem `throws:` (e1): é um valor, não um raise.
 - **Medido.** Todo binding do Node declarado `-> @Task<@Result<T, E>>` é embrulhado em `__bp_host_task` (`js_prelude.zig`, decisão 126), que transforma qualquer rejeição em `Error(<message>)` sem `throws: true` — sob a 431 (2) um raise não anunciado é um crash, e `run/host_node_task_result` depende da conversão.
 - **Opções.**
   (a) Aposentá-la: um binding Node `@Task<@Result<…>>` escreve `throws: true` com `E = HostError`, senão é recusado; um host erlang que responde `{ok, V}` / `{error, R}` fica como está (um valor, não um raise).
