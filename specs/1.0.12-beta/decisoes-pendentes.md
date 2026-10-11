@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **456**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **457**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -13,18 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 451-a · `random.float()` no comptime
-
-Um `float()` sem semente no build hoje é recusado pela célula Erlang ("beam-to-wasm does not convert `rand:uniform/0`");
-depois do B-00j vira `comptime-host-cell-unavailable`. Nenhuma das duas diz "sem entropia", como o `seededFloat()` diz.
-
-**(a)** Deixar a recusa genérica. **(b)** Uma célula `std:random.float`: no programa sorteia pela entropia do host; no
-comptime levanta a recusa da 451:
-```text
-comptime random.float()   // (b) error: an unseeded draw: a build has no entropy, call `random.seed` first
-```
-**Recomendação: (b)** — todo sorteio sem semente no build é recusado com a mesma mensagem. Não trava nada.
 
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 

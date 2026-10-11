@@ -2293,6 +2293,8 @@ After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; n
 - [ ] a package named `std` that is not the bundled `libs/std` refused at its manifest (453) — a CLI contract case
       and an LSP diagnostic; the bundled std still builds as itself
 - [ ] `str_slice` and `mem_eq` deleted from `wat_prelude` (455); `codegen/wat/AGENTS.md`'s staying list without them
+- [ ] `random.float()` bound by `std:random.float` (456): the host's entropy in a wasm program, 451's refusal at
+      comptime — the unseeded `float()` cell refuses with it, never `comptime-host-cell-unavailable`
 
 **Impacted tests:** `comptime` host-cell tests, `tests/language` reject and decorator cells, `test-docs`.
 **Model:** sonnet (452 fixes the design). **Consumer commits:** none.
