@@ -14,6 +14,27 @@
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
 
+### 442-d · `str_slice` e `mem_eq`: a 442 (1) os mantém, mas nada os chama
+
+Desde o primeiro commit do B-00g, `s[i]` e `s[a..b]` usam o `text.slice` do std-wasm; nenhuma lowering chama
+`$__str_slice` nem `$__mem_eq`.
+
+**(a)** Apagar os dois e emendar a 442 (1). **(b)** Manter como listado.
+
+**Recomendação: (a)** — nada que não roda em lugar nenhum fica. Não trava nada.
+
+### 451-a · `random.float()` no comptime
+
+Um `float()` sem semente no build hoje é recusado pela célula Erlang ("beam-to-wasm does not convert `rand:uniform/0`");
+depois do B-00j vira `comptime-host-cell-unavailable`. Nenhuma das duas diz "sem entropia", como o `seededFloat()` diz.
+
+**(a)** Deixar a recusa genérica. **(b)** Uma célula `std:random.float`: no programa sorteia pela entropia do host; no
+comptime levanta a recusa da 451:
+```text
+comptime random.float()   // (b) error: an unseeded draw: a build has no entropy, call `random.seed` first
+```
+**Recomendação: (b)** — todo sorteio sem semente no build é recusado com a mesma mensagem. Não trava nada.
+
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 
 **Trava:** nada — construído como (a)

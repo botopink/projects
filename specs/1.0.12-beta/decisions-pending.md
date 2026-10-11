@@ -21,6 +21,30 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ## Part 1 — What blocks tracks 00–03
 
+### 144 B-00g (after its landing)
+
+#### 442-d · `str_slice` and `mem_eq`, kept by 442 (1), are called by nothing
+- **Measured.** B-00g's first commit made `s[i]` and `s[a..b]` std-wasm's `text.slice`; no lowering calls
+  `$__str_slice` or `$__mem_eq` since, and no snapshot holds them. 442 (1) still lists both as staying.
+- **Options.** (a) Delete both groups and amend 442 (1): nothing that runs nowhere stays. (b) Keep them as listed.
+- **Recommendation.** (a), the strictest (decision 67).
+- **Blocks.** nothing.
+
+#### 451-a · `random.float()` at comptime
+- **Measured.** An unseeded `float()` at build is refused through its Erlang cell today ("beam-to-wasm does not convert
+  `rand:uniform/0`"); once B-00j removes Erlang-cell translation (452) it becomes `comptime-host-cell-unavailable`.
+  Neither says "no entropy", which `seededFloat()` before a `seed` says (451).
+- **Options.**
+  (a) Leave the generic refusal.
+  (b) A `std:random.float` cell: in a program it draws the host's entropy (`env.bp_random_f64`); at comptime it raises
+  451's refusal.
+  ```text
+  comptime random.float()   // (b) error: an unseeded draw: a build has no entropy, call `random.seed` first
+  ```
+- **Recommendation.** (b): every unseeded draw at build is refused with one message. A program calling `float()` then
+  links one small std-wasm function.
+- **Blocks.** nothing.
+
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
