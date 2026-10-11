@@ -361,6 +361,9 @@ keeps what defines a value's representation or talks to the host; what only comp
 - [x] `std:` refused outside `libs/std` (445), at the annotation, naming std's function — a `reject/` cell
 - [x] `bigint` (`bn_*`) leaves `wat_prelude` for Zig beside std-wasm, its limbs internal; Zig unit tests and a
       property test against a reference (carry, `divmod`, text round-trip); the codegen calls it by pointer
+- [ ] the seeded random (451): its stream in std-wasm, bound by `std:` on `io/random.bp`'s `seed` / `seededFloat`; an
+      unseeded draw through `env.bp_random_f64`, linked to `$__wasi_random_f64`; at comptime a seeded draw answers
+      and an unseeded one is refused at the call — a `reject/` cell
 - [ ] transpiled Zig uses the program's `$__alloc` and the codegen's string / array layout — no second heap, no
       second stack pointer; a module that calls no moved helper renders byte for byte as before
       — 447: `$__std_sp` the one stack, std-wasm's frames only (no botopink value on it); laid out or checked so an

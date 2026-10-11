@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **451**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **452**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -31,22 +31,6 @@ error: comptime-beam-call-not-converted: beam-to-wasm does not convert `jhonstar
 ```
 **Recomendação: (c) agora e (a) quando houver necessidade medida** — mantém o `erlc` fora da compilação. Trava: a
 caixa 1 do 144 B-00b (com (c), ela vira a metade do utilitário, já construída).
-
-### 442-b · O random com semente (`io/random`)
-
-O fluxo Mulberry32 ainda está no `wat_prelude`; o primeiro sorteio sem semente é do host. Com `std:` no
-`seed` / `seededFloat`, o comptime também teria que responder — e ele não tem entropia.
-
-**(a)** O estado do fluxo vai para o std-wasm; o sorteio sem semente chama o host no programa; no comptime, com
-semente responde, sem semente é recusado:
-```text
-comptime random.seededFloat()   // depois de random.seed(42): o mesmo número em todo build
-comptime random.float()         // error: an unseeded random draw has no answer at build
-```
-**(b)** Como (a), mas o comptime sem semente usa uma semente fixa. **(c)** Fica no `wat_prelude`, sem face de comptime.
-
-**Recomendação: (a)** — o fluxo é cálculo (std-wasm), a entropia é do host, e o build nunca finge ter entropia.
-Trava: duas caixas do B-00g.
 
 ### 442-c · As duas tabelas do std-wasm: exports ligáveis e helpers só do programa
 

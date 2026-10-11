@@ -46,23 +46,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ### 144 B-00g (wat_prelude split, decisions 442, 443, 445)
 
-#### 442-b · The seeded random (442 (2), `io/random`)
-- **Measured.** The seeded stream (Mulberry32) is still in `wat_prelude`: its first draw before any seed is the
-  host's (`$__wasi_random_f64`). With `std:` cells on `io/random.bp`'s `seed` / `seededFloat`, the comptime must answer
-  them too, and it has no entropy.
-- **Options.**
-  (a) std-wasm holds the stream's state; an unseeded draw calls an import `env.bp_random_f64`, bound by the linker
-  to `$__wasi_random_f64` in a program; the comptime serves the seeded stream and refuses an unseeded draw.
-  ```text
-  comptime random.seededFloat()            // after random.seed(42): the same number on every build
-  comptime random.float()                  // error: an unseeded random draw has no answer at build
-  ```
-  (b) As (a), but the comptime's unseeded draw uses a fixed seed (a build answers the same "random" number always).
-  (c) Keep the stream in `wat_prelude` as runtime state, with no comptime face.
-- **Recommendation.** (a): the stream is computation (std-wasm's), the entropy is the host's (the prelude's), and a
-  build never pretends to have entropy.
-- **Blocks.** 144 B-00g boxes "every helper leaves `wat_prelude`" and "what stays is exactly 442 (1)".
-
 #### 442-c · std-wasm's two tables: bindable exports and program-only helpers (442 (2))
 - **Measured.** B-00g split std-wasm's table into `exports` (bound by a `std:` cell on a std declaration, with a
   comptime face) and `program` (functions only the wasm codegen calls — `joinInts` beside `joinFloats`, code-point
