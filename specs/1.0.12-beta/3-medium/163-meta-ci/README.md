@@ -85,8 +85,8 @@ with the compiler change they prove; this repository is their mirror for any imp
 - [ ] `repository/conformance/.github/workflows/conformance.yml`, against **the newest botopink-lang**: it checks
       out botopink-lang at the head of `feat` (never a pinned ref), builds the compiler and runs two jobs, every
       row hard (no `continue-on-error`, no row that cannot fail), as the libraries' `test.yml` does:
-      `cells` — every cell on commonJS (node), erlang and beam (OTP 28, the release the compiler emits for) and
-      wasm (wasmtime), on linux and macos; `mirror` — the cells equal botopink-lang's `tests/language` at that head
+      `cells` — `botopink cell check modules/` (decision 464): every cell on commonJS (node), erlang and beam (OTP 28,
+      the release the compiler emits for) and wasm (wasmtime), on linux and macos; `mirror` — the cells equal botopink-lang's `tests/language` at that head
 - [ ] it runs on a push to `conformance` and **whenever botopink-lang's `feat` moves**: botopink-lang's
       `test.yml`, green on `feat`, sends a `repository_dispatch` to `botopink/conformance` (a token with that one
       scope, a repository secret), so a compiler change is measured against the suite without a conformance commit
@@ -135,8 +135,9 @@ guarantees, the contract every implementation passes.
 
 After 144 B-29 step H (the cells' runner, the 457 shape).
 
-- [ ] `scripts/git-hooks/lib/runner-standalone.sh` gains a stage: every `conformance/modules/*/` cell of the repository
-      run on the targets its manifest declares and compared with its `snapshot/` (a mismatch writes a `.snap.new`
+- [ ] `scripts/git-hooks/lib/runner-standalone.sh` gains a stage: `botopink cell check conformance/` (decision 464) —
+      every `conformance/modules/*/` cell of the repository run on the targets its manifest declares and compared with
+      its `snapshot/` (a mismatch writes a `.snap.new`
       candidate and fails; never overwritten); absent only structurally (no `conformance/` directory)
 - [ ] the runner copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names its
       `conformance/` directory
