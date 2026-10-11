@@ -48,6 +48,58 @@ no `rt.zig` do compiler-core; o std-wasm tem texto e número.
 **Recomendação: (b)**, no B-00g ou depois — um lugar só nomeia o que é servido, sem mover a biblioteca de termos em
 que o runtime de comptime se apoia. Não trava nada hoje.
 
+### 442-a · O ponteiro de pilha do programa (442 (4))
+
+O codegen wasm não tem pilha. O Zig do std-wasm precisa de uma (`$__std_sp`, abaixo do heap) para o texto de float
+(Ryu), contas em `u128` e a tabela de 1 KB do `indexOf`. O heap já é o `$__alloc` do programa.
+
+**(a)** O `$__std_sp` é a única pilha do programa — o codegen não tem outra, então não há uma "segunda".
+**(b)** O transpilador troca cada frame do Zig por um `$__alloc`: sem pilha, mas cada chamada vaza o frame no heap
+(~1 KB por `split`). **(c)** Reescrever o std-wasm sem frames (o `floatToString` sem `std.fmt`) e recusar
+`__stack_pointer`.
+
+**Recomendação: (a).** Trava: a caixa "sem segundo heap, sem segundo ponteiro de pilha" do B-00g.
+
+### 442-b · O random com semente (`io/random`)
+
+O fluxo Mulberry32 ainda está no `wat_prelude`; o primeiro sorteio sem semente é do host. Com `std:` no
+`seed` / `seededFloat`, o comptime também teria que responder — e ele não tem entropia.
+
+**(a)** O estado do fluxo vai para o std-wasm; o sorteio sem semente chama o host no programa; no comptime, com
+semente responde, sem semente é recusado:
+```text
+comptime random.seededFloat()   // depois de random.seed(42): o mesmo número em todo build
+comptime random.float()         // error: an unseeded random draw has no answer at build
+```
+**(b)** Como (a), mas o comptime sem semente usa uma semente fixa. **(c)** Fica no `wat_prelude`, sem face de comptime.
+
+**Recomendação: (a)** — o fluxo é cálculo (std-wasm), a entropia é do host, e o build nunca finge ter entropia.
+Trava: duas caixas do B-00g.
+
+### 442-c · As duas tabelas do std-wasm: exports ligáveis e helpers só do programa
+
+O B-00g separou `exports` (ligados por `std:` a uma declaração do std, com face de comptime) de `program` (helpers que
+só o codegen chama, como `joinInts` ao lado de `joinFloats`, sem declaração no std).
+
+**(a)** Duas tabelas, como construído. **(b)** Uma tabela só: toda função ligável por `std:`, cada uma com declaração
+no std e face de comptime.
+
+**Recomendação: (a)** — um helper que o codegen escolhe por tipo não é função do std. Não trava nada.
+
+### 445-a · Que pacote conta como std (445)
+
+Hoje: o std embutido, o prelude e um pacote raiz cujo manifesto se chama `std`. Nada impede um pacote do usuário de
+se chamar `std`.
+
+**(a)** Como está. **(b)** Um pacote chamado `std` que não é o `libs/std` embutido é recusado pelo nome:
+```text
+// botopink.json do usuário: { "name": "std" }
+error: the package name `std` is the bundled standard library's — choose another name
+```
+**(c)** O std é identificado pelo diretório `libs/std` embutido, nunca pelo nome.
+
+**Recomendação: (b)**, a mais restritiva. Não trava nada.
+
 ### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 
 **Trava:** nada — construído como (a)

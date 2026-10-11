@@ -61,6 +61,63 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   the comptime runtime is built on.
 - **Blocks.** nothing today.
 
+### 144 B-00g (wat_prelude split, decisions 442, 443, 445)
+
+#### 442-a · The program's stack pointer (442 (4))
+- **Measured.** The wasm codegen has no stack of its own. std-wasm's Zig needs a shadow stack (`$__std_sp`, a region
+  sized from its frames, placed below the heap): Ryu's float text, `u128` math and `std.mem.indexOf`'s 1 KB table all
+  use frames. The heap is already the program's `$__alloc`; the stack is the open half of B-00g's box.
+- **Options.**
+  (a) `$__std_sp` is the program's one stack pointer — the codegen has none, so there is no second one.
+  ```wat
+  (global $__std_sp (mut i32) (i32.const 66560))   ;; one stack, below the heap
+  ```
+  (b) The transpiler rewrites each Zig frame into a `$__alloc`: no stack pointer at all, but every call leaks its
+  frame on the bump heap (about 1 KB per `split`).
+  (c) Write std-wasm's program face so nothing reached has a frame, and refuse `__stack_pointer` — `floatToString`
+  rewritten without `std.fmt`.
+- **Recommendation.** (a): 442 (4) forbids a *second* stack; with the codegen stackless, std-wasm's is the only one.
+- **Blocks.** 144 B-00g box "no second heap, no second stack pointer".
+
+#### 442-b · The seeded random (442 (2), `io/random`)
+- **Measured.** The seeded stream (Mulberry32) is still in `wat_prelude`: its first draw before any seed is the
+  host's (`$__wasi_random_f64`). With `std:` cells on `io/random.bp`'s `seed` / `seededFloat`, the comptime must answer
+  them too, and it has no entropy.
+- **Options.**
+  (a) std-wasm holds the stream's state; an unseeded draw calls an import `env.bp_random_f64`, bound by the linker
+  to `$__wasi_random_f64` in a program; the comptime serves the seeded stream and refuses an unseeded draw.
+  ```text
+  comptime random.seededFloat()            // after random.seed(42): the same number on every build
+  comptime random.float()                  // error: an unseeded random draw has no answer at build
+  ```
+  (b) As (a), but the comptime's unseeded draw uses a fixed seed (a build answers the same "random" number always).
+  (c) Keep the stream in `wat_prelude` as runtime state, with no comptime face.
+- **Recommendation.** (a): the stream is computation (std-wasm's), the entropy is the host's (the prelude's), and a
+  build never pretends to have entropy.
+- **Blocks.** 144 B-00g boxes "every helper leaves `wat_prelude`" and "what stays is exactly 442 (1)".
+
+#### 442-c · std-wasm's two tables: bindable exports and program-only helpers (442 (2))
+- **Measured.** B-00g split std-wasm's table into `exports` (bound by a `std:` cell on a std declaration, with a
+  comptime face) and `program` (functions only the wasm codegen calls — `joinInts` beside `joinFloats`, code-point
+  bounds — which no std declaration names). Built as (a).
+- **Options.** (a) Two tables, as built. (b) One table: every function bindable by `std:` and given a term-level
+  comptime face, each with a std declaration.
+- **Recommendation.** (a): a helper the codegen chooses by type is not a std function; declaring one per type would
+  add std API nobody calls.
+- **Blocks.** nothing (built as (a)).
+
+#### 445-a · Which package counts as std (445)
+- **Measured.** B-00g marks std's modules explicitly (`Module.std_member`): the embedded std, the prelude, and a root
+  package whose manifest is named `std` (to build std itself). Nothing stops a user package from naming itself `std`.
+- **Options.** (a) As built. (b) A package named `std` that is not the bundled `libs/std` is refused (by name, at
+  the manifest). (c) std is identified by the bundled `libs/std` directory, never by name.
+  ```text
+  // (b) a user's botopink.json { "name": "std" }
+  error: the package name `std` is the bundled standard library's — choose another name
+  ```
+- **Recommendation.** (b), the strictest: the name stays unambiguous everywhere (imports, `std:`, `bpmp`).
+- **Blocks.** nothing (built as (a)).
+
 ### 01-compiler
 
 `00-gate` has no open question: 114's steps wait on no decision.
