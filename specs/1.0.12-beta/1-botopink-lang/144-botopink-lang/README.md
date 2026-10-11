@@ -301,14 +301,14 @@ runtime, 434)
 std-wasm is linked into the wasm target's output too, replacing the `wat_prelude` helpers and the `wasi:`
 bindings it implements — after the comptime switch (B-00c). The std-on-wasm steps it absorbs move here.
 
-- [ ] the wasm target transpiles std-wasm into the program (440 (2)): its functions decoded from `std_wasm.wasm`
+- [x] the wasm target transpiles std-wasm into the program (440 (2)): its functions decoded from `std_wasm.wasm`
       into `wat_ast`, one module; each `wat_prelude` helper and `wasi:` binding it implements leaves the prelude and
       the binding list; a wasm program prints std-wasm's text (441) — each `run/` cell whose wasm `.out`
       changes (float interpolation, `toString`, exponent forms, `trim`) re-read one by one, the other targets' unchanged
-- [ ] the `std:` binding (440 (3)): `#[@External.Wasm("std:<module>.<function>")]` on each std function std-wasm
+- [x] the `std:` binding (440 (3)): `#[@External.Wasm("std:<module>.<function>")]` on each std function std-wasm
       implements, serving the wasm codegen and the comptime; `stdWasmSymbol`'s implicit name match removed; a `std:`
       naming no export, or with other types, refused at the annotation; the `fn:` bodies it replaces deleted
-- [ ] the size an emitted module gains or loses measured (a hello world, onze's blog page, std's test module)
+- [x] the size an emitted module gains or loses measured (a hello world, onze's blog page, std's test module)
       and recorded in `wat/AGENTS.md`
 
 **Impacted tests:** every wasm `RUN LOG` snapshot (re-read, not bulk-accepted); `run/std_*` cells on wasm;
