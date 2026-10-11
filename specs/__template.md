@@ -253,6 +253,9 @@ After every other step of the front has landed.
 - [ ] the cells that behaviour calls for written in decision 457's shape, each red on the front's base and green
       on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows (the coordinator files them)
+- [ ] the GitHub pipeline read (decision 474, `gh` read only): every run on `feat` of each repository the front
+      changes, since its base, green or each red named; a red the front causes or lands on fixed before landing;
+      one that predates it filed as a row; the pipeline's state in the step's report
 
 ## Gate
 

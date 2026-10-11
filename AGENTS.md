@@ -108,6 +108,8 @@ Three rules make it safe:
    proposed. The coordinator checks the cells at landing and files the proposals.
    A library front ends the same way (465): its "Conformance" step runs `botopink cell check
    conformance/` over the whole `<lib>/conformance/`.
+   The Conformance step also reads the GitHub pipeline with `gh` (474): `feat`'s runs since the
+   front's base green, or each red named and fixed or filed before landing.
 
 The thread commits in its repository only; the coordinator writes the specs and the
 pointer bump at landing, then removes it with `git -C repository/<repo> worktree remove

@@ -40,4 +40,5 @@ After every other step of this front has landed.
 - [ ] the front's changes to the library's behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
+- [ ] the GitHub pipeline read (474): the runs on `feat` since the front's base green, or each red named and fixed or filed
 

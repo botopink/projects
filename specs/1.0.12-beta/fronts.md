@@ -52,6 +52,10 @@ milestone (three when the console is closed).
     `botopink cell check conformance/` over the whole `<lib>/conformance/`, the front's library changes
     analysed against the cells, the cells written, the missing ones proposed. An earlier step keeps green
     the cells of the member it changes.
+14. **A front's Conformance step reads the GitHub pipeline** (decision 474): the runs on `feat` of every
+    repository the front changes, since its base — green, or each red named; a red the front causes or lands
+    on is fixed before landing (430); one that predates it is filed as a row; the step's report carries the
+    pipeline's state.
 
 ## Ownership, by repository
 
