@@ -3181,6 +3181,30 @@ Today std writes the cells as prefixed strings (50 `"fn:…"`, 28 `"std:…"`, 6
 - [ ] `docs.md` and the `AGENTS.md` files name only the labelled forms
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-34 — the BEAM assembler rejects `styled`'s module (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+Found moving jhonstart's examples into its `conformance/` (463): every jhonstart cell is refused on beam with
+`the OTP compiler refused the emitted program — nothing to run`; the BEAM assembler rejects the `styled` module
+(`make_fun3 … {unassigned,{y,3}}`). commonJS and erlang answer.
+
+- [ ] the beam emitter assigns the register `make_fun3` reads; `styled` assembles; jhonstart's 18 `conformance/` cells
+      green on beam — red on the parent, green after
+- [ ] the cheap test the hook runs that would have caught it (a beam export-audit or codegen snapshot case, 478)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-35 — `@println` has no wasm lowering (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend gap with a measured repro)
+
+Found moving erika's examples into its `conformance/` (463): `the wasm backend has no lowering for the builtin
+`@println``. Its two cells answer on commonJS, erlang and beam.
+
+- [ ] `@println` lowered on wasm as `@print` is, with its newline; erika's `conformance/` cells green on wasm — red on
+      the parent, green after; a codegen snapshot case (478)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
