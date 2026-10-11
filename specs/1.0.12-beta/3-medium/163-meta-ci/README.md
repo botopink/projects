@@ -92,7 +92,15 @@ yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one
       entries) — `bpmp install`, which already clones and links them — before it runs; jhonstart, onze and rakun green
 - [x] a library with a `botopink.json` and no `test.yml` gets one, the same shape as the others (dbcontext, json and
       yaml hold no `botopink.json` yet; each gets its workflow with its first manifest)
-- [ ] every library's workflow has at least one green run on `feat` — read with `gh` (474) after the landing
+- [x] the workflow fetches the dependency closure (each linked dependency's own `git` dependencies, the workspace
+      members', the sibling path libraries') under `.botopinkbuild/deps/` and the gate reads it through
+      `BOTOPINK_LIB_ROOTS`, which a cell's scratch copy also reads
+- [ ] the meta `scripts/gate.sh check` holds every library's `test.yml` dependency step and `BOTOPINK_LIB_ROOTS` to
+      one text (the cheap test of 478: the "not found" reds appear only on a runner with no sibling library)
+- [ ] actions, css, http, log, routing, styled and validation: their workflow has never fired on any push (Actions
+      enabled, the file active) — the cause found (an organisation or repository setting is the maintainer's)
+- [ ] every library's workflow has at least one green run on `feat` — read with `gh` (474); erika's red waits on
+      144 B-35 (`@println` on wasm) and jhonstart's on B-34 (styled's `spliced/2` on beam)
 - [x] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
 
 ### 163 s6 — a language tour generated from `botopink-lang/conformance/` (after 144 B-29 step I)
@@ -170,12 +178,12 @@ change how every library's gate and CI run, not what a library answers: the step
 
 **Repository:** every repository under `repository/` and the meta repository (a full worktree) · **Model:** sonnet
 
-- [ ] `scripts/decisions-split.py`: reads the meta `decisions-taken.md`, maps each row's Binds (front numbers, old ids
+- [x] `scripts/decisions-split.py`: reads the meta `decisions-taken.md`, maps each row's Binds (front numbers, old ids
       through the fronts' alias tables) to repositories, writes `repository/<repo>/decisions-taken.md` (the header line
       of 482, the rows as in the source, English only); a row it cannot map is reported, never guessed
-- [ ] every repository commits its generated file; its `AGENTS.md` names it ("generated — edit in the meta repository")
-- [ ] a meta CI check (and the meta `scripts/gate.sh`) fails when a repository's file differs from the script's output
-- [ ] the meta `AGENTS.md` § CI and § Layout name the script and the check
+- [x] every repository commits its generated file; its `AGENTS.md` names it ("generated — edit in the meta repository")
+- [x] a meta CI check (and the meta `scripts/gate.sh`) fails when a repository's file differs from the script's output
+- [x] the meta `AGENTS.md` § CI and § Layout name the script and the check
 
 ### 163 s11 — a library task holds its repository alone (decision 483)
 

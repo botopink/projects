@@ -3240,7 +3240,8 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
       never absent; a CLI test with a directory of cells counts them
 - [ ] a cell's `{"path": "…"}` dependency relative to the cell fails, because the cell runs from a scratch copy: the
       check resolves it against the cell's own directory (or, after B-37, the cell's `.botopinkbuild/deps/`), so a
-      library's cells drop their per-cell `deps/` workspaces of symlinks
+      library's cells drop their per-cell `deps/` workspaces of symlinks; the scratch copy (which skips hidden
+      directories today) inherits the project's dependency tiers, `.botopinkbuild/deps/` included
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-39 — a module-level `val` read by the next one is unbound on erlang (structural, decision 430)
