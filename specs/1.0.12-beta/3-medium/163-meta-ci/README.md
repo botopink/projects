@@ -70,54 +70,7 @@ spelling rewrites the class S lines of `specs/<current>/**` that write it, and a
 - [ ] the commits are on the front's branch; landing is the maintainer's, who reviews step 1's
       rows line by line
 
-### 163 s4 — `repository/conformance` mirrors `tests/language` (after 144 B-29 step H)
-
-**Repository:** conformance (the generator in the meta repository's `scripts/`) · **Model:** sonnet
-
-`botopink/conformance` holds its scaffold only. The cells are edited in botopink-lang's `tests/language/`, landing
-with the compiler change they prove; this repository is their mirror for any implementation of botopink.
-
-- [ ] a generator (`scripts/`) copies every cell (decision 457's shape: `src/`, `snapshot/output/`,
-      `snapshot/targets/`, `targets`) and `test/` from the botopink-lang pointer the meta repository pins, byte for byte, with the commit it came from recorded in the mirror's commit message
-- [ ] a CI check fails when the mirror differs from the pinned `tests/language` (no hand edit survives)
-- [ ] `repository/conformance/AGENTS.md` and `README.md` say how a cell is read (the `.out` / `.expect` shapes, the
-      `.targets` narrowing) without naming botopink-lang's runner as the only way to run them
-- [ ] `repository/conformance/.github/workflows/conformance.yml`, against **the newest botopink-lang**: it checks
-      out botopink-lang at the head of `feat` (never a pinned ref), builds the compiler and runs two jobs, every
-      row hard (no `continue-on-error`, no row that cannot fail), as the libraries' `test.yml` does:
-      `cells` — `botopink cell check modules/` (decision 464): every cell on commonJS (node), erlang and beam (OTP 28,
-      the release the compiler emits for) and wasm (wasmtime), on linux and macos; `mirror` — the cells equal botopink-lang's `tests/language` at that head
-- [ ] it runs on a push to `conformance` and **whenever botopink-lang's `feat` moves**: botopink-lang's
-      `test.yml`, green on `feat`, sends a `repository_dispatch` to `botopink/conformance` (a token with that one
-      scope, a repository secret), so a compiler change is measured against the suite without a conformance commit
-- [ ] the generator never writes or deletes a cell's `docs.md` (written only in conformance, decision 462); the
-      `mirror` job compares everything but the `docs.md` files
-
-
-### 163 s5 — the language reference moves to `botopink/conformance`, every example a cell (decision 461)
-
-**Repository:** conformance and botopink-lang (a full worktree: two repositories) · **Model:** opus
-
-After 163 s4 and 144 B-29 step H (the cells in decision 457's shape, the mirror running).
-
-- [ ] each of `docs.md`'s 141 botopink fences becomes a cell in botopink-lang's `tests/language` (or names an
-      existing cell showing the same thing): the 89 compiled-only and 13 `body` with their output, the 24
-      `project` as multi-module cells, the 15 `reject` with their refusal — red on the parent, green after
-- [ ] the reference written in `repository/conformance/` in decision 462's layout: the root `docs.md` (the index
-      and the text no single cell owns) and `modules/<cell>/docs.md` beside each cell it explains, an example being
-      the cell itself (or a `<!-- example: <cell> -->` reference from the root `docs.md`); botopink-lang's
-      `docs.md`, its `docs/` (the manifest schema, `botopink-json.md`) and the language part of its `README.md`
-      deleted — no copy
-- [ ] `test-docs` becomes a check that every reference names an existing cell (the fences' compile check moves to
-      the cells); the CLI's own usage text stays in botopink-lang
-- [ ] botopink-lang's `AGENTS.md` (§ Conventions: "README.md and docs.md stay in sync") rewritten to name the
-      reference's new home
-- [ ] `conformance.yml` gains `reference`: every `<!-- example: … -->` names an existing cell, the reference
-      rendered with its examples and published on GitHub Pages — on the same triggers, so the published reference
-      always shows the newest compiler's answers
-
-
-### 163 s6 — a language tour generated from `botopink/conformance` (after 163 s5)
+### 163 s6 — a language tour generated from `botopink-lang/conformance/` (after 144 B-29 step I)
 
 **Repository:** a new `botopink/tour` (created when this step opens) · **Model:** opus
 
@@ -126,19 +79,22 @@ teaching text, published as a site. Nothing duplicated — each lesson names its
 in `botopink/conformance`, rendered from them. The conformance repository keeps its name: it states what it
 guarantees, the contract every implementation passes.
 
-- [ ] the lesson order and the cell each lesson shows, chosen from `botopink/conformance`
+- [ ] the lesson order and the cell each lesson shows, chosen from `botopink-lang/conformance/`
 - [ ] a generator renders the lessons from the cells and the reference, with no copied text or code
 
-### 163 s7 — the shared library hook checks `conformance/` (decision 463)
+### 163 s7 — `scripts/gate.sh` in every repository; the libraries' gate checks `conformance/` (decisions 463, 466)
 
-**Repository:** every library repository (a full worktree: the one shared runner text) · **Model:** sonnet
+**Repository:** every library repository and the meta repository (a full worktree) · **Model:** sonnet
 
-After 144 B-29 step H (the cells' runner, the 457 shape).
+After 144 B-29 steps H and I (`botopink cell check`, botopink-lang's `scripts/gate.sh` as hook and CI entry).
 
-- [ ] `scripts/git-hooks/lib/runner-standalone.sh` gains a stage: `botopink cell check conformance/` (decision 464) —
-      every `conformance/modules/*/` cell of the repository run on the targets its manifest declares and compared with
-      its `snapshot/` (a mismatch writes a `.snap.new`
-      candidate and fails; never overwritten); absent only structurally (no `conformance/` directory)
-- [ ] the runner copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names its
-      `conformance/` directory
-
+- [ ] each library gets `scripts/gate.sh`, one text identical across the libraries (CI check 4 extended to it): it
+      runs the shared `runner-standalone.sh` and the repository's `repository-stages.sh`; the pre-commit hook and
+      the library's `test.yml` call it
+- [ ] `runner-standalone.sh` gains a stage: `botopink cell check conformance/` (464) — every
+      `conformance/modules/*/` cell on the targets the manifests declare, a mismatch a `.snap.new` candidate and a
+      red; absent only structurally (no `conformance/` directory)
+- [ ] `--no-conformance` by hand only (466 (3)): `not a gate verdict`, no stored pass; the hook and CI never pass it
+- [ ] the meta repository's `scripts/gate.sh` runs `hook-integrity.yml`'s checks locally, and the workflow calls it
+- [ ] copied byte for byte to every library (CI check 4 green); each library's `AGENTS.md` names `scripts/gate.sh`
+      and its `conformance/`

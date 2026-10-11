@@ -2195,7 +2195,7 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
 
 - [ ] measured first: `test-language`'s jobs and CPU-s by kind (`run/`, `reject/`, `modules/`, `test/`) and by
       target; an audit of the cells a compiler-core snapshot already covers — recorded in `tests/language/AGENTS.md`
-- [ ] every cell in decision 457's shape: `<cell>/src/<module>.bp`, `snapshot/output/<module>.snap` (one answer
+- [ ] `tests/language/` becomes `conformance/` (decision 466) and every cell is in decision 457's shape: `<cell>/src/<module>.bp`, `snapshot/output/<module>.snap` (one answer
       for every target), `snapshot/targets/<target>/<module>.snap` (a target's departure only), `targets` (when
       narrowed) — `run/`, `reject/` and `modules/` migrated by a codemod, each cell's claims byte for byte the same
       (every `.out`, `.exit`, `<target>.expect`, `<target>.stderr`, `.targets` mapped, none lost)
@@ -2225,6 +2225,23 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
 - [ ] measured again (one gate alone, cold and warm) in `scripts/AGENTS.md`; no cell, target or check dropped, no
       verdict changed (decision 67); a cell duplicated by a snapshot is named in the audit, never silently removed
+
+#### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After step H (the cells in `conformance/`).
+
+- [ ] each of `docs.md`'s 141 botopink fences becomes a cell in `conformance/modules/` (or names an existing one):
+      the 89 compiled-only and 13 `body` with their output, the 24 `project` as multi-module cells, the 15 `reject`
+      with their refusal — red on the parent, green after
+- [ ] the reference written in `conformance/docs.md` (the index, the text no cell owns) and
+      `conformance/modules/<cell>/docs.md` beside each cell (462); `docs.md`, `docs/` (the manifest schema) and the
+      language part of `README.md` moved there — no copy left; `test-docs` checks that every reference names a cell
+- [ ] `scripts/gate.sh --no-conformance` (466 (3)): by hand only — prints `not a gate verdict`, stores no pass; the
+      hook, a Conformance step, landing and CI refuse it or never pass it
+- [ ] `.github/workflows/test.yml` calls `scripts/gate.sh` (the full gate on `feat`), not its own list of stages
+- [ ] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
 
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 
