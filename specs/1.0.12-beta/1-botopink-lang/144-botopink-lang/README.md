@@ -44,7 +44,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–h, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–h, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -2250,3 +2250,21 @@ is the transition guard beside `test/case_arms.bp`. Needs the maintainer's word 
 each track rewrites its own tree.
 
 - [ ] maintainer's answer recorded; if removed, §5.1 arms rewritten in emilia, jhonstart, rakun by the tracks, cells green; `docs.md` § Case re-measured for both forms
+
+### B-30 — wasm memory managed as erlang's: a heap per `@Task`, collected (decision 448)
+
+After the B-00 group. botopink's values are immutable; on erlang each process's heap is collected and released
+when it dies. The wasm target's bump heap never frees; this step gives it erlang's model.
+
+- [ ] measured first: how far a program grows without collection — a long loop building strings, a request loop of
+      a server, onze's pages on wasm — recorded in `codegen/wat/AGENTS.md` before any design is written
+- [ ] a heap per `@Task`: each task allocates on its own heap; a value passed between tasks is copied, as an erlang
+      message is; a task that ends releases its heap whole
+- [ ] collection by copying the live values of one heap; no write barrier but on the mutable cells a `var` holds;
+      the roots named (the task's frames, the scheduler's queues, the cells)
+- [ ] a run that exhausts memory traps, never answers with damaged data; std-wasm's frames stay on the one stack (447)
+- [ ] every `run/` cell's `.out` on wasm unchanged; a long-running cell whose memory stays bounded where the bump heap
+      grew without limit
+
+**Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `test-libs` wasm
+column. **Model:** opus (a design the decision leaves to measurement). **Consumer commits:** none.

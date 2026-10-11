@@ -30,6 +30,8 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 
 ### 144 botopink-lang
 
+- [ ] 144 B-30 (448) — wasm memory as erlang's: a heap per `@Task`, collected by copying, freed whole when the task ends; measured first · after B-00
+
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
 - [x] 114 s6 box 1 — vscode-extension workflow installs the compiler's OTP 28 (vscode-extension `f041865`)
 - [x] 114 s6 box 2 — vscode-extension's workflow green on `feat` (`f041865`)
