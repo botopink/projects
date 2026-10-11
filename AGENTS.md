@@ -21,7 +21,7 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.12-beta/1-botopink-lang/144-botopink-lang/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own tools: `worktree-add.sh [--lang] <name> [<base>]` — opens a task worktree, `--lang` one of `repository/botopink-lang` alone (§ Worktrees); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
+| `scripts/` | The meta repository's own tools: `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
@@ -65,22 +65,40 @@ there, sets `core.hooksPath scripts/git-hooks` in every submodule that tracks
 worktree is a repository of its own, so nothing configured in the main checkout's
 submodules reaches it, and without the step a commit there runs no gate at all.
 
-A task that changes `repository/botopink-lang` alone opens a lighter one:
+A task that changes **one repository alone** opens a lighter one — chosen by what the task
+changes, never by habit:
 
 ```sh
-scripts/worktree-add.sh --lang <name> [<base>]   # base defaults to origin/feat
+scripts/worktree-add.sh --repo <repo> <name> [<base>]   # base defaults to origin/feat
+scripts/worktree-add.sh --lang <name>                   # = --repo botopink-lang
 ```
 
-It makes `.tasks/<name>/repository/botopink-lang` a git worktree of the main
-checkout's submodule on `front/<name>`, and every other submodule path a symlink
-to the main checkout's — no meta branch, no clone of the libraries. Because
-`.tasks/<name>` holds `repository/`, the compiler's library walk-up stops there
-and the gate's `test-libs` sees the same libraries a full worktree does (the
-main checkout's, at whatever they are checked out to). The hook is the
-submodule's own (a worktree shares its repository's config). The thread commits
-in the submodule only; the coordinator writes the specs and the pointer bump at
-landing, then removes it with `git -C repository/botopink-lang worktree remove
-.tasks/<name>/repository/botopink-lang` and `rm -r .tasks/<name>`.
+It makes `.tasks/<name>/repository/<repo>` a git worktree of the main checkout's
+submodule on `front/<name>`, and every other submodule path a symlink to the main
+checkout's — no meta branch, no clone. Because `.tasks/<name>` holds `repository/`,
+the compiler's library walk-up and a library hook's `locateBotopink` stop there:
+
+- a **library** task (`--repo emilia`) runs the **main checkout's compiler**
+  (`repository/botopink-lang/zig-out/bin/botopink`) — no compiler build per task;
+- a **compiler** task (`--repo botopink-lang`) builds its own and its gate's
+  `test-libs` sees the main checkout's libraries;
+- the hook is the repository's own (a worktree shares its repository's config).
+
+Three rules make it safe:
+
+1. **The main checkout's compiler stays at remote `feat` and built.** The coordinator
+   rebuilds it (`zig build -Doptimize=ReleaseSafe`) once after each compiler landing,
+   never during a library task's gate; `source_stamp` refuses a binary older than its
+   sources, so a stale compiler fails a gate, it never measures silently.
+2. **A library task never edits `repository/botopink-lang`** (decision 433): a missing
+   language feature is a `language-gaps.md` row and waits on its 144 step.
+3. **The full worktree** (no `--repo`) is for a task that edits the meta specs or more
+   than one repository.
+
+The thread commits in its repository only; the coordinator writes the specs and the
+pointer bump at landing, then removes it with `git -C repository/<repo> worktree remove
+.tasks/<name>/repository/<repo>` and `rm -r .tasks/<name>`. The other repositories are
+the main checkout's, at whatever they are checked out to.
 
 Inside a worktree, edit files under that worktree's path only — never the main
 checkout. Work in `repository/botopink-lang` on the branch the script created (a
