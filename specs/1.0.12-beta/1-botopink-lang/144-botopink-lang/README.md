@@ -2164,18 +2164,25 @@ on 16 cores. 5680 CPU-s fit in ~6 min on 16 cores. A warm (`--staged`) gate meas
 does not help: compiler-core is one Zig module, recompiled whole on any change (the main checkout's warm cache
 still took 3m17).
 
-- [ ] one job budget for the whole gate: the side-by-side stages (`test-libs`, `test-language`, `test-cli`,
+- [x] one job budget for the whole gate: the side-by-side stages (`test-libs`, `test-language`, `test-cli`,
       `test-docs`, `tsc-check`, `test-web`) draw from one pool sized to the machine (CPUs, bounded by memory), never
       a pool each; the order of each stage's report unchanged
-- [ ] `zig build test` (Debug) runs beside `zig build -Doptimize=ReleaseSafe` instead of after it, when the
+- [x] `zig build test` (Debug) runs beside `zig build -Doptimize=ReleaseSafe` instead of after it, when the
       machine has the memory for both; a red in either still stops the gate before the side-by-side stages
 - [ ] the step gate (decision 460): on a `front/*` branch the hook runs formatting, the build, `zig build test`,
       `test-cli`, and the `test-language` cells and `test-libs` libraries the staged change reaches by the backend
       partition (249) — a shared file reaches all; on `feat` and at a front's Conformance step the full gate; the
       branch decides, no flag or variable; measured: a one-backend step's gate time against the full gate's
-- [ ] measured again, one gate alone: cold and warm wall times and CPU-s per stage recorded in
+- [x] measured again, one gate alone: cold and warm wall times and CPU-s per stage recorded in
       `scripts/AGENTS.md` § Where the gate's time goes, against this step's numbers; no stage, cell or check
       dropped and no verdict changed (decision 67)
+
+Measured after (one gate alone, load < 3 at start): cold 10m24 / 10m36 (4616 / 4665 CPU-s), warm 1m35 (419 CPU-s);
+split 8 / 4 / 1 / 1 by the stages' measured CPU share. Still over the 7m30 cold budget: a job is about two runnable
+threads (the `botopink` child and its `erl` / `node`), so load still peaks near 28–30; `test-language` (7m12) is the
+pole and runs alone for its last ~1.5 min. Under heavier splits rakun's timing tests went red (`rakun·erlang` 503
+over max-connections, `rakun-messaging·erlang` dlq, `rakun-data·erlang` devtools watcher: 1 red in 4 cold runs at
+8 / 4 / 1 / 1) — a 150-rakun row. What remains: the step gate (box above) and step H.
 
 #### Step H — `tests/language` cells run in process where no CLI path is under test (after step G)
 
