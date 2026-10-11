@@ -2836,8 +2836,7 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
 - [ ] what the move left: `generic-loader-binding` into erika once B-45 lands; the decorator `random.float()` cell once
-      B-46 lands; the four caret-label cells (`case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name`,
-      `reserved_word_param_name`) with B-47; the reds B-43 and B-44 found
+      B-46 lands; the reds B-43 and B-44 found
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
@@ -3347,12 +3346,12 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-- [ ] the `.snap` format reads and writes `label <text>` after `at` in a refusal file (refused elsewhere, located);
+- [x] the `.snap` format reads and writes `label <text>` after `at` in a refusal file (refused elsewhere, located);
       `cell check` compares it and `cell new` writes it when the compiler prints a label beside the caret
-- [ ] CLI tests red on the parent: a label that changes, a label that disappears, a `label` record in an output file
-- [ ] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
+- [x] CLI tests red on the parent: a label that changes, a label that disappears, a `label` record in an output file
+- [x] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
       their whole refusal and label, green; every other refusal cell whose caret carries a label gains its record
-- [ ] `conformance/docs.md` states the record
+- [ ] `conformance/docs.md` states the record (with B-29 step I, which writes that file; `conformance/AGENTS.md` states it today)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-48 — a raise inside a decorator body is located at the raising call (decision 451 (3))

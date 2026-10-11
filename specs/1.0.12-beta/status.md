@@ -30,7 +30,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 
 In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (470) have landed (Done).
 
-- [ ] 144 B-29 step H — what the move left: `generic-loader-binding` (B-45), four caret-label cells (B-47); the in-process runs of `reject/` and single-file `run/` cells · after B-45, B-47
+- [ ] 144 B-29 step H — what the move left: `generic-loader-binding` (B-45); the in-process runs of `reject/` and single-file `run/` cells · after B-45
 - [ ] 144 B-29 step I — the commit hook runs `gate.sh --no-conformance` (470, landed: a one-backend step 4m20 cold, 1m28 warm); left: the reference into `botopink-lang/conformance/` (every `docs.md` example a cell), `test.yml` calling `scripts/gate.sh` (461, 462, 466) · the fourth step of the conformance order, after step H2
 - [ ] emilia's 79 cells green on wasm — after 144 B-40 and B-42 (the move into `emilia/conformance/` landed; jhonstart, erika, onze and rakun done) · the sixth step of the conformance order
 - [ ] 144 B-00c last box — each library repository's own hook run on this compiler, `scripts/gate.sh libs` (473); `test-libs` green · the seventh step of the conformance order: after the step gate, the hook's `--no-conformance`, B-29 steps H and I, 163 s7 and each library's move into `conformance/`, so the hooks include it; it closes B-00
@@ -55,7 +55,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · nothing
 - [ ] 144 B-44 — wasm prints a lifted `bool` as `1` (`yamlconf`) · nothing
 - [ ] 144 B-45 — erlang: `lib.member()` through a library's default handle is unbound (`generic-loader-binding`) · nothing
-- [ ] 144 B-47 — a refusal cell claims the label under the caret (`label <text>`, 485); the four caret-label cells green · nothing
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 144 B-49 — std's `io/random` sidecar ships on commonJS with a module whose decorator uses it · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
@@ -338,6 +337,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] **144 B-00a → B-00k (434, 437, 442, 446, 450, 452, 459)** — comptime on wasm only, the first thing the milestone did: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442); B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · landed: B-00a, B-00d, B-00f (437), B-00h (446); B-00b for 435's subset, a foreign `.beam` and standalone (438), the utility whole (the comptime does not call it, 452); B-00c (452: a host function at build answers by `std:` or `fn:`), its last box open — the line below; B-00e (440, 441: std-wasm transpiled into the wasm program, the `std:` binding, std-wasm's text, sizes in `wat/AGENTS.md`); B-00g (442, 443, 445, 447, 451: std's helpers and `bigint` in std-wasm, Unicode case mapping, `std:` std's alone, a frame past the stack's floor traps, the seeded random std-wasm's and refused unseeded at comptime); B-00j (452, 453, 455, 456: the comptime answers by `std:` or `fn:`, never an Erlang cell; the name `std` reserved; `random.float` std-wasm's); B-00i (450: the Erlang terms and OTP functions are std-wasm's, `bp_wat_rt.wasm` gone); B-00k (459: the group's Conformance step — four cells, the table in the README) — **the B-00 group is done but for B-00c's last box** (L1, the seventh step of the conformance order)
+- [x] 144 B-47 — a refusal `.snap` claims the label under the caret (`label <text>`, 485): 82 refusal cells carry one, the four caret-label cells green — its Conformance step open
 - [x] 144 B-46 — a failed decorator run checks its body with the module's std imports bound; the decorator `random.float()` cell refused unseeded (451, 456) — its Conformance step open
 - [x] 144 B-40 — a cell's targets in its `botopink.json` (`"targets"`), a `targets` file refused (475 (1)); jhonstart's, rakun's and emilia's cells on it — its Conformance step open
 - [x] 144 B-29 step H2 — `tests/language` is `conformance/`: 943 cells, each with its manifest (narrowing in `"targets"`, a `targets` file refused), the suites in `conformance/test/`, test-cli's language half and the examples as cells; the gate's conformance stage is `zig build test-conformance`
