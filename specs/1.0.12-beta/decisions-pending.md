@@ -164,7 +164,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Blocks.** Nothing — the built surface stands until widened.
 
 #### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
-- **Measured.** Built and landed (beda9073, `infer.zig` `noteAsyncCall`, `finishHookNode`,
+- **Measured.** Built and landed (`infer.zig` `noteAsyncCall`, `finishHookNode`,
   `markHookAsync`): (1) a call of a function value or a method makes the node asynchronous only when the call's
   type resolves to `@Component<R>` or stays an open type variable — `xs.length()`, a record constructor and a
   method answering `string` do not (s23-d's, answered by 389: "a `@Component` called through a function value or a method");
@@ -244,7 +244,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Measured.** 371 writes `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` in `builtins.d.bp`. An
   `extend` is always named (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` is
   parsed by the drift test (`comptime/builtins.zig` `collectTypes`), and that test holds a builtin type's instance
-  methods inside its declaration. Built and landed (882adcd2): a member of the behavior, mirrored in
+  methods inside its declaration. Built and landed: a member of the behavior, mirrored in
   `comptime.zig`'s `decl_reflection_src` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
   `a.decorator.same(serverOnly)` reads the same either way.
 - **Options.** (a) As built: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) A named
@@ -270,7 +270,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 - **Blocks.** Nothing — built as (a).
 
 #### 14s8-a · How a template reads a hole's build value (355; `01-compiler/14` step 8 box 1)
-- **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built and landed (0c544566): each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
+- **Measured.** Box 1 was written as `e.lookup(name)` answering a `val`'s build value. A `${…}` hole adds no word to the capture (237), so `lookup` cannot reach `tab4` in `styled "${tab4} color: red;"`, and 355's holes known at build include a literal and a `comptime`, which have no name. Built and landed: each `Interp` part of `q.parts()` carries `known` (bool) and `value` (the build value as data, a record its fields; `null` when computed at render). `builtins.d.bp` still declares `Part.Interp(hole: Expr<string>, span)`; the part a body reads carries `code`, `known`, `value` (field reads on `Part` are not checked today), so a value of the wrong shape fails the template at run time: `styled "${whole} margin: 0;"` with `whole = styled "color: red;"` (a `Styled` where a declaration stands) is `{error,{badkey,declarations}}` at the literal, where the computed call refused it as `type mismatch: expected StyledProperty, got Styled`.
 - **Options.** (a) As built: `for (q.parts()) { p -> if (p.kind == "Interp" && p.known) built = built + p.value; }`; `p.value` is `null` for a hole computed at render. (b) `q.lookup(p.code)` answers `Binding(name, kind, value)` for a hole that names a `val`: `val b = q.lookup(p.code); if (b?.value != null) …` — a literal or a `comptime` hole is never known. (c) 364's `@Expr<T>.value` on each hole: `if (p.known) built = built + p.hole.value;`, `.value` of a hole not known at build an error at the read, located — one spelling with every other `comptime` parameter, the hole typed `@Expr<T>`.
 - **Recommendation.** (c) — one spelling, typed, a read of an unknown value refused (decision 67); (a) stands until `01-checker` s24 builds `@Expr.value`, and either way `Part` in `builtins.d.bp` (02's) declares what the part carries.
 - **Blocks.** Nothing — built as (a).
@@ -361,7 +361,7 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
   children scope"), renders a component call written in a component body: the checker splices `await` around
   it (`inferComponentCall`), so `val inner = notFoundLevel(chain, i, route, page);` RUNS `notFoundLevel` with
   the children's scope and `inner` is its `Element`. 414's example writes the same line with the comment "the
-  lambda, not run". Built and landed (d3a2493a): the splice stands; a body gets an unrun component value
+  lambda, not run". Built and landed: the splice stands; a body gets an unrun component value
   by naming the function (`itens.map(Card)`) or through a lambda — jhonstart's `ErrorBoundaryNode` /
   `NotFoundBoundaryNode` hold `child: fn() -> @Component<Element>` (`{ -> notFoundLevel(…) }`), as
   `suspense.Boundary` already did.

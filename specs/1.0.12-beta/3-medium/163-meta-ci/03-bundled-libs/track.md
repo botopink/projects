@@ -37,7 +37,7 @@ no name std or a framework already exports).
 ## Order
 
 ```
-packages   102 steps 1–2 · 103 step 1  ─► landed (fdd9fc13, 5d053722; repository/routing, repository/actions)
+packages   102 steps 1–2 · 103 step 1  ─► landed (repository/routing, repository/actions)
            125 steps 3–10               (alone in repository/validation, beside the library fronts)
            105 package · 107 package    (each born as a repository: botopink/i18n, botopink/release)
                                                            │

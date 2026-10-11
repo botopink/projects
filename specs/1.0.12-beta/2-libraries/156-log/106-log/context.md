@@ -4,7 +4,7 @@
 
 **Priority:** high — `05-jhonstart/26` step 4, `04-rakun/17`, `07-onze/49` step 3 written against it
 (decisions 194, 195) · **State:** partial: step 1 (the package) on feat; step 2 open; step 3 built on
-erlang, beam and commonJS (step 3, landed in 2c5f568), its wasm column waiting on two gap rows (`fileSink` on wasm: decision 405)
+erlang, beam and commonJS (step 3, landed), its wasm column waiting on two gap rows (`fileSink` on wasm: decision 405)
 **Depends on:** step 2 — `04-rakun/17` and `05-jhonstart/26` step 4 (their boxes), `04-rakun/65`
 landed (own commit)
 **Owns:** `repository/log/**` · one consumer commit:
