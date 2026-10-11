@@ -90,6 +90,8 @@ with the compiler change they prove; this repository is their mirror for any imp
 - [ ] it runs on a push to `conformance` and **whenever botopink-lang's `feat` moves**: botopink-lang's
       `test.yml`, green on `feat`, sends a `repository_dispatch` to `botopink/conformance` (a token with that one
       scope, a repository secret), so a compiler change is measured against the suite without a conformance commit
+- [ ] the generator never writes or deletes a cell's `docs.md` (written only in conformance, decision 462); the
+      `mirror` job compares everything but the `docs.md` files
 
 
 ### 163 s5 — the language reference moves to `botopink/conformance`, every example a cell (decision 461)
@@ -101,10 +103,13 @@ After 163 s4 and 144 B-29 step H (the cells in decision 457's shape, the mirror 
 - [ ] each of `docs.md`'s 141 botopink fences becomes a cell in botopink-lang's `tests/language` (or names an
       existing cell showing the same thing): the 89 compiled-only and 13 `body` with their output, the 24
       `project` as multi-module cells, the 15 `reject` with their refusal — red on the parent, green after
-- [ ] the reference written in `repository/conformance/` with `<!-- example: <cell> -->` references, rendered
-      from the mirrored cells; botopink-lang's `docs.md` and the language part of its `README.md` deleted — no copy
+- [ ] the reference written in `repository/conformance/` in decision 462's layout: the root `docs.md` (the index
+      and the text no single cell owns) and `modules/<cell>/docs.md` beside each cell it explains, an example being
+      the cell itself (or a `<!-- example: <cell> -->` reference from the root `docs.md`); botopink-lang's
+      `docs.md`, its `docs/` (the manifest schema, `botopink-json.md`) and the language part of its `README.md`
+      deleted — no copy
 - [ ] `test-docs` becomes a check that every reference names an existing cell (the fences' compile check moves to
-      the cells); `docs/botopink-json.md` and the tool docs stay in botopink-lang
+      the cells); the CLI's own usage text stays in botopink-lang
 - [ ] botopink-lang's `AGENTS.md` (§ Conventions: "README.md and docs.md stay in sync") rewritten to name the
       reference's new home
 - [ ] `conformance.yml` gains `reference`: every `<!-- example: … -->` names an existing cell, the reference
