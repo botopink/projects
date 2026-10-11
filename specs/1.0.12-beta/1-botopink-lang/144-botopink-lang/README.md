@@ -2292,6 +2292,7 @@ After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; n
       unchanged
 - [ ] a package named `std` that is not the bundled `libs/std` refused at its manifest (453) — a CLI contract case
       and an LSP diagnostic; the bundled std still builds as itself
+- [ ] `str_slice` and `mem_eq` deleted from `wat_prelude` (455); `codegen/wat/AGENTS.md`'s staying list without them
 
 **Impacted tests:** `comptime` host-cell tests, `tests/language` reject and decorator cells, `test-docs`.
 **Model:** sonnet (452 fixes the design). **Consumer commits:** none.
