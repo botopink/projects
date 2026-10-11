@@ -21,29 +21,6 @@ Parts 2 and 3. Answered ids leave this file; `decisions-taken.md` holds the answ
 
 ## Part 1 — What blocks tracks 00–03
 
-### 144 B-00b (beam-to-wasm, decision 438)
-
-#### 438-a · How the comptime hands a library's modules to beam-to-wasm (438 (1))
-- **Measured.** beam-to-wasm translates a set of `.beam` whole (`translateSet`), following calls between them. A
-  `test-libs --cold` run over every library recorded 350 comptime modules: no host cell, no sidecar and no library
-  module reached at comptime today. How a library's own modules reach the utility is not fixed.
-- **Options.**
-  (a) Libraries ship `erlc`-built `.beam` for their sidecars, built when the library is built or published, never
-  while compiling; the comptime passes them with the cell.
-  ```text
-  jhonstart ships priv/beam/jhonstart_render.beam
-  @External.Erlang("jhonstart_render", "render") at comptime → translateSet([cell, jhonstart_render.beam])
-  ```
-  (b) The compiler builds a sidecar `.erl` itself (its own reader and assembler); a record or macro it cannot read is
-  refused, named.
-  (c) A sidecar call reached at comptime stays refused, located, until a measured need exists.
-  ```text
-  error: comptime-beam-call-not-converted: beam-to-wasm does not convert `jhonstart_render:render/1` — …
-  ```
-- **Recommendation.** (c) now — nothing reaches it today (decision 435's grow-by-measured-need) — and (a) when a need
-  is measured: it keeps `erlc` out of compiling and is 438's "erlc's output of a sidecar".
-- **Blocks.** 144 B-00b box 1 (with (c), the box is the utility half, built).
-
 ### 144 B-00g (wat_prelude split, decisions 442, 443, 445)
 
 #### 442-c · std-wasm's two tables: bindable exports and program-only helpers (442 (2))

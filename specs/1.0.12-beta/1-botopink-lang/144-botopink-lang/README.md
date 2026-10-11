@@ -36,6 +36,7 @@ order, before any other step of this front or any other front:
 | B-00h | wasm codegen snapshots show a transpiled std-wasm function as one line with its hash (decision 446) — before B-00g | sonnet |
 | B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
 | B-00i | the Erlang term library (`rt.zig`) and the OTP functions move into std-wasm; `bp_wat_rt.wasm` goes; beam-to-wasm reads std-wasm's OTP table (decision 450) — before B-30 | opus |
+| B-00j | the comptime stops calling beam-to-wasm: a host function answers by `std:` or `fn:`, never an Erlang cell; `cells.zig` and the Erlang-cell translation deleted from compiler-core (decision 452) | sonnet |
 
 ## Lanes
 
@@ -45,7 +46,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Files | Steps |
 |---|---|---|
 | A — checker | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–i, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
+| B — runtimes, backends, std | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–j, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
 | C — tooling, docs, gate | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
@@ -205,9 +206,9 @@ reaches and reporting its refusal at the call site.
       missing — `reject/comptime_beam_call_not_converted`
 - [x] each measured cell answers at comptime through the translation, `COMPTIME REPLY` byte-identical to the
       BEAM runtime's answer on the parent
-- [ ] whole modules (438): the `.beam` files it is given translated module by module, a call from one to another
-      followed — a cell of erika or jhonstart that calls a function of another of its modules answers at comptime;
-      each OTP function they reach served by std-wasm or refused located
+- [x] whole modules (438): the `.beam` files it is given translated module by module, a call from one to another
+      followed; each OTP function they reach served by std-wasm or refused located — the utility's half; botopink's
+      comptime does not call it (452)
 - [x] a `.beam` botopink did not generate (an Erlang module compiled by `erlc` outside botopink, as a fixture)
       translated and run: the utility reads bytecode, never the source language
 - [x] standalone: `modules/beam-to-wasm` imports Zig's `std` and std-wasm only — no `compiler-core`, `manifest` or
@@ -2273,6 +2274,23 @@ representation and the OTP functions and BIFs it serves) moves into `modules/std
 
 **Impacted tests:** `comptime` tests (every `COMPTIME REPLY`), `modules/std-wasm` and `modules/beam-to-wasm` unit
 tests, `test-web`, decorator/template/comptime cells of `tests/language`. **Model:** opus. **Consumer commits:** none.
+
+### B-00j — The comptime stops calling beam-to-wasm (decision 452)
+
+After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; nothing in botopink calls it.
+
+- [ ] a host function reached at build answers by its `std:` cell, else its `@External.Wasm("fn:…")` cell; none →
+      `comptime-host-cell-unavailable` naming both; an `@External.Erlang` cell never runs at build
+- [ ] `comptime/runtime/wat/cells.zig` and `host_cells.zig`'s `erlangCellOf` / `callingCell` deleted; compiler-core
+      imports nothing of `modules/beam-to-wasm` (`build.zig` wires it to its own tests only)
+- [ ] `reject/comptime_beam_call_not_converted*` become `comptime-host-cell-unavailable` cells (renamed, their
+      `.expect` re-read); `comptime-beam-call-not-converted` leaves `diagnostics.zig`
+- [ ] `docs.md` (§ host functions at compile time), `comptime/AGENTS.md`, `comptime/runtime/wat/AGENTS.md` and
+      `modules/beam-to-wasm/AGENTS.md` say beam-to-wasm is standalone and unused by botopink; every `COMPTIME REPLY`
+      unchanged
+
+**Impacted tests:** `comptime` host-cell tests, `tests/language` reject and decorator cells, `test-docs`.
+**Model:** sonnet (452 fixes the design). **Consumer commits:** none.
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 

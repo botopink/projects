@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **452**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
+**Em aberto: 89 perguntas, 6 contradições e 105 escolhas ★ para confirmar.** O que já foi respondido está em `decisions-taken.md` (próximo número livre: **453**). O texto completo de cada pergunta, em inglês, está em `decisions-pending.md` (a fonte) e no `README.md` da trilha que a levantou.
 
 - **Parte 1** — o que trava agora: toda pergunta aberta que trava um passo cujos outros pré-requisitos já estão cumpridos (`status.md` e o "Depends on" do README da frente) — respondida, o passo pode abrir hoje. As perguntas inteiras, no molde **Trava** → **Contexto** → **Hoje** → opções com exemplo → **Recomendação** → **Bloqueia**.
 - **Parte 2** — trava, mas o passo ainda espera outra frente: a pergunta inteira, com exemplo por opção e o que mais o passo espera.
@@ -13,24 +13,6 @@
 ## Parte 1 — O que trava agora (responder primeiro)
 
 Ordem: quantos passos e frentes a resposta libera, depois o caminho crítico de `fronts.md` § Execution order (102 s3 / 103 s2 → 128 → rakun 04 → 22 → 49 → 53; 118 → 26 → 67 → 127; 118 → 119 → 120 → 126 → 127 → 124). Nenhuma pergunta aberta trava a `00-gate/114`.
-
-### 438-a · Como o comptime entrega os módulos de uma lib ao beam-to-wasm (438 (1))
-
-O beam-to-wasm traduz um conjunto de `.beam` inteiros. Medido: nenhuma célula host, sidecar ou módulo de lib é
-alcançado no comptime hoje (350 módulos de comptime de todas as libs).
-
-**(a)** A lib publica o `.beam` dos sidecars, gerado pelo `erlc` no build/publicação da lib, nunca ao compilar:
-```text
-jhonstart publica priv/beam/jhonstart_render.beam
-@External.Erlang("jhonstart_render", "render") no comptime → translateSet([célula, jhonstart_render.beam])
-```
-**(b)** O compilador monta o `.erl` do sidecar ele mesmo; record ou macro que não lê é recusado.
-**(c)** Uma chamada a sidecar no comptime continua recusada, com local, até haver necessidade medida:
-```text
-error: comptime-beam-call-not-converted: beam-to-wasm does not convert `jhonstart_render:render/1` — …
-```
-**Recomendação: (c) agora e (a) quando houver necessidade medida** — mantém o `erlc` fora da compilação. Trava: a
-caixa 1 do 144 B-00b (com (c), ela vira a metade do utilitário, já construída).
 
 ### 442-c · As duas tabelas do std-wasm: exports ligáveis e helpers só do programa
 
