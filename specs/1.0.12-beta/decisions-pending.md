@@ -668,6 +668,7 @@ number, which is **484**.
 - **Blocks.** 144 B-05; `run/host_node_task_result` rewritten.
 
 #### 431-f · `throws:` and `attempt` on wasm (144 B-05, B-07)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), on a measurement.** `result:` is refused on `op:` / `fn:`. `attempt` on wasm uses wasm exception handling (`try_table` / `throw`), so `attempt({ -> @panic("x") })` answers `Error(Failure(message: "x", kind: "panic"))` as on the other targets — once it is measured passing on wasmtime and on node. If either fails, the question returns to the maintainer, between (c) and waiting; never (b).
 - **Measured.** A wasm binding is `op:`, `fn:` (botopink bodies, no raise) or `wasi:` (an adapter answering an error code); a trap cannot be caught inside the module today.
 - **Options.** `throws:` refused on `op:` / `fn:` in every option. `attempt`: (a) wasm exception handling (`try_table` / `throw`), measured on wasmtime and node first; (b) an unwinding return flag the emitter threads through every call; (c) `attempt` refused on wasm, located.
   (a) example:

@@ -667,6 +667,7 @@ número livre, que é **484**.
 - **Bloqueia.** 144 B-05; `run/host_node_task_result` reescrito.
 
 #### 431-f · `throws:` e `attempt` no wasm (144 B-05, B-07)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), sob uma medição.** `result:` é recusado em `op:` / `fn:`. O `attempt` no wasm usa o exception handling do wasm (`try_table` / `throw`), então `attempt({ -> @panic("x") })` responde `Error(Failure(message: "x", kind: "panic"))` como nos outros alvos — uma vez medido passando no wasmtime e no node. Se um dos dois falhar, a pergunta volta ao mantenedor, entre (c) e esperar; nunca (b).
 - **Medido.** Um binding wasm é `op:`, `fn:` (corpos botopink, sem raise) ou `wasi:` (um adaptador que responde um código de erro); um trap não pode ser capturado dentro do módulo hoje.
 - **Opções.** `throws:` recusado em `op:` / `fn:` em toda opção. `attempt`: (a) tratamento de exceções do wasm (`try_table` / `throw`), medido primeiro no wasmtime e no node; (b) um flag de retorno de desenrolamento que o emissor passa por toda chamada; (c) `attempt` recusado no wasm, localizado.
   Exemplo de (a):
