@@ -21,7 +21,7 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.12-beta/1-botopink-lang/144-botopink-lang/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own tools: `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
+| `scripts/` | The meta repository's own tools: `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5 |
 | `todo.md` | Live plan of the task in the current checkout/worktree — git-ignored, never committed |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
@@ -148,6 +148,16 @@ order:
 4. **On failure.** A thread that fails, or reports a judgement it was not asked to make,
    is redone one tier up — never the same model twice on the same work. `fable` only
    when the maintainer asks for it or `opus` failed on the work once.
+5. **Text and expected answers have no oracle.** Spec or decision text is never `haiku`'s
+   (`sonnet` at least); a thread that writes a cell's or a snapshot's expected answer decides
+   language versus defect, so it runs on `opus` unless its prompt fixes every answer.
+
+Every thread prompt opens with "Read `scripts/thread-rules.md` first" and then states only what is
+the task's own (decision 484): the rules every thread follows (no `--no-verify`, no scratch paths
+in specs, no timings, never a defect as a departure, rebase onto `origin/feat` before the final
+commit, the four-line report) live there once, so no prompt forgets one. Before a landing the
+coordinator runs `scripts/land-check.py` on the branch (163 s12) instead of re-reading the diff
+by hand.
 
 Applied to the threads this workflow opens:
 
