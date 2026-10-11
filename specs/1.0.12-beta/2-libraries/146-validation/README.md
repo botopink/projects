@@ -33,8 +33,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
       `#[check("…", rule)]` records `Check<T>(message, rule)` as typed meta, `#[validated]` hands on the member
       `__typeChecks` running every one through `for (comptime @typeInfo(T).metaAll(Check))`, `validate()` (so
       `parse`, `decode`, `encode`) appends its violations after the field checks, `#[check]` on a field refused naming
-      `#[refine]` — built as validation's patch, kept at the meta checkout's `.tasks/patches/typed-member-395/validation.patch` (the compiler half is on botopink-lang
-      `feat`, `9bfbed18`), held: on erlang `test/refine_and_messages_example_test.bp`'s case "decode runs the
+      `#[refine]` — the compiler half is on botopink-lang `feat`; held: on erlang `test/refine_and_messages_example_test.bp`'s case "decode runs the
       type-level rules…" fails while another test module's `Signup` answers `Signup.decode` · 144 B-10 G1 (the
       cross-module type-name fix, structural, decision 430)
 
