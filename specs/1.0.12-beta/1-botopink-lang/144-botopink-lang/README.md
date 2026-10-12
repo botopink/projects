@@ -59,7 +59,7 @@ conformance takes no lock (508, landed in the meta `scripts/gate.sh`; botopink-l
 
 **Order:** B-57 (the dead copies) and B-63 (`cell check` in parallel) → B-58 (the manifest's inherited dependencies, the workspaces, level A of the code
 cache, the closure key) → B-59 (the result store removed) and B-60 (level B, after its invariant is proved) → B-64 (a module's tests a unit of their own), the group's last step before its Conformance step · B-61
-(cell names) beside any of them. Lane B holds B-57, lane C B-58 to B-61. After its Conformance step resume the steps paused for it — B-24's Conformance step, B-39, B-41, B-43, B-51, B-52, B-56 (B-55, a study, runs beside the group). The group closes with its Conformance step:
+(cell names) beside any of them. Lane B holds B-57, lane C B-58 to B-61. After its Conformance step resume the steps paused for it — B-24's Conformance step, B-39, B-41, B-43, B-51, B-52 (B-55, a study, and B-56 run beside the group). The group closes with its Conformance step:
 emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm, against the numbers
 above, and every cell green on every target.
 
