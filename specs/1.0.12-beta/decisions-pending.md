@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**70 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**71 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -965,6 +965,23 @@ No general rule (283): each case below is its own question, (a) the language's o
   `botopink check` and `botopink build` both succeed; the error appears only where `area` is called.
 - **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
 - **Blocks.** Nothing today; the cell and `build`'s branch.
+
+#### B-22-b · How does a value of an enum section print? (144 B-22; `docs.md` § Sections of an enum)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): the leaf's whole path, as written** — `@print(Token.Color.White)` writes `Token.Color.White` on every target; a name at two levels (`Token.After` and `Token.Layout.Break.After`) stays two texts. One text for a value on every target (434 (5)), and no internal name (`_inner`, `__Token__Color`) in a program's output. Viable: each backend's printer for an enum value reads the section path the checker already resolves. Changes: a cell `enum_section_value_print` on the four targets; `docs.md` § Sections of an enum.
+- **Measured.** `val t = Token.Color.White; @print(t)`: commonJS, erlang and beam print `Token.Color(_inner: __Token__Color.White)` (the section's wrapper record and its internal enum name), wasm an address. No cell states the answer.
+- **Options.**
+  (a) The leaf's whole path.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // Token.Color.White
+  ```
+  (b) The leaf's name alone.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // White
+  ```
+- **Recommendation.** (a) — the path tells two leaves of one name apart, and it is the text the program wrote.
+- **Blocks.** 144 B-22's enum-section row; status.md's 05-wasm row.
 
 ### 02-std-and-packaging
 

@@ -1130,29 +1130,29 @@ and after each step · every re-recorded RUN LOG verified by running (`erlc +fro
 
 Each re-measured at the step that takes it; a holding row traps or is refused by name.
 
-- [ ] `Array.range` / `Array.repeat` recurse per element through a spread (`primitives.bp`), O(n²)
+- [x] `Array.range` / `Array.repeat` recurse per element through a spread (`primitives.bp`), O(n²)
       memory — `Array.repeat(0, 128)` exhausts the page; bodies double an array instead (std's file;
       limits table's open row)
-- [ ] from `01-checker`: element read of a union array (`run/array_literal_union` reads `length`
-      only), union of primitives a `case` produces (`test/case_value_union`), program-declared
-      `default fn` of a primitive (`test/program_primitive_behavior_extends_std`), `?.b` on an absent
-      element (`run/tuple_label_through_optional` keeps to the present half) — re-measured by `07`
-      step 5: no trap, a wrong value at exit 0: `es.at(3)?.a ?? 0` and `rs.at(5)?.a ?? -1` over
-      `#(a: i32, b: string)[]` print `8` on wasm where commonJS, erlang and beam print `0`, `-1`
-      (`codegen/tests/beam.zig`'s `?. on an absent tuple element …` program)
+- [x] from `01-checker`: element read of a union array (`run/array_literal_union_elements`), program-declared
+      `default fn` of a primitive (`test/program_primitive_behavior_extends_std`, green on four targets), `?.b` on
+      an absent element (`es.at(3)?.a ?? 0` prints `0` on wasm)
+- [ ] union of primitives a `case` produces (`test/case_value_union`) prints an address on wasm: the wasm backend
+      has no inferred type for a case value whose arms bind — a design pass of its own
 - [x] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
       `01-checker` step 13's `run/val_nested_ctor_pattern` needs it lowered (each binding off its
       field's slot, as the one-level form)
-- [ ] function read from a generic record's field, called through an untyped local, prints its
+- [x] function read from a generic record's field, called through an untyped local, prints its
       pointer (`Box<T>(value: T)`; `modules/typeinfo_all_registration` uses a typed local — from
       `130-decorator-outputs`)
-- [ ] `@print` of a generic record prints a field typed by a type parameter as a word:
+- [x] `@print` of a generic record prints a field typed by a type parameter as a word:
       `Q(items: [7])` over `Q<T>(items: Array<T>)` prints `Q(items: 308)`, `B(v: "s")` prints
       `B(v: 292)` at exit 0 (one descriptor per declaration, not per instantiation) — found by step 5
-- [ ] a primitive `default fn` from `primitives.bp` reached on wasm (`"1.5".parseFloat()`) is refused
-      at the PRELUDE's line under the caller's file name (`std/json.bp:341:13` for
-      `primitives.bp:341`'s `stringSlice0`) — `ensurePrimDefault`'s copy carries no origin; and the
-      refusal itself: `stringSlice0` / `stringToFloat` have no wasm cell — found by step 5
+- [ ] a primitive `default fn` from `primitives.bp` reached on wasm (`"1.5".parseFloat()`) is refused: its
+      location is the caller's line now; left, the lowering — `stringSlice0` / `stringSlice1`, `stringIsDigits`,
+      `stringToInteger`, `stringToFloat` and `stringNumeralRefused` have no wasm binding and need std-wasm functions,
+      one answering a `@Result` — found by step 5
+- [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
+      `Token.Color(_inner: __Token__Color.White)`, wasm an address · question B-22-b
 
 #### Compiler residuals — met here, worked around in std, owned elsewhere (was `97-std-dedupe` compiler residuals)
 

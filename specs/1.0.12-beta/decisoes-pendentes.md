@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**70 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**71 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -964,6 +964,23 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   `botopink check` e `botopink build`, ambos passam; o erro aparece só onde `area` é chamada.
 - **Recomendação.** (a) — a leitura mais restritiva: uma declaração quebrada é um erro onde quer que seja lida, e os dois comandos respondem igual a um conjunto de módulos.
 - **Bloqueia.** Nada hoje; a célula e o ramo do `build`.
+
+#### B-22-b · Como se imprime um valor de uma seção de enum? (144 B-22; `docs.md` § Sections of an enum)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o caminho inteiro da folha, como escrito** — `@print(Token.Color.White)` escreve `Token.Color.White` em todo target; um nome em dois níveis (`Token.After` e `Token.Layout.Break.After`) continua sendo dois textos. Um texto para um valor em todo target (434 (5)), e nenhum nome interno (`_inner`, `__Token__Color`) na saída de um programa. Viável: o printer de valor de enum de cada backend lê o caminho de seção que o checker já resolve. Mudanças: uma célula `enum_section_value_print` nos quatro targets; `docs.md` § Sections of an enum.
+- **Medido.** `val t = Token.Color.White; @print(t)`: commonJS, erlang e beam imprimem `Token.Color(_inner: __Token__Color.White)` (o record que embrulha a seção e o nome interno do seu enum), wasm um endereço. Nenhuma célula fixa a resposta.
+- **Opções.**
+  (a) O caminho inteiro da folha.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // Token.Color.White
+  ```
+  (b) Só o nome da folha.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // White
+  ```
+- **Recomendação.** (a) — o caminho distingue duas folhas de mesmo nome, e é o texto que o programa escreveu.
+- **Bloqueia.** A linha de seção de enum do 144 B-22; a linha 05-wasm do status.md.
 
 ### 02-std-and-packaging
 
