@@ -337,6 +337,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada para a 293.
 
 #### s23-g · Onde `Decorator.same` é declarado (o `extend Decorator { … }` da 371 não faz parse)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` no `builtins.d.bp`, espelhado no `decl_reflection_src` do `comptime.zig`; o `extend Decorator { … }` anônimo da 371 é lido como este membro, e `a.decorator.same(serverOnly)` não muda.
 - **Medido.** A 371 escreve `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` em `builtins.d.bp`. Um
   `extend` é sempre nomeado (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` é
   lido pelo teste de deriva (`comptime/builtins.zig` `collectTypes`), e esse teste guarda os métodos de instância de um tipo builtin
