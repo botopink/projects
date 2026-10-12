@@ -643,9 +643,10 @@ number, which is **484**.
 - **Blocks.** Nothing in the gate; the `abs` half of `02/97` step 13 (the cell `run/i64_number_methods_past_js_safe` stays off the minimum).
 
 #### 97-s13-b · `io/clock` given an epoch past ECMAScript's time range (319)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** One domain on every target, the epochs RFC 3339 writes — 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); `formatIso8601`, `toCivil` and `offsetMinutes` abort past it, naming the value, on every target.
 - **Measured.** `formatIso8601`, `toCivil` and `offsetMinutes` take an `i64` epoch and their Node forms build a `Date`, whose range is ±8.64 × 10^15 ms (years −271821 … 275760). Every `BigInt` epoch (past 2^53 − 1) is outside it. `clock.toCivil(8640000000000001l).year` prints `NaN` on commonJS and `275760` on erlang; `clock.offsetMinutes(8640000000000001l)` `NaN` / `-180`; `clock.toCivil(9007199254740993l)` throws `TypeError: Cannot convert a BigInt value to a number` on commonJS; `clock.formatIso8601(8640000000000000l)` answers `+275760-09-13T00:00:00.000Z` on commonJS and aborts on erlang (`calendar:system_time_to_rfc3339` is `badarg` past year 9999). 319 asks a Node template to take `number | bigint`; what it answers for these epochs is not written.
 - **Options.**
-  (a) One domain on every target, refused past it: the epochs RFC 3339 writes, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); the three abort past it, naming the value, on every target.
+  (a) ★ One domain on every target, refused past it: the epochs RFC 3339 writes, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); the three abort past it, naming the value, on every target.
   ```bp
   clock.toCivil(253402300800000l);   // aborts on every target: clock.toCivil: 253402300800000 is outside 0000-01-01 … 9999-12-31
   ```
@@ -653,7 +654,7 @@ number, which is **484**.
   ```bp
   @print(clock.toCivil(9007199254740993l).year);   // 287396 on every target
   ```
-  (c) ★ As is: each host's range and answer (`NaN` fields on commonJS, a date on erlang).
+  (c) As is: each host's range and answer (`NaN` fields on commonJS, a date on erlang).
   ```bp
   @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
   ```

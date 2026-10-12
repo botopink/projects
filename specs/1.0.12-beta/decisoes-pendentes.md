@@ -642,9 +642,10 @@ número livre, que é **484**.
 - **Bloqueia.** Nada no gate; a metade `abs` do `02/97` passo 13 (a célula `run/i64_number_methods_past_js_safe` fica longe do mínimo).
 
 #### 97-s13-b · O `io/clock` com uma época fora da faixa de tempo do ECMAScript (319)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Um domínio em todo alvo, as épocas que o RFC 3339 escreve — 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); `formatIso8601`, `toCivil` e `offsetMinutes` abortam além dele, nomeando o valor, em todo alvo.
 - **Medido.** `formatIso8601`, `toCivil` e `offsetMinutes` recebem uma época `i64` e suas formas Node constroem um `Date`, cuja faixa é ±8,64 × 10^15 ms (anos −271821 … 275760). Toda época `BigInt` (além de 2^53 − 1) está fora dela. `clock.toCivil(8640000000000001l).year` imprime `NaN` no commonJS e `275760` no erlang; `clock.offsetMinutes(8640000000000001l)` `NaN` / `-180`; `clock.toCivil(9007199254740993l)` lança `TypeError: Cannot convert a BigInt value to a number` no commonJS; `clock.formatIso8601(8640000000000000l)` responde `+275760-09-13T00:00:00.000Z` no commonJS e aborta no erlang (`calendar:system_time_to_rfc3339` é `badarg` além do ano 9999). A 319 pede que um template Node aceite `number | bigint`; o que ele responde para essas épocas não está escrito.
 - **Opções.**
-  (a) Um domínio em todo alvo, recusado além dele: as épocas que o RFC 3339 escreve, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); as três abortam além dele, nomeando o valor, em todo alvo.
+  (a) ★ Um domínio em todo alvo, recusado além dele: as épocas que o RFC 3339 escreve, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); as três abortam além dele, nomeando o valor, em todo alvo.
   ```bp
   clock.toCivil(253402300800000l);   // aborts on every target: clock.toCivil: 253402300800000 is outside 0000-01-01 … 9999-12-31
   ```
@@ -652,7 +653,7 @@ número livre, que é **484**.
   ```bp
   @print(clock.toCivil(9007199254740993l).year);   // 287396 on every target
   ```
-  (c) ★ Como está: a faixa e a resposta de cada host (campos `NaN` no commonJS, uma data no erlang).
+  (c) Como está: a faixa e a resposta de cada host (campos `NaN` no commonJS, uma data no erlang).
   ```bp
   @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
   ```
