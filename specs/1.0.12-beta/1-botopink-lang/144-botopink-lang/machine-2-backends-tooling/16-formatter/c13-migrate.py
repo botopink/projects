@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""c13-migrate.py [--md] <files...> — C-13 (decision 29 (c)): delete the `;` after a braced
+"""c13-migrate.py [--md] [--dry-run] <files...> — C-13 (decision 29 (c)): delete the `;` after a braced
 block statement — a statement that STARTS with `if`, `for`, `while`, `loop`, `case`, a
 `iter`/`stream` prefixed loop or a `#[…]`-annotated loop, whose last token before the `;` is
 its closing `}`. Nothing else is touched: a binding or `return` whose value is braced keeps
 its `;`, as `format.zig`'s `terminated` and the parser's `isBracedBlockStmt` do.
-With --md, only the ```botopink fences of a Markdown file are rewritten.
+With --md, only the ```botopink fences of a Markdown file are rewritten. With --dry-run, each site is
+printed (`SITE <file>:<line>: <text>`) and nothing is written.
 
 Front 16's C-13 migration. Verify a run: every changed line differs only by deleted `;`, and `botopink format` of each file before and after is byte-identical
 (the same program). Trees `scripts/format-check.sh` holds canonical are migrated by `botopink format`
@@ -76,15 +77,24 @@ def migrate(src):
                 deletes.append(p)
             fr['start'] = i + 1
         i += 1
+    if DRY:
+        for p in sorted(deletes):
+            ln = src.count('\n', 0, p) + 1
+            print(f'SITE {CUR}:{ln}: ' + src.splitlines()[ln - 1].strip())
+        return src, len(deletes)
     out = src
     for p in sorted(deletes, reverse=True):
         out = out[:p] + out[p + 1:]
     return out, len(deletes)
 
 total = 0
+DRY = '--dry-run' in sys.argv
+sys.argv = [a for a in sys.argv if a != '--dry-run']
+CUR = ''
 md = sys.argv[1] == '--md'
 for f in sys.argv[2 if md else 1:]:
     s = open(f, encoding='utf-8').read()
+    CUR = f
     if md:
         n = 0
         def rep(m):
@@ -94,6 +104,6 @@ for f in sys.argv[2 if md else 1:]:
         new = re.sub(r'(```botopink\n)([\s\S]*?)(```)', rep, s)
     else:
         new, n = migrate(s)
-    if n:
+    if n and not DRY:
         open(f, 'w', encoding='utf-8').write(new); print(f'{n:4d}  {f}'); total += n
-print(f'total {total}')
+print(f'total {total}' if not DRY else 'dry-run: nothing written')

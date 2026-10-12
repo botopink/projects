@@ -682,7 +682,11 @@ one per repository; erika's is 145 s3).
 `repository/{rakun,jhonstart,erika,onze,emilia}/**/*.bp`; 1.0.10: rakun 454, jhonstart 40, erika 28,
 onze 1.
 
-- [ ] a count per library, with the command, in this README
+- [x] a count per library, with the command, in this README
+      Counted on `feat` (dry run, nothing written): rakun 4, jhonstart 26, erika 0, onze 183, emilia 2 — every `.bp`
+      under `repository/<lib>/`, examples and `conformance/` included; command, from the meta root:
+      `find repository/<lib> -name '*.bp' -print0 | xargs -0 python3 c13-migrate.py --dry-run` (`--dry-run` added to
+      the script by this step: it prints each site and writes nothing)
 
 #### Step 2 — the migration in each tree (the tracks run it) (was `16-formatter` s2)
 
@@ -728,8 +732,8 @@ the comma is joined (345). No width rule opens a list: 16-a's `groupMeasured` le
 list and the array / tuple literals (a binary run and a brace-less `if` keep it), 16-b's open array
 goes. One-step pipeline: no comma, horizontal.
 
-- [ ] one `assertFormat` case per list kind, both spellings; the six trees measured before and after; `src/format/AGENTS.md` states the rule
-- [ ] 345 in the printer: a list without the trailing comma stays on one line past the width, and one written
+- [x] one `assertFormat` case per list kind, both spellings; the six trees measured before and after; `src/format/AGENTS.md` states the rule
+- [x] 345 in the printer: a list without the trailing comma stays on one line past the width, and one written
       open without it joins (`assertFormat` cases); 16-a's `groupMeasured` kept only for the binary run and the
       brace-less `if`; 16-b's open array removed
 
@@ -964,10 +968,10 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
 After the step gate of decision 460 lands (both change `scripts/gate.sh`). The pool itself is the meta repository's
 (163 s7); this gate knows nothing of it.
 
-- [ ] `scripts/gate.sh` takes one total of jobs (a leading argument; default the machine's, as step G computes) and
+- [x] `scripts/gate.sh` takes one total of jobs (a leading argument; default the machine's, as step G computes) and
       splits it among its stages as today; the gate lock removed (`scripts/AGENTS.md` § Gate lock rewritten)
-- [ ] `--no-conformance` stays: the commit hook's gate (470, step I), never a verdict
-- [ ] a library's `test-out` written under a per-run directory and removed after (botopink-lang's `test-libs` writes
+- [x] `--no-conformance` stays: the commit hook's gate (470, step I), never a verdict
+- [x] a library's `test-out` written under a per-run directory and removed after (botopink-lang's `test-libs` writes
       into the linked siblings)
 
 #### B-29 step J Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
@@ -1258,11 +1262,11 @@ codemod tied to a new rule)
 
 Today std writes the cells as prefixed strings (50 `"fn:…"`, 28 `"std:…"`, 6 `"op:…"`); 305 already made them labels.
 
-- [ ] the checker reads `fn: <identifier>` (resolved, typed), `op: "<opcode>"`, `wasi: .<Adapter>`, `std: "<module>.<fn>"`
+- [x] the checker reads `fn: <identifier>` (resolved, typed), `op: "<opcode>"`, `wasi: .<Adapter>`, `std: "<module>.<fn>"`
       (checked against std-wasm's `exports` and the declaration's types); a prefixed string refused, located, naming
       the labelled form — `reject/` cells for each
-- [ ] a codemod rewrites every cell in std and the libraries; every `.out`, RUN LOG and snapshot otherwise unchanged
-- [ ] `docs.md` and the `AGENTS.md` files name only the labelled forms
+- [x] a codemod rewrites every cell in std and the libraries; every `.out`, RUN LOG and snapshot otherwise unchanged
+- [x] `docs.md` and the `AGENTS.md` files name only the labelled forms
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-34 — the BEAM assembler rejects `styled`'s module (structural, decision 430)
@@ -1550,9 +1554,9 @@ under both hosts. The two `conformance/test/` suites that showed it (`module_var
 check `conformance/test/`.
 
 - [x] measured: the five answers above
-- [ ] the refusal in `run.zig` (and the wat component emitter where a module without `main` exports no
+- [x] the refusal in `run.zig` (and the wat component emitter where a module without `main` exports no
       `wasi:cli/run`), one message on every target and host; a unit test the hook runs (478)
-- [ ] a cell: a package with no `fn main` refused by `run` on every target
+- [x] a cell: a package with no `fn main` refused by `run` on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-80 — onze-cli's CSS accessors test red under `test-libs` on commonJS and erlang
@@ -1563,9 +1567,13 @@ Found landing B-24 (2026-10-12): `zig build test-libs` fails onze-cli's test at 
 accessors) on commonJS and erlang, the same with `libs/std` at `feat`'s — older than B-24. The cause is found first:
 a compiler defect is fixed here; a library's is a row of onze's front (162) and this step closes pointing at it.
 
-- [ ] the cause found (compiler or library), named in this box
-- [ ] fixed where it belongs; `test-libs` green for onze-cli on every target
-- [ ] Conformance step (459, 474, 477, 478, 480), when the fix is the compiler's
+- [x] the cause found (compiler or library), named in this box — the library's: the test creates its app with
+      `create styled`, so the app package is named `styled`, and jhonstart depends on the `styled` library
+      (`jhonstart/modules/jhonstart/botopink.json`); the build refuses two packages named `styled` in one workspace,
+      on every target. The compiler is right
+- [x] fixed where it belongs — handed to onze's front as 162 s11 (the test's app renamed); `test-libs` green for
+      onze-cli is that step's box
+- [x] Conformance step — none: the fix is not the compiler's
 
 ### B-81 — rakun-data's `#[query]` test red under `test-libs` on erlang
 
@@ -1604,7 +1612,7 @@ Measured on 2026-10-12: `botopink cell check <lib>/conformance` checks one cell 
 `botopink` process at ~80 % of a core, the machine's load 1.3 of 16); a library's gate calls it once over its whole
 `conformance/`, so emilia's 79 cells on three targets run in a row.
 
-- [ ] `cell check` runs its cells (and a cell's targets) on a pool of `--jobs <N>` (default the machine's, as
+- [x] `cell check` runs its cells (and a cell's targets) on a pool of `--jobs <N>` (default the machine's, as
       decision 468 counts it); the report in the cells' order, the same lines as today
 - [ ] a library's `scripts/gate.sh --jobs <N>` hands its share to `cell check` (469); botopink-lang's
       `test-conformance` the same
@@ -1620,13 +1628,13 @@ Today `botopink test` compiles a module's `test` blocks into the module itself (
 `-module(emilia@spacing)`), so one module's production code differs between `build` and `test` and the code cache
 cannot serve both.
 
-- [ ] every target emits a module's production unit always and its test unit (`__test__` prefix, 513 (1)) only under
+- [x] every target emits a module's production unit always and its test unit (`__test__` prefix, 513 (1)) only under
       `botopink test` of the package under test; a dependency's test units never emitted
-- [ ] the production unit always carries the reserved export of its private functions and module-level `val`s (513
+- [x] the production unit always carries the reserved export of its private functions and module-level `val`s (513
       (2)); a test reading either runs on every target; one test runner at the entry; every library's tests green
       unchanged
-- [ ] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
-- [ ] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
+- [x] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
+- [x] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-67 — erlang: a library's record imported beside a std record of the same name builds std's (D3)

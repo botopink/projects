@@ -35,18 +35,16 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
 - [ ] 163 s12 — `scripts/land-check.py`, the coordinator's check before a landing (484) · nothing
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
-- [ ] 144 B-29 step J — botopink-lang's gate drops the lock and takes a total of jobs; the pool and scheduling are the meta repository's `scripts/gate.sh` (163 s7) (468, 469) · after the step gate (460)
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
-- [ ] 144 B-63 — `botopink cell check` runs cells in parallel (`--jobs`, default the machine's; a library gate hands its share): today one cell after another on one core · nothing
+- [ ] 144 B-63 — `botopink cell check --jobs <N>` landed (cells in parallel, report in the cells' order); left: a library's `scripts/gate.sh --jobs` and botopink-lang's `test-conformance` handing their share to `cell check` (469; `runner-standalone.sh`, one text in 17 libraries), emilia's `conformance/` measured with `--jobs 1` and the default, the Conformance step · nothing
 - [ ] 144 B-60 — level B on disk: a dependency's analysis in `.botopinkbuild/analysis/` by closure key + the checker's sources; `test-analysis-equivalence` (cold vs from disk, byte for byte) in `test-cli`; doubt discards; one entry per dependency and target (`<package>.bpa`, std per module), no size bound; the design confirmed by the maintainer — the whole analysed output and a journal of the registries, encoded generically over the Zig types; S0–S2, S4 (code) and the review landed; `test-analysis-equivalence` over the libraries landed; 514/515 (every command keeps a dependency's `.d.bp`), `test` reading and writing CODE and the hook's hit / miss tests landed; the cold measurement and the Conformance step open (509 (1), 514, 515) · question B-60-a (a broken dependency `.d.bp` under `build`)
 - [ ] 144 B-77 — `botopink cache` (clean, status): level A to `.botopinkbuild/build/`; parallelism from the machine's pool inside botopink; `--cold` and `--jobs` go; scripts keep only `--staged` / `--no-conformance`; worktree rule 4b goes (468, 469, 473, 509, 225) · after B-60
 - [ ] 144 B-78 — commonJS writes an `f64` as text with its decimal part (a template hole, `.toString()`, `string + f64`) through `@print`'s helper, `float_text_everywhere` green; left: a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`, the Conformance step; contradicts decision 441's last sentence · question B-78-a
-- [ ] 144 B-79 — `botopink run` of a program with no `fn main`: one located error on every target and host (517); measured · nothing
-- [ ] 144 B-80 — onze-cli's CSS accessors test red under `test-libs` (commonJS, erlang), older than B-24; cause first, fixed where it belongs · nothing
+- [ ] 144 B-79 — `botopink run` of a program with no `fn main` refused before running, located at the entry module, one message on every target and host (517), cell `run_without_main` green; left: the Conformance step · nothing
 - [ ] 144 B-81 — rakun-data's `#[query]` test red under `test-libs` (erlang), older than B-24; cause first, fixed where it belongs · nothing
-- [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59; runs beside B-60 and lands before B-60's S4
+- [ ] 144 B-64 — a module's tests a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`, privates through a reserved export, `botopink test` on wasm (513) landed; left: the Conformance step · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) — removed; left: the Conformance step · nothing
@@ -70,7 +68,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 144 — after B-00: what B-00k found, and wasm memory
 
-- [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
+- [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481) landed: the checker reads `fn:`, `op:`, `wasi:`, `std:`, the prefixed strings refused (four cells), std rewritten by the codemod, no prefixed cell left in a library; left: the Conformance step · nothing
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
@@ -213,6 +211,10 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 143 (398) — `dbcontext`, botopink's JPA over erika: s0 done (`botopink/dbcontext` scaffolded, a submodule); s1 entities and `DbContext` over a `Driver`, s2 `#[repository]` / `#[query "…"]` / `#[nativeQuery]`, s3 rakun-data over it · 137 s2 · 01-checker s29 · s3 after 128
 
+### 162 onze
+
+- [ ] 162 s11 — onze-cli's CSS accessors test creates its app as `styled`, a package of jhonstart's closure: the app renamed, `test-libs` green for onze-cli (from 144 B-80) · nothing
+
 ### 163 meta-ci (medium)
 
 - [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
@@ -227,7 +229,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 - [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a (reduced: `registerRouteStarters` + `globals.starters`) · s8: 01's hooks capability, ctr-l (only the record) (s7 is 135's)
 - [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s6: 293
-- [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243/345, C-11 · s2: each library track runs the script · s6 (345 in the printer) before s4 · s3 last, after every tree is migrated · s5 (165, the one-line trailing lambda) and s9 (286, annotations as written) landed
+- [ ] 16 s2–4, s7 — the `;` migration and refusal, C-12's reformat, C-11 · s2: each library track runs the script (sites on `feat`: rakun 4, jhonstart 26, erika 0, onze 183, emilia 2) · s3 last, after every tree is migrated · s1 (the re-count), s5 (165), s6 (166/243/345, the trailing comma alone decides) and s9 (286) landed
 - [ ] 18 s1, s3 — the CI matrix, the bench's close row (s2, s4, s5, s3's evaluation budget done) · s1: the maintainer's push
 - [ ] 23 — the import cells and LSP snapshots, the confirmations · 23-b, std-c (23-a moot, 23-c → 317)
 - [ ] 24 — the guide as one program, the confirmations, the per-item cost · 24-c, 24-g (24-a → 431, 24-b → 432) · rakun's `serverAction`
@@ -338,6 +340,8 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-29 step J — botopink-lang's `scripts/gate.sh` takes one total of jobs (`--jobs <N>`, default the machine's) split among its stages, no gate lock (`scripts/AGENTS.md`); `--no-conformance` stays the hook's gate; a library's `test-out` is already a per-run directory, removed after (468, 469, 508) — its Conformance step open
+- [x] 144 B-80 — onze-cli's CSS accessors test: the cause is the library's — its app is created as `styled`, a package of jhonstart's closure, and the build refuses two packages of one name; handed to 162 s11, the compiler unchanged
 - [x] 144 B-39, B-41, B-43, B-51, B-52 — a module-level `val` read by the next one bound on erlang; a library's abort worded alike on every target; a `Set` of structurally equal records keeping one on commonJS and wasm; commonJS printing an `f64` with its `.0`; wasm printing a string field or an awaited string as text — each step's Conformance step open
 - [x] 144 B-31, B-44, B-53, B-54 — a float-hole template a `string` on wasm; a lifted `bool` printed `true` / `false` on wasm; `@print` of a `@Result` as `Ok(…)` / `Error(…)`; the formatter keeping an annotation's `label: value` — each step's Conformance step open
 - [x] 144 B-62, B-67, B-68 — the nine cells red on `feat` green; erlang building a library's record beside a std record of the same name; wasm resolving a method call on a template's answer — each step's Conformance step open
