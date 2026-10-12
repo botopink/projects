@@ -43,11 +43,11 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
 - [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
-- [ ] 144 B-61 — a cell's package name is its directory's name (511): a one-off script fills the 148 of botopink-lang's cells that differ (146 named `language_tests`) · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-58, B-59, B-61
 
 ### 144 — after B-00: what B-00k found, and wasm memory
 
+- [ ] 144 B-62 — 9 cells red on `feat` with the compiler of `feat`: the five `bpp_*` refusals locate `botopink.json:1:223` against an accepted 121-and-the-name, `bpp_prelude_holds_declaration`, `bpp_role_not_pub`, and `dependency_imports_itself_with_from` / `dependency_imports_undeclared_package` print a dependency's path as `../../../conformance/…` against an accepted `deps/…` · nothing
 - [ ] 144 B-31 — on wasm a template whose only part is a float hole is typed `f64` (`val s = "${5.0}"; s + "!"` invalid wasm): a structural fix (430) · nothing
 - [ ] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`, 471); a `badarith` at build in Erlang's words, located (472) · nothing
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
@@ -57,7 +57,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · nothing
 - [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · nothing
 - [ ] 144 B-44 — wasm prints a lifted `bool` as `1` (`yamlconf`) · nothing
-- [ ] 144 B-50 — beam: a member call through a library's default handle aborts (`default_handle_member`) · nothing
 - [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · nothing
 - [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · nothing
 - [ ] 144 B-53 — `@print` of a `@Result` prints the host's form · nothing
@@ -65,7 +64,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · nothing
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · nothing
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
-- [ ] 144 B-49 — std's `io/random` sidecar ships on commonJS with a module whose decorator uses it · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
@@ -338,6 +336,9 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-61 — a cell's package name is its directory's name (511): a one-off script filled the 148 of botopink-lang's cells that differed (146 were `language_tests`); `package_named_std` is the cell `std`; the name check is the manifest's (512 (1), B-58)
+- [x] 144 B-50 — beam: a member call through a library's default handle lowers to a call into the library; `default_handle_member` green on beam, a beam codegen test — its Conformance step open
+- [x] 144 B-49 — std's commonJS sidecars ship from the compiler's embedded copy — its Conformance step open
 - [x] **144 B-00a → B-00k (434, 437, 442, 446, 450, 452, 459)** — comptime on wasm only, the first thing the milestone did: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442); B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · landed: B-00a, B-00d, B-00f (437), B-00h (446); B-00b for 435's subset, a foreign `.beam` and standalone (438), the utility whole (the comptime does not call it, 452); B-00c (452: a host function at build answers by `std:` or `fn:`), its last box open — the line below; B-00e (440, 441: std-wasm transpiled into the wasm program, the `std:` binding, std-wasm's text, sizes in `wat/AGENTS.md`); B-00g (442, 443, 445, 447, 451: std's helpers and `bigint` in std-wasm, Unicode case mapping, `std:` std's alone, a frame past the stack's floor traps, the seeded random std-wasm's and refused unseeded at comptime); B-00j (452, 453, 455, 456: the comptime answers by `std:` or `fn:`, never an Erlang cell; the name `std` reserved; `random.float` std-wasm's); B-00i (450: the Erlang terms and OTP functions are std-wasm's, `bp_wat_rt.wasm` gone); B-00k (459: the group's Conformance step — four cells, the table in the README) — **the B-00 group is done**: B-00c's last box closed by the seventh step of the conformance order, every library's own gate green with conformance on this compiler (`scripts/gate.sh libs`, 17 of 17)
 - [x] 144 B-29 step I — the language reference is `conformance/docs.md`, every example a cell (90 new) or `text`; `docs.md`, `docs/` and README's example removed; `test.yml` runs `scripts/gate.sh --cold` with conformance — its Conformance step open; five new cells red until B-51 and B-52
 - [x] 144 B-42 — wasm: a fold lambda's string accumulator resolves its methods (`join/1`); emilia's 79 cells green on their declared targets, wasm refusing each on a host binding (`raisedBy`) — its Conformance step open; the sixth step of the conformance order done

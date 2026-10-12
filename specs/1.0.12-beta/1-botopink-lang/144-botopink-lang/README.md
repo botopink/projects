@@ -3383,29 +3383,6 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
       `comptime` expression named as the frame that ran it
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-49 — std's `io/random` sidecar ships with a module whose decorator uses it, on commonJS (structural, decision 430)
-
-**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
-
-A cell whose main module keeps a decorator calling `io.random.seed` or `seededFloat` is refused on commonJS:
-`module 'std/io/random' requires "./sidecars/random.mjs", but its library 'std' resolves to no package directory — the
-sidecar cannot be shipped`.
-
-- [ ] a cell red on the parent: a decorator using `io.random` in a module built for commonJS
-- [ ] std's sidecars resolved from the bundled std; the cell green on commonJS
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
-### B-50 — beam: a member call through a library's default handle aborts (structural, decision 430)
-
-**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
-
-`conformance/modules/default_handle_member` (`shapes.twice(21)` through `shapes`' default handle) prints `42` on every
-target but beam, which aborts; B-45 fixed the erlang lowering.
-
-- [ ] the abort measured; the beam lowering reaches the library's member; the cell green on beam
-- [ ] a beam codegen test the hook runs, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
 ### B-51 — commonJS prints an `f64` without its `.0` (structural, decision 430)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
@@ -3560,18 +3537,21 @@ one case where they did not.
 - [ ] tests the hook runs: an unchanged library is not analysed again; any closure-key input changed analyses it
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-61 — a cell's package name is its directory's name (decision 511)
+### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-893 of botopink-lang's 1041 cells name their package after their directory; 148 do not — 146 are all named
-`language_tests`, left by the move of `tests/language` into `conformance/` — so 146 cells emit the same module
-`language_tests@main` with different code. Every library's cells already follow the rule. The check that a name is
-present and unique is the manifest's (512 (1), B-58), not `cell check`'s.
+Found landing B-61 (2026-10-12), red with `feat`'s own compiler from the main checkout: `bpp_html_missing`,
+`bpp_html_twice`, `bpp_key_not_a_dependency`, `bpp_key_object_form`, `bpp_prelude_twice` locate their refusal at
+`botopink.json:1:223` where the accepted snapshot says the column of the `bpp` key; `bpp_prelude_holds_declaration`
+and `bpp_role_not_pub` likewise; `dependency_imports_itself_with_from` and `dependency_imports_undeclared_package`
+print a dependency's file as `../../../conformance/modules/<cell>/deps/…` where the accepted answer is `deps/…`.
 
-- [ ] a one-off script (not committed) sets every cell's missing or different `name` to its directory's; the 148
-      cells green as before, a snapshot that printed the old name listed
-- [ ] `conformance/AGENTS.md` states the rule
+- [ ] each cause measured (which landing moved the column and the path; the accepted answer is the language's —
+      a location relative to the cell, the column of the key that is refused); the fix in the compiler, the cells
+      green unchanged
+- [ ] a test the hook runs for each, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
