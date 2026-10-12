@@ -780,7 +780,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
   locals overflows the comptime stack; a record spread inside a member a decorator adds loses its spread on
   commonJS; `Decorator` is an unknown type in a package's module; a decorator argument is a raw lexeme;
   `Field` reflects no default; two test modules declaring one type name share it on erlang; std's
-  `clock.formatIso8601` answers differently on erlang and commonJS (`97-s13-b`); the package module namespace
+  `clock.formatIso8601` answers differently on erlang and commonJS (`decision 497`); the package module namespace
   in type and value position (the box below).
 - **G2 styled / emilia** — a method's behavior-typed parameter refuses an implementer; a wrapper's type alias
   cannot implement a behavior; a template function cannot read another expansion's value; a function a
@@ -2095,15 +2095,15 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang, with consumer commits in rakun, jhonstart, onze (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
-`bigint`'s rest (139 landed as bigint-139; its two open boxes) then `Decimal` and `Json`'s numbers. Questions `97-s13-a`, `97-s13-b`,
-`97-s15-a` (whether 142 s1 goes first and the `Int` / `BigInt` / `Dec` arms land in the json repository).
+`bigint`'s rest (139 landed as bigint-139; its two open boxes) then `Decimal` and `Json`'s numbers. Questions `decision 496`, `decision 497`,
+`decision 500` (whether 142 s1 goes first and the `Int` / `BigInt` / `Dec` arms land in the json repository).
 
 **Impacted tests:** `run/json_numbers_exact`, `run/i64_*`, the clock cells. **Model:** sonnet, opus for 139's
 checker half. **Consumer commits:** rakun (3 files), jhonstart (2), onze (2) — the `Json` `case` arms.
 
 #### Open (was `139-bigint` open)
 
-- [ ] 139-a's alternatives, if the maintainer answers (b) or (c): `is bigint` by value range, a
+- [ ] decision 501's alternatives, if the maintainer answers (b) or (c): `is bigint` by value range, a
       `bigint` in `unknown`, compile-time `bigint` in the folder and the comptime runtimes (14 · 18)
 - [ ] wasm: a `bigint` member of a union (`lowerAsUnknown` refuses it located, "has no `bigint` in a
       union yet"; erlang, beam and commonJS run it) — a `05-wasm` row
@@ -2155,8 +2155,8 @@ function i64add(a, b) {
 #### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9) (was `97-std-dedupe` s13)
 
 - [ ] `io/clock`'s `formatIso8601`, `toCivil` and `offsetMinutes` given an epoch past ECMAScript's
-      time range (every `BigInt` epoch): question `97-s13-b`; `parseDuration`'s 2^53 − 1 bound after
-      319: `97-s13-c`; `fs.stat`'s `mtime` resolution (ms on Node, s × 1000 on erlang): `97-s13-d`
+      time range (every `BigInt` epoch): question `decision 497`; `parseDuration`'s 2^53 − 1 bound after
+      319: `decision 498`; `fs.stat`'s `mtime` resolution (ms on Node, s × 1000 on erlang): `decision 499`
 - [ ] `Json`: an `i64` written as its digits (the read half is step 15's `Int` node, 332)
       (`9223372036854775807l` round-trips on commonJS through `Int`)
 - [x] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319):
@@ -2166,7 +2166,7 @@ function i64add(a, b) {
       (the numeric tower is patched on `BigInt.prototype` too — a carve-out in `04-js`'s
       `commonJS.zig` `prototypeAssign`; std's Node forms take either kind):
       `run/i64_number_methods_past_js_safe`; wasm refuses an `i64` receiver (`05-wasm` row);
-      `abs` of the minimum is question `97-s13-a`
+      `abs` of the minimum is question `decision 496`
 - [x] the explicit conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` declared on
       `Integer`, aborting when the value does not fit, never rounding: `run/integer_conversions_exact`,
       `run/integer_conversion_to_i32_aborts`, `run/integer_conversion_to_f64_inexact_aborts` on
@@ -2223,7 +2223,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 **Repository:** botopink-lang, with consumer commits in log (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 After B-00e (std-wasm in the wasm output may absorb some `wasi:` bindings these steps write). Questions
-`140-d`, `140-e`, `140-f`, `110-a`. Unblocks log 106 s3 (the wasm column; G4: a wasm binding cannot reach the
+`decision 502`, `140-e`, `140-f`, `110-a`. Unblocks log 106 s3 (the wasm column; G4: a wasm binding cannot reach the
 file system, cannot keep a value across calls; the wasm backend does not lower a context).
 
 **Impacted tests:** `run/wasm_host_*`, `run/std_io_http_on_every_target`, `run/std_async_on_every_target`,
@@ -3237,10 +3237,11 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-- [ ] `botopink cell check conformance/` over rakun's 35 cells reported 34 in two runs of three, a different cell
+- [ ] (the count row and a stdout write that no longer drops a line landed; the drop was not reproduced — confirmed
+      when the pipeline's runs report every cell) `botopink cell check conformance/` over rakun's 35 cells reported 34 in two runs of three, a different cell
       missing each time (each passes alone): every cell found is reported, a cell that cannot run is a red naming it,
       never absent; a CLI test with a directory of cells counts them
-- [ ] a cell's `{"path": "…"}` dependency relative to the cell fails, because the cell runs from a scratch copy: the
+- [x] a cell's `{"path": "…"}` dependency relative to the cell fails, because the cell runs from a scratch copy: the
       check resolves it against the cell's own directory (or, after B-37, the cell's `.botopinkbuild/deps/`), so a
       library's cells drop their per-cell `deps/` workspaces of symlinks; the scratch copy (which skips hidden
       directories today) inherits the project's dependency tiers, `.botopinkbuild/deps/` included

@@ -46,7 +46,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`, 471); a `badarith` at build in Erlang's words, located (472) · nothing
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers; the result store keeps a linked tree · nothing
-- [ ] 144 B-38 — `botopink cell check` reports every cell of a directory (a cell went missing in rakun's run) and resolves a cell's `path` dependency · nothing
+- [ ] 144 B-38 first box — every cell of a directory reported: a stdout write no longer drops a line (the suspected cause, not reproduced); confirmed by the pipeline's counts · nothing
 - [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
 - [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · nothing
 - [ ] 144 B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (`join/1`) · nothing
@@ -66,9 +66,9 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · runs in 163 s9 (the measurements at the end of the conformance order, a quiet machine)
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [ ] 134 — `registerStdlib` now runs the associated-type rewrite on std modules (`comptime.zig`, landed with batch 8 for `Type.Field<T>`): owner 01-checker · none
-- [ ] 140 (334) — steps 1–3 and 6's loader landed (botopink-lang `56d4bc29`); step 4 landed: `@Task` a resumable state machine over the scheduler on both hosts (392), the `wasi:delay` / `race` / `race_of` / `spawn_all` adapters checked by shape (393), one adapter list (394), `run/wasm_host_async` and three task cells green on four targets and both hosts, the cost in the README; open: `@Component` bodies (140-e), `fetch`'s records, the binary component encoding, std's `External.Wasm` declaration without `host` · then 97 s17 (`io/http`, `async` on wasm: `run/wasm_host_http`, `async_block_all_of`'s wasm column) · questions 140-d ★, 140-e, 140-f ★
+- [ ] 140 (334) — steps 1–3 and 6's loader landed (botopink-lang `56d4bc29`); step 4 landed: `@Task` a resumable state machine over the scheduler on both hosts (392), the `wasi:delay` / `race` / `race_of` / `spawn_all` adapters checked by shape (393), one adapter list (394), `run/wasm_host_async` and three task cells green on four targets and both hosts, the cost in the README; open: `@Component` bodies (140-e), `fetch`'s records, the binary component encoding, std's `External.Wasm` declaration without `host` · then 97 s17 (`io/http`, `async` on wasm: `run/wasm_host_http`, `async_block_all_of`'s wasm column) · questions 502 ★, 140-e, 140-f ★
 - [ ] 05-wasm s9 · 04-js s11 (333 (B), later) — a prebuilt wasm library merged into the module; no user yet
-- [ ] 139 (332) — steps 1–5 landed: the `n` literal, `primitives.bp`'s `behavior BigInt` (`of`, `parse`, `toString`, `toI64`, `toF64`), erlang/beam the VM's integer, commonJS `BigInt` (`.d.ts` `bigint`, `tsc-check.sh` green), wasm's `bigint` helper group (≈ 2.9 KB, linked only when used), `run/bigint_arithmetic` one `.out` on the four targets; 139-a (a) ★ built (no `unknown`, `is` or `comptime` over a `bigint`), 139-b ★ · lands through the coordinator; then 97 s15 (`Decimal`, `Json`'s `Int` / `BigInt` / `Dec`) · 125's bind rule; open: wasm's union row
+- [ ] 139 (332) — steps 1–5 landed: the `n` literal, `primitives.bp`'s `behavior BigInt` (`of`, `parse`, `toString`, `toI64`, `toF64`), erlang/beam the VM's integer, commonJS `BigInt` (`.d.ts` `bigint`, `tsc-check.sh` green), wasm's `bigint` helper group (≈ 2.9 KB, linked only when used), `run/bigint_arithmetic` one `.out` on the four targets; 501 (a) ★ built (no `unknown`, `is` or `comptime` over a `bigint`), 139-b ★ · lands through the coordinator; then 97 s15 (`Decimal`, `Json`'s `Int` / `BigInt` / `Dec`) · 125's bind rule; open: wasm's union row
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
 - [ ] 01-checker s24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (`Type.Field<T>`, 308) and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
@@ -107,7 +107,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the full `test-libs` count against its last record (138: 125 passed) · the cold gate; the engine half is done: no `-test` member has its own, and `test-libs --lib std` plus the seven `-test` members read 12 passed, 0 failed, 1 without tests, 3 restrictions audited
 - [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
-- [ ] 97 s13 rest — `io/clock`'s `formatIso8601` / `toCivil` / `offsetMinutes` past ECMAScript's time range · `97-s13-b` · `Json`'s `i64` as its digits (332, s15) · `97-s13-a` (`abs` of the minimum)
+- [ ] 97 s13 rest — `io/clock`'s `formatIso8601` / `toCivil` / `offsetMinutes` past ECMAScript's time range · `497` · `Json`'s `i64` as its digits (332, s15) · `496` (`abs` of the minimum)
 
 ### 146 validation
 
@@ -293,7 +293,6 @@ last section. Open: 88 questions, 6 contradictions, 100 implementation choices (
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):
 - [ ] 434-b — the at-build render path on one wasm runtime · 144 B-17
-- [ ] 97-s15-a — `Json`'s numbers before or after `json` leaves std · 144 B-24, B-27 · 151 s1
 
 **Then — the botopink shape** (raised 2026-10-04):
 - [ ] nat-d6…d9 — case by case (283; nat-d1 → 303, nat-d2 → 304, nat-d3 and nat-d4 → 306, nat-d5 → 307): `nav:` strings (26, 53), lifecycle (rakun 04), `use use…` (53), erika's LINQ names (98)
@@ -301,7 +300,6 @@ last section. Open: 88 questions, 6 contradictions, 100 implementation choices (
 
 Then:
 - [ ] std-d — 97 s6 · 50 s4, s7
-- [ ] 97-s13-b — 97 s13's three `io/clock` templates · 97-s13-c, 97-s13-d block nothing
 - [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole
 - [ ] 03r-ab — 09 s5 (and the scope of s1–4) · only the record
@@ -330,6 +328,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] **144 B-00a → B-00k (434, 437, 442, 446, 450, 452, 459)** — comptime on wasm only, the first thing the milestone did: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442); B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · landed: B-00a, B-00d, B-00f (437), B-00h (446); B-00b for 435's subset, a foreign `.beam` and standalone (438), the utility whole (the comptime does not call it, 452); B-00c (452: a host function at build answers by `std:` or `fn:`), its last box open — the line below; B-00e (440, 441: std-wasm transpiled into the wasm program, the `std:` binding, std-wasm's text, sizes in `wat/AGENTS.md`); B-00g (442, 443, 445, 447, 451: std's helpers and `bigint` in std-wasm, Unicode case mapping, `std:` std's alone, a frame past the stack's floor traps, the seeded random std-wasm's and refused unseeded at comptime); B-00j (452, 453, 455, 456: the comptime answers by `std:` or `fn:`, never an Erlang cell; the name `std` reserved; `random.float` std-wasm's); B-00i (450: the Erlang terms and OTP functions are std-wasm's, `bp_wat_rt.wasm` gone); B-00k (459: the group's Conformance step — four cells, the table in the README) — **the B-00 group is done but for B-00c's last box** (L1, the seventh step of the conformance order)
+- [x] 144 B-38 — a cell's `path` dependency and dependency tiers resolve from the cell's own directory, from any working directory — its Conformance step open
 - [x] 144 B-45 — erlang: a member call through a library's default handle reaches the library — its Conformance step open; the example's move into erika after the 144 front
 - [x] 144 B-34 — beam: a closure's free-name walk binds an `if` binding in its then-branch only (styled's `spliced`); jhonstart's 18 cells green on commonJS, erlang and beam — its Conformance step open
 - [x] 144 B-35 — wasm lowers `@println` as `@print` with its newline; erika's two cells green on every target — its Conformance step open

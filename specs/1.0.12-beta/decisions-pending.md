@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**78 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**71 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -402,34 +402,6 @@ number, which is **484**.
   01-checker step 36's stage gives once it lands, and agrees with (a).
 - **Blocks.** Nothing — built as (a) (`block_eval.useReached`); step 8's `Any`-call box reads it.
 
-#### 140-d · How a task adapter is spelled: 393's `wasi: .Delay` against 238's one string
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b), by decision 481.** `@External.Wasm`'s cells are labelled arguments: a task adapter is `#[@External.Wasm(wasi: .Delay)]` (`.Race`, `.RaceOf`, `.SpawnAll`), an enum; the prefixed string `"wasi:delay"` built in front 140 step 4 is refused, located, naming the labelled form, and is rewritten in 481's step (144 B-33).
-- **Measured.** 393 writes `#[@External.Wasm(wasi: .Delay)]`; 238's closed vocabulary (and every std
-  binding today) is one string, `#[@External.Wasm("wasi:random_f64")]`, and `builtins.d.bp` declares
-  `Wasm(template: string)` (+ step 2's `host:`). Built (front 140 step 4): the string form — `"wasi:delay"`,
-  `"wasi:race"`, `"wasi:race_of"`, `"wasi:spawn_all"` in `host_binding.zig`'s one list, checked by shape at
-  the annotation (`run/external_wasm_task_adapter_shape`).
-- **Options.** (a) ★ 238's one string: `#[@External.Wasm("wasi:delay")]`, adapter names in the list's
-  snake_case. (b) 393's spelling: a labelled enum argument `#[@External.Wasm(wasi: .Delay)]` beside the
-  string forms — a second spelling of the same binding, a `builtins.d.bp` change and a checker arm.
-  Today:
-  ```bp
-  #[@External.Wasm("wasi:delay")]
-  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
-  ```
-  (a) example:
-  ```bp
-  #[@External.Wasm("wasi:race_of")]
-  declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>;
-  ```
-  (b) example:
-  ```bp
-  #[@External.Wasm(wasi: .Delay)]
-  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
-  ```
-- **Recommendation.** (a) — one spelling for a binding; 393's example reads as `"wasi:delay"`.
-- **Blocks.** Nothing — built as (a); `02/97` step 17 writes std's bindings in the chosen spelling.
-
 #### 140-e · An `await` of a task inside a `@Component` body on wasm (392 (2) against 375 (3))
 - **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(d), a fourth option: composition by data, 388 applied to the end — comptime unchanged.** On wasm as on every target, calling a component only makes its lambda (388) and only the renderer runs it. A component is a state machine only when its own body writes `await` / `async { }` or `use`s an asynchronous hook (375 (1), without the conservative "calls a function value" clause: calling a component runs nothing). The lambda carries 375's mark and the renderer awaits only the marked ones, so a task's address and an `Element` are never told apart by their word. A component that composes others (`Layout(view)`, `App`) stays direct even when it receives a component as a value; the tree it answers holds component values — `<main>{view()}</main>` stores `view()`'s lambda, never the factory `view`, so the renderer meets one kind of child, runs it with the children's scope its parent answered (388 (3)), and a factory taking arguments needs nothing else. No trap, nothing paid by a synchronous component, on `wasi` and `browser` with 392's one mechanism; the same answer on every target. (c) (JSPI / stack switching) is not taken: 392 rules out JSPI and the `browser` host has neither. The condition: comptime does not change — 388 (4)'s at-build run with `RenderScope.root()` and 434-b's path keep their reading; (d) changes only the run-time lowering of components on wasm (front 140 step 4, a follow-up thread). **Suspense and error boundaries under (d)** (the maintainer, 2026-10-12): `Suspense(fallback, child)` and `ErrorBoundary(child, view)` are tree nodes holding component values (414), and run nothing when made. The renderer finds that a subtree waits while descending it — no compiler mark for a whole subtree (a component value hides it): inside a `Suspense`, it renders `child` with the scope it met the node with; if the whole subtree finishes without meeting a marked lambda, the HTML is emitted directly, with no fallback and no fill; at the first marked lambda it emits `fallback` in the boundary's placeholder, keeps `(child, scope)` and goes on with the page; when the child's task settles, the stream's fill runs `renderComponent(child, scope)` with that same scope, so a parent's `provide` stays visible. A page with no marked node renders without streaming (375 (1)). `ErrorBoundary` runs its child under `attempt` (431; 431-f on wasm) and renders `view(infoFor(failure))` with the same scope.
 - **Measured.** 392 (2): "a function 375 marks asynchronous compiles to a resumable state machine". Built: a
@@ -527,51 +499,6 @@ number, which is **484**.
   ```
 - **Recommendation.** (a): one rule for a call in a body (128, unchanged by 388), no inference of intent from
   the use; (b) changes what every body's `val x = Card(…)` means.
-#### 139-a · A `bigint` where its type is no longer static: `unknown`, `is`, `comptime` (332, decision 8 §4.1)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** A `bigint`'s type stays static: it does not widen to `unknown` (`bigint-widened`), `is` neither tests for one nor tests a value holding one (`bigint-type-test`), and a `comptime` computing one is `comptime-bigint`; `@print`'s variadic `unknown` takes one and a union holding one stays legal. (b) or (c) may widen it later, when a program needs it.
-- **Measured.** No target tells a `bigint` from another integer at run time: erlang and beam hold one
-  integer for both, commonJS's `i64` past 2^53 is a `BigInt` as a `bigint` is (319), wasm's `bigint` is
-  the address of a block where an `i32` is a word. Decision 8 §4.1 tests a number by its range, so on the
-  parent of this front's patch `val u: unknown = 5n; u is i32` would answer `true` on erlang and beam and
-  `false` on commonJS (a `BigInt` is no `number`), and wasm could not box it. The compile-time evaluator
-  holds a 64-bit integer: `val k = comptime 99999999999999999999n * 2n` was `integer beyond 64 bits`, a
-  module-level one an unlocated `UnsupportedComptimeValue`. Built: (a) — `reject/bigint_into_unknown`
-  (`bigint-widened` at `6:22`), `reject/bigint_type_test` (`bigint-type-test`), `reject/bigint_comptime`
-  (`comptime-bigint`); `@print`'s variadic `unknown` takes a `bigint`; a union holding one stays legal
-  (only `is` / a type pattern tells its members apart, and both are refused over it).
-- **Options.** (a) ★ A `bigint`'s type stays static: it does not widen to `unknown`
-  (`val u: unknown = 5n` is `bigint-widened`), `is` neither tests for one nor tests a value holding one
-  (`x is i32` over `x: bigint`, `case x { bigint { … } }` are `bigint-type-test`), and a `comptime`
-  computing one is `comptime-bigint`. (b) §4.1 read for `bigint`: `x is bigint` is "an integer of any
-  size" on every target (`5 is bigint` and `5n is i32` are `true`), commonJS's narrow tests accept a
-  `BigInt` in range, wasm boxes a `bigint` with a kind of its own; `comptime` folds it with an
-  arbitrary-precision integer in `eval.zig` and in the BEAM and WAT comptime runtimes. (c) (a) for `is`
-  and `unknown`, (b) for `comptime` only.
-  Today:
-  ```bp
-  val u: unknown = 5n;                       // error: bigint-widened: a `bigint` does not widen to `unknown`
-  @print(x is i32);                          // x: bigint — error: bigint-type-test
-  val k = comptime 99999999999999999999n * 2n;   // error: comptime-bigint
-  @print(5n);                                // @print's variadic `unknown` accepts it
-  ```
-  (a) example:
-  ```bp
-  fn pick(c: bool) -> i32 | bigint { return if (c) 1 else 2n; }   // legal; `pick(c) is i32` refused
-  ```
-  (b) example:
-  ```bp
-  val u: unknown = 5n;
-  @print(u is i32);      // true on all four targets
-  @print(5 is bigint);   // true
-  ```
-  (c) example:
-  ```bp
-  val k = comptime 99999999999999999999n * 2n;   // 199999999999999999998n, folded at build
-  ```
-- **Recommendation.** (a): no answer differs per target, and nothing is accepted that a later answer
-  would have to take back; (b) when a program needs `bigint` in `unknown` or at compile time.
-- **Blocks.** Nothing — built as (a).
-
 #### 434-b · The render-resident and at-build paths under one wasm comptime runtime (434, 378 (4))
 - **Measured.** 84 sent a comptime evaluation to the target's VM, so an erlang build rendered a `Build` / `Any` component at build on the BEAM (`render_resident`'s erl step) and a commonJS build on wat. 378 (4) asks the comptime runtime to run a component's lambda with `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; 134 step 6's last box (144 B-17). Under 434 the only runtime is wasm, and jhonstart's renderer on the BEAM is a sidecar (`jhonstart_render.erl`).
 - **Options.**
@@ -622,90 +549,6 @@ number, which is **484**.
   ```
 - **Recommendation.** (1) now; (2) if wasm must run asserts.
 - **Blocks.** Nothing in the gate; "std compiles on wasm" (05-wasm step 5, 97 step 11).
-
-#### 97-s13-a · `abs()` of an integer type's minimum (264, 319)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** `abs` aborts past its type as unary `-` does (`integer overflow: abs on i64`): `abs` moves from `Signed` to `I32` and `I64`, each with its own bound in its forms; `lo64().abs()` aborts on every target.
-- **Measured.** `fn lo64() -> i64 { return -9223372036854775807l - 1l; }` then `@print(lo64().abs())` prints `9223372036854775808` on commonJS, erlang and beam — a value outside `i64`; `lo32().abs()` (`-2147483647 - 1`) prints `2147483648`, outside `i32`; wasm refuses the `i64` call (its integer methods are `i32`'s). `abs` is a host call (`erlang:abs`, `Math.abs` / a `BigInt` negation), not one of 264's operators, so no range check runs. `Signed` declares one `abs` for `I32` and `I64` together, so a template does not know the width.
-- **Options.** (a) ★ `abs` aborts past its type as unary `-` does (`integer overflow: abs on i64`): `abs` moves from `Signed` to `I32` and `I64`, each with its own bound in its forms (`lo64().abs()` aborts on every target). (b) As is: `abs` answers the mathematical value even outside the type (`lo64().abs()` is `9223372036854775808` typed `i64`). (c) `abs` answers the unsigned type (`i64.abs() -> u64`; `lo64().abs()` is `9223372036854775808ul`).
-  Today:
-  ```bp
-  fn lo64() -> i64 { return -9223372036854775807l - 1l; }
-  @print(lo64().abs());   // 9223372036854775808 — outside i64 (commonJS, erlang, beam)
-  ```
-  (a) example:
-  ```bp
-  @print(lo64().abs());   // aborts: integer overflow: abs on i64 — on all four targets
-  ```
-  (b) example:
-  ```bp
-  @print(lo64().abs());   // 9223372036854775808, typed i64
-  ```
-  (c) example:
-  ```bp
-  val m: u64 = lo64().abs();   // 9223372036854775808ul
-  ```
-- **Recommendation.** (a): a value outside its declared type never exists (264), and the cost is two declarations.
-- **Blocks.** Nothing in the gate; the `abs` half of `02/97` step 13 (the cell `run/i64_number_methods_past_js_safe` stays off the minimum).
-
-#### 97-s13-b · `io/clock` given an epoch past ECMAScript's time range (319)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** One domain on every target, the epochs RFC 3339 writes — 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); `formatIso8601`, `toCivil` and `offsetMinutes` abort past it, naming the value, on every target.
-- **Measured.** `formatIso8601`, `toCivil` and `offsetMinutes` take an `i64` epoch and their Node forms build a `Date`, whose range is ±8.64 × 10^15 ms (years −271821 … 275760). Every `BigInt` epoch (past 2^53 − 1) is outside it. `clock.toCivil(8640000000000001l).year` prints `NaN` on commonJS and `275760` on erlang; `clock.offsetMinutes(8640000000000001l)` `NaN` / `-180`; `clock.toCivil(9007199254740993l)` throws `TypeError: Cannot convert a BigInt value to a number` on commonJS; `clock.formatIso8601(8640000000000000l)` answers `+275760-09-13T00:00:00.000Z` on commonJS and aborts on erlang (`calendar:system_time_to_rfc3339` is `badarg` past year 9999). 319 asks a Node template to take `number | bigint`; what it answers for these epochs is not written.
-- **Options.**
-  (a) ★ One domain on every target, refused past it: the epochs RFC 3339 writes, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); the three abort past it, naming the value, on every target.
-  ```bp
-  clock.toCivil(253402300800000l);   // aborts on every target: clock.toCivil: 253402300800000 is outside 0000-01-01 … 9999-12-31
-  ```
-  (b) Every `i64` epoch answers, the same on every target: a botopink civil body (days from civil, Hinnant's algorithm) replaces `Date` and `calendar`; `formatIso8601` writes a five-digit year with a sign, as `Date` does.
-  ```bp
-  @print(clock.toCivil(9007199254740993l).year);   // 287396 on every target
-  ```
-  (c) As is: each host's range and answer (`NaN` fields on commonJS, a date on erlang).
-  ```bp
-  @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
-  ```
-  Today:
-  ```bp
-  @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
-  clock.toCivil(9007199254740993l);                // commonJS: TypeError: Cannot convert a BigInt value to a number
-  clock.formatIso8601(8640000000000000l);          // "+275760-09-13T00:00:00.000Z" on commonJS; erlang aborts (badarg after year 9999)
-  ```
-- **Recommendation.** (a): no target answers `NaN` or a date another target refuses, and RFC 3339 — the text `formatIso8601` and `parseIso8601` promise — has four-digit years.
-- **Blocks.** The three templates of `02/97` step 13's `io/clock` row (the rest of the row landed: the readings are `number`s by construction, `wide` / `largestExactMillis` botopink).
-
-#### 97-s13-c · `clock.parseDuration`'s 2^53 − 1 bound after 319
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** The 2^53 − 1 ms bound stays, its reason restated: a duration is handed on as a timer delay or a JSON number, both `f64`, inexact past 2^53. `largestExactMillis`'s comment names that reason instead of "the two targets do not count alike".
-- **Measured.** `parseDuration` refuses a duration past 2^53 − 1 ms (`"9007199254740992ms"` is `… is out of range`) because "the two targets do not count alike" past it — true before 319, false after it: an `i64` is exact to 2^63 − 1 on every target, and `"9223372036854775807ms"` would answer the same digits on commonJS, erlang and beam.
-- **Options.**
-  (a) ★ Keep the bound: a duration is handed on as a timer delay or a JSON number, both `f64`, and past 2^53 it is no longer exact there.
-  ```bp
-  clock.parseDuration("9007199254740992ms");   // Error("clock.parseDuration: \"9007199254740992ms\" is out of range")
-  ```
-  (b) The bound is `i64`'s: the count past 2^63 − 1 / unit is out of range.
-  ```bp
-  clock.parseDuration("9007199254740992ms");   // Ok(9007199254740992)
-  clock.parseDuration("106751991168d");        // Error(… is out of range) — past 2^63 − 1 ms
-  ```
-- **Recommendation.** (a): the narrower range refuses more, and no caller measured needs a duration past 285 426 years.
-- **Blocks.** Nothing; `largestExactMillis`'s comment names the question.
-
-#### 97-s13-d · `fs.stat`'s `mtime` resolution
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** One value on every target: the Node form floors `mtime` to whole seconds too, as erlang and beam answer it.
-- **Measured.** The Node form answers `mtime` in whole milliseconds (`mtimeNs` floored), the erlang form in whole seconds × 1000 (`file:read_file_info/2` with `{time, posix}` has no sub-second field): a file written at …`.734` reads `…734` on commonJS and `…000` on erlang and beam.
-- **Options.**
-  (a) ★ One value on every target: the Node form floors to whole seconds too.
-  ```bp
-  fs.stat("five.txt")   // mtime: 1760000000000 on every target
-  ```
-  (b) Milliseconds where the host has them (as is).
-  ```bp
-  fs.stat("five.txt")   // mtime: 1760000000734 on commonJS, 1760000000000 on erlang
-  ```
-  (c) `FileStat.mtime` becomes whole seconds (`mtimeSeconds: i64`), the unit every host gives.
-  ```bp
-  fs.stat("five.txt")   // mtimeSeconds: 1760000000 on every target
-  ```
-- **Recommendation.** (a): the same file answers the same value on every target; (c) renames a public field for the same result.
-- **Blocks.** Nothing; `run/std_io_i64_canonical` prints only `mtime > 2020-01-01`.
 
 #### 97-s16-a · Where `unicode`'s generated tables live
 - **Measured.** `02/97` step 16 names `libs/std/src/unicode/tables.bp`. The module tree resolves a `mod Name;` only to `Name.bp` or `Name/mod.bp` in the declaring file's directory (`compiler-cli/src/cli/resolver.zig`, `build.zig` `collectStdModules`), so a file module `unicode.bp` has no children: `unicode/tables.bp` is unreachable unless `unicode` becomes a folder, and a folder index holds `mod` lines only and makes `unicode` a namespace (`unicode.normalize` would become `unicode.<sub>.normalize`, decision 110). Landed: a flat sibling `libs/std/src/unicode_tables.bp`, `mod unicode_tables;` (private) in `root.bp`, `import {unicode_tables as tables};` in `unicode.bp`. The registry does not honour the `mod`'s privacy: a consumer's `import {unicode_tables} from "std"` resolves (97's compiler residual 11).
@@ -775,22 +618,6 @@ number, which is **484**.
 - **Options.** (a) std's names (`filter`, `map`), erika adding only what std lacks (`groupBy`, the aggregates). (b) LINQ's names — erika's identity is LINQ. (c) As is.
 - **Recommendation.** none from this review: erika's purpose decides (b) is a fair reading.
 - **Blocks.** 98 (erika).
-
-#### 97-s15-a · `Decimal` and `Json`'s numbers before or after `json` leaves std (97 s15 against 142 s1)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** 142 s1 first (144 B-27, then 151 s1): `json` leaves std whole, and 97 s15's `Json` half (`Int` / `BigInt` / `Dec` replacing `Num`, the consumers' arms) lands in the json repository (151); its `Decimal` half stays in std (144 B-24). Each consumer is touched once.
-- **Measured.** 97 step 15 replaces `Json`'s `Num(value: f64)` with `Int` / `BigInt` / `Dec` in `libs/std/src/json.bp` and adds the arms to the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2); 142 step 1 moves `json.bp` whole to `repository/json`, the six consumers importing `from "json"`. Both rewrite the same file and the same consumers.
-- **Options.**
-  (a) 142 s1 first (144 B-27, then 151 s1); 97 s15's `Json` half lands in the json repository (151), its `Decimal` half in std (144 B-24).
-  ```bp
-  import {Json} from "json";
-  case doc { Int(value: n) { … } BigInt(value: b) { … } Dec(value: d) { … } … }   // written once, in json's tree
-  ```
-  (b) 97 s15 first in std (144 B-24), then 142 s1 moves the new `Json`.
-  ```bp
-  import {json.Json} from "std";   // the arms written here, then every import rewritten again by 142 s1
-  ```
-- **Recommendation.** (a): each consumer is touched once, and std never ships a `Json` it is about to lose.
-- **Blocks.** 144 B-24 (97 s15), B-27 (142 s1's std half), 151 s1.
 
 ### 03-bundled-libs
 

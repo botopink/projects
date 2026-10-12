@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**78 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**71 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -401,34 +401,6 @@ número livre, que é **484**.
   passo 36 do 01-checker dá quando pousar, e concorda com (a).
 - **Bloqueia.** Nada — construído como (a) (`block_eval.useReached`); a caixa da chamada `Any` do passo 8 o lê.
 
-#### 140-d · Como um adaptador de task é escrito: o `wasi: .Delay` da 393 contra a string única da 238
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b), pela decisão 481.** As células do `@External.Wasm` são argumentos rotulados: um adaptador de task é `#[@External.Wasm(wasi: .Delay)]` (`.Race`, `.RaceOf`, `.SpawnAll`), um enum; a string com prefixo `"wasi:delay"` construída no passo 4 da frente 140 é recusada, localizada, nomeando a forma rotulada, e é reescrita no passo da 481 (144 B-33).
-- **Medido.** A 393 escreve `#[@External.Wasm(wasi: .Delay)]`; o vocabulário fechado da 238 (e todo binding do std
-  hoje) é uma string, `#[@External.Wasm("wasi:random_f64")]`, e `builtins.d.bp` declara
-  `Wasm(template: string)` (+ `host:` do passo 2). Construído (frente 140 passo 4): a forma de string — `"wasi:delay"`,
-  `"wasi:race"`, `"wasi:race_of"`, `"wasi:spawn_all"` na lista única de `host_binding.zig`, checada pela forma na
-  anotação (`run/external_wasm_task_adapter_shape`).
-- **Opções.** (a) ★ A string única da 238: `#[@External.Wasm("wasi:delay")]`, nomes de adaptador no
-  snake_case da lista. (b) A grafia da 393: um argumento enum rotulado `#[@External.Wasm(wasi: .Delay)]` ao lado das
-  formas de string — uma segunda grafia do mesmo binding, uma mudança em `builtins.d.bp` e um braço no checker.
-  Hoje:
-  ```bp
-  #[@External.Wasm("wasi:delay")]
-  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
-  ```
-  Exemplo de (a):
-  ```bp
-  #[@External.Wasm("wasi:race_of")]
-  declare fn raceOf<T>(tasks: Array<fn() -> @Task<T>>) -> @Task<T>;
-  ```
-  Exemplo de (b):
-  ```bp
-  #[@External.Wasm(wasi: .Delay)]
-  declare fn delay<T>(millis: i32, value: T) -> @Task<T>;
-  ```
-- **Recomendação.** (a) — uma grafia por binding; o exemplo da 393 lê-se como `"wasi:delay"`.
-- **Bloqueia.** Nada — construído como (a); o `02/97` passo 17 escreve os bindings do std na grafia escolhida.
-
 #### 140-e · Um `await` de uma task dentro de um corpo `@Component` no wasm (392 (2) contra 375 (3))
 - **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(d), uma quarta opção: composição por dados, a 388 aplicada até o fim — comptime inalterado.** No wasm como em todo alvo, chamar um componente só cria sua lambda (388) e só o renderer a executa. Um componente é máquina de estados só quando o próprio corpo escreve `await` / `async { }` ou faz `use` de um hook assíncrono (375 (1), sem a cláusula conservadora "chama um valor de função": chamar um componente não executa nada). A lambda carrega a marca da 375 e o renderer faz await só nas marcadas, então o endereço de uma task e um `Element` nunca são distinguidos pela sua palavra. Um componente que compõe outros (`Layout(view)`, `App`) continua direto mesmo quando recebe um componente como valor; a árvore que ele responde guarda valores de componente — `<main>{view()}</main>` guarda a lambda de `view()`, nunca a fábrica `view`, então o renderer encontra um só tipo de filho, o executa com o scope dos filhos que seu pai respondeu (388 (3)), e uma fábrica que recebe argumentos não precisa de mais nada. Sem trap, nada pago por um componente síncrono, em `wasi` e `browser` com o mecanismo único da 392; a mesma resposta em todo alvo. (c) (JSPI / stack switching) não é tomada: a 392 exclui JSPI e o host `browser` não tem nenhum dos dois. A condição: o comptime não muda — a execução no build da 388 (4) com `RenderScope.root()` e o caminho da 434-b mantêm sua leitura; (d) muda só o lowering de componentes em tempo de execução no wasm (frente 140 passo 4, uma thread de acompanhamento). **Suspense e error boundaries sob a (d)** (o mantenedor, 2026-10-12): `Suspense(fallback, child)` e `ErrorBoundary(child, view)` são nós da árvore que guardam valores de componente (414), e não executam nada quando criados. O renderer descobre que uma subárvore espera ao descê-la — nenhuma marca do compilador para uma subárvore inteira (um valor de componente a esconde): dentro de um `Suspense`, renderiza `child` com o scope com que encontrou o nó; se a subárvore inteira termina sem encontrar uma lambda marcada, o HTML é emitido direto, sem fallback e sem fill; na primeira lambda marcada emite `fallback` no placeholder do boundary, guarda `(child, scope)` e segue com a página; quando a task do filho conclui, o fill do stream roda `renderComponent(child, scope)` com esse mesmo scope, então um `provide` de um pai continua visível. Uma página sem nó marcado renderiza sem streaming (375 (1)). `ErrorBoundary` roda seu filho sob `attempt` (431; 431-f no wasm) e renderiza `view(infoFor(failure))` com o mesmo scope.
 - **Medido.** 392 (2): "uma função que a 375 marca como assíncrona compila para uma máquina de estados retomável". Construído: uma
@@ -526,51 +498,6 @@ número livre, que é **484**.
   ```
 - **Recomendação.** (a): uma regra para uma chamada num corpo (128, inalterada pela 388), sem inferir intenção a partir do
   uso; (b) muda o que o `val x = Card(…)` de todo corpo significa.
-#### 139-a · Um `bigint` onde seu tipo deixa de ser estático: `unknown`, `is`, `comptime` (332, decisão 8 §4.1)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** O tipo de um `bigint` fica estático: não alarga para `unknown` (`bigint-widened`), `is` nem testa por um nem testa um valor que contém um (`bigint-type-test`), e um `comptime` que calcula um é `comptime-bigint`; o `unknown` variádico do `@print` aceita um e uma união que contém um continua legal. (b) ou (c) podem alargá-lo depois, quando um programa precisar.
-- **Medido.** Nenhum alvo distingue um `bigint` de outro inteiro em tempo de execução: erlang e beam guardam um
-  inteiro para os dois, o `i64` do commonJS além de 2^53 é um `BigInt` como um `bigint` é (319), o `bigint` do wasm é
-  o endereço de um bloco onde um `i32` é uma palavra. A decisão 8 §4.1 testa um número por sua faixa, então no
-  pai do patch desta frente `val u: unknown = 5n; u is i32` responderia `true` no erlang e no beam e
-  `false` no commonJS (um `BigInt` não é `number`), e o wasm não poderia encaixotá-lo. O avaliador em tempo de compilação
-  guarda um inteiro de 64 bits: `val k = comptime 99999999999999999999n * 2n` era `integer beyond 64 bits`, um
-  de nível de módulo um `UnsupportedComptimeValue` sem localização. Construído: (a) — `reject/bigint_into_unknown`
-  (`bigint-widened` em `6:22`), `reject/bigint_type_test` (`bigint-type-test`), `reject/bigint_comptime`
-  (`comptime-bigint`); o `unknown` variádico do `@print` aceita um `bigint`; uma união que contém um continua legal
-  (só `is` / um padrão de tipo distingue seus membros, e os dois são recusados sobre ela).
-- **Opções.** (a) ★ O tipo de um `bigint` permanece estático: não alarga para `unknown`
-  (`val u: unknown = 5n` é `bigint-widened`), `is` nem testa por um nem testa um valor que contém um
-  (`x is i32` sobre `x: bigint`, `case x { bigint { … } }` são `bigint-type-test`), e um `comptime`
-  que calcula um é `comptime-bigint`. (b) §4.1 lido para `bigint`: `x is bigint` é "um inteiro de qualquer
-  tamanho" em todo alvo (`5 is bigint` e `5n is i32` são `true`), os testes estreitos do commonJS aceitam um
-  `BigInt` na faixa, o wasm encaixota um `bigint` com um kind próprio; o `comptime` o dobra com um
-  inteiro de precisão arbitrária em `eval.zig` e nos runtimes de comptime do BEAM e do WAT. (c) (a) para `is`
-  e `unknown`, (b) só para `comptime`.
-  Hoje:
-  ```bp
-  val u: unknown = 5n;                       // error: bigint-widened: a `bigint` does not widen to `unknown`
-  @print(x is i32);                          // x: bigint — error: bigint-type-test
-  val k = comptime 99999999999999999999n * 2n;   // error: comptime-bigint
-  @print(5n);                                // @print's variadic `unknown` accepts it
-  ```
-  Exemplo de (a):
-  ```bp
-  fn pick(c: bool) -> i32 | bigint { return if (c) 1 else 2n; }   // legal; `pick(c) is i32` refused
-  ```
-  Exemplo de (b):
-  ```bp
-  val u: unknown = 5n;
-  @print(u is i32);      // true on all four targets
-  @print(5 is bigint);   // true
-  ```
-  Exemplo de (c):
-  ```bp
-  val k = comptime 99999999999999999999n * 2n;   // 199999999999999999998n, folded at build
-  ```
-- **Recomendação.** (a): nenhuma resposta difere por alvo, e nada é aceito que uma resposta posterior
-  tivesse de retirar; (b) quando um programa precisar de `bigint` em `unknown` ou em tempo de compilação.
-- **Bloqueia.** Nada — construído como (a).
-
 #### 434-b · Os caminhos residente-na-renderização e no-build sob um só runtime de comptime wasm (434, 378 (4))
 - **Medido.** A 84 mandava uma avaliação de comptime para a VM do alvo, então um build erlang renderizava um componente `Build` / `Any` no build no BEAM (o passo erl de `render_resident`) e um build commonJS no wat. A 378 (4) pede que o runtime de comptime rode o lambda de um componente com `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; a última caixa do passo 6 da 134 (144 B-17). Sob a 434 o único runtime é o wasm, e o renderizador do jhonstart no BEAM é um sidecar (`jhonstart_render.erl`).
 - **Opções.**
@@ -621,90 +548,6 @@ número livre, que é **484**.
   ```
 - **Recomendação.** (1) agora; (2) se o wasm precisar rodar asserts.
 - **Bloqueia.** Nada no gate; "o std compila no wasm" (05-wasm passo 5, 97 passo 11).
-
-#### 97-s13-a · O `abs()` do mínimo de um tipo inteiro (264, 319)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** `abs` aborta além do seu tipo como o `-` unário (`integer overflow: abs on i64`): `abs` sai de `Signed` para `I32` e `I64`, cada um com seu próprio limite nas suas formas; `lo64().abs()` aborta em todo alvo.
-- **Medido.** `fn lo64() -> i64 { return -9223372036854775807l - 1l; }` e depois `@print(lo64().abs())` imprime `9223372036854775808` no commonJS, erlang e beam — um valor fora de `i64`; `lo32().abs()` (`-2147483647 - 1`) imprime `2147483648`, fora de `i32`; o wasm recusa a chamada de `i64` (seus métodos de inteiro são os do `i32`). `abs` é uma chamada de host (`erlang:abs`, `Math.abs` / uma negação de `BigInt`), não um dos operadores da 264, então nenhuma checagem de faixa roda. `Signed` declara um `abs` para `I32` e `I64` juntos, então um template não conhece a largura.
-- **Opções.** (a) ★ `abs` aborta além de seu tipo como o `-` unário (`integer overflow: abs on i64`): `abs` sai de `Signed` para `I32` e `I64`, cada um com seu próprio limite em suas formas (`lo64().abs()` aborta em todo alvo). (b) Como está: `abs` responde o valor matemático mesmo fora do tipo (`lo64().abs()` é `9223372036854775808` tipado `i64`). (c) `abs` responde o tipo sem sinal (`i64.abs() -> u64`; `lo64().abs()` é `9223372036854775808ul`).
-  Hoje:
-  ```bp
-  fn lo64() -> i64 { return -9223372036854775807l - 1l; }
-  @print(lo64().abs());   // 9223372036854775808 — outside i64 (commonJS, erlang, beam)
-  ```
-  Exemplo de (a):
-  ```bp
-  @print(lo64().abs());   // aborts: integer overflow: abs on i64 — on all four targets
-  ```
-  Exemplo de (b):
-  ```bp
-  @print(lo64().abs());   // 9223372036854775808, typed i64
-  ```
-  Exemplo de (c):
-  ```bp
-  val m: u64 = lo64().abs();   // 9223372036854775808ul
-  ```
-- **Recomendação.** (a): um valor fora de seu tipo declarado nunca existe (264), e o custo são duas declarações.
-- **Bloqueia.** Nada no gate; a metade `abs` do `02/97` passo 13 (a célula `run/i64_number_methods_past_js_safe` fica longe do mínimo).
-
-#### 97-s13-b · O `io/clock` com uma época fora da faixa de tempo do ECMAScript (319)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Um domínio em todo alvo, as épocas que o RFC 3339 escreve — 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); `formatIso8601`, `toCivil` e `offsetMinutes` abortam além dele, nomeando o valor, em todo alvo.
-- **Medido.** `formatIso8601`, `toCivil` e `offsetMinutes` recebem uma época `i64` e suas formas Node constroem um `Date`, cuja faixa é ±8,64 × 10^15 ms (anos −271821 … 275760). Toda época `BigInt` (além de 2^53 − 1) está fora dela. `clock.toCivil(8640000000000001l).year` imprime `NaN` no commonJS e `275760` no erlang; `clock.offsetMinutes(8640000000000001l)` `NaN` / `-180`; `clock.toCivil(9007199254740993l)` lança `TypeError: Cannot convert a BigInt value to a number` no commonJS; `clock.formatIso8601(8640000000000000l)` responde `+275760-09-13T00:00:00.000Z` no commonJS e aborta no erlang (`calendar:system_time_to_rfc3339` é `badarg` além do ano 9999). A 319 pede que um template Node aceite `number | bigint`; o que ele responde para essas épocas não está escrito.
-- **Opções.**
-  (a) ★ Um domínio em todo alvo, recusado além dele: as épocas que o RFC 3339 escreve, 0000-01-01T00:00:00Z … 9999-12-31T23:59:59.999Z (−62167219200000 … 253402300799999); as três abortam além dele, nomeando o valor, em todo alvo.
-  ```bp
-  clock.toCivil(253402300800000l);   // aborts on every target: clock.toCivil: 253402300800000 is outside 0000-01-01 … 9999-12-31
-  ```
-  (b) Toda época `i64` responde, igual em todo alvo: um corpo civil em botopink (dias a partir do civil, algoritmo de Hinnant) substitui `Date` e `calendar`; `formatIso8601` escreve um ano de cinco dígitos com sinal, como `Date` faz.
-  ```bp
-  @print(clock.toCivil(9007199254740993l).year);   // 287396 on every target
-  ```
-  (c) Como está: a faixa e a resposta de cada host (campos `NaN` no commonJS, uma data no erlang).
-  ```bp
-  @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
-  ```
-  Hoje:
-  ```bp
-  @print(clock.toCivil(8640000000000001l).year);   // NaN on commonJS, 275760 on erlang
-  clock.toCivil(9007199254740993l);                // commonJS: TypeError: Cannot convert a BigInt value to a number
-  clock.formatIso8601(8640000000000000l);          // "+275760-09-13T00:00:00.000Z" on commonJS; erlang aborts (badarg after year 9999)
-  ```
-- **Recomendação.** (a): nenhum alvo responde `NaN` ou uma data que outro alvo recusa, e o RFC 3339 — o texto que `formatIso8601` e `parseIso8601` prometem — tem anos de quatro dígitos.
-- **Bloqueia.** Os três templates da linha `io/clock` do `02/97` passo 13 (o resto da linha pousou: as leituras são `number`s por construção, `wide` / `largestExactMillis` botopink).
-
-#### 97-s13-c · O limite de 2^53 − 1 do `clock.parseDuration` depois da 319
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** O limite de 2^53 − 1 ms fica, com o motivo reescrito: uma duração é repassada como atraso de timer ou número JSON, ambos `f64`, inexatos além de 2^53. O comentário de `largestExactMillis` nomeia esse motivo em vez de "os dois alvos não contam igual".
-- **Medido.** `parseDuration` recusa uma duração além de 2^53 − 1 ms (`"9007199254740992ms"` é `… is out of range`) porque "os dois alvos não contam igual" além dele — verdade antes da 319, falso depois: um `i64` é exato até 2^63 − 1 em todo alvo, e `"9223372036854775807ms"` responderia os mesmos dígitos no commonJS, erlang e beam.
-- **Opções.**
-  (a) ★ Manter o limite: uma duração é passada adiante como atraso de timer ou número JSON, ambos `f64`, e além de 2^53 ela deixa de ser exata ali.
-  ```bp
-  clock.parseDuration("9007199254740992ms");   // Error("clock.parseDuration: \"9007199254740992ms\" is out of range")
-  ```
-  (b) O limite é o do `i64`: a contagem além de 2^63 − 1 / unidade está fora da faixa.
-  ```bp
-  clock.parseDuration("9007199254740992ms");   // Ok(9007199254740992)
-  clock.parseDuration("106751991168d");        // Error(… is out of range) — past 2^63 − 1 ms
-  ```
-- **Recomendação.** (a): a faixa mais estreita recusa mais, e nenhum chamador medido precisa de uma duração além de 285 426 anos.
-- **Bloqueia.** Nada; o comentário de `largestExactMillis` nomeia a pergunta.
-
-#### 97-s13-d · A resolução do `mtime` do `fs.stat`
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Um valor em todo alvo: a forma do Node também arredonda `mtime` para segundos inteiros, como erlang e beam respondem.
-- **Medido.** A forma Node responde `mtime` em milissegundos inteiros (`mtimeNs` arredondado para baixo), a forma erlang em segundos inteiros × 1000 (`file:read_file_info/2` com `{time, posix}` não tem campo de subsegundo): um arquivo escrito em …`.734` lê `…734` no commonJS e `…000` no erlang e beam.
-- **Opções.**
-  (a) ★ Um valor em todo alvo: a forma Node também arredonda para segundos inteiros.
-  ```bp
-  fs.stat("five.txt")   // mtime: 1760000000000 on every target
-  ```
-  (b) Milissegundos onde o host os tem (como está).
-  ```bp
-  fs.stat("five.txt")   // mtime: 1760000000734 on commonJS, 1760000000000 on erlang
-  ```
-  (c) `FileStat.mtime` vira segundos inteiros (`mtimeSeconds: i64`), a unidade que todo host dá.
-  ```bp
-  fs.stat("five.txt")   // mtimeSeconds: 1760000000 on every target
-  ```
-- **Recomendação.** (a): o mesmo arquivo responde o mesmo valor em todo alvo; (c) renomeia um campo público para o mesmo resultado.
-- **Bloqueia.** Nada; `run/std_io_i64_canonical` imprime só `mtime > 2020-01-01`.
 
 #### 97-s16-a · Onde ficam as tabelas geradas do `unicode`
 - **Medido.** O `02/97` passo 16 nomeia `libs/std/src/unicode/tables.bp`. A árvore de módulos resolve um `mod Name;` só para `Name.bp` ou `Name/mod.bp` no diretório do arquivo declarante (`compiler-cli/src/cli/resolver.zig`, `build.zig` `collectStdModules`), então um módulo de arquivo `unicode.bp` não tem filhos: `unicode/tables.bp` é inalcançável a menos que `unicode` vire uma pasta, e um índice de pasta guarda só linhas `mod` e faz de `unicode` um namespace (`unicode.normalize` viraria `unicode.<sub>.normalize`, decisão 110). Pousado: um irmão plano `libs/std/src/unicode_tables.bp`, `mod unicode_tables;` (privado) em `root.bp`, `import {unicode_tables as tables};` em `unicode.bp`. O registro não respeita a privacidade do `mod`: o `import {unicode_tables} from "std"` de um consumidor resolve (resíduo 11 da 97 do compilador).
@@ -774,22 +617,6 @@ número livre, que é **484**.
 - **Opções.** (a) Nomes do std (`filter`, `map`), o erika acrescentando só o que o std não tem (`groupBy`, os agregados). (b) Nomes do LINQ — a identidade do erika é o LINQ. (c) Como está.
 - **Recomendação.** nenhuma desta revisão: o propósito do erika decide (b) é uma leitura justa.
 - **Bloqueia.** 98 (erika).
-
-#### 97-s15-a · `Decimal` e os números do `Json` antes ou depois de o `json` sair do std (97 s15 contra 142 s1)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** 142 s1 primeiro (144 B-27, depois 151 s1): `json` sai inteiro do std, e a metade `Json` do 97 s15 (`Int` / `BigInt` / `Dec` substituindo `Num`, os braços dos consumidores) entra no repositório json (151); sua metade `Decimal` fica no std (144 B-24). Cada consumidor é tocado uma vez.
-- **Medido.** O passo 15 da 97 substitui o `Num(value: f64)` do `Json` por `Int` / `BigInt` / `Dec` em `libs/std/src/json.bp` e acrescenta os braços aos 13 arquivos com um `case` sobre `Json` (std 6, rakun 3, jhonstart 2, onze 2); o passo 1 da 142 move `json.bp` inteiro para `repository/json`, os seis consumidores importando `from "json"`. Ambos reescrevem o mesmo arquivo e os mesmos consumidores.
-- **Opções.**
-  (a) 142 s1 primeiro (144 B-27, depois 151 s1); a metade `Json` da 97 s15 pousa no repositório json (151), sua metade `Decimal` no std (144 B-24).
-  ```bp
-  import {Json} from "json";
-  case doc { Int(value: n) { … } BigInt(value: b) { … } Dec(value: d) { … } … }   // written once, in json's tree
-  ```
-  (b) 97 s15 primeiro no std (144 B-24), depois a 142 s1 move o novo `Json`.
-  ```bp
-  import {json.Json} from "std";   // the arms written here, then every import rewritten again by 142 s1
-  ```
-- **Recomendação.** (a): cada consumidor é tocado uma vez, e o std nunca distribui um `Json` que está prestes a perder.
-- **Bloqueia.** 144 B-24 (97 s15), B-27 (a metade std da 142 s1), 151 s1.
 
 ### 03-bundled-libs
 

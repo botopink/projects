@@ -1206,6 +1206,13 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
 - [ ] `newRequestId()`, an event payload from `req.body()` under `rkDispatch` (empty), `draftMode()` marking the request
       dynamic when read: each in the text as the code answers it, or the code fixed
 
+### 150 s27 — rakun's cells drop their per-cell `deps/` workspaces (after 144 B-38)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** sonnet
+
+- [ ] each of the 35 cells depends on `{"path": "../../../modules/rakun"}` (and `rakun-web` the same), its `deps/`
+      directory deleted; every cell green through the library's hook and `botopink cell check conformance/`
+
 ### 150 Conformance — the front's last step (decision 465)
 
 **Repository:** rakun (`--repo rakun`) · **Model:** opus
