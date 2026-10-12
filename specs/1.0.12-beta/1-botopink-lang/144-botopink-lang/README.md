@@ -58,7 +58,7 @@ conformance order (fronts.md § Execution order).
 conformance takes no lock (508, landed in the meta `scripts/gate.sh`; botopink-lang's in B-29 step J).
 
 **Order:** B-57 (the dead copies) and B-63 (`cell check` in parallel) → B-58 (the manifest's inherited dependencies, the workspaces, level A of the code
-cache, the closure key) → B-59 (the result store removed), B-64 (tests a unit of their own) and B-60 (level B, after its invariant is proved) · B-61
+cache, the closure key) → B-59 (the result store removed) and B-60 (level B, after its invariant is proved) → B-64 (a module's tests a unit of their own), the group's last step before its Conformance step · B-61
 (cell names) beside any of them. Lane B holds B-57, lane C B-58 to B-61. The group closes with its Conformance step:
 emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm, against the numbers
 above, and every cell green on every target.
@@ -3572,7 +3572,7 @@ Measured on 2026-10-12: `botopink cell check <lib>/conformance` checks one cell 
 
 ### B-64 — a module's tests are a unit of their own, on every target (decision 513)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58, B-59, B-60 — the group's last step
 
 Today `botopink test` compiles a module's `test` blocks into the module itself (`'__bp_test_0'/0` … inside
 `-module(emilia@spacing)`), so one module's production code differs between `build` and `test` and the code cache
