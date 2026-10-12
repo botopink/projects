@@ -3484,7 +3484,10 @@ emilia's 79 cells with `--jobs`). **The maintainer's choice:** each dependency's
 (types, exports), its decorators' meta and its generated code per target — is written to the project's
 `.botopinkbuild/analysis/` (beside 483's `.botopinkbuild/deps/`; a workspace's members share its root's) under the
 dependency's closure key, and read back by later invocations, a restart and a CI job that keeps the directory
-included. Not taken: nothing; sharing within one invocation only; a warm server holding it in memory. Safe by the
+included. **One entry per dependency and target** (std's per module): an entry for a new key replaces the
+dependency's previous one, so nothing is stored twice and the directory needs no size bound; switching back to an
+older version analyses it again. `.botopinkbuild/` is never tracked by git; a CI job keeps it between runs keyed by
+the lockfile and the compiler's version. Not taken: nothing; sharing within one invocation only; a warm server holding it in memory. Safe by the
 closure invariant (B-65, B-66): a library's analysis and code are the same under every consumer.
 
 **What guards against a wrong answer** (the risk of a disk format is that it forgets a field, or falls behind the
@@ -3502,8 +3505,8 @@ checker, and answers a wrong program silently):
 4. **Entries are immutable;** what a consumer instantiates (a generic, a `comptime`, a template expansion) stays in the
    consumer's own code, never in a dependency's entry.
 5. **Never cached:** the package under test (509 (1)) and a test's result (510).
-6. **`--cold`** neither reads nor writes `.botopinkbuild/analysis/`; the group's Conformance step runs cold and warm and
-   compares.
+6. **Starting from nothing is `botopink cache clean`** (B-77); the group's Conformance step measures after it (cold)
+   and again (warm) and compares.
 
 - [x] the invariant's test: `zig build test-closure-invariant` (`closure_invariant.sh`) builds one library under two
       consumers and compares its output byte for byte on every target; green since B-65 and B-66
@@ -3512,8 +3515,7 @@ checker, and answers a wrong program silently):
       imports); every other package per package
 - [ ] the design reported before it is built and confirmed by the maintainer: the entry's format (what the interface
       holds, the meta, the code per target), how comptime, templates and generics instantiated by a consumer stay in
-      the consumer's code, the directory's layout and its bound (a size limit, the least recently used entries
-      removed; `botopink clean` empties it)
+      the consumer's code, the directory's layout (one entry per dependency and target, replaced on a new key)
 - [ ] entries written and read under the key above; `build`, `run`, `test` and `cell check` read them; guards 3–6
 - [ ] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
       on purpose)
@@ -3523,6 +3525,33 @@ checker, and answers a wrong program silently):
       level B; the directory's size
 - [ ] Conformance step (459, 474, 477, 478, 480)
 - [ ] under the module-model group (B-71, B-72) an entry becomes a block's; noted there
+
+### B-77 — `botopink cache`: one place for the caches, parallelism by the machine's pool, no `--cold` / `--jobs` (the maintainer, 2026-10-12)
+
+**Repository:** botopink-lang (`--lang`) and every library (the runner) · **Model:** sonnet · **After:** B-60
+
+botopink knows cells and workspaces only — never a conformance suite, a hook or a CI; what to run and when is its
+callers' (`scripts/gate.sh`, CI). Its build infrastructure gets a section of its own, `botopink cache`, and the flags
+that exposed it go.
+
+- [ ] **one place:** level A moves from 225's cache root to `.botopinkbuild/build/` beside level B's
+      `.botopinkbuild/analysis/` (B-60), at the workspace's root
+- [ ] **parallelism is botopink's:** `cell check` (and `test`, B-64) takes jobs from the machine's pool — the fixed
+      directory and formula of 468 / 473, moved from `scripts/gate.sh` into botopink — and reports in the units'
+      order; `--jobs` goes (no configuration, 67)
+- [ ] **`--cold` goes** from `build`, `run`, `test` and `cell check`; `test-analysis-equivalence` uses the compiler's
+      internal API
+- [ ] **`botopink cache`**, its own section: `botopink cache clean` (empties `.botopinkbuild/build/` and
+      `.botopinkbuild/analysis/`), `botopink cache status` (what each level holds and the machine pool's
+      occupancy — what a measurement waits on); `botopink --help` lists it apart from the language's commands
+- [ ] **the scripts keep only the hook's flags:** botopink-lang's and the meta's `scripts/gate.sh` and the 17
+      libraries' runner lose their cache logic (`--cold`, deleting `runtime-cache` and the libraries' caches) and the
+      pool; `--staged` and `--no-conformance` stay (`gate.sh` alone decides whether `botopink cell check
+      conformance/` runs); the three runner files stay byte-identical (CI check 4)
+- [ ] the worktree rule 4b (no `--cold` in a `--repo` / `--lang` worktree) and its line in `scripts/thread-rules.md`
+      removed, and `AGENTS.md` updated (meta, compiler-cli)
+- [ ] a test in `test-cli`: no string `"conformance"` in the CLI's code (comments aside)
+- [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
