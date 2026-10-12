@@ -104,6 +104,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a); `04-rakun/137` and `143`'s `#[repository]` read it.
 
 #### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b).** A meta type is either single or repeated on a declaration, never both: recorded with `setMeta` it is read with `meta(T)` (`?T`); recorded with `addMeta` it is read only with `metaAll(T)` (`T[]`) — `meta(Index)` over an added type is `typeinfo-meta-repeated` at the read even with one value, so adding a second decorator never breaks a reader. A type both set and added on one declaration (or set twice) stays `decorator-meta-twice` at the annotation that recorded it; `metaAll(T)` over a set type answers a one-element array.
 - **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
   declaration, never both — a second `setMeta` of a type, or an `addMeta` beside a `setMeta` of it, is
   `decorator-meta-twice` at the annotation that recorded it (`reject/meta_twice`). `@typeInfo(X).meta(T)`

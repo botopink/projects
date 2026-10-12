@@ -104,6 +104,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a); o `#[repository]` da `04-rakun/137` e da `143` o lê.
 
 #### 130-s8-a · Um tipo de record ao mesmo tempo fixado e acrescentado numa declaração; `meta(T)` sobre valores acrescentados (298)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b).** Um tipo de meta é ou único ou repetido numa declaração, nunca os dois: gravado com `setMeta` é lido com `meta(T)` (`?T`); gravado com `addMeta` é lido só com `metaAll(T)` (`T[]`) — `meta(Index)` sobre um tipo adicionado é `typeinfo-meta-repeated` na leitura mesmo com um valor, então acrescentar um segundo decorator nunca quebra um leitor. Um tipo ao mesmo tempo setado e adicionado numa declaração (ou setado duas vezes) continua `decorator-meta-twice` na anotação que o gravou; `metaAll(T)` sobre um tipo setado responde um array de um elemento.
 - **Medido.** Construído: um tipo é mantido uma vez (`decl.setMeta(v)`) ou se repete (`decl.addMeta(v)`) numa
   declaração, nunca os dois — um segundo `setMeta` de um tipo, ou um `addMeta` ao lado de um `setMeta` dele, é
   `decorator-meta-twice` na anotação que o registrou (`reject/meta_twice`). `@typeInfo(X).meta(T)`
