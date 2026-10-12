@@ -403,6 +403,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a) (`block_eval.useReached`); step 8's `Any`-call box reads it.
 
 #### 140-d · How a task adapter is spelled: 393's `wasi: .Delay` against 238's one string
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b), by decision 481.** `@External.Wasm`'s cells are labelled arguments: a task adapter is `#[@External.Wasm(wasi: .Delay)]` (`.Race`, `.RaceOf`, `.SpawnAll`), an enum; the prefixed string `"wasi:delay"` built in front 140 step 4 is refused, located, naming the labelled form, and is rewritten in 481's step (144 B-33).
 - **Measured.** 393 writes `#[@External.Wasm(wasi: .Delay)]`; 238's closed vocabulary (and every std
   binding today) is one string, `#[@External.Wasm("wasi:random_f64")]`, and `builtins.d.bp` declares
   `Wasm(template: string)` (+ step 2's `host:`). Built (front 140 step 4): the string form — `"wasi:delay"`,

@@ -402,6 +402,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a) (`block_eval.useReached`); a caixa da chamada `Any` do passo 8 o lê.
 
 #### 140-d · Como um adaptador de task é escrito: o `wasi: .Delay` da 393 contra a string única da 238
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b), pela decisão 481.** As células do `@External.Wasm` são argumentos rotulados: um adaptador de task é `#[@External.Wasm(wasi: .Delay)]` (`.Race`, `.RaceOf`, `.SpawnAll`), um enum; a string com prefixo `"wasi:delay"` construída no passo 4 da frente 140 é recusada, localizada, nomeando a forma rotulada, e é reescrita no passo da 481 (144 B-33).
 - **Medido.** A 393 escreve `#[@External.Wasm(wasi: .Delay)]`; o vocabulário fechado da 238 (e todo binding do std
   hoje) é uma string, `#[@External.Wasm("wasi:random_f64")]`, e `builtins.d.bp` declara
   `Wasm(template: string)` (+ `host:` do passo 2). Construído (frente 140 passo 4): a forma de string — `"wasi:delay"`,
