@@ -50,17 +50,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · in flight beside the cache group
 
-### 144 — after the cache group's Conformance step: the steps paused on 2026-10-12
-
-Each resumes on `feat` once the cache group has landed, one commit at a time.
-
-- [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · after the cache group's Conformance step
-- [ ] 144 B-24 Conformance — the group's last step: numbers and strings exact everywhere (319, 320, 332), its cells and `docs.md` · after the cache group's Conformance step
-- [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · after the cache group's Conformance step
-- [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · after the cache group's Conformance step
-- [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · after the cache group's Conformance step
-- [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · after the cache group's Conformance step
-
 ### 144 — the module-model group (B-69 … B-76, B-55-a (e)): after the cache group's Conformance step and B-55's timings
 
 - [ ] 144 B-69 — a file is a module: `mod` / `pub mod` and the root file removed; `src/internal/` private; an import cycle refused by name until B-71 · after the cache group's Conformance step, B-55
@@ -71,6 +60,17 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-74 — the language server checks the edited module's block · after B-72
 - [ ] 144 B-75 — std and every library on the module model: root file and `mod` removed, decorators and templates in `src/comptime/` · after B-70
 - [ ] 144 B-76 — the group's Conformance step · after B-69 … B-75
+
+### 144 — after the cache group's Conformance step: the steps paused on 2026-10-12
+
+Each resumes on `feat` once the cache group has landed, one commit at a time.
+
+- [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · after the cache group's Conformance step
+- [ ] 144 B-24 Conformance — the group's last step: numbers and strings exact everywhere (319, 320, 332), its cells and `docs.md` · after the cache group's Conformance step
+- [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · after the cache group's Conformance step
+- [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · after the cache group's Conformance step
+- [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · after the cache group's Conformance step
+- [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · after the cache group's Conformance step
 
 ### 144 — after B-00: what B-00k found, and wasm memory
 

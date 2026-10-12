@@ -177,6 +177,7 @@ Written with the old front ids (alias tables); they bind the new fronts holding 
    9. 163 s9: the measurements, at the end, on a quiet machine — no step before it spends time measuring.
    Beside it, **144's cache group (B-57 … B-64, decisions 508–513)**, worked now: the libraries' gates are slow
    for want of it, and every later step's commit pays that time.
+   After the cache group's Conformance step, **144's module-model group (B-69 … B-76, B-55-a (e))** continues it.
    144's steps paused on 2026-10-12 — B-24's Conformance step, B-39, B-41, B-43, B-51, B-52 — resume
    after the cache group's Conformance step.
 1. **144 B-00 — comptime on wasm (434), first and alone.** Done but for the seventh step above; the fronts in
