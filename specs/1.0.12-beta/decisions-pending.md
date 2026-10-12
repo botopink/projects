@@ -302,6 +302,7 @@ number, which is **484**.
 - **Blocks.** 04-js step 12 box 1's method, lambda and `default fn`.
 
 #### s23-a · Two field names of decision 277's records (contradiction with the reserved words)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read `n.function.name` and `u.context.name` by a decorator at build; 277's `fn` is a reserved word and is not a field name.
 - **Measured.** 277 writes `HookNode(fn: Declared<unknown>, …)`; every keyword is reserved in every position
   (`reserved-word-as-name`: `type N(fn: string)` is refused at the field). 354 (4) asks `Decl.hooks` to carry each
   `provide` / `context` "with its object" and names no field. Built (`01-checker` step 23): `HookNode(function:

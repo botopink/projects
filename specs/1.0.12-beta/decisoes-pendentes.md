@@ -302,6 +302,7 @@ número livre, que é **484**.
 - **Bloqueia.** O método, o lambda e o `default fn` da caixa 1 do 04-js passo 12.
 
 #### s23-a · Dois nomes de campo dos records da decisão 277 (contradição com as palavras reservadas)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` e `HookUse(…, context: ?Declared<unknown>)`, lidos `n.function.name` e `u.context.name` por um decorator no build; o `fn` da 277 é palavra reservada e não é nome de campo.
 - **Medido.** A 277 escreve `HookNode(fn: Declared<unknown>, …)`; toda palavra-chave é reservada em toda posição
   (`reserved-word-as-name`: `type N(fn: string)` é recusado no campo). A 354 (4) pede que `Decl.hooks` carregue cada
   `provide` / `context` "com seu objeto" e não nomeia nenhum campo. Construído (`01-checker` passo 23): `HookNode(function:
