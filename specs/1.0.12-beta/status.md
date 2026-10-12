@@ -43,7 +43,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
 - [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
-- [ ] 144 B-61 — a cell's package name is its directory's name (511): 148 of botopink-lang's cells renamed (146 named `language_tests`), `cell check` refuses a mismatch · nothing
+- [ ] 144 B-61 — a cell's package name is its directory's name (511): a one-off script fills the 148 of botopink-lang's cells that differ (146 named `language_tests`) · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-58, B-59, B-61
 
 ### 144 — after B-00: what B-00k found, and wasm memory

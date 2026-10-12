@@ -3566,14 +3566,12 @@ one case where they did not.
 
 893 of botopink-lang's 1041 cells name their package after their directory; 148 do not — 146 are all named
 `language_tests`, left by the move of `tests/language` into `conformance/` — so 146 cells emit the same module
-`language_tests@main` with different code. Every library's cells already follow the rule.
+`language_tests@main` with different code. Every library's cells already follow the rule. The check that a name is
+present and unique is the manifest's (512 (1), B-58), not `cell check`'s.
 
-- [ ] the 148 manifests renamed to their directory's name; every cell green as before; a member without `name` refused
-      (512 (1))
-- [ ] `botopink cell check` refuses a cell whose `name` differs from its directory, located at the manifest, naming
-      the expected name; a test the hook runs, red on the parent
-- [ ] `conformance/AGENTS.md` and `botopink cell new`'s scaffold state the rule
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] a one-off script (not committed) sets every cell's missing or different `name` to its directory's; the 148
+      cells green as before, a snapshot that printed the old name listed
+- [ ] `conformance/AGENTS.md` states the rule
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
