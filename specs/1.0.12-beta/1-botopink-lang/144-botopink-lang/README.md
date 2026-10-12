@@ -71,8 +71,8 @@ The front runs on two machines, each with its own coordinator, gate pool and mai
 
 | Machine | Folder | Lanes and groups |
 |---|---|---|
-| 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `116-bpp-file-format`, `129-import-without-from`, `130-decorator-outputs`, `134-builtins-declared`, `139-bigint`, `140-wasm-host` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); the steps this machine had in flight when the front was split — B-22 (its design pass) and B-60 (the cache's level B; B-77 waits on it); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
-| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`) | the rest of B-00 first; lane B; lane C; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81) |
+| 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `116-bpp-file-format`, `129-import-without-from`, `130-decorator-outputs`, `134-builtins-declared`, `139-bigint`, `140-wasm-host` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); the steps this machine had in flight when the front was split — B-22 (its design pass) and B-60 (the cache's level B; B-77 waits on it); B-19, B-24, B-25 and B-27, beside the old fronts whose work they hold (130, 139, 140, 116); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
+| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`) | the rest of B-00 first; lane B but B-19, B-22, B-24, B-25; lane C but B-27; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81) |
 
 **The rules the two machines share:**
 
@@ -102,8 +102,8 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Machine | Files | Steps |
 |---|---|---|---|
 | A — checker | 1 | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | 2 | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–k, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
-| C — tooling, docs, gate | 2 | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
+| B — runtimes, backends, std | 2 (B-19, B-22, B-24, B-25 on 1) | `comptime/runtime/**`, `codegen/**`, `libs/std/**`, `modules/{std-wasm,beam-to-wasm}/**` | B-00a–k, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26, B-30 |
+| C — tooling, docs, gate | 2 (B-27 on 1) | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the
 lanes open in order, at most six worktrees across the milestone (fronts.md § Execution order).
@@ -258,15 +258,15 @@ Where each step is (its machine's folder holds its whole text).
 | B-16 | [1](machine-1-checker/README.md) | 280, 307, 308: typed decorator arguments' rest, derived types' rest, `Type.Field<T>` |
 | B-17 | [1](machine-1-checker/README.md) | 277, 376, 354–388: hooks, stages, contexts |
 | B-18 | [1](machine-1-checker/README.md) | 311, 415, 426, 429: templates |
-| B-19 | [2](machine-2-backends-tooling/README.md) | 216, 281, 298, 353, 356: decorator outputs |
+| B-19 | [1](machine-1-checker/README.md) | 216, 281, 298, 353, 356: decorator outputs |
 | B-20 | [1](machine-1-checker/README.md) | 330: the optional operators' rest and their codemod |
 | B-21 | [1](machine-1-checker/README.md) | 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value |
 | B-22 | [1](machine-1-checker/README.md) | The backends' and the checker's residue rows |
 | B-23 | [1](machine-1-checker/README.md) | 247, 255, 310 and the checker's rows |
-| B-24 | [2](machine-2-backends-tooling/README.md) | 319, 320, 332: numbers and strings exact everywhere |
-| B-25 | [2](machine-2-backends-tooling/README.md) | 333 (B), 334, 335: the wasm host |
+| B-24 | [1](machine-1-checker/README.md) | 319, 320, 332: numbers and strings exact everywhere |
+| B-25 | [1](machine-1-checker/README.md) | 333 (B), 334, 335: the wasm host |
 | B-26 | [2](machine-2-backends-tooling/README.md) | 340: the keyed `Dict`'s per-row increment |
-| B-27 | [2](machine-2-backends-tooling/README.md) | Tooling, std residue, `.bpp` in the toolchain, `json` out of std |
+| B-27 | [1](machine-1-checker/README.md) | Tooling, std residue, `.bpp` in the toolchain, `json` out of std |
 | B-28 | [2](machine-2-backends-tooling/README.md) | The formatter: the `;` after a braced block, C-12, the trailing comma, annotations as written |
 | B-29 | [2](machine-2-backends-tooling/README.md) | The gate, CI and the residual sweep |
 | B-30 | [2](machine-2-backends-tooling/README.md) | wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449) |

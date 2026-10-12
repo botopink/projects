@@ -740,6 +740,160 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
+### B-19 — 216, 281, 298, 353, 356: decorator outputs
+
+**Repository:** botopink-lang, with consumer commits in rakun, jhonstart, validation, styled (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
+
+**Impacted tests:** `tests/language` `@emit` cells (become `reject/`), `run/meta_*`, `run/template_reads_program_catalogue`.
+**Model:** opus. **Consumer commits:** rakun (the remaining `@emit` sites, typed meta — each a decision-188
+commit after the owning rakun step), jhonstart (`#[page]`, `#[client]`), validation, styled (the catalogue).
+
+#### Step 5 — migrate the remaining sites (was `130-decorator-outputs` s5)
+
+Decision 318 shrinks rakun's list before it migrates: `#[service]`, `#[managed]`, the core's `#[repository]`,
+`#[restController]`, `#[configuration]` / `#[bean]`, the four transport listeners and `#[httpExchange]` are
+deleted by the owning rakun fronts (04 step 8, 13 step 6, 15 step 8), not migrated; only their
+replacements are written here in 216's forms.
+
+Member names are the library's (decision 174's note). Remaining `@emit(` at feat — a closed list
+(373: no front writes a new site, the count only shrinks): rakun 67 lines, jhonstart 1 (`#[page]`'s
+`<X>Params`), validation 1. Rakun rows target post-128 paths
+(`04-rakun/README.md` § Order, decision 339): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
+decision 188, never in a wave with the rakun front owning the file.
+
+| File | Sites | Generated today | New form | Written against |
+|---|---|---|---|---|
+| rakun `rakun/src/{decorators,autoconfig,config,context}.bp`, `rakun-web/src/convention.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | member `T.make()` (`rkSingleton`) on each stereotype; a `#[bean]` method emits `val __rkBeanM_<T>_<m> = rkRegisterBean("<return type>", …)` (`rakun/src/decorators.bp:333-385`); `<T>Tx` proxy + `val __rkTx_<T> = rkRegisterBean(…)` (`transactional.bp:81-82`), `<T>Sec` proxy + `pub fn __rkMake_<T>Sec()` (`method_security.bp:141-142`) | member `T.make()`; the registry built at comptime from `@TypeInfo.all(with: …)`, never keyed by a name string (281, 256; `ctr-q` closed) | 234 (`T.make()`, by-type injection), 254 (catalogue answers `Declared<unknown>[]`; `rkResolve<T>` narrows with `is fn() -> T`), 256 (registry built at comptime at the entry point), 281 (amends 234/256 where they key by a type's name, and `member: "make"`) |
+| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(with: …)` read at comptime (member by reference, step 7) | 235, 234, 254, 281 |
+| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun/src/actuator_api/**` (today `rakun-actuator-api`, moved by 128 step 1), `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
+| `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: behavior member called from another module fails (below) |
+| jhonstart `routes.bp` | 1 | `pub fn <X>Params(route)` (the four registrations are done) | none — the page takes no parameter and reads `use params<P>()`, checked by `#[page]` over `Decl.hooks` | 293 (amends 236's `paramsOf`); held: `05-jhonstart/26` step 11 after `01-checker` step 23, and the segment walk inside it is `03-bundled-libs/102` step 3's while 102 is open |
+| validation `#[schema]` (`libs/validation/src/decorators.bp`) — `#[validated]` after 306 | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode` (no `schema` — `Schema<T>` is private, 306) | nothing — next; `decode` passes `parse<T>At` as a value (unbound variable on erlang, below), so wrap it in a lambda |
+
+- [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/`
+      answers only `tests/language` cells about `@emit` itself
+
+#### Step 6 — remove module-level `@emit` (was `130-decorator-outputs` s6)
+
+`@emit` a named error everywhere (message lists the four places); `tests/language` `@emit` cells
+become `reject/` cells; `docs.md`'s "Decided, not yet implemented" row leaves; `language-gaps.md`
+closes **An emitted `pub val` is visible to other emitted code only** (T15) and **No comptime
+reflection over the project** (declaration half; the `@project()` manifest half is not 216's).
+
+- [ ] the refusal and the cells; the two `language-gaps.md` rows closed
+
+#### Rows found during the migration (open, not 216's places) (was `130-decorator-outputs` rows)
+
+- [ ] a `behavior`'s associated `default fn` called through the behavior from another module
+      (`Shape.unit()` with `import {shapes.Shape}`): unknown erlang module on erlang/beam, run-time
+      error on commonJS, refusal on wasm — members do not travel with a behavior as with a type
+      (holds `rakun-client`'s two sites)
+- [ ] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
+- [ ] a member's / associated type's diagnostic is located past the file's last line (member source
+      placed after the module's lines) and names `City__Columns`, not `City.Columns`
+- [ ] a decorator imported from another module whose body builds a record private to its module fails
+      at the evaluator (`call to undefined function Entity/1`): `block_eval.typesReached` finds an imported
+      decorator's types through the export registry only — string meta and typed meta alike (found by
+      step 8; `01-checker` step 21 owns `block_eval.zig`)
+
+#### Step 7 — references, not strings (decision 281) (was `130-decorator-outputs` s7)
+
+- [ ] `@TypeInfo.all(with: …, member: "make")` (256) names the member by reference — an interface's
+      method — not by string; `Declared.value` stays `unknown` (254; `nat-a` answered by 281)
+
+#### Step 8 — typed meta, keyed by its type (decision 298) (was `130-decorator-outputs` s8)
+
+`Decl.setMeta(value: T)` — one value per type per declaration, a second of the same type refused at
+the call —; `Decl.addMeta(value: T)` for what repeats; read `@typeInfo(X).meta(T) -> ?T`,
+`@typeInfo(X).metaAll(T) -> T[]`, and `Declared.meta(T)` in `@TypeInfo.all`'s answer. Comptime only
+(280 (0)). `setMeta(key: string, value: string)` and `.meta.<decorator>.<key>` go.
+
+Built (see § Done): the typed surface, its reads, the catalogue's and 370 (1)'s `@Expr<T>` fields. The
+string form stands beside it until the last box: rakun's sites wait on `04-rakun/128` (decision 339),
+and `Declared.meta` / `TypeInfo<T>.meta` stay `DeclaredMeta[]` fields until then (the typed reads are
+calls the checker answers, so the two coexist).
+
+- [x] `builtins.d.bp`: `setMeta(v)`, `addMeta` on `Decl`; `meta(T)`, `metaAll(T)` on `@typeInfo(X)` and
+      on a `Declared<T>` entry, answered by the checker (`TypeInfo<T>`'s and `Declared<T>`'s `meta` fields
+      keep the string form until the box below)
+- [x] `run/meta_typed` — `#[entity("cities")]` sets `Entity(table: "cities")`, `meta(Entity)?.table ==
+      "cities"`; two `#[index]` add two `Index`, `metaAll(Index).length == 2`; `meta(Other)` is `null`
+- [x] `reject/meta_twice` — two `setMeta(Entity(…))` on one declaration, at the second (annotation)
+- [x] a meta record may hold `@Expr<T>` fields (370 (1)): `decl.addMeta(Check(message: message, rule:
+      rule))` built in the reading program with each expression spliced where it was written —
+      `run/meta_expr_field` (the reader calls `rule` and evaluates `message` at run time, on the four
+      targets)
+- [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`
+      and `#[client]`), then `setMeta(key, value)`, `.meta.<decorator>.<key>` and `DeclaredMeta(key,
+      value)` gone (`Declared.meta` / `TypeInfo<T>.meta` the typed reads only)
+- [ ] a meta field of a record type, a `Type.Field<T>` (364 (2)'s data family) or a tuple: refused
+      today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
+      reader's scope (an `@Expr<T>` field carries such a value as written)
+- [x] an `@Expr<T>` meta field read in another module resolves its names where the annotation wrote them
+      (385): each module publishes its scope (`Reflection.scopes`, `comptime/written_names.zig`), and the
+      reader binds every name the annotation's arguments wrote under an unspellable alias, a private one
+      exported as `templatePrivateKey` (the annotation's module shares its privates, `pub` for the
+      backends only); `typeinfo-meta-expr-elsewhere` gone — `modules/meta_expr_read_elsewhere` runs
+      (`main` reads `signup`'s `Check` and calls its private `passwordsMatch`, its own `passwordsMatch`
+      and `hint` not captured; the `@TypeInfo.all` route the same through `d.metaAll(Note)`, a non-generic
+      record — a generic one through an entry is `130-s8-d`) on the four targets
+- [x] a typed member reads its own type's typed meta (395): pre-comptime, `@typeInfo(T).metaAll(Check)` with `T`
+      the decorator's type parameter accepted and typed `Check<T>[]` in the decorator's body, the body checked
+      against it; post-comptime, the member rendered into the annotated type's module with `T` spelled as the
+      type, the read answered and the member checked again; `comptime @typeInfo(X).metaAll(T)` is the checker's
+      answer (no comptime runtime), `for (comptime …)` parses — `run/member_reads_own_meta` (`#[validated]` over
+      two `#[check]`s: `validate()` runs both rules, the list a build constant under `comptime`) on the four
+      targets; `typeinfo-unknown-declaration` no longer raised for a bound type parameter
+- [x] questions `130-s8-a` → 418, `130-s8-c` → 419, `130-s8-d` → 420 (`130-s8-b` → 385, `130-s8-e` → 395): one type set and added, a `.hooks` reader's typed meta read in its module, a generic record through a
+      catalogue entry
+
+#### Step 10 — a template body reads the program's catalogue (decision 353) (was `130-decorator-outputs` s10)
+
+A library's template function calls `@TypeInfo.all(with: …)` and gets the catalogue of the program
+that expands the call — `styled` finds the application's one `#[theme]` (119 step 1 box 5).
+
+```bp
+// styled/src/styled.bp, inside `pub default fn styled(comptime css: @Expr<string>)`
+val themes = @TypeInfo.all(with: theme);   // the application's #[theme] declarations
+if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
+```
+
+- [x] a decorator on a `val` runs (356): `DeclKind.Val`, `name`, `returnType` as written; `setMeta`
+      legal, `addMember` / `addType` refused at the annotation; the `val` catalogued —
+      `reject/val_decorator_runs` (`#[mark] pub val one = 1;` fails with the decorator's message; a
+      refusal is target-independent, so a `reject/` cell) and `run/val_decorator_catalogue`
+- [x] `@TypeInfo.all` in a template function's body answers for the calling program, after every
+      module's decorators; the reader is exempt from `typeinfo-all-imported` (256's entry-point
+      rule unchanged for every other reader)
+- [ ] a `Declared`'s `value` readable at build: a `val` with a `comptime` initializer lifted into the
+      template's module as a literal (356), refused at the read otherwise
+      (`typeinfo-all-template-value`); a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
+      evaluates (row 133)
+- [x] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
+      import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
+- [ ] `run/template_reads_program_catalogue` (one and two built as `modules/template_reads_program_catalogue`, `modules/template_catalogue_two_themes`; none still answers an empty catalogue — 358's refusal open) — a package's template function counting the importing
+      application's `#[theme]` declarations: none (refused, 358), one, two (refused at the second, naming both)
+
+**Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
+
+#### B-19 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
 ### B-20 — 330: the optional operators' rest and their codemod
 
 **Repository:** botopink-lang, with consumer commits in actions, http, log, routing, validation, jhonstart, rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
@@ -1118,6 +1272,468 @@ parent binary, `zig build test-libs` at baseline (a library that reds gets a mig
 commit)
 
 #### B-23 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
+### B-24 — 319, 320, 332: numbers and strings exact everywhere
+
+**Repository:** botopink-lang, with consumer commits in rakun, jhonstart, onze (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
+
+`bigint`'s rest (139 landed as bigint-139; its two open boxes) then `Decimal` and `Json`'s numbers. Questions `decision 496`, `decision 497`,
+`decision 500` (whether 142 s1 goes first and the `Int` / `BigInt` / `Dec` arms land in the json repository).
+
+**Impacted tests:** `run/json_numbers_exact`, `run/i64_*`, the clock cells. **Model:** sonnet, opus for 139's
+checker half. **Consumer commits:** rakun (3 files), jhonstart (2), onze (2) — the `Json` `case` arms.
+
+#### Open (was `139-bigint` open)
+
+- [ ] decision 501's alternatives, if the maintainer answers (b) or (c): `is bigint` by value range, a
+      `bigint` in `unknown`, compile-time `bigint` in the folder and the comptime runtimes (14 · 18)
+- [ ] wasm: a `bigint` member of a union (`lowerAsUnknown` refuses it located, "has no `bigint` in a
+      union yet"; erlang, beam and commonJS run it) — a `05-wasm` row
+
+**Gate:** standard (fronts.md § Gate) + `zig build test-language` (the four targets) and
+`scripts/tsc-check.sh`.
+
+#### Step 9 — `i64`, `u64`, `isize`, `usize`: a number, a `BigInt` past 2^53 (decision 319) (was `04-js` s9)
+
+Today these four lower to JS numbers and 264's check bounds them at ±(2^53−1)
+(`ArithKind.rangeExactDouble`): `9007199254740991l + 1l` aborts on commonJS and answers on the other
+three targets. After, they keep the full range at a low cost: a value within ±(2^53−1) stays a JS
+`number`, a value beyond it is a `BigInt`, always in that canonical form.
+
+```js
+function i64add(a, b) {
+  if (typeof a === "number" && typeof b === "number") {
+    const r = a + b;
+    if (Number.isSafeInteger(r)) return r;        // the common case: today's cost
+  }
+  return norm(BigInt(a) + BigInt(b));             // promoted; checked against ±2^63, back to number when it fits
+}
+```
+
+- [x] lowering: every operation on the four types (`+ - * / %`, unary `-`, the compound assignments,
+      comparisons) through a prelude helper with the number fast path; the slow path computes in
+      `BigInt`, aborts past −2^63 … 2^63 − 1 / 0 … 2^64 − 1 (`__bp_int`), and answers the canonical form;
+      a literal is a number when safe, else `123…n`; `rangeExactDouble` deleted
+- [ ] canonical form kept by every producer (operations, literals, conversions, `Json`, host templates)
+      — operations and literals done; `Json` waits on 332 (`139`, then `02/97` step 15's `Json` integer); std's `Math.min`/`max`/`abs` cells and
+      `Integer`'s `default fn`s (`isEven`, `clamp`) throw a `TypeError` on a `BigInt` (97 step 13):
+      `==` stays `===`, a `Dict` / `Set` keyed by `i64` keys by value — one cell each across the 2^53 edge
+- [ ] conversions explicit and exact (no `toF64()` / `toI32()` is declared anywhere yet — std surface first):
+      widening `i32 → i64` is free (already canonical); `@print` and string interpolation print the digits
+      (no `n`)
+- [x] a Node host template taking or answering one of the four types sees `number | bigint` (canonical);
+      the emitted `.d.ts` types them `number | bigint`; `scripts/tsc-check.sh` green
+- [x] cost measured: a loop of i64 additions below 2^53 within 10% of today's `int_check` build (the
+      number recorded in `js/AGENTS.md`)
+- [x] `run/i64_full_range` (`9007199254740991l + 1l`, `9223372036854775807l`, `-9223372036854775808l`, the
+      `u64` top, a value crossing back below 2^53, an overflow past each bound) answers alike on the four
+      targets; `run/int_overflow_mul_i64` re-recorded — commonJS now aborts where the others do
+      — the minimum is written `-9223372036854775807l - 1l` (the checker refuses
+      `-9223372036854775808l`: the literal's digits are past `i64`, a `01-checker` row); the `u64` half is
+      `run/int_overflow_add_u64_max`, red on wasm only (prints the top as `-1`, traps on
+      `18446744073709551614ul + 1ul`; a `05-wasm` row)
+- [ ] `docs.md` § Integer overflow's commonJS paragraph rewritten (handed to `07-residuals`, owner of the prose)
+
+#### Step 13 — std over the hybrid `i64` on commonJS (decision 319; with `04-js` step 9) (was `97-std-dedupe` s13)
+
+- [ ] `io/clock`'s `formatIso8601`, `toCivil` and `offsetMinutes` given an epoch past ECMAScript's
+      time range (every `BigInt` epoch): question `decision 497`; `parseDuration`'s 2^53 − 1 bound after
+      319: `decision 498`; `fs.stat`'s `mtime` resolution (ms on Node, s × 1000 on erlang): `decision 499`
+- [ ] `Json`: an `i64` written as its digits (the read half is step 15's `Int` node, 332)
+      (`9223372036854775807l` round-trips on commonJS through `Int`)
+- [x] `string.parseInt()` answers `Error` only past the `i64` range (176 as amended by 319):
+      `run/string_parse_int_i64_range` on commonJS, erlang and beam; wasm's half is `05-wasm`'s
+      (`stringSlice0/2` unresolved, pinned by `.wasm.expect`)
+- [x] `min` / `max` / `abs` / `clamp` and `Integer`'s `isEven` / `isOdd` answer past 2^53 on commonJS
+      (the numeric tower is patched on `BigInt.prototype` too — a carve-out in `04-js`'s
+      `commonJS.zig` `prototypeAssign`; std's Node forms take either kind):
+      `run/i64_number_methods_past_js_safe`; wasm refuses an `i64` receiver (`05-wasm` row);
+      `abs` of the minimum is question `decision 496`
+- [x] the explicit conversions `toI32()`, `toI64()`, `toU32()`, `toU64()`, `toF64()` declared on
+      `Integer`, aborting when the value does not fit, never rounding: `run/integer_conversions_exact`,
+      `run/integer_conversion_to_i32_aborts`, `run/integer_conversion_to_f64_inexact_aborts` on
+      commonJS, erlang and beam; wasm has no row for them (`05-wasm`, pinned by `.wasm.expect`)
+
+#### Step 14 — erlang counts codepoints, not grapheme clusters (decision 320) (was `97-std-dedupe` s14)
+
+`primitives.bp`'s Erlang templates for `length`, `at`, `slice`, `indexOf`, `lastIndexOf` call
+`string:length/1` / `string:slice/3`, which count grapheme clusters: `"e\u{301}".length` is 1 on erlang
+and beam, 2 on wasm.
+
+- [x] the five templates count codepoints (`unicode:characters_to_list/1`, re-encoded with
+      `unicode:characters_to_binary/1`; the slice helpers normalise bounds as the Node forms do), on
+      erlang and beam; `02-erlang` step 15's cell green there; `libs/std/AGENTS.md` § One unit
+- [ ] std's Node templates for the five take and answer codepoint indices (`04-js` step 10's helpers)
+- [ ] `docs.md` § Strings states the unit — codepoints on every target — handed to `07-residuals` (the prose)
+
+#### Step 15 — `Decimal` and `Json`'s numbers as Jackson reads them (decision 332; after `01-compiler/139`) (was `97-std-dedupe` s15)
+
+- [ ] `Decimal` in std (`math/decimal.bp` or the module the front names): an unscaled `bigint` and a
+      `scale`; `add`, `sub`, `mul` exact; `div(b, scale:, rounding:)` with `Rounding { Up, Down, Ceiling,
+      Floor, HalfUp, HalfDown, HalfEven, Unnecessary }` (Java's `RoundingMode`; `Unnecessary` aborts when
+      rounding is needed); `compare`; `==` by numeric value (`1.0 == 1.00`); `toString()` plain with its
+      scale (`"1.00"`, never `1E+2`); `parse(text) -> @Result<Decimal, string>`
+- [ ] `Json`: `Num(value: f64)` replaced by `Int(value: i64)`, `BigInt(value: bigint)`, `Dec(value: Decimal)`,
+      chosen by the numeral; readers `num() -> ?f64`, `i64() -> ?i64`, `bigint() -> ?bigint`,
+      `decimal() -> ?Decimal`, `isNumber()`, `isIntegral()` (exact or `null`, never coerced); `encode` writes
+      the digits and the plain decimal text; std's tests `decodesTo("9007199254740993", Int(value: 9007199254740993))`
+- [ ] `json.parse` and `json.stringify` deleted with their Node / Erlang templates (336); their one caller (`tests/language/run/std_json_on_every_target.bp`)
+      rewritten to `decode` / `encode`; `json` compiles on wasm under both hosts with no host cell
+- [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
+      repository; `run/json_numbers_exact` one `.out` for the four targets
+
+#### B-24 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
+### B-25 — 333 (B), 334, 335: the wasm host
+
+**Repository:** botopink-lang, with consumer commits in log (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
+
+After B-00e (std-wasm in the wasm output may absorb some `wasi:` bindings these steps write). Questions
+`decision 502`, `decision 504`, `decision 505`, `decision 503`. Unblocks log 106 s3 (the wasm column; G4: a wasm binding cannot reach the
+file system, cannot keep a value across calls; the wasm backend does not lower a context).
+
+**Impacted tests:** `run/wasm_host_*`, `run/std_io_http_on_every_target`, `run/std_async_on_every_target`,
+`run/wasm_library_binding`. **Model:** opus. **Consumer commits:** log (its two wasm markers).
+
+#### Step 4 — `@Task` on `wasi` (was `140-wasm-host` s4)
+
+- [ ] `@Component` bodies (375's mark) as state machines — decision 504 (recommended: every `@Component` a
+      state machine on wasm); today they stay eager and an `await` of a task there runs the ready tasks,
+      trapping on both hosts when the task still waits on the host
+- [ ] `fetch`'s `Request` / `Response` in the compiler's layout (393), with `wasi:http` (`io/http`, `02/97`
+      step 17)
+- [ ] `async_block_all_of` gains the wasm column (`.targets` widened) — waits on std's `async` bindings
+      (`02/97` step 17: `std/async` is refused on wasm for want of `delay`, `race`, `raceOf`)
+
+#### Step 5 — the cells (was `140-wasm-host` s5)
+
+Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
+
+- [ ] `run/wasm_host_http` (a request to a local HTTP double, its status and body) under wasmtime; the
+      commonJS and erlang answers equal
+- [ ] `05-wasm`'s `wat/AGENTS.md` § Where this backend refuses to answer loses `io/http` and `async`
+
+#### Step 6 — the `browser` profile (with 3–5, never after) (was `140-wasm-host` s6)
+
+- [ ] `fetch`'s JavaScript implementation in the loader (394), with `io/http`
+- [ ] parity: std's check refuses a cell bound on one host only (std's, `02/97` step 17); `test-libs` runs
+      the wasm column on both hosts once `botopink test` runs wasm (335 (3)) — `test-language`'s does (§ Done)
+
+**Gate:** standard (fronts.md § Gate) + `zig build test-language` with wasmtime's component support and
+`zig build test-libs` (std's wasm column).
+
+#### Step 17 — `io/http` and `async` bound to the `wasi` host (decision 334; after `01-compiler/140` steps 1–4) (was `97-std-dedupe` s17)
+
+- [ ] `io/http`'s `fetch` binds `@External.Wasm(host: .Wasi, wasi: .HttpOutgoing)` and the `browser` host's JS `fetch`;
+      the request and response mapped by each adapter; on `browser` a forbidden header or a `Set-Cookie` read answers
+      `HttpError.NotAllowedOnHost(…)` naming it (335 (1)); `run/std_io_http_on_every_target` against a local double
+- [ ] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
+      gate cells as pollables) and on `browser` (the same adapters, 394), through 392's scheduler; `RetryPolicy` / `nextDelay` unchanged;
+      `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
+- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
+
+#### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after step 5) (was `05-wasm` s9)
+
+- [ ] `@External.Wasm(module: .<Library>, fn: "<export>")` — a fourth form beside `op:`, `fn:`, `wasi:` (238); the
+      library named from the package's wasm manifest (version, hash); an unknown library, a missing export or a
+      signature with a type that cannot cross is a located error at the annotation
+- [ ] the glue generated per binding: `string` copied in as UTF-8 through the library's allocator export, the
+      answer read back and freed; numbers and `bool` passed as values; `?T` of them as the library's null
+      convention named in the manifest; no pointer reaches botopink code
+- [ ] the merge: the library's functions, memory and data folded into the emitted module (the binary emitter is
+      front 18's — a named carve-out), one `.wasm` out; `wasmtime` and the WAT comptime runtime run it
+- [ ] `run/wasm_library_binding`: a test fixture library (a small `.wasm` built for the cell — a string and a number
+      across) called from wasm and from commonJS, one answer; the size the merge adds recorded in `wat/AGENTS.md`
+
+**Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under wasmtime and
+compared with commonJS's · no new RUN LOG answers at exit 0 a value another backend answers
+differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fixed
+
+#### Step 11 — the same wasm library from commonJS (decision 333 (B); after `05-wasm` step 9) (was `04-js` s11)
+
+- [ ] a binding with `@External.Wasm(module: …)` and no `@External.Node` lowers on commonJS to the same
+      library: the module instantiates the package's `.wasm` once (synchronously, from its bytes beside the
+      emitted `.js`) and calls it through the same glue
+- [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/wasm_library_binding`
+      one answer on commonJS and wasm
+
+#### B-25 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
+      fixed at once (430), pushed again; no cell edited to match the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
+- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
+- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+      the group's base, green or each red named
+
+### B-27 — Tooling, std residue, `.bpp` in the toolchain, `json` out of std
+
+**Repository:** botopink-lang, with consumer commits in jhonstart and the `json` consumers (through 151) (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
+
+116's botopink-lang half (the vscode-extension box is 161's) with 01-checker step 22's prelude scope;
+26 s9; std purity (23) and effects by return (24 — 24-a answered by 431, 24-b by 432; 24-c, 24-g open); std's
+snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-json.md` lines; 142 s1's std half
+(the json front, 151, carries the consumers). Questions `116-a/b/c`, `23-b`, `std-c`, `24-c`, `24-g`, `decision 506`,
+`decision 507`.
+
+**Impacted tests:** `tests/language/modules/bpp_*`, compiler-cli, language-server, lib-test-runner;
+`tests/cli_contract.sh`; `scripts/check-packaging.sh`; `test-libs`. **Model:** opus for 116, sonnet for the rest.
+**Consumer commits:** jhonstart (`#[bpp.html]` with 26 s0), the six `json` consumers through 151.
+
+#### Step 0 — Measure what the unfold stands on (was `116-bpp-file-format` s0)
+
+- [ ] `tests/language/modules/` cell: a package's `pub default fn` over `comptime template:
+      @Expr<string>`, imported `import t from "<package>";`, called with a literal from a consumer,
+      on every target the language suite runs
+- [ ] decision 199's header rule over every `.bpp` under `specs/1.0.12-beta/*/*/examples/`: each
+      header item listed as declaration (`import`, `type`, `pub`) or statement (`val`, `use`);
+      every unnamed item (`if`, expression statement, private `fn`, `test`, decorated
+      declaration) listed with its file
+- [ ] a module hand-assembled as the unfold would: a header-line type error and one inside the
+      literal each reported at the `.bpp` line
+
+#### Step 2 — The unfold (was `116-bpp-file-format` s2)
+
+- [ ] the return type is read from the default function's signature (decision 275): the fixture
+      package's `@ExprCustom<i32>` gives `-> i32`; jhonstart's gives `-> @Component<Element>`
+      for a header with and without `use` / `await`; the toolchain spells no type name
+- [ ] `tests/language/modules/bpp_*`: fixture package whose default function is **not**
+      jhonstart's (answers the literal's length) — `.bpp` with `type Props` unfolds to
+      `pub default fn (props: Props)`, without to `pub default fn ()`, no header = all
+      literal; fixture served unchanged (proof the toolchain knows no library)
+- [ ] the file's grammar (212, 338): the header from the first line to the first separator line;
+      `---` → markup to the end of the file; `--- style ---` → style section closed by `---`, then
+      markup; no separator line → markup only (a markup-only file compiles)
+- [ ] a first line `---` refused at line 1: `error: the header starts on the first line; a .bpp has
+      no opening ---`
+- [ ] each refused at its line: a `--- style ---` after the markup; a second style section; an
+      unclosed style section (at its `--- style ---` line)
+- [ ] the style section unfolds to `use <style> """<the section>""";` after the header's
+      statements, before `return html """…""";`, with `import <style> from "<bpp.style>";` binding
+      no name the header can reach — § Mechanism's `Props(title)` example unfolds as spelled there
+- [ ] fixture style package (not `jhonstart-styled`) whose default function answers something
+      trivial (the section's length): a `.bpp` with a style section compiles onto it unchanged —
+      the toolchain knows no library for the style section either
+- [ ] a diagnostic inside the style section reported at its `.bpp` line, like the markup's
+- [ ] the default function anonymous (289): `import {components.PostCard};` binds `PostCard` in the
+      importer, an alias another name; a file name that is no identifier (`not-found.bpp`) unfolds;
+      `decl.name` is the file name; `page.bpp` whose header imports and writes `#[page(…)]` compiles
+- [ ] declarations at module level, statements in the body in order; a statement reads `props`
+- [ ] a decorator on the header's last line, before the separator line, annotates the function
+      (221 (1)); without one the function carries none — no decorator from the file name, no
+      `bppKinds` read (285)
+- [ ] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
+- [ ] prelude (270): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
+      code import only used items; header name beats prelude's; `prelude.bp` holding a `fn`, another
+      package's item or an activation refused at its line. The scope (`compiler-core`: last scope, import-item list) is
+      `01-compiler/01-checker`'s, handed by this front
+- [ ] `grep -riE 'rakun|jhonstart|erika|emilia|onze'` over `modules/compiler-core/src` and the
+      edited `compiler-cli` files is empty
+
+#### Step 3 — The extension in every tool's list (was `116-bpp-file-format` s3)
+
+- [ ] every § Mechanism site reads one shared list instead of spelling `.bp`
+- [ ] `botopink build`, `check`, `run`, `test` over a `.bpp` project; test runner discovers a
+      `test` declared in a header
+- [ ] `mod x;` resolves `x.bp`, then `x.bpp`, then `x/mod.bp`
+
+#### Step 4 — The span mapping and the editor — part (was `116-bpp-file-format` s4 boxes 1, 2)
+
+- [ ] header-line type error and a `failAt` in the markup reported at their `.bpp` line and
+      column by `botopink check` and the language server
+- [ ] hover, go-to-definition in the header; default function's overlay served as the markup's
+      tokens — the extension ships no grammar of the file
+
+#### Step 5 — The formatter (was `116-bpp-file-format` s5)
+
+- [ ] `botopink format` rewrites a badly indented header as a module, leaves every byte of the style
+      section and the markup unchanged; `format --check` fails on the header, passes the style
+      section and the markup
+- [ ] `scripts/format-check.sh` walks `.bpp` files — header under the gate's format stage like any `.bp`
+
+#### Gate additions (was `116-bpp-file-format` gate)
+
+**Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
+- [ ] `zig build test-libs`: every library green — no existing `.bp` file changes meaning
+- [ ] `docs.md` § Modules documents `.bpp`, every fence compiled by `zig build test-docs`
+
+#### Step 22 — the prelude scope (decision 270) (was `01-checker` s22)
+
+`compiler-core` takes, with a module, a list of import items (`element.Element`,
+`elements.article`, aliases allowed) as the module's **last scope**: only for names the module does
+not bind (declared or imported names never reach it). An item becomes an ordinary import (`import
+{elements.article} from "<package>"`) in the transformed program and emitted code **only when a
+name resolves through it**; unused items emit nothing. Names no library — `08-bpp/116` hands it
+`prelude.bp` items for a `.bpp` file and owns the `.bpp` refusals (non-`import` `prelude.bp` line,
+item of another package, an activation, default function's name bound by the header).
+
+- [ ] `comptime/tests` fixture: module handed `[element.Element, elements.article]` naming only
+      `article` — transformed program imports `elements.article`, not `Element`; a self-declared
+      name resolves to its own declaration; nothing in `src/` names a library
+- [ ] `src/comptime/AGENTS.md` states the scope order
+
+#### Step 9 — a dependency's sidecars and imports answer as its own build does (was `26-cli-tooling` s9)
+
+- [ ] a transitive dependency's sidecar ships: a project outside the rakun workspace depending on a
+      member by `path` failed `build` with "`rakun_actuator` / `rakun_probes` is not a sidecar of
+      this project" — `libs.sidecarOwner` asked only the project's direct `dependencies`, then the
+      roots by name; it now walks the closure the build resolved (`closureOwner`) ·
+      `tests/cli_contract.sh` "a dependency of a path dependency", `libs.zig` unit test
+- [ ] a dependency's module importing a package it does not declare is decision 242's located
+      `unresolved import source` (at the dependency's file), not `unbound variable` —
+      `libs.loadOne` runs `resolver.checkSources` against the dependency's own manifest ·
+      `modules/dependency_imports_undeclared_package`, four targets
+
+**Gate:** standard (fronts.md § Gate) + `zig build test-cli`, `test-bpmp`, `test-vscode` green;
+language-server tests green with new snapshots · `zig build test-libs` at baseline (rakun's members
+exercise every sidecar path)
+
+#### Rows other fronts found (was `26-cli-tooling` rows)
+
+- [ ] `botopink check` / `build` print a type error's message and box but not its hint: the
+      `PersistentTerm` write (`infer.zig`'s hint names `#[@BeamMemory.Ets]`) and
+      `std-unsupported-on-target` carry one and the terminal shows none; a parse error's
+      `= hint:` line prints (measured by `07` step 6; `docs.md` § `@BeamMemory` cites the hint)
+
+#### Step 1 — the gate's rows (was `23-std-purity` s1)
+
+`zig build test-language` green on four targets with the import cells (`modules/import_alias_on_type`,
+`import_std_type_through_module`, `import_std_folder_namespace`, `import_type_closure*`,
+`import_type_alias`); language-server tests with the `project_graph.zig` cells (one `lsp/` snapshot
+per import spelling).
+
+- [ ] `run.sh --target all` green on the `modules/import_*` cells — measured, the box ticked
+- [ ] `grep -l 'import {' modules/language-server/snapshots/lsp/*.snap.md` lists one snapshot per spelling (dotted, grouped, `*`, `as`, a folder leaf); missing ones added
+- [ ] the five `AGENTS.md` name the tree and the grammar; `docs.md` § imports / § std verified against the grammar (07 places any correction)
+
+#### Step 2 — the confirmations (was `23-std-purity` s2)
+
+23-b (`base64` retired) and std-c (namespace rewrite): each confirmed or reversed; a reversal opens a
+step in the owner (01 for std-c). 23-c is confirmed (317).
+
+- [ ] the three ids in `../../decisions-taken.md` with their numbers, or a reversal's step named —
+      23-c confirmed (317); 23-b and std-c open
+
+#### Step 1 — every guide fence compiles as one program (E3, decision 134) (was `24-effects-by-return` s1)
+
+`botopink check` over `guide.md`, jhonstart as path dependency: ✓ fences type, ✗ sites answer their
+code located; § 7's server action types against rakun's `serverAction` once shipped (stubs until
+then, named as stubs in the report). E3's three checker rows landed in 01
+(`run/try_catch_null_and_noreturn_narrowing`, `run/component_call_renders`).
+
+- [ ] `scripts/check-docs.sh` runs the guide as one program and is green
+- [ ] § 7 against the real `serverAction`, or the stub named with the rakun front that replaces it
+
+#### Step 2 — the confirmations (was `24-effects-by-return` s2)
+
+24-a (effect codes), 24-b (`@Task`'s `map` / `then`), 24-c (prefixed loop's label), 24-g
+(`std/async`'s shape) confirmed or reversed; 24-h answered (decision 179, replaced by 432).
+
+- [ ] the four ids in `../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`; 24-b → 432, the failing task;
+      `throws: true` and `attempt` are `01-checker` step 42 and `02/97` step 18)
+
+#### Step 3 — the cost of a `@Result` per item (was `24-effects-by-return` s3)
+
+`@Iterator<@Result<T, E>>` of 10⁵ items consumed by `for` with `try r`, on erlang and wasm, vs the
+same loop over `@Iterator<T>`; if the `Ok` wrap weighs, the backend specialises the `Ok` `yield` — a
+row for 02 and 05, not edited here.
+
+- [ ] the two ratios in this README with the program and the machine; a row filed in 02 / 05 if either exceeds 1.5×
+
+#### Step 1 — `json` leaves std — part (was `142-data-formats` s1 boxes 1, 2)
+
+- [ ] `libs/std/src/json.bp` moves whole to `repository/json` (history kept as 138 did): the `Json` type
+      and its methods, `parse`, `decode`, `stringify`, `quote`, `unquote`, `array`, `object`, the host
+      cells and their tests; std's `root.bp` loses `pub mod json;`; `grep -rn "json" libs/std/src` names
+      no module (comments aside)
+- [ ] `import {json} from "std"` is an unknown-module error naming the `json` library
+
+#### Step 1 — std (390) (was `20-snap` s1)
+
+- [ ] `mocks.verify`'s message pinned with `throwsWith` on both targets (§ 1, CONVERT)
+- [ ] `libs/std/AGENTS.md`: the inline literals and the four `__snapshots__/` path-rule files are the evidence
+
+#### Step 4 residue — the engine under every `-test` member (was `97-std-dedupe` s4 residue)
+
+- [ ] `zig build test-libs` reads every member's row at its previous count (the last recorded whole run, 138's gate: 125 passed) — read on the next cold gate. Measured for std and the seven `-test` members: `std`, `emilia-test`, `erika-test`, `jhonstart-test`, `onze-test` pass on commonJS and erlang, `jhonstart-dom-test` on commonJS, `rakun-test` on erlang, `rakun-starter-test` compiles (no tests); 12 passed, 0 failed, 1 without tests, 3 restrictions audited
+
+#### Step 6 — conditional on `decision 506`: `io.process` signals and a line reader (was `97-std-dedupe` s6)
+
+(a): `process.onSignal`, `process.forwardSignals(child)`, `io.stdin.readLine()`. (b), recommended:
+onze 50's boxes take their (b) shape.
+
+- [ ] under (a): a spawned child receives the `SIGTERM` sent to its parent, asserted on both
+      targets with a child that prints on the signal; `readLine` answers a line without its newline
+- [ ] under (b): `libs/std/AGENTS.md` states std has no signal or TTY surface and why
+
+#### Gate additions (was `97-std-dedupe` gate)
+
+**Gate:** standard (fronts.md § Gate) + `botopink test` and `botopink test --target erlang` green in
+`libs/std`, `libs/actions`, `libs/validation`
+- [ ] steps 0–5, 8–10 landed before this gate was recorded: one cold `zig build test` and a full
+      `zig build test-libs` on feat with them in, recorded here
+
+#### Step 2 — the packaging check, as a script (was `98-packaging-tail` s2)
+
+`repository/botopink-lang/scripts/check-packaging.sh`: § Mechanism's four checks over
+`repository/*`, non-zero exit naming each failing path. Calling it from `gate.sh` is the gate's call.
+
+- [ ] main checkout after the library steps land: exit 0; one README removed: exit 1 naming it; one
+      `-test` member emptied: exit 1 naming it
+- [ ] `docs/botopink-json.md` § Examples states the README and helper rules, links the script
+
+#### Step 3 — front 95 closed as a confirmation (was `98-packaging-tail` s3)
+
+Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspace `onze`, eight members with
+`files`, listed by `zig build test-libs`; `mocking-lib-final` already resolves. Only the
+`docs/botopink-json.md` line to write.
+
+- [ ] `git -C repository/onze rev-parse mocking-lib-final` resolves; `git submodule status
+      repository/onze` is the orchestrator's commit; `docs/botopink-json.md` says in one line the
+      orchestrator repository carries the mocking library as tagged history
+
+#### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
