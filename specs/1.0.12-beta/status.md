@@ -46,6 +46,19 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59, B-60 — the group's last step
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 
+### 144 — after the cache group's Conformance step: the steps paused on 2026-10-12
+
+Each resumes on `feat` once the cache group has landed, one commit at a time.
+
+- [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · after the cache group's Conformance step
+- [ ] 144 B-24 Conformance — the group's last step: numbers and strings exact everywhere (319, 320, 332), its cells and `docs.md` · after the cache group's Conformance step
+- [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · after the cache group's Conformance step
+- [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · after the cache group's Conformance step
+- [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · after the cache group's Conformance step
+- [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · after the cache group's Conformance step
+- [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · after the cache group's Conformance step
+- [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · after the cache group's Conformance step
+
 ### 144 — after B-00: what B-00k found, and wasm memory
 
 - [ ] 144 B-62 — 9 cells red on `feat` with the compiler of `feat`: the five `bpp_*` refusals locate `botopink.json:1:223` against an accepted 121-and-the-name, `bpp_prelude_holds_declaration`, `bpp_role_not_pub`, and `dependency_imports_itself_with_from` / `dependency_imports_undeclared_package` print a dependency's path as `../../../conformance/…` against an accepted `deps/…` · nothing
@@ -54,16 +67,9 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers · nothing
 - [ ] 144 B-38 first box — every cell of a directory reported: a stdout write no longer drops a line (the suspected cause, not reproduced); confirmed by the pipeline's counts · nothing
-- [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
-- [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · nothing
-- [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · nothing
 - [ ] 144 B-44 — wasm prints a lifted `bool` as `1` (`yamlconf`) · nothing
-- [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · nothing
-- [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · nothing
 - [ ] 144 B-53 — `@print` of a `@Result` prints the host's form · nothing
 - [ ] 144 B-54 — `botopink format` rewrites `keyed: true` to `keyed = true` · nothing
-- [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · nothing
-- [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · nothing
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
