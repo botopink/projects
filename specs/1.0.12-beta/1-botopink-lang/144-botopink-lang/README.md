@@ -3430,22 +3430,38 @@ labelled form.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
-Today the resolver orders a package's modules by their imports (`resolver.zig`, topological) and refuses a cycle; each
-module runs 372's phases whole before its importers, and 130-s8-c's same-module meta read is answered in a step 4. Rust
-compiles a crate as one unit, its modules free to use each other; Zig analyses a declaration on demand and refuses only a
-`dependency loop`. This step measures whether botopink can analyse a whole package on demand — `a.bp` and `b.bp`
-importing each other, a declaration (and its decorators) analysed when something needs it — and reports; it changes no
-behaviour. Until a decision follows it, no import cycle between modules (s23-i).
+Measured (the study's prototype stays on its branch, never landed). **Today** the resolver
+(`compiler-cli/src/cli/resolver.zig` `orderByDependencies`) sorts a package's modules by their imports and refuses
+no cycle: when the sort stalls the leftover modules go out in discovery order and the checker reports an unrelated
+`unbound variable` (`a ↔ b`: `error: unbound variable 'base' --> src/b.bp:4:18`), the same on every target; s23-i's
+"no import cycle" has no diagnostic of its own. Each module is analysed whole, in order (signatures, 372's plain
+decorators, bodies, `.hooks` readers, `registerExports`); a function's signature never depends on its body.
 
-- [ ] the design written: on-demand analysis of a package (resolver, checker, 372's decorator phases, 130-s8-c's pending
-      meta reads, the catalogue), what stays a refusal (a value cycle: `pub val x = b.y + 1` against `pub val y = a.x + 1`
-      → `dependency loop`), and what s23-i's root rules become
-- [ ] measured on a prototype branch: the cost on `zig build test` and on the language server's incremental check
-- [ ] each backend's answer to a module cycle measured: erlang and beam (calls across modules), wasm (one module),
-      commonJS (a `require` cycle answers `undefined` for a module-level `val` — one file per package, or lazy
-      module-level values)
-- [ ] the report and the question it raises filed in `decisions-pending.md`: adopt (with its steps), or keep the
-      acyclic rule
+**The design**, if adopted (the question is `decisions-pending.md` B-55-a): the resolver loads the package as one
+unit and computes its strongly connected components (the package graph, 512's members and dependencies, stays
+acyclic); each declaration is `unresolved → in progress → done`, a `fn` or type done after its header (signature,
+plain decorators' members), a `val` without annotation demanded whole, a meta demanded by running its `.hooks`
+readers over the bodies it reads; `in progress` met again is a located `dependency loop`. 130-s8-c's step 4 becomes
+the general rule; the catalogue demands every listed declaration (353's second compile goes); 14s8-d's option (b)
+falls out. What stays refused: a value cycle, a `comptime` depending on itself, a decorator reaching what it
+annotates, a `.hooks` reader adding a member, a build-time catalogue listing its own reader.
+
+**Does it solve what opened it:** 130-s8-c yes (a header-only prototype printed `none` for the module analysed
+first — meta must be demanded); s23-i partly (the root rule stays or is relaxed, option (b′)); 372's order yes, its
+output restriction stays; 14s8-d yes.
+
+**Each backend on a cycle** (real programs, the prototype): erlang and beam correct (a remote call; a module-level
+`val` a 0-arity function recomputed at each read); wasm correct (one linked module); commonJS wrong at load —
+`const { f } = require(…)` reads a cycle's empty `exports`, a function `undefined` too; hoisted function exports
+plus memoised getters for module-level values (checked by hand under node) run it, as would one file per package.
+
+- [x] the design written, with what stays a refusal and what s23-i's root rules become
+- [ ] measured on the prototype: the cost on `zig build test` and on the language server's incremental check — on a
+      quiet machine
+- [x] each backend's answer to a module cycle measured: erlang, beam and wasm correct; commonJS needs hoisted exports
+      and lazy values, or one file per package
+- [x] the report and the question filed: `decisions-pending.md` B-55-a (adopt, with its steps; or keep the acyclic
+      rule with its own located refusal)
 
 ### B-56 — `botopink migrate` removed (s23-i)
 

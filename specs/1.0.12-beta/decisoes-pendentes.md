@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**66 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**67 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -451,6 +451,34 @@ número livre, que é **484**.
   (c) Manter a VM do alvo só para a renderização no build (um passo BEAM dentro da compilação para builds erlang/beam).
 - **Recomendação.** (b) agora — nenhuma resposta no build que dependa de uma tradução não provada; (a) quando o beam-to-wasm cobrir as células do renderizador; nunca (c), que a 434 remove.
 - **Bloqueia.** 144 B-17 (a caixa da 378 (4) do passo 6 da 134); nada em B-00.
+
+#### B-55-a · Análise do pacote inteiro: dois módulos de um pacote podem importar um ao outro? (s23-i, 372, 419, 130-s8-c, 14s8-d)
+- **Medido.** Hoje o resolver ordena os módulos de um pacote por seus imports e cada módulo é analisado inteiro antes de seus importadores (as três fases da 372, depois `registerExports`); um ciclo não é recusado por nome — o pai reporta um `unbound variable` sem relação (`error: unbound variable 'base' --> src/b.bp:4:18` para `a ↔ b`). A assinatura de uma função nunca depende de seu corpo (um tipo de retorno omitido é `void`). Um protótipo (144 B-55, não pousado) ordena um ciclo como um componente fortemente conexo e registra os cabeçalhos de seus módulos (assinaturas, tipos, valores anotados) antes de seus corpos: o `a.title` ↔ `b.format` / `b.header` do mantenedor e `a.isEven` ↔ `b.isOdd` rodam em erlang, beam e wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` é recusado, localizado: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Cabeçalhos sozinhos não bastam: `home.bp` e `blog.bp` importando um ao outro, cada um decorado com `#[route]` e lendo o `@typeInfo(X).meta(Route)` do outro, imprimem `none` para o módulo analisado primeiro — o meta precisa ser demandado, seu decorador rodado sob demanda. O `const { f } = require(…)` do commonJS responde `undefined` para uma função e um valor de um ciclo de `require` (`TypeError: title is not a function`); içar as funções para `exports` antes de qualquer `require` e fazer dos valores de nível de módulo getters memoizados roda o ciclo corretamente (verificado à mão sob node). O custo em `zig build test` e na checagem do servidor de linguagem ainda não foi medido.
+- **Opções.**
+  (a) Manter a regra acíclica, com uma recusa própria: o resolver nomeia o ciclo, localizado, no lugar de `unbound variable`; 419, o passo 4 da 130-s8-c (b′), as regras de raiz da s23-i e a recusa da 14s8-d ficam.
+  ```text
+  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
+  ```
+  (b) Adotar a análise sob demanda do pacote inteiro, mantendo as regras de raiz da s23-i: módulos de um pacote importam um ao outro livremente; uma declaração é analisada quando algo precisa dela (um `fn` ou tipo pelo seu cabeçalho, um `val` inteiro, um meta rodando seus decoradores sobre os corpos que ele lê); a única recusa é um `dependency loop`; o passo 4 da 130-s8-c vira a regra geral, a 419 e a recusa da 14s8-d saem, a segunda compilação da 353 sai; `@TypeInfo.all` fica em `lib.bp` (ou `main.bp` sem `lib.bp`) e nenhum módulo importa a raiz. Passos: (i) os componentes do resolver e uma recusa `import-cycle` até (ii)–(iv) pousarem; (ii) um `Env` de pacote, imports preguiçosos, estados de cabeçalho e de corpo; (iii) um `val` demandado inteiro, `dependency loop`; (iv) decoradores simples no cabeçalho; (v) meta sob demanda (leitores de `.hooks`); (vi) o catálogo sob demanda; (vii) 14s8-d; (viii) os exports içados e os valores preguiçosos do commonJS; (ix) o servidor de linguagem checa o componente do módulo editado e seus importadores.
+  ```bp
+  // src/a.bp
+  import {b.format};
+  pub fn title(x: string) -> string { return format(x) + "!"; }
+  // src/b.bp
+  import {a.title};
+  pub fn format(x: string) -> string { return x.toUpper(); }
+  pub fn header() -> string { return title("hi"); }        // "HI!"
+  // src/c.bp, src/d.bp
+  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
+  ```
+  (b′) Como (b), com as regras de raiz da s23-i relaxadas: `@TypeInfo.all` lido em qualquer módulo e qualquer módulo pode importar a raiz; um catálogo cujo valor o build precisa dentro de uma declaração que ele lista (ou uma que os hooks dela alcançam) é o `dependency loop`.
+  ```bp
+  // src/pages/index.bp
+  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
+  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
+  ```
+- **Recomendação.** (b) — uma regra (um dependency loop) no lugar de quatro recusas dependentes de ordem, e uma resposta que não depende mais de qual módulo o resolver pôs primeiro; as regras de raiz da s23-i mantidas (a leitura mais restritiva da decisão 67, e a árvore organizada para a qual foram escolhidas) até uma frente precisar de (b′). Até o passo (ii) de (b) pousar, a recusa localizada de (a) substitui o `unbound variable` de hoje.
+- **Bloqueia.** Nada construído depende dela; os passos seguintes da 144 B-55, o passo 4 da 130-s8-c e a regra de catálogo da s23-i são escritos contra a resposta.
 
 ### 02-std-and-packaging
 

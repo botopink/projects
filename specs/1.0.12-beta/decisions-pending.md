@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**66 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**67 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -452,6 +452,34 @@ number, which is **484**.
   (c) Keep the target's VM for at-build rendering alone (a BEAM step inside the compile for erlang/beam builds).
 - **Recommendation.** (b) now — no at-build answer that depends on a translation not proved; (a) once beam-to-wasm covers the renderer's cells; never (c), which 434 removes.
 - **Blocks.** 144 B-17 (134 step 6's 378 (4) box); nothing in B-00.
+
+#### B-55-a · Whole-package analysis: may two modules of a package import each other? (s23-i, 372, 419, 130-s8-c, 14s8-d)
+- **Measured.** Today the resolver sorts a package's modules by their imports and each module is analysed whole before its importers (372's three phases, then `registerExports`); a cycle is not refused by name — the parent reports an unrelated `unbound variable` (`error: unbound variable 'base' --> src/b.bp:4:18` for `a ↔ b`). A function's signature never depends on its body (an omitted return type is `void`). A prototype (144 B-55, not landed) orders a cycle as one strongly connected component and registers its modules' headers (signatures, types, annotated values) before their bodies: the maintainer's `a.title` ↔ `b.format` / `b.header` and `a.isEven` ↔ `b.isOdd` run on erlang, beam and wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` is refused, located: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Headers alone are not enough: `home.bp` and `blog.bp` importing each other, each `#[route]`-decorated and reading the other's `@typeInfo(X).meta(Route)`, print `none` for the module analysed first — the meta must be demanded, its decorator run on demand. commonJS's `const { f } = require(…)` answers `undefined` for a function and a value of a `require` cycle (`TypeError: title is not a function`); hoisting the functions onto `exports` before any `require` and making module-level values memoised getters runs the cycle correctly (checked by hand under node). The cost on `zig build test` and on the language server's check is not measured yet.
+- **Options.**
+  (a) Keep the acyclic rule, with its own refusal: the resolver names the cycle, located, in place of `unbound variable`; 419, 130-s8-c (b′)'s step 4, s23-i's root rules and 14s8-d's refusal stay.
+  ```text
+  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
+  ```
+  (b) Adopt whole-package on-demand analysis, keeping s23-i's root rules: modules of a package import each other freely; a declaration is analysed when something needs it (a `fn` or type by its header, a `val` whole, a meta by running its decorators over the bodies it reads); the only refusal is a `dependency loop`; 130-s8-c's step 4 becomes the general rule, 419 and 14s8-d's refusal go, 353's second compile goes; `@TypeInfo.all` stays in `lib.bp` (or `main.bp` without `lib.bp`) and no module imports the root. Steps: (i) the resolver's components and an `import-cycle` refusal until (ii)–(iv) land; (ii) a package `Env`, lazy imports, header and body states; (iii) a `val` demanded whole, `dependency loop`; (iv) plain decorators in the header; (v) meta on demand (`.hooks` readers); (vi) the catalogue on demand; (vii) 14s8-d; (viii) commonJS's hoisted exports and lazy values; (ix) the language server checks the edited module's component and its importers.
+  ```bp
+  // src/a.bp
+  import {b.format};
+  pub fn title(x: string) -> string { return format(x) + "!"; }
+  // src/b.bp
+  import {a.title};
+  pub fn format(x: string) -> string { return x.toUpper(); }
+  pub fn header() -> string { return title("hi"); }        // "HI!"
+  // src/c.bp, src/d.bp
+  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
+  ```
+  (b′) As (b), with s23-i's root rules relaxed: `@TypeInfo.all` read in any module and any module may import the root; a catalogue whose value the build needs inside a declaration it lists (or one its hooks reach) is the `dependency loop`.
+  ```bp
+  // src/pages/index.bp
+  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
+  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
+  ```
+- **Recommendation.** (b) — one rule (a dependency loop) in place of four order-dependent refusals, and an answer that no longer depends on which module the resolver placed first; s23-i's root rules kept (decision 67's strictest reading, and the tidy tree they were chosen for) until a front needs (b′). Until (b)'s step (ii) lands, (a)'s located refusal replaces today's `unbound variable`.
+- **Blocks.** Nothing built depends on it; 144 B-55's follow-up steps, 130-s8-c's step 4 and s23-i's catalogue rule are written against the answer.
 
 ### 02-std-and-packaging
 
