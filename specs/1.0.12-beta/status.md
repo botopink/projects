@@ -61,6 +61,17 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · after the cache group's Conformance step
 - [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · after the cache group's Conformance step
 
+### 144 — the module-model group (B-69 … B-76, B-55-a (e)): after the cache group's Conformance step and B-55's timings
+
+- [ ] 144 B-69 — a file is a module: `mod` / `pub mod` and the root file removed; `src/internal/` private; an import cycle refused by name until B-71 · after the cache group's Conformance step, B-55
+- [ ] 144 B-70 — `src/comptime/`, the build layer: analysed first, its own imports only; decorators and templates declared there · after B-69
+- [ ] 144 B-71 — blocks: modules importing each other, headers before bodies, `dependency loop` · after B-70
+- [ ] 144 B-72 — per block: decorators after the bodies, meta and catalogues filled; the catalogue in any module; 419, 14s8-d and 353's second compile go · after B-71
+- [ ] 144 B-73 — commonJS: a module cycle loads (hoisted exports, memoised getters) · after B-71
+- [ ] 144 B-74 — the language server checks the edited module's block · after B-72
+- [ ] 144 B-75 — std and every library on the module model: root file and `mod` removed, decorators and templates in `src/comptime/` · after B-70
+- [ ] 144 B-76 — the group's Conformance step · after B-69 … B-75
+
 ### 144 — after B-00: what B-00k found, and wasm memory
 
 - [ ] 144 B-62 — 9 cells red on `feat` with the compiler of `feat`: the five `bpp_*` refusals locate `botopink.json:1:223` against an accepted 121-and-the-name, `bpp_prelude_holds_declaration`, `bpp_role_not_pub`, and `dependency_imports_itself_with_from` / `dependency_imports_undeclared_package` print a dependency's path as `../../../conformance/…` against an accepted `deps/…` · nothing

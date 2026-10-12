@@ -3641,6 +3641,109 @@ wasm backend cannot resolve the call `toString/0`"; the other targets run it.
 - [ ] a cell red on the parent; the call resolved on wasm, the cell green on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### The module-model group (B-69 … B-76, B-55-a (e)): a file is a module, `src/comptime/` the build layer
+
+After the cache group's Conformance step, and only once B-55's timings pass (B-55-a (e)'s condition; a high cost
+returns the question to the maintainer). One rule replaces s23-i's root rules, 419's and 14s8-d's refusals and 353's
+second compile: every `.bp` under `src/` is a module named by its path; `mod` / `pub mod` and `lib.bp` / `root.bp`
+leave the language; `src/main.bp` is an executable's entry; `src/comptime/` is the build layer, analysed first,
+importing only std, dependencies and itself, the one place (with std and dependencies) that declares a decorator or a
+template; the program's modules import each other freely, a cycle forming a block (headers before bodies, a
+module-level `val` a ref at run time); per block the decorators run over the bodies, then meta and catalogues are
+filled; `@TypeInfo.all` is read in any module; `src/internal/` is private to its package; the only order refusal is a
+located `dependency loop`. In order:
+
+### B-69 — a file is a module: `mod` / `pub mod` and the root file removed (B-55-a (e) (1), (2), (8))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** the cache group's Conformance step, B-55
+
+- [ ] the resolver loads every `.bp` under `src/` as a module named by its path (`pages/home.bp` → `pages.home`);
+      `src/main.bp` is the entry, imported by no module (refused, located)
+- [ ] `mod` / `pub mod` removed from the language: the parser refuses them, located (`` `mod` is gone — every file
+      under src/ is a module (B-55-a) ``), the AST node, the formatter and the checker's module-tree walk go;
+      `lib.bp` / `root.bp` are ordinary files with no special role, std's included
+- [ ] `src/internal/` private to its package: an import of it from another package refused, located
+- [ ] until B-71 lands, an import cycle is refused by name, located (`import cycle: src/a.bp imports src/b.bp, which
+      imports src/a.bp`), in place of today's `unbound variable`
+- [ ] the orphan warning and the blind-scan fallback go (`sources.zig`); `AGENTS.md` (compiler-cli, resolver) updated
+- [ ] cells red on the parent: a module by path, `mod` refused, `internal/` refused from outside, the cycle refusal
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-70 — `src/comptime/`, the build layer (B-55-a (e) (3))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-69
+
+- [ ] `src/comptime/` analysed before every other module of the package; it imports only std, dependencies and
+      `src/comptime/` (else refused, located)
+- [ ] a decorator or a template declared outside `src/comptime/`, std and a dependency refused, located
+- [ ] cells red on the parent for both refusals; a decorator from `src/comptime/` applied in a program module
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-71 — blocks: modules importing each other, headers before bodies, `dependency loop` (B-55-a (e) (4), (6))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-70
+
+- [ ] the resolver computes the program's strongly connected components; each block's headers (`fn` signatures, types,
+      annotated `val`s) are registered before its bodies; B-69's cycle refusal goes
+- [ ] a value needing itself across modules (`pub val x = b.y + 1` / `pub val y = a.x + 1`) refused, located:
+      `` dependency loop: `a.x` → `b.y` → `a.x` ``
+- [ ] erlang, beam and wasm run a cycle (B-55's measurements); cells: `a.title` ↔ `b.format`, `a.isEven` ↔ `b.isOdd`,
+      the value loop refused
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-72 — per block: decorators after the bodies, meta and catalogues filled (B-55-a (e) (5), (6), (7))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-71
+
+- [ ] per block: headers, bodies, every decorator over them, then every `@typeInfo(X).meta(T)` (`T[]`, 130-s8-a) and
+      `@TypeInfo.all` of the block filled — 130-s8-c's step 4, per block
+- [ ] `@TypeInfo.all` read in any module; a `comptime` needing a meta, a catalogue or a value of its own block before
+      its decorators ran refused, located, as a `dependency loop`
+- [ ] 419's and 14s8-d's refusals and 353's second compile removed; `typeinfo-meta-hooks-pending` and
+      `typeinfo-all-hooks-reader` gone
+- [ ] cells: `home.bp` ↔ `blog.bp` each reading the other's `Route`; a catalogue in a page module; the comptime loop
+      refused
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-73 — commonJS: a module cycle loads (B-55-a (e) (4))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-71
+
+- [ ] a module's functions hoisted onto `exports` before any `require`; a module-level `val` a memoised getter
+- [ ] B-71's and B-72's cycle cells green on commonJS; a codegen test, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-74 — the language server checks the edited module's block (B-55-a (e))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-72
+
+- [ ] an edit re-checks its module's block and the blocks importing it, never the whole package; no `mod` tree read
+- [ ] a language-server test: an edit in one module of a cycle reports the other's error
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-75 — std and every library on the module model (B-55-a (e))
+
+**Repository:** botopink-lang and every library (`scripts/worktree-add.sh` full worktree) · **Model:** sonnet ·
+**After:** B-70
+
+One mechanical pass, as B-33's codemod: no design choice.
+
+- [ ] std: `libs/std/src/root.bp` and every `mod` / `pub mod` removed; its decorators and templates moved to
+      `libs/std/src/comptime/`
+- [ ] each library (emilia, erika, jhonstart, onze, rakun, actions, http, log, routing, validation, css, styled, snap,
+      json, yaml, markdown, dbcontext, vscode-extension's botopink sources): `src/root.bp` / `src/lib.bp` and every
+      `mod` / `pub mod` removed, decorators and templates (`#[route]`, `#[page]`, `html`, `css`, `styled` …) moved to
+      `src/comptime/`, private modules to `src/internal/`; each library's gate green
+- [ ] the specs and `AGENTS.md` files that name `root.bp`, `lib.bp` or `pub mod` updated
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-76 — the module-model group's Conformance step
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-69 … B-75
+
+- [ ] botopink-lang's and every library's gate with conformance, cold and warm; every cell green on every target
+- [ ] the root `conformance/docs.md` rewritten for the module model (480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
