@@ -3483,10 +3483,10 @@ each of `emilia@tokens`, `emilia@emilia`, `emilia@container`, `emilia@compose`, 
 - [ ] a codegen test per backend the hook runs, red on the parent: a type imported by two modules has one formatter
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-58 — the code cache, level A: a dependency's toolchain step by content, for every target; the closure key (decision 509)
+### B-58 — the code cache, level A: a dependency's toolchain step by content, for every target; the closure key; workspace-inherited dependencies (decisions 509, 512)
 
-**Repository:** botopink-lang (`--lang`), and each library's `conformance/modules/botopink.json` · **Model:** opus ·
-**After:** B-57
+**Repository:** botopink-lang and each library with cells (a full worktree; each library's half a commit there) ·
+**Model:** opus · **After:** B-57
 
 Today a build keeps `cache/erlcheck` (verdicts) and `botopink test` a `.beam` cache (`test_cmd.zig`
 `precompileErlang`), the same key under two labels; `run` and `cell check` keep nothing, and a cell is its own cache
@@ -3499,9 +3499,13 @@ root. Measured on emilia's `alpha` cell (`run --target erlang`, a quiet machine)
       `cache/beam` removed; `build`, `run`, `test` and `cell check` read it
 - [ ] the closure key as a function: the package's files by content, its dependencies' closure keys (Merkle), the
       target, the compiler's sources by backend partition (249) — B-60's key
-- [ ] `conformance/modules/botopink.json` (`"workspaces": ["*"]`) in botopink-lang and in each library with cells,
-      so a library's cells share `conformance/modules/.botopinkbuild/cache/`; the gates and `cell check` unchanged
-      by the new workspace
+- [ ] first, the manifest (512): a member inherits its workspace's `dependencies` (a `path` from the workspace's
+      manifest), adds its own, redeclaring an inherited one refused, located; `src`, `entry`, `version` defaulted;
+      `name` required; tests in `modules/manifest`, red on the parent
+- [ ] `conformance/modules/botopink.json` (`"workspaces": ["*"]`, the cells' shared `dependencies` and `targets`)
+      in botopink-lang and in each library with cells (a commit in each library), every cell's manifest reduced to
+      what is its own (emilia's 79 to `{ "name": "<cell>" }`); a library's cells share
+      `conformance/modules/.botopinkbuild/cache/`; the gates and `cell check` unchanged by the new workspace
 - [ ] an entry stored by hash, materialised into the project's own output (hard link, else copy), never run from the
       cache; `--cold` reads nothing and writes what it ran; staging and rename, no lock; the gates hand `--cold` on
 - [ ] tests the hook runs, red on the parent: two cells over one dependency compile it once; the cell's own modules
@@ -3548,7 +3552,8 @@ one case where they did not.
 `language_tests`, left by the move of `tests/language` into `conformance/` — so 146 cells emit the same module
 `language_tests@main` with different code. Every library's cells already follow the rule.
 
-- [ ] the 148 manifests renamed to their directory's name; every cell green as before
+- [ ] the 148 manifests renamed to their directory's name; every cell green as before; a member without `name` refused
+      (512 (1))
 - [ ] `botopink cell check` refuses a cell whose `name` differs from its directory, located at the manifest, naming
       the expected name; a test the hook runs, red on the parent
 - [ ] `conformance/AGENTS.md` and `botopink cell new`'s scaffold state the rule

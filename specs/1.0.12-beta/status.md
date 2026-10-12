@@ -56,7 +56,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · nothing
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · nothing
 - [ ] 144 B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module (emilia's `alpha` cell: 4106 files, ~680 copies per importer) · nothing
-- [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; `conformance/modules/` a workspace sharing its cells' dependency cache; `--cold` on the CLI (509) · after B-57
+- [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
 - [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
 - [ ] 144 B-61 — a cell's package name is its directory's name (511): 148 of botopink-lang's cells renamed (146 named `language_tests`), `cell check` refuses a mismatch · nothing
