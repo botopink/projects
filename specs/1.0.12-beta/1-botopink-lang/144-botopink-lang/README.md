@@ -3467,6 +3467,59 @@ tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the 
       unknown-command error
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+Printing dispatches by the value's tag (`'__bp_tagged'/2` cuts the `__v__` segment and calls that module's
+`'__bp_format'/1`), so only the declaring module's formatter is ever called. Yet every module that uses an imported
+type emits a byte-identical copy of the type's formatter modules: emilia's `Token` has ~680 nested variant types, and
+`botopink build` of the cell `emilia/conformance/modules/alpha` writes 4106 files on erlang and on beam — ~680 under
+each of `emilia@tokens`, `emilia@emilia`, `emilia@container`, `emilia@compose`, `emilia@arbitrary` and `alpha@main`
+(commonJS: 13). `botopink run --target erlang` of that cell takes ~21 s, a hello world 0.3 s.
+
+- [ ] an imported type's unit is not emitted by the importer, on erlang and on beam; the alpha cell's file count on
+      both targets measured before and after; every printed output unchanged
+- [ ] a codegen test per backend the hook runs, red on the parent: a type imported by two modules has one formatter
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-58 — `botopink run` and `cell check` compile `.erl` through the content-keyed `.beam` cache
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+`botopink test` keeps a `.beam` cache (`test_cmd.zig` `precompileErlang`; `build.zig`'s `erlcheck` verdicts share its
+key): the SHA-256 of the `.erl` bytes, the options, the OTP release, the erts / `compiler` / `stdlib` versions and
+`ERL_COMPILER_OPTIONS`; a source with `-include` or `parse_transform` is never looked up; only an acceptance is stored.
+`botopink run` and `botopink cell check` do not read it, so each of a library's cells compiles its whole dependency
+closure again (emilia's 79 cells, emilia 79 times). The cache is the CLI's, parameterised on its command line — the
+gates only hand the flag on.
+
+- [ ] `run` and `cell check` (and `build`'s check) read and write the same cache under decision 225's cache root —
+      the library repository's root for a cell under `<lib>/conformance/modules/`, so its cells share it
+- [ ] `--cold` on `run`, `test` and `cell check` neither reads nor keeps a warm entry (it compiles every source; it
+      may write); the gates' `--cold` hands it on; no variable or other flag changes the cache's path (decision 67)
+- [ ] a test the hook runs: a second `cell check` of two cells over one dependency compiles that dependency once; a
+      changed `.erl` byte compiles again
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-59 — `botopink cell check` answers an unchanged cell from the result store
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+The result store (`lib-test-runner/src/result_store.zig`, decisions 229, 246, 249) answers a cell of `test-libs`
+from a stored pass when its key — the SHA-256 of everything the cell can read: the compiler by backend partition, the
+toolchain, the library universe by content, the cell — is equal. `botopink cell check`, which a library's gate and
+botopink-lang's `test-conformance` run, does not use it: every cell runs on every check, unchanged or not. The store
+is the CLI's, parameterised on its command line.
+
+- [ ] `botopink cell check` computes the same key per cell and target and answers an equal key from a stored pass;
+      only a pass is stored, and never when the key cannot be computed with certainty (`Global.unstorable`)
+- [ ] `--cold` runs every cell and writes the passes it ran; the line of a cell answered from the store says so;
+      the gates' `--cold` hands it on
+- [ ] a test the hook runs: an unchanged cell is answered from the store, a changed cell file or compiler source of
+      its backend runs it again
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
