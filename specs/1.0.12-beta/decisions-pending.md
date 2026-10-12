@@ -1241,6 +1241,22 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 ### 02-std-and-packaging
 
+#### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s29)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `@Decl` of a member names its owner type** — a decorator on a method reads `decl.owner` (`?string`, `null` at module level), and `query.bp` names its registration `__rkQueryReg_<Owner>_<method>`; the name is the declaration's identity, so it never collides by accident and needs no hashing. Viable: the checker knows the owner when it runs a member's decorator; `builtins.d.bp`'s `Decl<T>` gains the field. Changes: a 144 step (the field, a cell), then 150 s29 in rakun.
+- **Measured.** `query.bp`'s decorator emits `val __rkQueryReg_<method> = rkRegisterQuery(…)` at module level. Two repositories in one module, each with `#[query] find`, emit `__rkQueryReg_find` twice; erlang refuses `function '__rkQueryReg_find'/0 already defined`. It built until 144 B-39 made a `_`-prefixed module-level `val` an ordinary binding (the language's rule). A module-level statement cannot be written (`val _ = …` and a bare call do not parse), and a member's `@Decl` has `name` and `kind`, no owner. `query.bp`'s header says two same-named methods in one module collide and that this is right; `test/sql_build_test.bp:148` says they build.
+- **Options.**
+  (a) `@Decl` names a member's owner type; the registration is `__rkQueryReg_<Owner>_<method>`.
+  ```bp
+  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
+  ```
+  (b) rakun alone: the name carries a hash of the SQL text; two methods of one name and the same SQL in one module still collide.
+  ```bp
+  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
+  ```
+  (c) The header wins: two `#[query]` methods of one name in one module are refused, located; the test becomes a refusal.
+- **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
+- **Blocks.** 150 s29.
+
 #### std-e · Test lifecycle hooks
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): no lifecycle hook; a test body calls its reset helper** — nothing implicit runs around a `test` (67), every `test` block reads whole, and 513's test unit holds `test` blocks only. (b) runs a module function the test never names and (c) adds grammar for what a call already says. Viable: as built (no `#[before]` / `beforeEach` in std, `lib-test-runner` or the libraries); the counts in the entry are stale — `resetChain()` is called 77 times across rakun (31 in rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Changes: `language-gaps.md`'s "No test lifecycle hooks" row becomes by design.
 - **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.

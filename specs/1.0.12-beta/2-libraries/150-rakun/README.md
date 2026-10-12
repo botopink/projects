@@ -1237,6 +1237,18 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
       call.args, { -> call.run() }) })`, every value an `@Expr` parameter; rakun-cache's two markers (`cache.bp`,
       `granularity_test.bp`) are the module-level-annotation gap's, not 316's, and stay
 
+### 150 s30 — two `#[query]` methods of one name in one module build (144 B-81)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** sonnet
+
+`test/sql_build_test.bp:148` ("two #[query] methods of one name on two types of one module are two members and
+build") is red on erlang: `query.bp`'s decorator emits `val __rkQueryReg_<method> = rkRegisterQuery(…)`, one name per
+method name, so a second `find` in the module redefines `__rkQueryReg_find/0`. The header of `query.bp` (the comment
+saying two same-named methods in one module collide, and that this is the right failure) contradicts the test.
+
+- [ ] the registration's name unique per declaration, not per method name — question B-81-a (how the decorator
+      names the owner); the header and the test agree; rakun-data's test green on every target
+
 ### 150 Conformance — the front's last step (decision 465)
 
 **Repository:** rakun (`--repo rakun`) · **Model:** opus

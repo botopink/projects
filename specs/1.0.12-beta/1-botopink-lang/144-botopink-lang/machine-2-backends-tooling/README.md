@@ -1588,9 +1588,12 @@ Found landing B-24 (2026-10-12): `zig build test-libs` fails rakun-data's test a
 `#[query]` decorator) on erlang, the same with `libs/std` at `feat`'s — older than B-24. The cause is found first: a
 compiler defect is fixed here; a library's is a row of rakun's front (150) and this step closes pointing at it.
 
-- [ ] the cause found (compiler or library), named in this box
-- [ ] fixed where it belongs; `test-libs` green for rakun-data on erlang
-- [ ] Conformance step (459, 474, 477, 478, 480), when the fix is the compiler's
+- [x] the cause found: the library's. `rakun-data/src/sql/query.bp`'s `#[query]` emits a module-level
+      `val __rkQueryReg_<method>`, named by the method alone, so two `find` methods on two types of one module emit
+      the same name twice (`function '__rkQueryReg_find'/0 already defined` on erlang). It built while a `_`-prefixed
+      module-level `val` emitted no function; B-39 made it an ordinary binding, which is the language's rule
+- [x] fixed where it belongs: rakun's, 150 s29; no compiler change
+- [x] Conformance step: none — the fix is not the compiler's
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 

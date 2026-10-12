@@ -43,7 +43,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-77 — `botopink cache` (clean, status): level A to `.botopinkbuild/build/`; parallelism from the machine's pool inside botopink; `--cold` and `--jobs` go; scripts keep only `--staged` / `--no-conformance`; worktree rule 4b goes (468, 469, 473, 509, 225) · after B-60
 - [ ] 144 B-78 — commonJS writes an `f64` as text with its decimal part (a template hole, `.toString()`, `string + f64`) through `@print`'s helper, `float_text_everywhere` green; left: a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`, the Conformance step; contradicts decision 441's last sentence · question B-78-a
 - [ ] 144 B-79 — `botopink run` of a program with no `fn main` refused before running, located at the entry module, one message on every target and host (517), cell `run_without_main` green; left: the Conformance step · nothing
-- [ ] 144 B-81 — rakun-data's `#[query]` test red under `test-libs` (erlang), older than B-24; cause first, fixed where it belongs · nothing
 - [ ] 144 B-64 — a module's tests a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`, privates through a reserved export, `botopink test` on wasm (513) landed; left: the Conformance step · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)
@@ -218,6 +217,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 150 s29 — `decl.wrapWith` in rakun (144 B-11, 316): the publish-retry example as `#[retryable(policy)]`, its marker and the gap row gone; the 318 wrappers build on it · nothing
 - [ ] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340); `tryQuery`'s stale comment removed (B-13, 304) · nothing
+- [ ] 150 s29 — two `#[query]` methods of one name in one module build: `query.bp`'s registration `val` named per method name collides on erlang (found by 144 B-81) · question B-81-a
 
 ### 163 meta-ci (medium)
 
@@ -355,6 +355,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 144 B-01 (part) — `effect-try-without-fallible-channel` names `try … catch` and `result: true`; the reference § Results, § Host bindings — its Conformance step open
 - [x] 144 B-13 — a method declared `-> @Result` already lowered as a `@Result` on every target (`result_method_throw`, `behavior_method_result_typed`, `behavior_method_result_chained`); no code change; rakun's stale comment is 150 s28 — its Conformance step open
 - [x] 144 B-26 (340) — `Dict.bump`; `counts = counts.bump(k, n)` on a keyed var as `ets:update_counter/4` on erlang and beam, `beam_memory_ets_keyed_bump`; rakun's registry is 150 s28 — its Conformance step open
+- [x] 144 B-81 — rakun-data's `#[query]` red on erlang: the cause is rakun's (a registration `val` named per method name, colliding since B-39), filed as 150 s29; no compiler change
 - [x] 144 B-29 step J — botopink-lang's `scripts/gate.sh` takes one total of jobs (`--jobs <N>`, default the machine's) split among its stages, no gate lock (`scripts/AGENTS.md`); `--no-conformance` stays the hook's gate; a library's `test-out` is already a per-run directory, removed after (468, 469, 508) — its Conformance step open
 - [x] 144 B-80 — onze-cli's CSS accessors test: the cause is the library's — its app is created as `styled`, a package of jhonstart's closure, and the build refuses two packages of one name; handed to 162 s11, the compiler unchanged
 - [x] 144 B-39, B-41, B-43, B-51, B-52 — a module-level `val` read by the next one bound on erlang; a library's abort worded alike on every target; a `Set` of structurally equal records keeping one on commonJS and wasm; commonJS printing an `f64` with its `.0`; wasm printing a string field or an awaited string as text — each step's Conformance step open
