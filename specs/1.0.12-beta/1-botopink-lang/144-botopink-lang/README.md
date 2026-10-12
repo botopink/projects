@@ -241,7 +241,7 @@ call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `
       cell, else its `fn:` cell, else is refused at the call naming both — `reject/comptime_host_cell_unavailable`
 - [x] an Erlang cell never runs at build (452; 439 no longer applies — no Erlang cell is translated):
       `reject/comptime_expression_erlang_cell_never_runs`; the fall-through B-00c built removed
-- [ ] every decorator, template and `comptime` cell of `tests/language` green on the four targets with one
+- [x] every decorator, template and `comptime` cell of `tests/language` green on the four targets with one
       `COMPTIME REPLY`; every library repository's hook green on this compiler
 
 **Impacted tests:** `comptime/tests/**`; the codegen runtime listings; `tests/language` decorator / template /
