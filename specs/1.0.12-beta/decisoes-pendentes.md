@@ -618,6 +618,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada no gate; "o std compila no wasm" (05-wasm passo 5, 97 passo 11).
 
 #### 97-s13-a · O `abs()` do mínimo de um tipo inteiro (264, 319)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** `abs` aborta além do seu tipo como o `-` unário (`integer overflow: abs on i64`): `abs` sai de `Signed` para `I32` e `I64`, cada um com seu próprio limite nas suas formas; `lo64().abs()` aborta em todo alvo.
 - **Medido.** `fn lo64() -> i64 { return -9223372036854775807l - 1l; }` e depois `@print(lo64().abs())` imprime `9223372036854775808` no commonJS, erlang e beam — um valor fora de `i64`; `lo32().abs()` (`-2147483647 - 1`) imprime `2147483648`, fora de `i32`; o wasm recusa a chamada de `i64` (seus métodos de inteiro são os do `i32`). `abs` é uma chamada de host (`erlang:abs`, `Math.abs` / uma negação de `BigInt`), não um dos operadores da 264, então nenhuma checagem de faixa roda. `Signed` declara um `abs` para `I32` e `I64` juntos, então um template não conhece a largura.
 - **Opções.** (a) ★ `abs` aborta além de seu tipo como o `-` unário (`integer overflow: abs on i64`): `abs` sai de `Signed` para `I32` e `I64`, cada um com seu próprio limite em suas formas (`lo64().abs()` aborta em todo alvo). (b) Como está: `abs` responde o valor matemático mesmo fora do tipo (`lo64().abs()` é `9223372036854775808` tipado `i64`). (c) `abs` responde o tipo sem sinal (`i64.abs() -> u64`; `lo64().abs()` é `9223372036854775808ul`).
   Hoje:
