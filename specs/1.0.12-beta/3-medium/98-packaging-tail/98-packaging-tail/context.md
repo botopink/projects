@@ -44,6 +44,6 @@ Four checks (step 2's script):
 
 ## Decisions
 
-`95-f` — [`../README.md`](../../../1-botopink-lang/144-botopink-lang/02-std-and-packaging/track.md) § Decisions; `subdir` is decision 344.
+`95-f` — [`../README.md`](../../../1-botopink-lang/144-botopink-lang/machine-2-backends-tooling/02-std-and-packaging/track.md) § Decisions; `subdir` is decision 344.
 
 **Gate:** standard (fronts.md § Gate) + `scripts/check-packaging.sh` exit 0 in the main checkout

@@ -12,7 +12,7 @@ browser) need the same code and decision 113 keeps it out of each framework. Nam
 protocol of its own, no state beyond an inline host table (`persistent_term` / `globalThis`, as in
 `repository/validation/src/messages.bp`), `.bp` only with inline `#[@External]` templates,
 `["erlang", "commonJS"]` erlang first, imports only std and the shared packages it declares. Generic,
-protocol-free code → **std** ([`97-std-dedupe`](../../../1-botopink-lang/144-botopink-lang/97-std-dedupe/context.md)).
+protocol-free code → **std** ([`97-std-dedupe`](../../../1-botopink-lang/144-botopink-lang/machine-2-backends-tooling/97-std-dedupe/context.md)).
 
 Copies deleted: seven hand walks of the route-segment grammar outside `routing`, two action-id
 derivations, four `Cookie:` readers with three duplicate rules, three q-value parsers, four
