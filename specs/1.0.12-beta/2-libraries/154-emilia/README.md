@@ -190,7 +190,8 @@ After 163 s7 (the shared hook checks `conformance/`).
 - [x] `emilia/docs.md` moved to `emilia/conformance/docs.md` (no copy left); each ` ```bp ` fence a cell in
       `conformance/modules/<example>/` (decisions 457, 462) or a `<!-- example: <cell> -->` reference; a fragment that
       is not a program given its context or turned into ` ```text `
-- [ ] every cell green (79 cells: green on commonJS, erlang and beam; wasm waits on B-40 — the manifest's `"targets"` read — and B-42) on the targets the library's manifests declare, through the library's own hook
+- [x] every cell green on the targets it declares (79 cells on commonJS, erlang and beam); wasm refuses each on
+      `arbitrary.bp`'s `raisedBy`, a host binding with no wasm template (a departure, 475) on the targets the library's manifests declare, through the library's own hook
 
 ### 154 s5 — `conformance/docs.md` agrees with its cells (found moving the reference, decision 480)
 
@@ -203,6 +204,13 @@ After 163 s7 (the shared hook checks `conformance/`).
 - [ ] the quickstart calls `flush()` without `await`; it answers a task
 - [ ] `.GroupNamed(…)` / `.PeerNamed(…)` compile as written, against the text's claim that a leading-dot call does not
       carry the typed-array context: the text or the checker fixed
+
+### 154 s6 — emilia on wasm: `raisedBy` gains a wasm template (after the 144 front)
+
+**Repository:** emilia (`--repo emilia`) · **Model:** sonnet
+
+- [ ] `arbitrary.bp`'s `raisedBy` gets an `#[@External.Wasm(…)]` cell (decision 481's labels); the 79 cells declare wasm
+      and run green there, or each names the next host binding wasm lacks
 
 ### 154 Conformance — the front's last step (decision 465)
 

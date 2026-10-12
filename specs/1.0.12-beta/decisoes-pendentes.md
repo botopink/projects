@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**71 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**66 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -405,79 +405,6 @@ número livre, que é **484**.
   passo 36 do 01-checker dá quando pousar, e concorda com (a).
 - **Bloqueia.** Nada — construído como (a) (`block_eval.useReached`); a caixa da chamada `Any` do passo 8 o lê.
 
-#### 140-e · Um `await` de uma task dentro de um corpo `@Component` no wasm (392 (2) contra 375 (3))
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(d), uma quarta opção: composição por dados, a 388 aplicada até o fim — comptime inalterado.** No wasm como em todo alvo, chamar um componente só cria sua lambda (388) e só o renderer a executa. Um componente é máquina de estados só quando o próprio corpo escreve `await` / `async { }` ou faz `use` de um hook assíncrono (375 (1), sem a cláusula conservadora "chama um valor de função": chamar um componente não executa nada). A lambda carrega a marca da 375 e o renderer faz await só nas marcadas, então o endereço de uma task e um `Element` nunca são distinguidos pela sua palavra. Um componente que compõe outros (`Layout(view)`, `App`) continua direto mesmo quando recebe um componente como valor; a árvore que ele responde guarda valores de componente — `<main>{view()}</main>` guarda a lambda de `view()`, nunca a fábrica `view`, então o renderer encontra um só tipo de filho, o executa com o scope dos filhos que seu pai respondeu (388 (3)), e uma fábrica que recebe argumentos não precisa de mais nada. Sem trap, nada pago por um componente síncrono, em `wasi` e `browser` com o mecanismo único da 392; a mesma resposta em todo alvo. (c) (JSPI / stack switching) não é tomada: a 392 exclui JSPI e o host `browser` não tem nenhum dos dois. A condição: o comptime não muda — a execução no build da 388 (4) com `RenderScope.root()` e o caminho da 434-b mantêm sua leitura; (d) muda só o lowering de componentes em tempo de execução no wasm (frente 140 passo 4, uma thread de acompanhamento). **Suspense e error boundaries sob a (d)** (o mantenedor, 2026-10-12): `Suspense(fallback, child)` e `ErrorBoundary(child, view)` são nós da árvore que guardam valores de componente (414), e não executam nada quando criados. O renderer descobre que uma subárvore espera ao descê-la — nenhuma marca do compilador para uma subárvore inteira (um valor de componente a esconde): dentro de um `Suspense`, renderiza `child` com o scope com que encontrou o nó; se a subárvore inteira termina sem encontrar uma lambda marcada, o HTML é emitido direto, sem fallback e sem fill; na primeira lambda marcada emite `fallback` no placeholder do boundary, guarda `(child, scope)` e segue com a página; quando a task do filho conclui, o fill do stream roda `renderComponent(child, scope)` com esse mesmo scope, então um `provide` de um pai continua visível. Uma página sem nó marcado renderiza sem streaming (375 (1)). `ErrorBoundary` roda seu filho sob `attempt` (431; 431-f no wasm) e renderiza `view(infoFor(failure))` com o mesmo scope.
-- **Medido.** 392 (2): "uma função que a 375 marca como assíncrona compila para uma máquina de estados retomável". Construído: uma
-  função `-> @Task`, um método que responde uma e um bloco `async { }` são máquinas de estados; um corpo `@Component`
-  continua ansioso (como a 375 (2) deixou o wasm), porque um valor de componente tem uma representação para todo chamador:
-  a 375 (3) mantém `await` legal num componente síncrono (um no-op) e um componente alcançado por um valor de
-  função (`slot.view(c)`) é aguardado sem o chamador saber qual é — o endereço de uma task e um
-  `Element` são ambos uma palavra `i32`, não distinguidos em tempo de execução. Um `await` de uma TASK num corpo de componente
-  roda as tasks prontas até ela se resolver (`$__task_block_on`) e dá trap, nos dois hosts, quando a task ainda
-  espera o host (`run/effect_context_await`, `component_call_awaited` e as outras células de componente
-  passam nos dois hosts).
-- **Opções.** (a) Todo `@Component` no wasm é uma máquina de estados que responde uma task — uma síncrona
-  se resolve quando feita; `await` / `use` de um componente sempre lê uma task (o que o commonJS fazia antes da metade de código
-  da 375). (b) Só os componentes que a 375 marca são máquinas de estados; uma chamada por um valor de função é
-  assíncrona (a resposta conservadora da 375), então um componente síncrono passado como valor deve ser embrulhado numa
-  task já resolvida onde vira valor. (c) Como construído: componentes ansiosos, um `await` de uma task pendente do host
-  ali dá trap.
-  Hoje:
-  ```bp
-  fn page(n: i32) -> @Component<i32> {
-      val v = await answer(n);   // answer -> @Task<i32>: runs the ready tasks until it settles
-      return v;                  // a task waiting on the host here: trap on both hosts
-  }
-  ```
-  Exemplo de (a):
-  ```bp
-  val page = await Page(slot);   // always reads a task — as commonJS did before 375
-  ```
-  Exemplo de (b):
-  ```bp
-  val wrapped = await view(Title());   // view: a function value — always a task
-  ```
-  Exemplo de (c):
-  ```bp
-  fn Widget() -> @Component<i32> { return await delay(5, 1); }   // trap on both hosts
-  ```
-- **Recomendação.** (a) — uma representação de `@Component<R>` no wasm, sem trap; a marca da 375 continua uma
-  otimização do commonJS. Não construído: muda o lowering de toda célula de componente no wasm (frente 140 passo 4,
-  uma thread de acompanhamento).
-- **Bloqueia.** A caixa 1 do 140 passo 4 para corpos `@Component`; nada mais (nenhuma célula aguarda uma task de host num
-  componente).
-
-#### 140-f · Uma chamada antes de um `await` no mesmo statement, no wasm (392 (2))
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b).** O backend wasm liga cada operando avaliado antes de um `await` no seu comando a um local do frame (A-normal form), então o comando roda como escrito e como no commonJS, erlang e beam: `pair(label("x"), await answer(21))` guarda `label("x")`, depois faz o await — a chamada roda uma vez. Até isso entrar, a recusa localizada da (a) fica, então nada roda duas vezes em silêncio; `run/task_await_after_call_refused_on_wasm` então vira uma célula que roda em todo alvo.
-- **Medido.** Uma máquina de estados retoma um `await` entrando em seu statement de novo, lendo de volta o que
-  passou (condições, sujeitos de `case`, inícios de laço são mantidos no frame) e pulando os statements
-  antes dele; um operando avaliado antes do `await` em seu próprio statement roda de novo. Construído: uma chamada ali é
-  recusada no `await` — `@print(pair(label("x"), await answer(21)))` é ``the wasm backend resumes an
-  `await` by entering its statement again, and a call evaluated before it in that statement would run
-  twice`` em `21:29` (`run/task_await_after_call_refused_on_wasm`, `wasm.expect`); commonJS, erlang e beam
-  o rodam. Construtores e `Ok`/`Error` (uma alocação) não são contados como chamadas.
-- **Opções.** (a) ★ Recusado onde escrito (como construído): `val l = label("x"); @print(pair(l, await answer(21)));`
-  constrói em todo lugar. (b) O backend liga cada operando avaliado antes de um `await` a um local do frame
-  (forma normal A), então o statement roda como escrito: `pair(label("x"), await answer(21))` → `label("x")`
-  guardado, depois o `await`.
-  Hoje:
-  ```bp
-  @print(pair(label("x"), await answer(21)));
-  // wasm: error: the wasm backend resumes an `await` by entering its statement again, and a call
-  //       evaluated before it in that statement would run twice … --> src/main.bp:21:29
-  ```
-  Exemplo de (a):
-  ```bp
-  val l = label("x");
-  @print(pair(l, await answer(21)));
-  ```
-  Exemplo de (b):
-  ```bp
-  @print(pair(label("x"), await answer(21)));   // wasm: label("x") stored, then the await
-  ```
-- **Recomendação.** (a) agora — nunca uma chamada rodada duas vezes, a recusa localizada; (b) quando um programa precisar.
-- **Bloqueia.** Nada.
-
 #### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
 - **Medido.** A cadeia da 128, mantida pela 388 (4) ("dentro de um corpo de componente `await c` roda `c` com o escopo
   de filhos do corpo"), renderiza uma chamada de componente escrita num corpo de componente: o checker insere `await` em volta
@@ -520,40 +447,6 @@ número livre, que é **484**.
 
 ### 02-std-and-packaging
 
-#### 110-a · `testing.asserts` no wasm sob a regra estrita (146)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(3).** `testing.asserts` é importável no wasm, sua API inalterada (74): `throws` / `throwsWith` rodam sobre `attempt` (431-h, a forma wasm da 431-f) e não precisam de `tryCatch`; `canonical` (`deepEquals`) ganha um corpo botopink; `matches` vem com o regex do std no wasm — até lá uma chamada que alcança `regexMatches` no wasm é a recusa localizada, não o import. Amenda a última cláusula da 146.
-- **Medido.** Um programa wasm que importa `testing.asserts` é recusado: 4 de suas 27 funções alcançam células de host sem binding wasm (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); usos: throwsWith ~290, throws 4, deepEquals 2, matches 1; 140 arquivos importam o módulo.
-- **Regras.** 230: a frente 110 fecha em "um módulo do std que o wasm não consegue construir é uma recusa localizada"; o `02/97` passo 11 oferece (a) fora de um build wasm ou (b) reestruturado, uma pergunta por módulo. A última cláusula da 146 ("`testing.asserts` é reestruturado para que nada sem binding wasm seja alcançável a partir dele no wasm") pede (2)/(3); responder (1) a emenda.
-- **Opções.** (1) ★ Como está: não importável no wasm. (2) Os quatro vão para um módulo próprio; os outros 23 importam no wasm (muda a API da decisão 74). (3) As três células ganham versões wasm (um motor de regex no prelúdio wasm; um `@panic` capturável).
-  Hoje:
-  ```bp
-  import {testing.asserts} from "std";      // --target wasm
-  // error: `canonical` has no `#[@External.<Target>(…)]` for the wasm backend — in `std/testing/asserts`, which this import links
-  ```
-  Hoje:
-  ```
-  deepEquals → canonical        matches → regexMatches        throws, throwsWith → tryCatch
-  uses in the repositories: throwsWith ~290 · throws 4 · deepEquals 2 · matches 1 · 140 files import the module
-  ```
-  Exemplo de (1):
-  ```bp
-  // --target wasm: the import is refused (error above); a wasm program checks by hand
-  if (soma(1, 2) != 3) @panic("soma(1, 2) != 3");
-  ```
-  Exemplo de (2):
-  ```bp
-  import {testing.asserts} from "std";            // equals, isTrue, contains… — imports on wasm
-  import {testing.asserts_host} from "std";       // deepEquals, matches, throws, throwsWith — illustrative name
-  ```
-  Exemplo de (3):
-  ```bp
-  import {testing.asserts} from "std";            // --target wasm: compiles
-  try asserts.matches("abc", "a.c");              // the wasm prelude's regex
-  try asserts.throwsWith({ -> parse("x") }, "bad");  // catchable @panic on wasm
-  ```
-- **Recomendação.** (1) agora; (2) se o wasm precisar rodar asserts.
-- **Bloqueia.** Nada no gate; "o std compila no wasm" (05-wasm passo 5, 97 passo 11).
-
 #### 97-s16-a · Onde ficam as tabelas geradas do `unicode`
 - **Medido.** O `02/97` passo 16 nomeia `libs/std/src/unicode/tables.bp`. A árvore de módulos resolve um `mod Name;` só para `Name.bp` ou `Name/mod.bp` no diretório do arquivo declarante (`compiler-cli/src/cli/resolver.zig`, `build.zig` `collectStdModules`), então um módulo de arquivo `unicode.bp` não tem filhos: `unicode/tables.bp` é inalcançável a menos que `unicode` vire uma pasta, e um índice de pasta guarda só linhas `mod` e faz de `unicode` um namespace (`unicode.normalize` viraria `unicode.<sub>.normalize`, decisão 110). Pousado: um irmão plano `libs/std/src/unicode_tables.bp`, `mod unicode_tables;` (privado) em `root.bp`, `import {unicode_tables as tables};` em `unicode.bp`. O registro não respeita a privacidade do `mod`: o `import {unicode_tables} from "std"` de um consumidor resolve (resíduo 11 da 97 do compilador).
 - **Opções.** (a) ★ Como pousado — um irmão plano privado:
@@ -578,38 +471,6 @@ número livre, que é **484**.
   ```
 - **Recomendação.** (a): nenhuma mudança no compilador, um módulo a mais no registro; o resíduo 11 torna a privacidade real seja qual for a escolhida.
 - **Bloqueia.** Nada (uma mudança de um arquivo gerado e do caminho de saída do gerador sob (b)).
-
-#### std-d · `io.process`: sinais e leitor de TTY
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(c), uma terceira opção: as primitivas de host do std e uma nova biblioteca `cli`.** (1) O **std** ganha as células de host de um CLI, iguais em commonJS, erlang e beam, erros tipados por módulo (431-a), uma recusa localizada no wasm: `io.stdin` (`readLine() -> @Task<?string>`, `isTTY()`), `io.terminal` (`stdoutIsTTY()`, `size() -> ?#(i32, i32)`, `setRaw(on)`, `keys() -> Stream<Key>`), e em `io.process` `enum Signal { Int, Term, Hup, Winch }`, `onSignal(s, f)`, `spawn(cmd, args) -> @Result<Child, ProcessError>` com `Child.wait()`, `kill(s)`, `forwardSignals()`. (2) **`cli`**, uma biblioteca em botopink sobre elas, um estilo por parte escolhido para o botopink: **comandos a partir dos tipos** (o derive do clap, não a cadeia de builder do commander nem o objeto de opções do yargs, que respondem strings sem tipo) — um record com `#[cli.command("create", about: …)]`, seus campos `#[cli.arg]` / `#[cli.flag(short: "p")]` com padrões, subcomandos um enum desses records, `cli.parse<Onze>(env.args())` respondendo o valor tipado ou um erro nomeando a flag e o tipo, `--help` gerado a partir dos records; **estilo** como funções simples componíveis (as cores do chalk sem seus getters encadeados): `cli.style.green(s)`, `bold`, `dim` …, aninhamento seguro, nada emitido sob `NO_COLOR` ou quando o stdout não é TTY; **prompts** uma função aguardada por tipo respondendo seu próprio tipo (a forma do `@inquirer/prompts`, não o array de perguntas do inquirer respondendo um mapa sem tipo): `cli.prompt.text(msg)`, `confirm(msg, default:)`, `select(msg, options)` — sem terminal, um erro nomeando o argumento a passar em vez disso, nunca uma espera. (3) O onze a usa: `start` faz spawn do nó com `forwardSignals()` (e `bin/onze` mantém o `exec` da 71), `create` pergunta por `cli.prompt` num terminal. O repositório é `botopink/cli` (`repository/cli`, importado `from "cli"`), nomeado como as bibliotecas de formato de dados e empacotadas (`json`, `yaml`, `http`, `log`); o número da frente é da coordenação, como na 396.
-- **Medido.** `io/process.bp` nem registra nem repassa um sinal; o std não tem leitor de linha de TTY; `onze start` espera em `process.run` → `SIGTERM` deixa o nó rodando; `onze create` sem `--yes` não tem prompt a que recorrer.
-- **Opções.** (a) `process.onSignal(name, fn)`, `process.forwardSignals(child)`, `io.stdin.readLine()` — três células de host em dois alvos. (b) Nenhuma mudança no std: `onze start` faz exec do nó (o `bin/onze` da 71 é PID 1); `onze create` sem `--yes` recusado nomeando as flags de que precisa.
-  Hoje:
-  ```text
-  $ onze start &  ;  kill -TERM %1
-  # bin/onze exits; the erl node keeps running
-  $ onze create
-  # without --yes: there is no TTY reader to ask for the project name
-  ```
-  Exemplo de (a):
-  ```bp
-  process.forwardSignals(child);
-  val name = io.stdin.readLine();           // `onze create` asks for the project name
-  ```
-  Exemplo de (b):
-  ```text
-  $ onze start            # execs the erl node (71's bin/onze): the VM is PID 1 and receives SIGTERM directly
-  $ onze create           # no name and no --yes:
-  error: `onze create` needs <name> (or --yes)    # the name is positional; the flags are --example, --port, …
-  ```
-- **Recomendação.** (b).
-- **Bloqueia.** Passos 4 e 7 da onze 50; 97 passo 6 (condicional).
-
-#### 95-f · A tomada do onze — emendar a decisão 79
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(1).** A árvore é confirmada e uma nova decisão amenda a 79: `repository/onze` é o orquestrador, construído sobre a tag `mocking-lib-final` no mesmo histórico e remote; a biblioteca de mocks vive como esse histórico com tag — sem branch órfão, nada arquivado nem renomeado, nenhum histórico reescrito.
-- **Medido.** `repository/onze` é o workspace do orquestrador, construído na tag `mocking-lib-final` na mesma história e remoto — não o branch órfão da decisão 79; nada arquivado ou renomeado; o nome resolve só para os membros do orquestrador.
-- **Opções.** (1) Confirmar a árvore: uma nova decisão emenda a 79 — a biblioteca antiga vive como a história com tag do mesmo repositório. (2) Reescrever o remoto para um branch órfão, arquivar a história antiga (todo checkout re-clona).
-- **Recomendação.** (1).
-- **Bloqueia.** `02/98` passo 3 ("frente 95 fechada como confirmação"), escrito sob (1).
 
 #### nat-f3 · `files` e `workspaces` em `botopink.json` (98)
 - **Medido.** `files` lista, relativo a `src`, os módulos que um consumidor pode importar; uma biblioteca sem ele não distribui nada (`docs/botopink-json.md:52`). `workspaces` lista membros; um manifesto com ele é um workspace e recusa `src`, `files`, `entry`, `dependencies` (`:159-170`) — os dois nunca dividem um arquivo (`98-packaging-tail/README.md:27`). A 270 depende de `files` (o prelúdio `src/prelude.bp` é listado ali).

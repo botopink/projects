@@ -419,7 +419,7 @@ with a located message, recorded as the design; or (b) restructured so no host c
 
 - [ ] `io/http` and `async` build on wasm through step 17 (334, 335); `testing/mocks` keeps its located refusal on wasm
       until `botopink test` runs the wasm column, then its registry moves to the module's memory (335 (3)); `testing/asserts` per
-      `110-a` — each refusing module refuses with a located message, recorded in `libs/std/AGENTS.md` as the design
+      `decision 503` — each refusing module refuses with a located message, recorded in `libs/std/AGENTS.md` as the design
 
 ### B-01 — 431 (1): the effect messages and docs
 
@@ -2223,7 +2223,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 **Repository:** botopink-lang, with consumer commits in log (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 After B-00e (std-wasm in the wasm output may absorb some `wasi:` bindings these steps write). Questions
-`decision 502`, `140-e`, `140-f`, `110-a`. Unblocks log 106 s3 (the wasm column; G4: a wasm binding cannot reach the
+`decision 502`, `decision 504`, `decision 505`, `decision 503`. Unblocks log 106 s3 (the wasm column; G4: a wasm binding cannot reach the
 file system, cannot keep a value across calls; the wasm backend does not lower a context).
 
 **Impacted tests:** `run/wasm_host_*`, `run/std_io_http_on_every_target`, `run/std_async_on_every_target`,
@@ -2231,7 +2231,7 @@ file system, cannot keep a value across calls; the wasm backend does not lower a
 
 #### Step 4 — `@Task` on `wasi` (was `140-wasm-host` s4)
 
-- [ ] `@Component` bodies (375's mark) as state machines — 140-e (recommended: every `@Component` a
+- [ ] `@Component` bodies (375's mark) as state machines — decision 504 (recommended: every `@Component` a
       state machine on wasm); today they stay eager and an `await` of a task there runs the ready tasks,
       trapping on both hosts when the task still waits on the host
 - [ ] `fetch`'s `Request` / `Response` in the compiler's layout (393), with `wasi:http` (`io/http`, `02/97`
@@ -2349,8 +2349,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 116's botopink-lang half (the vscode-extension box is 161's) with 01-checker step 22's prelude scope;
 26 s9; std purity (23) and effects by return (24 — 24-a answered by 431, 24-b by 432; 24-c, 24-g open); std's
 snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-json.md` lines; 142 s1's std half
-(the json front, 151, carries the consumers). Questions `116-a/b/c`, `23-b`, `std-c`, `24-c`, `24-g`, `std-d`,
-`95-f`.
+(the json front, 151, carries the consumers). Questions `116-a/b/c`, `23-b`, `std-c`, `24-c`, `24-g`, `decision 506`,
+`decision 507`.
 
 **Impacted tests:** `tests/language/modules/bpp_*`, compiler-cli, language-server, lib-test-runner;
 `tests/cli_contract.sh`; `scripts/check-packaging.sh`; `test-libs`. **Model:** opus for 116, sonnet for the rest.
@@ -2533,7 +2533,7 @@ row for 02 and 05, not edited here.
 
 - [ ] `zig build test-libs` reads every member's row at its previous count (the last recorded whole run, 138's gate: 125 passed) — read on the next cold gate. Measured for std and the seven `-test` members: `std`, `emilia-test`, `erika-test`, `jhonstart-test`, `onze-test` pass on commonJS and erlang, `jhonstart-dom-test` on commonJS, `rakun-test` on erlang, `rakun-starter-test` compiles (no tests); 12 passed, 0 failed, 1 without tests, 3 restrictions audited
 
-#### Step 6 — conditional on `std-d`: `io.process` signals and a line reader (was `97-std-dedupe` s6)
+#### Step 6 — conditional on `decision 506`: `io.process` signals and a line reader (was `97-std-dedupe` s6)
 
 (a): `process.onSignal`, `process.forwardSignals(child)`, `io.stdin.readLine()`. (b), recommended:
 onze 50's boxes take their (b) shape.
@@ -2560,7 +2560,7 @@ onze 50's boxes take their (b) shape.
 
 #### Step 3 — front 95 closed as a confirmation (was `98-packaging-tail` s3)
 
-Under `95-f` (1): one `repository/onze` entry in `.gitmodules`, workspace `onze`, eight members with
+Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspace `onze`, eight members with
 `files`, listed by `zig build test-libs`; `mocking-lib-final` already resolves. Only the
 `docs/botopink-json.md` line to write.
 
@@ -2844,18 +2844,18 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
 
 After step H (the cells in `conformance/`).
 
-- [ ] each of `docs.md`'s 141 botopink fences becomes a cell in `conformance/modules/` (or names an existing one):
+- [x] each of `docs.md`'s 141 botopink fences becomes a cell in `conformance/modules/` (or names an existing one):
       the 89 compiled-only and 13 `body` with their output, the 24 `project` as multi-module cells, the 15 `reject`
       with their refusal — red on the parent, green after
-- [ ] the reference written in `conformance/docs.md` (the index, the text no cell owns) and
+- [x] the reference written in `conformance/docs.md` (the index, the text no cell owns) and
       `conformance/modules/<cell>/docs.md` beside each cell (462); `docs.md`, `docs/` (the manifest schema) and the
       language part of `README.md` moved there — no copy left; `test-docs` checks that every reference names a cell
 - [x] `scripts/gate.sh --no-conformance` (470): the commit hook's gate — every stage but the conformance cells;
       the GitHub pipeline runs `scripts/gate.sh` with them on `feat`, which a front's Conformance step reads (477);
       conformance runs locally only to reproduce a red
-- [ ] `.github/workflows/test.yml` calls `scripts/gate.sh` with conformance on a push to `feat` (477: a front's
+- [x] `.github/workflows/test.yml` calls `scripts/gate.sh` with conformance on a push to `feat` (477: a front's
       Conformance step reads that run), not its own list of stages
-- [ ] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
+- [x] `AGENTS.md` (§ Conventions' "README.md and docs.md stay in sync", § Local gate) rewritten for `conformance/`
 
 #### B-29 step I Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
 
@@ -3295,9 +3295,9 @@ for a defect).
 Found moving emilia's reference (79 cells): on wasm, any cell with a `path` dependency prints nothing, a bare
 `@print("hello")` included; emilia's `arbitrary.bp` does not build on wasm (`join/1` does not resolve).
 
-- [ ] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
+- [x] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
       dependency on wasm
-- [ ] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
+- [x] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-43 — a `Set` of structurally equal records keeps one on every target (decision 210)
@@ -3389,6 +3389,49 @@ target but beam, which aborts; B-45 fixed the erlang lowering.
 
 - [ ] the abort measured; the beam lowering reaches the library's member; the cell green on beam
 - [ ] a beam codegen test the hook runs, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-51 — commonJS prints an `f64` without its `.0` (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`math.abs(0.0 - 1.0)` prints `1` (`import_module_paths`) and an `f64` out of a `case` prints `2` (`enum_declaration`) on
+commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.0` / `2.0`.
+
+- [ ] the two cells green on commonJS; an `f64` reaching `@print` through a std call or a `case` keeps its `.0`
+- [ ] a codegen test the hook runs, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-52 — wasm prints a string field or an awaited string as a number (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`generic_fn_and_type` prints `Tree.Leaf(value: 280)` for a generic record's string field; `async_block_both` prints
+`2922` for `ana2`; `task_result_await` prints `Hello, 292` for `Hello, ana`.
+
+- [ ] the three cells green on wasm: a string reaching a generic field or crossing an `await` prints as text
+- [ ] a codegen test the hook runs, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-53 — `@print` of a `@Result` prints the host's form (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`@print(Ok(81))` prints `{ ok: 81 }` on commonJS, `{ok,81}` on erlang and a number on wasm; the reference says a value
+prints the way the source writes it.
+
+- [ ] a cell red on the parent: `@print` of `Ok(…)` and `Error(…)` on every target, the source's form
+- [ ] every backend prints a `@Result` as `Ok(81)` / `Error(…)`
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-54 — `botopink format` rewrites an annotation's labelled argument `keyed: true` to `keyed = true`
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`#[@BeamMemory.Ets(keyed: true)]` comes back from the formatter as `keyed = true`; the reference and 305 write the
+labelled form.
+
+- [ ] the formatter keeps an annotation's labelled arguments as written (`label: value`); a format test red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)

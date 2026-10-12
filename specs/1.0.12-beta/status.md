@@ -31,8 +31,6 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (470) have landed (Done).
 
 - [ ] 144 B-29 step H — what the move left: the in-process runs of `reject/` and single-file `run/` cells; `generic-loader-binding` into erika after the 144 front · nothing
-- [ ] 144 B-29 step I — the commit hook runs `gate.sh --no-conformance` (470, landed: a one-backend step 4m20 cold, 1m28 warm); left: the reference into `botopink-lang/conformance/` (every `docs.md` example a cell), `test.yml` calling `scripts/gate.sh` (461, 462, 466) · the fourth step of the conformance order, after step H2
-- [ ] emilia's 79 cells green on wasm — after 144 B-40 and B-42 (the move into `emilia/conformance/` landed; jhonstart, erika, onze and rakun done) · the sixth step of the conformance order
 - [ ] 144 B-00c last box — each library repository's own hook run on this compiler, `scripts/gate.sh libs` (473); `test-libs` green · the seventh step of the conformance order: after the step gate, the hook's `--no-conformance`, B-29 steps H and I, 163 s7 and each library's move into `conformance/`, so the hooks include it; it closes B-00
 - [ ] 163 s8 last boxes — a green `test.yml` run on `feat` for every library (dependency closure fixed; jhonstart's cells green on commonJS, erlang and beam, wasm waits on B-38); the workflow's dependency step held to one text by `gate.sh check` · nothing
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
@@ -49,10 +47,13 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-38 first box — every cell of a directory reported: a stdout write no longer drops a line (the suspected cause, not reproduced); confirmed by the pipeline's counts · nothing
 - [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
 - [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · nothing
-- [ ] 144 B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (`join/1`) · nothing
 - [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · nothing
 - [ ] 144 B-44 — wasm prints a lifted `bool` as `1` (`yamlconf`) · nothing
 - [ ] 144 B-50 — beam: a member call through a library's default handle aborts (`default_handle_member`) · nothing
+- [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · nothing
+- [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · nothing
+- [ ] 144 B-53 — `@print` of a `@Result` prints the host's form · nothing
+- [ ] 144 B-54 — `botopink format` rewrites `keyed: true` to `keyed = true` · nothing
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 144 B-49 — std's `io/random` sidecar ships on commonJS with a module whose decorator uses it · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
@@ -66,7 +67,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · runs in 163 s9 (the measurements at the end of the conformance order, a quiet machine)
 - [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [ ] 134 — `registerStdlib` now runs the associated-type rewrite on std modules (`comptime.zig`, landed with batch 8 for `Type.Field<T>`): owner 01-checker · none
-- [ ] 140 (334) — steps 1–3 and 6's loader landed (botopink-lang `56d4bc29`); step 4 landed: `@Task` a resumable state machine over the scheduler on both hosts (392), the `wasi:delay` / `race` / `race_of` / `spawn_all` adapters checked by shape (393), one adapter list (394), `run/wasm_host_async` and three task cells green on four targets and both hosts, the cost in the README; open: `@Component` bodies (140-e), `fetch`'s records, the binary component encoding, std's `External.Wasm` declaration without `host` · then 97 s17 (`io/http`, `async` on wasm: `run/wasm_host_http`, `async_block_all_of`'s wasm column) · questions 502 ★, 140-e, 140-f ★
+- [ ] 140 (334) — steps 1–3 and 6's loader landed (botopink-lang `56d4bc29`); step 4 landed: `@Task` a resumable state machine over the scheduler on both hosts (392), the `wasi:delay` / `race` / `race_of` / `spawn_all` adapters checked by shape (393), one adapter list (394), `run/wasm_host_async` and three task cells green on four targets and both hosts, the cost in the README; open: `@Component` bodies (504), `fetch`'s records, the binary component encoding, std's `External.Wasm` declaration without `host` · then 97 s17 (`io/http`, `async` on wasm: `run/wasm_host_http`, `async_block_all_of`'s wasm column) · questions 502 ★, 504, 505 ★
 - [ ] 05-wasm s9 · 04-js s11 (333 (B), later) — a prebuilt wasm library merged into the module; no user yet
 - [ ] 139 (332) — steps 1–5 landed: the `n` literal, `primitives.bp`'s `behavior BigInt` (`of`, `parse`, `toString`, `toI64`, `toF64`), erlang/beam the VM's integer, commonJS `BigInt` (`.d.ts` `bigint`, `tsc-check.sh` green), wasm's `bigint` helper group (≈ 2.9 KB, linked only when used), `run/bigint_arithmetic` one `.out` on the four targets; 501 (a) ★ built (no `unknown`, `is` or `comptime` over a `bigint`), 139-b ★ · lands through the coordinator; then 97 s15 (`Decimal`, `Json`'s `Int` / `BigInt` / `Dec`) · 125's bind rule; open: wasm's union row
 - [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
@@ -106,7 +107,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 97 s2 residue — the library repositories' `Json` accessor copies (botopink-lang's `libs/` is std alone, clean): validation `derived.bp` `membersOf`, `formats.bp` `isObject` · 125 s2 residue · rakun `jwt.bp`, `autoconfig_registry.bp` · 04-rakun
 - [ ] 97 s3 · s5 residue — rakun's `parseDuration`, `skewOf` and four retry loops as "consume std" rows · no 04-rakun front carries them yet
 - [ ] 97 s4 residue — the full `test-libs` count against its last record (138: 125 passed) · the cold gate; the engine half is done: no `-test` member has its own, and `test-libs --lib std` plus the seven `-test` members read 12 passed, 0 failed, 1 without tests, 3 restrictions audited
-- [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 110-a
+- [ ] 97 s11 — std on wasm, group 3 (230) · `io/http`, `async` through 140 + s17 (334) · `testing/mocks` in module memory when tests run on wasm (335), 503
 - [ ] 97 s13 rest — `io/clock`'s `formatIso8601` / `toCivil` / `offsetMinutes` past ECMAScript's time range · `497` · `Json`'s `i64` as its digits (332, s15) · `496` (`abs` of the minimum)
 
 ### 146 validation
@@ -210,6 +211,8 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 
 The `(W<n>)` marks are the old waves, kept as relative order; the order in force is [`fronts.md`](fronts.md) § Execution order.
 
+- [ ] 164 cli — a new library repository `botopink/cli` (decision 506): typed commands, style and prompts over std's new CLI primitives (144 B-27); the repository and its front open after the 144 front · after 144 B-27
+
 ### 144 botopink-lang
 
 - [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a (reduced: `registerRouteStarters` + `globals.starters`) · s8: 01's hooks capability, ctr-l (only the record) (s7 is 135's)
@@ -245,7 +248,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 ### 162 onze
 
 - [ ] 49 s2–5 (W3 → W7) — query, headers, dispatcher; the digest's sink; the public root; the dynamic mark · 102 s3 · s3: 26 s4 + 17 · s4: 65 s1 · s5: 22 s4 · 49-e
-- [ ] 50 s2–7, s9 (W3 → W8) — `dev`, `prerender/`, the signal, `bin/onze`, the bundler tail, the defaults table; the `@/` alias gone (218) · 102 s3 · s2: 50-b · s4, s7: std-d · s5: 71 s2 · s6: 27 s1
+- [ ] 50 s2–7, s9 (W3 → W8) — `dev`, `prerender/`, the signal, `bin/onze`, the bundler tail, the defaults table; the `@/` alias gone (218) · 102 s3 · s2: 50-b · s4, s7: 506 · s5: 71 s2 · s6: 27 s1
 - [ ] 51 s2–6 (W7) — single flight and the route, the prop table, the metrics generator, the OG defaults · 22 · s4: 52-a
 - [ ] 71 s1–2 (W3) · s3–4 (W7) · s5 (W10) — ERTS copy and `bin/onze`; shutdown over real cells and static export; the four gate boxes over the blog · 49 s6 · s3: 11, 04, 81 · s4: 22 · s5: 50, 53
 - [ ] 53 (W8) — the blog's `alias` gone, the acceptance script's second half, the browser · 49 · 50 · 51 · 71 s1–4 · 26 · 27 · 67 · 22 · 12 · 65 · 135 s5 (the runner) · s6: 50-b
@@ -268,7 +271,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 ### 98 packaging tail (medium)
 
-- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 95-f · s4 done: `subdir` (344)
+- [ ] 98 (W11) — packaging checked everywhere · every library track's `-test` and README steps · s3: 507 · s4 done: `subdir` (344)
 
 ### 135 snap (medium)
 
@@ -299,8 +302,6 @@ last section. Open: 88 questions, 6 contradictions, 100 implementation choices (
 - [ ] nat-f2…f4 — case by case (284): `onze.json` keys (124), `files`/`workspaces` (98), `ONZE_PUBLIC_` (50, 53)
 
 Then:
-- [ ] std-d — 97 s6 · 50 s4, s7
-- [ ] 95-f — 98 s3
 - [ ] 07-g — 107 whole
 - [ ] 03r-ab — 09 s5 (and the scope of s1–4) · only the record
 - [ ] 03r-ae — 79 s3
@@ -328,6 +329,8 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] **144 B-00a → B-00k (434, 437, 442, 446, 450, 452, 459)** — comptime on wasm only, the first thing the milestone did: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442); B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · landed: B-00a, B-00d, B-00f (437), B-00h (446); B-00b for 435's subset, a foreign `.beam` and standalone (438), the utility whole (the comptime does not call it, 452); B-00c (452: a host function at build answers by `std:` or `fn:`), its last box open — the line below; B-00e (440, 441: std-wasm transpiled into the wasm program, the `std:` binding, std-wasm's text, sizes in `wat/AGENTS.md`); B-00g (442, 443, 445, 447, 451: std's helpers and `bigint` in std-wasm, Unicode case mapping, `std:` std's alone, a frame past the stack's floor traps, the seeded random std-wasm's and refused unseeded at comptime); B-00j (452, 453, 455, 456: the comptime answers by `std:` or `fn:`, never an Erlang cell; the name `std` reserved; `random.float` std-wasm's); B-00i (450: the Erlang terms and OTP functions are std-wasm's, `bp_wat_rt.wasm` gone); B-00k (459: the group's Conformance step — four cells, the table in the README) — **the B-00 group is done but for B-00c's last box** (L1, the seventh step of the conformance order)
+- [x] 144 B-29 step I — the language reference is `conformance/docs.md`, every example a cell (90 new) or `text`; `docs.md`, `docs/` and README's example removed; `test.yml` runs `scripts/gate.sh --cold` with conformance — its Conformance step open; five new cells red until B-51 and B-52
+- [x] 144 B-42 — wasm: a fold lambda's string accumulator resolves its methods (`join/1`); emilia's 79 cells green on their declared targets, wasm refusing each on a host binding (`raisedBy`) — its Conformance step open; the sixth step of the conformance order done
 - [x] 144 B-38 — a cell's `path` dependency and dependency tiers resolve from the cell's own directory, from any working directory — its Conformance step open
 - [x] 144 B-45 — erlang: a member call through a library's default handle reaches the library — its Conformance step open; the example's move into erika after the 144 front
 - [x] 144 B-34 — beam: a closure's free-name walk binds an `if` binding in its then-branch only (styled's `spliced`); jhonstart's 18 cells green on commonJS, erlang and beam — its Conformance step open
