@@ -757,6 +757,7 @@ número livre, que é **484**.
 - **Bloqueia.** Passos 4 e 7 da onze 50; 97 passo 6 (condicional).
 
 #### 95-f · A tomada do onze — emendar a decisão 79
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(1).** A árvore é confirmada e uma nova decisão amenda a 79: `repository/onze` é o orquestrador, construído sobre a tag `mocking-lib-final` no mesmo histórico e remote; a biblioteca de mocks vive como esse histórico com tag — sem branch órfão, nada arquivado nem renomeado, nenhum histórico reescrito.
 - **Medido.** `repository/onze` é o workspace do orquestrador, construído na tag `mocking-lib-final` na mesma história e remoto — não o branch órfão da decisão 79; nada arquivado ou renomeado; o nome resolve só para os membros do orquestrador.
 - **Opções.** (1) Confirmar a árvore: uma nova decisão emenda a 79 — a biblioteca antiga vive como a história com tag do mesmo repositório. (2) Reescrever o remoto para um branch órfão, arquivar a história antiga (todo checkout re-clona).
 - **Recomendação.** (1).

@@ -758,6 +758,7 @@ number, which is **484**.
 - **Blocks.** onze 50 steps 4 and 7; 97 step 6 (conditional).
 
 #### 95-f · The onze takeover — amend decision 79
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(1).** The tree is confirmed and a new decision amends 79: `repository/onze` is the orchestrator, built on tag `mocking-lib-final` in the same history and remote; the mocking library lives as that tagged history — no orphan branch, nothing archived or renamed, no history rewritten.
 - **Measured.** `repository/onze` is the orchestrator's workspace, built on tag `mocking-lib-final` in the same history and remote — not decision 79's orphan branch; nothing archived or renamed; the name resolves only to the orchestrator's members.
 - **Options.** (1) Confirm the tree: a new decision amends 79 — the old library lives as the tagged history of the same repository. (2) Rewrite the remote to an orphan branch, archive the old history (every checkout re-clones).
 - **Recommendation.** (1).
