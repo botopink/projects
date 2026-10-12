@@ -71,8 +71,8 @@ The front runs on two machines, each with its own coordinator, gate pool and mai
 
 | Machine | Folder | Lanes and groups |
 |---|---|---|
-| 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `129-import-without-from`, `134-builtins-declared` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
-| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `140-wasm-host`) | the rest of B-00 first; lane B; lane C; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64, B-77); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81) |
+| 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `129-import-without-from`, `134-builtins-declared` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); the steps this machine had in flight when the front was split — B-22 (its design pass) and B-60 (the cache's level B; B-77 waits on it); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
+| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `140-wasm-host`) | the rest of B-00 first; lane B; lane C; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81) |
 
 **The rules the two machines share:**
 
@@ -261,7 +261,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-19 | [2](machine-2-backends-tooling/README.md) | 216, 281, 298, 353, 356: decorator outputs |
 | B-20 | [1](machine-1-checker/README.md) | 330: the optional operators' rest and their codemod |
 | B-21 | [1](machine-1-checker/README.md) | 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value |
-| B-22 | [2](machine-2-backends-tooling/README.md) | The backends' and the checker's residue rows |
+| B-22 | [1](machine-1-checker/README.md) | The backends' and the checker's residue rows |
 | B-23 | [1](machine-1-checker/README.md) | 247, 255, 310 and the checker's rows |
 | B-24 | [2](machine-2-backends-tooling/README.md) | 319, 320, 332: numbers and strings exact everywhere |
 | B-25 | [2](machine-2-backends-tooling/README.md) | 333 (B), 334, 335: the wasm host |
@@ -294,7 +294,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-54 | [2](machine-2-backends-tooling/README.md) | `botopink format` rewrites an annotation's labelled argument `keyed: true` to `keyed = true` |
 | B-55 | [1](machine-1-checker/README.md) | whole-package analysis: can two modules of a package import each other? (study, s23-i) |
 | B-56 | [1](machine-1-checker/README.md) | `botopink migrate` removed (s23-i) |
-| B-60 | [2](machine-2-backends-tooling/README.md) | the code cache, level B: a dependency's analysis on disk in `.botopinkbuild/analysis/` (decision 509 (1); t… |
+| B-60 | [1](machine-1-checker/README.md) | the code cache, level B: a dependency's analysis on disk in `.botopinkbuild/analysis/` (decision 509 (1); t… |
 | B-62 | [2](machine-2-backends-tooling/README.md) | nine cells red on `feat`: a manifest column and a dependency's path |
 | B-63 | [2](machine-2-backends-tooling/README.md) | `botopink cell check` runs cells in parallel (`--jobs`) |
 | B-64 | [2](machine-2-backends-tooling/README.md) | a module's tests are a unit of their own, on every target (decision 513) |
