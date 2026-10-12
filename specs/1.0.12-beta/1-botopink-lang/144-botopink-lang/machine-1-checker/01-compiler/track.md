@@ -31,10 +31,10 @@ cut by file ownership so fronts run in parallel.
 | [`24-effects-by-return/`](../../machine-2-backends-tooling/24-effects-by-return/context.md) | medium | not started | the guide as one program, four confirmations, the per-item cost | rakun's `serverAction` · 24-a/b/c/g |
 | [`26-cli-tooling/`](../../machine-2-backends-tooling/26-cli-tooling/context.md) | high | partial: steps 1–5, 7, 8 done (2 box 3 measured, rakun's row); 6, 9 open | only a direct dependency importable (242), warnings in `build`/`test`, the LSP's import check | 98 step 4 · 23 |
 | [`129-import-without-from/`](../129-import-without-from/context.md) | high | partial | `from` names a package (206, done); the shorthand goes, `mod` binds its namespace (337) | — |
-| [`130-decorator-outputs/`](../../machine-2-backends-tooling/130-decorator-outputs/context.md) | high | partial: steps 1–4 done; 5 (38 of 119 sites), 6 open | the library sites, `@emit` removed | 01 step 20 (256's registry) · the library tracks |
+| [`130-decorator-outputs/`](../130-decorator-outputs/context.md) | high | partial: steps 1–4 done; 5 (38 of 119 sites), 6 open | the library sites, `@emit` removed | 01 step 20 (256's registry) · the library tracks |
 | [`134-builtins-declared/`](../134-builtins-declared/context.md) | high | partial: steps 1, 3 on feat; 2 partial | the type functions, the `result` namespace, the `@Result`/`?T` methods, `@is` | 134-a…d |
-| [`139-bigint/`](../../machine-2-backends-tooling/139-bigint/context.md) | medium | steps 1–5 landed | `bigint`, an integer of any size with the integer operators and the `n` suffix, one value on the four targets (332) | 04-js step 9 · 05-wasm step 8 |
-| [`140-wasm-host/`](../../machine-2-backends-tooling/140-wasm-host/context.md) | high | not started | a wasm build binds to its runtime: `wasi` (wasmtime, WASI preview 2: `wasi:http`, clocks, pollables) first, `browser` (JS imports, JSPI) after; `@External.Wasm(host: …)`; `@Task` on `wasi` (334) | 05-wasm s5 · front 18 · 98 (the manifest key) |
+| [`139-bigint/`](../139-bigint/context.md) | medium | steps 1–5 landed | `bigint`, an integer of any size with the integer operators and the `n` suffix, one value on the four targets (332) | 04-js step 9 · 05-wasm step 8 |
+| [`140-wasm-host/`](../140-wasm-host/context.md) | high | not started | a wasm build binds to its runtime: `wasi` (wasmtime, WASI preview 2: `wasi:http`, clocks, pollables) first, `browser` (JS imports, JSPI) after; `@External.Wasm(host: …)`; `@Task` on `wasi` (334) | 05-wasm s5 · front 18 · 98 (the manifest key) |
 
 ## Ownership
 

@@ -21,7 +21,7 @@ that library's front holds the same files (then the step names a handed-over row
 Every open box of the steps (now in the two machines' folders, § Machines) was moved verbatim from the old track fronts; the tag after each `####` heading names
 where it was; each old front's goal, mechanism and topic files sit in a subdirectory named after it, in the
 folder of the machine that runs its steps (`machine-1-checker/01-checker/context.md`,
-`machine-2-backends-tooling/116-bpp-file-format/examples/` …). The steps run in the order written: **first B-00 (434)**,
+`machine-1-checker/116-bpp-file-format/examples/` …). The steps run in the order written: **first B-00 (434)**,
 then the error contract of 431 / 432 (B-01–B-09), then the structural fixes the library fronts wait on
 (decision 430: B-10–B-19), then the rest (B-20–B-29).
 
@@ -71,8 +71,8 @@ The front runs on two machines, each with its own coordinator, gate pool and mai
 
 | Machine | Folder | Lanes and groups |
 |---|---|---|
-| 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `129-import-without-from`, `134-builtins-declared` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); the steps this machine had in flight when the front was split — B-22 (its design pass) and B-60 (the cache's level B; B-77 waits on it); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
-| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `140-wasm-host`) | the rest of B-00 first; lane B; lane C; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81) |
+| 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `116-bpp-file-format`, `129-import-without-from`, `130-decorator-outputs`, `134-builtins-declared`, `139-bigint`, `140-wasm-host` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); the steps this machine had in flight when the front was split — B-22 (its design pass) and B-60 (the cache's level B; B-77 waits on it); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
+| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`) | the rest of B-00 first; lane B; lane C; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81) |
 
 **The rules the two machines share:**
 
