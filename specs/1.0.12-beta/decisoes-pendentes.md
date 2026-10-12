@@ -5,7 +5,7 @@ entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seu
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
 - Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
-  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **484**.
+  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **515**.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
@@ -18,7 +18,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **484**.
+número livre, que é **515**.
 
 ---
 
@@ -29,6 +29,7 @@ número livre, que é **484**.
 `00-gate` não tem pergunta aberta: os passos da 114 não esperam nenhuma decisão.
 
 #### s29-a · Como uma anotação de template recebe a declaração anotada, e se ela também é um template de ponto de chamada (311)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído** — uma função de template que declara `comptime decl: @Decl` como seu segundo parâmetro é só uma anotação (`#[query "…"]`): chamada como `query "…"` é `template-annotation-only`, e um template sem esse parâmetro nunca é uma anotação (`template-annotation-without-decl`). A assinatura diz qual forma uma função toma, então nenhum ponto de chamada encontra um handle que não pode ter, e a 398 já escreve os dois usos como duas funções (`#[query "…"]` no dbcontext, `self.db.query "…"` no erika) — uma grafia por coisa; o `?@Decl` de (b) e o `q.decl()` de (c) fazem cada um uma função responder duas formas. Viável, construído: `member_fn.zig` `isTemplateAnnotation` / `isTemplateAnnotationParams`, `infer.zig` `checkTemplateAnnotations` e a recusa na chamada, células `template_annotation`, `template_annotation_called`, `template_annotation_without_decl` (comptime em wasm, uma resposta nos quatro alvos). Mudanças: o "uma função é ao mesmo tempo o template e a anotação" da 311 (2) é emendado para "uma função de template é uma coisa ou outra"; sob a 14s8-a (e) os buracos `${…}` da anotação são a gramática própria do template, cada nome emendado no membro construído e resolvido no escopo da declaração anotada (311), então a leitura de `q.parts()` de `template_annotation` é reescrita pelo passo que pousa a 14s8-a (e).
 - **Medido.** A 311 deixa a grafia do `@Decl` para o `01-checker` passo 29 e diz "uma função é ao mesmo tempo
   o template e a anotação (`erika "…"` e `#[erika "…"]`)". Uma função de template é chamada só com
   seu literal (`f "…"`), então um parâmetro `@Decl` declarado não tem argumento num ponto de chamada; a 398 desde
@@ -69,6 +70,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a) (`01-checker` passo 29).
 
 #### s29-b · Como o decorator de um dono lê o meta tipado de um método (313)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído, lido como a 130-s8-a agora grafa** — o decorator do dono lê `m.meta(Query)` numa entrada de `decl.methods` e recebe `Query[]` (`[]` quando não há); `metaAll` vai embora. A leitura fica onde o dono já percorre seus métodos, tipada pelo record (298), e a leitura única da 130-s8-a (sempre uma lista) substitui o par `?T` / `metaAll`; (b) não é viável hoje (`inferTypeinfoRead` responde só `.name` e o meta de string, e o meta de um método não é publicado no `TypeInfo` — s23-f (b) primeiro); (c) refaz o trabalho do template em todo dono. Viável: `infer.zig` `inferMethodMetaRead` (tipa `?T` hoje), `runtime/prelude.zig` `__bp_methodMeta` / `__bp_methodMetaAll`, o `Method` de `builtins.d.bp`, célula `template_annotation`. Mudanças: a leitura `T[]` é um passo 144 próprio (o da 130-s8-a, antes do B-72, cuja caixa já nomeia `T[]`): `inferMethodMetaRead` e `inferTypedMetaRead` respondem `T[]`, os dois helpers do prelúdio viram um, `metaAll`, `typeinfo-meta-several` e `typeinfo-meta-repeated` saem de `builtins.d.bp`, `typed_meta.zig`, `expr_param.zig`, `transform.zig` e `typeinfo_all.zig`, os textos das decisões 418 e 298 são emendados do mesmo modo; um defeito a registrar até lá: `m.meta(T)` sobre vários valores acrescentados responde silenciosamente o primeiro (`__bp_methodMeta` pega a cabeça) onde `@typeInfo(X).meta(T)` recusa.
 - **Medido.** A 313 tem `#[erika "…"]` / `#[query "…"]` e `#[nativeQuery(…)]` registrando "meta tipado do
   método (298)", e `#[repository]` no behavior "lê o meta de cada método"; a célula do passo 29 pede
   "uma anotação de método cujo meta um decorator de nível de tipo lê". Antes: meta tipado num método era
@@ -159,6 +161,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a); o `#[page]` da `05-jhonstart/26` lê seu meta a partir do ponto de entrada.
 
 #### 130-s8-d · Um record de meta genérico lido por uma entrada de catálogo (298)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 420** ((a), como construído). Fechar removendo a entrada; quando o `T[]` da 130-s8-a pousar, o `metaAll(Check)` da 420 lê `meta(Check)` — a regra (um record genérico é lido por `@typeInfo(X)`, nunca por uma entrada de catálogo) não muda.
 - **Medido.** Construído: `d.metaAll(T)` numa entrada de `@TypeInfo.all` chama uma função do módulo leitor
   tipada para `T` (`declared__metaAll__<T>`, `typed_meta.withMetaHelper`); uma genérica não pode ser escrita
   sem aplicação (`Check` de `Check<T>`), e um leitor genérico perde o `T` no wasm. `d.metaAll(Check)` é
@@ -184,6 +187,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a).
 
 #### s28-a · O default de um campo de uma fonte importada que nomeia um binding de seu módulo (307)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 421** ((a), como construído). Fechar removendo a entrada.
 - **Medido.** Construído: `Type.omit(Link, .href)` sobre um `Link(…, rel: string = defaultRel())` importado
   copia o campo sem seu default — a regra que `registerExports` aplica ao parâmetro de uma função importada
   (`infer.isClosedDefault`): um literal, `true` / `false`, `null`, um sinal, um array ou tupla desses
@@ -206,6 +210,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a).
 
 #### s28-b · `Type.required` sobre um campo com default `null` (307)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 422** ((a), como construído). Fechar removendo a entrada.
 - **Medido.** Construído: `required` tira o `?` de cada campo e descarta junto um default `null`
   (`description: ?string = null` → `description: string`, fornecido em toda construção); qualquer outro
   default permanece.
@@ -219,6 +224,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a).
 
 #### s28-c · O que um tipo derivado leva além dos campos (307)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 423** ((a), como construído). Fechar removendo a entrada.
 - **Medido.** Construído: o record derivado contém só os campos — os métodos, as cláusulas `implement`
   e as anotações de nível de tipo da fonte não vêm (`Type.pick(Recipe, .title)` não tem método de `Recipe`);
   as anotações do próprio `val` vão no tipo. A decisão 307 nomeia só "os marcadores dos campos da fonte".
@@ -232,6 +238,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a).
 
 #### s28-d · Um record genérico ou um alias importado como fonte (307)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 424** ((a), como construído). Fechar removendo a entrada.
 - **Medido.** Construído: recusado no argumento (`derived-type-source-not-record`): um record com parâmetros
   de tipo (`Type.pick(Box, .item)` — `T` sem vínculo), e um alias de tipo importado (seu alvo é nomeado no
   escopo de seu próprio módulo). Um alias local de um record é esse record.
@@ -250,11 +257,13 @@ número livre, que é **484**.
 
 
 #### ctr-o · Decisão 146 contra a confirmação `lem-c`
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Confirmar `lem-c`, e ler a 146 junto com ela como uma só regra** — uma célula de host sem binding para o alvo (um `declare fn` livre ou um `declare fn` de um tipo) pode ser declarada; toda função com corpo, livre ou método, cujo corpo a alcança é recusada para esse alvo na expressão de chamada dentro desse corpo, chame-se ou não essa função. Os dois textos nomeiam um só comportamento: o "na sua declaração, chamada ou não" da 146 é a função recusada pelo próprio corpo, o "onde é chamada" da `lem-c` é onde fica o cursor; recusar a declaração do tipo proibiria um tipo declarado uma vez para vários alvos, e nada roda em silêncio de um jeito ou de outro (67). Viável, construído: `codegen/hostMethods.zig` `missingAt`, chamado na chamada em `commonJS.zig`, `erlang.zig`, `beam_asm.zig` e `wat.zig`; toda função com corpo é emitida, então a chamada falha chamada ou não; células `bodyless_method_without_binding`, `external_method_erlang_only`, `external_wrapper_keeps_refusal`, `std_asserts_host_cell_on_wasm`; `conformance/docs.md` já afirma as duas. Mudanças: a linha da 146 e a `lem-c` reescritas como a regra única acima (sem código); duas linhas 144 a registrar: em wasm um método de behavior com parâmetros de tipo é emitido só quando alcançado (`wat.zig`), então a 146 não vale ali; `hostMethods.binds(.wasm)` é `false` fixo, então um método de tipo que carrega uma célula `@External.Wasm(fn:` / `std:)` é recusado em wasm contra o `docs.md`.
 - **Regras.** 146: uma função cujo corpo alcança uma função de host sem binding para o alvo "é recusada em sua declaração, chamada ou não". `lem-c` (construído, a confirmar): um método de host sem binding "é recusado onde é CHAMADO" — recusar a declaração era a opção não tomada; a 311 mantém o mesmo na chamada.
 - **Recomendação.** Confirmar `lem-c` para uma declaração de host sem corpo (um tipo declarado uma vez ainda compila para um alvo que seu método não tem); declarar que a 146 rege qualquer função com corpo, livre ou método, que alcance uma; `docs.md` diz as duas coisas.
 - **Bloqueia.** A confirmação de `lem-c`.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.
 - **Medido.** Construído: só `counts.at(k)` (`ets:lookup`) e `counts = counts.insert(k, v)` (`ets:insert`); todo o resto (`counts[k]`, `hasKey`, `delete`, `size()`, passá-lo adiante) recusado no identificador; um var keyed nunca é `pub`. A 63 da 1.0.5: um índice responde `V` e falha numa chave ausente; `at` responde `?V` (`null`).
 - **Opções.** (a) As duas formas, como construído, e `counts = counts.bump(k, n)` (340). (b) (a) mais `counts[k]` com o significado da 63 (`ets:lookup`, `V`, falha numa linha ausente). (c) (b) mais `hasKey` (`ets:member`) e `delete` (`ets:delete`), cada um uma nova primitiva de `std/beam`.
 - **Recomendação.** (a).
@@ -318,6 +327,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a); um renome toca `builtins.d.bp`, o espelho do `comptime.zig`, `hooks.zig` e as células.
 
 #### s23-c · O que o `Declared` de uma declaração alcançada guarda num corpo de decorator
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b), e a leitura de meta tipada** — num corpo de decorator o `value` de uma declaração alcançada (`h.hook.value`, `c.callee.value`, `n.function.value`) é recusado na leitura, localizado (`decl-hooks-value: a reached function is no value at build`), como o `value` de catálogo de um corpo de template é (`typeinfo-all-template-value`); seu meta é lido tipado — `h.hook.meta(Route)` → `Route[]` (298, 130-s8-a), respondido no build quando `Route` é dado e recusado nomeando o campo de run-time caso contrário (415 (3), 380) — nunca a lista de strings `<decorator>.<key>`. Recusar antes de aceitar (67): um `null` tipado como a função esconde que não há nada ali, e a 364 (3) já diz que uma função não tem valor no build; strings carregando os fatos de um decorator são o legado da 216 (2), que o próprio `builtins.d.bp` marca como de saída. Viável: a recusa de corpo de template em `infer.zig` (guardada por `env.inTemplateFn`) ampliada para um corpo de decorator, um id em `diagnostics.zig`; `hooks.zig` `declaredTerm` constrói o termo (escreve `value` como `undefined` e o `meta` de string, e não escreve a chave `typedMeta` hoje, então uma leitura direta de `typedMeta` provavelmente falha em run time — uma linha 144); a leitura tipada segue a regra de `meta_read_at_build` para dados. Mudanças: `Declared.meta: DeclaredMeta[]` sai com o meta de string; o comentário sobre `Declared` em `builtins.d.bp`; uma célula de recusa.
 - **Medido.** `HookUse.hook`, `HookCall.callee` e `HookNode.function` são `Declared<unknown>`. Construído: `value` é
   `null` (nenhuma função do programa roda enquanto ele compila, 364 (3)), e `meta` é toda entrada que os decorators da
   declaração definiram até então, com chave `<decorator>.<key>` (`DeclaredMeta(key: "route.path", value: "/about")`). A leitura de `value`
@@ -386,6 +396,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a).
 
 #### 14s8-d · Um `comptime` que alcança uma função declarada depois dele que contém uma chamada de template
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a) até o 144 B-72, depois obsoleta pela B-55-a (e)** — a recusa fica como construída; a B-55-a (e) (5) analisa todo corpo de um bloco antes de seus decorators e de seus valores `comptime`, então uma função declarada depois do `comptime` já está expandida quando o `comptime` roda, e a recusa vai embora com a da 419 (caixa do B-72). O "inferir os corpos alcançados primeiro" de (b) é o que o modelo de blocos dá em geral; uma versão de um módulo só (o precedente de `sameLoweredFn` em `infer.zig`) seria o mesmo passo feito duas vezes. Viável: `block_eval.zig` `expandedFn` / `unexpandedTemplateCall`, célula `comptime_template_call_declared_after`; o B-72 os remove. Mudanças: nenhuma agora; `cep-a` (o gêmeo do caminho de seção, `comptime_section_path_declared_after`) vai na mesma caixa do B-72, que nomeia só a 14s8-d e deveria nomear as duas.
 - **Medido.** As chamadas de template de uma função são expandidas quando seu corpo é inferido; um `comptime` carrega as expansões (`block_eval.zig` `expandedFn`). Uma função declarada depois do `comptime` ainda não tem nenhuma. Construído: recusado no `comptime` — `pub val early = comptime late();` acima de `fn late() -> string { return tag "b"; }` é ``the comptime reaches the template call `tag` at 14:12 in `late`, which is not expanded where the comptime runs — declare `late` before the `comptime` in this module`` (`reject/comptime_template_call_declared_after`).
 - **Opções.** (a) Recusado, nomeando a chamada e o remédio (como construído). (b) O checker infere o corpo de toda função que um `comptime` alcança antes de o `comptime` ser avaliado, então a ordem das declarações não importa.
 - **Recomendação.** (a) até (b) ser construída pelo `01-checker`; (b) não recusa nada de que um programa precise.
@@ -413,6 +424,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a) (`block_eval.useReached`); a caixa da chamada `Any` do passo 8 o lê.
 
 #### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Respondida pela 504 e pela resposta da s23-j: uma chamada num corpo faz o lambda** — `val inner = notFoundLevel(chain, i, route, page);` num corpo de componente é o `@Component<Element>` não executado, posto na árvore (`ErrorBoundaryNode(child: inner)`) e executado pelo renderizador com o escopo que seu pai respondeu; só um `await c` escrito executa `c` no corpo (388 (4)); uma leitura de campo num valor sem `await` continua a recusa do checker. 504: "chamar um componente só faz seu lambda, só o renderizador o executa", "`<main>{view()}</main>` guarda o lambda de `view()`"; s23-j: "compor outro componente só põe seu lambda na árvore"; o "renderiza onde lido como `R`" de (b) é mais fraco e infere intenção do uso. Viável: `infer.zig` `inferComponentCall` (o splice de `await` por `env.indexRewrites`) e seu ponto de chamada saem, `noteAsyncCall` e `context_lower.zig` seguem; o renderizador do jhonstart na feat já escreve toda execução como `await` e guarda seus filhos como thunks (`ErrorBoundaryNode.child: fn() -> @Component<Element>`, que vira `child: @Component<Element>` sob a 504 e a lg2-n); commonJS, erlang e beam hoje, wasm com o 144 B-25 passo 4 (cuja caixa ainda lê a recomendação pré-504). Mudanças: a caixa de hooks do 144 B-17 toma a remoção do splice e reescreve as duas células que codificam o renderizar-na-chamada da 128 (`component_call_renders`, `component_call_awaited`; `component_is_lambda` fica); a entrada fecha como (b) na redação da 504.
 - **Medido.** A cadeia da 128, mantida pela 388 (4) ("dentro de um corpo de componente `await c` roda `c` com o escopo
   de filhos do corpo"), renderiza uma chamada de componente escrita num corpo de componente: o checker insere `await` em volta
   dela (`inferComponentCall`), então `val inner = notFoundLevel(chain, i, route, page);` RODA `notFoundLevel` com

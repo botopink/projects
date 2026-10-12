@@ -18,7 +18,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **484**.
+number, which is **515**.
 
 ---
 
@@ -29,6 +29,7 @@ number, which is **484**.
 `00-gate` has no open question: 114's steps wait on no decision.
 
 #### s29-a · How a template annotation receives the annotated declaration, and whether it is also a call-site template (311)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a), as built** — a template function that declares `comptime decl: @Decl` as its second parameter is an annotation only (`#[query "…"]`): called as `query "…"` it is `template-annotation-only`, and a template without that parameter is never an annotation (`template-annotation-without-decl`). The signature says which form a function takes, so no call site meets a handle it cannot have, and 398 already writes the two uses as two functions (`#[query "…"]` in dbcontext, `self.db.query "…"` in erika) — one spelling per thing; (b)'s `?@Decl` and (c)'s `q.decl()` each make one function answer two forms. Viable, built: `member_fn.zig` `isTemplateAnnotation` / `isTemplateAnnotationParams`, `infer.zig` `checkTemplateAnnotations` and the call refusal, cells `template_annotation`, `template_annotation_called`, `template_annotation_without_decl` (comptime on wasm, one answer on the four targets). Changes: 311 (2)'s "one function is both the template and the annotation" is amended to "a template function is one or the other"; under 14s8-a (e) the annotation's `${…}` holes are the template's own grammar, each name spliced into the built member and resolved in the annotated declaration's scope (311), so `template_annotation`'s `q.parts()` read is rewritten by the step that lands 14s8-a (e).
 - **Measured.** 311 leaves the `@Decl`'s spelling to `01-checker` step 29 and says "one function is both
   the template and the annotation (`erika "…"` and `#[erika "…"]`)". A template function is called with
   its literal alone (`f "…"`), so a declared `@Decl` parameter has no argument at a call site; 398 has
@@ -69,6 +70,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a) (`01-checker` step 29).
 
 #### s29-b · How an owner's decorator reads a method's typed meta (313)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a), as built, read as 130-s8-a now spells it** — the owner's decorator reads `m.meta(Query)` on a `decl.methods` entry and gets `Query[]` (`[]` when none); `metaAll` goes. The read stands where the owner already walks its methods, typed by the record (298), and 130-s8-a's one read (always a list) replaces the `?T` / `metaAll` pair; (b) is not viable today (`inferTypeinfoRead` answers only `.name` and the string meta, and a method's meta is not published to `TypeInfo` — s23-f (b) first); (c) redoes the template's work in every owner. Viable: `infer.zig` `inferMethodMetaRead` (types `?T` today), `runtime/prelude.zig` `__bp_methodMeta` / `__bp_methodMetaAll`, `builtins.d.bp`'s `Method`, cell `template_annotation`. Changes: the `T[]` read is one 144 step of its own (130-s8-a's, before B-72, whose box already names `T[]`): `inferMethodMetaRead` and `inferTypedMetaRead` answer `T[]`, the two prelude helpers become one, `metaAll`, `typeinfo-meta-several` and `typeinfo-meta-repeated` leave `builtins.d.bp`, `typed_meta.zig`, `expr_param.zig`, `transform.zig` and `typeinfo_all.zig`, decision 418's and 298's texts are amended alike; a defect to file until then: `m.meta(T)` over several added values silently answers the first (`__bp_methodMeta` takes the head) where `@typeInfo(X).meta(T)` refuses.
 - **Measured.** 313 has `#[erika "…"]` / `#[query "…"]` and `#[nativeQuery(…)]` record "typed meta of
   the method (298)", and `#[repository]` on the behavior "reads each method's meta"; step 29's cell asks
   for "a method annotation whose meta a type-level decorator reads". Before: typed meta on a method was
@@ -159,6 +161,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a); `05-jhonstart/26`'s `#[page]` reads its meta from the entry point.
 
 #### 130-s8-d · A generic meta record read through a catalogue entry (298)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 420** ((a), as built). Close by removing the entry; when 130-s8-a's `T[]` lands, 420's `metaAll(Check)` reads `meta(Check)` — the rule (a generic record is read through `@typeInfo(X)`, never through a catalogue entry) does not change.
 - **Measured.** Built: `d.metaAll(T)` on a `@TypeInfo.all` entry calls a function of the reading module
   typed for `T` (`declared__metaAll__<T>`, `typed_meta.withMetaHelper`); a generic one cannot be written
   unapplied (`Check` of `Check<T>`), and a generic reader loses `T` on wasm. `d.metaAll(Check)` is
@@ -184,6 +187,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a).
 
 #### s28-a · An imported source's field default that names a binding of its module (307)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 421** ((a), as built). Close by removing the entry.
 - **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
   copies the field without its default — the rule `registerExports` applies to an imported function's
   parameter (`infer.isClosedDefault`): a literal, `true` / `false`, `null`, a sign, an array or tuple of
@@ -206,6 +210,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a).
 
 #### s28-b · `Type.required` over a field with a `null` default (307)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 422** ((a), as built). Close by removing the entry.
 - **Measured.** Built: `required` takes the `?` off each field and drops a `null` default with it
   (`description: ?string = null` → `description: string`, supplied at every construction); any other
   default stays.
@@ -219,6 +224,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a).
 
 #### s28-c · What a derived type takes besides the fields (307)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 423** ((a), as built). Close by removing the entry.
 - **Measured.** Built: the derived record holds the fields only — the source's methods, `implement`
   clauses and type-level annotations do not come (`Type.pick(Recipe, .title)` has no `Recipe` method);
   the `val`'s own annotations go on the type. Decision 307 names "the source fields' markers" only.
@@ -232,6 +238,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a).
 
 #### s28-d · A generic record or an imported alias as the source (307)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 424** ((a), as built). Close by removing the entry.
 - **Measured.** Built: refused at the argument (`derived-type-source-not-record`): a record with type
   parameters (`Type.pick(Box, .item)` — `T` unbound), and an imported type alias (its target is named in
   its own module's scope). A local alias of a record is that record.
@@ -250,11 +257,13 @@ number, which is **484**.
 
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Confirm `lem-c`, and read 146 with it as one rule** — a host cell with no binding for the target (a free `declare fn` or a type's `declare fn`) may be declared; any bodied function, free or method, whose body reaches it is refused for that target at the call expression inside that body, whether or not anything calls that function. The two texts name one behaviour: 146's "at its declaration, called or not" is the function refused by its own body, `lem-c`'s "where it is called" is where the caret stands; refusing the type's declaration would forbid a type declared once for several targets, and nothing runs silently either way (67). Viable, built: `codegen/hostMethods.zig` `missingAt`, called at the call in `commonJS.zig`, `erlang.zig`, `beam_asm.zig` and `wat.zig`; every bodied function is emitted, so the call fails called or not; cells `bodyless_method_without_binding`, `external_method_erlang_only`, `external_wrapper_keeps_refusal`, `std_asserts_host_cell_on_wasm`; `conformance/docs.md` already states both. Changes: 146's row and `lem-c` restated as the one rule above (no code); two 144 rows to file: on wasm a behavior method with type parameters is emitted only when reached (`wat.zig`), so 146 is not held there; `hostMethods.binds(.wasm)` is hard-coded `false`, so a type method carrying an `@External.Wasm(fn:` / `std:)` cell is refused on wasm against `docs.md`.
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.
 - **Recommendation.** Confirm `lem-c` for a bodyless host declaration (a type declared once still compiles for a target its method lacks); state that 146 governs any bodied function, free or method, reaching one; `docs.md` says both.
 - **Blocks.** `lem-c`'s confirmation.
 
 #### 17-c · What else names a `keyed: true` var
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.
 - **Measured.** Built: only `counts.at(k)` (`ets:lookup`) and `counts = counts.insert(k, v)` (`ets:insert`); everything else (`counts[k]`, `hasKey`, `delete`, `size()`, passing it on) refused at the identifier; a keyed var is never `pub`. 1.0.5's 63: an index answers `V` and fails on an absent key; `at` answers `?V` (`null`).
 - **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
 - **Recommendation.** (a).
@@ -318,6 +327,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a); a rename touches `builtins.d.bp`, `comptime.zig`'s mirror, `hooks.zig` and the cells.
 
 #### s23-c · What a reached declaration's `Declared` holds in a decorator body
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b), and the meta read typed** — in a decorator body a reached declaration's `value` (`h.hook.value`, `c.callee.value`, `n.function.value`) is refused at the read, located (`decl-hooks-value: a reached function is no value at build`), as a template body's catalogue `value` is (`typeinfo-all-template-value`); its meta is read typed — `h.hook.meta(Route)` → `Route[]` (298, 130-s8-a), answered at build when `Route` is data and refused naming the run-time field otherwise (415 (3), 380) — never the `<decorator>.<key>` string list. Refuse over accept (67): a `null` typed as the function hides that nothing is there, and 364 (3) already says a function has no value at build; strings carrying a decorator's facts are 216 (2)'s legacy, which `builtins.d.bp` itself marks as going. Viable: the template-body refusal in `infer.zig` (guarded by `env.inTemplateFn`) widened to a decorator body, one id in `diagnostics.zig`; `hooks.zig` `declaredTerm` builds the term (it writes `value` as `undefined` and the string `meta`, and writes no `typedMeta` key today, so a direct `typedMeta` read likely fails at run time — a 144 row); the typed read follows `meta_read_at_build`'s rule for data. Changes: `Declared.meta: DeclaredMeta[]` leaves with the string meta; the comment on `Declared` in `builtins.d.bp`; one refusal cell.
 - **Measured.** `HookUse.hook`, `HookCall.callee` and `HookNode.function` are `Declared<unknown>`. Built: `value` is
   `null` (no function of the program runs while it compiles, 364 (3)), and `meta` is every entry the declaration's
   decorators set so far, keyed `<decorator>.<key>` (`DeclaredMeta(key: "route.path", value: "/about")`). A template
@@ -387,6 +397,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a).
 
 #### 14s8-d · A `comptime` reaching a function declared after it that holds a template call
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a) until 144 B-72, then obsolete by B-55-a (e)** — the refusal stands as built; B-55-a (e) (5) analyses every body of a block before its decorators and its `comptime` values, so a function declared after the `comptime` is already expanded when the `comptime` runs, and the refusal goes with 419's (B-72's box). (b)'s "infer the reached bodies first" is what the block model gives in general; a one-module version (`sameLoweredFn`'s precedent in `infer.zig`) would be the same step done twice. Viable: `block_eval.zig` `expandedFn` / `unexpandedTemplateCall`, cell `comptime_template_call_declared_after`; B-72 removes them. Changes: none now; `cep-a` (the section-path twin, `comptime_section_path_declared_after`) goes in the same B-72 box, which names 14s8-d only and should name both.
 - **Measured.** A function's template calls are expanded when its body is inferred; a `comptime` carries the expansions (`block_eval.zig` `expandedFn`). A function declared after the `comptime` has none yet. Built: refused at the `comptime` — `pub val early = comptime late();` above `fn late() -> string { return tag "b"; }` is ``the comptime reaches the template call `tag` at 14:12 in `late`, which is not expanded where the comptime runs — declare `late` before the `comptime` in this module`` (`reject/comptime_template_call_declared_after`).
 - **Options.** (a) Refused, naming the call and the remedy (as built). (b) The checker infers the body of every function a `comptime` reaches before the `comptime` is evaluated, so the order of declarations does not matter.
 - **Recommendation.** (a) until (b) is built by `01-checker`; (b) refuses nothing a program needs.
@@ -414,6 +425,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a) (`block_eval.useReached`); step 8's `Any`-call box reads it.
 
 #### 414-a · A component call in a body: rendered (128) or the lambda (414's example)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Answered by 504 and by s23-j's answer: a call in a body makes the lambda** — `val inner = notFoundLevel(chain, i, route, page);` in a component body is the unrun `@Component<Element>`, placed in the tree (`ErrorBoundaryNode(child: inner)`) and run by the renderer with the scope its parent answered; only a written `await c` runs `c` in the body (388 (4)); a field read on an unawaited value stays the checker's refusal. 504: "calling a component only makes its lambda, only the renderer runs it", "`<main>{view()}</main>` stores `view()`'s lambda"; s23-j: "composing another component only puts its lambda in the tree"; (b)'s "renders where read as `R`" is weaker and infers intent from the use. Viable: `infer.zig` `inferComponentCall` (the `await` splice through `env.indexRewrites`) and its call site go, `noteAsyncCall` and `context_lower.zig` follow; jhonstart's renderer on feat already writes every run as `await` and holds its children as thunks (`ErrorBoundaryNode.child: fn() -> @Component<Element>`, which becomes `child: @Component<Element>` under 504 and lg2-n); commonJS, erlang and beam today, wasm with 144 B-25 step 4 (whose box still reads the pre-504 recommendation). Changes: 144 B-17's hooks box takes the splice removal and rewrites the two cells that encode 128's render-on-call (`component_call_renders`, `component_call_awaited`; `component_is_lambda` stands); the entry closes as (b) in 504's wording.
 - **Measured.** 128's chain, kept by 388 (4) ("inside a component body `await c` runs `c` with the body's
   children scope"), renders a component call written in a component body: the checker splices `await` around
   it (`inferComponentCall`), so `val inner = notFoundLevel(chain, i, route, page);` RUNS `notFoundLevel` with
