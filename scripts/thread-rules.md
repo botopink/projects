@@ -10,6 +10,13 @@ what is the task's own: the step, its boxes, its worktree, its model.
   lands. Never open a PR.
 - **Right before the final commit, `git fetch origin` and rebase onto `origin/feat`**, so the landing
   is a fast-forward and the hook's gate already ran on the base being landed on.
+- **Exception, the maintainer's (2026-10-12), until 144 B-60 lands:** a thread on a 144 step in
+  botopink-lang commits with `--no-verify`, runs only the tests its change reaches (the unit tests it
+  touches, the snapshots it changes, its cells on every target), and lands its own commit:
+  `git fetch origin && git rebase origin/feat`, re-run what the rebase touched, then
+  `rtk proxy git push origin HEAD:feat` — fast-forward only, never force, confirmed with
+  `git ls-remote origin feat`. The libraries and every other front keep the two rules above. This
+  paragraph is removed when B-60 lands.
 - End each commit message with the attribution line the coordinator's prompt gives.
 - Never commit `*.snap.new`, `*.snap.md.new` or `todo.md`.
 
