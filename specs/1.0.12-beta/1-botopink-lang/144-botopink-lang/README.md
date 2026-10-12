@@ -3483,53 +3483,47 @@ each of `emilia@tokens`, `emilia@emilia`, `emilia@container`, `emilia@compose`, 
 - [ ] a codegen test per backend the hook runs, red on the parent: a type imported by two modules has one formatter
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-58 — the code cache, level A: every target's toolchain step by content; the closure key (decision 509 (1), (2), (4))
+### B-58 — the code cache, level A: a dependency's toolchain step by content, for every target; the closure key (decision 509)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-57
+**Repository:** botopink-lang (`--lang`), and each library's `conformance/modules/botopink.json` · **Model:** opus ·
+**After:** B-57
 
 Today a build keeps `cache/erlcheck` (verdicts) and `botopink test` a `.beam` cache (`test_cmd.zig`
-`precompileErlang`), the same key under two labels; `run` and `cell check` keep nothing. Measured on emilia's `alpha`
-cell (`run --target erlang`, a quiet machine): ~21 s, of which ~19 s is `.erl` → `.beam` of ~4100 modules and ~1.2 s
-the analysis and codegen of std, emilia and the cell; a hello world 0.3 s. Level A takes the toolchain step out of
-every cell but the first.
+`precompileErlang`), the same key under two labels; `run` and `cell check` keep nothing, and a cell is its own cache
+root. Measured on emilia's `alpha` cell (`run --target erlang`, a quiet machine): ~21 s, of which ~19 s is `.erl` →
+`.beam` of ~4100 modules and ~1.2 s the analysis and codegen of std, emilia and the cell; a hello world 0.3 s.
 
-- [ ] one cache for every target's toolchain step after codegen, keyed by its input bytes and the tool's version:
-      erlang `.erl` → `.beam` (the existing key; `-include` / `parse_transform` never looked up), wasm's assembly and
-      precompile; `cache/erlcheck` and `cache/beam` removed; `build`, `run`, `test` and `cell check` read it
-- [ ] the closure key as a function (no storage): the package's files by content, its dependencies' closure keys
-      (Merkle), the target, the compiler's sources by backend partition (249) — B-59's key and B-60's
-- [ ] `--cold` on each command reads nothing and writes what it ran; the path fixed under 225's cache root (67), a
-      cell under `<lib>/conformance/modules/` sharing its library's; a staging file renamed, no lock; the gates hand
-      `--cold` on
-- [ ] tests the hook runs, red on the parent: two cells over one dependency compile it once; a changed byte misses;
-      `--cold` reads nothing; two concurrent writers of one entry leave one whole entry
-- [ ] the alpha cell and a two-cell check measured cold and warm on every target
+- [ ] one cache for every target's toolchain step after codegen, for a dependency's modules only, keyed by its input
+      bytes and the tool's version: erlang `.erl` → `.beam` (the existing key; `-include` / `parse_transform` never
+      looked up), wasm's assembly and precompile; the package under test never cached; `cache/erlcheck` and
+      `cache/beam` removed; `build`, `run`, `test` and `cell check` read it
+- [ ] the closure key as a function: the package's files by content, its dependencies' closure keys (Merkle), the
+      target, the compiler's sources by backend partition (249) — B-60's key
+- [ ] `conformance/modules/botopink.json` (`"workspaces": ["*"]`) in botopink-lang and in each library with cells,
+      so a library's cells share `conformance/modules/.botopinkbuild/cache/`; the gates and `cell check` unchanged
+      by the new workspace
+- [ ] an entry stored by hash, materialised into the project's own output (hard link, else copy), never run from the
+      cache; `--cold` reads nothing and writes what it ran; staging and rename, no lock; the gates hand `--cold` on
+- [ ] tests the hook runs, red on the parent: two cells over one dependency compile it once; the cell's own modules
+      compiled every time; a changed byte misses; `--cold` reads nothing; two concurrent writers leave one entry
+- [ ] the alpha cell and emilia's `conformance/` measured cold and warm on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-59 — the test cache: a test's or cell's pass per target, keyed by its closure (decisions 509 (3), 510)
+### B-59 — the result store removed: no test result is cached (decision 510)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-58
 
-The result store (`lib-test-runner/src/result_store.zig`, 229, 249) answers a `test-libs` cell from a stored pass
-under 246's key — the whole library universe, so one byte in any library re-runs every cell; `botopink test` and
-`botopink cell check` keep nothing. 510 amends 246: the key is the cell's dependency closure.
+229 and 249's result store answers a `test-libs` cell from a stored pass (`lib-test-runner/src/result_store.zig`,
+`scripts/lib/result-store.js`, `cache/results/lib-test`). 510: what a test exercises is never cached.
 
-- [ ] one test cache, the CLI's, for `test` and `cell check` on every target, replacing `cache/results/lib-test`
-      (the lib-test-runner reads the same); the key per 510: the cell's files and snapshots, its package's closure
-      key (B-58), the target, the printing flags, the compiler and toolchain by backend partition
-- [ ] only a pass stored, never when a key cannot be computed with certainty; a line answered from it says so;
-      `--cold` runs every cell and writes what it ran; the gates hand it on
-- [ ] a test that reads outside its closure declares it in its manifest, entering its key (`onze-assets`' siblings
-      a row in front 162's language-gaps if the library must change); an undeclared read is the test's defect
-- [ ] tests the hook runs, red on the parent: unchanged → answered from the cache; a changed cell file, snapshot,
-      dependency or backend source → runs again; a library outside the closure or another backend's source → still
-      answered
-- [ ] emilia's `conformance/` measured: cold, warm unchanged, after one emilia file, after one backend source
+- [ ] the store removed: its code, its script, its cache directory, its rows in the AGENTS.md files and the gate's
+      text; every `test-libs` cell runs on every run
+- [ ] the gate's time with the code cache measured against the time with the store, in the step's report
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-60 — the code cache, level B: a package's checked interface and code per target, by its closure key (decision 509 (1))
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-59
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58
 
 Level B skips analysing an unchanged library (~1 s a cell on emilia's `alpha`). It needs what level A does not: the
 checked interface a consumer is checked against (types, exports, decorator meta) stored and read back, and the
@@ -3541,7 +3535,7 @@ one case where they did not.
       row) before anything is stored
 - [ ] the design reported before it is built (what the interface holds, its format, how comptime, templates and
       generics instantiated by a consumer stay in the consumer's own code) and confirmed by the maintainer
-- [ ] a package's interface and code per target stored under its closure key; `build`, `run`, `test` and `cell
+- [ ] a dependency's interface and code per target stored under its closure key (never the package under test); `build`, `run`, `test` and `cell
       check` read them; `--cold` reads nothing
 - [ ] tests the hook runs: an unchanged library is not analysed again; any closure-key input changed analyses it
 - [ ] Conformance step (459, 474, 477, 478, 480)
