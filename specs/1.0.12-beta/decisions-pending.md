@@ -473,6 +473,7 @@ number, which is **484**.
   component).
 
 #### 140-f · A call before an `await` in the same statement, on wasm (392 (2))
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b).** The wasm backend binds each operand evaluated before an `await` in its statement to a frame local (A-normal form), so the statement runs as written and as on commonJS, erlang and beam: `pair(label("x"), await answer(21))` stores `label("x")`, then awaits — the call runs once. Until it lands, (a)'s located refusal stays, so nothing runs twice silently; `run/task_await_after_call_refused_on_wasm` then becomes a cell that runs on every target.
 - **Measured.** A state machine resumes an `await` by entering its statement again, reading back what it
   passed (conditions, `case` subjects, loop starts are kept in the frame) and skipping the statements
   before it; an operand evaluated before the `await` in its own statement runs again. Built: a call there is

@@ -472,6 +472,7 @@ número livre, que é **484**.
   componente).
 
 #### 140-f · Uma chamada antes de um `await` no mesmo statement, no wasm (392 (2))
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b).** O backend wasm liga cada operando avaliado antes de um `await` no seu comando a um local do frame (A-normal form), então o comando roda como escrito e como no commonJS, erlang e beam: `pair(label("x"), await answer(21))` guarda `label("x")`, depois faz o await — a chamada roda uma vez. Até isso entrar, a recusa localizada da (a) fica, então nada roda duas vezes em silêncio; `run/task_await_after_call_refused_on_wasm` então vira uma célula que roda em todo alvo.
 - **Medido.** Uma máquina de estados retoma um `await` entrando em seu statement de novo, lendo de volta o que
   passou (condições, sujeitos de `case`, inícios de laço são mantidos no frame) e pulando os statements
   antes dele; um operando avaliado antes do `await` em seu próprio statement roda de novo. Construído: uma chamada ali é
