@@ -3546,6 +3546,20 @@ one case where they did not.
 - [ ] tests the hook runs: an unchanged library is not analysed again; any closure-key input changed analyses it
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-61 — a cell's package name is its directory's name (decision 511)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+893 of botopink-lang's 1041 cells name their package after their directory; 148 do not — 146 are all named
+`language_tests`, left by the move of `tests/language` into `conformance/` — so 146 cells emit the same module
+`language_tests@main` with different code. Every library's cells already follow the rule.
+
+- [ ] the 148 manifests renamed to their directory's name; every cell green as before
+- [ ] `botopink cell check` refuses a cell whose `name` differs from its directory, located at the manifest, naming
+      the expected name; a test the hook runs, red on the parent
+- [ ] `conformance/AGENTS.md` and `botopink cell new`'s scaffold state the rule
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)

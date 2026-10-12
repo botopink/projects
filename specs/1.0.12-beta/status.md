@@ -59,6 +59,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-58 — the code cache, level A: every target's toolchain step by content (`.erl` → `.beam`, wasm assembly), the closure key; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the test cache: a test's or cell's pass per target, keyed by its dependency closure (509, 510 amending 246), `--cold` on the CLI · after B-58
 - [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-59
+- [ ] 144 B-61 — a cell's package name is its directory's name (511): 148 of botopink-lang's cells renamed (146 named `language_tests`), `cell check` refuses a mismatch · nothing
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 144 B-49 — std's `io/random` sidecar ships on commonJS with a module whose decorator uses it · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
