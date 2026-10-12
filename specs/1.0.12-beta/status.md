@@ -40,6 +40,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 ### 144 — the cache group (B-57 … B-61, decisions 508–512): worked now, beside the conformance order
 
 - [ ] 144 B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module (emilia's `alpha` cell: 4106 files, ~680 copies per importer) · nothing
+- [ ] 144 B-63 — `botopink cell check` runs cells in parallel (`--jobs`, default the machine's; a library gate hands its share): today one cell after another on one core · nothing
 - [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
 - [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58

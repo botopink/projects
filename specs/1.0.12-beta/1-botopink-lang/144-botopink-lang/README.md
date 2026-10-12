@@ -57,7 +57,7 @@ conformance order (fronts.md § Execution order).
 `conformance/modules/` one, so a library's cells share one dependency closure and one cache (512); a gate run without
 conformance takes no lock (508, landed in the meta `scripts/gate.sh`; botopink-lang's in B-29 step J).
 
-**Order:** B-57 (the dead copies) → B-58 (the manifest's inherited dependencies, the workspaces, level A of the code
+**Order:** B-57 (the dead copies) and B-63 (`cell check` in parallel) → B-58 (the manifest's inherited dependencies, the workspaces, level A of the code
 cache, the closure key) → B-59 (the result store removed) and B-60 (level B, after its invariant is proved) · B-61
 (cell names) beside any of them. Lane B holds B-57, lane C B-58 to B-61. The group closes with its Conformance step:
 emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm, against the numbers
@@ -3551,6 +3551,23 @@ print a dependency's file as `../../../conformance/modules/<cell>/deps/…` wher
       a location relative to the cell, the column of the key that is refused); the fix in the compiler, the cells
       green unchanged
 - [ ] a test the hook runs for each, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-63 — `botopink cell check` runs cells in parallel (`--jobs`)
+
+**Repository:** botopink-lang (`--lang`), and the libraries' shared runner (`runner-standalone.sh`, one text) ·
+**Model:** sonnet
+
+Measured on 2026-10-12: `botopink cell check <lib>/conformance` checks one cell after another on one core (one
+`botopink` process at ~80 % of a core, the machine's load 1.3 of 16); a library's gate calls it once over its whole
+`conformance/`, so emilia's 79 cells on three targets run in a row.
+
+- [ ] `cell check` runs its cells (and a cell's targets) on a pool of `--jobs <N>` (default the machine's, as
+      decision 468 counts it); the report in the cells' order, the same lines as today
+- [ ] a library's `scripts/gate.sh --jobs <N>` hands its share to `cell check` (469); botopink-lang's
+      `test-conformance` the same
+- [ ] a test the hook runs: two cells checked at once, their report in order; emilia's `conformance/` measured
+      with `--jobs 1` and the default
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
