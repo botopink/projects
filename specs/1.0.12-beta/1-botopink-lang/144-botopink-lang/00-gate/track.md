@@ -29,16 +29,16 @@ All hard, every declared cell green, no red counts as green. Residue: front 114.
    snapshot audit · 5 `test-bpmp` · 6 beam export audit · 7 `test-cli` · 8 `test-libs` · 9
    `test-language` · 10 `test-docs` · 11 `tsc-check.sh` · 12 `test-web` (231). 1–4 serial; 4b–12
    parallel, reported in order. CI builds what the gate builds, ReleaseSafe after unit tests (226).
-6. **Cold gate decides every landing** (229, 249, 265): `--cold` deletes the runtime cache and every
-   root's `.botopinkbuild/cache/`, runs all, writes passes to the store, never reads it.
-   **`budget_cold=450`** (7m30s), `budget_warm=60`, 16 cores; over budget = yellow, never red; no coverage traded for time.
-7. **Result store** `.botopinkbuild/cache/results/` (229, 249, 246, 258): warm reuse only on equal
-   full key (target, runtime version, SHA-256 of every byte read, compiler sources by backend, every
-   root library); no dependency analysis; failures rerun; no persistent runtime process; several
-   `--lib` → one report.
-8. **All build caches under `<root>/.botopinkbuild/cache/`** (225, 232, 233): erlang verdicts,
-   `.beam` cache, cell durations, `cache/lsp/`; nothing in `$HOME`; `botopink clean` deletes
-   `.botopinkbuild/`; package under test built from source; no closure cache.
+6. **Cold gate decides every landing** (249, 265, 509): `--cold` deletes the runtime cache and every
+   root's `.botopinkbuild/cache/` and runs all, reading no cache.
+   **`budget_cold=450`** (7m30s), 16 cores; over budget = yellow, never red; no coverage traded for time.
+7. **Only dependencies are cached; no test result is** (509, 510, 258): the code cache keeps a
+   dependency's toolchain step by content (level A) and, later, its interface and code by closure key
+   (level B); the package under test is always built; every test and cell runs on every check; no
+   persistent runtime process; several `--lib` → one report.
+8. **All build caches under `<root>/.botopinkbuild/cache/`** (225, 233, 509): the code cache, cell
+   durations, `cache/lsp/`; nothing in `$HOME`; `botopink clean` deletes `.botopinkbuild/`; a
+   `conformance/modules/` workspace holds its cells' dependency cache (512).
 9. **OTP 28 pinned** (228, 227): `OTP_RELEASE` (`modules/manifest/src/root.zig`), printed by
    `botopink --version`; erlang/beam `build`/`run`/`test` refuse another `erl` on `PATH`; manifest
    `"otp"` supported and agreed across a closure; `gate.sh` stage 1 and workflows read it from the

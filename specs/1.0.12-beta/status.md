@@ -37,12 +37,21 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
 - [ ] 144 B-29 step J — botopink-lang's gate drops the lock and takes a total of jobs; the pool and scheduling are the meta repository's `scripts/gate.sh` (163 s7) (468, 469) · after the step gate (460)
 
+### 144 — the cache group (B-57 … B-61, decisions 508–512): worked now, beside the conformance order
+
+- [ ] 144 B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module (emilia's `alpha` cell: 4106 files, ~680 copies per importer) · nothing
+- [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
+- [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
+- [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
+- [ ] 144 B-61 — a cell's package name is its directory's name (511): 148 of botopink-lang's cells renamed (146 named `language_tests`), `cell check` refuses a mismatch · nothing
+- [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-58, B-59, B-61
+
 ### 144 — after B-00: what B-00k found, and wasm memory
 
 - [ ] 144 B-31 — on wasm a template whose only part is a float hole is typed `f64` (`val s = "${5.0}"; s + "!"` invalid wasm): a structural fix (430) · nothing
 - [ ] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`, 471); a `badarith` at build in Erlang's words, located (472) · nothing
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
-- [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers; the result store keeps a linked tree · nothing
+- [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers · nothing
 - [ ] 144 B-38 first box — every cell of a directory reported: a stdout write no longer drops a line (the suspected cause, not reproduced); confirmed by the pipeline's counts · nothing
 - [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
 - [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · nothing
@@ -55,11 +64,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-54 — `botopink format` rewrites `keyed: true` to `keyed = true` · nothing
 - [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · nothing
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · nothing
-- [ ] 144 B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module (emilia's `alpha` cell: 4106 files, ~680 copies per importer) · nothing
-- [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
-- [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
-- [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
-- [ ] 144 B-61 — a cell's package name is its directory's name (511): 148 of botopink-lang's cells renamed (146 named `language_tests`), `cell check` refuses a mismatch · nothing
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 144 B-49 — std's `io/random` sidecar ships on commonJS with a module whose decorator uses it · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing

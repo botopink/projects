@@ -46,6 +46,23 @@ conformance order (fronts.md § Execution order).
 | B-00j | the comptime stops calling beam-to-wasm: a host function answers by `std:` or `fn:`, never an Erlang cell; `cells.zig` and the Erlang-cell translation deleted from compiler-core (decision 452); the package name `std` reserved (453) | sonnet |
 | B-00k | **Conformance** — the B-00 group's last step (459): the suite green, the group's changes analysed against the cells, the cells written, the missing ones proposed | opus |
 
+## The cache group — B-57 … B-61 (decisions 508–512)
+
+**Goal:** a gate as fast as its dependencies allow, without trusting a stored answer about what it tests. Measured on
+2026-10-12, a quiet machine: one emilia cell (`alpha`) takes ~21 s on erlang — ~19 s compiling ~4100 `.erl` modules,
+~3400 of them dead copies of `Token`'s formatters — and a hello world 0.3 s; emilia's gate with conformance ~48 min.
+
+**The plan:** one code cache, the CLI's, for every target, holding only dependencies (509); no test result cached
+(510); a cell named after its directory (511); a workspace declaring what its members share, every
+`conformance/modules/` one, so a library's cells share one dependency closure and one cache (512); a gate run without
+conformance takes no lock (508, landed in the meta `scripts/gate.sh`; botopink-lang's in B-29 step J).
+
+**Order:** B-57 (the dead copies) → B-58 (the manifest's inherited dependencies, the workspaces, level A of the code
+cache, the closure key) → B-59 (the result store removed) and B-60 (level B, after its invariant is proved) · B-61
+(cell names) beside any of them. Lane B holds B-57, lane C B-58 to B-61. The group closes with its Conformance step:
+emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm, against the numbers
+above, and every cell green on every target.
+
 ## Lanes
 
 Three lanes share the front; two steps run together only when their files are disjoint (fronts.md
@@ -2886,7 +2903,7 @@ After the step gate of decision 460 lands (both change `scripts/gate.sh`). The p
       splits it among its stages as today; the gate lock removed (`scripts/AGENTS.md` § Gate lock rewritten)
 - [ ] `--no-conformance` stays: the commit hook's gate (470, step I), never a verdict
 - [ ] a library's `test-out` written under a per-run directory and removed after (botopink-lang's `test-libs` writes
-      into the linked siblings); the result store shared
+      into the linked siblings)
 
 #### B-29 step J Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
 
@@ -3229,8 +3246,6 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 - [x] `bpmp link [<checkout>]`: `.botopinkbuild/deps/<name>` → `<checkout>/repository/<name>` for each dependency of
       every manifest of the project (a workspace's members included); a missing local repository named, never guessed
 - [x] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
-- [ ] the lib-test-runner's result store keeps a tree whose dependencies come through `.botopinkbuild/deps/` links
-      (today a symlink or a `.botopinkbuild/deps/` in the tree makes it re-run every cell) — with 163 s11
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-38 — `botopink cell check`: a full run that drops a cell; a `path` dependency inside a cell (found moving rakun's reference)
@@ -3517,7 +3532,7 @@ root. Measured on emilia's `alpha` cell (`run --target erlang`, a quiet machine)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-58
 
-229 and 249's result store answers a `test-libs` cell from a stored pass (`lib-test-runner/src/result_store.zig`,
+The lib-test-runner's result store answers a `test-libs` cell from a stored pass (`lib-test-runner/src/result_store.zig`,
 `scripts/lib/result-store.js`, `cache/results/lib-test`). 510: what a test exercises is never cached.
 
 - [ ] the store removed: its code, its script, its cache directory, its rows in the AGENTS.md files and the gate's
