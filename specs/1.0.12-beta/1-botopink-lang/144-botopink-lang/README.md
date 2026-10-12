@@ -3516,7 +3516,8 @@ root. Measured on emilia's `alpha` cell (`run --target erlang`, a quiet machine)
       target, the compiler's sources by backend partition (249) — B-60's key
 - [ ] first, the manifest (512): a member inherits its workspace's `dependencies` (a `path` from the workspace's
       manifest), adds its own, redeclaring an inherited one refused, located; `src`, `entry`, `version` defaulted;
-      `name` required; tests in `modules/manifest`, red on the parent
+      `name` required and unique in the workspace (a duplicate refused, located, naming both members); tests in
+      `modules/manifest`, red on the parent
 - [ ] `conformance/modules/botopink.json` (`"workspaces": ["*"]`, the cells' shared `dependencies` and `targets`)
       in botopink-lang and in each library with cells (a commit in each library), every cell's manifest reduced to
       what is its own (emilia's 79 to `{ "name": "<cell>" }`); a library's cells share
