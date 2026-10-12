@@ -3455,6 +3455,18 @@ behaviour. Until a decision follows it, no import cycle between modules (s23-i).
 - [ ] the report and the question it raises filed in `decisions-pending.md`: adopt (with its steps), or keep the
       acyclic rule
 
+### B-56 — `botopink migrate` removed (s23-i)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** haiku
+
+`botopink migrate [--dry-run]` derives a module tree from the `src/` layout for a package without one. s23-i makes the
+tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the blind scan, so the command has no use.
+
+- [ ] the command removed: its dispatch in `compiler-cli/src/main.zig`, `cli/migrate.zig`, its tests, its rows in
+      `compiler-cli/AGENTS.md` and `cli/AGENTS.md`, and every doc that names it; `botopink migrate` answers the CLI's
+      unknown-command error
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
