@@ -175,7 +175,7 @@ Written with the old front ids (alias tables); they bind the new fronts holding 
    7. closing B-00: B-00c's last box, each library's own hook on this compiler — `scripts/gate.sh libs` (473);
    8. 163 s8: each library's CI fetches its dependencies (474);
    9. 163 s9: the measurements, at the end, on a quiet machine — no step before it spends time measuring.
-   Beside it, **144's cache group (B-57 … B-61, decisions 508–512)**, worked now: the libraries' gates are slow
+   Beside it, **144's cache group (B-57 … B-64, decisions 508–513)**, worked now: the libraries' gates are slow
    for want of it, and every later step's commit pays that time.
 1. **144 B-00 — comptime on wasm (434), first and alone.** Done but for the seventh step above; the fronts in
    flight when 434 was taken have landed (checker-s41, checker-s29, render-scope-388, bigint-139, comptime-14,

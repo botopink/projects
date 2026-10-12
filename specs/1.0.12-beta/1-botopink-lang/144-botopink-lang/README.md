@@ -46,7 +46,7 @@ conformance order (fronts.md § Execution order).
 | B-00j | the comptime stops calling beam-to-wasm: a host function answers by `std:` or `fn:`, never an Erlang cell; `cells.zig` and the Erlang-cell translation deleted from compiler-core (decision 452); the package name `std` reserved (453) | sonnet |
 | B-00k | **Conformance** — the B-00 group's last step (459): the suite green, the group's changes analysed against the cells, the cells written, the missing ones proposed | opus |
 
-## The cache group — B-57 … B-61 (decisions 508–512)
+## The cache group — B-57 … B-64 (decisions 508–513)
 
 **Goal:** a gate as fast as its dependencies allow, without trusting a stored answer about what it tests. Measured on
 2026-10-12, a quiet machine: one emilia cell (`alpha`) takes ~21 s on erlang — ~19 s compiling ~4100 `.erl` modules,
@@ -3457,22 +3457,6 @@ tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the 
 - [ ] the command removed: its dispatch in `compiler-cli/src/main.zig`, `cli/migrate.zig`, its tests, its rows in
       `compiler-cli/AGENTS.md` and `cli/AGENTS.md`, and every doc that names it; `botopink migrate` answers the CLI's
       unknown-command error
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
-### B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module
-
-**Repository:** botopink-lang (`--lang`) · **Model:** opus
-
-Printing dispatches by the value's tag (`'__bp_tagged'/2` cuts the `__v__` segment and calls that module's
-`'__bp_format'/1`), so only the declaring module's formatter is ever called. Yet every module that uses an imported
-type emits a byte-identical copy of the type's formatter modules: emilia's `Token` has ~680 nested variant types, and
-`botopink build` of the cell `emilia/conformance/modules/alpha` writes 4106 files on erlang and on beam — ~680 under
-each of `emilia@tokens`, `emilia@emilia`, `emilia@container`, `emilia@compose`, `emilia@arbitrary` and `alpha@main`
-(commonJS: 13). `botopink run --target erlang` of that cell takes ~21 s, a hello world 0.3 s.
-
-- [ ] an imported type's unit is not emitted by the importer, on erlang and on beam; the alpha cell's file count on
-      both targets measured before and after; every printed output unchanged
-- [ ] a codegen test per backend the hook runs, red on the parent: a type imported by two modules has one formatter
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-58 — the code cache, level A: a dependency's toolchain step by content, for every target; the closure key; workspace-inherited dependencies (decisions 509, 512)
