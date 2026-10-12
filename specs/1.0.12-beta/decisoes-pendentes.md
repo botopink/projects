@@ -5,7 +5,7 @@ entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seu
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
 - Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
-  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **515**.
+  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **518**.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
@@ -18,7 +18,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **515**.
+número livre, que é **518**.
 
 ---
 
@@ -968,54 +968,63 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 ### 04-rakun
 
 #### erk-b · `#[documentQuery]` sob a 313 (*proposta*)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), com gerador próprio: o `#[documentRepository]` do rakun-data-nosql sobre um `behavior` cujos métodos carregam `#[documentQuery("…")]`** — a mesma forma da 313 (um `behavior`, uma anotação por método registrando meta tipado, um gerador produzindo a implementação e o registro por tipo), o filtro uma string comum entregue ao store textualmente como `#[nativeQuery]` entrega SQL (placeholders `:name` casados por nome com os parâmetros, um erro na anotação quando um fica sem par); não o `#[repository]` do dbcontext, cujo gerador emite runners de SQL e recusa um método que não conhece (313: "um método sem nenhuma das anotações é um erro"). Uma forma de repositório para todo store, nenhum segundo modelo (283); (b) um alvo de documentos do erika espera uma necessidade medida; (c) é a forma que a 313 apagou. Viável como decorator de biblioteca (216, 311 (1): um gerador sobre um behavior, como `#[mocks.mock]`): um novo módulo `rakun-data/src/nosql/` (o `pub mod nosql;` de `root.bp` até o B-75) — nada da 09 existe na feat (nenhum `DocumentStore`, nenhum `nosql.url`; `documentQuery` é um comentário em `sql/query.bp`), e o dbcontext é um esqueleto vazio, então o passo 4 da 09 abre depois de a 143 pousar a forma a copiar. Mudanças: o README da 09 nomeia `#[documentRepository]`; o "09 passo 4" da entrada é `2-libraries/150-rakun/09-rakun-data-nosql`.
 - **Medido.** 09 passo 4: `#[documentQuery("…")]` segue a forma de `#[query]` — um membro do tipo repositório que responde o template literalmente. A 313 apaga essa forma para SQL: um repositório é um `#[repository] behavior`, seus métodos carregando `#[erika "…"]` ou `#[nativeQuery("…")]`. A gramática do erika é a do SQL; o filtro de um document store é JSON (`$in`, `$gt`, …).
 - **Opções.** (a) A mesma forma: um repositório de documentos é um `#[repository] behavior` cujos métodos carregam `#[documentQuery("…")]`, uma string comum entregue ao store como `#[nativeQuery]` entrega SQL ao driver (placeholders `:name` casados com os parâmetros, escapados por `bind`). (b) O erika ganha um alvo de documentos — o mesmo `select … where …` baixado para o filtro do store. (c) Como está: um membro do tipo.
 - **Recomendação.** (a) agora — uma forma de repositório para todo store; (b) quando uma necessidade medida pedir.
 - **Bloqueia.** 09 passo 4.
 
 #### 03r-ab · Os stores de protocolo binário da frente 09
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), confirmar — só o registro** — a 09 entrega `ets:memory`, `mnesia:local` / `mnesia:cluster`, `redis://` e `https://` com a suíte do behavior contra os quatro no gate; `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` são esquemas reconhecidos cuja recusa de boot nomeia o driver (passo 5; 160: um double em processo ou uma linha de `deferred.md`, nunca um fallback para ETS). Recusar antes de um substituto silencioso (67); o braço Elasticsearch alcança HTTP por um ponto de extensão do core, nunca por uma aresta `rakun-data → rakun-client` (`ctr-w`, 185). Viável: nada da 09 está na feat (`rakun.nosql.url` não existe; o único store escolhido por URL é `rakun.datasource.url` em `rakun-data/src/datasource.bp`, cuja recusa de esquema desconhecido — "whose scheme no arm serves — accepted: …" — e `sql_datasource_test.bp` são o padrão que as células do passo 5 copiam). Mudanças: nenhuma; a 09 segue (a) como escrita.
 - **Medido.** O store é selecionado por `rakun.nosql.url`. MongoDB, Neo4j, Cassandra, Couchbase são protocolos de bytes (`Bytes` é da 346, ainda não construído) que precisam de drivers OTP que um sidecar não consegue carregar; ETS e Mnesia estão na VM; Redis é RESP sobre `gen_tcp`; Elasticsearch é HTTP + JSON. O README da 09 já está escrito para (a): os antigos passos 4 e 7 são as células de recusa do passo 5 mais uma linha de `deferred.md` cada — só falta o registro.
 - **Opções.** (a) A 09 entrega `ets:memory`, `mnesia:local` / `mnesia:cluster`, `redis://`, `https://` com a suíte de behavior contra os quatro no gate; `mongodb://`, `bolt://`, `cassandra://`, `couchbase://` são esquemas reconhecidos cuja recusa no boot nomeia o driver (passo 5). (b) Quatro clientes de protocolo em sidecars Erlang, uma frente cada. (c) Adiar a 09.
 - **Recomendação.** (a): nunca um fallback para ETS sob uma URL Mongo; o braço Elasticsearch sem uma aresta `rakun-client` (`ctr-w`; o passo 3 da 09 ainda passa por ela). A frente já segue (a).
 - **Bloqueia.** 09 passo 5 (as células de recusa).
 
 #### 03r-ae · ACS do SAML 2.0
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) agora: as três caixas do ACS vão embora e `saml2/` mantém o 501 sob uma linha de `deferred.md`; (a) quando uma frente medir necessidade** — uma funcionalidade que responde 501 está ausente, não meio construída, e nada é marcado como passado sem rodar (67, 160); nunca (c). As ~300 linhas de exc-c14n sobre `xmerl` de (a) num novo `rakun-security/src/sidecars/rakun_saml2.erl` (como `rakun_ws.erl` usa `xmerl_scan`) são viáveis, só erlang (03r-a), quando a 79 for ocupada; a 150 está parcial com a 79 não aberta, então o registro honesto é o adiamento. Viável: `rakun-security/src/saml2/saml2.bp` responde 501 hoje (`oauth2_test.bp` o afirma); nenhum `rakun_saml2.erl` existe. Mudanças: as três caixas do passo 3 da 79 viram uma linha de `deferred.md`.
 - **Medido.** Verificar a assinatura de um IdP precisa de Exclusive XML Canonicalisation, que nem o `xmerl` do OTP nem o std fornecem; `saml2/saml2.bp` responde 501.
 - **Opções.** (a) exc-c14n sobre a árvore do `xmerl` em `src/sidecars/rakun_saml2.erl` (~300 linhas), as três caixas fechadas por um fixture assinado com uma chave versionada. (b) Aposentar o SP: as três caixas saem, `saml2/` mantém 501 com uma linha de `deferred.md`. (c) Deixá-las abertas.
 - **Recomendação.** (a) se a 79 tiver equipe neste milestone, senão (b); nunca (c).
 - **Bloqueia.** 79 passo 3.
 
 #### 03r-af · Os sete projetos de exemplo não construídos
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): aposentar os sete; os três em disco ganham um `README.md` cada** — `examples/` contém `rakun`, `rakun-container`, `rakun-ssr` (nenhum com README), e o contrato de todo membro é afirmado por seus próprios testes (390 (5): um valor que nada verifica vira um teste comum, não um exemplo). Um exemplo que nunca rodou é uma promessa que o gate não pode cumprir (67); (b) são sete frentes para nenhum leitor medido. Viável: três arquivos; o manifesto do workspace já lista `examples/*`. Mudanças: o passo 3 da 73; a lista da 1.0.10 é um registro fechado.
 - **Medido.** `examples/` guarda `rakun`, `rakun-container`, `rakun-ssr` (células de gate); `rest-service`, `secured-api`, `blog-server`, `order-pipeline`, `observed-service`, `realtime-gateway`, `release-kit` nunca começaram; o contrato de cada membro é afirmado por seus próprios testes.
 - **Opções.** (a) Aposentar os sete (a lista de exemplos da 1.0.10 um registro fechado; os três em disco ganham um `README.md` cada). (b) Construí-los, uma frente cada, depois de toda frente de membro. (c) Construir só o `rest-service`.
 - **Recomendação.** (a).
 - **Bloqueia.** 73 passo 3.
 
 #### 03r-ak · Validação CycloneDX
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a′): validar o SBOM contra o schema CycloneDX 1.5 versionado com o validador vendorizado que a 399 já fixou, só no teste — não um caminhador escrito à mão** — `release_test.bp` roda `process.run("node", ["test/tools/check-schema.js", <documento>])` sobre `test/release/fixtures/bom-1.5.schema.json`, como `repository/validation/test/json_schema_test.bp` faz com o build standalone 2020 do Ajv (399: vendorizado sob `test/tools/`, versão e hash no `AGENTS.md`, nunca distribuído); `ok` ou a lista de erros do validador reprova o teste; sem rede. Um validador no ecossistema, não um segundo de ~120 linhas implementando um subconjunto do JSON Schema (67: um subconjunto que aprova um documento que o schema real recusaria é uma aprovação silenciosa); (b) enfraquece a caixa, (c) é uma funcionalidade de std de que ninguém mais precisa. Viável: `rakun-cli/test/release/release_test.bp` (o teste do SBOM afirma `bomFormat`, `specVersion`, `components` por nome hoje; nenhum `fixtures/` ainda), o `io.process.run` do std (o CLI do rakun já o chama); node nas linhas de CI do rakun como nas do validation. Mudanças: a caixa do passo 3 da 81 nomeia a ferramenta da 399; o `release_test.bp:168` da entrada está defasado.
 - **Medido.** A caixa pede validação contra um schema CycloneDX 1.5 versionado, sem rede; o std não tem validador de JSON schema; `release_test.bp:168` afirma campos por nome (`rakun-cli/test/release/` depois da 128).
 - **Opções.** (a) `release_test.bp` percorre o SBOM contra os `required`, `type`, `enum` e `$ref`s locais de `test/release/fixtures/bom-1.5.schema.json` (~120 linhas), como o passo 3 da 81 já lê. (b) Emendar a caixa para a lista campo a campo. (c) Um `json.schema` no std.
 - **Recomendação.** (a).
 - **Bloqueia.** 81 passo 3.
 
 #### 03r-al · Transações de produtor Kafka contra o broker em processo
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): confirmar — o registro, e a fiação** — o relay de outbox da 83 publica por `withProducerTransaction` no broker em processo (envios retidos, liberados no commit, descartados num raise; `read_committed` não vê nada depois de um abort); a execução com broker real é uma linha de `deferred.md` (160). Viável: `rakun-messaging/src/reliability/transaction.bp` `withProducerTransaction` (testado em `transaction_test.bp`); o outbox (`rakun-data/src/tx/outbox.bp` `publishAfterCommit`, `relayTick(ds, publisher)`) recebe uma função publicadora e ainda não passa por ele — a aresta `rakun-messaging → rakun-data` existe, então a cola é o publicador do rakun-messaging entregue a `relayTick`, a primeira caixa do passo 5 da 15. Mudanças: nenhuma no plano; o `transaction.bp:39` da entrada é `:54`.
 - **Medido.** `rakun-messaging/src/reliability/transaction.bp:39` provê `withProducerTransaction(prefix, body)` (envios retidos, liberados no commit, descartados num raise; leitor `read_committed` testado em `transaction_test.bp`). O passo 5 da 15 já está escrito para (a): quatro caixas (caminho do outbox por `withProducerTransaction`, nenhuma linha de outbox; nada visível a `read_committed` depois de um aborto; o caminho no log; uma linha de `deferred.md` para um broker real). Só falta o registro.
 - **Opções.** (a) O caminho do outbox da 83 publica por `withProducerTransaction` no broker em processo; execução com broker real uma linha de `deferred.md`. (b) Apagar as caixas de broker do passo 5. (c) Deixar o passo 5 aberto até um Kafka real estar no gate.
 - **Recomendação.** (a).
 - **Bloqueia.** 15 passo 5 (só o registro; a frente segue (a)).
 
 #### 03r-am · Onde vivem os doubles de broker e scheduler
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(c): os doubles vivem em `rakun-test`, alcançando os registros só pelos hooks do core — nenhuma aresta para o rakun-messaging, nada a medir** — `rkOnReset("broker-double", …)` (`rakun/src/runtime.bp`) e um termo de nomes de listeners que o core possui são a costura; `rakun-test` continua dependendo só de `rakun` e os testes do `rakun-messaging` dependem de `rakun-test` (sem ciclo: o manifesto não tem escopo só de teste — nenhum existe em `modules/manifest` — então a medição de (a) só encontraria o ciclo). A regra da 185 (o core define o ponto de extensão); o passo 3 da 19 então roda `container_test.bp` pelo double. Viável: `rkOnReset` existe; nenhum `broker_double` / `task_double` existe no rakun (o manifesto do `rakun-test` já descreve "o double de broker" que não contém). Mudanças: os passos 3–4 da 19 escritos para (c); o `runtime.bp:215` da entrada é `:232`.
 - **Medido.** `rakun-test` depende só de `rakun`; nenhum `rakun-messaging/test/*.bp` importa `rakun-test` hoje, mas o passo 3 da 19 faz `container_test.bp` rodar pelo double — com o double no `rakun-test` isso é `rakun-test → rakun-messaging` ao lado de `rakun-messaging (tests) → rakun-test`, um ciclo de pacotes a menos que o loader respeite o escopo de teste (não verificado). `rkOnReset(name, reset)` (`rakun/src/runtime.bp:215`).
 - **Opções.** (a) Medir: acrescentar a aresta e o import de `container_test.bp`; se `botopink test` recusar o ciclo, os doubles vivem ao lado do módulo que duplicam (`rakun-messaging/src/broker_double.bp` + `rakun_messaging_fixture.erl`, `rakun-scheduling/src/task_double.bp`) e o `rakun-test` os documenta. (b) Tomar a aresta, supondo que a regra pousou. (c) Os doubles no `rakun-test`, alcançando os registros só por hooks do core (`rkOnReset("broker-double", …)`, o termo de nomes de listeners).
 - **Recomendação.** (a), com a forma de (c) de qualquer jeito.
 - **Bloqueia.** 19 passos 3 e 4.
 
 #### 03r-an · O transporte WebSocket do RSocket depois da decisão 187 (*proposta*, levantada como R92-1)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b): um ponto de extensão do core chaveado por um enum de transporte — `rkRegisterTransport(.WebSocket, mount)`; o `rakun-websocket` se encaixa** — o core declara `enum Transport { Tcp, Tls, WebSocket }` e um registro em `rakun/src/runtime.bp`; o RSocket no `rakun-messaging` pede ao registro o transporte configurado e recusa o boot nomeando o membro a acrescentar quando nenhum o registrou; `rakun.rsocket.server.transport` é lido no enum pela config tipada da 299. 185 (nenhuma aresta membro-a-membro para o que é opcional; o `rakun-messaging` não depende do `rakun-websocket` hoje e (a) carregaria sua árvore para todo consumidor de messaging); 281 / 299: o transporte é uma variante, não a string que o código compara. Viável: `rakun-messaging/src/rsocket/rsocket.bp` recusa `transport == "websocket"` e fala só `tcp://`; nenhum registro ou enum existe — a primeira e a terceira caixas do passo 2 da 92 os constroem (o padrão de registro de `rkOnReset`). Mudanças: o `rakun-rsocket/src/rsocket.bp:69` da entrada é `rakun-messaging/src/rsocket/rsocket.bp` (187).
 - **Medido.** R92-1 monta o transporte pelo `#[wsEndpoint]` do `rakun-websocket`; depois da 187 o RSocket vive no `rakun-messaging` → a aresta carregaria a árvore do `rakun-websocket` (security, data) para todo consumidor de messaging; hoje o transporte WebSocket é recusado no boot (`rakun-rsocket/src/rsocket.bp:69`, só TCP).
 - **Opções.** (a) Tomar a aresta `rakun-messaging → rakun-websocket`. (b) O core define um ponto de extensão de transporte em que o `rakun-websocket` se pluga (regra da 185), chaveado pela variante do enum de transporte (`rkRegisterTransport(.WebSocket, …)` — a 299 tipa a config, a 281 nenhuma string). (c) Aposentar o transporte WebSocket: as duas caixas da R92-1 e os braços `ws://` / `wss://` da R92-7 apagados, só TCP e TLS, uma linha de `deferred.md`.
 - **Recomendação.** (b).
 - **Bloqueia.** A primeira e a terceira caixas do passo 2 da 92.
 
 #### 04-a · O tempo de vida, o tipo e a tag vazia da época de tag (*implementado como (a), aguarda confirmação*)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído — confirmar** — uma época só cresce (`rkResetContext` deixa a tabela de tags), `i64`, e `""` é recusada em `rkBumpTag` / `rkTagEpoch` (`rakun: a tag is a non-empty string (rkBumpTag)`). Um contador de versão nunca volta, então nenhuma época guardada encontra um estado posterior; `i64` não tem borda alcançável; uma tag vazia é bug de quem chama, recusada (67). Viável, construído: `rakun/src/runtime.bp` (`rkTagEpoch` / `rkBumpTag -> i64`), `rakun_runtime.erl` (`tag_epoch/1`, `bump_tag/1` sobre `ets:update_counter`, `check_tag`, `reset_context/0` deixando `?TAGS`). Mudanças: nenhuma.
 - **Medido.** A 185 põe a época por tag no core (04 passo 1): `rkBumpTag(tag)` a incrementa, `rkTagEpoch(tag)` a lê, o `rakun-client` guarda as épocas das tags de uma resposta ao lado dela e trata uma alterada como miss (13 passo 1), os três verbos do `rakun-cache` incrementam (12 passo 3). A 185 não diz se `rkResetContext` (o seam de teste que descarta registros e roda todo hook `rkOnReset`) limpa as épocas, de que tipo inteiro elas são, nem o que é uma tag vazia. Todo outro contador em `src/runtime.bp` é `i32` (`rkBuildCount`, `rkScannedCount`); um contador do BEAM não dá a volta, então um `i32` além de `2^31 - 1` seria um valor fora de seu tipo.
 - **Opções.** (a) Uma época só cresce: `rkResetContext` deixa a tabela; `i64`; `""` recusado nas duas células (`rakun: a tag is a non-empty string (rkBumpTag)`), localizado pelo raise:
   ```bp
@@ -1040,6 +1049,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 ### 05-jhonstart
 
 #### 27-b · As entradas do driver: de onde vem o markup, e quem define `data-jh-pending` (*proposta* ★)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído — confirmar** — seis funções, o driver assíncrono, `replaceDepth(nav) = nav.shared - 1`; `markPending` põe e limpa `data-jh-pending` (363 (4): o roteador do cliente o define, o CSS o estiliza); um markup que falha limpa a marca, não substitui nada e responde o erro. Toda caixa do README afirmada sem DOM, sobre um `DomOps` que grava; (b) e (c) movem uma caixa para o navegador do onze 53 ou fazem a entrada buscar. Viável, construído: `jhonstart/modules/jhonstart-link/src/reconcile.bp` (`DomOps` com `markup`, `replaceSubtree`, `startIslands`, `mountCount`, `scrollTo`, `markPending`; `applyTransition(current, target, dom) -> @Task<@Result<Navigation, string>>`). Mudanças: nenhuma; o passo 6 do `07-onze/50` fornece as seis (seu `onze dev` ainda recusa).
 - **Medido** (frente 27 passo 1 caixa 1 e passo 2 caixa 3). O README fixa
   `applyTransition(current, target, dom: DomOps) -> Navigation` e `DomOps` como quatro funções
   (`replaceSubtree(depth, html)`, `startIslands(depth)`, `mountCount(name)`, `scrollTo`). Duas de suas
@@ -1084,6 +1094,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Bloqueia.** Nada — (a) está construída; o `07-onze/50` passo 6 fornece as seis funções.
 
 #### 67-a · Onde as caixas de formulários do lado DOM são afirmadas
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): `fake_dom.mjs` ganha `<form>`, `<input>`, `FormData` e `submit`; as cinco caixas são afirmadas em `jhonstart-dom-test/test/forms_dom_test.bp` agora, e de novo no navegador do onze 53** — uma caixa afirmada só numa execução de navegador que nenhum gate segura é não afirmada (160, 67); (c) acrescenta uma dependência para o que algumas centenas de linhas de fake dão. Viável: `jhonstart/modules/jhonstart-dom-test/src/fake_dom.mjs` (sem form, sem `FormData`, sem `submit` hoje), `test/dom_test.bp` o padrão; org-6: a 67 é dona do arquivo que acrescenta, `fake_dom.mjs` editado por uma frente de cada vez. Mudanças: os passos 1–3 da 67 como escritos; uma linha de decisão o registra (o cabeçalho da frente reivindica uma resposta que nenhuma decisão tem).
 - **Medido.** `fieldError` depois de `__jhFormState`, re-renderização no lugar em `ok: false`, `pending` de dois formulários, commit / rollback otimista leem `document` e `FormData`; `botopink test` não tem DOM; `jhonstart-dom-test` (`fake_dom.mjs`, só commonJS) já serve a metade de navegador da renderização. O cabeçalho da frente 67 diz "`67-a` respondida", mas nenhuma decisão a registra — ainda aberta.
 - **Opções.** (a) Estender `fake_dom.mjs` com `<form>`, `<input>`, `FormData`, `submit`; afirmar as cinco caixas (3a, 3b, 4, 5 da 1.0.10) em `jhonstart-dom-test/test/forms_dom_test.bp` agora, e de novo no navegador da onze 53. (b) Só no navegador da onze 53. (c) Uma biblioteca DOM real como dependência de dev.
 - **Recomendação.** (a).
@@ -1094,12 +1105,14 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 ### 07-onze
 
 #### 50-b · O que `onze dev` faz numa mudança
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): `onze dev` é `build` e depois `start`, em loop sobre um observador de arquivos — um caminho de código, os bytes que o `start` serve** — uma mudança reconstrói e reinicia o nó (1–3 s por edição); o estado das ilhas se perde de qualquer modo (Fast Refresh não é meta). O hot load de (b) e o fallback de (c) acrescentam um segundo caminho cuja equivalência com o `start` nada prova (67); (b) volta quando (a) medir lento demais no blog. Viável: `onze-cli/src/start.bp` (`erl -noshell -pa … -eval …`), `onze-bundler/src/rebuild.bp` (a invalidação, mantida para a metade do cliente); `onze dev` responde 2 hoje (`main.bp`) e nenhum observador existe — o observador é o `fs` do std em commonJS / erlang com o `io.process.spawn` / `forwardSignals` da 506 para o filho; o passo 2 da 50 o constrói. Mudanças: o "recarrega os módulos mudados" do passo 6 da 50 vira um reinício; o passo 6 da 53.
 - **Medido.** `onze build` compila o servidor para BEAM (`server/beam/`), `onze start` roda `erl -noshell -pa <outDir>/server/beam -eval …` (50-a); `onze-bundler/src/rebuild.bp` calcula os módulos invalidados; o BEAM pode fazer `code:load_file/1`; o registro de UI e a tabela de rotas se preenchem no carregamento do módulo (decisão 140): uma página recarregada se re-registra, um novo arquivo de rota precisa de `onze_routes.bp` regenerado e da tabela reconstruída.
 - **Opções.** (a) Reiniciar o nó a cada mudança (`build` + `start` em loop sobre um observador de arquivos — os mesmos bytes de `start`, 1–3 s por edição). (b) Carregar a quente os módulos alterados; regenerar e recarregar `onze_routes` quando a árvore do app mudar. (c) (b), recaindo em (a) quando um arquivo de convenção mudou. Estado de ilha do navegador perdido de qualquer jeito (Fast Refresh um não-objetivo, `07-onze/reference-holes.md` § 29).
 - **Recomendação.** (a): um caminho de código, os mesmos bytes que `start` serve; (b) depois, se (a) medir lento demais no blog.
 - **Bloqueia.** 50 passo 2; 53 passo 6.
 
 #### 49-g · `isString` — do próprio onze, ou o `Json` do std
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b), no `json`: `Json.isString()` ao lado de `isObject`; o onze apaga o seu** — um leitor por pergunta, na biblioteca dona do `Json` (396: a biblioteca `json` toma o `json.bp` do std inteiro; na feat o tipo ainda é do std porque o passo 1 da 142 não o moveu, então o método pousa no std sob a 97 e viaja com a mudança). (c) é um texto de diagnóstico como teste de tipo, nunca. Viável: `libs/std/src/json.bp` (o `case` de `isObject` é a forma), depois o `isString` de `onze/modules/onze/src/config.bp` e o import de `types.bp` vão embora. Mudanças: uma continuação de uma linha no onze depois que a linha do std pousar.
 - **Medido.** O passo 1 da 49 moveu `onze/src/config.bp` e `types.bp` para os métodos do `Json` do std
   (`members`, `field`, `str`, `items`, `isObject`, `kindName`); o std não tem teste de string, então
   `config.bp` mantém um `pub fn isString(v: Json) -> bool` (um `case` sobre `Str`), importado por
@@ -1113,6 +1126,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Bloqueia.** nada; sob (b), um acompanhamento de uma linha em `config.bp` / `types.bp` depois da 97.
 
 #### 51-a · Um inteiro malformado num sidecar de métricas ou num ângulo de gradiente
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b): recusar — `parseMetrics(…) -> @Result<FontMetrics, string>` responde `Error("<family> <weight>: line 3: \"9x0\" is not an integer")`, e `gradientOf` responde seu valor "not a two-stop linear gradient" para um ângulo não inteiro** — uma entrada malformada é recusada, nunca lida como zero (67; o precedente da 299: `rkPropInt("12abc") == 12` foi revertido). Viável: `onze-og/src/metrics.bp` (`Error(_) -> 0` em três pontos de `parseInt`) e `svg.bp` `gradientOf`; os pontos de chamada e `og_test.bp`. Mudanças: as caixas de `og_test.bp` da 51.
 - **Medido.** O passo 1 da 51 substituiu as duas células `intOf` do `onze-og` pelo `string.parseInt()` do std;
   as células antigas respondiam `0` para texto que não é inteiro, e os pontos de chamada agora também
   (`case t.parseInt() { Ok(n) -> n.toI32(); Error(_) -> 0; }` — `metrics.bp` `parseMetrics`,
@@ -1165,6 +1179,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Bloqueia.** A caixa de prelúdio do passo 2 da 116 (a lista de itens e suas recusas); nada no passo 1.
 
 #### 116-b · Os papéis são checados num projeto sem arquivo `.bpp`? (*proposta* ★)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído — confirmar** — os papéis são checados sempre que a chave está presente; uma chave que não pode ser honrada é recusada onde é escrita, antes de um arquivo depender dela (67, 361 (4)). Viável, construído: `compiler-cli/src/cli/libs.zig` (`if (project.bpp) checkBppRoles`), `bpp.zig` `checkPackage`, célula `bpp_html_missing` (sem arquivo `.bpp`, recusada na chave). Mudanças: nenhuma; uma linha de decisão.
 - **Medido** (frente 116 passo 1). 361 (4): "a chave num projeto sem `.bpp` aceita". Implementado:
   a chave é aceita, e os papéis do pacote que ela nomeia ainda são checados em todo
   `build` / `check` / `run` / `test` (`compiler-cli/src/cli/bpp.zig`, chamado de
@@ -1187,6 +1202,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Bloqueia.** Nada — (a) está construída; (b) removeria uma chamada.
 
 #### 116-c · Um decorator num `var` de módulo (a decisão 356 nomeia um `val`) (*proposta* ★)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído — confirmar** — um decorator do usuário num `var` de módulo é recusado na anotação; recusar não perde nada de que uma biblioteca precise, e (b) / (c) podem ser acrescentadas sem quebrar um programa (a 356 nomeia um `val`: um `var` não tem valor de build). Viável, construído: `infer.zig` (a recusa), célula `val_decorator_on_var`. Mudanças: o `docs.md` da célula ainda diz "question 116-c open"; uma linha de decisão.
 - **Medido** (01-compiler/130 passo 10 caixa 1). Antes da 356 todo decorator de usuário
   num binding de módulo era descartado em silêncio. A 356 faz um num `val` rodar (`DeclKind.Val`). Um `var`
   de módulo é o mesmo nó de AST (`ValDecl.mutable`); construído: um decorator de usuário num `var` é recusado na
@@ -1214,12 +1230,14 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 ### 09-cardume
 
 #### atm-c · O `T` de um átomo através da costura servidor/navegador (*proposta*)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b), com `#[clientOnly]` na declaração do átomo como a única grafia** — qualquer `T` pode ser um átomo; o conjunto de leituras de uma ilha é checado no build sobre seus hooks (277: arestas `use atomValue(x)`), e um átomo que uma ilha lê cujo `T` não é codificável (o `encode` do `#[validated]`, 327, ou um tipo que a 294 aceita) deve ser declarado `#[clientOnly] pub val draft = atom(…);` — a única função com um só significado da 278, numa declaração como a 186 a põe num hook — senão um erro no `use` da ilha nomeando o átomo e `T`; nenhum `clientAtom(…)`. Restritiva onde cruza, livre no resto (a 354 (6) declara a costura para contextos e deixa os átomos a esta pergunta); (a) proíbe um handle de DOM em qualquer átomo, (c) descobre em run time. Viável só com o cardume: `repository/cardume` não existe (296, passo 0 da 136) e rakun / jhonstart ainda não têm átomos de requisição; a checagem precisa que `HookUse` carregue o argumento de declaração do `use` (o `val` do átomo) — sujeito ao `HookUse` da 277 ganhá-lo (uma linha 144 se o B-17 não o fizer), senão o conjunto de leituras da ilha é incognoscível no build. Mudanças: o passo 6 da 136 escrito para (b); a 282 lê `#[clientOnly]` num `val`.
 - **Medido.** O servidor semeia os valores que uma ilha leu em seu payload (136 passo 6); um valor que cruza deve ser codificável — depois da 306, o membro `encode` de um tipo `#[validated]` (`T.encode(v)`, 327; outra biblioteca aceita `T` só com `@typeInfo(T).meta(Validated)`), ou um dos `T`s que a 294 aceita para um cookie (string, número, `bool`, enum, record de um campo); algum estado é só do navegador por natureza (um handle de DOM, uma função).
 - **Opções.** (a) O `T` de todo átomo codificável, checado onde o átomo é declarado. (b) Qualquer `T`; o conjunto de leitura de uma ilha checado no build — um átomo não codificável que uma ilha lê deve ser declarado só-cliente (`clientAtom(…)`, ou o `#[clientOnly]` da 278 estendido a declarações, 282). (c) Qualquer `T`, recusado só em tempo de execução.
 - **Recomendação.** (b): restritivo onde importa (o que cruza), livre no resto.
 - **Bloqueia.** 136 passo 6.
 
 #### atm-d · Quais efeitos de átomo são entregues (*proposta*)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): nenhum efeito de átomo no primeiro corte** — o store pousa primeiro; `persistLocal` / `syncSearchParam` são um passo próprio depois de uma necessidade medida, uma função por preocupação (281: uma chave é a declaração, nunca uma string). Viável: nada a construir; o cardume ainda não tem código (136). Mudanças: o passo 8 da 136 adiado.
 - **Medido.** Os efeitos de átomo do Recoil persistem ou sincronizam um átomo (localStorage, URL, um push do servidor); nenhum existe aqui.
 - **Opções.** (a) Nenhum no primeiro corte. (b) Só `persistLocal("cart")`. (c) `persistLocal` e uma sincronização de search-param (`syncSearchParam("tab")`).
 - **Recomendação.** (a): pousar o store primeiro; efeitos como um passo próprio depois de uma necessidade medida.
@@ -1228,6 +1246,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 ### 10-specs
 
 #### 141-a · Como uma decisão que aposenta uma grafia impede os specs de derivar (*proposta*)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): o commit da decisão reescreve a grafia aposentada em `specs/<current>/**` e acrescenta sua linha ao `inventory.md` da 141; o `land-check.py` (484 (4), 163 s12) acrescenta uma checagem — uma linha de decisão que emenda ou substitui N fica vermelha enquanto uma grafia que N aposenta ainda está escrita fora de um milestone fechado e das tabelas de alias** — a deriva nasce no commit da decisão, então é fechada ali; a lista de permissão de (b) escusa linhas (67) e não distingue uma frase que declara uma regra de uma que nomeia o que remove; (c) deixa uma frente ler a forma aposentada por um milestone. Viável: nenhuma ferramenta para (a); a checagem são algumas linhas em `scripts/land-check.py` (ainda não escrito — o 163 s12 está aberto), lendo as palavras da própria linha pela grafia que aposenta (a linha nomeia as duas formas, o inventário da 141 os arquivos). Mudanças: o passo 6 da 141 e a caixa do 163 s12.
 - **Medido.** A 354 aposentou `@Component<C, R>`; o compilador a recusa e o codemod da 134 reescreveu as bibliotecas (`01-compiler/134` passo 6 caixas 1, 6), mas cerca de 280 linhas de spec em 71 arquivos ainda escrevem grafias aposentadas (`10-specs/141-specs-sweep/inventory.md`, nove famílias), e 25 linhas de `decisions-taken.md` ainda declaram o texto que uma emenda substituiu. Nada liga uma decisão às linhas de spec que ela aposenta.
 - **Opções.** (a) O commit que escreve tal decisão também reescreve as linhas de classe S de `specs/<current>/**` que escrevem a forma antiga, e acrescenta sua linha ao `inventory.md` da 141 — um dever de quem escreve a decisão, sem ferramenta. (b) Uma checagem 6 de CI meta: uma lista de grafias aposentadas e dos arquivos autorizados a nomeá-las, vermelha em qualquer outro acerto — uma lista que desculpa linhas, o que o espírito da decisão 67 recusa, e uma checagem que não distingue uma linha S de uma linha R. (c) Nada: a varredura da 141 re-roda em cada fechamento de milestone.
 - **Exemplos.** Uma decisão que aposenta `Context<T>()` por `createContext(value)` (379): (a) seu commit também reescreve o `pub val StyledContext = Context<StyledSheet>();` de `08-bpp/119/README.md` para `comptime createContext(StyledSheet.missing())` e acrescenta uma linha F1 ao `inventory.md` — `grep -rn 'Context<StyledSheet>()' specs/1.0.12-beta` fica vazio quando pousa; (b) `scripts/retired-spellings.txt` ganha `Context<[A-Z][A-Za-z]*>\(\)` com `01-compiler/134/README.md` autorizado, e a checagem 6 fica vermelha na linha da 119 até alguém reescrevê-la — e fica verde numa caixa que nomeia a forma como o que ela remove só porque esse arquivo está na lista; (c) a linha da 119 mantém `Context<StyledSheet>()` até o milestone fechar, e uma frente que abre a 119 nesse meio-tempo lê a forma aposentada.
@@ -1244,6 +1263,7 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 ### Do registro em português do mantenedor (`decisoes-pendentes.md`)
 
 #### 07-i (revision) · Se a proibição da 163 de nomes repetidos em pacotes embutidos sobrevive ao alias da 170
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): continua proibido — um novo pacote embutido escolhe um nome que o std e os frameworks não exportam** — o alias da 170 serve às colisões próprias de um programa, não à nomeação do ecossistema; um nome para uma coisa entre pacotes se lê igual em todo módulo (67), e o `cookie` do `http`, o `id.deriveActionId` do `actions` já escolheram nomes livres. Viável: nada a construir. Mudanças: o "até a linha do toolchain fechar" da 163 vira regra permanente; nenhuma no código.
 - **Medido.** A 163 proíbe um pacote embutido de exportar um nome que o std ou um framework exporta "até a linha do toolchain fechar"; a 170 (um import que nomeia seu módulo nunca é ambíguo; alias quando os dois são necessários) a fecha.
 - **Opções.** (a) Ainda proibido: um novo pacote embutido escolhe um nome que não colide (o módulo `cookie` do `http`, o `id.deriveActionId` do `actions`). (b) Proibição suspensa: nomes naturais, os importadores usam alias.
 - **Recomendação.** (a).
@@ -1254,6 +1274,7 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 ### Propriedade
 
 #### own-a · Quem é dono dos test runners (*proposta*)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a) como a 433 já corta: os runners do botopink-lang são da 144, os `scripts/**` da meta da 163** — o § Ownership do `fronts.md` o declara ("144 holds them; the meta `scripts/**` are 163's"); um passo que edita um runner o nomeia em seu commit; a 114 de (b) e a 07-residuals de (a) estão dentro da 144 desde a 433 (1). Viável: a regra está em vigor; o item aberto do `fronts.md` ainda lista `tests/language/run.sh`, que saiu com a 466. Mudanças: o item aberto fecha; o `fronts.md:55-59` da entrada é o § Ownership.
 - **Medido.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (além das linhas de orçamento da 114), `tests/language/run.sh` (além do relatório da 12), `modules/test-shard/**`, `modules/lib-test-runner/**`, os `scripts/**` do meta eram de `25-gate-perf`, 113, 115, 133, todas fechadas (`fronts.md` § Ownership, item aberto). Regra provisória ali (`fronts.md:55-59`) = opção (c): uma frente que edita nomeia a exceção em seu commit; duas frentes abertas não editam o mesmo arquivo. Nenhum passo aberto edita um runner: o passo 12 da 07-residuals "não edita nenhum runner", as linhas de orçamento do passo 5 da 114 já são da 114, o passo 7 da 114 só roda o gate.
 - **Opções.** (a) `01-compiler/07-residuals`, que já guarda o passo aberto da 25 (a compilação de dependência por célula). (b) `00-gate/114`, o resíduo do gate. (c) nenhuma: cada frente nomeia uma exceção por commit (a regra provisória de hoje, mantida).
 - **Recomendação.** (a): um dono, a frente que herdou o passo aberto da 25.
@@ -1262,22 +1283,26 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 ### Contradições que não bloqueiam nenhum passo 00–03
 
 #### ctr-l · A terceira recusa da decisão 186 contra a decisão 202
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Retirar a terceira recusa da 186** — sob a 202 nenhuma página se declara pré-renderizada, então "um hook `#[serverOnly]` numa página que se declara pré-renderizada" não tem caso: o `#[page]` recusa um hook `#[serverOnly]` dentro de um componente `#[client]` e um hook `#[clientOnly]` fora de um, e renderiza por requisição uma página cujos hooks alcançam `#[serverOnly]` (186, 202, 277). Viável: o contexto da 26 já lista só as duas recusas (`2-libraries/149-jhonstart/26-jhonstart-router/context.md`). Mudanças: a linha da 186 perde sua terceira recusa; o `README.md:58-59,182-183` da entrada é esse arquivo de contexto.
 - **Regras.** A 186 recusa "um hook `#[serverOnly]` numa página que se declara pré-renderizada (`08-g`)". A 202: "Nenhuma declaração … nenhum `pub val prerender` … nenhum jeito de forçar". Uma página é `pub fn blog() -> View` lendo `use cookie(sessionCookie)` (293, 294): renderizada por requisição, sem erro.
 - **Recomendação.** Descartar a terceira recusa da 186: sob a 202 nenhuma página se declara pré-renderizada. O `05-jhonstart/26` passo 8 já lista só as duas recusas (`README.md:58-59,182-183`); só a linha da 186 está pendente.
 - **Bloqueia.** Nada nas frentes; o registro.
 
 #### ctr-v · A decisão 189 (org-3) contra as frentes do emilia abrindo antes da 118
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Registrar: um carve-out só de comentários é tomado pela frente dona; a 118 mantém as linhas de código** — a org-3 sequencia carve-outs de código, e as linhas de colchetes do emilia são comentários (hoje só em `emilia/AGENTS.md`, `README.md`, `conformance/docs.md` e no comentário de uma célula: `attributes.bp` / `emilia.bp` não têm nenhuma, e `emilia-card` não existe mais). Viável: nada a construir. Mudanças: a linha org-3 da 189 ganha a frase; as linhas de arquivo da entrada estão defasadas.
 - **Regras.** org-3: as exceções da 118 pousam antes de a frente dona abrir. `06-emilia/34` passo 1 e `33` passo 2 abrem agora; as linhas `[class]={…}` do emilia (`attributes.bp:30,32,36`, `emilia.bp:185,202`) e o `[emilia]={…}` de `emilia-card/src/main.bp:5` são só comentários, reescritos por essas frentes.
 - **Recomendação.** Registrar que uma exceção só de comentários é tomada pela frente dona; a 118 mantém as linhas de código (seus próprios testes, o teste de ponte do `jhonstart-emilia`, `document-shell`). As frentes já a seguem (118 § Does not touch, 34 passo 1, `fronts.md:49`); só a linha da org-3 está pendente.
 - **Bloqueia.** Nada nas frentes; o registro.
 
 #### ctr-w · O braço Elasticsearch da frente 09 contra a decisão 185
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **O braço Elasticsearch alcança HTTP por um ponto de extensão do core (185), nunca por uma aresta `rakun-data → rakun-client`; respondida com a lista de braços da `03r-ab`** — o `rakun-data` depende só de `rakun` e `rakun-actuator` hoje e nenhum braço existe, então nada é desfeito. Viável: o padrão de registro do core (`rkOnReset`; o registro de transporte da `03r-an`), ou o `io/http` do std diretamente, como o relay da 65 faz. Mudanças: o passo 3 da 09 escrito contra ela.
 - **Regras.** 185: uma capacidade opcional passa por um ponto de extensão do core, "nenhuma aresta de membro para membro". `04-rakun/09` § Open point: o braço Elasticsearch sobre `rakun-client` acrescenta uma aresta `rakun-data → rakun-client` que todo consumidor de data carrega.
 - **Recomendação.** O braço alcança HTTP por um ponto de extensão do core (ou `httpc` diretamente, como o relay da 65), não por uma aresta `rakun-client`; respondida com a lista de braços da `03r-ab`.
 - **Bloqueia.** 09 passo 3.
 
 
 #### 119-a · A caixa de grep do passo 1 contra o hook byte-idêntico da checagem 4 do CI
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): a caixa faz grep no texto próprio do pacote — `{src,test,botopink.json}` de `css` e `styled`** — o hook é um só texto de que o gate é dono (checagem 4 do CI), `AGENTS.md` e `decisions-taken.md` nomeiam os vizinhos por design (as camadas da 338), e o `{src,test,botopink.json}` do `css` está vazio hoje; o do `styled` não (`src/styled.bp` e `test/styled_example_test.bp` nomeiam o `flush()` do emilia e o render do jhonstart em comentários) — a 148 reescreve esses dois comentários (338 (2): `styled` não nomeia jhonstart nem emilia). Viável: um grep. Mudanças: a caixa do passo 1 da 119; a "linha 31" da entrada é `runner-standalone.sh:45`, e `css/AGENTS.md` contém `emilia` (por design).
 - **Regras.** 119 passo 1 e seu gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` vazio (338). Checagem 4 do CI (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-idêntico em todo repositório de biblioteca — e sua linha 31 lê `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, então o grep o encontra em `repository/css` (e encontrará em `repository/styled`). `src/`, `test/`, `AGENTS.md` e o manifesto não guardam nenhum dos três nomes.
 - **Opções.** (a) A caixa faz grep no texto do próprio pacote: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/styled/{src,test,botopink.json}` — vazio hoje para `css`. (b) O comentário do hook compartilhado perde o nome, em todo repositório de biblioteca de uma vez (checagem 4), uma mudança que nenhum dos repositórios da 119 possui.
 - **Recomendação.** (a): a caixa mede o que o pacote sabe; o hook é um texto dono do gate.
@@ -1313,6 +1338,28 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 | 03r-x | O relay do outbox reivindica por `UPDATE` condicional (as reivindicações de um relay que caiu voltam por `reclaimStale`); os coordenadores de saga e 2PC persistem toda transição e retomam no boot (`resumeSagas`, `recover2pc`); o job store reivindica triggers e assume leases do mesmo modo | 15 |
 | 04-a | A época de tag do core só cresce (`rkResetContext` a deixa), é `i64`, e a tag vazia é recusada em `rkBumpTag` / `rkTagEpoch` | 04 passo 1 · `rakun/src/runtime.bp`, `rakun_runtime.erl` |
 
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-a:** confirmar a regra só-erlang; sob a 512 (3) os 27 manifestos de membros, 8 de starters e 3 de exemplos que repetem `"targets": ["erlang"]` o largam (o workspace o declara uma vez) — com a `95-b`, a varredura de manifestos da 150.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-c:** confirmar (`rakun/src/config.bp`, nenhum `rakun_config.erl`); os records `#[config]` da 299 ainda não estão construídos (`#[configurationProperties]` e `rkProp*` permanecem) — rakun 04 s7.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-e:** revertida pela `ctr-p`: nada fica "como escrito"; `decodeComponent` vai embora com os leitores que a 196 apaga.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-f:** confirmar (`rakun-cache/src/cache.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-g:** confirmar (`cache.bp`: uma linha privada sem sessão roda o loader, não guarda nada).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-h:** confirmar (`cache.bp` `cacheMethod`, `cacheEvictAll`, `cacheEvictKeys`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-i:** confirmar; o wire Redis ainda é o `rkSessRedis` do `rakun-session` importado pelo `rakun-cache` — uma aresta membro-a-membro que a 185 move para o core quando uma frente a tocar.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-j:** confirmar (`cache.bp`: `rakun.cache.type=none` vence todo cache; `updateTag` fora de uma action entra em pânico).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-k:** confirmar (`rakun-messaging/src/container.bp` aceita só `memory`, recusa nomeando o driver).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-l:** emendar sob a 318 (5): um listener, `#[listen(orders)]` num método de um `#[component]`, o destino declarado uma vez e tipado (`pub val orders = Destination<OrderPlaced>("order-events")`), o container nomeado por esse destino (`rakun.messaging.listener.<destination>.*`), o modo de ack `none` do Redis imposto, as chaves lidas pela config tipada da 299 (`ackMode` / `#[key("ack-mode")]`); na feat `markers.bp` ainda declara `#[amqpListener]`, `#[kafkaListener]`, `#[redisListener]`, `#[streamListener]`, `#[listener]` e lê `rkProp(listenerKey(…))` — o passo da 15 para a 318.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-m:** confirmar (o texto de fase de action do `cache.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-n:** confirmar (`rakun-app/src/actions.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-p:** confirmar (`rakun-app/src/file_router.bp`, `slotOf`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-r:** confirmar (`starters/rakun-starter/botopink.json` `"workspace": true`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-s:** confirmar (`rakun_metrics.erl` `otlp_*_json`, `json:encode`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-t:** confirmar (`rakun-actuator/src/management.bp`, `rakun_probes.erl`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-u:** confirmar (`management.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-v:** confirmar como o estado na feat (`rakun-data/src/orm/query.bp` `Op`, `queryOf`, `City.columns()`); superada em direção por 312 / 397 / 398: o builder tipado sai do rakun-data quando o `self.db.query "…"` do erika e o dbcontext pousarem (137, 143), uma linguagem de consulta — a pergunta da coluna como `Type.Field<City>` (308) fica sem objeto então.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-w:** confirmar (`rakun-security/src/oauth2/provider.bp`; `client_credentials.bp` `withClientToken`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-x:** confirmar (`tx/outbox.bp` `reclaimStale`, `saga.bp` `resumeSagas`, `twopc.bp` `recover2pc`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 04-a:** confirmar (a entrada acima).
+
 ### 05-jhonstart (9)
 
 | Id | Escolha implementada | Onde |
@@ -1326,6 +1373,16 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 | 30-f | `app(…, lang = "en")`: uma língua checada por app. A checagem vira o subconjunto BCP 47 da decisão 180 quando a 105 substituir `isLangTag` por `i18n.wellFormedTag`; um `PageInput.lang` por requisição do `htmlLang()` existente do rakun-app continua aditivo | core · `streaming.bp:197-204` · 105 |
 | 30-g | Metade de navegador afirmada no membro só-commonJS `jhonstart-dom-test` sobre `fake_dom.mjs` | `jhonstart-dom-test` |
 | 31-a | `notFound()` / `redirect(url)` lançam por uma célula de host (`__jhRaise`); um boundary captura por `__jhCapture`; `notFoundReason()` / `redirectReason(url)` respondem a razão sem lançar. Declaram `-> string` até `noreturn` caber numa posição de valor — espera nat-d6 e lg2-l (se nat-d6 for (a), viram `-> noreturn`) | core · `error_boundary.bp:118-187` |
+
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 26-a (jhonstart):** confirmar (`router_runtime.mjs` ao lado de `router.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 29-a:** confirmar a escolha reduzida (`registerRouteStarters` + `globals.starters`); o `registerStarter` por nome ainda está declarado em `client.bp` — vai embora com a tabela de starters em comptime da 281 (26 passo 5, 120 passo 6), uma linha 149.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 30-b:** confirmar (`plugin.bp` `RenderPlugin`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 30-c:** confirmar o thunk (`render.bp` `compose(chain, route: PageContext, page: fn() -> @Component<Element>)`); o parâmetro `route: PageContext` ainda está lá — sai com a 293 (26 passo 11), quando a assinatura vira `compose(chain, { -> Page() })`.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 30-d:** confirmar (`suspense.bp` `Boundary`, `__jhPushBoundary`); seu `child: fn() -> @Component<Element>` vira `@Component<Element>` sob 504 / lg2-n.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 30-e:** confirmar (`routes.bp` `UiSegment`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 30-f:** confirmar (`streaming.bp` `app(…, lang = "en")`, `isLangTag`; o repositório `i18n` da 105 ainda não existe).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 30-g:** confirmar (`jhonstart-dom-test`, `fake_dom.mjs`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 31-a:** emendar sob a `nat-d6` (a) e a `lg2-l`: `notFound()` / `redirect(url)` viram `-> noreturn`, lançando um `NavOutcome` tipado; `notFoundReason()` / `redirectReason(url)` ficam; `isSignalReason` vai embora.
 
 ### 06-emilia (9)
 
@@ -1341,6 +1398,16 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 | 05emilia-j | Um modificador de lista de seletores (`marker:`, `selection:`) é uma lista de variantes de um `&` | 34 · 56 |
 | 05emilia-k | O meio passo negativo é `spacingNegHalf(n)`; `spacingHalf` recusa um `n` negativo | 54 |
 
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-a:** confirmar (`emilia.bp` `filterChain`, `backdropFilterChain`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-b:** confirmar (`BackdropFilter` em `emilia.bp`, `tokens.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-c:** confirmar (`emilia.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-d:** confirmar (`tokens.bp` / `emilia.bp` `--tw-scroll-snap-strictness`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-f:** confirmar (`theme.bp` `--inset-shadow-*`; o detalhe do `inset` inicial não reverificado).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-g:** confirmar (`emilia.bp` `space-*` / `divide-*`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-i:** confirmar (blocos `@property` em `emilia.bp`, `tokens.bp`, `output.bp`; o nome da camada não relido).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-j:** confirmar (`emilia.bp` `selectionVariants`, `tokens.bp` `Selection`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 05emilia-k:** confirmar (`spacing.bp` `spacingNegHalf`; `spacingHalf` recusa um `n` negativo).
+
 ### 07-onze (9)
 
 | Id | Escolha implementada | Onde |
@@ -1354,3 +1421,13 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 | 68-a | Um campo do manifesto de cliente escapa só `%`, `\|`, LF e CR | bundler |
 | 68-d | O styleMap é avaliado por uma sonda compilada em ambos os pacotes (`emilia-hash-split`, `emilia-unevaluated`) — sem sentido quando o passo 1 da 34 e o passo 4 da 119 pousarem (301: os tokens `#[styled]` são comptime, a classe e a regra calculadas no build sobre o `contentHash` do std); vale até lá | bundler |
 | 69-a | O onze-assets mantém `AssetRoot`; o onze-server o converte para o `StaticRoot` do rakun-web | assets · server |
+
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 49-a:** confirmar os `describe*` próprios; emendar o motor: as suítes escrevem pelo `assertAs` do `snap` (391; `import {assertAs} from "snap"`, uma dependência git em `onze/botopink.json`), não pelo `snapshots` do std.
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 49-c:** confirmar (`onze/src/config.bp`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 49-e:** confirmar (`onze-server`, erlang).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 50-a:** confirmar (`onze-cli/src/start.bp` roda `erl -noshell …`; `bin/onze` espera a 71).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 52-a:** confirmar (`onze-assets/src/font_metrics.bp`, cinco linhas; o gerador devido).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 53-a:** confirmar (`examples/blog/onze.json` `appDir: "src/app"`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 68-a:** confirmar (`onze-bundler/src/manifest.bp` `escapeField`).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 68-d:** confirmar até 34 s1 / 119 s4 pousarem (a sonda e seu snapshot ainda existem).
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 69-a:** confirmar (`onze-assets/src/assets.bp` `AssetRoot`; `onze-server/src/server.bp` `staticRootOf`).
