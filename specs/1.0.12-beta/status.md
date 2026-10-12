@@ -34,7 +34,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-29 step I — the commit hook runs `gate.sh --no-conformance` (470, landed: a one-backend step 4m20 cold, 1m28 warm); left: the reference into `botopink-lang/conformance/` (every `docs.md` example a cell), `test.yml` calling `scripts/gate.sh` (461, 462, 466) · the fourth step of the conformance order, after step H2
 - [ ] emilia's 79 cells green on wasm — after 144 B-40 and B-42 (the move into `emilia/conformance/` landed; jhonstart, erika, onze and rakun done) · the sixth step of the conformance order
 - [ ] 144 B-00c last box — each library repository's own hook run on this compiler, `scripts/gate.sh libs` (473); `test-libs` green · the seventh step of the conformance order: after the step gate, the hook's `--no-conformance`, B-29 steps H and I, 163 s7 and each library's move into `conformance/`, so the hooks include it; it closes B-00
-- [ ] 163 s8 last boxes — a green `test.yml` run on `feat` for every library (dependency closure fixed; jhonstart waits on B-34); the workflow's dependency step held to one text by `gate.sh check` · nothing
+- [ ] 163 s8 last boxes — a green `test.yml` run on `feat` for every library (dependency closure fixed; jhonstart's cells green on commonJS, erlang and beam, wasm waits on B-38); the workflow's dependency step held to one text by `gate.sh check` · nothing
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
 - [ ] 163 s12 — `scripts/land-check.py`, the coordinator's check before a landing (484) · nothing
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
@@ -45,7 +45,6 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-31 — on wasm a template whose only part is a float hole is typed `f64` (`val s = "${5.0}"; s + "!"` invalid wasm): a structural fix (430) · nothing
 - [ ] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`, 471); a `badarith` at build in Erlang's words, located (472) · nothing
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
-- [ ] 144 B-34 — the BEAM assembler rejects `styled` (`make_fun3 … {unassigned,{y,3}}`): every jhonstart cell refused on beam — a structural fix (430) · nothing
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers; the result store keeps a linked tree · nothing
 - [ ] 144 B-38 — `botopink cell check` reports every cell of a directory (a cell went missing in rakun's run) and resolves a cell's `path` dependency · nothing
 - [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · nothing
@@ -293,11 +292,6 @@ last section. Open: 88 questions, 6 contradictions, 100 implementation choices (
 - [ ] 05w-i → 333 (A): 97 s16 · 05w-j → 336: 97 s15
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):
-- [ ] 431-a — std's hand-caught bindings · 144 B-08 · 431-j — a binding that raises without catching · B-08
-- [ ] 431-b, 431-c — `throws:` beside `inline:`, what counts as `HostError` · 144 B-03
-- [ ] 431-d, 431-e — `HostError`'s fields per backend, 126's implicit Promise conversion · 144 B-05
-- [ ] 431-f — `throws:` and `attempt` on wasm · 144 B-05, B-07 · 431-g — `Failure`'s kinds · B-04, B-07
-- [ ] 431-h, 431-i — `asserts.throws`' signature, `attempt`'s `@Task` form · 144 B-07
 - [ ] 434-b — the at-build render path on one wasm runtime · 144 B-17
 - [ ] 97-s15-a — `Json`'s numbers before or after `json` leaves std · 144 B-24, B-27 · 151 s1
 
@@ -336,6 +330,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] **144 B-00a → B-00k (434, 437, 442, 446, 450, 452, 459)** — comptime on wasm only, the first thing the milestone did: `modules/std-wasm` (std's host functions in Zig), `modules/beam-to-wasm` (`.beam` to wasm), the comptime driver on wasm for every target, the BEAM comptime runtime deleted and `snapshots/codegen/<target>/` one tree, std-wasm in the `--target wasm` output, `@External.Beam` deleted (437), `wat_prelude` keeping only representation, operators, output and runtime (442); B-00b a standalone `.beam` → wasm utility on std-wasm (435, 438) · landed: B-00a, B-00d, B-00f (437), B-00h (446); B-00b for 435's subset, a foreign `.beam` and standalone (438), the utility whole (the comptime does not call it, 452); B-00c (452: a host function at build answers by `std:` or `fn:`), its last box open — the line below; B-00e (440, 441: std-wasm transpiled into the wasm program, the `std:` binding, std-wasm's text, sizes in `wat/AGENTS.md`); B-00g (442, 443, 445, 447, 451: std's helpers and `bigint` in std-wasm, Unicode case mapping, `std:` std's alone, a frame past the stack's floor traps, the seeded random std-wasm's and refused unseeded at comptime); B-00j (452, 453, 455, 456: the comptime answers by `std:` or `fn:`, never an Erlang cell; the name `std` reserved; `random.float` std-wasm's); B-00i (450: the Erlang terms and OTP functions are std-wasm's, `bp_wat_rt.wasm` gone); B-00k (459: the group's Conformance step — four cells, the table in the README) — **the B-00 group is done but for B-00c's last box** (L1, the seventh step of the conformance order)
+- [x] 144 B-34 — beam: a closure's free-name walk binds an `if` binding in its then-branch only (styled's `spliced`); jhonstart's 18 cells green on commonJS, erlang and beam — its Conformance step open
 - [x] 144 B-35 — wasm lowers `@println` as `@print` with its newline; erika's two cells green on every target — its Conformance step open
 - [x] 144 B-47 — a refusal `.snap` claims the label under the caret (`label <text>`, 485): 82 refusal cells carry one, the four caret-label cells green — its Conformance step open
 - [x] 144 B-46 — a failed decorator run checks its body with the module's std imports bound; the decorator `random.float()` cell refused unseeded (451, 456) — its Conformance step open

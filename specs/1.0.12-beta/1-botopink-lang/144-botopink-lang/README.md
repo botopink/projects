@@ -517,7 +517,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 `builtins.d.bp`'s External variants gain `throws: bool = false`; `refuseThrowsReturn` (`throws: true` only on
 `@Result<…, failure.HostError>` or `@Task` of one); `ast.externalRefOf` trims every bool flag. Questions
-`431-b`, `431-c`.
+`decision 487`, `decision 488`.
 
 **Impacted tests:** new `reject/external_throws_return`; `comptime/tests/effect_{future,generator}.zig`;
 `infer_decls` drift. **Model:** opus. **Consumer commits:** none (B-08 carries them).
@@ -556,7 +556,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 **Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** `test-libs --lib std`; `run/std_failure_attempt` (with B-07). **Model:** sonnet. Question
-`431-g` (the kinds). **Consumer commits:** none.
+`decision 492` (the kinds). **Consumer commits:** none.
 
 #### Step 18 — `failure`: `HostError`, `Failure`, `attempt` (decision 431; with `01-checker` step 42) — part (was `97-std-dedupe` s18 box 1)
 
@@ -587,9 +587,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 **Repository:** botopink-lang (`--lang`)
 
 commonJS: a sync binding in a `try/catch` answering `{ok}` / `{error: HostError(e.message, kind)}`, a `@Task`
-binding's rejection a `HostError` rejection, `__bp_host_task` only under `throws: true` (`431-e`); erlang and
-beam: `try … catch Class:Reason` building `HostError` (`431-d`); wasm: the `wasi:` adapter's error, `throws:`
-refused on `op:` / `fn:` (`431-f`). Consequence of 431 + 432, recorded (no question): a `throws: true` `@Task`
+binding's rejection a `HostError` rejection, `__bp_host_task` only under `throws: true` (`decision 490`); erlang and
+beam: `try … catch Class:Reason` building `HostError` (`decision 489`); wasm: the `wasi:` adapter's error, `throws:`
+refused on `op:` / `fn:` (`decision 491`). Consequence of 431 + 432, recorded (no question): a `throws: true` `@Task`
 binding on commonJS rejects with `HostError(e.message, e.name)`.
 
 **Impacted tests:** new `run/external_throws_host_error` (four targets); `run/host_node_task_result` rewritten;
@@ -671,8 +671,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang, with consumer commits in jhonstart (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
-Then jhonstart's `__jhTryValue` / `__jhTryTask` go, in jhonstart's consumer commit (its renderer, 388 / 414, landed). Questions `431-h`,
-`431-i`; wasm `431-f`.
+Then jhonstart's `__jhTryValue` / `__jhTryTask` go, in jhonstart's consumer commit (its renderer, 388 / 414, landed). Questions `decision 493`,
+`decision 494`; wasm `decision 491`.
 
 **Impacted tests:** `run/std_failure_attempt`; `run/std_asserts_host_cell_on_wasm`; the 82 files calling
 `throws` / `throwsWith` / `tryCatch`. **Model:** sonnet. **Consumer commits:** jhonstart (the `__jhTry*`
@@ -708,14 +708,14 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 std's hand-written try/catch templates are boundaries by hand (fs 11 Node + 2 Erlang, json 3+3, encoding 1+3,
 hash 1+1, regex 1, async 3, primitives 1, http 1, process 1, clock 1, asserts 1+1 — measured on botopink-lang
-`feat`); a binding that raises without catching is a crash under 431 (2). Questions `431-a`, `431-j`.
+`feat`); a binding that raises without catching is a crash under 431 (2). Questions `decision 486`, `decision 495`.
 Sequence with 142 s1 (`json` leaves std, B-27).
 
 - [ ] every std binding that catches by hand declares `throws: true` and answers `@Result<T, failure.HostError>`,
       or maps `HostError` into the typed error a decision names (`HttpError` 393 / 335, `StoreError` 304,
-      `ActionError` 303), per `431-a`; no hand-written `try` / `catch` template left in `libs/std/src`
+      `ActionError` 303), per `decision 486`; no hand-written `try` / `catch` template left in `libs/std/src`
 - [ ] every binding that raises without catching audited: `throws: true`, or documented in its module as
-      promising no raise (`431-j`); the list in `libs/std/AGENTS.md`
+      promising no raise (`decision 495`); the list in `libs/std/AGENTS.md`
 
 **Impacted tests:** `test-libs --lib std`; every library's suite (≈330 call sites change error type).
 **Model:** opus for the policy, haiku for the codemod. **Consumer commits:** onze (158 sites), rakun (121),
@@ -3191,9 +3191,9 @@ Found moving jhonstart's examples into its `conformance/` (463): every jhonstart
 `the OTP compiler refused the emitted program — nothing to run`; the BEAM assembler rejects the `styled` module
 (`make_fun3 … {unassigned,{y,3}}`). commonJS and erlang answer.
 
-- [ ] the beam emitter assigns the register `make_fun3` reads; `styled` assembles; jhonstart's 18 `conformance/` cells
+- [x] the beam emitter assigns the register `make_fun3` reads; `styled` assembles; jhonstart's 18 `conformance/` cells
       green on beam — red on the parent, green after
-- [ ] the cheap test the hook runs that would have caught it (a beam export-audit or codegen snapshot case, 478)
+- [x] the cheap test the hook runs that would have caught it (a beam export-audit or codegen snapshot case, 478)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-35 — `@println` has no wasm lowering (structural, decision 430)
