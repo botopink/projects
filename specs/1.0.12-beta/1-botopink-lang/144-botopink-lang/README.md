@@ -3620,6 +3620,23 @@ B-78-a** (`decisions-pending.md`): if the answer is to keep the engine's text, t
 - [ ] a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-79 — wasm: `module_var_self_registration_test` and `stdlib-tour` answer one way under wasmtime and node
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+Found landing the three `feat` reds (2026-10-12): the suites `conformance/test/module_var_self_registration_test`
+and `conformance/test/stdlib-tour` (`botopink test`) give different results on wasm under wasmtime and under node. A
+program has one answer on wasm whatever the host runs it (decision 434): the difference is measured, the host that
+answers wrong is fixed, and the right answer is the one the other targets give. The three suites under
+`conformance/test/` without a `src/main.bp` are not failures — they are `botopink test` suites, not cells, and a
+cell sweep does not check them.
+
+- [ ] the difference measured: each suite run under wasmtime and under node, which test answers differently and how,
+      and which host answers as erlang, beam and commonJS do
+- [ ] the wrong host fixed; both suites green on wasm under both hosts, a cheap test the hook runs beside the fix
+      (478)
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
