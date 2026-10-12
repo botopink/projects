@@ -668,6 +668,7 @@ number, which is **484**.
 - **Blocks.** The three templates of `02/97` step 13's `io/clock` row (the rest of the row landed: the readings are `number`s by construction, `wide` / `largestExactMillis` botopink).
 
 #### 97-s13-c · `clock.parseDuration`'s 2^53 − 1 bound after 319
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** The 2^53 − 1 ms bound stays, its reason restated: a duration is handed on as a timer delay or a JSON number, both `f64`, inexact past 2^53. `largestExactMillis`'s comment names that reason instead of "the two targets do not count alike".
 - **Measured.** `parseDuration` refuses a duration past 2^53 − 1 ms (`"9007199254740992ms"` is `… is out of range`) because "the two targets do not count alike" past it — true before 319, false after it: an `i64` is exact to 2^63 − 1 on every target, and `"9223372036854775807ms"` would answer the same digits on commonJS, erlang and beam.
 - **Options.**
   (a) ★ Keep the bound: a duration is handed on as a timer delay or a JSON number, both `f64`, and past 2^53 it is no longer exact there.

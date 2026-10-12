@@ -667,6 +667,7 @@ número livre, que é **484**.
 - **Bloqueia.** Os três templates da linha `io/clock` do `02/97` passo 13 (o resto da linha pousou: as leituras são `number`s por construção, `wide` / `largestExactMillis` botopink).
 
 #### 97-s13-c · O limite de 2^53 − 1 do `clock.parseDuration` depois da 319
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** O limite de 2^53 − 1 ms fica, com o motivo reescrito: uma duração é repassada como atraso de timer ou número JSON, ambos `f64`, inexatos além de 2^53. O comentário de `largestExactMillis` nomeia esse motivo em vez de "os dois alvos não contam igual".
 - **Medido.** `parseDuration` recusa uma duração além de 2^53 − 1 ms (`"9007199254740992ms"` é `… is out of range`) porque "os dois alvos não contam igual" além dele — verdade antes da 319, falso depois: um `i64` é exato até 2^63 − 1 em todo alvo, e `"9223372036854775807ms"` responderia os mesmos dígitos no commonJS, erlang e beam.
 - **Opções.**
   (a) ★ Manter o limite: uma duração é passada adiante como atraso de timer ou número JSON, ambos `f64`, e além de 2^53 ela deixa de ser exata ali.
