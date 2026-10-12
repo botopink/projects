@@ -40,9 +40,10 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
 - [ ] 144 B-63 — `botopink cell check` runs cells in parallel (`--jobs`, default the machine's; a library gate hands its share): today one cell after another on one core · nothing
-- [ ] 144 B-60 — level B on disk: a dependency's analysis in `.botopinkbuild/analysis/` by closure key + the checker's sources; `test-analysis-equivalence` (cold vs from disk, byte for byte) in `test-cli`; doubt discards; one entry per dependency and target (`<package>.bpa`, std per module), no size bound; the design confirmed by the maintainer — the whole analysed output and a journal of the registries, encoded generically over the Zig types; S0 (key, paths, header, discard) and S1 (encoder, decoder) under way, S2 (hooks), S4 (code) next (509 (1)) · nothing (B-58, B-65, B-66 landed)
+- [ ] 144 B-60 — level B on disk: a dependency's analysis in `.botopinkbuild/analysis/` by closure key + the checker's sources; `test-analysis-equivalence` (cold vs from disk, byte for byte) in `test-cli`; doubt discards; one entry per dependency and target (`<package>.bpa`, std per module), no size bound; the design confirmed by the maintainer — the whole analysed output and a journal of the registries, encoded generically over the Zig types; S0 (key, paths, header, discard) and S1 (encoder, decoder) landed, S2 (hooks) in part (the duplicate package name a located error; `binds_erlang_host` from the closure, in `test-closure-invariant`), the rest of S2, S4 (code), `test-analysis-equivalence` and the measurement open (509 (1)) · nothing (B-58, B-65, B-66 landed)
 - [ ] 144 B-77 — `botopink cache` (clean, status): level A to `.botopinkbuild/build/`; parallelism from the machine's pool inside botopink; `--cold` and `--jobs` go; scripts keep only `--staged` / `--no-conformance`; worktree rule 4b goes (468, 469, 473, 509, 225) · after B-60
-- [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59, B-60 — the group's last step
+- [ ] 144 B-78 — commonJS writes an `f64` as text with its decimal part (a template hole, `.toString()`, `string + f64`) through `@print`'s helper, `float_text_everywhere` green; left: a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`, the Conformance step; contradicts decision 441's last sentence · question B-78-a
+- [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59; runs beside B-60 and lands before B-60's S4
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · in flight beside the cache group
@@ -62,27 +63,12 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 
 Each resumes on `feat` once the cache group has landed, one commit at a time.
 
-- [ ] 144 B-39 — a module-level `val` read by the next one is unbound on erlang (rakun's `constraint` cell) · after the cache group's Conformance step
 - [ ] 144 B-24 Conformance — the group's last step: numbers and strings exact everywhere (319, 320, 332), its cells and `docs.md` · after the cache group's Conformance step
-- [ ] 144 B-41 — a library's abort reads the same on every target (emilia's `theme-unknown-namespace`) · after the cache group's Conformance step
-- [ ] 144 B-43 — a `Set` of structurally equal records keeps one on commonJS and wasm (`test/stdlib-tour`) · after the cache group's Conformance step
-- [ ] 144 B-51 — commonJS prints an `f64` without its `.0` (`import_module_paths`, `enum_declaration`) · after the cache group's Conformance step
-- [ ] 144 B-52 — wasm prints a string field or an awaited string as a number (`generic_fn_and_type`, `async_block_both`, `task_result_await`) · after the cache group's Conformance step
 
 ### 144 — after B-00: what B-00k found, and wasm memory
 
-- [ ] 144 B-62 — 9 cells red on `feat` with the compiler of `feat`: the five `bpp_*` refusals locate `botopink.json:1:223` against an accepted 121-and-the-name, `bpp_prelude_holds_declaration`, `bpp_role_not_pub`, and `dependency_imports_itself_with_from` / `dependency_imports_undeclared_package` print a dependency's path as `../../../conformance/…` against an accepted `deps/…` · nothing
-- [ ] 144 B-67 — erlang: a library's record imported beside a std record of the same name builds std's, `function_clause` (D3) · nothing
-- [ ] 144 B-68 — wasm: a method call on a template's answer does not resolve (`toString/0`, D4) · nothing
-- [ ] 144 B-31 — on wasm a template whose only part is a float hole is typed `f64` (`val s = "${5.0}"; s + "!"` invalid wasm): a structural fix (430) · nothing
-- [ ] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`, 471); a `badarith` at build in Erlang's words, located (472) · nothing
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers · nothing
-- [ ] 144 B-38 first box — every cell of a directory reported: a stdout write no longer drops a line (the suspected cause, not reproduced); confirmed by the pipeline's counts · nothing
-- [ ] 144 B-44 — wasm prints a lifted `bool` as `1` (`yamlconf`) · nothing
-- [ ] 144 B-53 — `@print` of a `@Result` prints the host's form · nothing
-- [ ] 144 B-54 — `botopink format` rewrites `keyed: true` to `keyed = true` · nothing
-- [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
@@ -90,19 +76,15 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 144 botopink-lang
 
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
-- [ ] 114 — `codegen/runtime.zig`'s own `test` blocks never run: `codegen/tests.zig` does not import the file (`runtimeTrapLog`, `compileFailureLog`, the duplicate-atom refusals — `-Dtest-filter` finds none) · none
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · runs in 163 s9 (the measurements at the end of the conformance order, a quiet machine)
-- [ ] 01-checker s6 box 3 — `throw` in a `case` arm under `@Result` · 04 s6
 - [ ] 134 — `registerStdlib` now runs the associated-type rewrite on std modules (`comptime.zig`, landed with batch 8 for `Type.Field<T>`): owner 01-checker · none
 - [ ] 140 (334) — steps 1–3 and 6's loader landed (botopink-lang `56d4bc29`); step 4 landed: `@Task` a resumable state machine over the scheduler on both hosts (392), the `wasi:delay` / `race` / `race_of` / `spawn_all` adapters checked by shape (393), one adapter list (394), `run/wasm_host_async` and three task cells green on four targets and both hosts, the cost in the README; open: `@Component` bodies (504), `fetch`'s records, the binary component encoding, std's `External.Wasm` declaration without `host` · then 97 s17 (`io/http`, `async` on wasm: `run/wasm_host_http`, `async_block_all_of`'s wasm column) · questions 502 ★, 504, 505 ★
 - [ ] 05-wasm s9 · 04-js s11 (333 (B), later) — a prebuilt wasm library merged into the module; no user yet
 - [ ] 139 (332) — steps 1–5 landed: the `n` literal, `primitives.bp`'s `behavior BigInt` (`of`, `parse`, `toString`, `toI64`, `toF64`), erlang/beam the VM's integer, commonJS `BigInt` (`.d.ts` `bigint`, `tsc-check.sh` green), wasm's `bigint` helper group (≈ 2.9 KB, linked only when used), `run/bigint_arithmetic` one `.out` on the four targets; 501 (a) ★ built (no `unknown`, `is` or `comptime` over a `bigint`), 139-b ★ · lands through the coordinator; then 97 s15 (`Decimal`, `Json`'s `Int` / `BigInt` / `Dec`) · 125's bind rule; open: wasm's union row
-- [ ] 01-checker s13 — JS-4's two checker gaps · 05 lowering a nested constructor in a `val`
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
 - [ ] 01-checker s24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (`Type.Field<T>`, 308) and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
 - [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `@External.Wasm` read on every target · none
-- [ ] 04-js s6 — `throw` in a `case` arm · 01 s6
 - [ ] 04-js s9 rest — `Json`'s exact `i64` (332: 139, then 97 s15) · the explicit conversions (97 s13's std surface)
 - [ ] 04-js s10 row — string reads cost +24 % against the 10 % target (`js/AGENTS.md`) · none
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `json` on wasm and its cell · 97 s15 (336)
@@ -113,9 +95,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 02-erlang · 04-js row — a leading-dot variant (written, or a field default) of an enum the consumer does not import (`Anchor(href: "/y", target: .Bottom)` with only `Anchor` imported): commonJS `ReferenceError: Target is not defined`, erlang `variable 'Target' is unbound`; beam and wasm right — the import closure · batch 17 (module identity, every backend's import closure)
 - [ ] 01-compiler row — an `l`-suffixed literal inside a `case` arm keeps its suffix in the generated code: `Ok(s) -> @print(s.mtime > 1577836800000l)` is a JS `SyntaxError`, an `erlc` syntax error and `illegal integer` on beam (the same literal in a plain function is fine) · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
-- [ ] 03-beam s1 box 3 — the checker's two binding shapes on beam · 01 s13
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
-- [ ] 12 s2 box 1 — `run/throw_in_case_arm_result` (`run/array_unique` landed with 02 s4 and 05 s1) · 01 s6 + 04 s6
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
 - [ ] 14 s6 342 — `@embedFile` / `@embedBytes` · 01-checker (the builtin's declaration and checking), 346 (`Bytes`, not built)
 - [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · `Dict.bump`, decision 340
@@ -244,7 +224,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 - [ ] 26 (W3) — the core: s0 merges `jhonstart-html`, s1–6 · 118 landed · 102 s3 `routes.bp` · s5: 29-a (reduced: `registerRouteStarters` + `globals.starters`) · s8: 01's hooks capability, ctr-l (only the record) (s7 is 135's)
 - [ ] 116 (W5 at the earliest) — the `.bpp` file kind · 118 · 26 s0 · 01-compiler/26 · with 01-checker s22 · s6: 293
-- [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243/345, C-11 · s2: each library track runs the script · s6 (345 in the printer) before s4 · s3 last, after every tree is migrated
+- [ ] 16 s1–7 — the `;` re-count, migration and refusal, C-12's reformat, 165, 166/243/345, C-11 · s2: each library track runs the script · s6 (345 in the printer) before s4 · s3 last, after every tree is migrated · s5 (165, the one-line trailing lambda) and s9 (286, annotations as written) landed
 - [ ] 18 s1, s3 — the CI matrix, the bench's close row (s2, s4, s5, s3's evaluation budget done) · s1: the maintainer's push
 - [ ] 23 — the import cells and LSP snapshots, the confirmations · 23-b, std-c (23-a moot, 23-c → 317)
 - [ ] 24 — the guide as one program, the confirmations, the per-item cost · 24-c, 24-g (24-a → 431, 24-b → 432) · rakun's `serverAction`
@@ -355,6 +335,15 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-39, B-41, B-43, B-51, B-52 — a module-level `val` read by the next one bound on erlang; a library's abort worded alike on every target; a `Set` of structurally equal records keeping one on commonJS and wasm; commonJS printing an `f64` with its `.0`; wasm printing a string field or an awaited string as text — each step's Conformance step open
+- [x] 144 B-31, B-44, B-53, B-54 — a float-hole template a `string` on wasm; a lifted `bool` printed `true` / `false` on wasm; `@print` of a `@Result` as `Ok(…)` / `Error(…)`; the formatter keeping an annotation's `label: value` — each step's Conformance step open
+- [x] 144 B-62, B-67, B-68 — the nine cells red on `feat` green; erlang building a library's record beside a std record of the same name; wasm resolving a method call on a template's answer — each step's Conformance step open
+- [x] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`), a `badarith` at build located in Erlang's words (471, 472) — its Conformance step open
+- [x] 144 B-38 — a worker that leaves no verdict is a FAIL; the dropped cell did not reproduce — its Conformance step open
+- [x] 144 B-48 — a raise inside a decorator or comptime body travels with its location: only this module's calls are located (an imported helper's raise lands on the local call, an imported decorator's raise at the annotation, a template expansion's calls not located) — its Conformance step open
+- [x] 144 B-22 (part) — `throw` in a `case` arm of a `@Result` fn on every target (`throw_in_case_arm_result`), a `val` binding a nested constructor and a spread-only list on every target (`val_nested_ctor_pattern`, `val_spread_only_list_pattern`; wasm and beam included), the four rows once filed under `04-js` fixed (`module_val_call_init`, `point_ctor_rest_in_case`, `block_partial_return`, `block_return_is_block_value`) — its Conformance step open
+- [x] 144 B-28 (part) — the one-line trailing lambda (165) and annotations printed as written (286) — its Conformance step open
+- [x] 114 — `codegen/runtime.zig`'s own `test` blocks run: the file and ten more are reached by the test barrels
 - [x] 144 B-58 — the code cache, level A: a dependency's `.erl` → `.beam` / `.S` → `.beam` by content (`cache/erlcheck`, `cache/beam` removed), the closure key, a workspace's dependencies inherited (512), every `conformance/modules/` a workspace (botopink-lang, emilia, erika, jhonstart, rakun); the three manifest-refusal cells removed (a manifest's refusals are `modules/manifest`'s unit tests); emilia's `conformance/` 189 s cold, 164 s warm (from ~48 min before the group) — its Conformance step the group's
 - [x] 144 B-59 — the result store removed (510); the backend-partition audit its own gate stage — its Conformance step the group's
 - [x] 144 B-65 — every emitter reads its package closure's index (`crossModule.Scopes.forModule`); `test-closure-invariant` green on erlang, beam and wasm; rakun's six rakun-web cells run on beam too — its Conformance step the group's

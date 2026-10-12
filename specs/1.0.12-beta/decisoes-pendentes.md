@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**67 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**69 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -811,6 +811,42 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Opções.** (1) Nenhuma: fora de markup, o trabalho em nível de expressão é uma chamada (`traced(compute())`). (2) Decorators em posição de expressão rodam no script de avaliação (`#[traced] compute()`).
 - **Recomendação.** (1).
 - **Bloqueia.** A linha (o caso de markup da emilia 48 coberto pela 301).
+
+#### B-78-a · O commonJS adota o texto de float do std-wasm? (decisão 441; 144 B-78)
+- **Medido.** Um float em texto nos quatro alvos: erlang, beam e wasm escrevem `5.0` e `1.0e21`; o `@print` do próprio commonJS escreve o mesmo desde a B-51; um furo de template, `.toString()` e `string + f64` no commonJS escrevem o `5` e o `1e21` do motor JS. A 144 B-78 faz com que compartilhem o helper do `@print` (`run/float_text_everywhere`, vermelho no pai no commonJS). A última frase da decisão 441 diz "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — a B-78 a contradiz e espera esta resposta.
+- **Opções.**
+  (a) Emendar a 441: o commonJS escreve um `f64` como os outros alvos, em todo lugar onde ele vira texto; a B-78 fica.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5.0
+  @print(x.toString()); // 5.0
+  @print("n=" + x);    // n=5.0
+  ```
+  (b) Manter o texto do motor JS: a B-78 é revertida, só o `@print` escreve `5.0`.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5
+  @print(x.toString()); // 5
+  @print("n=" + x);    // n=5
+  ```
+- **Recomendação.** (a) — um só texto para um float em todos os alvos, como erlang, beam, wasm e o `@print` desde a B-51 já o escrevem; um programa cuja saída difere por alvo para o mesmo valor é um defeito, não uma regra da linguagem (a leitura mais restritiva da decisão 67).
+- **Bloqueia.** A 144 B-78 (suas duas últimas caixas e seu passo Conformance).
+
+#### B-22-a · Um construtor de variante nu numa expressão (`Num(4)` por `Value.Num(4)`)
+- **Medido.** O checker admite `val v = Num(4);` para `type Value { Num(n: i32), … }`; erlang, beam e commonJS então falham com um `Num` não vinculado em tempo de execução (`conformance/docs.md` § type — enums registra o defeito hoje). A regra de padrões da decisão 8 permite uma variante nua num padrão de `case`, onde o sujeito fixa o enum; uma expressão não tem sujeito.
+- **Opções.**
+  (a) Recusado, localizado, nomeando a forma qualificada; o `.Num(4)` com ponto à frente e um tipo esperado continua legal.
+  ```bp
+  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
+  val b = Value.Num(4);    // legal
+  val c: Value = .Num(4);  // legal, the expected type names the enum
+  ```
+  (b) Legal: todo backend baixa o construtor nu para o da variante.
+  ```bp
+  val a = Num(4);          // Value.Num(4) on every target
+  ```
+- **Recomendação.** (a) — a leitura mais restritiva: recusar em vez de aceitar, a forma qualificada e a de ponto à frente mantidas; uma variante nua continua sendo de um padrão de `case` (decisão 8).
+- **Bloqueia.** A linha do checker e a falha dos três backends; `conformance/docs.md` § type — enums.
 
 ### 02-std-and-packaging
 

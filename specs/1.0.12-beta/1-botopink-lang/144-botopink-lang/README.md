@@ -58,7 +58,7 @@ conformance order (fronts.md § Execution order).
 conformance takes no lock (508, landed in the meta `scripts/gate.sh`; botopink-lang's in B-29 step J).
 
 **Order:** B-57 (the dead copies) and B-63 (`cell check` in parallel) → B-58 (the manifest's inherited dependencies, the workspaces, level A of the code
-cache, the closure key) → B-59 (the result store removed) and B-60 (level B, after its invariant is proved) → B-64 (a module's tests a unit of their own), the group's last step before its Conformance step · B-61
+cache, the closure key) → B-59 (the result store removed) and B-60 (level B, after its invariant is proved) → B-64 (a module's tests a unit of their own), beside B-60 and before B-60's S4 · B-61
 (cell names) beside any of them. Lane B holds B-57, lane C B-58 to B-61. After its Conformance step comes the module-model group (B-69 … B-76, B-55-a (e)), this front's continuation; beside it resume the steps paused for the cache group — B-24's Conformance step, B-39, B-41, B-43, B-51, B-52 (B-55, a study, and B-56 run beside the group). The group closes with its Conformance step:
 emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm, against the numbers
 above, and every cell green on every target.
@@ -1864,7 +1864,7 @@ Steps 6, 10, 13 all touch `infer.zig`/`parser/**`: one commit per step, serial.
 Checker keeps the fn's fallible channel in an arm's block; erlang, wasm, beam answer `Error` on the
 `throw` path, commonJS refuses at codegen (`JumpInValuePosition`, `04-js` step 6). Cell lands with 04.
 
-- [ ] `run/throw_in_case_arm_result` — `return case v { Num(n) -> g(n); _ -> throw "x"; }` under
+- [x] `run/throw_in_case_arm_result` — `return case v { Num(n) -> g(n); _ -> throw "x"; }` under
       `-> @Result<i32, string>`: `isError()` true on the throw path, four targets
 
 #### Step 6 — `throw` in a `case` arm (after `01-checker` step 6) (was `04-js` s6)
@@ -1872,7 +1872,7 @@ Checker keeps the fn's fallible channel in an arm's block; erlang, wasm, beam an
 Typed AST marks the arm's `throw` as the enclosing function's (today `JumpInValuePosition` at
 codegen); the arm emits `return {Error: e}`.
 
-- [ ] `run/throw_in_case_arm_result` green on commonJS; `isError()` true on the throw path
+- [x] `run/throw_in_case_arm_result` green on commonJS; `isError()` true on the throw path
 
 #### Step 2 — the owner rule for the area fronts' cells (box 1) (was `12-language-tests` s2)
 
@@ -1884,7 +1884,7 @@ green on four targets):
 |---|---|---|
 | `run/throw_in_case_arm_result` | `01-checker` step 6 (`04-js` step 6) | row 29 |
 
-- [ ] `run/throw_in_case_arm_result` exists at the close and passes on every target it declares
+- [x] `run/throw_in_case_arm_result` exists at the close and passes on every target it declares
 
 **Gate:** standard (fronts.md § Gate) + `tests/language/AGENTS.md` updated in the same commit as any
 cell or owner-row change
@@ -1896,7 +1896,7 @@ works (refusal lifted, commonJS/beam answer); erlang binds a lone spread (`Rest 
 `run/list_pattern_spread_alone`); wasm refuses nested (`05-wasm` row). Re-measure erlang's nested
 constructor; keep the nested refusal until wasm lowers it. Contract: `../03-beam/pattern-binding.md`.
 
-- [ ] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern`
+- [x] `run/val_spread_only_list_pattern` prints `rest`'s length; `run/val_nested_ctor_pattern`
       prints `r` and `n` — four targets
 
 #### Step 1 — the checker's two binding shapes on beam (box 3) (was `03-beam` s1)
@@ -1904,7 +1904,7 @@ constructor; keep the nested refusal until wasm lowers it. Contract: `../03-beam
 Lowering in (`emitPatternDestruct`); with the checker refusal lifted beam prints `val Pair(Circle(r),
 n) = p` as `3 4`, nested one-variant enums as `7 x 9`, `val [..rest] = [1, 2, 3]`'s length as `3`.
 
-- [ ] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (`01-checker` step 13)
+- [x] `run/val_nested_ctor_pattern` and `run/val_spread_only_list_pattern` (`01-checker` step 13)
       pass on beam
 
 **Gate:** standard (fronts.md § Gate) + `scripts/beam_export_audit.sh` assembles every module before
@@ -1921,15 +1921,15 @@ and after each step · every re-recorded RUN LOG verified by running (`erlc +fro
 
 #### Rows found by other fronts (was `04-js` rows)
 
-- [ ] module with a module-level `val` initialised by a call (`val t = "a b".split(" ")`) fails a
+- [x] module with a module-level `val` initialised by a call (`val t = "a b".split(" ")`) fails a
       commonJS build with a bare `TypeError` when any of its functions calls `Float.floor` (from
       `05-wasm` step 5, comptime path; re-measure, name the owner)
-- [ ] `Point(x: 0, ..)` in a `case` answers `null` on commonJS (from `02-erlang`; re-measure)
-- [ ] an `@block` whose `return` is valued on some paths and that falls through to a tail on
+- [x] `Point(x: 0, ..)` in a `case` answers `null` on commonJS (from `02-erlang`; re-measure)
+- [x] an `@block` whose `return` is valued on some paths and that falls through to a tail on
       another checks: `val a = @block { if (c) return 3; 4 };` answers `null` on commonJS on the
       fall-through path and `4` (the tail) on erlang, beam and wasm — decision 2 gives that path no
       value, so the checker refuses it (owner `01-checker`; found by step 1)
-- [ ] `return` inside an `@block` in value position leaves the enclosing function on beam and wasm:
+- [x] `return` inside an `@block` in value position leaves the enclosing function on beam and wasm:
       `pub fn main() { val b = @block { return 5; }; @print(b); @print(7); }` prints nothing there,
       `5` and `7` on commonJS and erlang (C1: the block owns its `return`s; owners `03-beam`,
       `05-wasm`; found by step 1)
@@ -1959,7 +1959,7 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       step 5: no trap, a wrong value at exit 0: `es.at(3)?.a ?? 0` and `rs.at(5)?.a ?? -1` over
       `#(a: i32, b: string)[]` print `8` on wasm where commonJS, erlang and beam print `0`, `-1`
       (`codegen/tests/beam.zig`'s `?. on an absent tuple element …` program)
-- [ ] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
+- [x] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
       `01-checker` step 13's `run/val_nested_ctor_pattern` needs it lowered (each binding off its
       field's slot, as the one-level form)
 - [ ] function read from a generic record's field, called through an untyped local, prints its
@@ -2652,7 +2652,7 @@ A fitting one-expression trailing-lambda body prints on one line, arrow or not; 
 `arrow_when_empty` (`format.zig` `fmtLambdaAt`): `h1 { "my blog" }` takes three lines. Canonical form
 into `src/format/AGENTS.md` first; own commit after step 6.
 
-- [ ] `h1 { "my blog" }` round-trips on one line; `assertFormat` / `assertIdempotent` / `assertLossless` cases; movement per tree measured and reported to the tracks
+- [x] `h1 { "my blog" }` round-trips on one line; `assertFormat` / `assertIdempotent` / `assertLossless` cases; movement per tree measured and reported to the tracks
 
 #### Step 6 — the trailing comma alone decides (decisions 166, 243, 345) (was `16-formatter` s6)
 
@@ -2696,17 +2696,17 @@ pub type Account(…)                     // stays two blocks
 fn mix(…) -> …                          // stays one list, one per line (trailing comma)
 ```
 
-- [ ] `#[a]` / `#[b]` round-trips as two blocks, `#[a, b]` as one list; with a trailing comma the
+- [x] `#[a]` / `#[b]` round-trips as two blocks, `#[a, b]` as one list; with a trailing comma the
       list prints one per line; `assertFormat`, `assertIdempotent`, `assertLossless` cases for a
       function, a type, a field, a method, a loop and a mix of builtin (`@`) and custom annotations
-- [ ] the template annotation (decision 311) prints as written: `#[erika "…"]` and `#[erika """…"""]`
+- [x] the template annotation (decision 311) prints as written: `#[erika "…"]` and `#[erika """…"""]`
       round-trip unchanged, alone and inside a list (`01-checker` step 29 adds the node) — alone:
       built (`format/tests/declarations.zig` "template annotation"); inside a list it prints as its
       own block, as every list does, until box 1
-- [ ] a comment between two blocks, or inside an open list, stays where it was written;
+- [x] a comment between two blocks, or inside an open list, stays where it was written;
       `helpers.zig`'s containment note and `src/format/AGENTS.md`'s canonical-rewrite line rewritten
-- [ ] the order is kept: a parser snapshot of `Decl.annotations` before and after formatting is equal
-- [ ] the trees of `scripts/format-check.sh` measured: no file moves but the lists the old split had
+- [x] the order is kept: a parser snapshot of `Decl.annotations` before and after formatting is equal
+- [x] the trees of `scripts/format-check.sh` measured: no file moves but the lists the old split had
       broken up (reported to the tracks)
 
 #### B-28 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
@@ -3132,8 +3132,8 @@ Found by B-00k, present before the B-00 group: on wasm `val s = "${5.0}"; @print
 in this array"); erlang and commonJS answer `5.0!` / the array. 441's `"${5.0}"` works on wasm only passed straight to
 `@print`.
 
-- [ ] a template is a `string` on wasm whatever its parts — a single float hole included
-- [ ] `run/interpolation_single_float_hole`: a `val`, an array element and a concatenation, four targets, red on the
+- [x] a template is a `string` on wasm whatever its parts — a single float hole included
+- [x] `run/interpolation_single_float_hole`: a `val`, an array element and a concatenation, four targets, red on the
       parent on wasm, green after (458)
 
 #### B-31 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
@@ -3161,12 +3161,12 @@ After the group's other steps have landed on `feat`; it holds back no front that
 Found by B-00k: `comptime same(2000000)` traps (wasm3 stack overflow) on every target; a float division by zero at
 build prints the raw `{error,badarith}`.
 
-- [ ] std-wasm's term equality and term order walk an explicit work list, no recursion (471): `comptime same(2000000)`
+- [x] std-wasm's term equality and term order walk an explicit work list, no recursion (471): `comptime same(2000000)`
       answers `true` on the four targets — `run/comptime_deep_structure_equality`, red on the parent, green after
-- [ ] a `badarith` at build is `comptime-badarith: an error occurred when evaluating an arithmetic expression — <the
+- [x] a `badarith` at build is `comptime-badarith: an error occurred when evaluating an arithmetic expression — <the
       expression> (division by zero)` at the expression's `line:column` (472) —
       `reject/comptime_float_division_by_zero`, red on the parent, green after
-- [ ] every `COMPTIME REPLY` otherwise unchanged
+- [x] every `COMPTIME REPLY` otherwise unchanged
 
 #### B-32 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -3252,8 +3252,8 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-- [ ] (the count row and a stdout write that no longer drops a line landed; the drop was not reproduced — confirmed
-      when the pipeline's runs report every cell) `botopink cell check conformance/` over rakun's 35 cells reported 34 in two runs of three, a different cell
+- [x] (a worker that leaves no verdict is a FAIL; the drop was not reproduced — the pipeline's runs confirm every cell
+      is reported) `botopink cell check conformance/` over rakun's 35 cells reported 34 in two runs of three, a different cell
       missing each time (each passes alone): every cell found is reported, a cell that cannot run is a red naming it,
       never absent; a CLI test with a directory of cells counts them
 - [x] a cell's `{"path": "…"}` dependency relative to the cell fails, because the cell runs from a scratch copy: the
@@ -3269,8 +3269,8 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 `val a = X(); val b = f(a.m())` at module level emits an erlang module that refers to `a` unbound; the OTP compiler
 refuses it (found in rakun's `constraint` cell, which registers inside `main` instead).
 
-- [ ] a cell red on the parent: two module-level `val`s, the second reading the first, on every target
-- [ ] the erlang emission binds the first before the second reads it; the cell green on every target
+- [x] a cell red on the parent: two module-level `val`s, the second reading the first, on every target
+- [x] the erlang emission binds the first before the second reads it; the cell green on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-40 — a cell's targets are its `botopink.json`'s `"targets"`, never a `targets` file (decision 475 (1))
@@ -3298,9 +3298,9 @@ emilia's `theme-unknown-namespace` cell aborts with `emilia theme: '--gutter' is
 erlang and beam word the same abort differently, so the cell cannot claim its `stderr` in `output/` (458: no departure
 for a defect).
 
-- [ ] the abort's text measured on each target; the library's message reaches stderr unchanged on every target (the
+- [x] the abort's text measured on each target; the library's message reaches stderr unchanged on every target (the
       runtime's frame around it the same, or none); the cell's `stderr` claim in `output/`, green on every target
-- [ ] a compiler-core test red on the parent (a `@panic` with a library's message, every backend)
+- [x] a compiler-core test red on the parent (a `@panic` with a library's message, every backend)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (structural, decision 430)
@@ -3321,8 +3321,8 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 
 `stdlib-tour`'s Set test keeps 3 members on commonJS where two are structurally equal (2 on erlang); the same on wasm.
 
-- [ ] a cell red on the parent: a `Set` of records, two structurally equal, its size on every target
-- [ ] commonJS and wasm compare members structurally (210); the cell and `test/stdlib-tour` green on every target
+- [x] a cell red on the parent: a `Set` of records, two structurally equal, its size on every target
+- [x] commonJS and wasm compare members structurally (210); the cell and `test/stdlib-tour` green on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-44 — wasm prints a lifted `bool` as `1` (structural, decision 430)
@@ -3331,8 +3331,8 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 
 The `yamlconf` cell prints `1` on wasm where every other target prints `true`.
 
-- [ ] a cell red on the parent: a `bool` that crosses a host value printed on wasm
-- [ ] wasm prints `true` / `false`; `yamlconf` green on wasm
+- [x] a cell red on the parent: a `bool` that crosses a host value printed on wasm
+- [x] wasm prints `true` / `false`; `yamlconf` green on wasm
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-45 — erlang: `lib.member()` through a library's default handle is unbound (structural, decision 430)
@@ -3378,9 +3378,14 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 `decorator_random_float_unseeded` is refused at the annotation that runs the decorator (`#[drawn]`), and
 `comptime_random_float_unseeded` at the `comptime` expression; 451 (3) locates the refusal at the call.
 
-- [ ] both cells claim the location of the raising call (`io.random.float()`), red on the parent
-- [ ] a raise inside a decorator or comptime body is located at the call that raised, the annotation or the
+- [x] both cells claim the location of the raising call (`io.random.float()`), red on the parent
+- [x] a raise inside a decorator or comptime body is located at the call that raised, the annotation or the
       `comptime` expression named as the frame that ran it
+
+The step's current scope: the location travels with the raise, and only this module's calls are located — an
+imported helper's raise lands on the local call, an imported decorator's raise at the annotation, and a template
+expansion's calls are not located.
+
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-51 — commonJS prints an `f64` without its `.0` (structural, decision 430)
@@ -3390,8 +3395,8 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 `math.abs(0.0 - 1.0)` prints `1` (`import_module_paths`) and an `f64` out of a `case` prints `2` (`enum_declaration`) on
 commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.0` / `2.0`.
 
-- [ ] the two cells green on commonJS; an `f64` reaching `@print` through a std call or a `case` keeps its `.0`
-- [ ] a codegen test the hook runs, red on the parent
+- [x] the two cells green on commonJS; an `f64` reaching `@print` through a std call or a `case` keeps its `.0`
+- [x] a codegen test the hook runs, red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-52 — wasm prints a string field or an awaited string as a number (structural, decision 430)
@@ -3401,8 +3406,8 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
 `generic_fn_and_type` prints `Tree.Leaf(value: 280)` for a generic record's string field; `async_block_both` prints
 `2922` for `ana2`; `task_result_await` prints `Hello, 292` for `Hello, ana`.
 
-- [ ] the three cells green on wasm: a string reaching a generic field or crossing an `await` prints as text
-- [ ] a codegen test the hook runs, red on the parent
+- [x] the three cells green on wasm: a string reaching a generic field or crossing an `await` prints as text
+- [x] a codegen test the hook runs, red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-53 — `@print` of a `@Result` prints the host's form (structural, decision 430)
@@ -3412,8 +3417,8 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
 `@print(Ok(81))` prints `{ ok: 81 }` on commonJS, `{ok,81}` on erlang and a number on wasm; the reference says a value
 prints the way the source writes it.
 
-- [ ] a cell red on the parent: `@print` of `Ok(…)` and `Error(…)` on every target, the source's form
-- [ ] every backend prints a `@Result` as `Ok(81)` / `Error(…)`
+- [x] a cell red on the parent: `@print` of `Ok(…)` and `Error(…)` on every target, the source's form
+- [x] every backend prints a `@Result` as `Ok(81)` / `Error(…)`
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-54 — `botopink format` rewrites an annotation's labelled argument `keyed: true` to `keyed = true`
@@ -3423,7 +3428,7 @@ prints the way the source writes it.
 `#[@BeamMemory.Ets(keyed: true)]` comes back from the formatter as `keyed = true`; the reference and 305 write the
 labelled form.
 
-- [ ] the formatter keeps an annotation's labelled arguments as written (`label: value`); a format test red on the parent
+- [x] the formatter keeps an annotation's labelled arguments as written (`label: value`); a format test red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
@@ -3550,14 +3555,15 @@ in-memory structures, so the checker and the four emitters read what they read t
       consumers and compares its output byte for byte on every target; green since B-65 and B-66
 - [x] the test joins `test-cli`
 - [x] the design reported before it is built and confirmed by the maintainer (above)
-- [ ] S0 — the key (effective manifest, wasm host, std's keys; the format's files hashed wherever they sit), the paths,
+- [x] S0 — the key (effective manifest, wasm host, std's keys; the format's files hashed wherever they sit), the paths,
       the header, the atomic replace, discard on doubt, `clean`, the duplicate package name as a located error; unit
       tests; no change of behaviour
-- [ ] S1 — the generic encoder and decoder; a round trip, and emitting from the decoded outputs equal to emitting from
+- [x] S1 — the generic encoder and decoder; a round trip, and emitting from the decoded outputs equal to emitting from
       the live ones, over std and the invariant's fixture; the entries' sizes reported; no change of behaviour
 - [ ] S2 — the journal and the hit / miss hooks in `compileOnce`; std per module, every other package per package;
       `build`, `run`, `test`, `cell check` and `check` read them; the catalogue readers never stored; guards 3–6
-- [ ] `binds_erlang_host` from the closure, and the case in `test-closure-invariant`
+      (the duplicate-name cell is in)
+- [x] `binds_erlang_host` from the closure, and the case in `test-closure-invariant`
 - [ ] S4 — the code section, and the four emitters skip a dependency module whose code the entry holds (`test` emits
       it again until B-64)
 - [ ] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
@@ -3596,6 +3602,20 @@ that exposed it go.
 - [ ] a test in `test-cli`: no string `"conformance"` in the CLI's code (comments aside)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-78 — commonJS writes an `f64` as text with its decimal part: a template hole, `.toString()`, `string + f64`
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+commonJS wrote an `f64` in text as the JS engine does (`5`, `1e21`); erlang, beam, wasm and commonJS's own `@print`
+(since B-51) write `5.0`, `1.0e21`. The change shares `@print`'s helper. It contradicts decision 441's last sentence
+("commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question") and **waits on question
+B-78-a** (`decisions-pending.md`): if the answer is to keep the engine's text, the change is reverted.
+
+- [x] a template hole, `.toString()` and `string + f64` write the `f64` with its decimal part (`5.0`, `1.0e21`) through
+      `@print`'s helper; the cell `float_text_everywhere`
+- [ ] a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
@@ -3606,10 +3626,10 @@ Found landing B-61 (2026-10-12), red with `feat`'s own compiler from the main ch
 and `bpp_role_not_pub` likewise; `dependency_imports_itself_with_from` and `dependency_imports_undeclared_package`
 print a dependency's file as `../../../conformance/modules/<cell>/deps/…` where the accepted answer is `deps/…`.
 
-- [ ] each cause measured (which landing moved the column and the path; the accepted answer is the language's —
+- [x] each cause measured (which landing moved the column and the path; the accepted answer is the language's —
       a location relative to the cell, the column of the key that is refused); the fix in the compiler, the cells
       green unchanged
-- [ ] a test the hook runs for each, red on the parent
+- [x] a test the hook runs for each, red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-63 — `botopink cell check` runs cells in parallel (`--jobs`)
@@ -3631,7 +3651,7 @@ Measured on 2026-10-12: `botopink cell check <lib>/conformance` checks one cell 
 
 ### B-64 — a module's tests are a unit of their own, on every target (decision 513)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58, B-59, B-60 — the group's last step
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58, B-59 · runs beside B-60 and lands before B-60's S4
 
 Today `botopink test` compiles a module's `test` blocks into the module itself (`'__bp_test_0'/0` … inside
 `-module(emilia@spacing)`), so one module's production code differs between `build` and `test` and the code cache
@@ -3654,9 +3674,9 @@ cannot serve both.
 `{std@collections@@Queue, …}` on erlang; the program dies with `function_clause` in `shelf@items:describe`. commonJS
 and beam print the right answer. A wrong program, found by `test-closure-invariant`'s `crowded` consumer.
 
-- [ ] a cell red on the parent (the two imports, a print of the record and a call into the library); green on every
+- [x] a cell red on the parent (the two imports, a print of the record and a call into the library); green on every
       target
-- [ ] the construction names the imported type's owner; an erlang codegen test
+- [x] the construction names the imported type's owner; an erlang codegen test
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-68 — wasm: a method call on a template's answer does not resolve (D4)
@@ -3666,7 +3686,7 @@ and beam print the right answer. A wrong program, found by `test-closure-invaria
 `val built = shelf "built"` (the template answers `Label`) then `built.size.toString()` is refused on wasm: "the
 wasm backend cannot resolve the call `toString/0`"; the other targets run it.
 
-- [ ] a cell red on the parent; the call resolved on wasm, the cell green on every target
+- [x] a cell red on the parent; the call resolved on wasm, the cell green on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### The module-model group (B-69 … B-76, B-55-a (e)): a file is a module, `src/comptime/` the build layer

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**67 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**69 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -812,6 +812,42 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (1) None: outside markup, expression-level work is a call (`traced(compute())`). (2) Expression-position decorators run in the eval script (`#[traced] compute()`).
 - **Recommendation.** (1).
 - **Blocks.** The row (emilia 48's markup case covered by 301).
+
+#### B-78-a · Does commonJS adopt std-wasm's float text? (decision 441; 144 B-78)
+- **Measured.** A float in text on the four targets: erlang, beam and wasm write `5.0` and `1.0e21`; commonJS's own `@print` writes the same since B-51; a template hole, `.toString()` and `string + f64` on commonJS write the JS engine's `5` and `1e21`. 144 B-78 makes them share `@print`'s helper (`run/float_text_everywhere`, red on the parent on commonJS). Decision 441's last sentence says "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — B-78 contradicts it, and waits on this answer.
+- **Options.**
+  (a) Amend 441: commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5.0
+  @print(x.toString()); // 5.0
+  @print("n=" + x);    // n=5.0
+  ```
+  (b) Keep the JS engine's text: B-78 is reverted, `@print` alone writes `5.0`.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5
+  @print(x.toString()); // 5
+  @print("n=" + x);    // n=5
+  ```
+- **Recommendation.** (a) — one text for a float on every target, as erlang, beam, wasm and `@print` since B-51 already write it; a program whose output differs by target for the same value is a defect, not a language rule (decision 67's strictest reading).
+- **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
+
+#### B-22-a · A bare variant constructor in an expression (`Num(4)` for `Value.Num(4)`)
+- **Measured.** The checker admits `val v = Num(4);` for `type Value { Num(n: i32), … }`; erlang, beam and commonJS then fail on an unbound `Num` at run time (`conformance/docs.md` § type — enums records the defect today). Decision 8's pattern rule allows a bare variant in a `case` pattern, where the subject fixes the enum; an expression has no subject.
+- **Options.**
+  (a) Refused, located, naming the qualified form; the leading-dot `.Num(4)` with an expected type stays legal.
+  ```bp
+  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
+  val b = Value.Num(4);    // legal
+  val c: Value = .Num(4);  // legal, the expected type names the enum
+  ```
+  (b) Legal: every backend lowers the bare constructor to the variant's.
+  ```bp
+  val a = Num(4);          // Value.Num(4) on every target
+  ```
+- **Recommendation.** (a) — the strictest reading: refuse over accept, the qualified form and the leading-dot form kept; a bare variant stays a `case` pattern's (decision 8).
+- **Blocks.** The checker row and the three backends' failure; `conformance/docs.md` § type — enums.
 
 ### 02-std-and-packaging
 
