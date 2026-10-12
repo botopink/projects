@@ -84,6 +84,9 @@ scripts/gate.sh status           # what runs and what waits: name, jobs, time, c
   `--jobs`. botopink-lang's gate takes no total of jobs yet (it sizes itself to the machine), so a run of
   it holds the whole pool. Measuring a gate's time waits for the pool to be empty (`status`) — that is
   the measurer's rule, not a lock on every gate. The commit hook's gate runs outside the pool (470).
+  A run with `--no-conformance` takes no lock (the maintainer, 2026-10-12): each gate is admitted at
+  once with `min(share, free)` jobs, or one when none is free, and never waits; only a run with
+  conformance waits for a free job. botopink-lang's own gate drops its one-gate lock the same way.
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
   for a task; the report names each one. Specs never name them.
 - It runs and reports; landing stays the coordinator's.

@@ -41,7 +41,10 @@
 # are both dead is reaped. The path is fixed, not a flag or a variable a commit
 # sets (decision 67). botopink-lang's gate takes no total of jobs yet (it sizes
 # itself to the machine), so a run of it holds the whole pool. The commit hook's
-# gate (decision 470) runs outside the pool.
+# gate (decision 470) runs outside the pool. A run with `--no-conformance` takes
+# no lock (the maintainer, 2026-10-12): each gate is admitted at once, with
+# `min(share, free)` jobs or one when none is free, and never waits; its lease
+# still shows in `status`. Only a run WITH conformance waits for a free job.
 #
 # A repository's own `scripts/gate.sh` knows none of this (decision 469): this
 # script calls it with `--jobs <share>` (a library's) and nothing else.
@@ -273,16 +276,18 @@ poolUsed() {
     echo "$n"
 }
 
-# poolAcquire <id> <name> <want> <log> — blocks until a job is free; prints the
-# jobs granted (min(want, free)) and leaves lease.<id>.
+# poolAcquire <id> <name> <want> <log> [nowait] — blocks until a job is free;
+# prints the jobs granted (min(want, free)) and leaves lease.<id>. With `nowait`
+# (a `--no-conformance` run) it never waits: no job free grants one.
 poolAcquire() {
-    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0
+    local id="$1" name="$2" want="$3" log="$4" nowait="${5:-}" cap used free grant waited=0
     cap="$(poolCapacity)"
     while :; do
         poolLock
         poolReap
         used="$(poolUsed)"
         free=$(( cap - used ))
+        [ -z "$nowait" ] || [ "$free" -ge 1 ] || free=1
         if [ "$free" -ge 1 ]; then
             grant="$want"; [ "$grant" -le "$free" ] || grant="$free"
             [ "$grant" -le "$cap" ] || grant="$cap"
@@ -388,8 +393,9 @@ resolveTarget() {
 # runPlan <extra gate args…> — start every gate of the plan, each when the pool
 # admits it, wait for all, print the report, return 1 if any is red.
 runPlan() {
-    local extra=("$@") n="${#plan[@]}" cap share line i=0 pids=() names=() logs=() rcs_dir
+    local extra=("$@") n="${#plan[@]}" cap share line i=0 pids=() names=() logs=() rcs_dir nowait="" a
     [ "$n" -gt 0 ] || { echo "gate: nothing to run"; return 1; }
+    for a in "${extra[@]}"; do [ "$a" != "--no-conformance" ] || nowait=nowait; done
     cap="$(poolCapacity)"
     share=$(( cap / n )); [ "$share" -ge 1 ] || share=1
     rcs_dir="$(mktemp -d)"
@@ -402,7 +408,7 @@ runPlan() {
         id="$$.$i"
         (
             want="$share"; [ "$kind" != "lang" ] || want="$cap"
-            grant="$(poolAcquire "$id" "$name" "$want" "$log")"
+            grant="$(poolAcquire "$id" "$name" "$want" "$log" "$nowait")"
             trap 'poolRelease "$id"' EXIT
             start=$SECONDS
             args=("${extra[@]}")
