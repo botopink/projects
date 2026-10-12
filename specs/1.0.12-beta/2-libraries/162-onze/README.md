@@ -702,9 +702,9 @@ Per decision 202 (no `prerender` export).
 `styled`; jhonstart depends on the `styled` library, and the build refuses two packages named `styled` in one workspace
 — red under botopink-lang's `test-libs` on every target. The compiler is right (144 B-80).
 
-- [ ] the test's app renamed (`create cssapp`, its directory with it); the assertions after it still hold; no other
+- [x] the test's app renamed (`create cssapp`, its directory with it); the assertions after it still hold; no other
       onze test creates an app named after a package of its dependency closure
-- [ ] `test-libs` green for onze-cli on every target, through the library's own hook
+- [x] `test-libs` green for onze-cli on every target, through the library's own hook
 
 ### 162 conformance — `onze/docs.md` and its examples into `onze/conformance/` (decision 463)
 

@@ -99,7 +99,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
 - [ ] 14 s6 342 — `@embedFile` / `@embedBytes` · 01-checker (the builtin's declaration and checking), 346 (`Bytes`, not built)
-- [ ] 17 s1 box 4 — the per-row increment of a keyed `Dict` · `Dict.bump`, decision 340
 - [ ] 17 s2 — the `@BeamMemory` text and the migration handed over · 07 s6 · the rakun track
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
@@ -160,7 +159,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] decision 375 (`HookNode.async`; commonJS emits a synchronous component as a plain `function`) — 01-checker s23 and 04-js s12 (top-level functions): landed; open `s23-j`, `04s12-a`
 - [ ] decision 302 (a tag's annotation = a decorator: `@Decl`, no return, meta) — 130 s9 · 118 s5 · 119 · 120 · 126
 - [ ] decision 303 (an action answers `@Result<T, ActionError>`; no `ActionOutcome`) — 127 s1–s3
-- [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4 · 02-erlang s14
+- [ ] decision 304 (a store answers `@Result<T, StoreError>`; no `try*` twin, no raise) — rakun 08 s6 · 09 s6 · 65 s4
 - [ ] decisions 311–313 (`declare fn` in a `type` is host-only; the template annotation `#[f "…"]`; erika queries a database — `from User`, holes bound, `limit 1` against `?T`; a repository is `#[repository] behavior` with `#[erika "…"]` or `#[nativeQuery("…")]`, `#[query]` goes) — 01-checker s29: the template annotation landed ( parser, checker, holes, `decl.params`, a method's typed meta read by its owner — `s29-a`/`s29-b` ★; `run/template_annotation`, `modules/template_annotation_imported`, five `reject/` cells; 425: a template call expands in a method body, a destructuring initializer, a field or parameter default — six `run/template_in_*` cells), the template method (397, 415) open · 16 s9 (the list form waits on box 1) · 137 · rakun 08 s7 · 130 s5
 - [ ] decision 308 (`Field<T>` is `Type.Field<T>` in std; `Type.keys(T)`; a field key at run time) — 01-checker s24, s28 · 134 s2
 - [ ] decision 307 (a derived type is a comptime function answering a new type: `pub val RecipeTitle = Type.pick(Recipe, .title);`, `Type` in std) — 01-checker s28 · 134 s2 · 125 s5
@@ -211,9 +210,9 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 143 (398) — `dbcontext`, botopink's JPA over erika: s0 done (`botopink/dbcontext` scaffolded, a submodule); s1 entities and `DbContext` over a `Driver`, s2 `#[repository]` / `#[query "…"]` / `#[nativeQuery]`, s3 rakun-data over it · 137 s2 · 01-checker s29 · s3 after 128
 
-### 162 onze
+### 150 rakun
 
-- [ ] 162 s11 — onze-cli's CSS accessors test creates its app as `styled`, a package of jhonstart's closure: the app renamed, `test-libs` green for onze-cli (from 144 B-80) · nothing
+- [ ] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340); `tryQuery`'s stale comment removed (B-13, 304) · nothing
 
 ### 163 meta-ci (medium)
 
@@ -340,6 +339,9 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-01 (part) — `effect-try-without-fallible-channel` names `try … catch` and `result: true`; the reference § Results, § Host bindings — its Conformance step open
+- [x] 144 B-13 — a method declared `-> @Result` already lowered as a `@Result` on every target (`result_method_throw`, `behavior_method_result_typed`, `behavior_method_result_chained`); no code change; rakun's stale comment is 150 s28 — its Conformance step open
+- [x] 144 B-26 (340) — `Dict.bump`; `counts = counts.bump(k, n)` on a keyed var as `ets:update_counter/4` on erlang and beam, `beam_memory_ets_keyed_bump`; rakun's registry is 150 s28 — its Conformance step open
 - [x] 144 B-29 step J — botopink-lang's `scripts/gate.sh` takes one total of jobs (`--jobs <N>`, default the machine's) split among its stages, no gate lock (`scripts/AGENTS.md`); `--no-conformance` stays the hook's gate; a library's `test-out` is already a per-run directory, removed after (468, 469, 508) — its Conformance step open
 - [x] 144 B-80 — onze-cli's CSS accessors test: the cause is the library's — its app is created as `styled`, a package of jhonstart's closure, and the build refuses two packages of one name; handed to 162 s11, the compiler unchanged
 - [x] 144 B-39, B-41, B-43, B-51, B-52 — a module-level `val` read by the next one bound on erlang; a library's abort worded alike on every target; a `Set` of structurally equal records keeping one on commonJS and wasm; commonJS printing an `f64` with its `.0`; wasm printing a string field or an awaited string as text — each step's Conformance step open
@@ -461,6 +463,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 162 onze
 
+- [x] 162 s11 — onze-cli's CSS accessors test creates its app as `cssapp`, not `styled` (a package of jhonstart's closure); onze-cli's tests green on commonJS and erlang (from 144 B-80)
 - [x] 114 — onze-cli `start_test.bp` asks the OS for each server's port (`freePort`, a listener on port 0) instead of 43101/43102; both cells green run side by side (onze-wave patch 05, lands with the coordinator)
 - [x] 121 s1–2 — Markdown to `Element` in `onze-content` (onze `584f64a`, on `feat`): 714 / 714 on both rows at onze `05b7005`
 - [x] 49 s1 · s6 — `config.bp` / `types.bp` on std's `Json` methods (`isString` stays — `49-g`); the six `onze-test` group stubs (onze-wave patch 02)

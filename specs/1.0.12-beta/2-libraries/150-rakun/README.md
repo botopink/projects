@@ -1213,6 +1213,17 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
 - [ ] each of the 35 cells depends on `{"path": "../../../modules/rakun"}` (and `rakun-web` the same), its `deps/`
       directory deleted; every cell green through the library's hook and `botopink cell check conformance/`
 
+### 150 s28 — two consumer rows from 144 (B-13, B-26)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** sonnet
+
+- [ ] `rakun_runtime.erl`'s registry: every per-key counter a keyed `#[@BeamMemory.Ets(keyed = true)]` var holds as
+      `insert(k, (at(k) ?? 0) + n)` becomes `counts = counts.bump(k, n)` (integer `V`, an `n` that does not read
+      `counts`; 340, 144 B-26)
+- [ ] `rakun-data/src/sql/template.bp`: the comment above `tryQuery` saying a method `-> @Result` is not lowered as a
+      `@Result` on erlang goes — it is (144 B-13; decision 304's dependency met); rakun 08 s6, 09 s6, 65 s4 no longer
+      wait on it
+
 ### 150 Conformance — the front's last step (decision 465)
 
 **Repository:** rakun (`--repo rakun`) · **Model:** opus

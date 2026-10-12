@@ -262,7 +262,7 @@ with a located message, recorded as the design; or (b) restructured so no host c
 
 #### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 3)
 
-- [ ] `effect-try-without-fallible-channel`'s message names `try … catch` and `throws: true`; `docs.md` § Results, § Host bindings
+- [x] `effect-try-without-fallible-channel`'s message names `try … catch` and `result: true` (490's name for 431's `throws: true`); the reference (`conformance/docs.md`) § Results, § Host bindings
 
 #### B-01 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -613,9 +613,12 @@ Measured by rakun (`rakun-data/src/sql/template.bp`, comment above `tryQuery`): 
 declared `-> @Result` is lowered as a plain function — a `throw` in it escapes as a raise and a returned
 value is not wrapped in `{ok, V}` — while a module-level fn is lowered correctly.
 
-- [ ] `run/` cell: a method `-> @Result<i32, string>` with `return 1`, `throw "x"` and `try other()` answers `{ok, 1}`, `{error, "x"}` and the propagated error — same as the module-level fn cell
-- [ ] the same cell on js (no change expected; asserted)
-- [ ] a behavior method (`KeyValueStore.get`) declared `-> @Result` dispatches and wraps the same
+- [x] `run/` cell: a method `-> @Result<i32, string>` with `return 1`, `throw "x"` and `try other()` answers `{ok, 1}`, `{error, "x"}` and the propagated error — same as the module-level fn cell
+- [x] the same cell on js (no change expected; asserted)
+- [x] a behavior method (`KeyValueStore.get`) declared `-> @Result` dispatches and wraps the same
+      Measured on `feat`: already lowered right on every target — `result_method_throw` (a record's and an enum's
+      method: `return`, `throw`, `try`, pass-through), `behavior_method_result_typed` and `behavior_method_result_chained`
+      green on commonJS, erlang, beam and wasm; no code change. rakun's `tryQuery` comment is stale (150 s28)
 
 #### B-13 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -644,11 +647,13 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 #### Step 1 — the per-row increment (box 4, decision 340) (was `17-beam-memory` s1)
 
-- [ ] std's `Dict.bump(key, by) -> Dict<K, V>` (integer `V`, an absent key counts from 0) is
+- [x] std's `Dict.bump(key, by) -> Dict<K, V>` (integer `V`, an absent key counts from 0) is
       `insert(key, (at(key) ?? 0) + by)` on any `Dict`; on a keyed var `counts = counts.bump(k, n)`
       lowers to `ets:update_counter(T, k, n, {k, 0})` on erlang and beam — a `run/beam_memory_ets`
       cell with concurrent bumps of one key losing none; `counts.insert(k, (counts.at(k) ?? 0) + n)`
       stays refused (no pattern recognised); `docs.md`'s `keyed` sentence names `bump`
+      Cell `beam_memory_ets_keyed_bump` (two processes, one key, none lost); a non-integer `V` refused; rakun's
+      registry to `bump` is 150 s28
 
 #### B-26 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
