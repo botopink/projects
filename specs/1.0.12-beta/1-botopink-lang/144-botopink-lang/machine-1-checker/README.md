@@ -1795,7 +1795,7 @@ plus memoised getters for module-level values (checked by hand under node) run i
 `botopink migrate [--dry-run]` derives a module tree from the `src/` layout for a package without one. s23-i makes the
 tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the blind scan, so the command has no use.
 
-- [ ] the command removed: its dispatch in `compiler-cli/src/main.zig`, `cli/migrate.zig`, its tests, its rows in
+- [x] the command removed: its dispatch in `compiler-cli/src/main.zig`, `cli/migrate.zig`, its tests, its rows in
       `compiler-cli/AGENTS.md` and `cli/AGENTS.md`, and every doc that names it; `botopink migrate` answers the CLI's
       unknown-command error
 - [ ] Conformance step (459, 474, 477, 478, 480)
@@ -1888,13 +1888,13 @@ in-memory structures, so the checker and the four emitters read what they read t
       it again until B-64)
 - [x] the review of S0–S4: a hit is a dependency's module alone, never one of the package under test at the same
       path; an entry for another module set is a miss; the entry carries no source text
-- [ ] decisions 514, 515: `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run`
+- [x] decisions 514, 515: `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run`
       do — one module set, one entry; `check` of `local_dependency` green (its dependency's `.d.bp` declares `Rect`)
-- [ ] `botopink test` reads and writes level B CODE as `build` does, now that B-64 landed; a test unit never stored
+- [x] `botopink test` reads and writes level B CODE as `build` does, now that B-64 landed; a test unit never stored
 - [x] `test-analysis-equivalence` in `test-cli` over jhonstart, rakun and emilia (cold, writing, reading; byte for byte)
 - [x] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
       on purpose)
-- [ ] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
+- [x] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
       content), a changed checker source or another target analyses it again; a truncated entry is discarded
 - [ ] measured (B-61's quiet machine): emilia's conformance and one cell repeated, cold and warm, without and with
       level B; the directory's size

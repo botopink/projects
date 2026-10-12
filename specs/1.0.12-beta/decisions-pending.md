@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**69 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**70 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -946,6 +946,25 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a) — the strictest reading: refuse over accept, the qualified form and the leading-dot form kept; a bare variant stays a `case` pattern's (decision 8).
 - **Blocks.** The checker row and the three backends' failure; `conformance/docs.md` § type — enums.
+
+#### B-60-a · A dependency's `.d.bp` that does not check: does `build` refuse it as `check` now does? (decisions 514, 515; 144 B-60)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): every command refuses it** — `build`, `run`, `test` and `cell check` stop on a dependency's `.d.bp` with an error, as `check` does since 514/515 made the module set one; one module set, one answer (67: refuse over accept). Viable: `check.zig` renders every module's errors; `build` drops a failure in a declaration file alone — that branch becomes the refusal. Changes: a cell (a dependency whose `.d.bp` names an unknown type) refused on every command.
+- **Measured.** Since 514/515 `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run` do. `check` renders and fails on any module's error, so a dependency whose `.d.bp` does not check fails `check`; `build` ignores a failure in a declaration file alone and builds.
+- **Options.**
+  (a) Every command refuses a dependency's `.d.bp` that does not check.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` and `botopink build` both: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
+  (b) `check` follows `build`: a failure in a dependency's declaration file alone is ignored by every command.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` and `botopink build` both succeed; the error appears only where `area` is called.
+- **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
+- **Blocks.** Nothing today; the cell and `build`'s branch.
 
 ### 02-std-and-packaging
 

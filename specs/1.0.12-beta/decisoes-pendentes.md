@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**69 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**70 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -945,6 +945,25 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a) — a leitura mais restritiva: recusar em vez de aceitar, a forma qualificada e a de ponto à frente mantidas; uma variante nua continua sendo de um padrão de `case` (decisão 8).
 - **Bloqueia.** A linha do checker e a falha dos três backends; `conformance/docs.md` § type — enums.
+
+#### B-60-a · Um `.d.bp` de dependência que não passa na checagem: o `build` o recusa como o `check` agora faz? (decisões 514, 515; 144 B-60)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): todo comando o recusa** — `build`, `run`, `test` e `cell check` param num `.d.bp` de dependência com erro, como o `check` faz desde que 514/515 tornaram o conjunto de módulos um só; um conjunto de módulos, uma resposta (67: recusar em vez de aceitar). Viável: `check.zig` renderiza os erros de todo módulo; o `build` descarta uma falha só num arquivo de declaração — esse ramo vira a recusa. Mudanças: uma célula (uma dependência cujo `.d.bp` nomeia um tipo desconhecido) recusada em todo comando.
+- **Medido.** Desde 514/515, `check`, `test` e `cell check` mantêm os módulos `.d.bp` de uma dependência como `build` e `run` fazem. O `check` renderiza e falha com o erro de qualquer módulo, então uma dependência cujo `.d.bp` não passa na checagem faz o `check` falhar; o `build` ignora uma falha só num arquivo de declaração e compila.
+- **Opções.**
+  (a) Todo comando recusa um `.d.bp` de dependência que não passa na checagem.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` e `botopink build`, ambos: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
+  (b) O `check` segue o `build`: uma falha só no arquivo de declaração de uma dependência é ignorada por todo comando.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` e `botopink build`, ambos passam; o erro aparece só onde `area` é chamada.
+- **Recomendação.** (a) — a leitura mais restritiva: uma declaração quebrada é um erro onde quer que seja lida, e os dois comandos respondem igual a um conjunto de módulos.
+- **Bloqueia.** Nada hoje; a célula e o ramo do `build`.
 
 ### 02-std-and-packaging
 
