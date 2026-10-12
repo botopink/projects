@@ -19,29 +19,29 @@ each, in the landing.
 
 #### Step 27 — the compiler's annotations speak botopink (decision 305) (was `01-checker` s27)
 
-- [ ] parser: `label = value` in an annotation's arguments is a located error naming `label:`
+- [x] parser: `label = value` in an annotation's arguments is a located error naming `label:`
       (`reject/annotation_label_equals`); `Annotation.labels` read from `label: value` only;
       `parser/AGENTS.md`'s labelled-argument line rewritten
-- [ ] `@External.<Target>(fn: name)` — `name` resolves to a private botopink function of the same module,
+- [x] `@External.<Target>(fn: name)` — `name` resolves to a private botopink function of the same module,
       its signature checked against the bound one; a misspelt name is the ordinary unbound-name error at
       the argument (`reject/external_fn_unbound`); renaming the function renames the binding
-- [ ] `@External.Wasm(op: "f64.sqrt")` checked against the opcode table (238's check, now on the label);
+- [x] `@External.Wasm(op: "f64.sqrt")` checked against the opcode table (238's check, now on the label);
       `@External.Wasm(wasi: .RandomF64)` — `wasi`'s type is an enum of docs.md's adapter list
-- [ ] the old prefixed strings (`"fn:…"`, `"op:…"`, `"wasi:…"`) are no longer recognised: an unlabelled
+- [x] the old prefixed strings (`"fn:…"`, `"op:…"`, `"wasi:…"`) are no longer recognised: an unlabelled
       string is host code, always; a string starting with one of the old prefixes is a located error
       naming the labelled form (one release, then removed)
-- [ ] std's 88 bindings migrated (79 `fn:`, 6 `op:`, 3 `wasi:`), `scripts/` grep cell: no `"fn:` /
+- [x] std's 88 bindings migrated (79 `fn:`, 6 `op:`, 3 `wasi:`), `scripts/` grep cell: no `"fn:` /
       `"op:` / `"wasi:` left in `libs/**`; `docs.md` § External rewritten
 
 #### Step 10 — `label: value` in annotations (decision 305) (was `16-formatter` s10)
 
-- [ ] a labelled annotation argument prints `label: value` (`#[@BeamMemory.Ets(keyed: true)]`,
+- [x] a labelled annotation argument prints `label: value` (`#[@BeamMemory.Ets(keyed: true)]`,
       `#[@External.Erlang("…", inline: true)]`); `src/format/AGENTS.md`'s "prints `label = value`" row
       rewritten; `format/tests/declarations.zig` cases updated (`assertFormat`, `assertIdempotent`)
 
 #### Step 2 — the text and the migration handed over — part (was `17-beam-memory` s2 box 1)
 
-- [ ] `keyed: true` (decision 305) in every cell and diagnostic of this front; `keyed = true` is the
+- [x] `keyed: true` (decision 305) in every cell and diagnostic of this front; `keyed = true` is the
       parser's located error (`01-checker` step 27)
 
 #### B-02 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
