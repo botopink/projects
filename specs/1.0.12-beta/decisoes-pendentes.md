@@ -683,13 +683,14 @@ número livre, que é **484**.
 - **Bloqueia.** Nada; o comentário de `largestExactMillis` nomeia a pergunta.
 
 #### 97-s13-d · A resolução do `mtime` do `fs.stat`
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** Um valor em todo alvo: a forma do Node também arredonda `mtime` para segundos inteiros, como erlang e beam respondem.
 - **Medido.** A forma Node responde `mtime` em milissegundos inteiros (`mtimeNs` arredondado para baixo), a forma erlang em segundos inteiros × 1000 (`file:read_file_info/2` com `{time, posix}` não tem campo de subsegundo): um arquivo escrito em …`.734` lê `…734` no commonJS e `…000` no erlang e beam.
 - **Opções.**
-  (a) Um valor em todo alvo: a forma Node também arredonda para segundos inteiros.
+  (a) ★ Um valor em todo alvo: a forma Node também arredonda para segundos inteiros.
   ```bp
   fs.stat("five.txt")   // mtime: 1760000000000 on every target
   ```
-  (b) ★ Milissegundos onde o host os tem (como está).
+  (b) Milissegundos onde o host os tem (como está).
   ```bp
   fs.stat("five.txt")   // mtime: 1760000000734 on commonJS, 1760000000000 on erlang
   ```

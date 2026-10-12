@@ -684,13 +684,14 @@ number, which is **484**.
 - **Blocks.** Nothing; `largestExactMillis`'s comment names the question.
 
 #### 97-s13-d · `fs.stat`'s `mtime` resolution
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** One value on every target: the Node form floors `mtime` to whole seconds too, as erlang and beam answer it.
 - **Measured.** The Node form answers `mtime` in whole milliseconds (`mtimeNs` floored), the erlang form in whole seconds × 1000 (`file:read_file_info/2` with `{time, posix}` has no sub-second field): a file written at …`.734` reads `…734` on commonJS and `…000` on erlang and beam.
 - **Options.**
-  (a) One value on every target: the Node form floors to whole seconds too.
+  (a) ★ One value on every target: the Node form floors to whole seconds too.
   ```bp
   fs.stat("five.txt")   // mtime: 1760000000000 on every target
   ```
-  (b) ★ Milliseconds where the host has them (as is).
+  (b) Milliseconds where the host has them (as is).
   ```bp
   fs.stat("five.txt")   // mtime: 1760000000734 on commonJS, 1760000000000 on erlang
   ```
