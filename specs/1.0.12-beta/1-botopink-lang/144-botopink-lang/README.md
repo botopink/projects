@@ -3475,52 +3475,9 @@ tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the 
       unknown-command error
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-58 — the code cache, level A: a dependency's toolchain step by content, for every target; the closure key; workspace-inherited dependencies (decisions 509, 512)
-
-**Repository:** botopink-lang and each library with cells (a full worktree; each library's half a commit there) ·
-**Model:** opus · **After:** B-57
-
-Today a build keeps `cache/erlcheck` (verdicts) and `botopink test` a `.beam` cache (`test_cmd.zig`
-`precompileErlang`), the same key under two labels; `run` and `cell check` keep nothing, and a cell is its own cache
-root. Measured on emilia's `alpha` cell (`run --target erlang`, a quiet machine): ~21 s, of which ~19 s is `.erl` →
-`.beam` of ~4100 modules and ~1.2 s the analysis and codegen of std, emilia and the cell; a hello world 0.3 s.
-
-- [ ] one cache for every target's toolchain step after codegen, for a dependency's modules only, keyed by its input
-      bytes and the tool's version: erlang `.erl` → `.beam` (the existing key; `-include` / `parse_transform` never
-      looked up), wasm's assembly and precompile; the package under test never cached; `cache/erlcheck` and
-      `cache/beam` removed; `build`, `run`, `test` and `cell check` read it
-- [ ] the closure key as a function: the package's files by content, its dependencies' closure keys (Merkle), the
-      target, the compiler's sources by backend partition (249) — B-60's key
-- [ ] first, the manifest (512): a member inherits its workspace's `dependencies` (a `path` from the workspace's
-      manifest), adds its own, redeclaring an inherited one refused, located; `src`, `entry`, `version` defaulted;
-      `name` required and unique in the workspace (a duplicate refused, located, naming both members); tests in
-      `modules/manifest`, red on the parent
-- [ ] `conformance/modules/botopink.json` (`"workspaces": ["*"]`, the cells' shared `dependencies` and `targets`)
-      in botopink-lang and in each library with cells (a commit in each library), every cell's manifest reduced to
-      what is its own (emilia's 79 to `{ "name": "<cell>" }`); a library's cells share
-      `conformance/modules/.botopinkbuild/cache/`; the gates and `cell check` unchanged by the new workspace
-- [ ] an entry stored by hash, materialised into the project's own output (hard link, else copy), never run from the
-      cache; `--cold` reads nothing and writes what it ran; staging and rename, no lock; the gates hand `--cold` on
-- [ ] tests the hook runs, red on the parent: two cells over one dependency compile it once; the cell's own modules
-      compiled every time; a changed byte misses; `--cold` reads nothing; two concurrent writers leave one entry
-- [ ] the alpha cell and emilia's `conformance/` measured cold and warm on every target
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
-### B-59 — the result store removed: no test result is cached (decision 510)
-
-**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-58
-
-The lib-test-runner's result store answers a `test-libs` cell from a stored pass (`lib-test-runner/src/result_store.zig`,
-`scripts/lib/result-store.js`, `cache/results/lib-test`). 510: what a test exercises is never cached.
-
-- [ ] the store removed: its code, its script, its cache directory, its rows in the AGENTS.md files and the gate's
-      text; every `test-libs` cell runs on every run
-- [ ] the gate's time with the code cache measured against the time with the store, in the step's report
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
 ### B-60 — the code cache, level B: a package's checked interface and code per target, by its closure key (decision 509 (1))
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58, B-65, B-66
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
 
 Level B skips analysing an unchanged library (~1 s a cell on emilia's `alpha`). It needs what level A does not: the
 checked interface a consumer is checked against (types, exports, decorator meta) stored and read back, and the
@@ -3530,7 +3487,7 @@ one case where they did not.
 - [x] the invariant's test: `zig build test-closure-invariant` (`closure_invariant.sh`) builds one library under two
       consumers and compares its output byte for byte on every target — red today on B-65 (erlang, beam) and B-66
       (commonJS); real libraries (jhonstart, rakun, emilia: 46 430 dependency files) differ in none
-- [ ] the test joins `test-cli` once B-65 and B-66 land, never before
+- [ ] the test joins `test-cli` (B-65 and B-66 landed: it is green)
 - [ ] std cached per module, keyed by the module and its closure inside std (a consumer receives only the std modules
       it imports: the set depends on the consumer, each module's bytes do not); every other package per package
 - [ ] the design reported before it is built (what the interface holds, its format, how comptime, templates and
@@ -3588,34 +3545,6 @@ cannot serve both.
       unchanged
 - [ ] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
 - [ ] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
-### B-65 — erlang and beam: a library's field read depends on its consumer's records (the closure invariant, D1)
-
-**Repository:** botopink-lang (`--lang`) · **Model:** opus
-
-A field read a library could place (`erlang:element(N, Q)`) becomes the dynamic `'__bp_field'(Q, label)` and its
-helper whenever anything else in the program — the consumer's module, another dependency, a std module it imports
-(`std/collections`' `Queue`) — declares a record of the same name or with the same field: `erlang.zig`
-`recordTypeOfReceiver` → `typeNameContested` / `uniqueRecordWithField` vote over `cross.owners`, the whole program's
-export index; beam_asm the same. Seen in `test-closure-invariant` and in the cell `import_sibling_path_beside_std_name`
-(`kit@report`).
-
-- [ ] one rule: an emitter consults the index of its own package's closure, never the whole program's; the same for
-      `methodOwnerContested`, `programFnFieldName`, `programRecordOrEnum`, `programFnField` (`erlang.zig`) and beam
-- [ ] `test-closure-invariant` green on erlang and beam; a codegen test per backend, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480)
-
-### B-66 — commonJS: a library's enum class depends on its consumer's variants (the closure invariant, D2)
-
-**Repository:** botopink-lang (`--lang`) · **Model:** opus
-
-When another package declares a variant of the same name with other fields (`Square`), the library's enum class
-gains `get $0()` and its `case` destructures by position: `commonJS.zig` `payloadSlots` / `variantReadsByPosition`
-read `xc.variantFields(bare)` over the whole program; `crossExport` reads `xc.imported` the same way.
-
-- [ ] the emitter reads its own package's closure (B-65's rule); `test-closure-invariant` green on commonJS
-- [ ] a codegen test, red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-67 — erlang: a library's record imported beside a std record of the same name builds std's (D3)

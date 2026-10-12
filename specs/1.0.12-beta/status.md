@@ -40,11 +40,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
 - [ ] 144 B-63 — `botopink cell check` runs cells in parallel (`--jobs`, default the machine's; a library gate hands its share): today one cell after another on one core · nothing
-- [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
-- [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
-- [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58, B-65, B-66 (its invariant's test landed: `zig build test-closure-invariant`, red on them)
-- [ ] 144 B-65 — erlang and beam: a library's field read depends on its consumer's records (D1); an emitter reads its own package's closure, never the whole program's · nothing
-- [ ] 144 B-66 — commonJS: a library's enum class depends on its consumer's variants (D2), B-65's rule · nothing
+- [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · nothing (B-58, B-65, B-66 landed; its invariant's test green, to join `test-cli`)
 - [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59, B-60 — the group's last step
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)
@@ -358,6 +354,10 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-58 — the code cache, level A: a dependency's `.erl` → `.beam` / `.S` → `.beam` by content (`cache/erlcheck`, `cache/beam` removed), the closure key, a workspace's dependencies inherited (512), every `conformance/modules/` a workspace (botopink-lang, emilia, erika, jhonstart, rakun); the three manifest-refusal cells removed (a manifest's refusals are `modules/manifest`'s unit tests); emilia's `conformance/` 189 s cold, 164 s warm (from ~48 min before the group) — its Conformance step the group's
+- [x] 144 B-59 — the result store removed (510); the backend-partition audit its own gate stage — its Conformance step the group's
+- [x] 144 B-65 — every emitter reads its package closure's index (`crossModule.Scopes.forModule`); `test-closure-invariant` green on erlang, beam and wasm; rakun's six rakun-web cells run on beam too — its Conformance step the group's
+- [x] 144 B-66 — commonJS reads the same closure scope; `test-closure-invariant` green on every target — its Conformance step the group's
 - [x] 144 B-57 — erlang and beam: an imported section enum's inner enums emitted once, by the declaring module; emilia's `alpha` cell 4106 → 706 modules on both targets, `run` 23.9 s → 13.8 s (erlang), 7.2 s → 4.0 s (beam); a codegen test per backend — its Conformance step the group's
 - [x] 144 B-61 — a cell's package name is its directory's name (511): a one-off script filled the 148 of botopink-lang's cells that differed (146 were `language_tests`); `package_named_std` is the cell `std`; the name check is the manifest's (512 (1), B-58)
 - [x] 144 B-50 — beam: a member call through a library's default handle lowers to a call into the library; `default_handle_member` green on beam, a beam codegen test — its Conformance step open
