@@ -3434,6 +3434,27 @@ labelled form.
 - [ ] the formatter keeps an annotation's labelled arguments as written (`label: value`); a format test red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
+### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+Today the resolver orders a package's modules by their imports (`resolver.zig`, topological) and refuses a cycle; each
+module runs 372's phases whole before its importers, and 130-s8-c's same-module meta read is answered in a step 4. Rust
+compiles a crate as one unit, its modules free to use each other; Zig analyses a declaration on demand and refuses only a
+`dependency loop`. This step measures whether botopink can analyse a whole package on demand — `a.bp` and `b.bp`
+importing each other, a declaration (and its decorators) analysed when something needs it — and reports; it changes no
+behaviour. Until a decision follows it, no import cycle between modules (s23-i).
+
+- [ ] the design written: on-demand analysis of a package (resolver, checker, 372's decorator phases, 130-s8-c's pending
+      meta reads, the catalogue), what stays a refusal (a value cycle: `pub val x = b.y + 1` against `pub val y = a.x + 1`
+      → `dependency loop`), and what s23-i's root rules become
+- [ ] measured on a prototype branch: the cost on `zig build test` and on the language server's incremental check
+- [ ] each backend's answer to a module cycle measured: erlang and beam (calls across modules), wasm (one module),
+      commonJS (a `require` cycle answers `undefined` for a module-level `val` — one file per package, or lazy
+      module-level values)
+- [ ] the report and the question it raises filed in `decisions-pending.md`: adopt (with its steps), or keep the
+      acyclic rule
+
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
 **Repository:** botopink-lang (`--lang`)
