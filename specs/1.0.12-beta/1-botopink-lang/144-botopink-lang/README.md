@@ -3580,8 +3580,9 @@ cannot serve both.
 
 - [ ] every target emits a module's production unit always and its test unit (`__test__` prefix, 513 (1)) only under
       `botopink test` of the package under test; a dependency's test units never emitted
-- [ ] the production unit always carries the reserved export of its private functions (513 (2)); a test calling a
-      private function runs on every target; every library's tests green unchanged
+- [ ] the production unit always carries the reserved export of its private functions and module-level `val`s (513
+      (2)); a test reading either runs on every target; one test runner at the entry; every library's tests green
+      unchanged
 - [ ] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
 - [ ] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
 - [ ] Conformance step (459, 474, 477, 478, 480)
