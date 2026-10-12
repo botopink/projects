@@ -3560,12 +3560,16 @@ in-memory structures, so the checker and the four emitters read what they read t
       tests; no change of behaviour
 - [x] S1 — the generic encoder and decoder; a round trip, and emitting from the decoded outputs equal to emitting from
       the live ones, over std and the invariant's fixture; the entries' sizes reported; no change of behaviour
-- [ ] S2 — the journal and the hit / miss hooks in `compileOnce`; std per module, every other package per package;
+- [x] S2 — the journal and the hit / miss hooks in `compileOnce`; std per module, every other package per package;
       `build`, `run`, `test`, `cell check` and `check` read them; the catalogue readers never stored; guards 3–6
       (the duplicate-name cell is in)
 - [x] `binds_erlang_host` from the closure, and the case in `test-closure-invariant`
-- [ ] S4 — the code section, and the four emitters skip a dependency module whose code the entry holds (`test` emits
+- [x] S4 — the code section, and the four emitters skip a dependency module whose code the entry holds (`test` emits
       it again until B-64)
+- [x] the review of S0–S4: a hit is a dependency's module alone, never one of the package under test at the same
+      path; an entry for another module set is a miss; the entry carries no source text
+- [ ] decision 514: `build` and `run` leave out a dependency's `.d.bp` modules as `check` and `test` do — one module
+      set, one entry (rakun)
 - [ ] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
       on purpose)
 - [ ] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
