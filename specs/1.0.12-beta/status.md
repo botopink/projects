@@ -42,7 +42,9 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-63 — `botopink cell check` runs cells in parallel (`--jobs`, default the machine's; a library gate hands its share): today one cell after another on one core · nothing
 - [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
-- [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
+- [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58, B-65, B-66 (its invariant's test landed: `zig build test-closure-invariant`, red on them)
+- [ ] 144 B-65 — erlang and beam: a library's field read depends on its consumer's records (D1); an emitter reads its own package's closure, never the whole program's · nothing
+- [ ] 144 B-66 — commonJS: a library's enum class depends on its consumer's variants (D2), B-65's rule · nothing
 - [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59, B-60 — the group's last step
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · in flight beside the cache group (a study; it changes nothing)
@@ -62,6 +64,8 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 144 — after B-00: what B-00k found, and wasm memory
 
 - [ ] 144 B-62 — 9 cells red on `feat` with the compiler of `feat`: the five `bpp_*` refusals locate `botopink.json:1:223` against an accepted 121-and-the-name, `bpp_prelude_holds_declaration`, `bpp_role_not_pub`, and `dependency_imports_itself_with_from` / `dependency_imports_undeclared_package` print a dependency's path as `../../../conformance/…` against an accepted `deps/…` · nothing
+- [ ] 144 B-67 — erlang: a library's record imported beside a std record of the same name builds std's, `function_clause` (D3) · nothing
+- [ ] 144 B-68 — wasm: a method call on a template's answer does not resolve (`toString/0`, D4) · nothing
 - [ ] 144 B-31 — on wasm a template whose only part is a float hole is typed `f64` (`val s = "${5.0}"; s + "!"` invalid wasm): a structural fix (430) · nothing
 - [ ] 144 B-32 — structural equality at build iterative (`comptime same(2000000)` answers `true`, 471); a `badarith` at build in Erlang's words, located (472) · nothing
 - [ ] 144 B-33 — `@External.Wasm`'s cells as labels (481): `fn: tanBody`, `op: "…"`, `wasi: .X`, `std: "hash.contentHash"`; the prefixed strings refused; a codemod over std and the libraries · nothing

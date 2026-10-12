@@ -3504,16 +3504,19 @@ The lib-test-runner's result store answers a `test-libs` cell from a stored pass
 
 ### B-60 — the code cache, level B: a package's checked interface and code per target, by its closure key (decision 509 (1))
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-58, B-65, B-66
 
 Level B skips analysing an unchanged library (~1 s a cell on emilia's `alpha`). It needs what level A does not: the
 checked interface a consumer is checked against (types, exports, decorator meta) stored and read back, and the
 invariant that a package's analysis and code depend on its closure alone — the per-importer copies B-57 removes are
 one case where they did not.
 
-- [ ] the invariant proved first: a test that builds one library under two different consumers and compares its
-      generated code and interface byte for byte, on every target; each difference found is a defect fixed (a 144
-      row) before anything is stored
+- [x] the invariant's test: `zig build test-closure-invariant` (`closure_invariant.sh`) builds one library under two
+      consumers and compares its output byte for byte on every target — red today on B-65 (erlang, beam) and B-66
+      (commonJS); real libraries (jhonstart, rakun, emilia: 46 430 dependency files) differ in none
+- [ ] the test joins `test-cli` once B-65 and B-66 land, never before
+- [ ] std cached per module, keyed by the module and its closure inside std (a consumer receives only the std modules
+      it imports: the set depends on the consumer, each module's bytes do not); every other package per package
 - [ ] the design reported before it is built (what the interface holds, its format, how comptime, templates and
       generics instantiated by a consumer stay in the consumer's own code) and confirmed by the maintainer
 - [ ] a dependency's interface and code per target stored under its closure key (never the package under test); `build`, `run`, `test` and `cell
@@ -3569,6 +3572,57 @@ cannot serve both.
       unchanged
 - [ ] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
 - [ ] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-65 — erlang and beam: a library's field read depends on its consumer's records (the closure invariant, D1)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+A field read a library could place (`erlang:element(N, Q)`) becomes the dynamic `'__bp_field'(Q, label)` and its
+helper whenever anything else in the program — the consumer's module, another dependency, a std module it imports
+(`std/collections`' `Queue`) — declares a record of the same name or with the same field: `erlang.zig`
+`recordTypeOfReceiver` → `typeNameContested` / `uniqueRecordWithField` vote over `cross.owners`, the whole program's
+export index; beam_asm the same. Seen in `test-closure-invariant` and in the cell `import_sibling_path_beside_std_name`
+(`kit@report`).
+
+- [ ] one rule: an emitter consults the index of its own package's closure, never the whole program's; the same for
+      `methodOwnerContested`, `programFnFieldName`, `programRecordOrEnum`, `programFnField` (`erlang.zig`) and beam
+- [ ] `test-closure-invariant` green on erlang and beam; a codegen test per backend, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-66 — commonJS: a library's enum class depends on its consumer's variants (the closure invariant, D2)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+When another package declares a variant of the same name with other fields (`Square`), the library's enum class
+gains `get $0()` and its `case` destructures by position: `commonJS.zig` `payloadSlots` / `variantReadsByPosition`
+read `xc.variantFields(bare)` over the whole program; `crossExport` reads `xc.imported` the same way.
+
+- [ ] the emitter reads its own package's closure (B-65's rule); `test-closure-invariant` green on commonJS
+- [ ] a codegen test, red on the parent
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-67 — erlang: a library's record imported beside a std record of the same name builds std's (D3)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+`import {items.Queue} from "shelf"` beside `import {collections} from "std"` builds `Queue(…)` as
+`{std@collections@@Queue, …}` on erlang; the program dies with `function_clause` in `shelf@items:describe`. commonJS
+and beam print the right answer. A wrong program, found by `test-closure-invariant`'s `crowded` consumer.
+
+- [ ] a cell red on the parent (the two imports, a print of the record and a call into the library); green on every
+      target
+- [ ] the construction names the imported type's owner; an erlang codegen test
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-68 — wasm: a method call on a template's answer does not resolve (D4)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`val built = shelf "built"` (the template answers `Label`) then `built.size.toString()` is refused on wasm: "the
+wasm backend cannot resolve the call `toString/0`"; the other targets run it.
+
+- [ ] a cell red on the parent; the call resolved on wasm, the cell green on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
