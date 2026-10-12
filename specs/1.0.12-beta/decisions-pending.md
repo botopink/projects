@@ -326,6 +326,7 @@ number, which is **484**.
 - **Blocks.** Nothing — built as (a).
 
 #### s23-f · A type argument's `TypeInfo` in a `HookUse`
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b), typed.** A `TypeInfo` carries every field's annotations and the type's methods, as `decl.fields` / `decl.methods` give them (`t.fields[0].annotations` lists `#[validated]`); the build session publishes each module's type declarations, so no empty list means "not carried". A field's, a parameter's and a return's type stops being `typeName: string` / `returnType: string` and is a `TypeInfo<unknown>`, with `kind: TypeKind` (`Record`, `Enum`, `Primitive`, `Array`, `Optional`, `Tuple`, `Fn`, `Task` …) and `args: TypeInfo<unknown>[]` (`Array<string>` → `[string]`, `?i32` → `[i32]`), all declared in std (`builtins.d.bp`, mirrored in `comptime.zig`'s `type_info_src`): `Field(name, type, annotations)`, `Param(name, type)`, `Method(name, params, returnType: ?TypeInfo<unknown>, annotations)`. An annotation's arguments stay read through the typed meta (s29-b).
 - **Measured.** Built: `typeArgs` gives the type's name, its declaring module (`""` for a primitive or std's), and a
   record's fields as `Field(name, typeName, annotations: [])` — `params<main.BlogParams(slug: string, id: i32)>`;
   `methods` is `[]` and a field's annotations are not carried (the checker of an importing module holds the type's

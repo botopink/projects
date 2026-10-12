@@ -326,6 +326,7 @@ número livre, que é **484**.
 - **Bloqueia.** Nada — construído como (a).
 
 #### s23-f · O `TypeInfo` de um argumento de tipo num `HookUse`
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b), tipada.** Um `TypeInfo` traz as annotations de cada campo e os métodos do tipo, como `decl.fields` / `decl.methods` os dão (`t.fields[0].annotations` lista `#[validated]`); a sessão de build publica as declarações de tipo de cada módulo, então nenhuma lista vazia significa "não carregado". O tipo de um campo, de um parâmetro e de um retorno deixa de ser `typeName: string` / `returnType: string` e é um `TypeInfo<unknown>`, com `kind: TypeKind` (`Record`, `Enum`, `Primitive`, `Array`, `Optional`, `Tuple`, `Fn`, `Task` …) e `args: TypeInfo<unknown>[]` (`Array<string>` → `[string]`, `?i32` → `[i32]`), todos declarados no std (`builtins.d.bp`, espelhados no `type_info_src` do `comptime.zig`): `Field(name, type, annotations)`, `Param(name, type)`, `Method(name, params, returnType: ?TypeInfo<unknown>, annotations)`. Os argumentos de uma annotation continuam lidos pela meta tipada (s29-b).
 - **Medido.** Construído: `typeArgs` dá o nome do tipo, seu módulo declarante (`""` para um primitivo ou do std), e os
   campos de um record como `Field(name, typeName, annotations: [])` — `params<main.BlogParams(slug: string, id: i32)>`;
   `methods` é `[]` e as anotações de um campo não são carregadas (o checker de um módulo importador guarda a forma
