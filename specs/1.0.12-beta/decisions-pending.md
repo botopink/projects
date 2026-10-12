@@ -590,6 +590,7 @@ number, which is **484**.
 ### 02-std-and-packaging
 
 #### 110-a · `testing.asserts` on wasm under the strict rule (146)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(3).** `testing.asserts` imports on wasm, its API unchanged (74): `throws` / `throwsWith` run over `attempt` (431-h, 431-f's wasm form) and need no `tryCatch`; `canonical` (`deepEquals`) gains a botopink body; `matches` comes with std's regex on wasm — until then a call reaching `regexMatches` on wasm is the located refusal, not the import. Amends 146's last clause.
 - **Measured.** A wasm program importing `testing.asserts` is refused: 4 of its 27 functions reach host cells with no wasm binding (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); uses: throwsWith ~290, throws 4, deepEquals 2, matches 1; 140 files import the module.
 - **Rules.** 230: front 110 closes on "a std module wasm cannot build is a located refusal"; `02/97` step 11 offers (a) out of a wasm build or (b) restructured, a question per module. 146's last clause ("`testing.asserts` is restructured so nothing without a wasm binding is reachable from it on wasm") asks for (2)/(3); answering (1) amends it.
 - **Options.** (1) ★ As is: not importable on wasm. (2) The four move to their own module; the other 23 import on wasm (changes decision 74's API). (3) The three cells gain wasm versions (a regex engine in the wasm prelude; a catchable `@panic`).

@@ -589,6 +589,7 @@ número livre, que é **484**.
 ### 02-std-and-packaging
 
 #### 110-a · `testing.asserts` no wasm sob a regra estrita (146)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(3).** `testing.asserts` é importável no wasm, sua API inalterada (74): `throws` / `throwsWith` rodam sobre `attempt` (431-h, a forma wasm da 431-f) e não precisam de `tryCatch`; `canonical` (`deepEquals`) ganha um corpo botopink; `matches` vem com o regex do std no wasm — até lá uma chamada que alcança `regexMatches` no wasm é a recusa localizada, não o import. Amenda a última cláusula da 146.
 - **Medido.** Um programa wasm que importa `testing.asserts` é recusado: 4 de suas 27 funções alcançam células de host sem binding wasm (`deepEquals → canonical`, `matches → regexMatches`, `throws`/`throwsWith → tryCatch`); usos: throwsWith ~290, throws 4, deepEquals 2, matches 1; 140 arquivos importam o módulo.
 - **Regras.** 230: a frente 110 fecha em "um módulo do std que o wasm não consegue construir é uma recusa localizada"; o `02/97` passo 11 oferece (a) fora de um build wasm ou (b) reestruturado, uma pergunta por módulo. A última cláusula da 146 ("`testing.asserts` é reestruturado para que nada sem binding wasm seja alcançável a partir dele no wasm") pede (2)/(3); responder (1) a emenda.
 - **Opções.** (1) ★ Como está: não importável no wasm. (2) Os quatro vão para um módulo próprio; os outros 23 importam no wasm (muda a API da decisão 74). (3) As três células ganham versões wasm (um motor de regex no prelúdio wasm; um `@panic` capturável).
