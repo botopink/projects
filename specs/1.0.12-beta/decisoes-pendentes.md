@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**71 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**74 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -981,6 +981,58 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a) — o caminho distingue duas folhas de mesmo nome, e é o texto que o programa escreveu.
 - **Bloqueia.** A linha de seção de enum do 144 B-22; a linha 05-wasm do status.md.
+
+#### B-14-a · `Name(..base, f: v)` (decisão 37) ao lado do `Name(...base, f: v)` da 359: o `..` sai? (144 B-14)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `..` sai** — uma grafia para copiar os campos de um record; `Name(..base, …)` é recusado, localizado, nomeando `...base`, e um codemod reescreve o std e as bibliotecas no passo que o pousa. Duas grafias para uma coisa é o que a decisão 67 recusa; `...` é o da 359, também o da tag (`<Card {...p} />`). Viável: o braço `..` do parser nos argumentos de um construtor; `grep -rn '(\.\.[a-z]'` nos repositórios. Mudanças: uma célula de recusa; decisão 37 emendada.
+- **Medido.** Os dois compilam na `feat`: o `..base` da decisão 37 (fonte limitada a um nome) e o `...src` da 359 (qualquer expressão do tipo do record ou de um tipo derivado pela 307).
+- **Opções.**
+  (a) O `..` sai.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");   // the one form
+  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
+  ```
+  (b) Os dois ficam.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");
+  val q = Pessoa(..old, nome: "Ana");    // same record
+  ```
+- **Recomendação.** (a).
+- **Bloqueia.** A linha do `..` do 144 B-14.
+
+#### B-14-b · Em que ordem a fonte de um spread e os valores rotulados são avaliados? (decisão 359 (3), (6); 144 B-14)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): na ordem escrita** — todo argumento, a fonte de um spread incluída, é avaliado da esquerda para a direita como escrito, uma vez; os campos então se aplicam da esquerda para a direita, o posterior vencendo (359 (3)). Os argumentos de uma chamada são avaliados na ordem escrita em todo outro lugar; um spread não é exceção. Viável: `infer.inferRecordSpread` liga todo argumento com efeito colateral a um local na ordem escrita, não só a fonte. Mudanças: uma célula cuja fonte e um valor rotulado imprimem.
+- **Medido.** Uma fonte que não é um nome é ligada uma vez antes da chamada, então é avaliada antes de todo valor rotulado, mesmo um escrito antes dela: `Pessoa(nome: say("n"), ...make())` imprime `make` e depois `n`.
+- **Opções.**
+  (a) Ordem escrita.
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
+  ```
+  (b) As fontes primeiro, depois os valores rotulados (como construído).
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
+  ```
+- **Recomendação.** (a).
+- **Bloqueia.** A linha de ordem do 144 B-14.
+
+#### B-14-c · Um tipo derivado de um tipo `Type.partial`, e `Type.required`: podem ser fonte de um spread? (decisões 307, 359 (2), 422; 144 B-14)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um tipo derivado de um partial é um partial** — `Type.pick` / `omit` / `merge` de um tipo `Type.partial` são recusados como fonte como o próprio partial; `Type.required(Type.partial(R))` é derivado de `R` e aceito. Os campos de um partial podem estar ausentes, o que a 359 (2) recusa; derivar de novo mantém isso. Viável: `derived_types` registra `derivedPartial` por tipo, então ele passa por `pick` / `omit` / `merge`, e `required` o limpa com a linhagem da sua fonte. Mudanças: duas células.
+- **Medido.** `pick` / `omit` / `merge` de um partial derivam só do tipo partial, não da sua fonte, então são recusados como outros records; `Type.required` não tem linhagem, então seu valor é recusado também.
+- **Opções.**
+  (a) Um partial derivado é um partial; `required` restaura a fonte.
+  ```bp
+  pub val Patch = Type.partial(Pessoa);
+  pub val Nome = Type.pick(Patch, .nome);
+  pub val Full = Type.required(Patch);
+  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
+  Pessoa(...full);             // accepted
+  ```
+  (b) Como construído: os dois recusados como records de outro tipo.
+  ```bp
+  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
+  Pessoa(...full);             // refused: `Full` is not `Pessoa`
+  ```
+- **Recomendação.** (a).
+- **Bloqueia.** A linha de linhagem do 144 B-14.
 
 ### 02-std-and-packaging
 

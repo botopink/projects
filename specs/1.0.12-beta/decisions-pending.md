@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**71 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**74 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -982,6 +982,58 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a) — the path tells two leaves of one name apart, and it is the text the program wrote.
 - **Blocks.** 144 B-22's enum-section row; status.md's 05-wasm row.
+
+#### B-14-a · `Name(..base, f: v)` (decision 37) beside 359's `Name(...base, f: v)`: does `..` go? (144 B-14)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `..` goes** — one spelling for copying a record's fields; `Name(..base, …)` is refused, located, naming `...base`, and a codemod rewrites std and the libraries in the step that lands it. Two spellings for one thing is what decision 67 refuses; `...` is 359's, also the tag's (`<Card {...p} />`). Viable: the parser's `..` arm in a constructor's arguments; `grep -rn '(\.\.[a-z]'` over the repositories. Changes: a refusal cell; decision 37 amended.
+- **Measured.** Both compile on `feat`: decision 37's `..base` (source limited to a name) and 359's `...src` (any expression of the record's type or a 307 derived type).
+- **Options.**
+  (a) `..` goes.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");   // the one form
+  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
+  ```
+  (b) Both stay.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");
+  val q = Pessoa(..old, nome: "Ana");    // same record
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-14's `..` row.
+
+#### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
+- **Measured.** A source that is not a name is bound once before the call, so it is evaluated before every labelled value, even one written before it: `Pessoa(nome: say("n"), ...make())` prints `make` then `n`.
+- **Options.**
+  (a) Written order.
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
+  ```
+  (b) The sources first, then the labelled values (as built).
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-14's order row.
+
+#### B-14-c · A type derived from a `Type.partial` type, and `Type.required`: may they be a spread's source? (decisions 307, 359 (2), 422; 144 B-14)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a type derived from a partial is a partial** — `Type.pick` / `omit` / `merge` of a `Type.partial` type are refused as a source like the partial itself; `Type.required(Type.partial(R))` is derived from `R` and accepted. A partial's fields may be absent, which 359 (2) refuses; deriving again keeps that. Viable: `derived_types` records `derivedPartial` per type, so it carries through `pick` / `omit` / `merge`, and `required` clears it with its source's lineage. Changes: two cells.
+- **Measured.** `pick` / `omit` / `merge` of a partial derive from the partial type only, not from its source, so they are refused as other records; `Type.required` has no lineage, so its value is refused too.
+- **Options.**
+  (a) A derived partial is a partial; `required` restores the source.
+  ```bp
+  pub val Patch = Type.partial(Pessoa);
+  pub val Nome = Type.pick(Patch, .nome);
+  pub val Full = Type.required(Patch);
+  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
+  Pessoa(...full);             // accepted
+  ```
+  (b) As built: both refused as records of another type.
+  ```bp
+  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
+  Pessoa(...full);             // refused: `Full` is not `Pessoa`
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-14's lineage row.
 
 ### 02-std-and-packaging
 

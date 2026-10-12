@@ -195,15 +195,21 @@ pub val Contato = Type.pick(Pessoa, .email, .telefone);
 val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later winning
 ```
 
-- [ ] the parser reads `...expr` at the start of a record constructor's argument; `a...b` stays the
+- [x] the parser reads `...expr` at the start of a record constructor's argument; `a...b` stays the
       inclusive range; the formatter prints `...src` (with `01-compiler/16`)
-- [ ] the source is the record's type or a 307 type derived from it (`pick`, `omit`, `merge`); any
+- [x] the source is the record's type or a 307 type derived from it (`pick`, `omit`, `merge`); any
       other record refused at the `...` naming both types; a `Type.partial` value refused
-- [ ] arguments apply left to right; a field without a default supplied by neither a spread nor a
+- [x] arguments apply left to right; a field without a default supplied by neither a spread nor a
       label is an error at the call; a label written twice stays an error
-- [ ] `run/record_spread` on the four targets (a new record, the source unchanged and evaluated once);
+- [x] `run/record_spread` on the four targets (a new record, the source unchanged and evaluated once);
       `reject/record_spread_other_type`, `reject/record_spread_partial`, `reject/record_spread_missing_field`
-- [ ] a plain function call takes no spread (267): `reject/call_spread`
+- [x] a plain function call takes no spread (267): `reject/call_spread`
+- [ ] a source whose type is an import alias of a derived type is refused: the lineage is matched by the type's
+      name, so `import {Contato as C}` then `Pessoa(...c, …)` with `c: C` does not reach `Contato`'s source — follow
+      the alias; one cell
+- [ ] `..base` (decision 37) beside 359's `...src` · question B-14-a
+- [ ] a source that is not a name is evaluated before the labelled values, even one written after it · question B-14-b
+- [ ] `Type.pick` / `omit` / `merge` of a `Type.partial` type, and `Type.required`: their lineage · question B-14-c
 
 #### B-14 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -1151,6 +1157,10 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       location is the caller's line now; left, the lowering — `stringSlice0` / `stringSlice1`, `stringIsDigits`,
       `stringToInteger`, `stringToFloat` and `stringNumeralRefused` have no wasm binding and need std-wasm functions,
       one answering a `@Result` — found by step 5
+- [ ] commonJS prints a generic record as `Box.t(…)` (`@print(Box(value: 1))` over `Box<T>(value: T)`) — found by
+      B-14; one cell on the four targets
+- [ ] a `case` arm with a catch-all binder over a record value is lowered wrongly on commonJS and wasm — found by
+      B-14; re-measured with its cell
 - [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
       `Token.Color(_inner: __Token__Color.White)`, wasm an address · question B-22-b
 
