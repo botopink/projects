@@ -40,7 +40,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
 - [ ] 144 B-63 — `botopink cell check` runs cells in parallel (`--jobs`, default the machine's; a library gate hands its share): today one cell after another on one core · nothing
-- [ ] 144 B-60 — level B as a warm compiler server: dependencies' analysis kept in memory between invocations, checked by closure key; nothing on disk; design confirmed by the maintainer before it is built (509 (1), option (c)) · nothing (B-58, B-65, B-66 landed)
+- [ ] 144 B-60 — level B on disk: a dependency's analysis in `.botopinkbuild/analysis/` by closure key + the checker's sources; `test-analysis-equivalence` (cold vs from disk, byte for byte) in `test-cli`; doubt discards; design confirmed by the maintainer before it is built (509 (1)) · nothing (B-58, B-65, B-66 landed)
 - [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58, B-59, B-60 — the group's last step
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)

@@ -3475,37 +3475,54 @@ tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the 
       unknown-command error
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-60 — the code cache, level B: a warm compiler server keeps dependencies' analysis in memory (decision 509 (1); the maintainer, 2026-10-12)
+### B-60 — the code cache, level B: a dependency's analysis on disk in `.botopinkbuild/analysis/` (decision 509 (1); the maintainer, 2026-10-12)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
 Level B skips analysing an unchanged library (~0.8 s a cell on emilia's `alpha`; ~15–20 s of ~164 s warm over
-emilia's 79 cells with `--jobs`). **The maintainer's choice (option (c) of four):** a long-lived compiler process
-keeps each dependency's analysis (checked interface, decorator meta, generated code per target) **in memory** between
-invocations, each entry checked against its closure key (509 (3): the package's files by content, its dependencies'
-keys, the target, the compiler's backend partition) before reuse. Nothing is written to disk. Not taken: (a) nothing,
-(b) sharing only within one invocation (the server gives it too), (d) the analysis serialised to disk (the format to
-keep in step with the checker, and a field it forgets answers a wrong program silently). Safe by the closure invariant
-(B-65, B-66): a library's analysis and code are the same under every consumer.
+emilia's 79 cells with `--jobs`). **The maintainer's choice:** each dependency's analysis — its checked interface
+(types, exports), its decorators' meta and its generated code per target — is written to the project's
+`.botopinkbuild/analysis/` (beside 483's `.botopinkbuild/deps/`; a workspace's members share its root's) under the
+dependency's closure key, and read back by later invocations, a restart and a CI job that keeps the directory
+included. Not taken: nothing; sharing within one invocation only; a warm server holding it in memory. Safe by the
+closure invariant (B-65, B-66): a library's analysis and code are the same under every consumer.
+
+**What guards against a wrong answer** (the risk of a disk format is that it forgets a field, or falls behind the
+checker, and answers a wrong program silently):
+
+1. **The key** is 509 (3)'s closure key — the package's files by content, its dependencies' keys (Merkle), the
+   target, the compiler's backend partition — **and the hash of the checker's and the format's own sources**: any
+   change to what an entry holds, or how, gives every entry a new key; no version number to remember.
+2. **`test-analysis-equivalence`** in `test-cli`: for libraries and consumers (jhonstart, rakun, emilia and
+   `closure_invariant.sh`'s), the output built with `--cold` and the output built reading `.botopinkbuild/analysis/`
+   compared byte for byte on every target — a field the format forgets fails the gate.
+3. **Doubt discards:** an entry that does not read back whole (truncated, a checksum that differs, a key it does not
+   carry) is deleted and the dependency analysed again — never used in part. Writes are atomic (a temporary file
+   renamed), so parallel invocations and `--jobs` workers never read half an entry.
+4. **Entries are immutable;** what a consumer instantiates (a generic, a `comptime`, a template expansion) stays in the
+   consumer's own code, never in a dependency's entry.
+5. **Never cached:** the package under test (509 (1)) and a test's result (510).
+6. **`--cold`** neither reads nor writes `.botopinkbuild/analysis/`; the group's Conformance step runs cold and warm and
+   compares.
 
 - [x] the invariant's test: `zig build test-closure-invariant` (`closure_invariant.sh`) builds one library under two
       consumers and compares its output byte for byte on every target; green since B-65 and B-66
 - [ ] the test joins `test-cli`
 - [ ] std per module, keyed by the module and its closure inside std (a consumer receives only the std modules it
       imports); every other package per package
-- [ ] the design reported before it is built and confirmed by the maintainer: how `botopink build` / `run` / `test` /
-      `cell check` find and start the server (one per checkout and compiler binary; a stale binary's server
-      refused, as `source_stamp`), its life (idle timeout, memory bound, eviction), concurrent invocations and
-      `--jobs` workers sharing it, how comptime, templates and generics instantiated by a consumer stay in the
-      consumer's own code, and how the language server's existing in-memory analysis is reused
-- [ ] the package under test never comes from the server (509 (1)); `--cold` bypasses it (a fresh analysis, the
-      server untouched); a server that dies is restarted, never trusted half-way
-- [ ] tests the hook runs: a second invocation does not re-analyse an unchanged library; a changed file (by content)
-      re-analyses its package and its dependents; `--cold` analyses everything
-- [ ] measured (B-61's quiet machine): emilia's conformance and one cell repeated, cold, warm without and with the
-      server; memory held
+- [ ] the design reported before it is built and confirmed by the maintainer: the entry's format (what the interface
+      holds, the meta, the code per target), how comptime, templates and generics instantiated by a consumer stay in
+      the consumer's code, the directory's layout and its bound (a size limit, the least recently used entries
+      removed; `botopink clean` empties it)
+- [ ] entries written and read under the key above; `build`, `run`, `test` and `cell check` read them; guards 3–6
+- [ ] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
+      on purpose)
+- [ ] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
+      content), a changed checker source or another target analyses it again; a truncated entry is discarded
+- [ ] measured (B-61's quiet machine): emilia's conformance and one cell repeated, cold and warm, without and with
+      level B; the directory's size
 - [ ] Conformance step (459, 474, 477, 478, 480)
-- [ ] under the module-model group (B-71, B-72) the server's unit becomes the block; noted there
+- [ ] under the module-model group (B-71, B-72) an entry becomes a block's; noted there
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
@@ -3642,7 +3659,7 @@ located `dependency loop`. In order:
       `typeinfo-all-hooks-reader` gone
 - [ ] cells: `home.bp` ↔ `blog.bp` each reading the other's `Route`; a catalogue in a page module; the comptime loop
       refused
-- [ ] B-60's warm server keys its entries by block (headers, bodies, decorators' meta of a block)
+- [ ] B-60's `.botopinkbuild/analysis/` keys its entries by block (headers, bodies, decorators' meta of a block)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-73 — commonJS: a module cycle loads (B-55-a (e) (4))
