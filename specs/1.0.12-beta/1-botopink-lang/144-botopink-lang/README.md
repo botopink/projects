@@ -3508,15 +3508,58 @@ checker, and answers a wrong program silently):
 6. **Starting from nothing is `botopink cache clean`** (B-77); the group's Conformance step measures after it (cold)
    and again (warm) and compares.
 
+**The design** (confirmed by the maintainer, 2026-10-12). A consumer reads more than an interface: each dependency
+module's whole analysed output (`ComptimeOutput.ok`) and what its analysis and `registerExports` leave in the session
+— the five registries (types, type declarations, templates, decorators, extensions), the default DSL and the
+reflection catalogue (the decorators' meta). The entry stores exactly that and is decoded back into the same
+in-memory structures, so the checker and the four emitters read what they read today.
+
+- **An entry** (`<name>.bpa`): one file per package and target, a hit only when every module of the package hits;
+  std one file per module. Sections: META (package, module paths in order, wasm host, whether a module reads the
+  catalogue, each module's std imports), STRINGS, then per module ANALYSIS (the analysed output without
+  `bindings[].typedExpr` and `custom_ast`: the transformed AST with bodies, bindings with their types, `type_ids`,
+  `dispatch_rewrites`, `instance_lowerings`, warnings, …), JOURNAL (what the module added to or replaced in the
+  registries, the default DSL and the catalogue, replayed in order on load) and CODE (the module's own unit on the
+  target; on commonJS the `.d.ts` always). The AST is stored because the checker receives templates, decorators and
+  carried `pub fn`s with their bodies, and wasm links its dependencies' bodies.
+- **What a consumer instantiates** (generics, `comptime` calls, template expansions, per-callee templates, wasm's
+  lowering of linked bodies) is never in an entry: the entry holds the AST, the result exists only in the
+  consumer's code (guard 4). The entry is encoded right after the dependency's analysis, before codegen rewrites a
+  `declare fn` in place.
+- **The encoding:** binary, generic over the Zig types (`@typeInfo`): every field of every type is written unless
+  named in a short skip list, so a new field is never forgotten silently; maps by sorted key, so the bytes are
+  deterministic; pointers through an identity table, so shared nodes and type variables stay shared. A header
+  (magic, the key, the payload's length and SHA-256, a section table); no version number. The encoder and decoder
+  live in `compiler-core/src`, inside the compiler key; wherever they sit, the key hashes their files.
+- **The directory:** `<workspace root>/.botopinkbuild/analysis/<target>/<package>.bpa` and
+  `…/<target>/std/<module>.bpa` (`io@fs.bpa` for `std/io/fs`); `wasm` and `wasm.browser` are separate targets, so a
+  cell running both hosts never thrashes. Two packages of one name in the workspace's closure (two members, or a
+  member and a dependency) are a located error, never one entry silently replacing the other.
+- **The key:** 509 (3)'s closure key, which now also hashes the effective manifest (after 512's inheritance) and the
+  wasm host; std's is the module path, the target, the host and the compiler key (std's bytes are inside it).
+- **Never stored:** a package with a module that reads `@TypeInfo.all` or expands a template that queries the
+  catalogue — its answer depends on the whole program.
+- **Before B-64:** `botopink test` reads a dependency's analysis from the entry and emits its code again (dependencies
+  are still emitted in test mode); `build`, `run` and `cell check` read the code too.
+- **Readers:** `build`, `run`, `test`, `cell check` and `check`; the language server not until B-74.
+- **`binds_erlang_host`** (`crossModule.Scopes`) is computed from the module's closure, not the whole program, and
+  the case joins `test-closure-invariant`.
+- **Later, after the measurement:** dropping from erlang, beam and commonJS entries the bodies no registry carries.
+
 - [x] the invariant's test: `zig build test-closure-invariant` (`closure_invariant.sh`) builds one library under two
       consumers and compares its output byte for byte on every target; green since B-65 and B-66
-- [ ] the test joins `test-cli`
-- [ ] std per module, keyed by the module and its closure inside std (a consumer receives only the std modules it
-      imports); every other package per package
-- [ ] the design reported before it is built and confirmed by the maintainer: the entry's format (what the interface
-      holds, the meta, the code per target), how comptime, templates and generics instantiated by a consumer stay in
-      the consumer's code, the directory's layout (one entry per dependency and target, replaced on a new key)
-- [ ] entries written and read under the key above; `build`, `run`, `test` and `cell check` read them; guards 3–6
+- [x] the test joins `test-cli`
+- [x] the design reported before it is built and confirmed by the maintainer (above)
+- [ ] S0 — the key (effective manifest, wasm host, std's keys; the format's files hashed wherever they sit), the paths,
+      the header, the atomic replace, discard on doubt, `clean`, the duplicate package name as a located error; unit
+      tests; no change of behaviour
+- [ ] S1 — the generic encoder and decoder; a round trip, and emitting from the decoded outputs equal to emitting from
+      the live ones, over std and the invariant's fixture; the entries' sizes reported; no change of behaviour
+- [ ] S2 — the journal and the hit / miss hooks in `compileOnce`; std per module, every other package per package;
+      `build`, `run`, `test`, `cell check` and `check` read them; the catalogue readers never stored; guards 3–6
+- [ ] `binds_erlang_host` from the closure, and the case in `test-closure-invariant`
+- [ ] S4 — the code section, and the four emitters skip a dependency module whose code the entry holds (`test` emits
+      it again until B-64)
 - [ ] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
       on purpose)
 - [ ] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
