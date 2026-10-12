@@ -770,6 +770,7 @@ number, which is **484**.
 - **Blocks.** 98 (erika).
 
 #### 97-s15-a · `Decimal` and `Json`'s numbers before or after `json` leaves std (97 s15 against 142 s1)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a).** 142 s1 first (144 B-27, then 151 s1): `json` leaves std whole, and 97 s15's `Json` half (`Int` / `BigInt` / `Dec` replacing `Num`, the consumers' arms) lands in the json repository (151); its `Decimal` half stays in std (144 B-24). Each consumer is touched once.
 - **Measured.** 97 step 15 replaces `Json`'s `Num(value: f64)` with `Int` / `BigInt` / `Dec` in `libs/std/src/json.bp` and adds the arms to the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2); 142 step 1 moves `json.bp` whole to `repository/json`, the six consumers importing `from "json"`. Both rewrite the same file and the same consumers.
 - **Options.**
   (a) 142 s1 first (144 B-27, then 151 s1); 97 s15's `Json` half lands in the json repository (151), its `Decimal` half in std (144 B-24).

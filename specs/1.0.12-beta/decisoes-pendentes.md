@@ -769,6 +769,7 @@ número livre, que é **484**.
 - **Bloqueia.** 98 (erika).
 
 #### 97-s15-a · `Decimal` e os números do `Json` antes ou depois de o `json` sair do std (97 s15 contra 142 s1)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a).** 142 s1 primeiro (144 B-27, depois 151 s1): `json` sai inteiro do std, e a metade `Json` do 97 s15 (`Int` / `BigInt` / `Dec` substituindo `Num`, os braços dos consumidores) entra no repositório json (151); sua metade `Decimal` fica no std (144 B-24). Cada consumidor é tocado uma vez.
 - **Medido.** O passo 15 da 97 substitui o `Num(value: f64)` do `Json` por `Int` / `BigInt` / `Dec` em `libs/std/src/json.bp` e acrescenta os braços aos 13 arquivos com um `case` sobre `Json` (std 6, rakun 3, jhonstart 2, onze 2); o passo 1 da 142 move `json.bp` inteiro para `repository/json`, os seis consumidores importando `from "json"`. Ambos reescrevem o mesmo arquivo e os mesmos consumidores.
 - **Opções.**
   (a) 142 s1 primeiro (144 B-27, depois 151 s1); a metade `Json` da 97 s15 pousa no repositório json (151), sua metade `Decimal` no std (144 B-24).
