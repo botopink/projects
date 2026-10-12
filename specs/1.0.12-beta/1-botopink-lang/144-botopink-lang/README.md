@@ -3568,9 +3568,11 @@ in-memory structures, so the checker and the four emitters read what they read t
       it again until B-64)
 - [x] the review of S0–S4: a hit is a dependency's module alone, never one of the package under test at the same
       path; an entry for another module set is a miss; the entry carries no source text
-- [ ] decision 514: `build` and `run` leave out a dependency's `.d.bp` modules as `check` and `test` do — one module
-      set, one entry (rakun)
-- [ ] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
+- [ ] decisions 514, 515: `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run`
+      do — one module set, one entry; `check` of `local_dependency` green (its dependency's `.d.bp` declares `Rect`)
+- [ ] `botopink test` reads and writes level B CODE as `build` does, now that B-64 landed; a test unit never stored
+- [x] `test-analysis-equivalence` in `test-cli` over jhonstart, rakun and emilia (cold, writing, reading; byte for byte)
+- [x] `test-analysis-equivalence` in `test-cli` (guard 2), red on a format that drops a field (a test that drops one
       on purpose)
 - [ ] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
       content), a changed checker source or another target analyses it again; a truncated entry is discarded
@@ -3620,22 +3622,47 @@ B-78-a** (`decisions-pending.md`): if the answer is to keep the engine's text, t
 - [ ] a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-79 — wasm: `module_var_self_registration_test` and `stdlib-tour` answer one way under wasmtime and node
+### B-79 — `botopink run` of a program with no `fn main`: one located error on every target and host (decision 517)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-Found landing the three `feat` reds (2026-10-12): the suites `conformance/test/module_var_self_registration_test`
-and `conformance/test/stdlib-tour` (`botopink test`) give different results on wasm under wasmtime and under node. A
-program has one answer on wasm whatever the host runs it (decision 434): the difference is measured, the host that
-answers wrong is fixed, and the right answer is the one the other targets give. The three suites under
-`conformance/test/` without a `src/main.bp` are not failures — they are `botopink test` suites, not cells, and a
-cell sweep does not check them.
+Measured (2026-10-12), `botopink run` of a package whose entry module declares no `fn main`: wasm on wasi (wasmtime)
+answered `no exported instance named wasi:cli/run`, wasm on the browser host (node) and commonJS exited 0 running
+nothing, erlang and beam failed with a raw `error:undef`. Decision 517: the CLI refuses before running, located at the
+package's entry module, naming that it declares no `fn main` — the same message on commonJS, erlang, beam and wasm
+under both hosts. The two `conformance/test/` suites that showed it (`module_var_self_registration_test`,
+`stdlib-tour`) are `botopink test` suites, not cells; `botopink test` does not run on wasm, and a cell sweep does not
+check `conformance/test/`.
 
-- [ ] the difference measured: each suite run under wasmtime and under node, which test answers differently and how,
-      and which host answers as erlang, beam and commonJS do
-- [ ] the wrong host fixed; both suites green on wasm under both hosts, a cheap test the hook runs beside the fix
-      (478)
+- [x] measured: the five answers above
+- [ ] the refusal in `run.zig` (and the wat component emitter where a module without `main` exports no
+      `wasi:cli/run`), one message on every target and host; a unit test the hook runs (478)
+- [ ] a cell: a package with no `fn main` refused by `run` on every target
 - [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-80 — onze-cli's CSS accessors test red under `test-libs` on commonJS and erlang
+
+**Repository:** botopink-lang (`--lang`), or onze when the cause is the library's · **Model:** sonnet
+
+Found landing B-24 (2026-10-12): `zig build test-libs` fails onze-cli's test at `test/build_test.bp:140` (the CSS
+accessors) on commonJS and erlang, the same with `libs/std` at `feat`'s — older than B-24. The cause is found first:
+a compiler defect is fixed here; a library's is a row of onze's front (162) and this step closes pointing at it.
+
+- [ ] the cause found (compiler or library), named in this box
+- [ ] fixed where it belongs; `test-libs` green for onze-cli on every target
+- [ ] Conformance step (459, 474, 477, 478, 480), when the fix is the compiler's
+
+### B-81 — rakun-data's `#[query]` test red under `test-libs` on erlang
+
+**Repository:** botopink-lang (`--lang`), or rakun when the cause is the library's · **Model:** sonnet
+
+Found landing B-24 (2026-10-12): `zig build test-libs` fails rakun-data's test at `test/sql_build_test.bp:148` (the
+`#[query]` decorator) on erlang, the same with `libs/std` at `feat`'s — older than B-24. The cause is found first: a
+compiler defect is fixed here; a library's is a row of rakun's front (150) and this step closes pointing at it.
+
+- [ ] the cause found (compiler or library), named in this box
+- [ ] fixed where it belongs; `test-libs` green for rakun-data on erlang
+- [ ] Conformance step (459, 474, 477, 478, 480), when the fix is the compiler's
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
