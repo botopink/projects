@@ -3326,8 +3326,9 @@ The `yamlconf` cell prints `1` on wasm where every other target prints `true`.
 `erika.of(…)` in the `generic-loader-binding` example fails on erlang: `variable 'Erika' is unbound`; it blocks the
 example's move into erika's `conformance/`.
 
-- [ ] a cell red on the parent: a local `path` library whose default handle's member is called, on every target
-- [ ] the erlang lowering binds the handle; the example moves into `erika/conformance/`
+- [x] a cell red on the parent: a local `path` library whose default handle's member is called, on every target
+- [x] the erlang lowering binds the handle (`default_handle_member` green on erlang; beam is B-50)
+- [ ] `examples/generic-loader-binding` moves into `erika/conformance/` as a cell on every target (an erika change, after the 144 front)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-46 — a decorator body reaches a nested std namespace (`io.random`) (structural, decision 430)
@@ -3376,6 +3377,17 @@ sidecar cannot be shipped`.
 
 - [ ] a cell red on the parent: a decorator using `io.random` in a module built for commonJS
 - [ ] std's sidecars resolved from the bundled std; the cell green on commonJS
+- [ ] Conformance step (459, 474, 477, 478, 480)
+
+### B-50 — beam: a member call through a library's default handle aborts (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`conformance/modules/default_handle_member` (`shapes.twice(21)` through `shapes`' default handle) prints `42` on every
+target but beam, which aborts; B-45 fixed the erlang lowering.
+
+- [ ] the abort measured; the beam lowering reaches the library's member; the cell green on beam
+- [ ] a beam codegen test the hook runs, red on the parent
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
