@@ -3483,41 +3483,47 @@ each of `emilia@tokens`, `emilia@emilia`, `emilia@container`, `emilia@compose`, 
 - [ ] a codegen test per backend the hook runs, red on the parent: a type imported by two modules has one formatter
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-58 — `botopink run` and `cell check` compile `.erl` through the content-keyed `.beam` cache
+### B-58 — the code cache: one content-keyed cache for every target, the CLI's (decision 509 (1), (3))
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
-`botopink test` keeps a `.beam` cache (`test_cmd.zig` `precompileErlang`; `build.zig`'s `erlcheck` verdicts share its
-key): the SHA-256 of the `.erl` bytes, the options, the OTP release, the erts / `compiler` / `stdlib` versions and
-`ERL_COMPILER_OPTIONS`; a source with `-include` or `parse_transform` is never looked up; only an acceptance is stored.
-`botopink run` and `botopink cell check` do not read it, so each of a library's cells compiles its whole dependency
-closure again (emilia's 79 cells, emilia 79 times). The cache is the CLI's, parameterised on its command line — the
-gates only hand the flag on.
+Today a build keeps `cache/erlcheck` (verdicts) and `botopink test` a `.beam` cache (`test_cmd.zig`
+`precompileErlang`), the same key under two labels; `run` and `cell check` keep nothing, so each of a library's
+cells analyses and compiles its whole dependency closure again (emilia's 79 cells: emilia 79 times; the `alpha`
+cell's `run --target erlang` ~21 s, a hello world 0.3 s). 509 replaces both with one code cache for every target.
 
-- [ ] `run` and `cell check` (and `build`'s check) read and write the same cache under decision 225's cache root —
-      the library repository's root for a cell under `<lib>/conformance/modules/`, so its cells share it
-- [ ] `--cold` on `run`, `test` and `cell check` neither reads nor keeps a warm entry (it compiles every source; it
-      may write); the gates' `--cold` hands it on; no variable or other flag changes the cache's path (decision 67)
-- [ ] a test the hook runs: a second `cell check` of two cells over one dependency compiles that dependency once; a
-      changed `.erl` byte compiles again
+- [ ] a package's generated code stored per target under its Merkle key — the package's files by content, its
+      dependencies' code keys, the target, the compiler's fingerprint by backend partition (249) — an unchanged
+      package not analysed again; a measurement that a changed dependency, a changed file and a compiler source of
+      the target's backend each miss, and another backend's source hits
+- [ ] every target's toolchain step after the codegen under the key of its input bytes and the tool's version:
+      erlang `.erl` → `.beam` (`-include` / `parse_transform` never looked up), wasm's assembly and precompile;
+      commonJS, erlang, beam and wasm through the one mechanism; `cache/erlcheck` and `cache/beam` removed
+- [ ] `build`, `run`, `test` and `cell check` read it on every target; `--cold` on each reads nothing and writes what
+      it ran; the path fixed under 225's cache root (67) — a cell under `<lib>/conformance/modules/` shares its
+      library's; the gates hand `--cold` on
+- [ ] tests the hook runs, red on the parent: two cells over one dependency analyse and compile it once; each key
+      input changed misses; `--cold` reads nothing
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
-### B-59 — `botopink cell check` answers an unchanged cell from the result store
+### B-59 — the test cache: a test's or cell's pass per target, keyed by its dependency closure (decisions 509 (2), 510)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
-The result store (`lib-test-runner/src/result_store.zig`, decisions 229, 246, 249) answers a cell of `test-libs`
-from a stored pass when its key — the SHA-256 of everything the cell can read: the compiler by backend partition, the
-toolchain, the library universe by content, the cell — is equal. `botopink cell check`, which a library's gate and
-botopink-lang's `test-conformance` run, does not use it: every cell runs on every check, unchanged or not. The store
-is the CLI's, parameterised on its command line.
+The result store (`lib-test-runner/src/result_store.zig`, 229, 249) answers a `test-libs` cell from a stored pass
+under 246's key — the whole library universe, so one byte in any library re-runs every cell; `botopink test` and
+`botopink cell check` keep nothing. 510 amends 246: the key is the cell's dependency closure.
 
-- [ ] `botopink cell check` computes the same key per cell and target and answers an equal key from a stored pass;
-      only a pass is stored, and never when the key cannot be computed with certainty (`Global.unstorable`)
-- [ ] `--cold` runs every cell and writes the passes it ran; the line of a cell answered from the store says so;
-      the gates' `--cold` hands it on
-- [ ] a test the hook runs: an unchanged cell is answered from the store, a changed cell file or compiler source of
-      its backend runs it again
+- [ ] one test cache, the CLI's, for `test` and `cell check` on every target, replacing `cache/results/lib-test`
+      (the lib-test-runner reads the same); the key per 510: the cell's files and snapshots, its package's code key
+      (B-58), the target, the printing flags, the compiler and toolchain by backend partition
+- [ ] only a pass stored, never when a key cannot be computed with certainty; a line answered from it says so;
+      `--cold` runs every cell and writes what it ran; the gates hand it on
+- [ ] a test that reads outside its closure declares it in its manifest, entering its key (`onze-assets`' siblings
+      a row in front 162's language-gaps if the library must change); an undeclared read is the test's defect
+- [ ] tests the hook runs, red on the parent: unchanged → answered from the cache; a changed cell file, snapshot,
+      dependency or backend source → runs again; a library outside the closure or another backend's source → still
+      answered
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)

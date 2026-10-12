@@ -56,8 +56,8 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-55 — study: can two modules of a package import each other (whole-package, on-demand analysis, as Rust's crate / Zig's lazy analysis)? measured and reported; the acyclic rule holds until a decision · nothing
 - [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) · nothing
 - [ ] 144 B-57 — erlang and beam: an imported type's formatter modules emitted once, by the declaring module (emilia's `alpha` cell: 4106 files, ~680 copies per importer) · nothing
-- [ ] 144 B-58 — `botopink run` and `cell check` compile `.erl` through the content-keyed `.beam` cache, `--cold` on the CLI · after B-57
-- [ ] 144 B-59 — `botopink cell check` answers an unchanged cell from the result store, `--cold` on the CLI · nothing
+- [ ] 144 B-58 — the code cache: a package's code per target by a Merkle key, every target's toolchain step by its input bytes; `build`/`run`/`test`/`cell check` read it, `--cold` on the CLI (509) · nothing
+- [ ] 144 B-59 — the test cache: a test's or cell's pass per target, keyed by its dependency closure (509, 510 amending 246), `--cold` on the CLI · after B-58
 - [ ] 144 B-48 — a raise inside a decorator or comptime body located at the raising call (451 (3)) · nothing
 - [ ] 144 B-49 — std's `io/random` sidecar ships on commonJS with a module whose decorator uses it · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
