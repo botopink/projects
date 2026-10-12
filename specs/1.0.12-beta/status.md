@@ -44,6 +44,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-58 — the code cache, level A: a dependency's toolchain step by content for every target (`.erl` → `.beam`, wasm assembly), never the package under test; a member inherits its workspace's dependencies (512); `conformance/modules/` a workspace sharing its cells' dependencies and cache; `--cold` on the CLI (509) · after B-57
 - [ ] 144 B-59 — the result store removed: no test result is cached (510) · after B-58
 - [ ] 144 B-60 — the code cache, level B: a package's checked interface and code per target by its closure key, once the invariant "a package depends on its closure alone" is proved (509) · after B-58
+- [ ] 144 B-64 — a module's tests are a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`; privates through a reserved export (513) · after B-58
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-58, B-59, B-61
 
 ### 144 — after B-00: what B-00k found, and wasm memory
