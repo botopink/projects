@@ -25,6 +25,12 @@ what is the task's own: the step, its boxes, its worktree, its model.
 
 - The hook runs `scripts/gate.sh --no-conformance`; conformance is `feat`'s pipeline's (470, 477).
 - No `gate.sh --cold` inside a `--repo` / `--lang` worktree (meta `AGENTS.md` § Worktrees, 4b).
+- **Every heavy command runs under the machine's pool** (the pool is the machine's, so any checkout of the
+  meta repository serves — the main one for a `--repo` / `--lang` task):
+  `scripts/gate.sh exec <step> -- <command>…` for each `zig build`,
+  `zig build test`, `botopink cell check`, test binary run, and each library `git commit` (its hook runs
+  a gate). It waits for a free job and holds the lock only while the command executes (the maintainer,
+  2026-10-12). Never a gate or a build outside it.
 - Run only the tests your change reaches; a foreground `zig build test` gets at most 60 s, a longer
   run goes to the background.
 - Measure no time: timings belong to the final measurement step (163 s9).

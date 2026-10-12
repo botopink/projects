@@ -14,6 +14,12 @@
 #                                      checkout's compiler
 #   scripts/gate.sh status             what runs and what waits, each one's stage
 #                                      and time
+#   scripts/gate.sh exec [--jobs <N>] <name> -- <command>…
+#                                      one command (a `zig build`, a test run, a
+#                                      `cell check`, a library commit and its hook)
+#                                      under the pool: it waits for a free job,
+#                                      holds <N> (default half the capacity) while
+#                                      it runs, and gives them back when it ends
 #
 # <target> is a repository of this checkout (`repository/<name>/`, which has a
 # `scripts/gate.sh`), or a task: `task:<name>`, or a bare name that is no
@@ -41,10 +47,10 @@
 # are both dead is reaped. The path is fixed, not a flag or a variable a commit
 # sets (decision 67). botopink-lang's gate takes no total of jobs yet (it sizes
 # itself to the machine), so a run of it holds the whole pool. The commit hook's
-# gate (decision 470) runs outside the pool. A run with `--no-conformance` takes
-# no lock (the maintainer, 2026-10-12): each gate is admitted at once, with
-# `min(share, free)` jobs or one when none is free, and never waits; its lease
-# still shows in `status`. Only a run WITH conformance waits for a free job.
+# gate (decision 470) runs outside the pool; a thread that commits runs it
+# through `exec`. Every run waits for a free job, `--no-conformance` included
+# (the maintainer, 2026-10-12: the lock is held while a gate executes, never
+# skipped — unlocked runs piling up took the machine down).
 #
 # A repository's own `scripts/gate.sh` knows none of this (decision 469): this
 # script calls it with `--jobs <share>` (a library's) and nothing else.
@@ -276,18 +282,16 @@ poolUsed() {
     echo "$n"
 }
 
-# poolAcquire <id> <name> <want> <log> [nowait] — blocks until a job is free;
-# prints the jobs granted (min(want, free)) and leaves lease.<id>. With `nowait`
-# (a `--no-conformance` run) it never waits: no job free grants one.
+# poolAcquire <id> <name> <want> <log> — blocks until a job is free; prints the
+# jobs granted (min(want, free)) and leaves lease.<id>.
 poolAcquire() {
-    local id="$1" name="$2" want="$3" log="$4" nowait="${5:-}" cap used free grant waited=0
+    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0
     cap="$(poolCapacity)"
     while :; do
         poolLock
         poolReap
         used="$(poolUsed)"
         free=$(( cap - used ))
-        [ -z "$nowait" ] || [ "$free" -ge 1 ] || free=1
         if [ "$free" -ge 1 ]; then
             grant="$want"; [ "$grant" -le "$free" ] || grant="$free"
             [ "$grant" -le "$cap" ] || grant="$cap"
@@ -393,9 +397,8 @@ resolveTarget() {
 # runPlan <extra gate args…> — start every gate of the plan, each when the pool
 # admits it, wait for all, print the report, return 1 if any is red.
 runPlan() {
-    local extra=("$@") n="${#plan[@]}" cap share line i=0 pids=() names=() logs=() rcs_dir nowait="" a
+    local extra=("$@") n="${#plan[@]}" cap share line i=0 pids=() names=() logs=() rcs_dir
     [ "$n" -gt 0 ] || { echo "gate: nothing to run"; return 1; }
-    for a in "${extra[@]}"; do [ "$a" != "--no-conformance" ] || nowait=nowait; done
     cap="$(poolCapacity)"
     share=$(( cap / n )); [ "$share" -ge 1 ] || share=1
     rcs_dir="$(mktemp -d)"
@@ -408,7 +411,7 @@ runPlan() {
         id="$$.$i"
         (
             want="$share"; [ "$kind" != "lang" ] || want="$cap"
-            grant="$(poolAcquire "$id" "$name" "$want" "$log" "$nowait")"
+            grant="$(poolAcquire "$id" "$name" "$want" "$log")"
             trap 'poolRelease "$id"' EXIT
             start=$SECONDS
             args=("${extra[@]}")
@@ -463,6 +466,32 @@ cmdStatus() {
     [ "$any" -eq 1 ] || echo "(no gate running or waiting)"
 }
 
+# cmdExec [--jobs <N>] <name> -- <command>… — run one command under the pool:
+# wait for a free job, hold the jobs granted while it runs, return its status.
+cmdExec() {
+    local want="" name="" id grant rc=0 child
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --jobs) want="$2"; shift 2 ;;
+            --) shift; break ;;
+            *) [ -z "$name" ] || { echo "usage: scripts/gate.sh exec [--jobs <N>] <name> -- <command>…" >&2; return 1; }
+               name="$1"; shift ;;
+        esac
+    done
+    [ -n "$name" ] && [ "$#" -gt 0 ] || { echo "usage: scripts/gate.sh exec [--jobs <N>] <name> -- <command>…" >&2; return 1; }
+    [ -n "$want" ] || { want=$(( $(poolCapacity) / 2 )); [ "$want" -ge 1 ] || want=1; }
+    id="$$.exec"
+    grant="$(poolAcquire "$id" "$name" "$want" "")"
+    trap 'poolRelease "$id"' EXIT
+    "$@" &
+    child=$!
+    poolSetChild "$id" "$child"
+    wait "$child" || rc=$?
+    poolRelease "$id"
+    trap - EXIT
+    return "$rc"
+}
+
 # ── commands ─────────────────────────────────────────────────────────────────
 
 extra=()
@@ -512,6 +541,7 @@ case "$cmd" in
         done
         runPlan ${extra[@]+"${extra[@]}"} ;;
     status) cmdStatus ;;
-    -h|--help|help) sed -n '2,52p' "$0" ;;
-    *) echo "gate: unknown command '$cmd' (check, run, tasks, libs, status)" >&2; exit 1 ;;
+    exec) cmdExec "$@" ;;
+    -h|--help|help) sed -n '2,58p' "$0" ;;
+    *) echo "gate: unknown command '$cmd' (check, run, tasks, libs, status, exec)" >&2; exit 1 ;;
 esac
