@@ -525,6 +525,7 @@ number, which is **484**.
 - **Recommendation.** (a): one rule for a call in a body (128, unchanged by 388), no inference of intent from
   the use; (b) changes what every body's `val x = Card(…)` means.
 #### 139-a · A `bigint` where its type is no longer static: `unknown`, `is`, `comptime` (332, decision 8 §4.1)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** A `bigint`'s type stays static: it does not widen to `unknown` (`bigint-widened`), `is` neither tests for one nor tests a value holding one (`bigint-type-test`), and a `comptime` computing one is `comptime-bigint`; `@print`'s variadic `unknown` takes one and a union holding one stays legal. (b) or (c) may widen it later, when a program needs it.
 - **Measured.** No target tells a `bigint` from another integer at run time: erlang and beam hold one
   integer for both, commonJS's `i64` past 2^53 is a `BigInt` as a `bigint` is (319), wasm's `bigint` is
   the address of a block where an `i32` is a word. Decision 8 §4.1 tests a number by its range, so on the

@@ -524,6 +524,7 @@ número livre, que é **484**.
 - **Recomendação.** (a): uma regra para uma chamada num corpo (128, inalterada pela 388), sem inferir intenção a partir do
   uso; (b) muda o que o `val x = Card(…)` de todo corpo significa.
 #### 139-a · Um `bigint` onde seu tipo deixa de ser estático: `unknown`, `is`, `comptime` (332, decisão 8 §4.1)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** O tipo de um `bigint` fica estático: não alarga para `unknown` (`bigint-widened`), `is` nem testa por um nem testa um valor que contém um (`bigint-type-test`), e um `comptime` que calcula um é `comptime-bigint`; o `unknown` variádico do `@print` aceita um e uma união que contém um continua legal. (b) ou (c) podem alargá-lo depois, quando um programa precisar.
 - **Medido.** Nenhum alvo distingue um `bigint` de outro inteiro em tempo de execução: erlang e beam guardam um
   inteiro para os dois, o `i64` do commonJS além de 2^53 é um `BigInt` como um `bigint` é (319), o `bigint` do wasm é
   o endereço de um bloco onde um `i32` é uma palavra. A decisão 8 §4.1 testa um número por sua faixa, então no
