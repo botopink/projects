@@ -996,7 +996,7 @@ type's body is a parse error.
 - [x] erlang, beam, wasm: `recv?.m()` over an absent receiver — `s?.length()` raises `badarg` on erlang and
       beam and answers `8` on wasm (the backends' `?.` method lowering; a method continuing a `?.member` chain
       is right on the four)
-- [ ] erlang: `a ?? ns.f()` with a package-module namespace call as the default (std's own
+- [x] erlang: `a ?? ns.f()` with a package-module namespace call as the default (std's own
       `os.tmpdir()`) lowers as a method call on `ns`; std reads it into a `val` first
 
 #### B-20 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
@@ -1237,9 +1237,9 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       pattern; commonJS then fails `k is not defined` — refused at the arm, located — found by B-22
 - [ ] `Float.toString` differs across targets: `9007199254740992.0` against `9.007199254740992e15`, `1200.0` against
       `1.2e3` on commonJS — one text on every target (decision 441, with B-78) — found by B-22
-- [ ] wasm: calling an `f64`-taking function bound out of an optional (`if (h) { g -> g(3.0) }`,
+- [x] wasm: calling an `f64`-taking function bound out of an optional (`if (h) { g -> g(3.0) }`,
       `halver(true)?.(3.0)`) refused "would narrow this `f64` value to an `i32` slot" — found by B-20
-- [ ] wasm: `val n: ?i32 = if (c) 3 else null` reads as `0` when absent (`n ?? -1` prints `0`) — found by B-20
+- [x] wasm: `val n: ?i32 = if (c) 3 else null` reads as `0` when absent (`n ?? -1` prints `0`) — found by B-20
 
 #### Compiler residuals — met here, worked around in std, owned elsewhere (was `97-std-dedupe` compiler residuals)
 
