@@ -2119,7 +2119,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 - [x] proposed: a `test` declared in a `.bpp` header found by the test runner, a `conformance/test/` suite (with step 3)
       — pin `conformance/test/bpp_header_test`
-- [ ] `conformance/modules/bpp_unfold_props/out/` (built `.js`) is tracked: removed, and `out/` ignored
+- [x] `conformance/modules/bpp_unfold_props/out/` (built `.js`) is tracked: removed, and `out/` ignored — with `optional_enum_method_imported`'s
 
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
