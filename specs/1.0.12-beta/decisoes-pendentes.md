@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**103 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**104 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1481,6 +1481,21 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `std:` do 144 B-02.
+
+#### B-25-d · Uma biblioteca wasm pré-compilada: o seu manifesto, a sua ABI e a sua cola (decisão 333 (B); 144 B-25 passo 9)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a)** — o manifesto: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` no `botopink.json`, os exports nomeados pelos bindings; a ABI: um side module independente de posição (`wasm-ld --shared`, `env.memory` / `__memory_base`), a forma que o std-wasm já tem, então o `std_wasm_link.zig` o dobra no módulo único; a cola: uma `string` entra como ponteiro e tamanho depois do export `alloc(len)` da biblioteca, volta como um `i64` que empacota ponteiro e tamanho, liberada pelo seu export `free(ptr, len)`; a ausência numa resposta `?T` é um ponteiro `0`. Um módulo autônomo com memória própria não pode ser mesclado sem relocações ou multi-memória.
+- **Medido.** A 333 (B) fixa a ideia (uma biblioteca pré-compilada mesclada no módulo emitido), não o manifesto, a ABI nem a cola.
+- **Opções.**
+  (a) Um side module, exports `alloc` / `free`, uma resposta de string em `i64`.
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
+  ```
+  (b) Um módulo autônomo mantido à parte, importado na instanciação (sem mesclar).
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
+  ```
+- **Recomendação.** (a).
+- **Trava.** Os passos 9 e 11 do 144 B-25.
 
 ### 02-std-and-packaging
 

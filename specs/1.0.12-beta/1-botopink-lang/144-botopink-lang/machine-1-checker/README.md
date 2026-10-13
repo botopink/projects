@@ -1601,8 +1601,11 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
       counters) left unbound on wasm until `botopink test` runs wasm (335 (3)) · question B-25-a
 - [ ] `fetch`'s surface: `Request`, `HttpError` and the migration from `fetch(url)` · question B-25-b
 - [ ] log's two markers: a wasm adapter keeping one host value per name, `wasi:filesystem` · question B-25-c
-- [ ] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
-      needs (the lambda's answer type not read) — found by B-25
+- [x] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
+      needs (the lambda's answer type not read) — found by B-25 — bound from the argument's answer type (`generic_thunk_result_binds`)
+- [ ] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25
+- [ ] Step 9's manifest key, the library's ABI (a position-independent side module, as std-wasm, or a standalone module)
+      and the glue (strings in and out, freeing, `?T`'s null) · question B-25-d
 - [ ] erlang: DebugAllocator reports a leak in `erlang.zig`'s `closeTypeUnit` under `cell check` — found by B-25
 
 #### B-25 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)

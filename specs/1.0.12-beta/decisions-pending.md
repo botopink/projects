@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**103 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**104 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1482,6 +1482,21 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-02's `std:` row.
+
+#### B-25-d · A prebuilt wasm library: its manifest, its ABI and its glue (decision 333 (B); 144 B-25 step 9)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a)** — the manifest: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` in `botopink.json`, the exports named by the bindings; the ABI: a position-independent side module (`wasm-ld --shared`, `env.memory` / `__memory_base`), the shape std-wasm already has, so `std_wasm_link.zig` folds it into the one module; the glue: a `string` goes in as pointer and length after the library's `alloc(len)` export, comes back as an `i64` packing pointer and length, freed by its `free(ptr, len)` export; a `?T` answer's absence is a pointer of `0`. A standalone module with its own memory cannot be merged without relocations or multi-memory.
+- **Measured.** 333 (B) fixes the idea (a prebuilt library merged into the emitted module), not the manifest, the ABI or the glue.
+- **Options.**
+  (a) A side module, `alloc` / `free` exports, an `i64` string answer.
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
+  ```
+  (b) A standalone module kept separate, imported at instantiation (no merge).
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-25 steps 9 and 11.
 
 ### 02-std-and-packaging
 
