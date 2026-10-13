@@ -91,7 +91,7 @@ total = 0
 DRY = '--dry-run' in sys.argv
 sys.argv = [a for a in sys.argv if a != '--dry-run']
 CUR = ''
-md = sys.argv[1] == '--md'
+md = len(sys.argv) > 1 and sys.argv[1] == '--md'
 for f in sys.argv[2 if md else 1:]:
     s = open(f, encoding='utf-8').read()
     CUR = f

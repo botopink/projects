@@ -97,7 +97,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 01-compiler row — `conformance/test/expr_sugar.bp` red on `feat`: erlang does not compile it, beam fails two pipe assertions (found by B-29 step H's full run) · none
 - [ ] 01-checker row — importing std `failure` brings `HostErrorName`'s variant `Error` into scope as a bare name: `Error(x)` is then refused `callee-not-a-function` (found by B-05) · none
 - [ ] 01-checker row — `import {failure.HostError}` alone: reading `e.name` fails `unknown type 'HostErrorName'` (a field's type not reachable without its module) (found by B-05) · none
-- [ ] 144 B-28 step 2 — the `;` migration: emilia, jhonstart, onze landed; rakun's 4 sites after 150 s29; botopink-lang's own 64 before step 3 · 150 s29
+- [ ] 144 B-28 step 2 — the `;` migration: emilia, jhonstart, onze and botopink-lang at 0 on `feat`; rakun's 4 sites after 150 s29; then step 3 (the parser refuses it) · 150 s29
 - [ ] 05-wasm row — onze's blog (67 modules) does not build on wasm (found measuring B-30) · none
 - [ ] 14 row — `located_errors`' "a raise … is located at the call that raised" fails when run filtered beside other wat / wasm / comptime tests, alone and in the full suite it passes (shared state between tests) · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none

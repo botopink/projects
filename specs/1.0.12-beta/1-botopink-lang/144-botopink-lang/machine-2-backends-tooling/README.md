@@ -710,10 +710,9 @@ Each track runs it at the end of its last thread in that tree (07 for erika); ve
 script's docstring — changed lines differ only by a deleted `;`, `botopink format` before/after
 byte-identical, cells green before and after.
 
-- [ ] the library trees at 0 sites (step 1's command re-run, one file at a time — over several files the script raises
-      `IndexError`): emilia, jhonstart and onze at 0 (their commits on `feat`); the other thirteen libraries and
-      vscode-extension had none; rakun's 4 wait on 150 s29 (its hook red on `sql_build_test.bp:148`); botopink-lang's
-      own 64 (`libs/std`, `conformance/`, the rest) before step 3
+- [ ] every tree at 0 sites (step 1's command re-run): emilia, jhonstart, onze and botopink-lang (its 64, all in 45
+      `conformance/` cells) at 0 on `feat`; the other thirteen libraries and vscode-extension had none; rakun's 4 wait
+      on 150 s29 (its hook red on `sql_build_test.bp:148`)
 
 #### Step 3 — the parser refuses the `;` (was `16-formatter` s3)
 
