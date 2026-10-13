@@ -1105,14 +1105,29 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally but for `fn_value_float_argument`'s stale wasm departure (B-20's); eleven
+      cells added, red on the base; no `test` run completed since the base — each cancelled by the next push. Box 1
+      closes on the next completed green `test` run.
+
+| B-21 change | Cells |
+|---|---|
+| 408: a typed `fn` expression in a val / var / argument / return, a record field, an array | `fn_expr_typed_anywhere`, `fn_expr_typed_in_record_field` |
+| 408: written types checked against the position | `fn_expr_typed_mismatch`, `fn_expr_typed_field_mismatch` |
+| 408: a `decl.addMember` member; beam's closure | `decorator_member_fn_tail`, `lambda_last_statement_semicolon` |
+| 409: a named fn's, a method's, a `fn` expression's, a lambda's tail | `fn_tail_value`, `method_tail_value`, `fn_expr_tail_value`, `fn_expr_tail_semicolon` |
+| 409: a tail after a loop's return, an `if` chain, a `case` arm block, at comptime, under `@Result` | `fn_tail_after_loop_return`, `fn_tail_if_else_chain`, `fn_tail_case_arm_block`, `fn_tail_comptime`, `fn_tail_result` |
+| 409: the tail checked; a value in a body answering nothing; a void tail | `fn_tail_type_mismatch`, `fn_tail_in_void`, `method_tail_in_void`, `fn_tail_void_call` |
+| the formatter's tail | no cell: `format/tests/declarations.zig` |
+
+- [ ] the formatter adds `;` to a `case` arm block's last expression (409 covers function bodies) · question B-21-c
 
 ### B-22 — The backends' and the checker's residue rows
 
@@ -1606,6 +1621,11 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
 - [ ] log's two markers: a wasm adapter keeping one host value per name, `wasi:filesystem` · question B-25-c
 - [x] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
       needs (the lambda's answer type not read) — found by B-25 — bound from the argument's answer type (`generic_thunk_result_binds`)
+- [ ] beam: a tuple holding a function value fails `invalid_store` (`val p = #(g, 2); p.0("abc")`) — found by B-21's
+      Conformance step
+- [ ] wasm: in `#(g, h)`, calling a string-answering `h` prints a number — found by B-21's Conformance step
+- [ ] wasm: `op.run(5).toString()` on a function-typed field inside `for (ops) { op -> … }`: "cannot resolve the call
+      `toString/0`" — found by B-21's Conformance step
 - [ ] a type implementing a behavior imported from another module does not adopt the behavior's instance `default fn`s
       (`Sq(n: 3).twice()` is "'twice' is not declared in any behavior implemented for 'Sq'") — found by B-19
 - [ ] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25

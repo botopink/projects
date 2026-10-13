@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**106 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1256,8 +1256,8 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Blocks.** 144 B-21's lambda row.
 
 #### B-21-b · A method with no `->`: when is a non-`void` tail refused? (decisions 409, 06 C9; 144 B-21)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`, as built** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: as built. Changes: none.
-- **Measured.** Built as (a).
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: the checker reads the body's valued `return`s before the tail. Changes: a cell.
+- **Measured.** B-21's thread reported (a); its Conformance step measured `feat` refusing a non-`void` tail next to a valued `return` too, in a method and in a free fn — (b) as built.
 - **Options.**
   (a) Refused only without a valued `return`.
   ```bp
@@ -1528,6 +1528,21 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-19 step 7.
+
+#### B-21-c · Does the formatter print a `case` arm block's last expression as written? (decision 409; 144 B-21)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — as written, like a body's tail** — the printer adds and removes no `;` anywhere (409's formatter rule), an arm block included; one rule for every block.
+- **Measured.** The formatter adds `;` to a `case` arm block's last expression; 409's text covers function bodies.
+- **Options.**
+  (a) As written.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
+  ```
+  (b) `;` added in arms.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d; } }
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-21's arm row.
 
 ### 02-std-and-packaging
 

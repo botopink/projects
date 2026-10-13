@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1255,8 +1255,8 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Trava.** A linha do lambda do 144 B-21.
 
 #### B-21-b · Um método sem `->`: quando um tail não-`void` é recusado? (decisões 409, 06 C9; 144 B-21)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): só quando o método não tem `return` com valor, como construído** — um método sem `->` infere o retorno dos seus `return`s (06 C9); sem nenhum ele não responde nada e um tail não-`void` ali é recusado nele; com um `return` com valor, o tail é mais uma das suas respostas, tipado junto com elas. Viável: como construído. Muda: nada.
-- **Medido.** Construído como (a).
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): só quando o método não tem `return` com valor** — um método sem `->` infere o retorno dos seus `return`s (06 C9); sem nenhum ele não responde nada e um tail não-`void` ali é recusado nele; com um `return` com valor, o tail é mais uma das suas respostas, tipado junto com elas. Viável: o checker lê os `return`s com valor do corpo antes do tail. Muda: uma cell.
+- **Medido.** O thread do B-21 reportou (a); o seu passo Conformance mediu a `feat` recusando um tail não-`void` ao lado de um `return` com valor também, num método e numa fn livre — (b) como construído.
 - **Opções.**
   (a) Recusado só sem `return` com valor.
   ```bp
@@ -1527,6 +1527,21 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** O passo 7 do 144 B-19.
+
+#### B-21-c · O formatter imprime a última expressão do bloco de um braço de `case` como escrita? (decisão 409; 144 B-21)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — como escrita, como o tail de um corpo** — o printer não acrescenta nem remove `;` em lugar nenhum (a regra do formatter da 409), incluindo o bloco de um braço; uma regra para todo bloco.
+- **Medido.** O formatter acrescenta `;` à última expressão do bloco de um braço de `case`; o texto da 409 cobre corpos de função.
+- **Opções.**
+  (a) Como escrita.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
+  ```
+  (b) `;` acrescentado nos braços.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d; } }
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do braço do 144 B-21.
 
 ### 02-std-and-packaging
 
