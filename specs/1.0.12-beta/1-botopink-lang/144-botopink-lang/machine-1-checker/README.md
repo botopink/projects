@@ -1444,11 +1444,18 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
       `crossModule.pick`, every backend (erlang's imported-enum owner), the `.d.ts` and the comptime
       runtime (`block_eval.findType` by module); a dependency's shorthand stays in its package
       (`modules/two_packages_one_module_name`, four targets; from `08-bpp/119` step 1 box 4)
-- [ ] two aliased imports of two same-named **types** are legal (310): every backend qualifies a type by
+- [x] two aliased imports of two same-named **types** are legal (310): every backend qualifies a type by
       its module; `modules/import_two_types_one_name` becomes an accept cell on every target (until
       then the refusal is a `language-gaps.md` row) — its own work: a type's identity by module throughout the checker
       and the four backends, which name a type by its declared name alone today; whether a type of this
       module beside an aliased import of a same-named type counts is question B-23-a
+      — built: the checker keys an aliased type by its alias, erlang / beam / wasm follow, names unchanged with one type
+      per name; `import_two_types_one_name` accepted on four targets, one alias alone too; the two-packages row falls with
+      it. A local type beside an aliased import stays `import-name-collision` (question B-23-a; `decorator_member_type_same_name`
+      with it). Left:
+- [ ] a std type in the pair (`import {collections.Dict as D} from "std"` beside an aliased `Dict`) still refused
+- [ ] an imported function's signature renamed through a namespace call (`m.f()`), an imported template function and
+      decorator support, as it is for a plain import by name
 - [x] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
       `codegen/wat/host_binding.zig`'s `parse`, so a misspelt `op:` no wasm build reaches is refused
       (from `05-wasm` step 5)
