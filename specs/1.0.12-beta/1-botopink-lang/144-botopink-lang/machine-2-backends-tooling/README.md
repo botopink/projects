@@ -915,8 +915,7 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       fixture of their own, no check lost — `tsc-check.sh` and `format-check` still check `generic-loader-binding`
       while it is here
 - [ ] `generic-loader-binding` (three `from "erika"` forms — a library, not the language) moves to erika as a
-      consumer commit (rule 10), then `examples/` deleted · its wasm build: `.join("-")` on an erika `Query`'s
-      `toArray()` is `the wasm backend cannot resolve the call join/1` (a 144 row) — erika declares every target
+      consumer commit (rule 10), then `examples/` deleted; its tests pass on the four targets
 - [x] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
       (`"${5.0}"`, `1.0e21`, `1.0e-7` — commonJS departs), `trim` keeping a NBSP, the final sigma (commonJS `ς`),
       `NaN` / `Infinity` (erlang and beam abort), and an unseeded `random.float()` reached from a decorator body
