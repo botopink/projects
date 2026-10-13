@@ -849,7 +849,7 @@ decision 188, never in a wave with the rakun front owning the file.
 | jhonstart `routes.bp` | 1 | `pub fn <X>Params(route)` (the four registrations are done) | none — the page takes no parameter and reads `use params<P>()`, checked by `#[page]` over `Decl.hooks` | 293 (amends 236's `paramsOf`); held: `05-jhonstart/26` step 11 after `01-checker` step 23, and the segment walk inside it is `03-bundled-libs/102` step 3's while 102 is open |
 | validation `#[schema]` (`libs/validation/src/decorators.bp`) — `#[validated]` after 306 | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode` (no `schema` — `Schema<T>` is private, 306) | nothing — next; `decode` passes `parse<T>At` as a value (unbound variable on erlang, below), so wrap it in a lambda |
 
-- [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/`
+- [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/` — validation's sites migrated (private members, `T.parseAt` passed as a value); left: jhonstart's 1 (after B-17, `05-jhonstart/26` s11), rakun's 67 (after 318's deletions in 150: 04 s8, 13 s6, 15 s8)
       answers only `tests/language` cells about `@emit` itself
 
 #### Step 6 — remove module-level `@emit` (was `130-decorator-outputs` s6)
@@ -863,14 +863,15 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 
 #### Rows found during the migration (open, not 216's places) (was `130-decorator-outputs` rows)
 
-- [ ] a `behavior`'s associated `default fn` called through the behavior from another module
+- [x] a `behavior`'s associated `default fn` called through the behavior from another module
       (`Shape.unit()` with `import {shapes.Shape}`): unknown erlang module on erlang/beam, run-time
       error on commonJS, refusal on wasm — members do not travel with a behavior as with a type
       (holds `rakun-client`'s two sites)
-- [ ] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
+- [x] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
 - [ ] a member's / associated type's diagnostic is located past the file's last line (member source
       placed after the module's lines) and names `City__Columns`, not `City.Columns`
-- [ ] a decorator imported from another module whose body builds a record private to its module fails
+      — the type named by its owner's path landed (`assoc_type_named_by_owner_in_diagnostic`); the location · question B-19-a
+- [x] a decorator imported from another module whose body builds a record private to its module fails
       at the evaluator (`call to undefined function Entity/1`): `block_eval.typesReached` finds an imported
       decorator's types through the export registry only — string meta and typed meta alike (found by
       step 8; `01-checker` step 21 owns `block_eval.zig`)
@@ -879,6 +880,8 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 
 - [ ] `@TypeInfo.all(with: …, member: "make")` (256) names the member by reference — an interface's
       method — not by string; `Declared.value` stays `unknown` (254; `nat-a` answered by 281)
+- [ ] `member:`'s reference: its spelling, whether a catalogued type must `implement` the behavior, refused or
+      skipped at the query · question B-19-b
 
 #### Step 8 — typed meta, keyed by its type (decision 298) (was `130-decorator-outputs` s8)
 
@@ -950,7 +953,7 @@ if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
       evaluates (row 133)
 - [x] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
       import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
-- [ ] `run/template_reads_program_catalogue` (one and two built as `modules/template_reads_program_catalogue`, `modules/template_catalogue_two_themes`; none still answers an empty catalogue — 358's refusal open) — a package's template function counting the importing
+- [x] `run/template_reads_program_catalogue` (one and two built as `modules/template_reads_program_catalogue`, `modules/template_catalogue_two_themes`; none still answers an empty catalogue — 358's refusal open) — a package's template function counting the importing
       application's `#[theme]` declarations: none (refused, 358), one, two (refused at the second, naming both)
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
@@ -1603,6 +1606,8 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
 - [ ] log's two markers: a wasm adapter keeping one host value per name, `wasi:filesystem` · question B-25-c
 - [x] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
       needs (the lambda's answer type not read) — found by B-25 — bound from the argument's answer type (`generic_thunk_result_binds`)
+- [ ] a type implementing a behavior imported from another module does not adopt the behavior's instance `default fn`s
+      (`Sq(n: 3).twice()` is "'twice' is not declared in any behavior implemented for 'Sq'") — found by B-19
 - [ ] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25
 - [ ] Step 9's manifest key, the library's ABI (a position-independent side module, as std-wasm, or a standalone module)
       and the glue (strings in and out, freeing, `?T`'s null) · question B-25-d

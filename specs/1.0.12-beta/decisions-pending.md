@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**104 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**106 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1497,6 +1497,37 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-25 steps 9 and 11.
+
+#### B-19-a · Where is a type error inside a decorator's member or associated-type source located? (decisions 216, 281; 144 B-19)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the annotation that added it** (`#[maker]`), as `decorator-member-duplicate` is, with the decorator's `addMember` / `addType` call named in the message — the program's reader sees where the code came from; the decorator's author sees which call wrote it.
+- **Measured.** The diagnostic points past the file's last line (the member's source has no span in the program).
+- **Options.**
+  (a) At the annotation, the call named.
+  ```bp
+  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
+  ```
+  (b) At the `addMember` argument in the decorator's module.
+  ```bp
+  decl.addMember("make", fn() -> Self { … })   // error here, in the library
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-19's row 3.
+
+#### B-19-b · `@TypeInfo.all(member: …)` by reference: what is written, and what does a type that does not conform do? (decisions 256, 281; 144 B-19 step 7)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): `member: Factory.make`, a behavior's associated fn; a catalogued type must `implement Factory`, and one that does not is refused at the query, naming it** — a reference is checked, a string was not (281); conformance by declaration, not by a matching name.
+- **Measured.** `member: "make"` is a string today.
+- **Options.**
+  (a) Implementers only, refused otherwise.
+  ```bp
+  pub behavior Factory { fn make() -> Self; }
+  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
+  ```
+  (b) Any type declaring a matching associated fn; others skipped.
+  ```bp
+  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-19 step 7.
 
 ### 02-std-and-packaging
 

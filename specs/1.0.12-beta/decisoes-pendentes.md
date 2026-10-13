@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**104 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1496,6 +1496,37 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** Os passos 9 e 11 do 144 B-25.
+
+#### B-19-a · Onde fica um erro de tipo dentro do código de um membro ou tipo associado que um decorator escreveu? (decisões 216, 281; 144 B-19)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na anotação que o adicionou** (`#[maker]`), como `decorator-member-duplicate`, com a chamada `addMember` / `addType` do decorator nomeada na mensagem — quem lê o programa vê de onde o código veio; quem escreveu o decorator vê qual chamada o escreveu.
+- **Medido.** O diagnóstico aponta para depois da última linha do arquivo (o código do membro não tem span no programa).
+- **Opções.**
+  (a) Na anotação, a chamada nomeada.
+  ```bp
+  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
+  ```
+  (b) No argumento do `addMember` no módulo do decorator.
+  ```bp
+  decl.addMember("make", fn() -> Self { … })   // error here, in the library
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha 3 do 144 B-19.
+
+#### B-19-b · `@TypeInfo.all(member: …)` por referência: o que se escreve, e o que faz um tipo que não se conforma? (decisões 256, 281; 144 B-19 passo 7)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): `member: Factory.make`, uma fn associada de um behavior; um tipo catalogado precisa `implement Factory`, e um que não implementa é recusado na consulta, nomeado** — uma referência é checada, uma string não era (281); conformidade por declaração, não por um nome que bate.
+- **Medido.** `member: "make"` é uma string hoje.
+- **Opções.**
+  (a) Só quem implementa, recusado senão.
+  ```bp
+  pub behavior Factory { fn make() -> Self; }
+  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
+  ```
+  (b) Qualquer tipo que declare uma fn associada que bate; os outros pulados.
+  ```bp
+  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
+  ```
+- **Recomendação.** (a).
+- **Trava.** O passo 7 do 144 B-19.
 
 ### 02-std-and-packaging
 
