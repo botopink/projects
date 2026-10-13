@@ -1727,11 +1727,14 @@ file system, cannot keep a value across calls; the wasm backend does not lower a
       resolve it; `net_new_nested_template_call_inside_a_template_body`) — found by the template-name rows
 - [ ] a local named like a module function with comptime parameters has its arguments stripped by the name-based
       transform — found by the template-name rows
-- [ ] `feat` red: four codegen `use … is a plain call` snapshots quote std's `context.bp` comment changed with B-25's
+- [x] `feat` red: four codegen `use … is a plain call` snapshots quote std's `context.bp` comment changed with B-25's
       marker; `std_json_on_every_target`'s wasm departure no longer refuses — re-recorded / removed at once
-- [ ] wasm: a component body with a bare `try` runs its tail as an inner closure that stays a plain lambda, so a
+      — re-recorded; the two stale std/json wasm departures removed
+- [x] wasm: a component body with a bare `try` runs its tail as an inner closure that stays a plain lambda, so a
       host-pending task awaited in it traps — found by B-25
-- [ ] wasm: an `f64` / `i64` provided or rendered through the scope is refused (it does not fit one slot) — found by B-25
+      — the tail's closure a state machine when it awaits (`component_try_then_awaits_host_task`)
+- [x] wasm: an `f64` / `i64` provided or rendered through the scope is refused (it does not fit one slot) — found by B-25
+      — it crosses as its cell's address (`context_wide_number_through_scope`)
 - [ ] `fetch`'s `Request` / `Response` in the compiler's layout (393), with `wasi:http` (`io/http`, `02/97`
       step 17)
 - [x] `async_block_all_of` gains the wasm column (`.targets` widened) — waits on std's `async` bindings
@@ -1817,14 +1820,25 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (2020); B-25's red (the four snapshots) caught by `zig build test`; the table below.
+      Box 1 closes on the next completed green `test` run.
+
+| B-25 change | Cells |
+|---|---|
+| std's `async` on both wasm hosts | `std_async_on_every_target`, `async_block_all_of` |
+| a function-typed parameter binds type parameters from its argument | `generic_thunk_result_binds` |
+| components on wasm (504) | `component_awaits_host_task`, 33 component cells with wasm |
+| a `try` tail awaiting; a wide number through the scope | `component_try_then_awaits_host_task`, `context_wide_number_through_scope` |
+
+- [ ] proposed: a `?f64` / `?i64` through a context; `try … catch` then an await in a component; the gates under `browser`
 
 ### B-27 — Tooling, std residue, `.bpp` in the toolchain, `json` out of std
 
