@@ -1249,6 +1249,13 @@ saying two same-named methods in one module collide, and that this is the right 
 - [ ] the registration's name unique per declaration, not per method name — question B-81-a (how the decorator
       names the owner); the header and the test agree; rakun-data's test green on every target
 
+### 150 s30 — `rakun-cache`'s racing-readers test times out under the cold gate (from 144 B-23)
+
+**Repository:** rakun (`--repo rakun`) · **Model:** sonnet
+
+- [ ] "store: a write racing sixteen readers is never undone by a read" timed out under `test-libs` in a cold gate on
+      a loaded machine: measure it alone and under load; a test that depends on timing asserts an order, not a deadline
+
 ### 150 Conformance — the front's last step (decision 465)
 
 **Repository:** rakun (`--repo rakun`) · **Model:** opus

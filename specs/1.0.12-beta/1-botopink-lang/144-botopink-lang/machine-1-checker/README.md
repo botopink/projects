@@ -1477,6 +1477,8 @@ Numeric literals.
       literal half
 - [ ] a cold gate green over the literal's change — B-23's Conformance step runs it (`feat`'s pipeline with
       conformance)
+      — run on `feat` in the main checkout: green to `test-cli`, red at `test-libs` on `rakun-data`'s `#[query]` (B-81) and a
+      `rakun-cache` timing test (150 s30); closes when both are green
 
 #### Step 19 — a type application before a member (decision 255 (1)) — built (`6185db3c`, on feat through `49455602`) (was `01-checker` s19)
 
@@ -1549,14 +1551,26 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (1267 cells, every `test/` suite); no red B-23's; two pins (`import_two_types_one_name_unaliased`,
+      `own_type_beside_aliased_type_import`); seven `docs.md`. Box 1 closes on the next completed green `test` run.
+
+| B-23 change | Cells |
+|---|---|
+| a literal past its range on every target (319) | `wide_literal_past_js_safe_integer`, the `integer_literal_*` refusals |
+| a type application through a namespace | `type_application_through_namespace`, `type_application_through_namespace_mismatch` |
+| `@External.Wasm` read on every target | `external_wasm_op_type_on_every_target`, `external_wasm_adapter_signature_on_every_target`, `external_wasm_task_adapter_shape` |
+| a comptime body's file | `decorator_raise_names_body_file` |
+| 310 | `import_two_types_one_name`, `import_two_enums_one_name`, `import_same_type_name_two_packages_one_aliased`, `import_std_type_beside_aliased_type`, `import_two_types_one_name_reached_indirectly`; pins `import_two_types_one_name_unaliased`, `own_type_beside_aliased_type_import` |
+
+- [ ] proposed: a template body's raise naming its file (only `decorator_invocation.zig` pins it)
 
 ### B-24 — 319, 320, 332: numbers and strings exact everywhere
 
