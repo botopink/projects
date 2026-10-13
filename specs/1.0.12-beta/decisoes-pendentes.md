@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**114 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -984,6 +984,28 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   (c) Retirar os dois métodos de task que falha; `try await` e `case` leem uma task que falha.
 - **Recomendação.** (a) — a palavra-chave continua palavra-chave (67), o método mantém seu significado; quem chama em JS uma task genérica ou um componente é uma linha à parte, e a célula invertida passa a se chamar `task_failure_rejects`.
 - **Bloqueia.** 144 B-06 passo 2.
+
+#### B-28-a · A reformatação das bibliotecas reescreve mais que a regra da vírgula do C-12: pousar, ou registrar as reescritas como defeitos do formatador? (decisões 165, 166, 243, 345; 144 B-28 passo 4)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): pousar — a forma canônica do printer é a única forma escrita da linguagem, e o passo 4 é a reformatação para ela**; o critério "idêntico em tokens" é lido como "o mesmo programa" (cada reescrita abaixo mantém o significado), as células e testes de cada biblioteca verdes depois, um commit por biblioteca. Viável: toda cópia é idempotente.
+- **Medido.** Com o compilador da checkout principal, nove bibliotecas não precisam de mudança; o único trecho do validation (uma sequência binária escrita aberta sem vírgula final, juntada) é idêntico em tokens e pousou. emilia (101 arquivos, 549 trechos), jhonstart (43, 103) e onze (61, 355) são idempotentes mas não idênticos em tokens: além da regra da vírgula o printer reescreve (1) um `if (c) stmt;` sem chaves em duas linhas, (2) `if (c) { "1" } else { "0" }` sem as chaves, (3) `fn(code: i32) -> void` sem `-> void`, (4) um import aninhado `{state: {A, b}}` como `{state.A, state.b}`, (5) um `"""x"""` de uma linha como `"x"` e um `"…"` com uma quebra de linha crua como `"""…"""`, (6) uma sequência longa de `+` um operando por linha dentro de argumentos de chamada, (7) `import { A, B }` como `import {A, B}`.
+- **Opções.**
+  (a) Pousar as três reformatações como estão, rodando antes as células e testes de cada biblioteca.
+  (b) Cada reescrita (1)–(7) é um defeito do formatador a menos que uma decisão a nomeie; o printer mantém essas formas como escritas, e o passo 4 roda de novo.
+  (c) Pousar só os trechos da regra da vírgula; as outras reescritas esperam suas próprias decisões.
+- **Recomendação.** (a) — uma forma escrita por programa é para o que serve o `botopink format` (C-12), e nenhuma das sete muda o que o programa faz.
+- **Bloqueia.** 144 B-28 passo 4 (emilia, jhonstart, onze); o rakun espera o 150 s30.
+
+#### B-53-a · Um buraco de template escreve o texto do `@print` para todo valor, ou só para enums? (B-53; decisão 430)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): todo valor — um buraco escreve o texto que o `@print` escreve para ele** (um record, um array, `null`, um enum), nos quatro alvos; uma string escreve a si mesma.
+- **Medido.** Um valor de enum num buraco agora escreve o texto do `@print` nos quatro alvos (`enum_value_template_hole`). A referência declara a regra do buraco só como "escrito como texto" (`docs.md` § Literals) ao lado de § What `@print` writes. No erlang e no beam a mesma mudança faz todo buraco que não é string escrever o texto do `@print` (`[1, 2]`, `null`, um record); o commonJS e o wasm ainda escrevem um array ou um record do seu jeito antigo (`"${[A, B]}"` é `Target.Top,Target.Bottom` no commonJS, um endereço no wasm).
+- **Opções.**
+  (a) Todo valor: o commonJS e o wasm seguem o erlang e o beam.
+  ```bp
+  @print("${[1, 2]}");         // [1, 2] on the four targets
+  ```
+  (b) Só enums; um record ou um array num buraco é recusado no buraco (nenhum texto é prometido).
+- **Recomendação.** (a) — um texto por valor (434 (5), a regra do B-53), o buraco e o `@print` concordando em todo lugar.
+- **Bloqueia.** Uma linha da 144 (commonJS e wasm escrevem um array ou um record num buraco do seu jeito).
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.

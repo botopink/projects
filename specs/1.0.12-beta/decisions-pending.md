@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**114 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -984,6 +984,28 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   (c) Drop the two failing-task methods; `try await` and `case` read a failing task.
 - **Recommendation.** (a) — the keyword stays a keyword (67), the method keeps its meaning; a JS caller of a generic task or a component is a separate row, and the inverted cell takes the name `task_failure_rejects`.
 - **Blocks.** 144 B-06 step 2.
+
+#### B-28-a · The library reformat rewrites more than C-12's comma rule: land it, or file the rewrites as formatter defects? (decisions 165, 166, 243, 345; 144 B-28 step 4)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): land it — the printer's canonical form is the language's one written form, and step 4 is the reformat to it**; the criterion "token-identical" is read as "the same program" (each rewrite below keeps the meaning), every library's cells and tests green after, one commit per library. Viable: every copy is idempotent.
+- **Measured.** With the main checkout's compiler, nine libraries need no change; validation's one hunk (a binary run written open without a trailing comma joined) is token-identical and landed. emilia (101 files, 549 hunks), jhonstart (43, 103) and onze (61, 355) are idempotent but not token-identical: besides the comma rule the printer rewrites (1) a brace-less `if (c) stmt;` onto two lines, (2) `if (c) { "1" } else { "0" }` without its braces, (3) `fn(code: i32) -> void` without `-> void`, (4) a nested import `{state: {A, b}}` as `{state.A, state.b}`, (5) a one-line `"""x"""` as `"x"` and a `"…"` holding a raw newline as `"""…"""`, (6) a long `+` run one operand per line inside call arguments, (7) `import { A, B }` as `import {A, B}`.
+- **Options.**
+  (a) Land the three reformats as they are, each library's cells and tests run first.
+  (b) Each rewrite (1)–(7) is a formatter defect unless a decision names it; the printer keeps those forms as written, then step 4 runs again.
+  (c) Land the comma rule's hunks alone; the other rewrites wait on their own decisions.
+- **Recommendation.** (a) — one written form per program is what `botopink format` is for (C-12), and none of the seven changes what the program does.
+- **Blocks.** 144 B-28 step 4 (emilia, jhonstart, onze); rakun waits on 150 s30.
+
+#### B-53-a · A template hole writes `@print`'s text for every value, or only for enums? (B-53; decision 430)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): every value — a hole writes the text `@print` writes for it** (a record, an array, `null`, an enum), on the four targets; a string writes itself.
+- **Measured.** An enum value in a hole now writes `@print`'s text on the four targets (`enum_value_template_hole`). The reference states the hole rule only as "written out as text" (`docs.md` § Literals) beside § What `@print` writes. On erlang and beam the same change makes every non-string hole write `@print`'s text (`[1, 2]`, `null`, a record); commonJS and wasm still write an array or a record their old way (`"${[A, B]}"` is `Target.Top,Target.Bottom` on commonJS, an address on wasm).
+- **Options.**
+  (a) Every value: commonJS and wasm follow erlang and beam.
+  ```bp
+  @print("${[1, 2]}");         // [1, 2] on the four targets
+  ```
+  (b) Enums only; a record or an array in a hole is refused at the hole (no text is promised).
+- **Recommendation.** (a) — one text per value (434 (5), B-53's rule), the hole and `@print` agreeing everywhere.
+- **Blocks.** A 144 row (commonJS and wasm write an array or a record in a hole their own way).
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.
