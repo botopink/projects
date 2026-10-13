@@ -888,11 +888,14 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       refuses a cell without one, the migration writes one per cell (its `name`, its `"targets"` from today's
       `.targets` sidecar, its path dependencies); an answer that names the package (an erlang atom, a host template)
       measured and re-read cell by cell, never bulk-accepted
-- [ ] `reject/` cells checked in process by a compiler-core test that reads `tests/language/reject/*.bp` and its
-      `.expect` (message line and `line:col`), no `botopink` process per cell
-- [ ] single-file `run/` cells compiled in process and run on the four targets through the snapshot executors
-      (`executeJavaScript`, `executeErlang`, `executeBeamAsm`, `executeWat`) and their runtime cache, each `.out`
-      byte for byte; a `.targets` narrowing still audited against the host-binding refusal
+- [x] no `botopink` process per cell (464 (5), 475 (2): one `.snap` reader, `botopink cell check`): `cell check`
+      takes several paths and checks many cells in one process, an arena per cell; `--jobs N` hands the cells out in
+      shares, a share whose process dies re-checked cell by cell; `conformance/run.sh` gives its pool the same shares.
+      Every claim of today checked the same way — a refusal's message, `line:col` and label (485), output, `abort`,
+      `stderr`, `no-final-newline`, both wasm hosts, every narrowing audit; 1085 cells before and after
+- [x] a cell's program stays a process of its runtime (`node`, `erl`, `wasmtime`): the snapshot executors answer from
+      a stored result (510 forbids it), merge stdout and stderr, and run one module rather than a cell's project —
+      written in `conformance/AGENTS.md` § What runs in process
 - [x] the language half of `test-cli` becomes cells (decision 457's shape): `backend_exec.sh`'s programs (numeric —
       `55` on the four targets —, records with enum / `case` / lambda, the multi-folder `mod` / `pub mod` package)
       and `mutual_recursion.sh`'s forward reference and `isEven` ↔ `isOdd`; `test_tooling.sh`'s semantics of

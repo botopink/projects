@@ -30,7 +30,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 
 In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (470) have landed (Done).
 
-- [ ] 144 B-29 step H — what the move left: the in-process runs of `reject/` and single-file `run/` cells; `generic-loader-binding` into erika after the 144 front · nothing
+- [ ] 144 B-29 step H — the in-process boxes landed (`cell check` many cells per process, in shares; programs stay under their runtimes, 510); left: `examples/` into cells, the B-00k per-target cells, the step's Conformance; `generic-loader-binding` into erika · nothing
 - [ ] 163 s8 last boxes — a green `test.yml` run on `feat` for every library (dependency closure fixed; jhonstart's cells green on commonJS, erlang and beam, wasm waits on B-38); the workflow's dependency step held to one text by `gate.sh check` · nothing
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
 - [ ] 163 s12 — `scripts/land-check.py`, the coordinator's check before a landing (484) · nothing
@@ -94,6 +94,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 01-compiler row — an enum value interpolated (`"${t}"`) differs on every target: `[object Object]` on commonJS, the variant atom (`language_tests@main@@Target__v__top`) on erlang and beam, the ordinal on wasm · none
 - [ ] 02-erlang · 04-js row — a leading-dot variant (written, or a field default) of an enum the consumer does not import (`Anchor(href: "/y", target: .Bottom)` with only `Anchor` imported): commonJS `ReferenceError: Target is not defined`, erlang `variable 'Target' is unbound`; beam and wasm right — the import closure · batch 17 (module identity, every backend's import closure)
 - [ ] 01-compiler row — an `l`-suffixed literal inside a `case` arm keeps its suffix in the generated code: `Ok(s) -> @print(s.mtime > 1577836800000l)` is a JS `SyntaxError`, an `erlc` syntax error and `illegal integer` on beam (the same literal in a plain function is fine) · none
+- [ ] 01-compiler row — `conformance/test/expr_sugar.bp` red on `feat`: erlang does not compile it, beam fails two pipe assertions (found by B-29 step H's full run) · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
