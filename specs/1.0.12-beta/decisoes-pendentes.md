@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**110 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**113 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1589,6 +1589,51 @@ fn label() -> string { … }   // moved to module level
   ```
 - **Recomendação.** (a).
 - **Trava.** O 97 s6 do 144 B-27.
+
+#### B-17-e · Um raise ao dobrar uma expressão no build: sempre um erro de build? (decisão 380 (2); 144 B-17)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim, como a 380 (2) escreve — depois que as primitivas do runtime de comptime responderem como os targets** (essa linha antes); até lá a dobra fica limitada ao que o runtime responde certo, para nenhuma resposta errada virar erro de build.
+- **Medido.** Como construído só erros aritméticos (badarith) são erros de build; qualquer outro raise deixa o hole para renderizar.
+- **Opções.**
+  (a) Todo raise um erro de build, depois da linha do runtime.
+  ```bp
+  val h = "${parse("x")}";   // build error: the raise named
+  ```
+  (b) Só erros aritméticos.
+  ```bp
+  val h = "${parse("x")}";   // left to run
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-f · Qual função `Any` a 380 dobra no build? (decisões 376, 380; 144 B-17)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — uma função `Any` que não escreve `@panic` / `@todo` / `throw`, nem `@print`, nem `var` de módulo, nem chamada por valor de função, nem método de tipo declarado; as suas chamadas por outras funções assim também dobram.
+- **Medido.** Construído como (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
+- **Opções.**
+  (a) Como construído.
+  ```bp
+  fn shout(s: string) -> string { s.toUpper() }   // folded
+  ```
+  (b) Toda função `Any`.
+  ```bp
+  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-g · Onde uma leitura de contexto encontra um default declarado num módulo que ela nem importa nem alcança pelo seu tipo? (decisões 378, 379; 144 B-17)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): no próprio módulo do tipo ou num módulo já analisado; senão recusada na leitura, nomeando o tipo** — um default é encontrado onde o programa o vê, nunca por uma busca no programa inteiro.
+- **Medido.** Não construído; o passo 6 espera por isso.
+- **Opções.**
+  (a) O módulo do tipo ou um analisado, senão recusada.
+  ```bp
+  use context<Theme>();   // refused: no default for Theme visible here
+  ```
+  (b) Qualquer módulo do programa.
+  ```bp
+  use context<Theme>();   // the default found in any module
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
 
 ### 02-std-and-packaging
 

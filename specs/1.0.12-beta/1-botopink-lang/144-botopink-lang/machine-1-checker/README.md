@@ -594,7 +594,7 @@ Both open boxes wait on `01-checker` step 36 (every function's stage, not built)
 is the checker's answer. `padAll(2)` also reads styled's context (`use context(StyledContext)`), which
 no `comptime` provides — question `14s8-e`.
 
-- [ ] a call of an `Any` function (376) whose arguments are known at build is known at build and computed
+- [x] a call of an `Any` function (376) whose arguments are known at build is known at build and computed
       by the comptime runtime — in a hole (`styled "${padAll(2)}"`, `padAll(ESPACO)`) and in a `val`'s
       initializer; a raise refused at the hole (14s8-c); `padAll(n)` with `n` a parameter stays at render —
       `run/hole_any_call_at_build`, `reject/hole_any_call_raises`
@@ -602,6 +602,7 @@ no `comptime` provides — question `14s8-e`.
       a body's `val raio = ESPACO * 2 + 4;` emitted as `12`; no step or time budget — a raise an error at the
       expression (`reject/fold_raises_at_build`); `@panic` / `throw` computed only under a written `comptime`
       (`run/fold_keeps_dead_panic`)
+      — built and measured, not landed: it moves ~26 snapshots, breaks `component_call_*` and `context_sheet_registers`, and the comptime runtime answers some primitives wrongly (`1000.toI64()` raises `integer_overflow`) — after that row, questions B-17-e, B-17-f
 
 #### Step 12 — a synchronous component is a plain `function` (decision 375; after `01-checker` step 23's `HookNode.async`) (was `04-js` s12)
 
@@ -617,11 +618,13 @@ async function Post(map) { … Card(map, "x") … await Comments(map) … }
       `await`, written or not; a call the checker cannot follow keeps the `await` — landed for a top-level function (`Emitter.fnShape`, `SyncMarks` from `OkData.sync_fns` /
       `sync_calls`, `useHookExpr`, the `.await_` arm); a method, a lambda and a `default fn` have no node and stay
       `async` (`04s12-a`)
+      — methods done (`component_method_sync`: marked by their own body, a synchronous one an arrow called with no `await`); lambdas already were; `default fn` and enum methods left, and 04s12-a's redesign (type components, props as one record)
 - [ ] the TypeScript typedef answers the value, not a `Promise`, for a synchronous one; `tsc-check.sh` green —
       built for a top-level function (`typescript.zig` `fnReturnType`)
 - [ ] `run/component_sync_plain_function` (the emitted module holds `function Card(` and `async function
       Post(`) and every `run/context_*` / jhonstart and emilia cell green on commonJS; erlang, beam and wasm
       output unchanged
+      — jhonstart's gate green with conformance; emilia's four beam cells (OTP "implementation limit") and rakun's `rakun-data` test and two workspace cells red the same on the compiler before B-17
 
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
@@ -712,6 +715,14 @@ fn Button() -> @Component<Element> {
       `run/use_conditional_argument` (`use provide(Ctx, if (c) a else b)` accepted)
 - [x] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
       `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
+
+- [ ] the comptime runtime's primitives answer as the targets do (`1000.toI64()` raises `integer_overflow` at build) —
+      found by B-17
+- [ ] emilia: four beam cells fail with OTP's "implementation limit"; rakun: two workspace cells red — older than B-17,
+      found by its library gate run
+- [ ] a raise other than an arithmetic error while folding: a build error (380 (2)) or the hole left to render · question B-17-e
+- [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
+- [ ] where a context read finds a default declared in a module it neither imports nor reaches through its type · question B-17-g
 
 #### B-17 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

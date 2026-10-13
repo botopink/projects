@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**110 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**113 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1590,6 +1590,51 @@ fn label() -> string { … }   // moved to module level
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-27's 97 s6.
+
+#### B-17-e · A raise while folding an expression at build: always a build error? (decision 380 (2); 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes, as 380 (2) writes — once the comptime runtime's primitives answer as the targets do** (that row first); until then folding stays limited to what the runtime answers right, so no wrong answer becomes a build error.
+- **Measured.** As built only arithmetic errors (badarith) are build errors; any other raise leaves the hole to render.
+- **Options.**
+  (a) Every raise a build error, after the runtime row.
+  ```bp
+  val h = "${parse("x")}";   // build error: the raise named
+  ```
+  (b) Arithmetic errors only.
+  ```bp
+  val h = "${parse("x")}";   // left to run
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-f · Which `Any` function does 380 fold at build? (decisions 376, 380; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — an `Any` function that writes no `@panic` / `@todo` / `throw`, no `@print`, no module `var`, no function-value call and no method of a declared type; its calls through other such functions fold too.
+- **Measured.** Built as (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
+- **Options.**
+  (a) As built.
+  ```bp
+  fn shout(s: string) -> string { s.toUpper() }   // folded
+  ```
+  (b) Every `Any` function.
+  ```bp
+  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-g · Where does a context read find a default declared in a module it neither imports nor reaches through its type? (decisions 378, 379; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): in the type's own module or a module already analysed; otherwise refused at the read, naming the type** — a default is found where the program can see it, never by a whole-program search.
+- **Measured.** Not built; Step 6 waits on it.
+- **Options.**
+  (a) The type's module or one analysed, else refused.
+  ```bp
+  use context<Theme>();   // refused: no default for Theme visible here
+  ```
+  (b) Any module of the program.
+  ```bp
+  use context<Theme>();   // the default found in any module
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
 
 ### 02-std-and-packaging
 
