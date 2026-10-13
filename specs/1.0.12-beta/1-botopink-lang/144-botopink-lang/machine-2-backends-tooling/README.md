@@ -915,12 +915,19 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
+
+| Behaviour (decision) | Test |
+|---|---|
+| one job budget split 50 / 30 / 10 %, at least 1 each | `cli_contract.sh` § the gate (`pool_share`) |
+| `zig build test` beside the ReleaseSafe build, a red stopping the gate | read from `gate.sh` — no cheap test runs a gate in the hook |
+| the step gate on a `front/*` branch, the full gate elsewhere (460) | `cli_contract.sh` (`gate-mode.sh`) |
+| what a step reaches through the backend partition (249) | `cli_contract.sh` § the gate, seven cases |
 
 #### Step H — `tests/language` cells run in process where no CLI path is under test (after step G)
 
@@ -966,9 +973,8 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
 - [x] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
       (`"${5.0}"`, `1.0e21`, `1.0e-7` — commonJS departs), `trim` keeping a NBSP, the final sigma (commonJS `ς`),
       `NaN` / `Infinity` (erlang and beam abort), and an unseeded `random.float()` reached from a decorator body
-- [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
-      manifest, module-loading and library-resolution path; the runner's `--self-test` unchanged
-
+- [x] `test/` suites stay on the CLI (`botopink test --json`), the runner's `--self-test` unchanged; `modules/` projects
+      are cells checked in process by `cell check`
 #### B-29 step H Conformance (decisions 459, 474, 477, 478, 479, 480) — the step's last box group
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
@@ -980,14 +986,23 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
 - [ ] what the move left: the decorator `random.float()` cell once B-46 lands; the reds B-43 and B-44 found
       (`generic-loader-binding` is erika's cell `conformance/modules/generic_loader_binding`)
+
+| Behaviour (decision) | Test |
+|---|---|
+| `conformance/` in 457's shape | every cell, `cell check`; the codemod's audit |
+| `cell new` / `cell check` (464), a manifest per cell (475 (1)), narrowings audited | `cli_contract.sh` § botopink cell |
+| many cells in one process, in shares (464 (5), 475 (2)) | `cli_contract.sh` (same bytes for any `--jobs`), `cell.zig` unit tests |
+| a share whose process dies is re-checked cell by cell | `cell.zig` unit test of its input only — a row |
+| the language half of `test-cli` and `examples/` as cells | `tail_recursive_sum`, `record_enum_case_lambda`, `mutual_recursion_forward_reference`, `assert_message_aborts`, `test/assert_and_try.bp`, `hello`, `modules`, `yamlconf`, `yamlconf_unknown_label`, `test/stdlib-tour`; erika's `generic_loader_binding` |
+| B-00k's per-target answers | `float_text_at_run_time`, `string_trim_keeps_nbsp`, `string_lower_final_sigma`, `float_nan_infinity_words`, `decorator_random_float_unseeded` |
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
@@ -1019,12 +1034,18 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
+
+| Behaviour (decision) | Test |
+|---|---|
+| each reference names a cell or a suite (461) | `check-docs.sh` and its self-test (`zig build test-docs`) |
+| a cell the reference names has a `docs.md` quoting it (462) | `check-docs.sh`'s new rule and self-test case |
+| `gate.sh --no-conformance` is the hook's gate; `test.yml` runs it with conformance (470, 477) | read from `runner-standalone.sh`; the pipeline (box 1) |
 
 #### Step J — botopink-lang's gate drops the lock and takes a total of jobs (decisions 468, 469)
 
@@ -1050,12 +1071,19 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the step's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
+
+| Behaviour (decision) | Test |
+|---|---|
+| one total of jobs, `--jobs <N>` positive (468, 469) | `cli_contract.sh` § the gate (`--jobs 0`, `--jobs=many`, a bare `--jobs`) |
+| the total split among the stages | `pool_share` |
+| no gate lock (508) | read from `gate.sh` |
+| a library's `test-out` per run, removed after | `cli_contract.sh`, `test_tooling.sh`, `runner.zig` |
 
 #### Step 3 — the windows row is hard or absent (decision 158) (was `114-gate-docs-and-ci` s3)
 
