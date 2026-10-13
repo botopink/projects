@@ -10,6 +10,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
 
+- **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
 - **Parte 1** — o que bloqueia a frente 144 (`repository/botopink-lang`, decisão 433: os passos abertos das antigas trilhas
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), por antiga trilha, depois as
   escolhas de implementação dessas trilhas que aguardam confirmação.
@@ -21,6 +22,842 @@ A página em português (`decisoes-pendentes.md`) é a tradução direta desta p
 número livre, que é **518**.
 
 ---
+
+## Máquina 1 — prioridade máxima (frente 144, `machine-1-checker/`)
+
+As perguntas que os passos da máquina 1 esperam (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, o grupo do
+modelo de módulos), respondidas antes de toda outra parte desta página; na ordem dos passos que travam.
+
+#### B-02-c · `"std:…"` escrito em `@External.Node` / `@External.Erlang`: código de host, ou recusado como os outros prefixos? (decisões 305, 481; 144 B-02)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusado em todo target, nomeando a forma rotulada** — o `conformance/docs.md` § Host bindings já diz que as quatro strings com prefixo são recusadas no argumento em todo target; uma string que se lê como cell e roda como código de host é a ambiguidade que a 305 removeu. Muda: `checkExternalCells` recusa `"std:"` fora do wasm também; uma cell.
+- **Medido.** `checkExternalCells` recusa `"std:…"` só em `@External.Wasm`; no Node e no Erlang é código de host ("`std:` was only ever a wasm cell").
+- **Opções.**
+  (a) Recusado em todo lugar.
+  ```bp
+  #[@External.Node("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
+  ```
+  (b) Código de host fora do wasm, o texto corrigido.
+  ```bp
+  #[@External.Node("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `std:` do 144 B-02.
+
+#### B-10-a · `Field` reflete o default de um campo: como se chama o membro, sendo `default` uma palavra reservada? (decisões 280, 308; 144 B-10 G1)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `defaultValue: ?@Expr<unknown>`** — o default como a expressão escrita, `null` quando não há; `default` é palavra reservada e nenhum campo recebe o nome de uma. Um `@Expr` guarda o código do default, nunca um valor calculado no build (281).
+- **Medido.** `Field` não tem membro de default; o marcador do validation lê defaults à mão. Um campo chamado `default` é erro de parse.
+- **Opções.**
+  (a) `defaultValue: ?@Expr<unknown>`.
+  ```bp
+  for (f in decl.fields) { if (f.defaultValue != null) … }
+  ```
+  (b) Só `hasDefault: bool`.
+  ```bp
+  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-b · `Decl.variants`: o que uma entrada carrega, incluindo uma seção? (decisões 268, 298; 144 B-10 G1)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — uma variante com payload lista seus campos como `decl.fields`; uma seção não é entrada, suas variantes carregam o nome da seção. Uma entrada por variante construível.
+- **Medido.** `Decl.variants` carrega só nomes, com as seções listadas entre eles.
+- **Opções.**
+  (a) Entradas tipadas, seções como campo.
+  ```bp
+  decl.variants[0].fields[0].name   // "amount"
+  ```
+  (b) Como hoje: nomes.
+  ```bp
+  decl.variants[0]   // "Paid" — a name, sections among them
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-c · `clock.formatIso8601`: qual texto é a resposta única? (decisão 497; 144 B-10 G1)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sempre milissegundos, `.sssZ`** — `2026-10-12T20:31:02.000Z` em todo target; uma largura fixa ordena como texto e é lida de volta por uma regra só.
+- **Medido.** o commonJS responde sempre `.sssZ` (o `toISOString` do node); o erlang nunca escreve milissegundos.
+- **Opções.**
+  (a) Sempre `.sssZ`.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
+  ```
+  (b) Milissegundos só quando não são zero.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-d · Uma variante sem qualificador em posição de expressão (`Two(t)`): recusada ou gerada? (144 B-10 G2)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusada na chamada, localizada, nomeando `.Two(t)` ou `E.Two(t)`** — o `docs.md` já diz que não é gerada; o checker aceitar o que nenhum backend emite é o defeito. Uma grafia: a qualificada ou a com ponto.
+- **Medido.** `Two(t)` passa no checker e falha no commonJS, erlang e beam; o `docs.md` diz que não é gerada.
+- **Opções.**
+  (a) Recusada.
+  ```bp
+  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
+  ```
+  (b) Gerada em todo target.
+  ```bp
+  val m = Two(t);   // a Mode, on every target
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-e · Como um alias de tipo de `@Component<Styled>` implementa um behavior? (144 B-10 G2)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não implementa — um alias é o seu alvo**: `Styleable` é implementado por `Styled`, e `@Component<Styled>` chega a ele por `R`; um alias não declara nada (um segundo nome, não um tipo). O marcador do styled é reescrito sobre a implementação de `Styled`.
+- **Medido.** `pub val StyledView = @Component<Styled>` não aceita `implement`; não existe grafia.
+- **Opções.**
+  (a) Um alias com `implement`.
+  ```bp
+  pub val StyledView = @Component<Styled> implement Styleable;
+  ```
+  (b) Só o tipo alvo implementa.
+  ```bp
+  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-f · Como um decorator lê se o `R` de um retorno `@Component<R>` implementa `@Renderable`? (decisões 268, 280; 144 B-10 G3)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): pelo `@typeInfo` do retorno declarado** — `@typeInfo(decl.returnType).implements(@Renderable)`; `@Decl` continua sendo o handle de uma declaração e perguntas de tipo passam por `@typeInfo`, a única reflexão de um tipo. Viável: `decl.returnType` como valor de tipo (hoje um nome) e `TypeInfo.implements(B)`. Muda: dois membros; o marcador do jhonstart em `client.bp` sai.
+- **Medido.** Nenhuma reflexão responde: `decl.returnType` é o nome do tipo como texto, e nenhum membro pergunta se um tipo implementa um behavior.
+- **Opções.**
+  (a) `@typeInfo` do tipo de retorno.
+  ```bp
+  if (!@typeInfo(decl.returnType).typeArg(0).implements(@Renderable)) decl.fail("…");
+  ```
+  (b) Um membro de `@Decl`.
+  ```bp
+  if (!decl.returnImplements(@Renderable)) decl.fail("…");
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `@Renderable` do 144 B-10 G3.
+
+#### B-10-g · Um template declarado `-> @ExprCustom<View>` cujo código construído é um `Element`: a expansão é um `View`? (decisões 275, 276; 144 B-10 G3)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim — a expansão é o que o template declara** — o `html` declarado `-> @ExprCustom<View>` responde um `View` (`@Component<Element>`), e um `Element` construído é checado contra ele como corpo de um componente; o `renderNode(html …)` do jhonstart e os seus componentes `-> Element` passam para `View`. O tipo declarado de um template é o tipo da sua chamada (426); manter `Element` na chamada tornaria a declaração decorativa. Viável: a checagem do código construído contra `View` aceita um `Element` como resposta de um componente. Muda: os componentes do jhonstart (um commit de consumidor), uma cell.
+- **Medido.** Com `-> @ExprCustom<View>` toda expansão do `html` falha `expected Component, got Element`.
+- **Opções.**
+  (a) Um `View`.
+  ```bp
+  fn Card() -> View { html`<div/>` }   // the expansion is a View
+  ```
+  (b) A chamada mantém `Element`.
+  ```bp
+  fn Card() -> Element { html`<div/>` }   // the declared View ignored at the call
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `@ExprCustom<View>` do 144 B-10 G3.
+
+#### B-11-a · `decl.wrapWith(f)`: o wrapper é só um lambda escrito na chamada, ou qualquer valor do tipo da chamada? (decisão 316; 144 B-11)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um lambda escrito na chamada** — `decl.wrapWith({ call -> … })`; qualquer outra expressão é `decorator-wrap-not-lambda`, localizado no argumento. É a regra da 370 (2) para uma função membro que um decorator adiciona: o código que o decorator escreve é checado como o do programa, nunca um valor calculado no build. Viável: como construído. Muda: nada.
+- **Medido.** Construído como (a). O tipo da chamada é interno (`__Decl__Call<A, R>`, um por função embrulhada), então um helper que devolve um wrapper (`cachedCall(cache)`) não consegue nomear o tipo do seu parâmetro; (b) precisaria desse tipo nomeável.
+- **Opções.**
+  (a) Um lambda na chamada.
+  ```bp
+  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
+  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
+  ```
+  (b) Qualquer valor de um tipo de chamada nomeável.
+  ```bp
+  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
+  decl.wrapWith(cachedCall(cache));                                  // accepted
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do wrapper do 144 B-11.
+
+#### B-11-b · `decl.wrapWith` pode embrulhar uma função genérica ou um membro de um tipo genérico? (decisão 316; 144 B-11)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): sim, como uma linha do 144** — o wrapper é checado contra a assinatura com seus parâmetros de tipo, e a função embrulhada continua genérica. A 316 não nomeia exceção para genéricos, e um cache ou um retry é tão útil em `fn byId<T>(…)`. Viável: o tipo de chamada gerado recebe os parâmetros de tipo da função. Muda: uma cell; `decorator-wrap-generic` sai.
+- **Medido.** Uma função ou dono genérico é recusado hoje, `decorator-wrap-generic`, localizado no decorator.
+- **Opções.**
+  (a) Recusado, como construído.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
+  ```
+  (b) Embrulhado, genérico.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha genérica do 144 B-11.
+
+#### B-14-a · `Name(..base, f: v)` (decisão 37) ao lado do `Name(...base, f: v)` da 359: o `..` sai? (144 B-14)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `..` sai** — uma grafia para copiar os campos de um record; `Name(..base, …)` é recusado, localizado, nomeando `...base`, e um codemod reescreve o std e as bibliotecas no passo que o pousa. Duas grafias para uma coisa é o que a decisão 67 recusa; `...` é o da 359, também o da tag (`<Card {...p} />`). Viável: o braço `..` do parser nos argumentos de um construtor; `grep -rn '(\.\.[a-z]'` nos repositórios. Mudanças: uma célula de recusa; decisão 37 emendada.
+- **Medido.** Os dois compilam na `feat`: o `..base` da decisão 37 (fonte limitada a um nome) e o `...src` da 359 (qualquer expressão do tipo do record ou de um tipo derivado pela 307).
+- **Opções.**
+  (a) O `..` sai.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");   // the one form
+  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
+  ```
+  (b) Os dois ficam.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");
+  val q = Pessoa(..old, nome: "Ana");    // same record
+  ```
+- **Recomendação.** (a).
+- **Bloqueia.** A linha do `..` do 144 B-14.
+
+#### B-14-b · Em que ordem a fonte de um spread e os valores rotulados são avaliados? (decisão 359 (3), (6); 144 B-14)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): na ordem escrita** — todo argumento, a fonte de um spread incluída, é avaliado da esquerda para a direita como escrito, uma vez; os campos então se aplicam da esquerda para a direita, o posterior vencendo (359 (3)). Os argumentos de uma chamada são avaliados na ordem escrita em todo outro lugar; um spread não é exceção. Viável: `infer.inferRecordSpread` liga todo argumento com efeito colateral a um local na ordem escrita, não só a fonte. Mudanças: uma célula cuja fonte e um valor rotulado imprimem.
+- **Medido.** Uma fonte que não é um nome é ligada uma vez antes da chamada, então é avaliada antes de todo valor rotulado, mesmo um escrito antes dela: `Pessoa(nome: say("n"), ...make())` imprime `make` e depois `n`.
+- **Opções.**
+  (a) Ordem escrita.
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
+  ```
+  (b) As fontes primeiro, depois os valores rotulados (como construído).
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
+  ```
+- **Recomendação.** (a).
+- **Bloqueia.** A linha de ordem do 144 B-14.
+
+#### B-14-c · Um tipo derivado de um tipo `Type.partial`, e `Type.required`: podem ser fonte de um spread? (decisões 307, 359 (2), 422; 144 B-14)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um tipo derivado de um partial é um partial** — `Type.pick` / `omit` / `merge` de um tipo `Type.partial` são recusados como fonte como o próprio partial; `Type.required(Type.partial(R))` é derivado de `R` e aceito. Os campos de um partial podem estar ausentes, o que a 359 (2) recusa; derivar de novo mantém isso. Viável: `derived_types` registra `derivedPartial` por tipo, então ele passa por `pick` / `omit` / `merge`, e `required` o limpa com a linhagem da sua fonte. Mudanças: duas células.
+- **Medido.** `pick` / `omit` / `merge` de um partial derivam só do tipo partial, não da sua fonte, então são recusados como outros records; `Type.required` não tem linhagem, então seu valor é recusado também.
+- **Opções.**
+  (a) Um partial derivado é um partial; `required` restaura a fonte.
+  ```bp
+  pub val Patch = Type.partial(Pessoa);
+  pub val Nome = Type.pick(Patch, .nome);
+  pub val Full = Type.required(Patch);
+  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
+  Pessoa(...full);             // accepted
+  ```
+  (b) Como construído: os dois recusados como records de outro tipo.
+  ```bp
+  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
+  Pessoa(...full);             // refused: `Full` is not `Pessoa`
+  ```
+- **Recomendação.** (a).
+- **Bloqueia.** A linha de linhagem do 144 B-14.
+
+#### B-15-a · Como um corpo de template constrói o `@Decl` de uma tag e roda a sua anotação? (decisão 302; 144 B-15)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `q.tagDecl(kind, name, attrs)` e `q.annotate(decl, at: Span)`, como construído** — a captura (`q`) constrói o handle e roda a anotação escrita num span do seu próprio texto, resolvida no escopo de quem chama, com os argumentos checados ali; o texto da anotação é lido do span, nunca passado como string (281). Os dois ficam na captura porque só ela conhece o escopo e o texto de quem chama. Viável: como construído (a execução para com `need`, o compilador roda a anotação, o corpo roda de novo com a resposta). Muda: nada.
+- **Medido.** Construído como (a); o `html` do `jhonstart` usa (`#[isRaw]` grava `RawBody`).
+- **Opções.**
+  (a) Na captura.
+  ```bp
+  val d = q.tagDecl(.Element, "div", attrs);
+  q.annotate(d, at: ann.span);
+  val names = d.metaAll(ClassName);
+  ```
+  (b) Funções livres no namespace `template` da std.
+  ```bp
+  val d = template.tagDecl(q, .Element, "div", attrs);
+  template.annotate(q, d, ann.span);
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da grafia do 144 B-15.
+
+#### B-15-b · O `Binding` de um corpo de template carrega o seu `Decorator`, para `Decorator.same`? (decisões 268, 302, 371; 144 B-15)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não — a meta é lida pelo tipo** — um corpo de template distingue anotações pela meta que gravam (`d.meta(RawBody)`), como diz a 302; `Binding` não carrega `Decorator`, e a caixa do B-15 que nomeia `Decorator.same` sai. Uma só forma de identificar o que uma anotação fez, pela sua resposta tipada, não por qual função ela era. Viável: como construído. Muda: o texto da caixa.
+- **Medido.** `Binding` (um nome procurado num corpo de template) não tem `Decorator`; o `html` lê a meta pelo tipo.
+- **Opções.**
+  (a) `Binding.decorator`.
+  ```bp
+  if (b.decorator?.same(isRaw)) { … }
+  ```
+  (b) Pelo tipo da meta.
+  ```bp
+  if (d.meta(RawBody) != null) { … }
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha do `Decorator.same` do 144 B-15.
+
+#### B-15-c · Uma anotação pode ler a meta que uma anotação anterior gravou na mesma declaração ou tag? (decisões 298, 302; 144 B-15)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): não, como construído** — dentro de um decorator, `decl.meta(T)` é recusado; a meta de uma declaração é lida pelo código que a consome (`@typeInfo(X).meta(T)`, um corpo de template sobre `d.meta(T)`), depois de toda anotação rodar. As anotações então não dependem da ordem em que foram escritas. Viável: como construído. Muda: nada.
+- **Medido.** `d.meta(T)` no próprio parâmetro `@Decl` de um decorator é recusado.
+- **Opções.**
+  (a) Recusado dentro de um decorator.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
+  ```
+  (b) Lido, na ordem das anotações.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da leitura de meta do 144 B-15.
+
+#### B-16-a · Uma chave de campo em runtime: qual é o seu `typeName`, as suas `annotations` e a sua forma impressa? (decisão 308; 144 B-16)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma chave em runtime é o seu nome** — em runtime `Type.Field<T>` carrega só `name`; `key.typeName` e `key.annotations` são membros de build, recusados fora de um corpo de decorator ou de template (`field-key-build-only`), e `@print(key)` imprime `.name`. Anotações são valores `Decorator`, que só existem no build; uma cópia em runtime seria uma segunda verdade, parcial. Viável: o record de runtime guarda um campo; o checker recusa os dois membros pelo estágio. Muda: uma cell de recusa; `field_key_runtime` imprime uma chave.
+- **Medido.** Como construído, uma chave em runtime guarda `typeName` como o checker o escreve e `annotations: []`; `@print(key)` imprime o record inteiro. As cells usam só `name`, `==`, `case`, `of`, `all`.
+- **Opções.**
+  (a) Só o nome.
+  ```bp
+  val k = Recipe.Key.of("title") ?? .title;
+  @print(k);           // .title
+  k.annotations;       // refused at run time: field-key-build-only
+  ```
+  (b) O record inteiro, como construído.
+  ```bp
+  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da chave em runtime do 144 B-16.
+
+#### B-16-b · `Type.keys(R)` num `val` anotado: recusado? (decisões 307, 308; 144 B-16)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado** — `#[x] pub val K = Type.keys(R)` é `derived-type-arguments` na anotação: `Type.keys` nomeia um tipo existente (um alias), não uma nova declaração, então não há o que um decorator anotar; um record derivado (`pick`, `omit`, …) continua anotável. Viável: como construído. Muda: nada.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Recusado.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
+  ```
+  (b) Aceito, o decorator vendo o tipo das chaves de `Recipe`.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `val` anotado do 144 B-16.
+
+#### B-17-a · Um corpo que roda no build chama uma função host com forma de build: permitido? (decisões 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma função host com forma de build (cell `std:`, `@External.Wasm` `fn:`) é `Any`; o run-in-build recusa só as outras**, substituindo `comptime-host-cell-unavailable` pela mensagem da 376. A 434/452 tornaram exatamente essas chamáveis no build; a 376, escrita antes delas, desfaria isso.
+- **Medido.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` chamam funções host com forma wasm no build e passam; a 376 como escrita as recusa.
+- **Opções.**
+  (a) Uma forma de build faz `Any`.
+  ```bp
+  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
+  ```
+  (b) A 376 como escrita.
+  ```bp
+  comptime { random.seeded(1).next() }   // refused: a Run function at build
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-b · Como se escreve o estágio de uma função? (decisão 376 (4); 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `#[@Stage.Any]`, como construído** — `pub type Stage { Build, Run, Any }` em `builtins.d.bp`; só `Any` é escrito (Build e Run decorrem dos recursos), então `#[@Stage.Build]` / `#[@Stage.Run]` são recusados como anotações desconhecidas.
+- **Medido.** Construído como (a); as funções host do `math` da std o carregam.
+- **Opções.**
+  (a) `#[@Stage.Any]`.
+  ```bp
+  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
+  ```
+  (b) `#[pure]`.
+  ```bp
+  #[pure] pub declare fn sqrt(x: f64) -> f64;
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-c · O que é o recurso `Build`: a leitura de um parâmetro comptime, ou qualquer `@typeInfo`? (decisões 364, 376 (1); 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): a leitura de um parâmetro comptime `@Decl` / `@Expr`**; `@typeInfo(NamedType)` é uma constante de build, dobrada, não um recurso. Senão todo `main` que lê a meta de um tipo vira `Build` e não roda.
+- **Medido.** Construído como (a); `comptime t: type` é recusado (364).
+- **Opções.**
+  (a) Parâmetro comptime.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
+  ```
+  (b) Qualquer `@typeInfo`.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-d · O estágio segue só declarações? (decisão 376 (2); 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o estágio de uma chamada é o da declaração chamada; uma chamada de método ou por um valor de função não acrescenta nada (`Any`); um corpo de run que chama uma função comptime-`@Expr` e lê o relógio é `build-and-run`, como a 376 escreve.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Só declarações.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
+  ```
+  (b) Valores de função também.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-e · Um raise ao dobrar uma expressão no build: sempre um erro de build? (decisão 380 (2); 144 B-17)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim, como a 380 (2) escreve — depois que as primitivas do runtime de comptime responderem como os targets** (essa linha antes); até lá a dobra fica limitada ao que o runtime responde certo, para nenhuma resposta errada virar erro de build.
+- **Medido.** Como construído só erros aritméticos (badarith) são erros de build; qualquer outro raise deixa o hole para renderizar.
+- **Opções.**
+  (a) Todo raise um erro de build, depois da linha do runtime.
+  ```bp
+  val h = "${parse("x")}";   // build error: the raise named
+  ```
+  (b) Só erros aritméticos.
+  ```bp
+  val h = "${parse("x")}";   // left to run
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-f · Qual função `Any` a 380 dobra no build? (decisões 376, 380; 144 B-17)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — uma função `Any` que não escreve `@panic` / `@todo` / `throw`, nem `@print`, nem `var` de módulo, nem chamada por valor de função, nem método de tipo declarado; as suas chamadas por outras funções assim também dobram.
+- **Medido.** Construído como (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
+- **Opções.**
+  (a) Como construído.
+  ```bp
+  fn shout(s: string) -> string { s.toUpper() }   // folded
+  ```
+  (b) Toda função `Any`.
+  ```bp
+  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-g · Onde uma leitura de contexto encontra um default declarado num módulo que ela nem importa nem alcança pelo seu tipo? (decisões 378, 379; 144 B-17)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): no próprio módulo do tipo ou num módulo já analisado; senão recusada na leitura, nomeando o tipo** — um default é encontrado onde o programa o vê, nunca por uma busca no programa inteiro.
+- **Medido.** Não construído; o passo 6 espera por isso.
+- **Opções.**
+  (a) O módulo do tipo ou um analisado, senão recusada.
+  ```bp
+  use context<Theme>();   // refused: no default for Theme visible here
+  ```
+  (b) Qualquer módulo do programa.
+  ```bp
+  use context<Theme>();   // the default found in any module
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### 04s12-a · Um método, lambda ou `default fn` de `@Component` não tem nó de hooks (375 (2), 04-js passo 12)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(c), e um tipo pode ser um componente — toda forma se comporta e é chamada como um componente `fn`.** (1) Um método, uma lambda ou um `default fn` que responde `@Component<R>` é baixado como um componente de topo: uma lambda sobre o `RenderScope` (388) que responde sua árvore e o scope dos seus filhos, com `use provide` / `use context` / `await` no seu corpo, marcado pelo próprio corpo (s23-j); chamá-lo só cria a lambda e não marca quem chama. (2) Um tipo que implementa `Component<R>` é um componente: seus campos são suas props e seu `render(self) -> R` é seu corpo — `type Menu(items: string[]) implement Component<Element> { fn render(self: Self) -> Element { val t = use context(Theme); return <ul class={t.cls}>…</ul>; } }` — escrito e chamado como `fn Menu(items: string[]) -> @Component<Element>` é: `<Menu items={["a", "b"]}/>`, o mesmo lowering `(props) => (scope) => …`, as mesmas marcas. O scope nunca é um campo (388 (5): nada capturado; o renderer o entrega em cada execução, inclusive um fill de `Suspense`). (3) Cada um tem seu próprio nó de hooks, e o nó de um método ou de um tipo entra no `decl.hooks` (277 amendada: uma chamada de método seguida pelo tipo do receptor), então um decorator vê os hooks de `Menu` como vê os de `fn App`. **(2) em detalhe** (o mantenedor, 2026-10-12): um tipo que implementa `Component<R>` é açúcar para um componente `fn`. Seus campos são os parâmetros — padrões, opcionais, `children`, genéricos como numa `fn`, imutáveis — e seu `fn render(self: Self) -> @Component<R>` é o corpo, `self` lendo os campos e os métodos auxiliares do tipo. `X(campos…)` e `<X …/>` respondem o componente (a lambda `(props) => (scope) => …`), nunca um record, então quem chama não distingue as duas formas. O mesmo lowering em commonJS, erlang, beam e wasm, o mesmo `.d.ts` (`export declare function X(props: {…}): Component<R>`), as mesmas marcas (s23-j: um `render` com `await` é assíncrono), o mesmo `decl.hooks` para decorators (`#[page] type` e `#[page] fn` intercambiáveis), o mesmo comptime (434-b). Hooks só no `render`; um método auxiliar que não responde `@Component` é uma função comum. Recusados, localizados: `implement Component` sem `render`; um `render` de outra assinatura; um campo `RenderScope` (388 (5)); um `use` fora do `render`; `X.render()` chamado direto (`call the component, not its body: <X …/> or X(…)`). **(2) amendada — as props de um componente são um record** (o mantenedor, 2026-10-12): um componente, `fn` ou tipo, recebe suas props como um único parâmetro record, nunca uma lista de parâmetros. `type MenuProps(items: string[], title: string = "Menu");` — então `fn Menu(props: MenuProps) -> @Component<Element> { val t = use context(Theme); return <nav class={t.cls}><h2>{title}</h2><ul>{items.map({ i -> <li>{i}</li> })}</ul></nav>; }`, ou o mesmo componente como tipo: `type Menu(props: MenuProps) implement Component<Element> { fn render(self: Self) -> @Component<Element> { …<h2>{self.title}</h2><ul>{self.items.map({ i -> self.item(i) })}</ul>… } fn item(self: Self, i: string) -> Element { return <li>{i}</li>; } }` (`item` não responde `@Component`: um auxiliar comum). Os campos do record estão em escopo: nus no corpo da `fn` (`title`, `items`), em `self` no `render` e nos auxiliares (`self.title`, `self.items`); `props` nomeia o record inteiro. Padrões, opcionais, `children` e genéricos são do record, escritos uma vez em `MenuProps`. Quem chama nunca constrói o record: os atributos são seus campos — `<Menu items={["a", "b"]}/>` (`title` assumindo seu padrão), `<Menu items={["a", "b"]} title="Principal"/>`, `<Layout view={ { -> <Menu items={xs}/> } }/>` (dentro de uma prop lambda, igual) — e o compilador constrói o `MenuProps` a partir deles, verificado campo a campo como uma construção de record (um campo faltando, um atributo desconhecido, um tipo errado: localizado no atributo). Um componente sem props não recebe parâmetro (`fn App() -> @Component<Element>`). O lowering não muda — `(props) => (scope) => …`, `props` o record — e o `.d.ts` o nomeia: `export declare function Menu(props: MenuProps): Component<Element>`, `MenuProps` exportado ao lado. Recusados, localizados: um componente com mais de um parâmetro, ou cujo único parâmetro não é um tipo record (`a component takes its props as one record: type MenuProps(…); fn Menu(props: MenuProps)`).
+- **Medido.** O 04-js passo 12 pede que um método, um lambda e um `default fn` sigam a marca "do mesmo modo", mas os
+  nós da 277 são só as funções de nível superior do módulo. Construído: cada um continua uma `async function` / arrow `async` no
+  commonJS, e uma chamada de um deles mantém seu `await` (uma chamada que o checker não consegue seguir, s23-j (1)).
+- **Opções.** (a) Como construído. (b) O checker marca todo corpo de `@Component` — um método, um `default fn`, um lambda —
+  pela regra da 375 (um nó próprio, não listado em `decl.hooks`), o commonJS emite cada um por sua marca:
+  ```bp
+  type Menu(items: string[]) { fn render(self: Self) -> @Component<Element> { return Element(…); } }
+  // (a): `async render(map) {…}`, `await menu.render(map)`; (b): `render(map) {…}`, no `await`
+  ```
+  (c) (b), e o nó de um método entra em `decl.hooks` (277 emendada: uma chamada de método seguida pelo tipo de seu
+  receptor).
+- **Recomendação.** (b): a regra é do corpo, onde quer que o corpo seja escrito; (c) muda o que um leitor de `.hooks`
+  vê e é pergunta da 277.
+- **Bloqueia.** O método, o lambda e o `default fn` da caixa 1 do 04-js passo 12.
+
+#### 434-b · Os caminhos residente-na-renderização e no-build sob um só runtime de comptime wasm (434, 378 (4))
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Toda biblioteca roda no build no runtime de comptime wasm (434), o jhonstart primeiro; uma função que só Erlang ou Node consegue rodar é um erro localizado ali.** (1) Uma célula de host (`@External.Erlang` / `@External.Node`) alcançada no build roda pela sua forma wasm — um corpo botopink (`#[@External.Wasm(fn: …)]`) ou um export do std-wasm (`std:`, 481) — então `comptime renderToString(<Rodape ano={2026} />)` responde uma string para todo alvo. (2) Cada biblioteca dá às suas células puras (escape, formatação, parse — lógica escrita em Erlang ou JS por conveniência) uma forma wasm: o renderer do jhonstart (`jhonstart_render.erl`) primeiro, para o 144 B-17, depois cada frente de biblioteca (145–162) num passo próprio. (3) Uma função sem forma wasm — 100% Erlang ou Node, ou um efeito real de host (rede, banco, fs, processo) — alcançada por um `comptime` é recusada no build, localizada, nomeando a célula: `error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm form — it cannot run at build (give it a botopink body, or remove `comptime`)`. Nenhuma tradução substitui uma forma wasm ausente no build (sem fallback de beam-to-wasm), e nunca a VM do alvo (c). O alvo do build não estreita isso: um `comptime` roda no wasm qualquer que seja o `--target`, então um build erlang que alcança no build uma célula só `@External.Erlang` é recusado como um build commonJS é. A leitura do comptime fora isso não muda (388 (4): `RenderScope.root()`).
+- **Medido.** A 84 mandava uma avaliação de comptime para a VM do alvo, então um build erlang renderizava um componente `Build` / `Any` no build no BEAM (o passo erl de `render_resident`) e um build commonJS no wat. A 378 (4) pede que o runtime de comptime rode o lambda de um componente com `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; a última caixa do passo 6 da 134 (144 B-17). Sob a 434 o único runtime é o wasm, e o renderizador do jhonstart no BEAM é um sidecar (`jhonstart_render.erl`).
+- **Opções.**
+  (a) O renderizador roda no build só no wasm: o caminho de renderização do jhonstart alcançado no build é botopink (ou std-wasm), sua célula Erlang traduzida pelo beam-to-wasm onde não tem corpo botopink; a resposta é uma string para todo alvo.
+  ```bp
+  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" on the four targets
+  ```
+  (b) Um componente é renderizado no build só quando toda função que ele alcança tem um corpo botopink ou std-wasm; um que alcança uma célula Erlang é recusado no `comptime`, nomeando a célula.
+  ```text
+  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
+  ```
+  (c) Manter a VM do alvo só para a renderização no build (um passo BEAM dentro da compilação para builds erlang/beam).
+- **Recomendação.** (b) agora — nenhuma resposta no build que dependa de uma tradução não provada; (a) quando o beam-to-wasm cobrir as células do renderizador; nunca (c), que a 434 remove.
+- **Bloqueia.** 144 B-17 (a caixa da 378 (4) do passo 6 da 134); nada em B-00.
+
+#### B-18-a · Como um método de template é encontrado: por um nome no escopo de quem chama, ou pelo tipo do receptor? (decisões 397, 415; 144 B-18)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): por um nome no escopo de quem chama, como construído** — `value.method "…"` resolve `method` como um template cujo `self` recebe o receptor, local ou importado; nada alcança o template de uma biblioteca sem import, como todo outro nome. O tipo de um receptor nunca importa código sozinho. Muda: o exemplo do 145 importa `query`.
+- **Medido.** Construído como (a); o exemplo do 145 escreve `self.db.query """…"""` sem import de `query`.
+- **Opções.**
+  (a) Um nome no escopo.
+  ```bp
+  import {query} from "erika";
+  self.db.query """select …"""
+  ```
+  (b) Pelo tipo do receptor.
+  ```bp
+  self.db.query """select …"""   // erika's query found through Db, no import
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do lookup do 144 B-18; o exemplo do 145.
+
+#### B-18-b · Confirmar a superfície do B-18: o texto de `q.note`, `bindings()` como `Decl[]`, `@Decl.module` em todo handle (decisões 415, 426; 144 B-18)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): como construído** — uma nota é acrescentada à linha do mismatch como `— note: …`, então a linha `refused` de uma cell a fixa; `bindings()` responde `Decl[]` e `Binding.ref()` sai com o record `Binding` (um handle só, o `@Decl`); todo `@Decl` carrega `module`, não só um procurado.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Como construído.
+  ```bp
+  // error: type mismatch: expected User, got Order — note: the query selects from orders
+  ```
+  (b) Uma nota na sua própria linha, `Binding` mantido ao lado de `Decl`.
+  ```bp
+  // error: type mismatch: expected User, got Order
+  //   note: the query selects from orders
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da superfície do 144 B-18.
+
+#### B-19-a · Onde fica um erro de tipo dentro do código de um membro ou tipo associado que um decorator escreveu? (decisões 216, 281; 144 B-19)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na anotação que o adicionou** (`#[maker]`), como `decorator-member-duplicate`, com a chamada `addMember` / `addType` do decorator nomeada na mensagem — quem lê o programa vê de onde o código veio; quem escreveu o decorator vê qual chamada o escreveu.
+- **Medido.** O diagnóstico aponta para depois da última linha do arquivo (o código do membro não tem span no programa).
+- **Opções.**
+  (a) Na anotação, a chamada nomeada.
+  ```bp
+  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
+  ```
+  (b) No argumento do `addMember` no módulo do decorator.
+  ```bp
+  decl.addMember("make", fn() -> Self { … })   // error here, in the library
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha 3 do 144 B-19.
+
+#### B-19-b · `@TypeInfo.all(member: …)` por referência: o que se escreve, e o que faz um tipo que não se conforma? (decisões 256, 281; 144 B-19 passo 7)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): `member: Factory.make`, uma fn associada de um behavior; um tipo catalogado precisa `implement Factory`, e um que não implementa é recusado na consulta, nomeado** — uma referência é checada, uma string não era (281); conformidade por declaração, não por um nome que bate.
+- **Medido.** `member: "make"` é uma string hoje.
+- **Opções.**
+  (a) Só quem implementa, recusado senão.
+  ```bp
+  pub behavior Factory { fn make() -> Self; }
+  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
+  ```
+  (b) Qualquer tipo que declare uma fn associada que bate; os outros pulados.
+  ```bp
+  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
+  ```
+- **Recomendação.** (a).
+- **Trava.** O passo 7 do 144 B-19.
+
+#### B-21-a · A última expressão de um lambda escrita com `;`: continua sendo o seu valor? (decisão 409; 144 B-21)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): continua sendo o valor, só para lambdas e `fn(x) { … }` sem tipo** — a regra do tail da 409 vale para os corpos com tipo de retorno escrito (`fn`, método, expressão `fn` tipada); um lambda não tem retorno escrito, o seu valor sempre foi a sua última instrução, e o formatter sempre terminou essa linha com `;`. Ler a 409 ao pé da letra ali significa um codemod sobre 3.800 corpos de lambda (std 180, `conformance/` 207, rakun 1855 …) sem regra nenhuma que o lambda ganhe. Viável: como construído. Muda: o texto da 409 nomeia os corpos que ela rege.
+- **Medido.** Nenhum corpo de `fn` nomeado, método ou expressão `fn` tipada termina sem `;` em lugar nenhum; os corpos de lambda que terminam com `;` são std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
+- **Opções.**
+  (a) Estrito: com `;` a última expressão de um lambda é uma instrução.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
+  ```
+  (b) A última instrução de um lambda é o seu valor, com `;` ou não.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers x + 1, as today
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha do lambda do 144 B-21.
+
+#### B-21-b · Um método sem `->`: quando um tail não-`void` é recusado? (decisões 409, 06 C9; 144 B-21)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): só quando o método não tem `return` com valor** — um método sem `->` infere o retorno dos seus `return`s (06 C9); sem nenhum ele não responde nada e um tail não-`void` ali é recusado nele; com um `return` com valor, o tail é mais uma das suas respostas, tipado junto com elas. Viável: o checker lê os `return`s com valor do corpo antes do tail. Muda: uma cell.
+- **Medido.** O thread do B-21 reportou (a); o seu passo Conformance mediu a `feat` recusando um tail não-`void` ao lado de um `return` com valor também, num método e numa fn livre — (b) como construído.
+- **Opções.**
+  (a) Recusado só sem `return` com valor.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
+  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
+  ```
+  (b) Sempre recusado sem `->`.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do método do 144 B-21.
+
+#### B-21-c · O formatter imprime a última expressão do bloco de um braço de `case` como escrita? (decisão 409; 144 B-21)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — como escrita, como o tail de um corpo** — o printer não acrescenta nem remove `;` em lugar nenhum (a regra do formatter da 409), incluindo o bloco de um braço; uma regra para todo bloco.
+- **Medido.** O formatter acrescenta `;` à última expressão do bloco de um braço de `case`; o texto da 409 cobre corpos de função.
+- **Opções.**
+  (a) Como escrita.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
+  ```
+  (b) `;` acrescentado nos braços.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d; } }
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do braço do 144 B-21.
+
+#### B-22-a · Um construtor de variante nu numa expressão (`Num(4)` por `Value.Num(4)`)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): um construtor de variante nu numa expressão é recusado, localizado, nomeando a forma qualificada** — `val a = Num(4);` é `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` e `val c: Value = .Num(4)` (o tipo esperado nomeia o enum) continuam as duas formas legais; uma variante nua continua sendo de um padrão de `case` (decisão 8, o sujeito fixa o enum). Recusar antes de aceitar (67): hoje o `check` passa e commonJS, erlang e beam falham em run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) enquanto wasm imprime um endereço — quatro respostas erradas; (b) acrescentaria uma quarta grafia a todo backend. Viável: `infer.zig` `registerEnum` liga o nome nu (`env.bind(v.name, ctorType)`, `noteVariantClaim`), e `refuseAmbiguousVariant` recusa dois reivindicantes — o caminho de chamada de um só reivindicante vira a recusa para um uso fora de padrão, o caminho de padrão mantido; uma célula de recusa. Mudanças: `conformance/docs.md` § type — enums; dois defeitos a registrar ao lado: em wasm um `val b = Value.Num(4); @print(b)` sem anotação imprime um endereço, e `"${b}"` de uma variante com payload imprime `[object Object]` / uma tupla erlang / um endereço por alvo (nenhum impressor para uma variante num template; a linha 01-compiler do `status.md` nomeia a metade do enum).
+- **Medido.** O checker admite `val v = Num(4);` para `type Value { Num(n: i32), … }`; erlang, beam e commonJS então falham com um `Num` não vinculado em tempo de execução (`conformance/docs.md` § type — enums registra o defeito hoje). A regra de padrões da decisão 8 permite uma variante nua num padrão de `case`, onde o sujeito fixa o enum; uma expressão não tem sujeito.
+- **Opções.**
+  (a) Recusado, localizado, nomeando a forma qualificada; o `.Num(4)` com ponto à frente e um tipo esperado continua legal.
+  ```bp
+  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
+  val b = Value.Num(4);    // legal
+  val c: Value = .Num(4);  // legal, the expected type names the enum
+  ```
+  (b) Legal: todo backend baixa o construtor nu para o da variante.
+  ```bp
+  val a = Num(4);          // Value.Num(4) on every target
+  ```
+- **Recomendação.** (a) — a leitura mais restritiva: recusar em vez de aceitar, a forma qualificada e a de ponto à frente mantidas; uma variante nua continua sendo de um padrão de `case` (decisão 8).
+- **Bloqueia.** A linha do checker e a falha dos três backends; `conformance/docs.md` § type — enums.
+
+#### B-22-b · Como se imprime um valor de uma seção de enum? (144 B-22; `docs.md` § Sections of an enum)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o caminho inteiro da folha, como escrito** — `@print(Token.Color.White)` escreve `Token.Color.White` em todo target; um nome em dois níveis (`Token.After` e `Token.Layout.Break.After`) continua sendo dois textos. Um texto para um valor em todo target (434 (5)), e nenhum nome interno (`_inner`, `__Token__Color`) na saída de um programa. Viável: o printer de valor de enum de cada backend lê o caminho de seção que o checker já resolve. Mudanças: uma célula `enum_section_value_print` nos quatro targets; `docs.md` § Sections of an enum.
+- **Medido.** `val t = Token.Color.White; @print(t)`: commonJS, erlang e beam imprimem `Token.Color(_inner: __Token__Color.White)` (o record que embrulha a seção e o nome interno do seu enum), wasm um endereço. Nenhuma célula fixa a resposta.
+- **Opções.**
+  (a) O caminho inteiro da folha.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // Token.Color.White
+  ```
+  (b) Só o nome da folha.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // White
+  ```
+- **Recomendação.** (a) — o caminho distingue duas folhas de mesmo nome, e é o texto que o programa escreveu.
+- **Bloqueia.** A linha de seção de enum do 144 B-22; a linha 05-wasm do status.md.
+
+#### B-22-c · Um valor de `case` cujos braços têm tipos diferentes no wasm: empacotado como um elemento de array união? (decisões 150, 8 §11; 144 B-22)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o valor de cada braço empacotado como o wasm já empacota um elemento de array união, o `val` tipado pela união do checker; reaproveita uma representação e não acrescenta nenhuma.
+- **Medido.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) imprime um endereço no wasm; commonJS, erlang e beam imprimem o valor.
+- **Opções.**
+  (a) Empacotado por braço.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
+  ```
+  (b) Recusado no wasm até uma representação própria.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `case_value_union` do 144 B-22.
+
+#### B-22-d · Um nome sozinho dentro de um braço de vários sujeitos: um binding, ou recusado como um nome sozinho? (144 B-22)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado, como um nome sozinho é** — o `docs.md` diz que um nome sozinho não é padrão, e a forma com chaves já o recusa dentro de um braço de vários sujeitos; a forma com seta segue: `_` para qualquer um, um padrão para fazer binding. Uma regra para todo braço. Muda: `case_multi_subject_patterns` reescrita com padrões.
+- **Medido.** A forma com seta faz binding de `Shape.Square(side), m -> …` e `_, y -> …` (`case_multi_subject_patterns` fixa isso); a forma com chaves recusa o mesmo braço.
+- **Opções.**
+  (a) Recusado.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
+  ```
+  (b) Um binding.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha de vários sujeitos do 144 B-22.
+
+#### B-23-a · Decisão 310: um tipo deste módulo ao lado de um import com alias de um tipo de mesmo nome conta como dois módulos? (decisão 310; 144 B-23)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — `type T` declarado aqui e `import {other.T as U}` são dois tipos, legais sob a 310 como dois imports: o alias é o nome que o programa dá ao tipo do outro módulo, e a identidade é por módulo. Recusar faria a 310 depender de onde uma declaração está. Viável: com a identidade qualificada por módulo da 310 (a linha aberta do B-23), nada mais. Muda: uma cell ao lado de `import_two_types_one_name`.
+- **Medido.** Hoje o checker e os quatro backends nomeiam um tipo pelo nome declarado, então as duas formas colidem (`import-name-collision` para dois imports); a 310 está aberta.
+- **Opções.**
+  (a) Dois tipos.
+  ```bp
+  import {shapes.Box as ShapeBox};
+  pub type Box(v: i32)
+  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
+  ```
+  (b) Recusado: um tipo local e um alias de um tipo de mesmo nome colidem.
+  ```bp
+  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da 310 do 144 B-23.
+
+#### B-25-a · Confirmar os adaptadores de gate do B-25 no wasm e as cells deixadas sem binding (decisões 334, 335 (3); 144 B-25)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — `.GateNew`, `.GateOpen`, `.GateAwait` (um gate é uma task pendente que nenhum host responde; abri-lo descarta o timer de cada espera pendente); as cells só de teste da std (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) ficam sem binding no wasm até o `botopink test` rodar wasm (335 (3)), então as "doze cells" da 334 são as de uso do `async`.
+- **Medido.** Construído como (a); `std_async_on_every_target` verde nos quatro targets e nos dois hosts.
+- **Opções.**
+  (a) Como construído.
+  ```bp
+  @External.Wasm(wasi: .GateNew)
+  ```
+  (b) As cells de teste também com binding, agora.
+  ```bp
+  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha dos adaptadores do 144 B-25.
+
+#### B-25-b · A superfície do `fetch` antes do `io/http` ter binding no wasm: `Request`, `HttpError`, o antigo `fetch(url)` (decisões 334, 393; 144 B-25)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): a std fixa primeiro, no 144, com `fetch(url)` removido no mesmo commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; os sites de chamada (std, `http`) migram no pouso (uma grafia, 67).
+- **Medido.** a std só tem `fetch(url) -> @Result<Response, string>`; não existe `Request` nem `HttpError`.
+- **Opções.**
+  (a) A superfície tipada, a forma antiga removida.
+  ```bp
+  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
+  ```
+  (b) A superfície tipada ao lado de `fetch(url)`.
+  ```bp
+  val r = await fetch(u);   // still accepted
+  ```
+- **Recomendação.** (a).
+- **Trava.** As linhas do `io/http` do 144 B-25 (passos 4, 5, 6, 17).
+
+#### B-25-c · Os dois marcadores de wasm do log: um valor de host por nome e `wasi:filesystem`, ou o interino da 405 no log? (decisões 334, 405; 144 B-25)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o interino da 405 no log agora** — as cells de arquivo com binding a um `fn:` que não alcança arquivo no wasm, recusa localizada no uso; o adaptador de valor de host por nome e o `wasi:filesystem` esperam uma decisão própria. Nenhuma caixa do B-25 nem decisão fixa a forma de nenhum dos dois.
+- **Medido.** os dois marcadores do log nomeiam as duas necessidades; nenhum dos adaptadores existe.
+- **Opções.**
+  (a) O interino da 405.
+  ```bp
+  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
+  ```
+  (b) Os dois adaptadores desenhados no 144 agora.
+  ```bp
+  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
+  ```
+- **Recomendação.** (a).
+- **Trava.** Os marcadores de wasm do 156.
+
+#### B-25-d · Uma biblioteca wasm pré-compilada: o seu manifesto, a sua ABI e a sua cola (decisão 333 (B); 144 B-25 passo 9)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a)** — o manifesto: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` no `botopink.json`, os exports nomeados pelos bindings; a ABI: um side module independente de posição (`wasm-ld --shared`, `env.memory` / `__memory_base`), a forma que o std-wasm já tem, então o `std_wasm_link.zig` o dobra no módulo único; a cola: uma `string` entra como ponteiro e tamanho depois do export `alloc(len)` da biblioteca, volta como um `i64` que empacota ponteiro e tamanho, liberada pelo seu export `free(ptr, len)`; a ausência numa resposta `?T` é um ponteiro `0`. Um módulo autônomo com memória própria não pode ser mesclado sem relocações ou multi-memória.
+- **Medido.** A 333 (B) fixa a ideia (uma biblioteca pré-compilada mesclada no módulo emitido), não o manifesto, a ABI nem a cola.
+- **Opções.**
+  (a) Um side module, exports `alloc` / `free`, uma resposta de string em `i64`.
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
+  ```
+  (b) Um módulo autônomo mantido à parte, importado na instanciação (sem mesclar).
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
+  ```
+- **Recomendação.** (a).
+- **Trava.** Os passos 9 e 11 do 144 B-25.
+
+#### B-27-a · Uma declaração no header de um `.bpp` escrita depois de uma instrução: movida ou recusada? (decisões 199, 212; 144 B-27)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusada na declaração, localizada, nomeando a instrução antes dela** — o header se lê de cima para baixo como escrito; uma declaração depois de uma instrução rodaria numa ordem que o arquivo não mostra. Muda: uma cell de recusa; o unfold deixa de movê-la.
+- **Medido.** O unfold a move para depois da função, com a localização mapeada de volta.
+- **Opções.**
+  (a) Recusada.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // refused: a declaration after a statement
+  ```
+  (b) Movida, como construído.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // moved to module level
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do unfold do 144 B-27.
+
+#### B-27-b · Como quem importa escreve um `.bpp` cujo nome não é identificador (`not-found.bpp`)? (decisões 199, 289; 144 B-27)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não escreve — um arquivo assim é a folha de uma rota, lida pelo router pelo caminho, nunca importada; importá-lo é recusado nomeando o arquivo** — um nome de módulo é um identificador em todo outro lugar.
+- **Medido.** Não existe grafia de import; `not-found.bpp` é convenção do jhonstart.
+- **Opções.**
+  (a) Não importável.
+  ```bp
+  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
+  ```
+  (b) Um caminho entre aspas.
+  ```bp
+  import "not-found" as NotFound;
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `not-found.bpp` do 144 B-27.
+
+#### B-27-c · O 97 s6 sob a resposta (c) da decisão 506: quais são as suas caixas? (decisão 506; 144 B-27)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o passo é reescrito para a metade std de (c), as caixas (a) / (b) removidas** — o coordenador o escreve a partir do texto da 506 (c) na próxima passada de specs; esta pergunta registra que o passo como escrito não pode ser construído.
+- **Medido.** A 506 foi respondida (c); as caixas do 97 s6 estão escritas para (a) e (b).
+- **Opções.**
+  (a) Reescrito para (c).
+  ```bp
+  // 97 s6: (c)'s std half
+  ```
+  (b) Mantido como escrito.
+  ```bp
+  // 97 s6: under (a) … under (b) …
+  ```
+- **Recomendação.** (a).
+- **Trava.** O 97 s6 do 144 B-27.
+
+#### 116-a · O `import {bpp} from "std"` do próprio módulo de prelúdio (decisão 361 × 270) (*proposta*)
+- **Respondida (o mantenedor, 2026-10-12; aguardando seu número em `decisions-taken.md`):** **(f), uma sexta opção: o prelude são os itens marcados `#[bpp.htmlPrelude]` onde são declarados, um a um.** Um `pub val` / `pub fn` / `pub type` marcado de um módulo que a raiz do pacote (s23-i) alcança só por `pub mod` — inclusive a própria raiz — está no prelude: um `.bpp` o vê pelo nome simples sem importar (`#[bpp.htmlPrelude] pub fn Card(…)` em `src/components.bp`, `pub mod components;` na raiz, `<Card/>` num `.bpp`). A raiz não reexporta nada para isso. Um item `pub` sem o marcador é API da biblioteca, não prelude. Imports são privados — inclusive o `import {bpp} from "std";` de que cada módulo marcado precisa — então nenhum chega a um `.bpp`. Nenhum nome é sombreado: dois itens marcados de um nome, ou um `.bpp` que declara ou importa um nome que o prelude já dá, é recusado, localizado, nomeando os dois lugares (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Recusados, localizados: o marcador num item sem `pub`, num `mod`, num módulo alcançado por um `mod` privado (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), ou num item que reexporta um item de outro pacote (242). `src/prelude.bp` e seu `pub val prelude = bpp.Prelude()` saem. A frente 116 lista o prelude de um pacote — cada item, seu nome e onde é declarado — por `botopink prelude` e no language server (a origem de um nome de `.bpp` no hover). Amenda a 361 e a 270. **Sob a B-55-a (e)** (2026-10-12): o prelude é qualquer item `pub` marcado fora de `src/internal/`; não há raiz a partir da qual alcançá-lo.
+- **Medido** (frente 116 passo 1). A 361 põe o marcador do prelúdio no módulo
+  de prelúdio — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — então o módulo deve importar o
+  `bpp` do std (o `src/prelude.bp` do jhonstart agora termina em `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
+  prelude = bpp.Prelude();`). A 270 diz "os imports daquele módulo são o prelúdio" e recusa, na
+  linha, "um item de outro pacote (242)". Lidas juntas, o import do próprio marcador é ao mesmo tempo um item do
+  prelúdio (todo arquivo `.bpp` resolveria `bpp` por ele) e uma linha recusada. O passo 1 checa só que
+  o módulo contém imports e seu marcador; o escopo do prelúdio e suas recusas são do passo 2.
+- **Opções.**
+  (a) O import do `bpp` do std (ou de uma folha dele) é do marcador, não do prelúdio: deixado de fora da
+  lista de itens entregue ao `compiler-core`, e isento da recusa da 242 — todo outro item `from "std"`
+  num prelúdio continua recusado:
+  ```bp
+  // src/prelude.bp
+  import {element.Element};          // a prelude item
+  import {bpp} from "std";           // the marker's import — not a prelude item, not refused
+  #[bpp.htmlPrelude]
+  pub val prelude = bpp.Prelude();
+  // Card.bpp: `bpp.Prelude()` in its header is `unbound variable 'bpp'`
+  ```
+  (b) O import do marcador é um item de prelúdio como qualquer outro: um arquivo `.bpp` resolve `bpp` sem
+  importá-lo, e a recusa da 242 isenta o std:
+  ```bp
+  // Card.bpp header: `val p = bpp.Prelude();` compiles through the prelude
+  ```
+  (c) A 242 vale para o prelúdio: um módulo de prelúdio não pode importar nada de outro pacote, então o
+  marcador é escrito por um caminho que a linguagem não tem hoje (uma anotação qualificada sem
+  import, `#[std.bpp.htmlPrelude]`), uma mudança de parser e checker:
+  ```bp
+  #[std.bpp.htmlPrelude]
+  pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
+  ```
+- **Recomendação.** (a): o prelúdio continua os módulos do próprio pacote (242), e o único import de que o
+  marcador precisa não alcança nenhum arquivo `.bpp`.
+- **Bloqueia.** A caixa de prelúdio do passo 2 da 116 (a lista de itens e suas recusas); nada no passo 1.
+
+#### s23-a · Dois nomes de campo dos records da decisão 277 (contradição com as palavras reservadas)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` e `HookUse(…, context: ?Declared<unknown>)`, lidos `n.function.name` e `u.context.name` por um decorator no build; o `fn` da 277 é palavra reservada e não é nome de campo.
+- **Medido.** A 277 escreve `HookNode(fn: Declared<unknown>, …)`; toda palavra-chave é reservada em toda posição
+  (`reserved-word-as-name`: `type N(fn: string)` é recusado no campo). A 354 (4) pede que `Decl.hooks` carregue cada
+  `provide` / `context` "com seu objeto" e não nomeia nenhum campo. Construído (`01-checker` passo 23): `HookNode(function:
+  Declared<unknown>, uses: HookUse[], calls: HookCall[])` e `HookUse(…, context: ?Declared<unknown>)`, lidos como
+  `n.function.name` e `u.context.name` (`run/decl_hooks_context` imprime `App: std/context.provide(main.ThemeContext)`).
+- **Opções.** (a) Como construído: `n.function`, `u.context`. (b) `n.decl` / `u.target`: `n.decl.name`, `u.target.name`.
+  (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
+- **Recomendação.** (a): as palavras que as decisões usam para eles, nenhuma exceção às palavras reservadas.
+- **Bloqueia.** Nada — construído como (a); um renome toca `builtins.d.bp`, o espelho do `comptime.zig`, `hooks.zig` e as células.
+
+#### s23-g · Onde `Decorator.same` é declarado (o `extend Decorator { … }` da 371 não faz parse)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` no `builtins.d.bp`, espelhado no `decl_reflection_src` do `comptime.zig`; o `extend Decorator { … }` anônimo da 371 é lido como este membro, e `a.decorator.same(serverOnly)` não muda.
+- **Medido.** A 371 escreve `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` em `builtins.d.bp`. Um
+  `extend` é sempre nomeado (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` é
+  lido pelo teste de deriva (`comptime/builtins.zig` `collectTypes`), e esse teste guarda os métodos de instância de um tipo builtin
+  dentro de sua declaração. Construído e pousado: um membro do behavior, espelhado em
+  `decl_reflection_src` do `comptime.zig` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
+  `a.decorator.same(serverOnly)` lê igual nos dois casos.
+- **Opções.** (a) Como construído: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) Uma
+  extensão nomeada: `pub DecoratorIdentity extend Decorator { fn same(self: Self, other: Decorator) -> bool; }`, o teste de
+  deriva ensinado a ler os métodos de um `extend` em seu alvo. (c) O parser aceita um `extend Decorator { … }` anônimo
+  só em `builtins.d.bp`.
+- **Recomendação.** (a): nenhuma exceção ao parser para um arquivo, e o teste de deriva já o guarda.
+- **Bloqueia.** Nada — construído como (a).
+
+#### B-55-a · Análise do pacote inteiro: dois módulos de um pacote podem importar um ao outro? (s23-i, 372, 419, 130-s8-c, 14s8-d)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(e), uma contraproposta: um arquivo é um módulo, e o build tem uma camada própria.** (1) Todo `.bp` em `src/` é um módulo do pacote, seu caminho seu nome (`pages.home`, `comptime.route`); sem `lib.bp`, sem `mod` / `pub mod`. (2) `src/main.bp` é a entrada de um executável (`pub fn main()`), importado por nenhum módulo; uma biblioteca não tem. (3) `src/comptime/` é a camada de build: analisada antes de todo outro módulo do pacote, importa só o std, as dependências e o próprio `src/comptime/` (senão recusado, localizado); um decorator ou um template é declarado só ali, no std ou numa dependência (senão recusado, localizado). (4) Os módulos do programa se importam livremente: módulos que se importam formam um bloco (um componente fortemente conectado); as assinaturas de um bloco (assinaturas de `fn`, tipos, `val`s anotados) são registradas antes dos seus corpos; em runtime um `val` de módulo é uma ref, um getter memoizado (o commonJS iça suas funções para `exports` antes de qualquer `require`). (5) Por bloco: assinaturas, corpos, então todo decorator sobre eles (a camada de build já está compilada), então todo `@typeInfo(X).meta(T)` e catálogo do bloco é preenchido — o passo 4 da 130-s8-c, por bloco. (6) A única recusa de ordem é `dependency loop`, localizada: um valor que precisa de si mesmo entre módulos (`pub val x = b.y + 1` / `pub val y = a.x + 1`), ou um `comptime` que precisa de uma meta, um catálogo ou um valor do seu próprio bloco antes de seus decorators rodarem. (7) `@TypeInfo.all` é lido em qualquer módulo. (8) `src/internal/` é privado ao seu pacote; todo outro item `pub` é a API do pacote. (9) O prelude (116-a) é qualquer item `pub` marcado fora de `internal/`. Substitui as regras de raiz da s23-i (`lib.bp`, `mod`, o catálogo na raiz), as recusas da 419 e da 14s8-d e a segunda compilação da 353; o B-56 fica. O custo no `zig build test` e no language server é medido antes dos passos de implementação; um custo alto devolve a pergunta ao mantenedor.
+- **Medido.** Hoje o resolver ordena os módulos de um pacote por seus imports e cada módulo é analisado inteiro antes de seus importadores (as três fases da 372, depois `registerExports`); um ciclo não é recusado por nome — o pai reporta um `unbound variable` sem relação (`error: unbound variable 'base' --> src/b.bp:4:18` para `a ↔ b`). A assinatura de uma função nunca depende de seu corpo (um tipo de retorno omitido é `void`). Um protótipo (144 B-55, não pousado) ordena um ciclo como um componente fortemente conexo e registra os cabeçalhos de seus módulos (assinaturas, tipos, valores anotados) antes de seus corpos: o `a.title` ↔ `b.format` / `b.header` do mantenedor e `a.isEven` ↔ `b.isOdd` rodam em erlang, beam e wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` é recusado, localizado: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Cabeçalhos sozinhos não bastam: `home.bp` e `blog.bp` importando um ao outro, cada um decorado com `#[route]` e lendo o `@typeInfo(X).meta(Route)` do outro, imprimem `none` para o módulo analisado primeiro — o meta precisa ser demandado, seu decorador rodado sob demanda. O `const { f } = require(…)` do commonJS responde `undefined` para uma função e um valor de um ciclo de `require` (`TypeError: title is not a function`); içar as funções para `exports` antes de qualquer `require` e fazer dos valores de nível de módulo getters memoizados roda o ciclo corretamente (verificado à mão sob node). O custo em `zig build test` e na checagem do servidor de linguagem ainda não foi medido.
+- **Opções.**
+  (a) Manter a regra acíclica, com uma recusa própria: o resolver nomeia o ciclo, localizado, no lugar de `unbound variable`; 419, o passo 4 da 130-s8-c (b′), as regras de raiz da s23-i e a recusa da 14s8-d ficam.
+  ```text
+  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
+  ```
+  (b) Adotar a análise sob demanda do pacote inteiro, mantendo as regras de raiz da s23-i: módulos de um pacote importam um ao outro livremente; uma declaração é analisada quando algo precisa dela (um `fn` ou tipo pelo seu cabeçalho, um `val` inteiro, um meta rodando seus decoradores sobre os corpos que ele lê); a única recusa é um `dependency loop`; o passo 4 da 130-s8-c vira a regra geral, a 419 e a recusa da 14s8-d saem, a segunda compilação da 353 sai; `@TypeInfo.all` fica em `lib.bp` (ou `main.bp` sem `lib.bp`) e nenhum módulo importa a raiz. Passos: (i) os componentes do resolver e uma recusa `import-cycle` até (ii)–(iv) pousarem; (ii) um `Env` de pacote, imports preguiçosos, estados de cabeçalho e de corpo; (iii) um `val` demandado inteiro, `dependency loop`; (iv) decoradores simples no cabeçalho; (v) meta sob demanda (leitores de `.hooks`); (vi) o catálogo sob demanda; (vii) 14s8-d; (viii) os exports içados e os valores preguiçosos do commonJS; (ix) o servidor de linguagem checa o componente do módulo editado e seus importadores.
+  ```bp
+  // src/a.bp
+  import {b.format};
+  pub fn title(x: string) -> string { return format(x) + "!"; }
+  // src/b.bp
+  import {a.title};
+  pub fn format(x: string) -> string { return x.toUpper(); }
+  pub fn header() -> string { return title("hi"); }        // "HI!"
+  // src/c.bp, src/d.bp
+  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
+  ```
+  (b′) Como (b), com as regras de raiz da s23-i relaxadas: `@TypeInfo.all` lido em qualquer módulo e qualquer módulo pode importar a raiz; um catálogo cujo valor o build precisa dentro de uma declaração que ele lista (ou uma que os hooks dela alcançam) é o `dependency loop`.
+  ```bp
+  // src/pages/index.bp
+  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
+  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
+  ```
+- **Recomendação.** (b) — uma regra (um dependency loop) no lugar de quatro recusas dependentes de ordem, e uma resposta que não depende mais de qual módulo o resolver pôs primeiro; as regras de raiz da s23-i mantidas (a leitura mais restritiva da decisão 67, e a árvore organizada para a qual foram escolhidas) até uma frente precisar de (b′). Até o passo (ii) de (b) pousar, a recusa localizada de (a) substitui o `unbound variable` de hoje.
+- **Bloqueia.** Nada construído depende dela; os passos seguintes da 144 B-55, o passo 4 da 130-s8-c e a regra de catálogo da s23-i são escritos contra a resposta.
+
+#### B-60-a · Um `.d.bp` de dependência que não passa na checagem: o `build` o recusa como o `check` agora faz? (decisões 514, 515; 144 B-60)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): todo comando o recusa** — `build`, `run`, `test` e `cell check` param num `.d.bp` de dependência com erro, como o `check` faz desde que 514/515 tornaram o conjunto de módulos um só; um conjunto de módulos, uma resposta (67: recusar em vez de aceitar). Viável: `check.zig` renderiza os erros de todo módulo; o `build` descarta uma falha só num arquivo de declaração — esse ramo vira a recusa. Mudanças: uma célula (uma dependência cujo `.d.bp` nomeia um tipo desconhecido) recusada em todo comando.
+- **Medido.** Desde 514/515, `check`, `test` e `cell check` mantêm os módulos `.d.bp` de uma dependência como `build` e `run` fazem. O `check` renderiza e falha com o erro de qualquer módulo, então uma dependência cujo `.d.bp` não passa na checagem faz o `check` falhar; o `build` ignora uma falha só num arquivo de declaração e compila.
+- **Opções.**
+  (a) Todo comando recusa um `.d.bp` de dependência que não passa na checagem.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` e `botopink build`, ambos: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
+  (b) O `check` segue o `build`: uma falha só no arquivo de declaração de uma dependência é ignorada por todo comando.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` e `botopink build`, ambos passam; o erro aparece só onde `area` é chamada.
+- **Recomendação.** (a) — a leitura mais restritiva: uma declaração quebrada é um erro onde quer que seja lida, e os dois comandos respondem igual a um conjunto de módulos.
+- **Bloqueia.** Nada hoje; a célula e o ramo do `build`.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 
@@ -298,35 +1135,6 @@ número livre, que é **518**.
   os tipos dizem.
 - **Bloqueia.** Nada — construído como (a).
 
-#### 04s12-a · Um método, lambda ou `default fn` de `@Component` não tem nó de hooks (375 (2), 04-js passo 12)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(c), e um tipo pode ser um componente — toda forma se comporta e é chamada como um componente `fn`.** (1) Um método, uma lambda ou um `default fn` que responde `@Component<R>` é baixado como um componente de topo: uma lambda sobre o `RenderScope` (388) que responde sua árvore e o scope dos seus filhos, com `use provide` / `use context` / `await` no seu corpo, marcado pelo próprio corpo (s23-j); chamá-lo só cria a lambda e não marca quem chama. (2) Um tipo que implementa `Component<R>` é um componente: seus campos são suas props e seu `render(self) -> R` é seu corpo — `type Menu(items: string[]) implement Component<Element> { fn render(self: Self) -> Element { val t = use context(Theme); return <ul class={t.cls}>…</ul>; } }` — escrito e chamado como `fn Menu(items: string[]) -> @Component<Element>` é: `<Menu items={["a", "b"]}/>`, o mesmo lowering `(props) => (scope) => …`, as mesmas marcas. O scope nunca é um campo (388 (5): nada capturado; o renderer o entrega em cada execução, inclusive um fill de `Suspense`). (3) Cada um tem seu próprio nó de hooks, e o nó de um método ou de um tipo entra no `decl.hooks` (277 amendada: uma chamada de método seguida pelo tipo do receptor), então um decorator vê os hooks de `Menu` como vê os de `fn App`. **(2) em detalhe** (o mantenedor, 2026-10-12): um tipo que implementa `Component<R>` é açúcar para um componente `fn`. Seus campos são os parâmetros — padrões, opcionais, `children`, genéricos como numa `fn`, imutáveis — e seu `fn render(self: Self) -> @Component<R>` é o corpo, `self` lendo os campos e os métodos auxiliares do tipo. `X(campos…)` e `<X …/>` respondem o componente (a lambda `(props) => (scope) => …`), nunca um record, então quem chama não distingue as duas formas. O mesmo lowering em commonJS, erlang, beam e wasm, o mesmo `.d.ts` (`export declare function X(props: {…}): Component<R>`), as mesmas marcas (s23-j: um `render` com `await` é assíncrono), o mesmo `decl.hooks` para decorators (`#[page] type` e `#[page] fn` intercambiáveis), o mesmo comptime (434-b). Hooks só no `render`; um método auxiliar que não responde `@Component` é uma função comum. Recusados, localizados: `implement Component` sem `render`; um `render` de outra assinatura; um campo `RenderScope` (388 (5)); um `use` fora do `render`; `X.render()` chamado direto (`call the component, not its body: <X …/> or X(…)`). **(2) amendada — as props de um componente são um record** (o mantenedor, 2026-10-12): um componente, `fn` ou tipo, recebe suas props como um único parâmetro record, nunca uma lista de parâmetros. `type MenuProps(items: string[], title: string = "Menu");` — então `fn Menu(props: MenuProps) -> @Component<Element> { val t = use context(Theme); return <nav class={t.cls}><h2>{title}</h2><ul>{items.map({ i -> <li>{i}</li> })}</ul></nav>; }`, ou o mesmo componente como tipo: `type Menu(props: MenuProps) implement Component<Element> { fn render(self: Self) -> @Component<Element> { …<h2>{self.title}</h2><ul>{self.items.map({ i -> self.item(i) })}</ul>… } fn item(self: Self, i: string) -> Element { return <li>{i}</li>; } }` (`item` não responde `@Component`: um auxiliar comum). Os campos do record estão em escopo: nus no corpo da `fn` (`title`, `items`), em `self` no `render` e nos auxiliares (`self.title`, `self.items`); `props` nomeia o record inteiro. Padrões, opcionais, `children` e genéricos são do record, escritos uma vez em `MenuProps`. Quem chama nunca constrói o record: os atributos são seus campos — `<Menu items={["a", "b"]}/>` (`title` assumindo seu padrão), `<Menu items={["a", "b"]} title="Principal"/>`, `<Layout view={ { -> <Menu items={xs}/> } }/>` (dentro de uma prop lambda, igual) — e o compilador constrói o `MenuProps` a partir deles, verificado campo a campo como uma construção de record (um campo faltando, um atributo desconhecido, um tipo errado: localizado no atributo). Um componente sem props não recebe parâmetro (`fn App() -> @Component<Element>`). O lowering não muda — `(props) => (scope) => …`, `props` o record — e o `.d.ts` o nomeia: `export declare function Menu(props: MenuProps): Component<Element>`, `MenuProps` exportado ao lado. Recusados, localizados: um componente com mais de um parâmetro, ou cujo único parâmetro não é um tipo record (`a component takes its props as one record: type MenuProps(…); fn Menu(props: MenuProps)`).
-- **Medido.** O 04-js passo 12 pede que um método, um lambda e um `default fn` sigam a marca "do mesmo modo", mas os
-  nós da 277 são só as funções de nível superior do módulo. Construído: cada um continua uma `async function` / arrow `async` no
-  commonJS, e uma chamada de um deles mantém seu `await` (uma chamada que o checker não consegue seguir, s23-j (1)).
-- **Opções.** (a) Como construído. (b) O checker marca todo corpo de `@Component` — um método, um `default fn`, um lambda —
-  pela regra da 375 (um nó próprio, não listado em `decl.hooks`), o commonJS emite cada um por sua marca:
-  ```bp
-  type Menu(items: string[]) { fn render(self: Self) -> @Component<Element> { return Element(…); } }
-  // (a): `async render(map) {…}`, `await menu.render(map)`; (b): `render(map) {…}`, no `await`
-  ```
-  (c) (b), e o nó de um método entra em `decl.hooks` (277 emendada: uma chamada de método seguida pelo tipo de seu
-  receptor).
-- **Recomendação.** (b): a regra é do corpo, onde quer que o corpo seja escrito; (c) muda o que um leitor de `.hooks`
-  vê e é pergunta da 277.
-- **Bloqueia.** O método, o lambda e o `default fn` da caixa 1 do 04-js passo 12.
-
-#### s23-a · Dois nomes de campo dos records da decisão 277 (contradição com as palavras reservadas)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` e `HookUse(…, context: ?Declared<unknown>)`, lidos `n.function.name` e `u.context.name` por um decorator no build; o `fn` da 277 é palavra reservada e não é nome de campo.
-- **Medido.** A 277 escreve `HookNode(fn: Declared<unknown>, …)`; toda palavra-chave é reservada em toda posição
-  (`reserved-word-as-name`: `type N(fn: string)` é recusado no campo). A 354 (4) pede que `Decl.hooks` carregue cada
-  `provide` / `context` "com seu objeto" e não nomeia nenhum campo. Construído (`01-checker` passo 23): `HookNode(function:
-  Declared<unknown>, uses: HookUse[], calls: HookCall[])` e `HookUse(…, context: ?Declared<unknown>)`, lidos como
-  `n.function.name` e `u.context.name` (`run/decl_hooks_context` imprime `App: std/context.provide(main.ThemeContext)`).
-- **Opções.** (a) Como construído: `n.function`, `u.context`. (b) `n.decl` / `u.target`: `n.decl.name`, `u.target.name`.
-  (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
-- **Recomendação.** (a): as palavras que as decisões usam para eles, nenhuma exceção às palavras reservadas.
-- **Bloqueia.** Nada — construído como (a); um renome toca `builtins.d.bp`, o espelho do `comptime.zig`, `hooks.zig` e as células.
-
 #### s23-c · O que o `Declared` de uma declaração alcançada guarda num corpo de decorator
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b), e a leitura de meta tipada** — num corpo de decorator o `value` de uma declaração alcançada (`h.hook.value`, `c.callee.value`, `n.function.value`) é recusado na leitura, localizado (`decl-hooks-value: a reached function is no value at build`), como o `value` de catálogo de um corpo de template é (`typeinfo-all-template-value`); seu meta é lido tipado — `h.hook.meta(Route)` → `Route[]` (298, 130-s8-a), respondido no build quando `Route` é dado e recusado nomeando o campo de run-time caso contrário (415 (3), 380) — nunca a lista de strings `<decorator>.<key>`. Recusar antes de aceitar (67): um `null` tipado como a função esconde que não há nada ali, e a 364 (3) já diz que uma função não tem valor no build; strings carregando os fatos de um decorator são o legado da 216 (2), que o próprio `builtins.d.bp` marca como de saída. Viável: a recusa de corpo de template em `infer.zig` (guardada por `env.inTemplateFn`) ampliada para um corpo de decorator, um id em `diagnostics.zig`; `hooks.zig` `declaredTerm` constrói o termo (escreve `value` como `undefined` e o `meta` de string, e não escreve a chave `typedMeta` hoje, então uma leitura direta de `typedMeta` provavelmente falha em run time — uma linha 144); a leitura tipada segue a regra de `meta_read_at_build` para dados. Mudanças: `Declared.meta: DeclaredMeta[]` sai com o meta de string; o comentário sobre `Declared` em `builtins.d.bp`; uma célula de recusa.
 - **Medido.** `HookUse.hook`, `HookCall.callee` e `HookNode.function` são `Declared<unknown>`. Construído: `value` é
@@ -350,21 +1158,6 @@ número livre, que é **518**.
   os dão — `t.fields[0].annotations` lista `#[validated]` — a sessão publicando as declarações de tipo de cada módulo.
 - **Recomendação.** (b): o record é do `TypeInfo`, e uma lista vazia que significa "não carregado" é uma mentira.
 - **Bloqueia.** Nada para a 293.
-
-#### s23-g · Onde `Decorator.same` é declarado (o `extend Decorator { … }` da 371 não faz parse)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), como construído.** `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` no `builtins.d.bp`, espelhado no `decl_reflection_src` do `comptime.zig`; o `extend Decorator { … }` anônimo da 371 é lido como este membro, e `a.decorator.same(serverOnly)` não muda.
-- **Medido.** A 371 escreve `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` em `builtins.d.bp`. Um
-  `extend` é sempre nomeado (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` é
-  lido pelo teste de deriva (`comptime/builtins.zig` `collectTypes`), e esse teste guarda os métodos de instância de um tipo builtin
-  dentro de sua declaração. Construído e pousado: um membro do behavior, espelhado em
-  `decl_reflection_src` do `comptime.zig` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
-  `a.decorator.same(serverOnly)` lê igual nos dois casos.
-- **Opções.** (a) Como construído: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) Uma
-  extensão nomeada: `pub DecoratorIdentity extend Decorator { fn same(self: Self, other: Decorator) -> bool; }`, o teste de
-  deriva ensinado a ler os métodos de um `extend` em seu alvo. (c) O parser aceita um `extend Decorator { … }` anônimo
-  só em `builtins.d.bp`.
-- **Recomendação.** (a): nenhuma exceção ao parser para um arquivo, e o teste de deriva já o guarda.
-- **Bloqueia.** Nada — construído como (a).
 
 #### s23-i · Um catálogo de um leitor de `.hooks` lido no próprio módulo do leitor (372)
 - **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(d), uma quarta opção: o catálogo é lido só na raiz do pacote.** (1) `@TypeInfo.all` é lido só na raiz do pacote (`main.bp` num binário, `root.bp` numa biblioteca); em qualquer outro módulo é recusado, localizado, nomeando a raiz (``@TypeInfo.all` is read only in the package's root (src/main.bp) — move it there`). (2) Nenhum módulo do pacote importa da sua raiz — recusado, localizado (`src/pages/home.bp imports from the package's root (src/main.bp) — the root imports the package, never the reverse`) — então o resolver analisa a raiz depois de todo módulo que sua árvore de `mod` declara. (3) Na raiz, os catálogos são respondidos depois que os seus próprios leitores de `.hooks` rodaram (um passo 4 depois dos três da 372), então uma declaração decorada na própria raiz também traz sua meta. Nenhum catálogo é respondido antes do que ele lista: toda entrada traz sua meta inteira. Substitui `typeinfo-all-hooks-reader`. Um framework recebe o catálogo da raiz da aplicação como argumento (`jhonstart.serve(@TypeInfo.all(with: page))`), nunca o lê sozinho. **Todo pacote com fontes tem raiz** (o mantenedor, 2026-10-12): um pacote cujo `botopink.json` tem fontes declara `src/root.bp` (uma biblioteca) ou `src/main.bp` (um binário), e o resolver segue a árvore de `mod` a partir dela; o blind scan deprecated sai — um pacote com fontes e sem raiz é recusado, localizado, nomeando o arquivo que falta. Um manifesto sem fontes (o `"workspaces"` de um workspace, o manifesto de dependência de uma fixture) não precisa de raiz. `onze/examples/scaffold` move seu `root.bp` para `src/root.bp` ou seu manifesto nomeia onde fica sua raiz — escolha da frente 162; `json`, `yaml` e `dbcontext` nascem com `src/root.bp`. Medido no `feat` de cada biblioteca: todo outro pacote com fontes já tem uma. **`root.bp` declara a árvore, `main.bp` é a entrada** (o mantenedor, 2026-10-12; amenda a regra da raiz desta resposta): `mod` / `pub mod` são declarados só em `src/root.bp` e no `mod.bp` de uma pasta — nunca em `src/main.bp` nem em outro módulo (recusado, localizado: `declare the module tree in src/root.bp`). `src/root.bp` não é obrigatório: um pacote sem módulo além da sua entrada (um programa de um arquivo) tem só `src/main.bp`; um pacote com módulos tem `src/root.bp`; uma biblioteca tem `src/root.bp` e nenhum `main.bp`. `src/main.bp` contém `pub fn main()`, não é declarado por nenhum `mod`, importa o pacote como um consumidor, não é importado por nenhum módulo, e é analisado depois de toda a árvore e do `root.bp`. Nenhum módulo da árvore importa o `root.bp`. `@TypeInfo.all` é lido no `root.bp` ou no `main.bp` e recusado, localizado, em qualquer outro módulo. O prelude (116-a) é alcançado a partir do `root.bp`. **`src/lib.bp`, como o `lib.rs` do Rust** (o mantenedor, 2026-10-12; amenda as duas regras acima): a raiz do pacote se chama `src/lib.bp` — `root.bp` é renomeado em todo lugar (o do std, o de cada biblioteca, o do resolver, o da documentação — pelo passo que o entrega, à mão ou por um script avulso); `botopink migrate` é removido (o comando, `cli/migrate.zig`, seus testes e docs; 144 B-56) — e `src/main.bp` pode declarar `mod` / `pub mod` quando o pacote não tem `lib.bp`, como o `main.rs` do Rust: um pacote só com `main.bp` tem sua árvore ali; com `lib.bp`, o `lib.bp` guarda a árvore e o `main.bp` não declara `mod` (recusado, localizado: `declare the module tree in src/lib.bp`) e usa o pacote como um consumidor. Toda regra acima que nomeia a raiz lê `lib.bp`, ou `main.bp` quando não há `lib.bp` (o catálogo, o prelude da 116-a, nenhum módulo da árvore a importar). A análise do pacote inteiro permitindo que dois módulos se importem mutuamente é o estudo do B-55 da frente 144; até ele entrar, nenhum ciclo de import entre módulos. **Substituída pela B-55-a (e)** (o mantenedor, 2026-10-12): um arquivo é um módulo, sem `lib.bp` e sem `mod`; o catálogo é lido em qualquer módulo; o que fica aqui é a entrada `src/main.bp` de um executável.
@@ -449,51 +1242,6 @@ número livre, que é **518**.
   ```
 - **Recomendação.** (a): uma regra para uma chamada num corpo (128, inalterada pela 388), sem inferir intenção a partir do
   uso; (b) muda o que o `val x = Card(…)` de todo corpo significa.
-#### 434-b · Os caminhos residente-na-renderização e no-build sob um só runtime de comptime wasm (434, 378 (4))
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Toda biblioteca roda no build no runtime de comptime wasm (434), o jhonstart primeiro; uma função que só Erlang ou Node consegue rodar é um erro localizado ali.** (1) Uma célula de host (`@External.Erlang` / `@External.Node`) alcançada no build roda pela sua forma wasm — um corpo botopink (`#[@External.Wasm(fn: …)]`) ou um export do std-wasm (`std:`, 481) — então `comptime renderToString(<Rodape ano={2026} />)` responde uma string para todo alvo. (2) Cada biblioteca dá às suas células puras (escape, formatação, parse — lógica escrita em Erlang ou JS por conveniência) uma forma wasm: o renderer do jhonstart (`jhonstart_render.erl`) primeiro, para o 144 B-17, depois cada frente de biblioteca (145–162) num passo próprio. (3) Uma função sem forma wasm — 100% Erlang ou Node, ou um efeito real de host (rede, banco, fs, processo) — alcançada por um `comptime` é recusada no build, localizada, nomeando a célula: `error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm form — it cannot run at build (give it a botopink body, or remove `comptime`)`. Nenhuma tradução substitui uma forma wasm ausente no build (sem fallback de beam-to-wasm), e nunca a VM do alvo (c). O alvo do build não estreita isso: um `comptime` roda no wasm qualquer que seja o `--target`, então um build erlang que alcança no build uma célula só `@External.Erlang` é recusado como um build commonJS é. A leitura do comptime fora isso não muda (388 (4): `RenderScope.root()`).
-- **Medido.** A 84 mandava uma avaliação de comptime para a VM do alvo, então um build erlang renderizava um componente `Build` / `Any` no build no BEAM (o passo erl de `render_resident`) e um build commonJS no wat. A 378 (4) pede que o runtime de comptime rode o lambda de um componente com `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; a última caixa do passo 6 da 134 (144 B-17). Sob a 434 o único runtime é o wasm, e o renderizador do jhonstart no BEAM é um sidecar (`jhonstart_render.erl`).
-- **Opções.**
-  (a) O renderizador roda no build só no wasm: o caminho de renderização do jhonstart alcançado no build é botopink (ou std-wasm), sua célula Erlang traduzida pelo beam-to-wasm onde não tem corpo botopink; a resposta é uma string para todo alvo.
-  ```bp
-  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" on the four targets
-  ```
-  (b) Um componente é renderizado no build só quando toda função que ele alcança tem um corpo botopink ou std-wasm; um que alcança uma célula Erlang é recusado no `comptime`, nomeando a célula.
-  ```text
-  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
-  ```
-  (c) Manter a VM do alvo só para a renderização no build (um passo BEAM dentro da compilação para builds erlang/beam).
-- **Recomendação.** (b) agora — nenhuma resposta no build que dependa de uma tradução não provada; (a) quando o beam-to-wasm cobrir as células do renderizador; nunca (c), que a 434 remove.
-- **Bloqueia.** 144 B-17 (a caixa da 378 (4) do passo 6 da 134); nada em B-00.
-
-#### B-55-a · Análise do pacote inteiro: dois módulos de um pacote podem importar um ao outro? (s23-i, 372, 419, 130-s8-c, 14s8-d)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(e), uma contraproposta: um arquivo é um módulo, e o build tem uma camada própria.** (1) Todo `.bp` em `src/` é um módulo do pacote, seu caminho seu nome (`pages.home`, `comptime.route`); sem `lib.bp`, sem `mod` / `pub mod`. (2) `src/main.bp` é a entrada de um executável (`pub fn main()`), importado por nenhum módulo; uma biblioteca não tem. (3) `src/comptime/` é a camada de build: analisada antes de todo outro módulo do pacote, importa só o std, as dependências e o próprio `src/comptime/` (senão recusado, localizado); um decorator ou um template é declarado só ali, no std ou numa dependência (senão recusado, localizado). (4) Os módulos do programa se importam livremente: módulos que se importam formam um bloco (um componente fortemente conectado); as assinaturas de um bloco (assinaturas de `fn`, tipos, `val`s anotados) são registradas antes dos seus corpos; em runtime um `val` de módulo é uma ref, um getter memoizado (o commonJS iça suas funções para `exports` antes de qualquer `require`). (5) Por bloco: assinaturas, corpos, então todo decorator sobre eles (a camada de build já está compilada), então todo `@typeInfo(X).meta(T)` e catálogo do bloco é preenchido — o passo 4 da 130-s8-c, por bloco. (6) A única recusa de ordem é `dependency loop`, localizada: um valor que precisa de si mesmo entre módulos (`pub val x = b.y + 1` / `pub val y = a.x + 1`), ou um `comptime` que precisa de uma meta, um catálogo ou um valor do seu próprio bloco antes de seus decorators rodarem. (7) `@TypeInfo.all` é lido em qualquer módulo. (8) `src/internal/` é privado ao seu pacote; todo outro item `pub` é a API do pacote. (9) O prelude (116-a) é qualquer item `pub` marcado fora de `internal/`. Substitui as regras de raiz da s23-i (`lib.bp`, `mod`, o catálogo na raiz), as recusas da 419 e da 14s8-d e a segunda compilação da 353; o B-56 fica. O custo no `zig build test` e no language server é medido antes dos passos de implementação; um custo alto devolve a pergunta ao mantenedor.
-- **Medido.** Hoje o resolver ordena os módulos de um pacote por seus imports e cada módulo é analisado inteiro antes de seus importadores (as três fases da 372, depois `registerExports`); um ciclo não é recusado por nome — o pai reporta um `unbound variable` sem relação (`error: unbound variable 'base' --> src/b.bp:4:18` para `a ↔ b`). A assinatura de uma função nunca depende de seu corpo (um tipo de retorno omitido é `void`). Um protótipo (144 B-55, não pousado) ordena um ciclo como um componente fortemente conexo e registra os cabeçalhos de seus módulos (assinaturas, tipos, valores anotados) antes de seus corpos: o `a.title` ↔ `b.format` / `b.header` do mantenedor e `a.isEven` ↔ `b.isOdd` rodam em erlang, beam e wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` é recusado, localizado: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Cabeçalhos sozinhos não bastam: `home.bp` e `blog.bp` importando um ao outro, cada um decorado com `#[route]` e lendo o `@typeInfo(X).meta(Route)` do outro, imprimem `none` para o módulo analisado primeiro — o meta precisa ser demandado, seu decorador rodado sob demanda. O `const { f } = require(…)` do commonJS responde `undefined` para uma função e um valor de um ciclo de `require` (`TypeError: title is not a function`); içar as funções para `exports` antes de qualquer `require` e fazer dos valores de nível de módulo getters memoizados roda o ciclo corretamente (verificado à mão sob node). O custo em `zig build test` e na checagem do servidor de linguagem ainda não foi medido.
-- **Opções.**
-  (a) Manter a regra acíclica, com uma recusa própria: o resolver nomeia o ciclo, localizado, no lugar de `unbound variable`; 419, o passo 4 da 130-s8-c (b′), as regras de raiz da s23-i e a recusa da 14s8-d ficam.
-  ```text
-  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
-  ```
-  (b) Adotar a análise sob demanda do pacote inteiro, mantendo as regras de raiz da s23-i: módulos de um pacote importam um ao outro livremente; uma declaração é analisada quando algo precisa dela (um `fn` ou tipo pelo seu cabeçalho, um `val` inteiro, um meta rodando seus decoradores sobre os corpos que ele lê); a única recusa é um `dependency loop`; o passo 4 da 130-s8-c vira a regra geral, a 419 e a recusa da 14s8-d saem, a segunda compilação da 353 sai; `@TypeInfo.all` fica em `lib.bp` (ou `main.bp` sem `lib.bp`) e nenhum módulo importa a raiz. Passos: (i) os componentes do resolver e uma recusa `import-cycle` até (ii)–(iv) pousarem; (ii) um `Env` de pacote, imports preguiçosos, estados de cabeçalho e de corpo; (iii) um `val` demandado inteiro, `dependency loop`; (iv) decoradores simples no cabeçalho; (v) meta sob demanda (leitores de `.hooks`); (vi) o catálogo sob demanda; (vii) 14s8-d; (viii) os exports içados e os valores preguiçosos do commonJS; (ix) o servidor de linguagem checa o componente do módulo editado e seus importadores.
-  ```bp
-  // src/a.bp
-  import {b.format};
-  pub fn title(x: string) -> string { return format(x) + "!"; }
-  // src/b.bp
-  import {a.title};
-  pub fn format(x: string) -> string { return x.toUpper(); }
-  pub fn header() -> string { return title("hi"); }        // "HI!"
-  // src/c.bp, src/d.bp
-  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
-  ```
-  (b′) Como (b), com as regras de raiz da s23-i relaxadas: `@TypeInfo.all` lido em qualquer módulo e qualquer módulo pode importar a raiz; um catálogo cujo valor o build precisa dentro de uma declaração que ele lista (ou uma que os hooks dela alcançam) é o `dependency loop`.
-  ```bp
-  // src/pages/index.bp
-  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
-  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
-  ```
-- **Recomendação.** (b) — uma regra (um dependency loop) no lugar de quatro recusas dependentes de ordem, e uma resposta que não depende mais de qual módulo o resolver pôs primeiro; as regras de raiz da s23-i mantidas (a leitura mais restritiva da decisão 67, e a árvore organizada para a qual foram escolhidas) até uma frente precisar de (b′). Até o passo (ii) de (b) pousar, a recusa localizada de (a) substitui o `unbound variable` de hoje.
-- **Bloqueia.** Nada construído depende dela; os passos seguintes da 144 B-55, o passo 4 da 130-s8-c e a regra de catálogo da s23-i são escritos contra a resposta.
-
 ### 02-std-and-packaging
 
 #### 97-s16-a · Onde ficam as tabelas geradas do `unicode`
@@ -930,711 +1678,6 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Também perguntado.** Se a frase de 441 ainda cobre `trim` e o mapeamento de caixa sob (a): `string_trim_keeps_nbsp` (commonJS `[x]`) e `string_lower_final_sigma` (commonJS `ς`) registram desvios do commonJS que se apoiam nela; sob (a) só para floats eles ficam, sob um (a) mais amplo passam a ser a resposta do std-wasm também no commonJS. Sob (b), `float_text_at_run_time` ganha um desvio `snapshot/targets/commonJS/`.
 - **Bloqueia.** A 144 B-78 (suas duas últimas caixas e seu passo Conformance).
 
-#### B-22-a · Um construtor de variante nu numa expressão (`Num(4)` por `Value.Num(4)`)
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): um construtor de variante nu numa expressão é recusado, localizado, nomeando a forma qualificada** — `val a = Num(4);` é `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` e `val c: Value = .Num(4)` (o tipo esperado nomeia o enum) continuam as duas formas legais; uma variante nua continua sendo de um padrão de `case` (decisão 8, o sujeito fixa o enum). Recusar antes de aceitar (67): hoje o `check` passa e commonJS, erlang e beam falham em run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) enquanto wasm imprime um endereço — quatro respostas erradas; (b) acrescentaria uma quarta grafia a todo backend. Viável: `infer.zig` `registerEnum` liga o nome nu (`env.bind(v.name, ctorType)`, `noteVariantClaim`), e `refuseAmbiguousVariant` recusa dois reivindicantes — o caminho de chamada de um só reivindicante vira a recusa para um uso fora de padrão, o caminho de padrão mantido; uma célula de recusa. Mudanças: `conformance/docs.md` § type — enums; dois defeitos a registrar ao lado: em wasm um `val b = Value.Num(4); @print(b)` sem anotação imprime um endereço, e `"${b}"` de uma variante com payload imprime `[object Object]` / uma tupla erlang / um endereço por alvo (nenhum impressor para uma variante num template; a linha 01-compiler do `status.md` nomeia a metade do enum).
-- **Medido.** O checker admite `val v = Num(4);` para `type Value { Num(n: i32), … }`; erlang, beam e commonJS então falham com um `Num` não vinculado em tempo de execução (`conformance/docs.md` § type — enums registra o defeito hoje). A regra de padrões da decisão 8 permite uma variante nua num padrão de `case`, onde o sujeito fixa o enum; uma expressão não tem sujeito.
-- **Opções.**
-  (a) Recusado, localizado, nomeando a forma qualificada; o `.Num(4)` com ponto à frente e um tipo esperado continua legal.
-  ```bp
-  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
-  val b = Value.Num(4);    // legal
-  val c: Value = .Num(4);  // legal, the expected type names the enum
-  ```
-  (b) Legal: todo backend baixa o construtor nu para o da variante.
-  ```bp
-  val a = Num(4);          // Value.Num(4) on every target
-  ```
-- **Recomendação.** (a) — a leitura mais restritiva: recusar em vez de aceitar, a forma qualificada e a de ponto à frente mantidas; uma variante nua continua sendo de um padrão de `case` (decisão 8).
-- **Bloqueia.** A linha do checker e a falha dos três backends; `conformance/docs.md` § type — enums.
-
-#### B-60-a · Um `.d.bp` de dependência que não passa na checagem: o `build` o recusa como o `check` agora faz? (decisões 514, 515; 144 B-60)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): todo comando o recusa** — `build`, `run`, `test` e `cell check` param num `.d.bp` de dependência com erro, como o `check` faz desde que 514/515 tornaram o conjunto de módulos um só; um conjunto de módulos, uma resposta (67: recusar em vez de aceitar). Viável: `check.zig` renderiza os erros de todo módulo; o `build` descarta uma falha só num arquivo de declaração — esse ramo vira a recusa. Mudanças: uma célula (uma dependência cujo `.d.bp` nomeia um tipo desconhecido) recusada em todo comando.
-- **Medido.** Desde 514/515, `check`, `test` e `cell check` mantêm os módulos `.d.bp` de uma dependência como `build` e `run` fazem. O `check` renderiza e falha com o erro de qualquer módulo, então uma dependência cujo `.d.bp` não passa na checagem faz o `check` falhar; o `build` ignora uma falha só num arquivo de declaração e compila.
-- **Opções.**
-  (a) Todo comando recusa um `.d.bp` de dependência que não passa na checagem.
-  ```bp
-  // deps/shapes/src/shapes.d.bp
-  pub declare fn area(r: Rectt) -> f64;   // unknown type
-  ```
-  `botopink check` e `botopink build`, ambos: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
-  (b) O `check` segue o `build`: uma falha só no arquivo de declaração de uma dependência é ignorada por todo comando.
-  ```bp
-  // deps/shapes/src/shapes.d.bp
-  pub declare fn area(r: Rectt) -> f64;   // unknown type
-  ```
-  `botopink check` e `botopink build`, ambos passam; o erro aparece só onde `area` é chamada.
-- **Recomendação.** (a) — a leitura mais restritiva: uma declaração quebrada é um erro onde quer que seja lida, e os dois comandos respondem igual a um conjunto de módulos.
-- **Bloqueia.** Nada hoje; a célula e o ramo do `build`.
-
-#### B-22-b · Como se imprime um valor de uma seção de enum? (144 B-22; `docs.md` § Sections of an enum)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o caminho inteiro da folha, como escrito** — `@print(Token.Color.White)` escreve `Token.Color.White` em todo target; um nome em dois níveis (`Token.After` e `Token.Layout.Break.After`) continua sendo dois textos. Um texto para um valor em todo target (434 (5)), e nenhum nome interno (`_inner`, `__Token__Color`) na saída de um programa. Viável: o printer de valor de enum de cada backend lê o caminho de seção que o checker já resolve. Mudanças: uma célula `enum_section_value_print` nos quatro targets; `docs.md` § Sections of an enum.
-- **Medido.** `val t = Token.Color.White; @print(t)`: commonJS, erlang e beam imprimem `Token.Color(_inner: __Token__Color.White)` (o record que embrulha a seção e o nome interno do seu enum), wasm um endereço. Nenhuma célula fixa a resposta.
-- **Opções.**
-  (a) O caminho inteiro da folha.
-  ```bp
-  val t = Token.Color.White;
-  @print(t);   // Token.Color.White
-  ```
-  (b) Só o nome da folha.
-  ```bp
-  val t = Token.Color.White;
-  @print(t);   // White
-  ```
-- **Recomendação.** (a) — o caminho distingue duas folhas de mesmo nome, e é o texto que o programa escreveu.
-- **Bloqueia.** A linha de seção de enum do 144 B-22; a linha 05-wasm do status.md.
-
-#### B-14-a · `Name(..base, f: v)` (decisão 37) ao lado do `Name(...base, f: v)` da 359: o `..` sai? (144 B-14)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `..` sai** — uma grafia para copiar os campos de um record; `Name(..base, …)` é recusado, localizado, nomeando `...base`, e um codemod reescreve o std e as bibliotecas no passo que o pousa. Duas grafias para uma coisa é o que a decisão 67 recusa; `...` é o da 359, também o da tag (`<Card {...p} />`). Viável: o braço `..` do parser nos argumentos de um construtor; `grep -rn '(\.\.[a-z]'` nos repositórios. Mudanças: uma célula de recusa; decisão 37 emendada.
-- **Medido.** Os dois compilam na `feat`: o `..base` da decisão 37 (fonte limitada a um nome) e o `...src` da 359 (qualquer expressão do tipo do record ou de um tipo derivado pela 307).
-- **Opções.**
-  (a) O `..` sai.
-  ```bp
-  val p = Pessoa(...old, nome: "Ana");   // the one form
-  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
-  ```
-  (b) Os dois ficam.
-  ```bp
-  val p = Pessoa(...old, nome: "Ana");
-  val q = Pessoa(..old, nome: "Ana");    // same record
-  ```
-- **Recomendação.** (a).
-- **Bloqueia.** A linha do `..` do 144 B-14.
-
-#### B-14-b · Em que ordem a fonte de um spread e os valores rotulados são avaliados? (decisão 359 (3), (6); 144 B-14)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): na ordem escrita** — todo argumento, a fonte de um spread incluída, é avaliado da esquerda para a direita como escrito, uma vez; os campos então se aplicam da esquerda para a direita, o posterior vencendo (359 (3)). Os argumentos de uma chamada são avaliados na ordem escrita em todo outro lugar; um spread não é exceção. Viável: `infer.inferRecordSpread` liga todo argumento com efeito colateral a um local na ordem escrita, não só a fonte. Mudanças: uma célula cuja fonte e um valor rotulado imprimem.
-- **Medido.** Uma fonte que não é um nome é ligada uma vez antes da chamada, então é avaliada antes de todo valor rotulado, mesmo um escrito antes dela: `Pessoa(nome: say("n"), ...make())` imprime `make` e depois `n`.
-- **Opções.**
-  (a) Ordem escrita.
-  ```bp
-  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
-  ```
-  (b) As fontes primeiro, depois os valores rotulados (como construído).
-  ```bp
-  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
-  ```
-- **Recomendação.** (a).
-- **Bloqueia.** A linha de ordem do 144 B-14.
-
-#### B-14-c · Um tipo derivado de um tipo `Type.partial`, e `Type.required`: podem ser fonte de um spread? (decisões 307, 359 (2), 422; 144 B-14)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um tipo derivado de um partial é um partial** — `Type.pick` / `omit` / `merge` de um tipo `Type.partial` são recusados como fonte como o próprio partial; `Type.required(Type.partial(R))` é derivado de `R` e aceito. Os campos de um partial podem estar ausentes, o que a 359 (2) recusa; derivar de novo mantém isso. Viável: `derived_types` registra `derivedPartial` por tipo, então ele passa por `pick` / `omit` / `merge`, e `required` o limpa com a linhagem da sua fonte. Mudanças: duas células.
-- **Medido.** `pick` / `omit` / `merge` de um partial derivam só do tipo partial, não da sua fonte, então são recusados como outros records; `Type.required` não tem linhagem, então seu valor é recusado também.
-- **Opções.**
-  (a) Um partial derivado é um partial; `required` restaura a fonte.
-  ```bp
-  pub val Patch = Type.partial(Pessoa);
-  pub val Nome = Type.pick(Patch, .nome);
-  pub val Full = Type.required(Patch);
-  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
-  Pessoa(...full);             // accepted
-  ```
-  (b) Como construído: os dois recusados como records de outro tipo.
-  ```bp
-  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
-  Pessoa(...full);             // refused: `Full` is not `Pessoa`
-  ```
-- **Recomendação.** (a).
-- **Bloqueia.** A linha de linhagem do 144 B-14.
-
-#### B-11-a · `decl.wrapWith(f)`: o wrapper é só um lambda escrito na chamada, ou qualquer valor do tipo da chamada? (decisão 316; 144 B-11)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um lambda escrito na chamada** — `decl.wrapWith({ call -> … })`; qualquer outra expressão é `decorator-wrap-not-lambda`, localizado no argumento. É a regra da 370 (2) para uma função membro que um decorator adiciona: o código que o decorator escreve é checado como o do programa, nunca um valor calculado no build. Viável: como construído. Muda: nada.
-- **Medido.** Construído como (a). O tipo da chamada é interno (`__Decl__Call<A, R>`, um por função embrulhada), então um helper que devolve um wrapper (`cachedCall(cache)`) não consegue nomear o tipo do seu parâmetro; (b) precisaria desse tipo nomeável.
-- **Opções.**
-  (a) Um lambda na chamada.
-  ```bp
-  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
-  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
-  ```
-  (b) Qualquer valor de um tipo de chamada nomeável.
-  ```bp
-  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
-  decl.wrapWith(cachedCall(cache));                                  // accepted
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do wrapper do 144 B-11.
-
-#### B-11-b · `decl.wrapWith` pode embrulhar uma função genérica ou um membro de um tipo genérico? (decisão 316; 144 B-11)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): sim, como uma linha do 144** — o wrapper é checado contra a assinatura com seus parâmetros de tipo, e a função embrulhada continua genérica. A 316 não nomeia exceção para genéricos, e um cache ou um retry é tão útil em `fn byId<T>(…)`. Viável: o tipo de chamada gerado recebe os parâmetros de tipo da função. Muda: uma cell; `decorator-wrap-generic` sai.
-- **Medido.** Uma função ou dono genérico é recusado hoje, `decorator-wrap-generic`, localizado no decorator.
-- **Opções.**
-  (a) Recusado, como construído.
-  ```bp
-  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
-  ```
-  (b) Embrulhado, genérico.
-  ```bp
-  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
-  ```
-- **Recomendação.** (b).
-- **Trava.** A linha genérica do 144 B-11.
-
-#### B-16-a · Uma chave de campo em runtime: qual é o seu `typeName`, as suas `annotations` e a sua forma impressa? (decisão 308; 144 B-16)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma chave em runtime é o seu nome** — em runtime `Type.Field<T>` carrega só `name`; `key.typeName` e `key.annotations` são membros de build, recusados fora de um corpo de decorator ou de template (`field-key-build-only`), e `@print(key)` imprime `.name`. Anotações são valores `Decorator`, que só existem no build; uma cópia em runtime seria uma segunda verdade, parcial. Viável: o record de runtime guarda um campo; o checker recusa os dois membros pelo estágio. Muda: uma cell de recusa; `field_key_runtime` imprime uma chave.
-- **Medido.** Como construído, uma chave em runtime guarda `typeName` como o checker o escreve e `annotations: []`; `@print(key)` imprime o record inteiro. As cells usam só `name`, `==`, `case`, `of`, `all`.
-- **Opções.**
-  (a) Só o nome.
-  ```bp
-  val k = Recipe.Key.of("title") ?? .title;
-  @print(k);           // .title
-  k.annotations;       // refused at run time: field-key-build-only
-  ```
-  (b) O record inteiro, como construído.
-  ```bp
-  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da chave em runtime do 144 B-16.
-
-#### B-16-b · `Type.keys(R)` num `val` anotado: recusado? (decisões 307, 308; 144 B-16)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado** — `#[x] pub val K = Type.keys(R)` é `derived-type-arguments` na anotação: `Type.keys` nomeia um tipo existente (um alias), não uma nova declaração, então não há o que um decorator anotar; um record derivado (`pick`, `omit`, …) continua anotável. Viável: como construído. Muda: nada.
-- **Medido.** Construído como (a).
-- **Opções.**
-  (a) Recusado.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
-  ```
-  (b) Aceito, o decorator vendo o tipo das chaves de `Recipe`.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `val` anotado do 144 B-16.
-
-#### B-23-a · Decisão 310: um tipo deste módulo ao lado de um import com alias de um tipo de mesmo nome conta como dois módulos? (decisão 310; 144 B-23)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — `type T` declarado aqui e `import {other.T as U}` são dois tipos, legais sob a 310 como dois imports: o alias é o nome que o programa dá ao tipo do outro módulo, e a identidade é por módulo. Recusar faria a 310 depender de onde uma declaração está. Viável: com a identidade qualificada por módulo da 310 (a linha aberta do B-23), nada mais. Muda: uma cell ao lado de `import_two_types_one_name`.
-- **Medido.** Hoje o checker e os quatro backends nomeiam um tipo pelo nome declarado, então as duas formas colidem (`import-name-collision` para dois imports); a 310 está aberta.
-- **Opções.**
-  (a) Dois tipos.
-  ```bp
-  import {shapes.Box as ShapeBox};
-  pub type Box(v: i32)
-  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
-  ```
-  (b) Recusado: um tipo local e um alias de um tipo de mesmo nome colidem.
-  ```bp
-  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da 310 do 144 B-23.
-
-#### B-15-a · Como um corpo de template constrói o `@Decl` de uma tag e roda a sua anotação? (decisão 302; 144 B-15)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `q.tagDecl(kind, name, attrs)` e `q.annotate(decl, at: Span)`, como construído** — a captura (`q`) constrói o handle e roda a anotação escrita num span do seu próprio texto, resolvida no escopo de quem chama, com os argumentos checados ali; o texto da anotação é lido do span, nunca passado como string (281). Os dois ficam na captura porque só ela conhece o escopo e o texto de quem chama. Viável: como construído (a execução para com `need`, o compilador roda a anotação, o corpo roda de novo com a resposta). Muda: nada.
-- **Medido.** Construído como (a); o `html` do `jhonstart` usa (`#[isRaw]` grava `RawBody`).
-- **Opções.**
-  (a) Na captura.
-  ```bp
-  val d = q.tagDecl(.Element, "div", attrs);
-  q.annotate(d, at: ann.span);
-  val names = d.metaAll(ClassName);
-  ```
-  (b) Funções livres no namespace `template` da std.
-  ```bp
-  val d = template.tagDecl(q, .Element, "div", attrs);
-  template.annotate(q, d, ann.span);
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da grafia do 144 B-15.
-
-#### B-15-b · O `Binding` de um corpo de template carrega o seu `Decorator`, para `Decorator.same`? (decisões 268, 302, 371; 144 B-15)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não — a meta é lida pelo tipo** — um corpo de template distingue anotações pela meta que gravam (`d.meta(RawBody)`), como diz a 302; `Binding` não carrega `Decorator`, e a caixa do B-15 que nomeia `Decorator.same` sai. Uma só forma de identificar o que uma anotação fez, pela sua resposta tipada, não por qual função ela era. Viável: como construído. Muda: o texto da caixa.
-- **Medido.** `Binding` (um nome procurado num corpo de template) não tem `Decorator`; o `html` lê a meta pelo tipo.
-- **Opções.**
-  (a) `Binding.decorator`.
-  ```bp
-  if (b.decorator?.same(isRaw)) { … }
-  ```
-  (b) Pelo tipo da meta.
-  ```bp
-  if (d.meta(RawBody) != null) { … }
-  ```
-- **Recomendação.** (b).
-- **Trava.** A linha do `Decorator.same` do 144 B-15.
-
-#### B-15-c · Uma anotação pode ler a meta que uma anotação anterior gravou na mesma declaração ou tag? (decisões 298, 302; 144 B-15)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): não, como construído** — dentro de um decorator, `decl.meta(T)` é recusado; a meta de uma declaração é lida pelo código que a consome (`@typeInfo(X).meta(T)`, um corpo de template sobre `d.meta(T)`), depois de toda anotação rodar. As anotações então não dependem da ordem em que foram escritas. Viável: como construído. Muda: nada.
-- **Medido.** `d.meta(T)` no próprio parâmetro `@Decl` de um decorator é recusado.
-- **Opções.**
-  (a) Recusado dentro de um decorator.
-  ```bp
-  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
-  ```
-  (b) Lido, na ordem das anotações.
-  ```bp
-  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da leitura de meta do 144 B-15.
-
-#### B-10-a · `Field` reflete o default de um campo: como se chama o membro, sendo `default` uma palavra reservada? (decisões 280, 308; 144 B-10 G1)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `defaultValue: ?@Expr<unknown>`** — o default como a expressão escrita, `null` quando não há; `default` é palavra reservada e nenhum campo recebe o nome de uma. Um `@Expr` guarda o código do default, nunca um valor calculado no build (281).
-- **Medido.** `Field` não tem membro de default; o marcador do validation lê defaults à mão. Um campo chamado `default` é erro de parse.
-- **Opções.**
-  (a) `defaultValue: ?@Expr<unknown>`.
-  ```bp
-  for (f in decl.fields) { if (f.defaultValue != null) … }
-  ```
-  (b) Só `hasDefault: bool`.
-  ```bp
-  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-b · `Decl.variants`: o que uma entrada carrega, incluindo uma seção? (decisões 268, 298; 144 B-10 G1)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — uma variante com payload lista seus campos como `decl.fields`; uma seção não é entrada, suas variantes carregam o nome da seção. Uma entrada por variante construível.
-- **Medido.** `Decl.variants` carrega só nomes, com as seções listadas entre eles.
-- **Opções.**
-  (a) Entradas tipadas, seções como campo.
-  ```bp
-  decl.variants[0].fields[0].name   // "amount"
-  ```
-  (b) Como hoje: nomes.
-  ```bp
-  decl.variants[0]   // "Paid" — a name, sections among them
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-c · `clock.formatIso8601`: qual texto é a resposta única? (decisão 497; 144 B-10 G1)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sempre milissegundos, `.sssZ`** — `2026-10-12T20:31:02.000Z` em todo target; uma largura fixa ordena como texto e é lida de volta por uma regra só.
-- **Medido.** o commonJS responde sempre `.sssZ` (o `toISOString` do node); o erlang nunca escreve milissegundos.
-- **Opções.**
-  (a) Sempre `.sssZ`.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
-  ```
-  (b) Milissegundos só quando não são zero.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-d · Uma variante sem qualificador em posição de expressão (`Two(t)`): recusada ou gerada? (144 B-10 G2)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusada na chamada, localizada, nomeando `.Two(t)` ou `E.Two(t)`** — o `docs.md` já diz que não é gerada; o checker aceitar o que nenhum backend emite é o defeito. Uma grafia: a qualificada ou a com ponto.
-- **Medido.** `Two(t)` passa no checker e falha no commonJS, erlang e beam; o `docs.md` diz que não é gerada.
-- **Opções.**
-  (a) Recusada.
-  ```bp
-  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
-  ```
-  (b) Gerada em todo target.
-  ```bp
-  val m = Two(t);   // a Mode, on every target
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-e · Como um alias de tipo de `@Component<Styled>` implementa um behavior? (144 B-10 G2)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não implementa — um alias é o seu alvo**: `Styleable` é implementado por `Styled`, e `@Component<Styled>` chega a ele por `R`; um alias não declara nada (um segundo nome, não um tipo). O marcador do styled é reescrito sobre a implementação de `Styled`.
-- **Medido.** `pub val StyledView = @Component<Styled>` não aceita `implement`; não existe grafia.
-- **Opções.**
-  (a) Um alias com `implement`.
-  ```bp
-  pub val StyledView = @Component<Styled> implement Styleable;
-  ```
-  (b) Só o tipo alvo implementa.
-  ```bp
-  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
-  ```
-- **Recomendação.** (b).
-- **Trava.** A linha do 144 B-10.
-
-#### B-21-a · A última expressão de um lambda escrita com `;`: continua sendo o seu valor? (decisão 409; 144 B-21)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): continua sendo o valor, só para lambdas e `fn(x) { … }` sem tipo** — a regra do tail da 409 vale para os corpos com tipo de retorno escrito (`fn`, método, expressão `fn` tipada); um lambda não tem retorno escrito, o seu valor sempre foi a sua última instrução, e o formatter sempre terminou essa linha com `;`. Ler a 409 ao pé da letra ali significa um codemod sobre 3.800 corpos de lambda (std 180, `conformance/` 207, rakun 1855 …) sem regra nenhuma que o lambda ganhe. Viável: como construído. Muda: o texto da 409 nomeia os corpos que ela rege.
-- **Medido.** Nenhum corpo de `fn` nomeado, método ou expressão `fn` tipada termina sem `;` em lugar nenhum; os corpos de lambda que terminam com `;` são std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
-- **Opções.**
-  (a) Estrito: com `;` a última expressão de um lambda é uma instrução.
-  ```bp
-  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
-  ```
-  (b) A última instrução de um lambda é o seu valor, com `;` ou não.
-  ```bp
-  xs.map({ x -> x + 1; })   // answers x + 1, as today
-  ```
-- **Recomendação.** (b).
-- **Trava.** A linha do lambda do 144 B-21.
-
-#### B-21-b · Um método sem `->`: quando um tail não-`void` é recusado? (decisões 409, 06 C9; 144 B-21)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): só quando o método não tem `return` com valor** — um método sem `->` infere o retorno dos seus `return`s (06 C9); sem nenhum ele não responde nada e um tail não-`void` ali é recusado nele; com um `return` com valor, o tail é mais uma das suas respostas, tipado junto com elas. Viável: o checker lê os `return`s com valor do corpo antes do tail. Muda: uma cell.
-- **Medido.** O thread do B-21 reportou (a); o seu passo Conformance mediu a `feat` recusando um tail não-`void` ao lado de um `return` com valor também, num método e numa fn livre — (b) como construído.
-- **Opções.**
-  (a) Recusado só sem `return` com valor.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
-  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
-  ```
-  (b) Sempre recusado sem `->`.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do método do 144 B-21.
-
-#### B-10-f · Como um decorator lê se o `R` de um retorno `@Component<R>` implementa `@Renderable`? (decisões 268, 280; 144 B-10 G3)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): pelo `@typeInfo` do retorno declarado** — `@typeInfo(decl.returnType).implements(@Renderable)`; `@Decl` continua sendo o handle de uma declaração e perguntas de tipo passam por `@typeInfo`, a única reflexão de um tipo. Viável: `decl.returnType` como valor de tipo (hoje um nome) e `TypeInfo.implements(B)`. Muda: dois membros; o marcador do jhonstart em `client.bp` sai.
-- **Medido.** Nenhuma reflexão responde: `decl.returnType` é o nome do tipo como texto, e nenhum membro pergunta se um tipo implementa um behavior.
-- **Opções.**
-  (a) `@typeInfo` do tipo de retorno.
-  ```bp
-  if (!@typeInfo(decl.returnType).typeArg(0).implements(@Renderable)) decl.fail("…");
-  ```
-  (b) Um membro de `@Decl`.
-  ```bp
-  if (!decl.returnImplements(@Renderable)) decl.fail("…");
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `@Renderable` do 144 B-10 G3.
-
-#### B-10-g · Um template declarado `-> @ExprCustom<View>` cujo código construído é um `Element`: a expansão é um `View`? (decisões 275, 276; 144 B-10 G3)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim — a expansão é o que o template declara** — o `html` declarado `-> @ExprCustom<View>` responde um `View` (`@Component<Element>`), e um `Element` construído é checado contra ele como corpo de um componente; o `renderNode(html …)` do jhonstart e os seus componentes `-> Element` passam para `View`. O tipo declarado de um template é o tipo da sua chamada (426); manter `Element` na chamada tornaria a declaração decorativa. Viável: a checagem do código construído contra `View` aceita um `Element` como resposta de um componente. Muda: os componentes do jhonstart (um commit de consumidor), uma cell.
-- **Medido.** Com `-> @ExprCustom<View>` toda expansão do `html` falha `expected Component, got Element`.
-- **Opções.**
-  (a) Um `View`.
-  ```bp
-  fn Card() -> View { html`<div/>` }   // the expansion is a View
-  ```
-  (b) A chamada mantém `Element`.
-  ```bp
-  fn Card() -> Element { html`<div/>` }   // the declared View ignored at the call
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `@ExprCustom<View>` do 144 B-10 G3.
-
-#### B-17-a · Um corpo que roda no build chama uma função host com forma de build: permitido? (decisões 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma função host com forma de build (cell `std:`, `@External.Wasm` `fn:`) é `Any`; o run-in-build recusa só as outras**, substituindo `comptime-host-cell-unavailable` pela mensagem da 376. A 434/452 tornaram exatamente essas chamáveis no build; a 376, escrita antes delas, desfaria isso.
-- **Medido.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` chamam funções host com forma wasm no build e passam; a 376 como escrita as recusa.
-- **Opções.**
-  (a) Uma forma de build faz `Any`.
-  ```bp
-  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
-  ```
-  (b) A 376 como escrita.
-  ```bp
-  comptime { random.seeded(1).next() }   // refused: a Run function at build
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-b · Como se escreve o estágio de uma função? (decisão 376 (4); 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `#[@Stage.Any]`, como construído** — `pub type Stage { Build, Run, Any }` em `builtins.d.bp`; só `Any` é escrito (Build e Run decorrem dos recursos), então `#[@Stage.Build]` / `#[@Stage.Run]` são recusados como anotações desconhecidas.
-- **Medido.** Construído como (a); as funções host do `math` da std o carregam.
-- **Opções.**
-  (a) `#[@Stage.Any]`.
-  ```bp
-  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
-  ```
-  (b) `#[pure]`.
-  ```bp
-  #[pure] pub declare fn sqrt(x: f64) -> f64;
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-c · O que é o recurso `Build`: a leitura de um parâmetro comptime, ou qualquer `@typeInfo`? (decisões 364, 376 (1); 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): a leitura de um parâmetro comptime `@Decl` / `@Expr`**; `@typeInfo(NamedType)` é uma constante de build, dobrada, não um recurso. Senão todo `main` que lê a meta de um tipo vira `Build` e não roda.
-- **Medido.** Construído como (a); `comptime t: type` é recusado (364).
-- **Opções.**
-  (a) Parâmetro comptime.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
-  ```
-  (b) Qualquer `@typeInfo`.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-d · O estágio segue só declarações? (decisão 376 (2); 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o estágio de uma chamada é o da declaração chamada; uma chamada de método ou por um valor de função não acrescenta nada (`Any`); um corpo de run que chama uma função comptime-`@Expr` e lê o relógio é `build-and-run`, como a 376 escreve.
-- **Medido.** Construído como (a).
-- **Opções.**
-  (a) Só declarações.
-  ```bp
-  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
-  ```
-  (b) Valores de função também.
-  ```bp
-  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-22-c · Um valor de `case` cujos braços têm tipos diferentes no wasm: empacotado como um elemento de array união? (decisões 150, 8 §11; 144 B-22)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o valor de cada braço empacotado como o wasm já empacota um elemento de array união, o `val` tipado pela união do checker; reaproveita uma representação e não acrescenta nenhuma.
-- **Medido.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) imprime um endereço no wasm; commonJS, erlang e beam imprimem o valor.
-- **Opções.**
-  (a) Empacotado por braço.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
-  ```
-  (b) Recusado no wasm até uma representação própria.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `case_value_union` do 144 B-22.
-
-#### B-22-d · Um nome sozinho dentro de um braço de vários sujeitos: um binding, ou recusado como um nome sozinho? (144 B-22)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado, como um nome sozinho é** — o `docs.md` diz que um nome sozinho não é padrão, e a forma com chaves já o recusa dentro de um braço de vários sujeitos; a forma com seta segue: `_` para qualquer um, um padrão para fazer binding. Uma regra para todo braço. Muda: `case_multi_subject_patterns` reescrita com padrões.
-- **Medido.** A forma com seta faz binding de `Shape.Square(side), m -> …` e `_, y -> …` (`case_multi_subject_patterns` fixa isso); a forma com chaves recusa o mesmo braço.
-- **Opções.**
-  (a) Recusado.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
-  ```
-  (b) Um binding.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha de vários sujeitos do 144 B-22.
-
-#### B-18-a · Como um método de template é encontrado: por um nome no escopo de quem chama, ou pelo tipo do receptor? (decisões 397, 415; 144 B-18)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): por um nome no escopo de quem chama, como construído** — `value.method "…"` resolve `method` como um template cujo `self` recebe o receptor, local ou importado; nada alcança o template de uma biblioteca sem import, como todo outro nome. O tipo de um receptor nunca importa código sozinho. Muda: o exemplo do 145 importa `query`.
-- **Medido.** Construído como (a); o exemplo do 145 escreve `self.db.query """…"""` sem import de `query`.
-- **Opções.**
-  (a) Um nome no escopo.
-  ```bp
-  import {query} from "erika";
-  self.db.query """select …"""
-  ```
-  (b) Pelo tipo do receptor.
-  ```bp
-  self.db.query """select …"""   // erika's query found through Db, no import
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do lookup do 144 B-18; o exemplo do 145.
-
-#### B-18-b · Confirmar a superfície do B-18: o texto de `q.note`, `bindings()` como `Decl[]`, `@Decl.module` em todo handle (decisões 415, 426; 144 B-18)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): como construído** — uma nota é acrescentada à linha do mismatch como `— note: …`, então a linha `refused` de uma cell a fixa; `bindings()` responde `Decl[]` e `Binding.ref()` sai com o record `Binding` (um handle só, o `@Decl`); todo `@Decl` carrega `module`, não só um procurado.
-- **Medido.** Construído como (a).
-- **Opções.**
-  (a) Como construído.
-  ```bp
-  // error: type mismatch: expected User, got Order — note: the query selects from orders
-  ```
-  (b) Uma nota na sua própria linha, `Binding` mantido ao lado de `Decl`.
-  ```bp
-  // error: type mismatch: expected User, got Order
-  //   note: the query selects from orders
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da superfície do 144 B-18.
-
-#### B-25-a · Confirmar os adaptadores de gate do B-25 no wasm e as cells deixadas sem binding (decisões 334, 335 (3); 144 B-25)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — `.GateNew`, `.GateOpen`, `.GateAwait` (um gate é uma task pendente que nenhum host responde; abri-lo descarta o timer de cada espera pendente); as cells só de teste da std (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) ficam sem binding no wasm até o `botopink test` rodar wasm (335 (3)), então as "doze cells" da 334 são as de uso do `async`.
-- **Medido.** Construído como (a); `std_async_on_every_target` verde nos quatro targets e nos dois hosts.
-- **Opções.**
-  (a) Como construído.
-  ```bp
-  @External.Wasm(wasi: .GateNew)
-  ```
-  (b) As cells de teste também com binding, agora.
-  ```bp
-  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha dos adaptadores do 144 B-25.
-
-#### B-25-b · A superfície do `fetch` antes do `io/http` ter binding no wasm: `Request`, `HttpError`, o antigo `fetch(url)` (decisões 334, 393; 144 B-25)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): a std fixa primeiro, no 144, com `fetch(url)` removido no mesmo commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; os sites de chamada (std, `http`) migram no pouso (uma grafia, 67).
-- **Medido.** a std só tem `fetch(url) -> @Result<Response, string>`; não existe `Request` nem `HttpError`.
-- **Opções.**
-  (a) A superfície tipada, a forma antiga removida.
-  ```bp
-  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
-  ```
-  (b) A superfície tipada ao lado de `fetch(url)`.
-  ```bp
-  val r = await fetch(u);   // still accepted
-  ```
-- **Recomendação.** (a).
-- **Trava.** As linhas do `io/http` do 144 B-25 (passos 4, 5, 6, 17).
-
-#### B-25-c · Os dois marcadores de wasm do log: um valor de host por nome e `wasi:filesystem`, ou o interino da 405 no log? (decisões 334, 405; 144 B-25)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o interino da 405 no log agora** — as cells de arquivo com binding a um `fn:` que não alcança arquivo no wasm, recusa localizada no uso; o adaptador de valor de host por nome e o `wasi:filesystem` esperam uma decisão própria. Nenhuma caixa do B-25 nem decisão fixa a forma de nenhum dos dois.
-- **Medido.** os dois marcadores do log nomeiam as duas necessidades; nenhum dos adaptadores existe.
-- **Opções.**
-  (a) O interino da 405.
-  ```bp
-  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
-  ```
-  (b) Os dois adaptadores desenhados no 144 agora.
-  ```bp
-  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
-  ```
-- **Recomendação.** (a).
-- **Trava.** Os marcadores de wasm do 156.
-
-#### B-02-c · `"std:…"` escrito em `@External.Node` / `@External.Erlang`: código de host, ou recusado como os outros prefixos? (decisões 305, 481; 144 B-02)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusado em todo target, nomeando a forma rotulada** — o `conformance/docs.md` § Host bindings já diz que as quatro strings com prefixo são recusadas no argumento em todo target; uma string que se lê como cell e roda como código de host é a ambiguidade que a 305 removeu. Muda: `checkExternalCells` recusa `"std:"` fora do wasm também; uma cell.
-- **Medido.** `checkExternalCells` recusa `"std:…"` só em `@External.Wasm`; no Node e no Erlang é código de host ("`std:` was only ever a wasm cell").
-- **Opções.**
-  (a) Recusado em todo lugar.
-  ```bp
-  #[@External.Node("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
-  ```
-  (b) Código de host fora do wasm, o texto corrigido.
-  ```bp
-  #[@External.Node("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `std:` do 144 B-02.
-
-#### B-25-d · Uma biblioteca wasm pré-compilada: o seu manifesto, a sua ABI e a sua cola (decisão 333 (B); 144 B-25 passo 9)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a)** — o manifesto: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` no `botopink.json`, os exports nomeados pelos bindings; a ABI: um side module independente de posição (`wasm-ld --shared`, `env.memory` / `__memory_base`), a forma que o std-wasm já tem, então o `std_wasm_link.zig` o dobra no módulo único; a cola: uma `string` entra como ponteiro e tamanho depois do export `alloc(len)` da biblioteca, volta como um `i64` que empacota ponteiro e tamanho, liberada pelo seu export `free(ptr, len)`; a ausência numa resposta `?T` é um ponteiro `0`. Um módulo autônomo com memória própria não pode ser mesclado sem relocações ou multi-memória.
-- **Medido.** A 333 (B) fixa a ideia (uma biblioteca pré-compilada mesclada no módulo emitido), não o manifesto, a ABI nem a cola.
-- **Opções.**
-  (a) Um side module, exports `alloc` / `free`, uma resposta de string em `i64`.
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
-  ```
-  (b) Um módulo autônomo mantido à parte, importado na instanciação (sem mesclar).
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
-  ```
-- **Recomendação.** (a).
-- **Trava.** Os passos 9 e 11 do 144 B-25.
-
-#### B-19-a · Onde fica um erro de tipo dentro do código de um membro ou tipo associado que um decorator escreveu? (decisões 216, 281; 144 B-19)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na anotação que o adicionou** (`#[maker]`), como `decorator-member-duplicate`, com a chamada `addMember` / `addType` do decorator nomeada na mensagem — quem lê o programa vê de onde o código veio; quem escreveu o decorator vê qual chamada o escreveu.
-- **Medido.** O diagnóstico aponta para depois da última linha do arquivo (o código do membro não tem span no programa).
-- **Opções.**
-  (a) Na anotação, a chamada nomeada.
-  ```bp
-  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
-  ```
-  (b) No argumento do `addMember` no módulo do decorator.
-  ```bp
-  decl.addMember("make", fn() -> Self { … })   // error here, in the library
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha 3 do 144 B-19.
-
-#### B-19-b · `@TypeInfo.all(member: …)` por referência: o que se escreve, e o que faz um tipo que não se conforma? (decisões 256, 281; 144 B-19 passo 7)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): `member: Factory.make`, uma fn associada de um behavior; um tipo catalogado precisa `implement Factory`, e um que não implementa é recusado na consulta, nomeado** — uma referência é checada, uma string não era (281); conformidade por declaração, não por um nome que bate.
-- **Medido.** `member: "make"` é uma string hoje.
-- **Opções.**
-  (a) Só quem implementa, recusado senão.
-  ```bp
-  pub behavior Factory { fn make() -> Self; }
-  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
-  ```
-  (b) Qualquer tipo que declare uma fn associada que bate; os outros pulados.
-  ```bp
-  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
-  ```
-- **Recomendação.** (a).
-- **Trava.** O passo 7 do 144 B-19.
-
-#### B-21-c · O formatter imprime a última expressão do bloco de um braço de `case` como escrita? (decisão 409; 144 B-21)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — como escrita, como o tail de um corpo** — o printer não acrescenta nem remove `;` em lugar nenhum (a regra do formatter da 409), incluindo o bloco de um braço; uma regra para todo bloco.
-- **Medido.** O formatter acrescenta `;` à última expressão do bloco de um braço de `case`; o texto da 409 cobre corpos de função.
-- **Opções.**
-  (a) Como escrita.
-  ```bp
-  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
-  ```
-  (b) `;` acrescentado nos braços.
-  ```bp
-  case s { Circle(r) -> { val d = r * 2; d; } }
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do braço do 144 B-21.
-
-#### B-27-a · Uma declaração no header de um `.bpp` escrita depois de uma instrução: movida ou recusada? (decisões 199, 212; 144 B-27)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusada na declaração, localizada, nomeando a instrução antes dela** — o header se lê de cima para baixo como escrito; uma declaração depois de uma instrução rodaria numa ordem que o arquivo não mostra. Muda: uma cell de recusa; o unfold deixa de movê-la.
-- **Medido.** O unfold a move para depois da função, com a localização mapeada de volta.
-- **Opções.**
-  (a) Recusada.
-  ```bp
-  val n = props.count;
-fn label() -> string { … }   // refused: a declaration after a statement
-  ```
-  (b) Movida, como construído.
-  ```bp
-  val n = props.count;
-fn label() -> string { … }   // moved to module level
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do unfold do 144 B-27.
-
-#### B-27-b · Como quem importa escreve um `.bpp` cujo nome não é identificador (`not-found.bpp`)? (decisões 199, 289; 144 B-27)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não escreve — um arquivo assim é a folha de uma rota, lida pelo router pelo caminho, nunca importada; importá-lo é recusado nomeando o arquivo** — um nome de módulo é um identificador em todo outro lugar.
-- **Medido.** Não existe grafia de import; `not-found.bpp` é convenção do jhonstart.
-- **Opções.**
-  (a) Não importável.
-  ```bp
-  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
-  ```
-  (b) Um caminho entre aspas.
-  ```bp
-  import "not-found" as NotFound;
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `not-found.bpp` do 144 B-27.
-
-#### B-27-c · O 97 s6 sob a resposta (c) da decisão 506: quais são as suas caixas? (decisão 506; 144 B-27)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o passo é reescrito para a metade std de (c), as caixas (a) / (b) removidas** — o coordenador o escreve a partir do texto da 506 (c) na próxima passada de specs; esta pergunta registra que o passo como escrito não pode ser construído.
-- **Medido.** A 506 foi respondida (c); as caixas do 97 s6 estão escritas para (a) e (b).
-- **Opções.**
-  (a) Reescrito para (c).
-  ```bp
-  // 97 s6: (c)'s std half
-  ```
-  (b) Mantido como escrito.
-  ```bp
-  // 97 s6: under (a) … under (b) …
-  ```
-- **Recomendação.** (a).
-- **Trava.** O 97 s6 do 144 B-27.
-
-#### B-17-e · Um raise ao dobrar uma expressão no build: sempre um erro de build? (decisão 380 (2); 144 B-17)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim, como a 380 (2) escreve — depois que as primitivas do runtime de comptime responderem como os targets** (essa linha antes); até lá a dobra fica limitada ao que o runtime responde certo, para nenhuma resposta errada virar erro de build.
-- **Medido.** Como construído só erros aritméticos (badarith) são erros de build; qualquer outro raise deixa o hole para renderizar.
-- **Opções.**
-  (a) Todo raise um erro de build, depois da linha do runtime.
-  ```bp
-  val h = "${parse("x")}";   // build error: the raise named
-  ```
-  (b) Só erros aritméticos.
-  ```bp
-  val h = "${parse("x")}";   // left to run
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-f · Qual função `Any` a 380 dobra no build? (decisões 376, 380; 144 B-17)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — uma função `Any` que não escreve `@panic` / `@todo` / `throw`, nem `@print`, nem `var` de módulo, nem chamada por valor de função, nem método de tipo declarado; as suas chamadas por outras funções assim também dobram.
-- **Medido.** Construído como (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
-- **Opções.**
-  (a) Como construído.
-  ```bp
-  fn shout(s: string) -> string { s.toUpper() }   // folded
-  ```
-  (b) Toda função `Any`.
-  ```bp
-  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-g · Onde uma leitura de contexto encontra um default declarado num módulo que ela nem importa nem alcança pelo seu tipo? (decisões 378, 379; 144 B-17)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): no próprio módulo do tipo ou num módulo já analisado; senão recusada na leitura, nomeando o tipo** — um default é encontrado onde o programa o vê, nunca por uma busca no programa inteiro.
-- **Medido.** Não construído; o passo 6 espera por isso.
-- **Opções.**
-  (a) O módulo do tipo ou um analisado, senão recusada.
-  ```bp
-  use context<Theme>();   // refused: no default for Theme visible here
-  ```
-  (b) Qualquer módulo do programa.
-  ```bp
-  use context<Theme>();   // the default found in any module
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
 ### 02-std-and-packaging
 
 #### B-81-a · Dois métodos `#[query]` de mesmo nome num módulo: como o registro do rakun ganha um nome único? (144 B-81; 150 s30)
@@ -1926,43 +1969,6 @@ fn label() -> string { … }   // moved to module level
 - **Bloqueia.** nada hoje; (b) é uma mudança em `og_test.bp` dona da 51.
 
 ### 08-bpp
-
-#### 116-a · O `import {bpp} from "std"` do próprio módulo de prelúdio (decisão 361 × 270) (*proposta*)
-- **Respondida (o mantenedor, 2026-10-12; aguardando seu número em `decisions-taken.md`):** **(f), uma sexta opção: o prelude são os itens marcados `#[bpp.htmlPrelude]` onde são declarados, um a um.** Um `pub val` / `pub fn` / `pub type` marcado de um módulo que a raiz do pacote (s23-i) alcança só por `pub mod` — inclusive a própria raiz — está no prelude: um `.bpp` o vê pelo nome simples sem importar (`#[bpp.htmlPrelude] pub fn Card(…)` em `src/components.bp`, `pub mod components;` na raiz, `<Card/>` num `.bpp`). A raiz não reexporta nada para isso. Um item `pub` sem o marcador é API da biblioteca, não prelude. Imports são privados — inclusive o `import {bpp} from "std";` de que cada módulo marcado precisa — então nenhum chega a um `.bpp`. Nenhum nome é sombreado: dois itens marcados de um nome, ou um `.bpp` que declara ou importa um nome que o prelude já dá, é recusado, localizado, nomeando os dois lugares (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Recusados, localizados: o marcador num item sem `pub`, num `mod`, num módulo alcançado por um `mod` privado (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), ou num item que reexporta um item de outro pacote (242). `src/prelude.bp` e seu `pub val prelude = bpp.Prelude()` saem. A frente 116 lista o prelude de um pacote — cada item, seu nome e onde é declarado — por `botopink prelude` e no language server (a origem de um nome de `.bpp` no hover). Amenda a 361 e a 270. **Sob a B-55-a (e)** (2026-10-12): o prelude é qualquer item `pub` marcado fora de `src/internal/`; não há raiz a partir da qual alcançá-lo.
-- **Medido** (frente 116 passo 1). A 361 põe o marcador do prelúdio no módulo
-  de prelúdio — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — então o módulo deve importar o
-  `bpp` do std (o `src/prelude.bp` do jhonstart agora termina em `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
-  prelude = bpp.Prelude();`). A 270 diz "os imports daquele módulo são o prelúdio" e recusa, na
-  linha, "um item de outro pacote (242)". Lidas juntas, o import do próprio marcador é ao mesmo tempo um item do
-  prelúdio (todo arquivo `.bpp` resolveria `bpp` por ele) e uma linha recusada. O passo 1 checa só que
-  o módulo contém imports e seu marcador; o escopo do prelúdio e suas recusas são do passo 2.
-- **Opções.**
-  (a) O import do `bpp` do std (ou de uma folha dele) é do marcador, não do prelúdio: deixado de fora da
-  lista de itens entregue ao `compiler-core`, e isento da recusa da 242 — todo outro item `from "std"`
-  num prelúdio continua recusado:
-  ```bp
-  // src/prelude.bp
-  import {element.Element};          // a prelude item
-  import {bpp} from "std";           // the marker's import — not a prelude item, not refused
-  #[bpp.htmlPrelude]
-  pub val prelude = bpp.Prelude();
-  // Card.bpp: `bpp.Prelude()` in its header is `unbound variable 'bpp'`
-  ```
-  (b) O import do marcador é um item de prelúdio como qualquer outro: um arquivo `.bpp` resolve `bpp` sem
-  importá-lo, e a recusa da 242 isenta o std:
-  ```bp
-  // Card.bpp header: `val p = bpp.Prelude();` compiles through the prelude
-  ```
-  (c) A 242 vale para o prelúdio: um módulo de prelúdio não pode importar nada de outro pacote, então o
-  marcador é escrito por um caminho que a linguagem não tem hoje (uma anotação qualificada sem
-  import, `#[std.bpp.htmlPrelude]`), uma mudança de parser e checker:
-  ```bp
-  #[std.bpp.htmlPrelude]
-  pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
-  ```
-- **Recomendação.** (a): o prelúdio continua os módulos do próprio pacote (242), e o único import de que o
-  marcador precisa não alcança nenhum arquivo `.bpp`.
-- **Bloqueia.** A caixa de prelúdio do passo 2 da 116 (a lista de itens e suas recusas); nada no passo 1.
 
 #### 116-b · Os papéis são checados num projeto sem arquivo `.bpp`? (*proposta* ★)
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a), como construído — confirmar** — os papéis são checados sempre que a chave está presente; uma chave que não pode ser honrada é recusada onde é escrita, antes de um arquivo depender dela (67, 361 (4)). Viável, construído: `compiler-cli/src/cli/libs.zig` (`if (project.bpp) checkBppRoles`), `bpp.zig` `checkPackage`, célula `bpp_html_missing` (sem arquivo `.bpp`, recusada na chave). Mudanças: nenhuma; uma linha de decisão.

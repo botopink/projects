@@ -10,6 +10,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 - A front meeting a question it cannot answer from the code adds it here: id · title · Measured
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
+- **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
 - **Part 1** — what blocks front 144 (`repository/botopink-lang`, decision 433: the open steps of the old tracks
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), by old track, then those
   tracks' implementation choices awaiting confirmation.
@@ -21,6 +22,842 @@ The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation:
 number, which is **518**.
 
 ---
+
+## Machine 1 — maximum priority (front 144, `machine-1-checker/`)
+
+The questions machine 1's steps wait on (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, the module-model
+group), answered before every other part of this page; in the order of the steps they block.
+
+#### B-02-c · `"std:…"` written on `@External.Node` / `@External.Erlang`: host code, or refused like the other prefixes? (decisions 305, 481; 144 B-02)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every target, naming the labelled form** — `conformance/docs.md` § Host bindings already says the four prefixed strings are refused at the argument on every target; a string that reads as a cell and runs as host code is the ambiguity 305 removed. Changes: `checkExternalCells` refuses `"std:"` off wasm too; a cell.
+- **Measured.** `checkExternalCells` refuses `"std:…"` only on `@External.Wasm`; on Node and Erlang it is host code ("`std:` was only ever a wasm cell").
+- **Options.**
+  (a) Refused everywhere.
+  ```bp
+  #[@External.Node("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
+  ```
+  (b) Host code off wasm, the text corrected.
+  ```bp
+  #[@External.Node("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-02's `std:` row.
+
+#### B-10-a · `Field` reflects a field's default: what is the member called, `default` being a keyword? (decisions 280, 308; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `defaultValue: ?@Expr<unknown>`** — the default as the expression written, `null` when none; `default` is a keyword and no field takes a keyword's name. An `@Expr` keeps the default code, never a value computed at build (281).
+- **Measured.** `Field` has no default member; validation's marker reads defaults by hand. A field named `default` is a parse error.
+- **Options.**
+  (a) `defaultValue: ?@Expr<unknown>`.
+  ```bp
+  for (f in decl.fields) { if (f.defaultValue != null) … }
+  ```
+  (b) `hasDefault: bool` only.
+  ```bp
+  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-b · `Decl.variants`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — a payload variant lists its fields as `decl.fields` does; a section is not an entry, its variants carry the section's name. One entry per constructible variant.
+- **Measured.** `Decl.variants` carries names only, sections listed among them.
+- **Options.**
+  (a) Typed entries, sections as a field.
+  ```bp
+  decl.variants[0].fields[0].name   // "amount"
+  ```
+  (b) As today: names.
+  ```bp
+  decl.variants[0]   // "Paid" — a name, sections among them
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-c · `clock.formatIso8601`: which text is the one answer? (decision 497; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): always milliseconds, `.sssZ`** — `2026-10-12T20:31:02.000Z` on every target; a fixed width sorts as text and parses back with one rule.
+- **Measured.** commonJS answers `.sssZ` always (node's `toISOString`); erlang never writes milliseconds.
+- **Options.**
+  (a) Always `.sssZ`.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
+  ```
+  (b) Milliseconds only when nonzero.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-d · A bare variant in expression position (`Two(t)`, no enum qualifier): refused or lowered? (144 B-10 G2)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused at the call, located, naming `.Two(t)` or `E.Two(t)`** — `docs.md` already says it is not lowered; the checker accepting what no backend emits is the defect. One spelling: the qualified or the dot form.
+- **Measured.** `Two(t)` checks, then fails on commonJS, erlang and beam; `docs.md` calls it unlowered.
+- **Options.**
+  (a) Refused.
+  ```bp
+  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
+  ```
+  (b) Lowered on every target.
+  ```bp
+  val m = Two(t);   // a Mode, on every target
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-e · How does a type alias of `@Component<Styled>` implement a behavior? (144 B-10 G2)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): it does not — an alias is its target**: `Styleable` is implemented by `Styled`, and `@Component<Styled>` reaches it through `R`; an alias declares nothing (a second name, not a type). styled's marker is rewritten over `Styled`'s implementation.
+- **Measured.** `pub val StyledView = @Component<Styled>` cannot carry `implement`; no spelling exists.
+- **Options.**
+  (a) An alias with `implement`.
+  ```bp
+  pub val StyledView = @Component<Styled> implement Styleable;
+  ```
+  (b) Only the target type implements.
+  ```bp
+  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-f · How does a decorator read whether a `@Component<R>` return's `R` implements `@Renderable`? (decisions 268, 280; 144 B-10 G3)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): through `@typeInfo` of the declared return** — `@typeInfo(decl.returnType).implements(@Renderable)`; `@Decl` stays a declaration's handle and type questions go through `@typeInfo`, the one reflection of a type. Viable: `decl.returnType` as a type value (today a name) and `TypeInfo.implements(B)`. Changes: two members; jhonstart's marker in `client.bp` goes.
+- **Measured.** No reflection answers it: `decl.returnType` is the type's name as text, and no member asks whether a type implements a behavior.
+- **Options.**
+  (a) `@typeInfo` of the return type.
+  ```bp
+  if (!@typeInfo(decl.returnType).typeArg(0).implements(@Renderable)) decl.fail("…");
+  ```
+  (b) A member of `@Decl`.
+  ```bp
+  if (!decl.returnImplements(@Renderable)) decl.fail("…");
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10 G3's `@Renderable` row.
+
+#### B-10-g · A template declared `-> @ExprCustom<View>` whose built code is an `Element`: is the expansion a `View`? (decisions 275, 276; 144 B-10 G3)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes — the expansion is what the template declares** — `html` declared `-> @ExprCustom<View>` answers a `View` (`@Component<Element>`), and a built `Element` is checked against it as a component's body; jhonstart's `renderNode(html …)` and its `-> Element` components move to `View`. A template's declared type is its call's type (426); keeping `Element` at the call would make the declaration decorative. Viable: the built code's check against `View` accepts an `Element` as a component's answer. Changes: jhonstart's components (a consumer commit), a cell.
+- **Measured.** With `-> @ExprCustom<View>` every `html` expansion fails `expected Component, got Element`.
+- **Options.**
+  (a) A `View`.
+  ```bp
+  fn Card() -> View { html`<div/>` }   // the expansion is a View
+  ```
+  (b) The call keeps `Element`.
+  ```bp
+  fn Card() -> Element { html`<div/>` }   // the declared View ignored at the call
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10 G3's `@ExprCustom<View>` row.
+
+#### B-11-a · `decl.wrapWith(f)`: is the wrapper only a lambda written at the call, or any value of the call type? (decision 316; 144 B-11)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a lambda written at the call** — `decl.wrapWith({ call -> … })`; any other expression is `decorator-wrap-not-lambda`, located at the argument. It is 370 (2)'s rule for a member function a decorator adds: the code the decorator writes is checked as the program's, never a value computed at build. Viable: as built. Changes: none.
+- **Measured.** Built as (a). The call type is internal (`__Decl__Call<A, R>`, one per wrapped function), so a helper returning a wrapper (`cachedCall(cache)`) cannot name its parameter's type; (b) would need that type nameable.
+- **Options.**
+  (a) A lambda at the call.
+  ```bp
+  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
+  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
+  ```
+  (b) Any value of a nameable call type.
+  ```bp
+  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
+  decl.wrapWith(cachedCall(cache));                                  // accepted
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-11's wrapper row.
+
+#### B-11-b · May `decl.wrapWith` wrap a generic function or a member of a generic type? (decision 316; 144 B-11)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): yes, as a 144 row** — the wrapper is checked against the signature with its type parameters, and the wrapped function stays generic. 316 names no exception for generics, and a cache or a retry is as useful on `fn byId<T>(…)`. Viable: the generated call type takes the function's type parameters. Changes: a cell; `decorator-wrap-generic` goes.
+- **Measured.** A generic function or owner is refused today, `decorator-wrap-generic`, located at the decorator.
+- **Options.**
+  (a) Refused, as built.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
+  ```
+  (b) Wrapped, generic.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-11's generic row.
+
+#### B-14-a · `Name(..base, f: v)` (decision 37) beside 359's `Name(...base, f: v)`: does `..` go? (144 B-14)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `..` goes** — one spelling for copying a record's fields; `Name(..base, …)` is refused, located, naming `...base`, and a codemod rewrites std and the libraries in the step that lands it. Two spellings for one thing is what decision 67 refuses; `...` is 359's, also the tag's (`<Card {...p} />`). Viable: the parser's `..` arm in a constructor's arguments; `grep -rn '(\.\.[a-z]'` over the repositories. Changes: a refusal cell; decision 37 amended.
+- **Measured.** Both compile on `feat`: decision 37's `..base` (source limited to a name) and 359's `...src` (any expression of the record's type or a 307 derived type).
+- **Options.**
+  (a) `..` goes.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");   // the one form
+  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
+  ```
+  (b) Both stay.
+  ```bp
+  val p = Pessoa(...old, nome: "Ana");
+  val q = Pessoa(..old, nome: "Ana");    // same record
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-14's `..` row.
+
+#### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
+- **Measured.** A source that is not a name is bound once before the call, so it is evaluated before every labelled value, even one written before it: `Pessoa(nome: say("n"), ...make())` prints `make` then `n`.
+- **Options.**
+  (a) Written order.
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
+  ```
+  (b) The sources first, then the labelled values (as built).
+  ```bp
+  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-14's order row.
+
+#### B-14-c · A type derived from a `Type.partial` type, and `Type.required`: may they be a spread's source? (decisions 307, 359 (2), 422; 144 B-14)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a type derived from a partial is a partial** — `Type.pick` / `omit` / `merge` of a `Type.partial` type are refused as a source like the partial itself; `Type.required(Type.partial(R))` is derived from `R` and accepted. A partial's fields may be absent, which 359 (2) refuses; deriving again keeps that. Viable: `derived_types` records `derivedPartial` per type, so it carries through `pick` / `omit` / `merge`, and `required` clears it with its source's lineage. Changes: two cells.
+- **Measured.** `pick` / `omit` / `merge` of a partial derive from the partial type only, not from its source, so they are refused as other records; `Type.required` has no lineage, so its value is refused too.
+- **Options.**
+  (a) A derived partial is a partial; `required` restores the source.
+  ```bp
+  pub val Patch = Type.partial(Pessoa);
+  pub val Nome = Type.pick(Patch, .nome);
+  pub val Full = Type.required(Patch);
+  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
+  Pessoa(...full);             // accepted
+  ```
+  (b) As built: both refused as records of another type.
+  ```bp
+  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
+  Pessoa(...full);             // refused: `Full` is not `Pessoa`
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-14's lineage row.
+
+#### B-15-a · How does a template body build a tag's `@Decl` and run its annotation? (decision 302; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `q.tagDecl(kind, name, attrs)` and `q.annotate(decl, at: Span)`, as built** — the capture (`q`) builds the handle and runs the annotation written at a span of its own text, resolved in the caller's scope with its arguments checked there; the annotation's text is read from the span, never passed as a string (281). Both live on the capture because only it knows the caller's scope and text. Viable: as built (the run stops with `need`, the compiler runs the annotation, the body runs again with the answer). Changes: none.
+- **Measured.** Built as (a); `jhonstart`'s `html` uses it (`#[isRaw]` records `RawBody`).
+- **Options.**
+  (a) On the capture.
+  ```bp
+  val d = q.tagDecl(.Element, "div", attrs);
+  q.annotate(d, at: ann.span);
+  val names = d.metaAll(ClassName);
+  ```
+  (b) Free functions in std's `template` namespace.
+  ```bp
+  val d = template.tagDecl(q, .Element, "div", attrs);
+  template.annotate(q, d, ann.span);
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-15's spelling row.
+
+#### B-15-b · Does a template body's `Binding` carry its `Decorator`, for `Decorator.same`? (decisions 268, 302, 371; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): no — meta is read by type** — a template body tells annotations apart by the meta they record (`d.meta(RawBody)`), as 302 says; `Binding` carries no `Decorator`, and B-15's box naming `Decorator.same` is dropped. One way to identify what an annotation did, by its typed answer, not by which function it was. Viable: as built. Changes: the box's text.
+- **Measured.** `Binding` (a looked-up name in a template body) has no `Decorator`; `html` reads meta by type.
+- **Options.**
+  (a) `Binding.decorator`.
+  ```bp
+  if (b.decorator?.same(isRaw)) { … }
+  ```
+  (b) By meta type.
+  ```bp
+  if (d.meta(RawBody) != null) { … }
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-15's `Decorator.same` row.
+
+#### B-15-c · May an annotation read the meta an earlier annotation recorded on the same declaration or tag? (decisions 298, 302; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): no, as built** — inside a decorator, `decl.meta(T)` is refused; a declaration's meta is read by the code that consumes it (`@typeInfo(X).meta(T)`, a template body over `d.meta(T)`), after every annotation ran. Annotations then do not depend on their written order. Viable: as built. Changes: none.
+- **Measured.** `d.meta(T)` on a decorator's own `@Decl` parameter is refused.
+- **Options.**
+  (a) Refused inside a decorator.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
+  ```
+  (b) Read, in annotation order.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-15's meta-read row.
+
+#### B-16-a · A field key at run time: what are its `typeName`, its `annotations` and its printed form? (decision 308; 144 B-16)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a run-time key is its name** — at run time `Type.Field<T>` carries `name` only; `key.typeName` and `key.annotations` are build-time members, refused outside a decorator or template body (`field-key-build-only`), and `@print(key)` prints `.name`. Annotations are `Decorator` values, which exist only at build; a run-time copy would be a second, partial truth. Viable: the run-time record keeps one field; the checker refuses the two members by stage. Changes: a refusal cell; `field_key_runtime` prints a key.
+- **Measured.** As built, a run-time key holds `typeName` as the checker spells it and `annotations: []`; `@print(key)` prints the whole record. The cells use only `name`, `==`, `case`, `of`, `all`.
+- **Options.**
+  (a) Its name only.
+  ```bp
+  val k = Recipe.Key.of("title") ?? .title;
+  @print(k);           // .title
+  k.annotations;       // refused at run time: field-key-build-only
+  ```
+  (b) The whole record, as built.
+  ```bp
+  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-16's run-time key row.
+
+#### B-16-b · `Type.keys(R)` on an annotated `val`: refused? (decisions 307, 308; 144 B-16)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused** — `#[x] pub val K = Type.keys(R)` is `derived-type-arguments` at the annotation: `Type.keys` names an existing type (an alias), not a new declaration, so there is nothing for a decorator to annotate; a derived record (`pick`, `omit`, …) stays annotatable. Viable: as built. Changes: none.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) Refused.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
+  ```
+  (b) Accepted, the decorator seeing `Recipe`'s keys type.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-16's annotated-`val` row.
+
+#### B-17-a · A body that runs at build calls a host function with a build form: allowed? (decisions 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a host function with a build form (`std:` cell, `@External.Wasm` `fn:`) is `Any`; run-in-build refuses only the others**, replacing `comptime-host-cell-unavailable` with 376's message. 434/452 made exactly these callable at build; 376 written before them would undo it.
+- **Measured.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` call host functions with a wasm form at build and pass; 376 as written refuses them.
+- **Options.**
+  (a) A build form makes it `Any`.
+  ```bp
+  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
+  ```
+  (b) 376 as written.
+  ```bp
+  comptime { random.seeded(1).next() }   // refused: a Run function at build
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-b · How is a function's stage written? (decision 376 (4); 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `#[@Stage.Any]`, as built** — `pub type Stage { Build, Run, Any }` in `builtins.d.bp`; only `Any` is written (Build and Run follow from resources), so `#[@Stage.Build]` / `#[@Stage.Run]` are refused as unknown annotations.
+- **Measured.** Built as (a); std's `math` host functions carry it.
+- **Options.**
+  (a) `#[@Stage.Any]`.
+  ```bp
+  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
+  ```
+  (b) `#[pure]`.
+  ```bp
+  #[pure] pub declare fn sqrt(x: f64) -> f64;
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-c · What is the `Build` resource: a read of a comptime parameter, or any `@typeInfo`? (decisions 364, 376 (1); 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a read of a comptime `@Decl` / `@Expr` parameter**; `@typeInfo(NamedType)` is a build constant, folded, not a resource. Otherwise every `main` that reads a type's meta becomes `Build` and cannot run.
+- **Measured.** Built as (a); `comptime t: type` is refused (364).
+- **Options.**
+  (a) A comptime parameter.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
+  ```
+  (b) Any `@typeInfo`.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-d · Does a stage follow declarations only? (decision 376 (2); 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a comptime-`@Expr` function and reads the clock is `build-and-run`, as 376 writes.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) Declarations only.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
+  ```
+  (b) Function values too.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-e · A raise while folding an expression at build: always a build error? (decision 380 (2); 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes, as 380 (2) writes — once the comptime runtime's primitives answer as the targets do** (that row first); until then folding stays limited to what the runtime answers right, so no wrong answer becomes a build error.
+- **Measured.** As built only arithmetic errors (badarith) are build errors; any other raise leaves the hole to render.
+- **Options.**
+  (a) Every raise a build error, after the runtime row.
+  ```bp
+  val h = "${parse("x")}";   // build error: the raise named
+  ```
+  (b) Arithmetic errors only.
+  ```bp
+  val h = "${parse("x")}";   // left to run
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-f · Which `Any` function does 380 fold at build? (decisions 376, 380; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — an `Any` function that writes no `@panic` / `@todo` / `throw`, no `@print`, no module `var`, no function-value call and no method of a declared type; its calls through other such functions fold too.
+- **Measured.** Built as (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
+- **Options.**
+  (a) As built.
+  ```bp
+  fn shout(s: string) -> string { s.toUpper() }   // folded
+  ```
+  (b) Every `Any` function.
+  ```bp
+  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-g · Where does a context read find a default declared in a module it neither imports nor reaches through its type? (decisions 378, 379; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): in the type's own module or a module already analysed; otherwise refused at the read, naming the type** — a default is found where the program can see it, never by a whole-program search.
+- **Measured.** Not built; Step 6 waits on it.
+- **Options.**
+  (a) The type's module or one analysed, else refused.
+  ```bp
+  use context<Theme>();   // refused: no default for Theme visible here
+  ```
+  (b) Any module of the program.
+  ```bp
+  use context<Theme>();   // the default found in any module
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### 04s12-a · A `@Component` method, lambda or `default fn` has no hooks node (375 (2), 04-js step 12)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(c), and a type may be a component — every form behaves and is called as a `fn` component.** (1) A method, a lambda or a `default fn` answering `@Component<R>` lowers as a top-level component: a lambda over the `RenderScope` (388) answering its tree and its children's scope, with `use provide` / `use context` / `await` in its body, marked by its own body (s23-j); calling it only makes the lambda and marks no caller. (2) A type implementing `Component<R>` is a component: its fields are its props and its `render(self) -> R` is its body — `type Menu(items: string[]) implement Component<Element> { fn render(self: Self) -> Element { val t = use context(Theme); return <ul class={t.cls}>…</ul>; } }` — written and called as `fn Menu(items: string[]) -> @Component<Element>` is: `<Menu items={["a", "b"]}/>`, the same lowering `(props) => (scope) => …`, the same marks. The scope is never a field (388 (5): nothing captured; the renderer hands it at each run, a `Suspense` fill included). (3) Each has its own hooks node, and a method's or a type's node enters `decl.hooks` (277 amended: a method call followed through its receiver's type), so a decorator sees `Menu`'s hooks as it sees `fn App`'s. **(2) in detail** (the maintainer, 2026-10-12): a type implementing `Component<R>` is sugar for a `fn` component. Its fields are the parameters — defaults, optionals, `children`, generics as in a `fn`, immutable — and its `fn render(self: Self) -> @Component<R>` is the body, `self` reading the fields and the type's helper methods. `X(fields…)` and `<X …/>` answer the component (the lambda `(props) => (scope) => …`), never a record, so a caller cannot tell the two forms apart. The same lowering on commonJS, erlang, beam and wasm, the same `.d.ts` (`export declare function X(props: {…}): Component<R>`), the same marks (s23-j: a `render` with `await` is asynchronous), the same `decl.hooks` for decorators (`#[page] type` and `#[page] fn` interchangeable), the same comptime (434-b). Hooks only in `render`; a helper method not answering `@Component` is an ordinary function. Refused, located: `implement Component` with no `render`; a `render` of another signature; a `RenderScope` field (388 (5)); a `use` outside `render`; `X.render()` called directly (`call the component, not its body: <X …/> or X(…)`). **(2) amended — a component's props are one record** (the maintainer, 2026-10-12): a component, `fn` or type, takes its props as one record parameter, never a list of parameters. `type MenuProps(items: string[], title: string = "Menu");` — then `fn Menu(props: MenuProps) -> @Component<Element> { val t = use context(Theme); return <nav class={t.cls}><h2>{title}</h2><ul>{items.map({ i -> <li>{i}</li> })}</ul></nav>; }`, or the same component as a type: `type Menu(props: MenuProps) implement Component<Element> { fn render(self: Self) -> @Component<Element> { …<h2>{self.title}</h2><ul>{self.items.map({ i -> self.item(i) })}</ul>… } fn item(self: Self, i: string) -> Element { return <li>{i}</li>; } }` (`item` does not answer `@Component`: an ordinary helper). The record's fields are in scope: bare in the `fn` body (`title`, `items`), on `self` in `render` and the helpers (`self.title`, `self.items`); `props` names the whole record. Defaults, optionals, `children` and generics are the record's, written once on `MenuProps`. A caller never builds the record: the attributes are its fields — `<Menu items={["a", "b"]}/>` (`title` taking its default), `<Menu items={["a", "b"]} title="Principal"/>`, `<Layout view={ { -> <Menu items={xs}/> } }/>` (inside a lambda prop alike) — and the compiler builds the `MenuProps` from them, checked field by field as a record construction is (a missing field, an unknown attribute, a wrong type: located on the attribute). A component with no props takes no parameter (`fn App() -> @Component<Element>`). The lowering is unchanged — `(props) => (scope) => …`, `props` the record — and the `.d.ts` names it: `export declare function Menu(props: MenuProps): Component<Element>`, `MenuProps` exported beside it. Refused, located: a component with more than one parameter, or whose one parameter is not a record type (`a component takes its props as one record: type MenuProps(…); fn Menu(props: MenuProps)`).
+- **Measured.** 04-js step 12 asks a method, a lambda and a `default fn` to follow the mark "alike", but 277's
+  nodes are the module's top-level functions only. Built: each stays an `async function` / `async` arrow on
+  commonJS, and a call of one keeps its `await` (a call the checker cannot follow, s23-j (1)).
+- **Options.** (a) As built. (b) The checker marks every `@Component` body — a method, a `default fn`, a lambda —
+  by 375's rule (a node of its own, not listed in `decl.hooks`), commonJS emits each by its mark:
+  ```bp
+  type Menu(items: string[]) { fn render(self: Self) -> @Component<Element> { return Element(…); } }
+  // (a): `async render(map) {…}`, `await menu.render(map)`; (b): `render(map) {…}`, no `await`
+  ```
+  (c) (b), and a method's node enters `decl.hooks` (277 amended: a method call followed through its receiver's
+  type).
+- **Recommendation.** (b): the rule is the body's, wherever the body is written; (c) changes what a `.hooks`
+  reader sees and is 277's question.
+- **Blocks.** 04-js step 12 box 1's method, lambda and `default fn`.
+
+#### 434-b · The render-resident and at-build paths under one wasm comptime runtime (434, 378 (4))
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **Every library runs at build on the wasm comptime runtime (434), jhonstart first; a function only Erlang or Node can run is a located error there.** (1) A host cell (`@External.Erlang` / `@External.Node`) reached at build runs through its wasm form — a botopink body (`#[@External.Wasm(fn: …)]`) or a std-wasm export (`std:`, 481) — so `comptime renderToString(<Rodape ano={2026} />)` answers one string for every target. (2) Each library gives its pure cells (escape, formatting, parsing — logic written in Erlang or JS for convenience) a wasm form: jhonstart's renderer (`jhonstart_render.erl`) first, for 144 B-17, then every library front (145–162) in a step of its own. (3) A function with no wasm form — 100% Erlang or Node, or a real host effect (network, database, fs, process) — reached by a `comptime` is refused at build, located, naming the cell: `error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm form — it cannot run at build (give it a botopink body, or remove `comptime`)`. No translation stands in for a missing wasm form at build (no beam-to-wasm fallback), and never the target's VM (c). The build's target does not narrow this: a `comptime` runs on wasm whatever `--target` is, so an erlang build reaching an `@External.Erlang`-only cell at build is refused as a commonJS build is. The comptime's reading is otherwise unchanged (388 (4): `RenderScope.root()`).
+- **Measured.** 84 sent a comptime evaluation to the target's VM, so an erlang build rendered a `Build` / `Any` component at build on the BEAM (`render_resident`'s erl step) and a commonJS build on wat. 378 (4) asks the comptime runtime to run a component's lambda with `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; 134 step 6's last box (144 B-17). Under 434 the only runtime is wasm, and jhonstart's renderer on the BEAM is a sidecar (`jhonstart_render.erl`).
+- **Options.**
+  (a) The renderer runs at build on wasm only: jhonstart's render path reached at build is botopink (or std-wasm), its Erlang cell translated by beam-to-wasm where it has no botopink body; the answer is one string for every target.
+  ```bp
+  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" on the four targets
+  ```
+  (b) A component is rendered at build only when every function it reaches has a botopink or std-wasm body; one reaching an Erlang cell is refused at the `comptime`, naming the cell.
+  ```text
+  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
+  ```
+  (c) Keep the target's VM for at-build rendering alone (a BEAM step inside the compile for erlang/beam builds).
+- **Recommendation.** (b) now — no at-build answer that depends on a translation not proved; (a) once beam-to-wasm covers the renderer's cells; never (c), which 434 removes.
+- **Blocks.** 144 B-17 (134 step 6's 378 (4) box); nothing in B-00.
+
+#### B-18-a · How is a template method found: by a name in the call site's scope, or through the receiver's type? (decisions 397, 415; 144 B-18)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): by a name in the call site's scope, as built** — `value.method "…"` resolves `method` as a template whose `self` takes the receiver, local or imported; nothing reaches a library's template without an import, as for every other name. A receiver's type never imports code by itself. Changes: 145's example imports `query`.
+- **Measured.** Built as (a); 145's example writes `self.db.query """…"""` with no import of `query`.
+- **Options.**
+  (a) A name in scope.
+  ```bp
+  import {query} from "erika";
+  self.db.query """select …"""
+  ```
+  (b) Through the receiver's type.
+  ```bp
+  self.db.query """select …"""   // erika's query found through Db, no import
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-18's lookup row; 145's example.
+
+#### B-18-b · Confirm B-18's surface: `q.note`'s text, `bindings()` as `Decl[]`, `@Decl.module` on every handle (decisions 415, 426; 144 B-18)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): as built** — a note is appended to the mismatch line as `— note: …`, so a cell's `refused` line pins it; `bindings()` answers `Decl[]` and `Binding.ref()` goes with the `Binding` record (one handle, the `@Decl`); every `@Decl` carries `module`, not only a looked-up one.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) As built.
+  ```bp
+  // error: type mismatch: expected User, got Order — note: the query selects from orders
+  ```
+  (b) A note on its own line, `Binding` kept beside `Decl`.
+  ```bp
+  // error: type mismatch: expected User, got Order
+  //   note: the query selects from orders
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-18's surface row.
+
+#### B-19-a · Where is a type error inside a decorator's member or associated-type source located? (decisions 216, 281; 144 B-19)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the annotation that added it** (`#[maker]`), as `decorator-member-duplicate` is, with the decorator's `addMember` / `addType` call named in the message — the program's reader sees where the code came from; the decorator's author sees which call wrote it.
+- **Measured.** The diagnostic points past the file's last line (the member's source has no span in the program).
+- **Options.**
+  (a) At the annotation, the call named.
+  ```bp
+  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
+  ```
+  (b) At the `addMember` argument in the decorator's module.
+  ```bp
+  decl.addMember("make", fn() -> Self { … })   // error here, in the library
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-19's row 3.
+
+#### B-19-b · `@TypeInfo.all(member: …)` by reference: what is written, and what does a type that does not conform do? (decisions 256, 281; 144 B-19 step 7)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): `member: Factory.make`, a behavior's associated fn; a catalogued type must `implement Factory`, and one that does not is refused at the query, naming it** — a reference is checked, a string was not (281); conformance by declaration, not by a matching name.
+- **Measured.** `member: "make"` is a string today.
+- **Options.**
+  (a) Implementers only, refused otherwise.
+  ```bp
+  pub behavior Factory { fn make() -> Self; }
+  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
+  ```
+  (b) Any type declaring a matching associated fn; others skipped.
+  ```bp
+  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-19 step 7.
+
+#### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): keep it the value, for lambdas and untyped `fn(x) { … }` only** — 409's tail rule binds the bodies with a written return type (`fn`, method, typed `fn` expression); a lambda has no written return, its value has always been its last statement, and the formatter has always ended that line with `;`. Reading 409 strictly there means a codemod over 3,800 lambda bodies (std 180, `conformance/` 207, rakun 1855 …) for no rule a lambda gains. Viable: as built. Changes: 409's text names the bodies it binds.
+- **Measured.** No named `fn`, method or typed `fn`-expression body ends without `;` anywhere; lambda bodies ending with `;` are std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
+- **Options.**
+  (a) Strict: with `;` a lambda's last expression is a statement.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
+  ```
+  (b) A lambda's last statement is its value, `;` or not.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers x + 1, as today
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-21's lambda row.
+
+#### B-21-b · A method with no `->`: when is a non-`void` tail refused? (decisions 409, 06 C9; 144 B-21)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: the checker reads the body's valued `return`s before the tail. Changes: a cell.
+- **Measured.** B-21's thread reported (a); its Conformance step measured `feat` refusing a non-`void` tail next to a valued `return` too, in a method and in a free fn — (b) as built.
+- **Options.**
+  (a) Refused only without a valued `return`.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
+  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
+  ```
+  (b) Always refused without `->`.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-21's method row.
+
+#### B-21-c · Does the formatter print a `case` arm block's last expression as written? (decision 409; 144 B-21)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — as written, like a body's tail** — the printer adds and removes no `;` anywhere (409's formatter rule), an arm block included; one rule for every block.
+- **Measured.** The formatter adds `;` to a `case` arm block's last expression; 409's text covers function bodies.
+- **Options.**
+  (a) As written.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
+  ```
+  (b) `;` added in arms.
+  ```bp
+  case s { Circle(r) -> { val d = r * 2; d; } }
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-21's arm row.
+
+#### B-22-a · A bare variant constructor in an expression (`Num(4)` for `Value.Num(4)`)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): a bare variant constructor in an expression is refused, located, naming the qualified form** — `val a = Num(4);` is `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` and `val c: Value = .Num(4)` (the expected type names the enum) stay the two legal forms; a bare variant stays a `case` pattern's (decision 8, the subject fixes the enum). Refuse over accept (67): today `check` passes and commonJS, erlang and beam fail at run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) while wasm prints an address — four wrong answers; (b) would add a fourth spelling to every backend. Viable: `infer.zig` `registerEnum` binds the bare name (`env.bind(v.name, ctorType)`, `noteVariantClaim`), and `refuseAmbiguousVariant` refuses two claimants — the single-claimant call path becomes the refusal for a non-pattern use, the pattern path kept; one refusal cell. Changes: `conformance/docs.md` § type — enums; two defects to file beside it: on wasm an unannotated `val b = Value.Num(4); @print(b)` prints an address, and `"${b}"` of a payload variant prints `[object Object]` / an erlang tuple / an address by target (no printer for a variant in a template; the 01-compiler row in `status.md` names the enum half).
+- **Measured.** The checker admits `val v = Num(4);` for `type Value { Num(n: i32), … }`; erlang, beam and commonJS then fail on an unbound `Num` at run time (`conformance/docs.md` § type — enums records the defect today). Decision 8's pattern rule allows a bare variant in a `case` pattern, where the subject fixes the enum; an expression has no subject.
+- **Options.**
+  (a) Refused, located, naming the qualified form; the leading-dot `.Num(4)` with an expected type stays legal.
+  ```bp
+  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
+  val b = Value.Num(4);    // legal
+  val c: Value = .Num(4);  // legal, the expected type names the enum
+  ```
+  (b) Legal: every backend lowers the bare constructor to the variant's.
+  ```bp
+  val a = Num(4);          // Value.Num(4) on every target
+  ```
+- **Recommendation.** (a) — the strictest reading: refuse over accept, the qualified form and the leading-dot form kept; a bare variant stays a `case` pattern's (decision 8).
+- **Blocks.** The checker row and the three backends' failure; `conformance/docs.md` § type — enums.
+
+#### B-22-b · How does a value of an enum section print? (144 B-22; `docs.md` § Sections of an enum)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): the leaf's whole path, as written** — `@print(Token.Color.White)` writes `Token.Color.White` on every target; a name at two levels (`Token.After` and `Token.Layout.Break.After`) stays two texts. One text for a value on every target (434 (5)), and no internal name (`_inner`, `__Token__Color`) in a program's output. Viable: each backend's printer for an enum value reads the section path the checker already resolves. Changes: a cell `enum_section_value_print` on the four targets; `docs.md` § Sections of an enum.
+- **Measured.** `val t = Token.Color.White; @print(t)`: commonJS, erlang and beam print `Token.Color(_inner: __Token__Color.White)` (the section's wrapper record and its internal enum name), wasm an address. No cell states the answer.
+- **Options.**
+  (a) The leaf's whole path.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // Token.Color.White
+  ```
+  (b) The leaf's name alone.
+  ```bp
+  val t = Token.Color.White;
+  @print(t);   // White
+  ```
+- **Recommendation.** (a) — the path tells two leaves of one name apart, and it is the text the program wrote.
+- **Blocks.** 144 B-22's enum-section row; status.md's 05-wasm row.
+
+#### B-22-c · A `case` value whose arms have different types on wasm: boxed as a union array element? (decisions 150, 8 §11; 144 B-22)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — each arm's value boxed as wasm already boxes a union array element, the `val` typed by the checker's union; it reuses a representation and adds none.
+- **Measured.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) prints an address on wasm; commonJS, erlang and beam print the value.
+- **Options.**
+  (a) Boxed per arm.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
+  ```
+  (b) Refused on wasm until a representation of its own.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-22's `case_value_union` row.
+
+#### B-22-d · A bare name inside a multi-subject arm: a binding, or refused like a name alone? (144 B-22)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused, as a name alone is** — `docs.md` says a name alone is not a pattern, and the braced form already refuses it inside a multi-subject arm; the arrow form follows: `_` for any, a pattern to bind. One rule for every arm. Changes: `case_multi_subject_patterns` rewritten with patterns.
+- **Measured.** The arrow form binds `Shape.Square(side), m -> …` and `_, y -> …` (`case_multi_subject_patterns` pins it); the braced form refuses the same arm.
+- **Options.**
+  (a) Refused.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
+  ```
+  (b) A binding.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-22's multi-subject row.
+
+#### B-23-a · Decision 310: does a type of this module beside an aliased import of a same-named type count as two modules? (decision 310; 144 B-23)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — `type T` declared here and `import {other.T as U}` are two types, legal under 310 like two imports: the alias is the program's name for the other module's type, and identity is by module. Refusing it would make 310 depend on where a declaration sits. Viable: with 310's module-qualified identity (B-23's open row), nothing more. Changes: a cell beside `import_two_types_one_name`.
+- **Measured.** Today the checker and the four backends name a type by its declared name, so both forms collide (`import-name-collision` for two imports); 310 is open.
+- **Options.**
+  (a) Two types.
+  ```bp
+  import {shapes.Box as ShapeBox};
+  pub type Box(v: i32)
+  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
+  ```
+  (b) Refused: a local type and an alias of a same-named type collide.
+  ```bp
+  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-23's 310 row.
+
+#### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
+- **Measured.** Built as (a); `std_async_on_every_target` green on four targets and both hosts.
+- **Options.**
+  (a) As built.
+  ```bp
+  @External.Wasm(wasi: .GateNew)
+  ```
+  (b) The test cells bound too, now.
+  ```bp
+  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-25's adapter row.
+
+#### B-25-b · `fetch`'s surface before `io/http` binds on wasm: `Request`, `HttpError`, the old `fetch(url)` (decisions 334, 393; 144 B-25)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): std fixes it in 144 first, `fetch(url)` removed in the same commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; the call sites (std, `http`) migrate in the landing (one spelling, 67).
+- **Measured.** std has only `fetch(url) -> @Result<Response, string>`; no `Request` or `HttpError` exists.
+- **Options.**
+  (a) The typed surface, the old form removed.
+  ```bp
+  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
+  ```
+  (b) The typed surface beside `fetch(url)`.
+  ```bp
+  val r = await fetch(u);   // still accepted
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-25's `io/http` rows (steps 4, 5, 6, 17).
+
+#### B-25-c · log's two wasm markers: a host value per name and `wasi:filesystem`, or 405's interim in log? (decisions 334, 405; 144 B-25)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): 405's interim in log now** — the file cells bound to a `fn:` that reaches no file on wasm, located refusal at use; the host-value-per-name adapter and `wasi:filesystem` wait for a decision of their own. No B-25 box and no decision fixes either adapter's shape.
+- **Measured.** log's two markers name both needs; neither adapter exists.
+- **Options.**
+  (a) 405's interim.
+  ```bp
+  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
+  ```
+  (b) Both adapters designed in 144 now.
+  ```bp
+  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 156's wasm markers.
+
+#### B-25-d · A prebuilt wasm library: its manifest, its ABI and its glue (decision 333 (B); 144 B-25 step 9)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a)** — the manifest: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` in `botopink.json`, the exports named by the bindings; the ABI: a position-independent side module (`wasm-ld --shared`, `env.memory` / `__memory_base`), the shape std-wasm already has, so `std_wasm_link.zig` folds it into the one module; the glue: a `string` goes in as pointer and length after the library's `alloc(len)` export, comes back as an `i64` packing pointer and length, freed by its `free(ptr, len)` export; a `?T` answer's absence is a pointer of `0`. A standalone module with its own memory cannot be merged without relocations or multi-memory.
+- **Measured.** 333 (B) fixes the idea (a prebuilt library merged into the emitted module), not the manifest, the ABI or the glue.
+- **Options.**
+  (a) A side module, `alloc` / `free` exports, an `i64` string answer.
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
+  ```
+  (b) A standalone module kept separate, imported at instantiation (no merge).
+  ```bp
+  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-25 steps 9 and 11.
+
+#### B-27-a · A `.bpp` header declaration written after a statement: moved or refused? (decisions 199, 212; 144 B-27)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused at the declaration, located, naming the statement before it** — the header reads top to bottom as written; a declaration after a statement would run in an order the file does not show. Changes: a refusal cell; the unfold stops moving it.
+- **Measured.** The unfold moves it after the function, its location mapped back.
+- **Options.**
+  (a) Refused.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // refused: a declaration after a statement
+  ```
+  (b) Moved, as built.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // moved to module level
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-27's unfold row.
+
+#### B-27-b · How does an importer spell a `.bpp` file whose name is not an identifier (`not-found.bpp`)? (decisions 199, 289; 144 B-27)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): it does not — such a file is a route's leaf, read by the router by path, never imported; importing it is refused naming the file** — a module name is an identifier everywhere else.
+- **Measured.** No importer spelling exists; `not-found.bpp` is jhonstart's convention.
+- **Options.**
+  (a) Not importable.
+  ```bp
+  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
+  ```
+  (b) A quoted path.
+  ```bp
+  import "not-found" as NotFound;
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-27's `not-found.bpp` row.
+
+#### B-27-c · 97 s6 under decision 506's answer (c): what are its boxes? (decision 506; 144 B-27)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): the step is rewritten to (c)'s std half, its (a) / (b) boxes removed** — the coordinator writes it from 506 (c)'s text at the next spec pass; this question records that the step as written cannot be built.
+- **Measured.** 506 answered (c); 97 s6's boxes are written for (a) and (b).
+- **Options.**
+  (a) Rewritten to (c).
+  ```bp
+  // 97 s6: (c)'s std half
+  ```
+  (b) Kept as written.
+  ```bp
+  // 97 s6: under (a) … under (b) …
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-27's 97 s6.
+
+#### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
+- **Answered (the maintainer, 2026-10-12; awaiting its number in `decisions-taken.md`):** **(f), a sixth option: the prelude is the items marked `#[bpp.htmlPrelude]` where they are declared, one by one.** A marked `pub val` / `pub fn` / `pub type` of a module the package's root (s23-i) reaches through `pub mod` only — the root itself included — is in the prelude: a `.bpp` sees it by its plain name without importing (`#[bpp.htmlPrelude] pub fn Card(…)` in `src/components.bp`, `pub mod components;` in the root, `<Card/>` in a `.bpp`). The root re-exports nothing for it. A `pub` item without the marker is the library's API, not the prelude. Imports are private — the `import {bpp} from "std";` each marked module needs included — so none reaches a `.bpp`. No name is shadowed: two marked items of one name, or a `.bpp` that declares or imports a name the prelude already gives, is refused, located, naming both places (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Refused, located: the marker on an item without `pub`, on a `mod`, in a module reached through a private `mod` (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), or on an item re-exporting another package's item (242). `src/prelude.bp` and its `pub val prelude = bpp.Prelude()` go. Front 116 lists a package's prelude — every item, its name and where it is declared — by `botopink prelude` and in the language server (a `.bpp` name's origin on hover). Amends 361 and 270. **Under B-55-a (e)** (2026-10-12): the prelude is any marked `pub` item outside `src/internal/`; there is no root to reach it from.
+- **Measured** (front 116 step 1). 361 puts the prelude's marker in the prelude
+  module — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — so the module must import std's
+  `bpp` (jhonstart's `src/prelude.bp` now ends `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
+  prelude = bpp.Prelude();`). 270 says "that module's imports are the prelude" and refuses, at the
+  line, "an item of another package (242)". Read together, the marker's own import is both a prelude
+  item (every `.bpp` file would resolve `bpp` through it) and a refused line. Step 1 checks only that
+  the module holds imports and its marker; the prelude scope and its refusals are step 2's.
+- **Options.**
+  (a) The import of std's `bpp` (or a leaf of it) is the marker's, not the prelude's: left out of the
+  item list handed to `compiler-core`, and exempt from 242's refusal — every other `from "std"` item
+  in a prelude stays refused:
+  ```bp
+  // src/prelude.bp
+  import {element.Element};          // a prelude item
+  import {bpp} from "std";           // the marker's import — not a prelude item, not refused
+  #[bpp.htmlPrelude]
+  pub val prelude = bpp.Prelude();
+  // Card.bpp: `bpp.Prelude()` in its header is `unbound variable 'bpp'`
+  ```
+  (b) The marker's import is a prelude item like any other: a `.bpp` file resolves `bpp` without
+  importing it, and 242's refusal exempts std:
+  ```bp
+  // Card.bpp header: `val p = bpp.Prelude();` compiles through the prelude
+  ```
+  (c) 242 stands for the prelude: a prelude module may import nothing from another package, so the
+  marker is spelled through a path the language does not have today (a qualified annotation with no
+  import, `#[std.bpp.htmlPrelude]`), a parser and checker change:
+  ```bp
+  #[std.bpp.htmlPrelude]
+  pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
+  ```
+- **Recommendation.** (a): the prelude stays the package's own modules (242), and the one import the
+  marker needs reaches no `.bpp` file.
+- **Blocks.** 116 step 2's prelude box (the item list and its refusals); nothing in step 1.
+
+#### s23-a · Two field names of decision 277's records (contradiction with the reserved words)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read `n.function.name` and `u.context.name` by a decorator at build; 277's `fn` is a reserved word and is not a field name.
+- **Measured.** 277 writes `HookNode(fn: Declared<unknown>, …)`; every keyword is reserved in every position
+  (`reserved-word-as-name`: `type N(fn: string)` is refused at the field). 354 (4) asks `Decl.hooks` to carry each
+  `provide` / `context` "with its object" and names no field. Built (`01-checker` step 23): `HookNode(function:
+  Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read
+  `n.function.name` and `u.context.name` (`run/decl_hooks_context` prints `App: std/context.provide(main.ThemeContext)`).
+- **Options.** (a) As built: `n.function`, `u.context`. (b) `n.decl` / `u.target`: `n.decl.name`, `u.target.name`.
+  (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
+- **Recommendation.** (a): the words the decisions use for them, no exception to the reserved words.
+- **Blocks.** Nothing — built as (a); a rename touches `builtins.d.bp`, `comptime.zig`'s mirror, `hooks.zig` and the cells.
+
+#### s23-g · Where `Decorator.same` is declared (371's `extend Decorator { … }` does not parse)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` in `builtins.d.bp`, mirrored in `comptime.zig`'s `decl_reflection_src`; 371's anonymous `extend Decorator { … }` reads as this member, and `a.decorator.same(serverOnly)` is unchanged.
+- **Measured.** 371 writes `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` in `builtins.d.bp`. An
+  `extend` is always named (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` is
+  parsed by the drift test (`comptime/builtins.zig` `collectTypes`), and that test holds a builtin type's instance
+  methods inside its declaration. Built and landed: a member of the behavior, mirrored in
+  `comptime.zig`'s `decl_reflection_src` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
+  `a.decorator.same(serverOnly)` reads the same either way.
+- **Options.** (a) As built: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) A named
+  extension: `pub DecoratorIdentity extend Decorator { fn same(self: Self, other: Decorator) -> bool; }`, the drift
+  test taught to read an `extend`'s methods into its target. (c) The parser takes an anonymous `extend Decorator { … }`
+  in `builtins.d.bp` only.
+- **Recommendation.** (a): no exception to the parser for one file, and the drift test already holds it.
+- **Blocks.** Nothing — built as (a).
+
+#### B-55-a · Whole-package analysis: may two modules of a package import each other? (s23-i, 372, 419, 130-s8-c, 14s8-d)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(e), a counter-proposal: a file is a module, and the build has a layer of its own.** (1) Every `.bp` under `src/` is a module of the package, its path its name (`pages.home`, `comptime.route`); no `lib.bp`, no `mod` / `pub mod`. (2) `src/main.bp` is an executable's entry (`pub fn main()`), imported by no module; a library has none. (3) `src/comptime/` is the build layer: analysed before every other module of the package, it imports only std, dependencies and `src/comptime/` itself (else refused, located); a decorator or a template is declared only there, in std or in a dependency (else refused, located). (4) The program's modules import each other freely: modules importing each other form a block (a strongly connected component); a block's headers (`fn` signatures, types, annotated `val`s) are registered before its bodies; at run time a module-level `val` is a ref, a memoised getter (commonJS hoists its functions onto `exports` before any `require`). (5) Per block: headers, bodies, then every decorator over them (the build layer is already compiled), then every `@typeInfo(X).meta(T)` and catalogue of the block is filled — 130-s8-c's step 4, per block. (6) The only order refusal is `dependency loop`, located: a value needing itself across modules (`pub val x = b.y + 1` / `pub val y = a.x + 1`), or a `comptime` needing a meta, a catalogue or a value of its own block before its decorators ran. (7) `@TypeInfo.all` is read in any module. (8) `src/internal/` is private to its package; every other `pub` item is the package's API. (9) The prelude (116-a) is any marked `pub` item outside `internal/`. Replaces s23-i's root rules (`lib.bp`, `mod`, the catalogue in the root), 419's and 14s8-d's refusals and 353's second compile; B-56 stands. The cost on `zig build test` and on the language server is measured before the implementation steps; a high cost returns the question to the maintainer.
+- **Measured.** Today the resolver sorts a package's modules by their imports and each module is analysed whole before its importers (372's three phases, then `registerExports`); a cycle is not refused by name — the parent reports an unrelated `unbound variable` (`error: unbound variable 'base' --> src/b.bp:4:18` for `a ↔ b`). A function's signature never depends on its body (an omitted return type is `void`). A prototype (144 B-55, not landed) orders a cycle as one strongly connected component and registers its modules' headers (signatures, types, annotated values) before their bodies: the maintainer's `a.title` ↔ `b.format` / `b.header` and `a.isEven` ↔ `b.isOdd` run on erlang, beam and wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` is refused, located: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Headers alone are not enough: `home.bp` and `blog.bp` importing each other, each `#[route]`-decorated and reading the other's `@typeInfo(X).meta(Route)`, print `none` for the module analysed first — the meta must be demanded, its decorator run on demand. commonJS's `const { f } = require(…)` answers `undefined` for a function and a value of a `require` cycle (`TypeError: title is not a function`); hoisting the functions onto `exports` before any `require` and making module-level values memoised getters runs the cycle correctly (checked by hand under node). The cost on `zig build test` and on the language server's check is not measured yet.
+- **Options.**
+  (a) Keep the acyclic rule, with its own refusal: the resolver names the cycle, located, in place of `unbound variable`; 419, 130-s8-c (b′)'s step 4, s23-i's root rules and 14s8-d's refusal stay.
+  ```text
+  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
+  ```
+  (b) Adopt whole-package on-demand analysis, keeping s23-i's root rules: modules of a package import each other freely; a declaration is analysed when something needs it (a `fn` or type by its header, a `val` whole, a meta by running its decorators over the bodies it reads); the only refusal is a `dependency loop`; 130-s8-c's step 4 becomes the general rule, 419 and 14s8-d's refusal go, 353's second compile goes; `@TypeInfo.all` stays in `lib.bp` (or `main.bp` without `lib.bp`) and no module imports the root. Steps: (i) the resolver's components and an `import-cycle` refusal until (ii)–(iv) land; (ii) a package `Env`, lazy imports, header and body states; (iii) a `val` demanded whole, `dependency loop`; (iv) plain decorators in the header; (v) meta on demand (`.hooks` readers); (vi) the catalogue on demand; (vii) 14s8-d; (viii) commonJS's hoisted exports and lazy values; (ix) the language server checks the edited module's component and its importers.
+  ```bp
+  // src/a.bp
+  import {b.format};
+  pub fn title(x: string) -> string { return format(x) + "!"; }
+  // src/b.bp
+  import {a.title};
+  pub fn format(x: string) -> string { return x.toUpper(); }
+  pub fn header() -> string { return title("hi"); }        // "HI!"
+  // src/c.bp, src/d.bp
+  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
+  ```
+  (b′) As (b), with s23-i's root rules relaxed: `@TypeInfo.all` read in any module and any module may import the root; a catalogue whose value the build needs inside a declaration it lists (or one its hooks reach) is the `dependency loop`.
+  ```bp
+  // src/pages/index.bp
+  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
+  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
+  ```
+- **Recommendation.** (b) — one rule (a dependency loop) in place of four order-dependent refusals, and an answer that no longer depends on which module the resolver placed first; s23-i's root rules kept (decision 67's strictest reading, and the tidy tree they were chosen for) until a front needs (b′). Until (b)'s step (ii) lands, (a)'s located refusal replaces today's `unbound variable`.
+- **Blocks.** Nothing built depends on it; 144 B-55's follow-up steps, 130-s8-c's step 4 and s23-i's catalogue rule are written against the answer.
+
+#### B-60-a · A dependency's `.d.bp` that does not check: does `build` refuse it as `check` now does? (decisions 514, 515; 144 B-60)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): every command refuses it** — `build`, `run`, `test` and `cell check` stop on a dependency's `.d.bp` with an error, as `check` does since 514/515 made the module set one; one module set, one answer (67: refuse over accept). Viable: `check.zig` renders every module's errors; `build` drops a failure in a declaration file alone — that branch becomes the refusal. Changes: a cell (a dependency whose `.d.bp` names an unknown type) refused on every command.
+- **Measured.** Since 514/515 `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run` do. `check` renders and fails on any module's error, so a dependency whose `.d.bp` does not check fails `check`; `build` ignores a failure in a declaration file alone and builds.
+- **Options.**
+  (a) Every command refuses a dependency's `.d.bp` that does not check.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` and `botopink build` both: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
+  (b) `check` follows `build`: a failure in a dependency's declaration file alone is ignored by every command.
+  ```bp
+  // deps/shapes/src/shapes.d.bp
+  pub declare fn area(r: Rectt) -> f64;   // unknown type
+  ```
+  `botopink check` and `botopink build` both succeed; the error appears only where `area` is called.
+- **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
+- **Blocks.** Nothing today; the cell and `build`'s branch.
 
 ## Part 1 — What blocks tracks 00–03
 
@@ -298,35 +1135,6 @@ number, which is **518**.
   the types say.
 - **Blocks.** Nothing — built as (a).
 
-#### 04s12-a · A `@Component` method, lambda or `default fn` has no hooks node (375 (2), 04-js step 12)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(c), and a type may be a component — every form behaves and is called as a `fn` component.** (1) A method, a lambda or a `default fn` answering `@Component<R>` lowers as a top-level component: a lambda over the `RenderScope` (388) answering its tree and its children's scope, with `use provide` / `use context` / `await` in its body, marked by its own body (s23-j); calling it only makes the lambda and marks no caller. (2) A type implementing `Component<R>` is a component: its fields are its props and its `render(self) -> R` is its body — `type Menu(items: string[]) implement Component<Element> { fn render(self: Self) -> Element { val t = use context(Theme); return <ul class={t.cls}>…</ul>; } }` — written and called as `fn Menu(items: string[]) -> @Component<Element>` is: `<Menu items={["a", "b"]}/>`, the same lowering `(props) => (scope) => …`, the same marks. The scope is never a field (388 (5): nothing captured; the renderer hands it at each run, a `Suspense` fill included). (3) Each has its own hooks node, and a method's or a type's node enters `decl.hooks` (277 amended: a method call followed through its receiver's type), so a decorator sees `Menu`'s hooks as it sees `fn App`'s. **(2) in detail** (the maintainer, 2026-10-12): a type implementing `Component<R>` is sugar for a `fn` component. Its fields are the parameters — defaults, optionals, `children`, generics as in a `fn`, immutable — and its `fn render(self: Self) -> @Component<R>` is the body, `self` reading the fields and the type's helper methods. `X(fields…)` and `<X …/>` answer the component (the lambda `(props) => (scope) => …`), never a record, so a caller cannot tell the two forms apart. The same lowering on commonJS, erlang, beam and wasm, the same `.d.ts` (`export declare function X(props: {…}): Component<R>`), the same marks (s23-j: a `render` with `await` is asynchronous), the same `decl.hooks` for decorators (`#[page] type` and `#[page] fn` interchangeable), the same comptime (434-b). Hooks only in `render`; a helper method not answering `@Component` is an ordinary function. Refused, located: `implement Component` with no `render`; a `render` of another signature; a `RenderScope` field (388 (5)); a `use` outside `render`; `X.render()` called directly (`call the component, not its body: <X …/> or X(…)`). **(2) amended — a component's props are one record** (the maintainer, 2026-10-12): a component, `fn` or type, takes its props as one record parameter, never a list of parameters. `type MenuProps(items: string[], title: string = "Menu");` — then `fn Menu(props: MenuProps) -> @Component<Element> { val t = use context(Theme); return <nav class={t.cls}><h2>{title}</h2><ul>{items.map({ i -> <li>{i}</li> })}</ul></nav>; }`, or the same component as a type: `type Menu(props: MenuProps) implement Component<Element> { fn render(self: Self) -> @Component<Element> { …<h2>{self.title}</h2><ul>{self.items.map({ i -> self.item(i) })}</ul>… } fn item(self: Self, i: string) -> Element { return <li>{i}</li>; } }` (`item` does not answer `@Component`: an ordinary helper). The record's fields are in scope: bare in the `fn` body (`title`, `items`), on `self` in `render` and the helpers (`self.title`, `self.items`); `props` names the whole record. Defaults, optionals, `children` and generics are the record's, written once on `MenuProps`. A caller never builds the record: the attributes are its fields — `<Menu items={["a", "b"]}/>` (`title` taking its default), `<Menu items={["a", "b"]} title="Principal"/>`, `<Layout view={ { -> <Menu items={xs}/> } }/>` (inside a lambda prop alike) — and the compiler builds the `MenuProps` from them, checked field by field as a record construction is (a missing field, an unknown attribute, a wrong type: located on the attribute). A component with no props takes no parameter (`fn App() -> @Component<Element>`). The lowering is unchanged — `(props) => (scope) => …`, `props` the record — and the `.d.ts` names it: `export declare function Menu(props: MenuProps): Component<Element>`, `MenuProps` exported beside it. Refused, located: a component with more than one parameter, or whose one parameter is not a record type (`a component takes its props as one record: type MenuProps(…); fn Menu(props: MenuProps)`).
-- **Measured.** 04-js step 12 asks a method, a lambda and a `default fn` to follow the mark "alike", but 277's
-  nodes are the module's top-level functions only. Built: each stays an `async function` / `async` arrow on
-  commonJS, and a call of one keeps its `await` (a call the checker cannot follow, s23-j (1)).
-- **Options.** (a) As built. (b) The checker marks every `@Component` body — a method, a `default fn`, a lambda —
-  by 375's rule (a node of its own, not listed in `decl.hooks`), commonJS emits each by its mark:
-  ```bp
-  type Menu(items: string[]) { fn render(self: Self) -> @Component<Element> { return Element(…); } }
-  // (a): `async render(map) {…}`, `await menu.render(map)`; (b): `render(map) {…}`, no `await`
-  ```
-  (c) (b), and a method's node enters `decl.hooks` (277 amended: a method call followed through its receiver's
-  type).
-- **Recommendation.** (b): the rule is the body's, wherever the body is written; (c) changes what a `.hooks`
-  reader sees and is 277's question.
-- **Blocks.** 04-js step 12 box 1's method, lambda and `default fn`.
-
-#### s23-a · Two field names of decision 277's records (contradiction with the reserved words)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read `n.function.name` and `u.context.name` by a decorator at build; 277's `fn` is a reserved word and is not a field name.
-- **Measured.** 277 writes `HookNode(fn: Declared<unknown>, …)`; every keyword is reserved in every position
-  (`reserved-word-as-name`: `type N(fn: string)` is refused at the field). 354 (4) asks `Decl.hooks` to carry each
-  `provide` / `context` "with its object" and names no field. Built (`01-checker` step 23): `HookNode(function:
-  Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read
-  `n.function.name` and `u.context.name` (`run/decl_hooks_context` prints `App: std/context.provide(main.ThemeContext)`).
-- **Options.** (a) As built: `n.function`, `u.context`. (b) `n.decl` / `u.target`: `n.decl.name`, `u.target.name`.
-  (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
-- **Recommendation.** (a): the words the decisions use for them, no exception to the reserved words.
-- **Blocks.** Nothing — built as (a); a rename touches `builtins.d.bp`, `comptime.zig`'s mirror, `hooks.zig` and the cells.
-
 #### s23-c · What a reached declaration's `Declared` holds in a decorator body
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b), and the meta read typed** — in a decorator body a reached declaration's `value` (`h.hook.value`, `c.callee.value`, `n.function.value`) is refused at the read, located (`decl-hooks-value: a reached function is no value at build`), as a template body's catalogue `value` is (`typeinfo-all-template-value`); its meta is read typed — `h.hook.meta(Route)` → `Route[]` (298, 130-s8-a), answered at build when `Route` is data and refused naming the run-time field otherwise (415 (3), 380) — never the `<decorator>.<key>` string list. Refuse over accept (67): a `null` typed as the function hides that nothing is there, and 364 (3) already says a function has no value at build; strings carrying a decorator's facts are 216 (2)'s legacy, which `builtins.d.bp` itself marks as going. Viable: the template-body refusal in `infer.zig` (guarded by `env.inTemplateFn`) widened to a decorator body, one id in `diagnostics.zig`; `hooks.zig` `declaredTerm` builds the term (it writes `value` as `undefined` and the string `meta`, and writes no `typedMeta` key today, so a direct `typedMeta` read likely fails at run time — a 144 row); the typed read follows `meta_read_at_build`'s rule for data. Changes: `Declared.meta: DeclaredMeta[]` leaves with the string meta; the comment on `Declared` in `builtins.d.bp`; one refusal cell.
 - **Measured.** `HookUse.hook`, `HookCall.callee` and `HookNode.function` are `Declared<unknown>`. Built: `value` is
@@ -351,21 +1159,6 @@ number, which is **518**.
   declarations.
 - **Recommendation.** (b): the record is `TypeInfo`'s, and an empty list that means "not carried" is a lie.
 - **Blocks.** Nothing for 293.
-
-#### s23-g · Where `Decorator.same` is declared (371's `extend Decorator { … }` does not parse)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` in `builtins.d.bp`, mirrored in `comptime.zig`'s `decl_reflection_src`; 371's anonymous `extend Decorator { … }` reads as this member, and `a.decorator.same(serverOnly)` is unchanged.
-- **Measured.** 371 writes `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` in `builtins.d.bp`. An
-  `extend` is always named (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` is
-  parsed by the drift test (`comptime/builtins.zig` `collectTypes`), and that test holds a builtin type's instance
-  methods inside its declaration. Built and landed: a member of the behavior, mirrored in
-  `comptime.zig`'s `decl_reflection_src` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
-  `a.decorator.same(serverOnly)` reads the same either way.
-- **Options.** (a) As built: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) A named
-  extension: `pub DecoratorIdentity extend Decorator { fn same(self: Self, other: Decorator) -> bool; }`, the drift
-  test taught to read an `extend`'s methods into its target. (c) The parser takes an anonymous `extend Decorator { … }`
-  in `builtins.d.bp` only.
-- **Recommendation.** (a): no exception to the parser for one file, and the drift test already holds it.
-- **Blocks.** Nothing — built as (a).
 
 #### s23-i · A catalogue of a `.hooks` reader read in the reader's own module (372)
 - **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(d), a fourth option: the catalogue is read only in the package's root.** (1) `@TypeInfo.all` is read only in the package's root (`main.bp` for a binary, `root.bp` for a library); in any other module it is refused, located, naming the root (``@TypeInfo.all` is read only in the package's root (src/main.bp) — move it there`). (2) No module of the package imports from its root — refused, located (`src/pages/home.bp imports from the package's root (src/main.bp) — the root imports the package, never the reverse`) — so the resolver analyses the root after every module its `mod` tree declares. (3) In the root, catalogues are answered after its own `.hooks` readers ran (a step 4 after 372's three), so a declaration decorated in the root itself carries its meta too. No catalogue is answered before what it lists: every entry carries its whole meta. Replaces `typeinfo-all-hooks-reader`. A framework receives the catalogue from the application's root as an argument (`jhonstart.serve(@TypeInfo.all(with: page))`), never reads it itself. **Every package with sources has a root** (the maintainer, 2026-10-12): a package whose `botopink.json` has sources declares `src/root.bp` (a library) or `src/main.bp` (a binary), and the resolver follows the `mod` tree from it; the deprecated blind scan goes — a package with sources and no root is refused, located, naming the missing file. A manifest with no sources (a workspace's `"workspaces"`, a fixture's dependency manifest) needs no root. `onze/examples/scaffold` moves its `root.bp` to `src/root.bp` or its manifest names where its root is — front 162's choice; `json`, `yaml` and `dbcontext` are born with `src/root.bp`. Measured on every library's `feat`: every other package with sources already has one. **`root.bp` declares the tree, `main.bp` is the entry** (the maintainer, 2026-10-12; amends this answer's root rule): `mod` / `pub mod` are declared only in `src/root.bp` and in a folder's `mod.bp` — never in `src/main.bp` nor in any other module (refused, located: `declare the module tree in src/root.bp`). `src/root.bp` is not mandatory: a package with no module but its entry (a one-file program) has only `src/main.bp`; a package with modules has `src/root.bp`; a library has `src/root.bp` and no `main.bp`. `src/main.bp` holds `pub fn main()`, is declared by no `mod`, imports the package as a consumer, is imported by no module, and is analysed after the whole tree and `root.bp`. No module of the tree imports `root.bp`. `@TypeInfo.all` is read in `root.bp` or `main.bp` and refused, located, in any other module. The prelude (116-a) is reached from `root.bp`. **`src/lib.bp`, as Rust's `lib.rs`** (the maintainer, 2026-10-12; amends the two rules above): the package's root is named `src/lib.bp` — `root.bp` is renamed everywhere (std's, every library's, the resolver's, the docs' — by the step that lands it, by hand or a one-off script); `botopink migrate` is removed (its command, `cli/migrate.zig`, its tests and docs; 144 B-56) — and `src/main.bp` may declare `mod` / `pub mod` when the package has no `lib.bp`, as Rust's `main.rs`: a package with only `main.bp` has its tree there; with `lib.bp`, `lib.bp` holds the tree and `main.bp` declares no `mod` (refused, located: `declare the module tree in src/lib.bp`) and uses the package as a consumer. Every rule above that names the root reads `lib.bp`, or `main.bp` when there is no `lib.bp` (the catalogue, 116-a's prelude, no module of the tree importing it). Whole-package analysis allowing two modules to import each other is front 144 B-55's study; until it lands, no import cycle between modules. **Superseded by B-55-a (e)** (the maintainer, 2026-10-12): a file is a module, with no `lib.bp` and no `mod`; the catalogue is read in any module; what stands here is the mandatory entry `src/main.bp` for an executable.
@@ -450,51 +1243,6 @@ number, which is **518**.
   ```
 - **Recommendation.** (a): one rule for a call in a body (128, unchanged by 388), no inference of intent from
   the use; (b) changes what every body's `val x = Card(…)` means.
-#### 434-b · The render-resident and at-build paths under one wasm comptime runtime (434, 378 (4))
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **Every library runs at build on the wasm comptime runtime (434), jhonstart first; a function only Erlang or Node can run is a located error there.** (1) A host cell (`@External.Erlang` / `@External.Node`) reached at build runs through its wasm form — a botopink body (`#[@External.Wasm(fn: …)]`) or a std-wasm export (`std:`, 481) — so `comptime renderToString(<Rodape ano={2026} />)` answers one string for every target. (2) Each library gives its pure cells (escape, formatting, parsing — logic written in Erlang or JS for convenience) a wasm form: jhonstart's renderer (`jhonstart_render.erl`) first, for 144 B-17, then every library front (145–162) in a step of its own. (3) A function with no wasm form — 100% Erlang or Node, or a real host effect (network, database, fs, process) — reached by a `comptime` is refused at build, located, naming the cell: `error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm form — it cannot run at build (give it a botopink body, or remove `comptime`)`. No translation stands in for a missing wasm form at build (no beam-to-wasm fallback), and never the target's VM (c). The build's target does not narrow this: a `comptime` runs on wasm whatever `--target` is, so an erlang build reaching an `@External.Erlang`-only cell at build is refused as a commonJS build is. The comptime's reading is otherwise unchanged (388 (4): `RenderScope.root()`).
-- **Measured.** 84 sent a comptime evaluation to the target's VM, so an erlang build rendered a `Build` / `Any` component at build on the BEAM (`render_resident`'s erl step) and a commonJS build on wat. 378 (4) asks the comptime runtime to run a component's lambda with `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; 134 step 6's last box (144 B-17). Under 434 the only runtime is wasm, and jhonstart's renderer on the BEAM is a sidecar (`jhonstart_render.erl`).
-- **Options.**
-  (a) The renderer runs at build on wasm only: jhonstart's render path reached at build is botopink (or std-wasm), its Erlang cell translated by beam-to-wasm where it has no botopink body; the answer is one string for every target.
-  ```bp
-  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" on the four targets
-  ```
-  (b) A component is rendered at build only when every function it reaches has a botopink or std-wasm body; one reaching an Erlang cell is refused at the `comptime`, naming the cell.
-  ```text
-  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
-  ```
-  (c) Keep the target's VM for at-build rendering alone (a BEAM step inside the compile for erlang/beam builds).
-- **Recommendation.** (b) now — no at-build answer that depends on a translation not proved; (a) once beam-to-wasm covers the renderer's cells; never (c), which 434 removes.
-- **Blocks.** 144 B-17 (134 step 6's 378 (4) box); nothing in B-00.
-
-#### B-55-a · Whole-package analysis: may two modules of a package import each other? (s23-i, 372, 419, 130-s8-c, 14s8-d)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(e), a counter-proposal: a file is a module, and the build has a layer of its own.** (1) Every `.bp` under `src/` is a module of the package, its path its name (`pages.home`, `comptime.route`); no `lib.bp`, no `mod` / `pub mod`. (2) `src/main.bp` is an executable's entry (`pub fn main()`), imported by no module; a library has none. (3) `src/comptime/` is the build layer: analysed before every other module of the package, it imports only std, dependencies and `src/comptime/` itself (else refused, located); a decorator or a template is declared only there, in std or in a dependency (else refused, located). (4) The program's modules import each other freely: modules importing each other form a block (a strongly connected component); a block's headers (`fn` signatures, types, annotated `val`s) are registered before its bodies; at run time a module-level `val` is a ref, a memoised getter (commonJS hoists its functions onto `exports` before any `require`). (5) Per block: headers, bodies, then every decorator over them (the build layer is already compiled), then every `@typeInfo(X).meta(T)` and catalogue of the block is filled — 130-s8-c's step 4, per block. (6) The only order refusal is `dependency loop`, located: a value needing itself across modules (`pub val x = b.y + 1` / `pub val y = a.x + 1`), or a `comptime` needing a meta, a catalogue or a value of its own block before its decorators ran. (7) `@TypeInfo.all` is read in any module. (8) `src/internal/` is private to its package; every other `pub` item is the package's API. (9) The prelude (116-a) is any marked `pub` item outside `internal/`. Replaces s23-i's root rules (`lib.bp`, `mod`, the catalogue in the root), 419's and 14s8-d's refusals and 353's second compile; B-56 stands. The cost on `zig build test` and on the language server is measured before the implementation steps; a high cost returns the question to the maintainer.
-- **Measured.** Today the resolver sorts a package's modules by their imports and each module is analysed whole before its importers (372's three phases, then `registerExports`); a cycle is not refused by name — the parent reports an unrelated `unbound variable` (`error: unbound variable 'base' --> src/b.bp:4:18` for `a ↔ b`). A function's signature never depends on its body (an omitted return type is `void`). A prototype (144 B-55, not landed) orders a cycle as one strongly connected component and registers its modules' headers (signatures, types, annotated values) before their bodies: the maintainer's `a.title` ↔ `b.format` / `b.header` and `a.isEven` ↔ `b.isOdd` run on erlang, beam and wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` is refused, located: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Headers alone are not enough: `home.bp` and `blog.bp` importing each other, each `#[route]`-decorated and reading the other's `@typeInfo(X).meta(Route)`, print `none` for the module analysed first — the meta must be demanded, its decorator run on demand. commonJS's `const { f } = require(…)` answers `undefined` for a function and a value of a `require` cycle (`TypeError: title is not a function`); hoisting the functions onto `exports` before any `require` and making module-level values memoised getters runs the cycle correctly (checked by hand under node). The cost on `zig build test` and on the language server's check is not measured yet.
-- **Options.**
-  (a) Keep the acyclic rule, with its own refusal: the resolver names the cycle, located, in place of `unbound variable`; 419, 130-s8-c (b′)'s step 4, s23-i's root rules and 14s8-d's refusal stay.
-  ```text
-  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
-  ```
-  (b) Adopt whole-package on-demand analysis, keeping s23-i's root rules: modules of a package import each other freely; a declaration is analysed when something needs it (a `fn` or type by its header, a `val` whole, a meta by running its decorators over the bodies it reads); the only refusal is a `dependency loop`; 130-s8-c's step 4 becomes the general rule, 419 and 14s8-d's refusal go, 353's second compile goes; `@TypeInfo.all` stays in `lib.bp` (or `main.bp` without `lib.bp`) and no module imports the root. Steps: (i) the resolver's components and an `import-cycle` refusal until (ii)–(iv) land; (ii) a package `Env`, lazy imports, header and body states; (iii) a `val` demanded whole, `dependency loop`; (iv) plain decorators in the header; (v) meta on demand (`.hooks` readers); (vi) the catalogue on demand; (vii) 14s8-d; (viii) commonJS's hoisted exports and lazy values; (ix) the language server checks the edited module's component and its importers.
-  ```bp
-  // src/a.bp
-  import {b.format};
-  pub fn title(x: string) -> string { return format(x) + "!"; }
-  // src/b.bp
-  import {a.title};
-  pub fn format(x: string) -> string { return x.toUpper(); }
-  pub fn header() -> string { return title("hi"); }        // "HI!"
-  // src/c.bp, src/d.bp
-  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
-  ```
-  (b′) As (b), with s23-i's root rules relaxed: `@TypeInfo.all` read in any module and any module may import the root; a catalogue whose value the build needs inside a declaration it lists (or one its hooks reach) is the `dependency loop`.
-  ```bp
-  // src/pages/index.bp
-  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
-  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
-  ```
-- **Recommendation.** (b) — one rule (a dependency loop) in place of four order-dependent refusals, and an answer that no longer depends on which module the resolver placed first; s23-i's root rules kept (decision 67's strictest reading, and the tidy tree they were chosen for) until a front needs (b′). Until (b)'s step (ii) lands, (a)'s located refusal replaces today's `unbound variable`.
-- **Blocks.** Nothing built depends on it; 144 B-55's follow-up steps, 130-s8-c's step 4 and s23-i's catalogue rule are written against the answer.
-
 ### 02-std-and-packaging
 
 #### 97-s16-a · Where `unicode`'s generated tables live
@@ -931,711 +1679,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Also asked.** Whether 441's sentence still covers `trim` and case mapping under (a): `string_trim_keeps_nbsp` (commonJS `[x]`) and `string_lower_final_sigma` (commonJS `ς`) record commonJS departures that rest on it; under (a) for floats alone they stay, under a wider (a) they become std-wasm's answer on commonJS too. Under (b), `float_text_at_run_time` gains a `snapshot/targets/commonJS/` departure.
 - **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
 
-#### B-22-a · A bare variant constructor in an expression (`Num(4)` for `Value.Num(4)`)
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): a bare variant constructor in an expression is refused, located, naming the qualified form** — `val a = Num(4);` is `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` and `val c: Value = .Num(4)` (the expected type names the enum) stay the two legal forms; a bare variant stays a `case` pattern's (decision 8, the subject fixes the enum). Refuse over accept (67): today `check` passes and commonJS, erlang and beam fail at run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) while wasm prints an address — four wrong answers; (b) would add a fourth spelling to every backend. Viable: `infer.zig` `registerEnum` binds the bare name (`env.bind(v.name, ctorType)`, `noteVariantClaim`), and `refuseAmbiguousVariant` refuses two claimants — the single-claimant call path becomes the refusal for a non-pattern use, the pattern path kept; one refusal cell. Changes: `conformance/docs.md` § type — enums; two defects to file beside it: on wasm an unannotated `val b = Value.Num(4); @print(b)` prints an address, and `"${b}"` of a payload variant prints `[object Object]` / an erlang tuple / an address by target (no printer for a variant in a template; the 01-compiler row in `status.md` names the enum half).
-- **Measured.** The checker admits `val v = Num(4);` for `type Value { Num(n: i32), … }`; erlang, beam and commonJS then fail on an unbound `Num` at run time (`conformance/docs.md` § type — enums records the defect today). Decision 8's pattern rule allows a bare variant in a `case` pattern, where the subject fixes the enum; an expression has no subject.
-- **Options.**
-  (a) Refused, located, naming the qualified form; the leading-dot `.Num(4)` with an expected type stays legal.
-  ```bp
-  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
-  val b = Value.Num(4);    // legal
-  val c: Value = .Num(4);  // legal, the expected type names the enum
-  ```
-  (b) Legal: every backend lowers the bare constructor to the variant's.
-  ```bp
-  val a = Num(4);          // Value.Num(4) on every target
-  ```
-- **Recommendation.** (a) — the strictest reading: refuse over accept, the qualified form and the leading-dot form kept; a bare variant stays a `case` pattern's (decision 8).
-- **Blocks.** The checker row and the three backends' failure; `conformance/docs.md` § type — enums.
-
-#### B-60-a · A dependency's `.d.bp` that does not check: does `build` refuse it as `check` now does? (decisions 514, 515; 144 B-60)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): every command refuses it** — `build`, `run`, `test` and `cell check` stop on a dependency's `.d.bp` with an error, as `check` does since 514/515 made the module set one; one module set, one answer (67: refuse over accept). Viable: `check.zig` renders every module's errors; `build` drops a failure in a declaration file alone — that branch becomes the refusal. Changes: a cell (a dependency whose `.d.bp` names an unknown type) refused on every command.
-- **Measured.** Since 514/515 `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run` do. `check` renders and fails on any module's error, so a dependency whose `.d.bp` does not check fails `check`; `build` ignores a failure in a declaration file alone and builds.
-- **Options.**
-  (a) Every command refuses a dependency's `.d.bp` that does not check.
-  ```bp
-  // deps/shapes/src/shapes.d.bp
-  pub declare fn area(r: Rectt) -> f64;   // unknown type
-  ```
-  `botopink check` and `botopink build` both: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
-  (b) `check` follows `build`: a failure in a dependency's declaration file alone is ignored by every command.
-  ```bp
-  // deps/shapes/src/shapes.d.bp
-  pub declare fn area(r: Rectt) -> f64;   // unknown type
-  ```
-  `botopink check` and `botopink build` both succeed; the error appears only where `area` is called.
-- **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
-- **Blocks.** Nothing today; the cell and `build`'s branch.
-
-#### B-22-b · How does a value of an enum section print? (144 B-22; `docs.md` § Sections of an enum)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): the leaf's whole path, as written** — `@print(Token.Color.White)` writes `Token.Color.White` on every target; a name at two levels (`Token.After` and `Token.Layout.Break.After`) stays two texts. One text for a value on every target (434 (5)), and no internal name (`_inner`, `__Token__Color`) in a program's output. Viable: each backend's printer for an enum value reads the section path the checker already resolves. Changes: a cell `enum_section_value_print` on the four targets; `docs.md` § Sections of an enum.
-- **Measured.** `val t = Token.Color.White; @print(t)`: commonJS, erlang and beam print `Token.Color(_inner: __Token__Color.White)` (the section's wrapper record and its internal enum name), wasm an address. No cell states the answer.
-- **Options.**
-  (a) The leaf's whole path.
-  ```bp
-  val t = Token.Color.White;
-  @print(t);   // Token.Color.White
-  ```
-  (b) The leaf's name alone.
-  ```bp
-  val t = Token.Color.White;
-  @print(t);   // White
-  ```
-- **Recommendation.** (a) — the path tells two leaves of one name apart, and it is the text the program wrote.
-- **Blocks.** 144 B-22's enum-section row; status.md's 05-wasm row.
-
-#### B-14-a · `Name(..base, f: v)` (decision 37) beside 359's `Name(...base, f: v)`: does `..` go? (144 B-14)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `..` goes** — one spelling for copying a record's fields; `Name(..base, …)` is refused, located, naming `...base`, and a codemod rewrites std and the libraries in the step that lands it. Two spellings for one thing is what decision 67 refuses; `...` is 359's, also the tag's (`<Card {...p} />`). Viable: the parser's `..` arm in a constructor's arguments; `grep -rn '(\.\.[a-z]'` over the repositories. Changes: a refusal cell; decision 37 amended.
-- **Measured.** Both compile on `feat`: decision 37's `..base` (source limited to a name) and 359's `...src` (any expression of the record's type or a 307 derived type).
-- **Options.**
-  (a) `..` goes.
-  ```bp
-  val p = Pessoa(...old, nome: "Ana");   // the one form
-  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
-  ```
-  (b) Both stay.
-  ```bp
-  val p = Pessoa(...old, nome: "Ana");
-  val q = Pessoa(..old, nome: "Ana");    // same record
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-14's `..` row.
-
-#### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
-- **Measured.** A source that is not a name is bound once before the call, so it is evaluated before every labelled value, even one written before it: `Pessoa(nome: say("n"), ...make())` prints `make` then `n`.
-- **Options.**
-  (a) Written order.
-  ```bp
-  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
-  ```
-  (b) The sources first, then the labelled values (as built).
-  ```bp
-  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-14's order row.
-
-#### B-14-c · A type derived from a `Type.partial` type, and `Type.required`: may they be a spread's source? (decisions 307, 359 (2), 422; 144 B-14)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a type derived from a partial is a partial** — `Type.pick` / `omit` / `merge` of a `Type.partial` type are refused as a source like the partial itself; `Type.required(Type.partial(R))` is derived from `R` and accepted. A partial's fields may be absent, which 359 (2) refuses; deriving again keeps that. Viable: `derived_types` records `derivedPartial` per type, so it carries through `pick` / `omit` / `merge`, and `required` clears it with its source's lineage. Changes: two cells.
-- **Measured.** `pick` / `omit` / `merge` of a partial derive from the partial type only, not from its source, so they are refused as other records; `Type.required` has no lineage, so its value is refused too.
-- **Options.**
-  (a) A derived partial is a partial; `required` restores the source.
-  ```bp
-  pub val Patch = Type.partial(Pessoa);
-  pub val Nome = Type.pick(Patch, .nome);
-  pub val Full = Type.required(Patch);
-  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
-  Pessoa(...full);             // accepted
-  ```
-  (b) As built: both refused as records of another type.
-  ```bp
-  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
-  Pessoa(...full);             // refused: `Full` is not `Pessoa`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-14's lineage row.
-
-#### B-11-a · `decl.wrapWith(f)`: is the wrapper only a lambda written at the call, or any value of the call type? (decision 316; 144 B-11)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a lambda written at the call** — `decl.wrapWith({ call -> … })`; any other expression is `decorator-wrap-not-lambda`, located at the argument. It is 370 (2)'s rule for a member function a decorator adds: the code the decorator writes is checked as the program's, never a value computed at build. Viable: as built. Changes: none.
-- **Measured.** Built as (a). The call type is internal (`__Decl__Call<A, R>`, one per wrapped function), so a helper returning a wrapper (`cachedCall(cache)`) cannot name its parameter's type; (b) would need that type nameable.
-- **Options.**
-  (a) A lambda at the call.
-  ```bp
-  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
-  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
-  ```
-  (b) Any value of a nameable call type.
-  ```bp
-  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
-  decl.wrapWith(cachedCall(cache));                                  // accepted
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-11's wrapper row.
-
-#### B-11-b · May `decl.wrapWith` wrap a generic function or a member of a generic type? (decision 316; 144 B-11)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): yes, as a 144 row** — the wrapper is checked against the signature with its type parameters, and the wrapped function stays generic. 316 names no exception for generics, and a cache or a retry is as useful on `fn byId<T>(…)`. Viable: the generated call type takes the function's type parameters. Changes: a cell; `decorator-wrap-generic` goes.
-- **Measured.** A generic function or owner is refused today, `decorator-wrap-generic`, located at the decorator.
-- **Options.**
-  (a) Refused, as built.
-  ```bp
-  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
-  ```
-  (b) Wrapped, generic.
-  ```bp
-  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-11's generic row.
-
-#### B-16-a · A field key at run time: what are its `typeName`, its `annotations` and its printed form? (decision 308; 144 B-16)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a run-time key is its name** — at run time `Type.Field<T>` carries `name` only; `key.typeName` and `key.annotations` are build-time members, refused outside a decorator or template body (`field-key-build-only`), and `@print(key)` prints `.name`. Annotations are `Decorator` values, which exist only at build; a run-time copy would be a second, partial truth. Viable: the run-time record keeps one field; the checker refuses the two members by stage. Changes: a refusal cell; `field_key_runtime` prints a key.
-- **Measured.** As built, a run-time key holds `typeName` as the checker spells it and `annotations: []`; `@print(key)` prints the whole record. The cells use only `name`, `==`, `case`, `of`, `all`.
-- **Options.**
-  (a) Its name only.
-  ```bp
-  val k = Recipe.Key.of("title") ?? .title;
-  @print(k);           // .title
-  k.annotations;       // refused at run time: field-key-build-only
-  ```
-  (b) The whole record, as built.
-  ```bp
-  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-16's run-time key row.
-
-#### B-16-b · `Type.keys(R)` on an annotated `val`: refused? (decisions 307, 308; 144 B-16)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused** — `#[x] pub val K = Type.keys(R)` is `derived-type-arguments` at the annotation: `Type.keys` names an existing type (an alias), not a new declaration, so there is nothing for a decorator to annotate; a derived record (`pick`, `omit`, …) stays annotatable. Viable: as built. Changes: none.
-- **Measured.** Built as (a).
-- **Options.**
-  (a) Refused.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
-  ```
-  (b) Accepted, the decorator seeing `Recipe`'s keys type.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-16's annotated-`val` row.
-
-#### B-23-a · Decision 310: does a type of this module beside an aliased import of a same-named type count as two modules? (decision 310; 144 B-23)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — `type T` declared here and `import {other.T as U}` are two types, legal under 310 like two imports: the alias is the program's name for the other module's type, and identity is by module. Refusing it would make 310 depend on where a declaration sits. Viable: with 310's module-qualified identity (B-23's open row), nothing more. Changes: a cell beside `import_two_types_one_name`.
-- **Measured.** Today the checker and the four backends name a type by its declared name, so both forms collide (`import-name-collision` for two imports); 310 is open.
-- **Options.**
-  (a) Two types.
-  ```bp
-  import {shapes.Box as ShapeBox};
-  pub type Box(v: i32)
-  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
-  ```
-  (b) Refused: a local type and an alias of a same-named type collide.
-  ```bp
-  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-23's 310 row.
-
-#### B-15-a · How does a template body build a tag's `@Decl` and run its annotation? (decision 302; 144 B-15)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `q.tagDecl(kind, name, attrs)` and `q.annotate(decl, at: Span)`, as built** — the capture (`q`) builds the handle and runs the annotation written at a span of its own text, resolved in the caller's scope with its arguments checked there; the annotation's text is read from the span, never passed as a string (281). Both live on the capture because only it knows the caller's scope and text. Viable: as built (the run stops with `need`, the compiler runs the annotation, the body runs again with the answer). Changes: none.
-- **Measured.** Built as (a); `jhonstart`'s `html` uses it (`#[isRaw]` records `RawBody`).
-- **Options.**
-  (a) On the capture.
-  ```bp
-  val d = q.tagDecl(.Element, "div", attrs);
-  q.annotate(d, at: ann.span);
-  val names = d.metaAll(ClassName);
-  ```
-  (b) Free functions in std's `template` namespace.
-  ```bp
-  val d = template.tagDecl(q, .Element, "div", attrs);
-  template.annotate(q, d, ann.span);
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-15's spelling row.
-
-#### B-15-b · Does a template body's `Binding` carry its `Decorator`, for `Decorator.same`? (decisions 268, 302, 371; 144 B-15)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): no — meta is read by type** — a template body tells annotations apart by the meta they record (`d.meta(RawBody)`), as 302 says; `Binding` carries no `Decorator`, and B-15's box naming `Decorator.same` is dropped. One way to identify what an annotation did, by its typed answer, not by which function it was. Viable: as built. Changes: the box's text.
-- **Measured.** `Binding` (a looked-up name in a template body) has no `Decorator`; `html` reads meta by type.
-- **Options.**
-  (a) `Binding.decorator`.
-  ```bp
-  if (b.decorator?.same(isRaw)) { … }
-  ```
-  (b) By meta type.
-  ```bp
-  if (d.meta(RawBody) != null) { … }
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-15's `Decorator.same` row.
-
-#### B-15-c · May an annotation read the meta an earlier annotation recorded on the same declaration or tag? (decisions 298, 302; 144 B-15)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): no, as built** — inside a decorator, `decl.meta(T)` is refused; a declaration's meta is read by the code that consumes it (`@typeInfo(X).meta(T)`, a template body over `d.meta(T)`), after every annotation ran. Annotations then do not depend on their written order. Viable: as built. Changes: none.
-- **Measured.** `d.meta(T)` on a decorator's own `@Decl` parameter is refused.
-- **Options.**
-  (a) Refused inside a decorator.
-  ```bp
-  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
-  ```
-  (b) Read, in annotation order.
-  ```bp
-  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-15's meta-read row.
-
-#### B-10-a · `Field` reflects a field's default: what is the member called, `default` being a keyword? (decisions 280, 308; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `defaultValue: ?@Expr<unknown>`** — the default as the expression written, `null` when none; `default` is a keyword and no field takes a keyword's name. An `@Expr` keeps the default code, never a value computed at build (281).
-- **Measured.** `Field` has no default member; validation's marker reads defaults by hand. A field named `default` is a parse error.
-- **Options.**
-  (a) `defaultValue: ?@Expr<unknown>`.
-  ```bp
-  for (f in decl.fields) { if (f.defaultValue != null) … }
-  ```
-  (b) `hasDefault: bool` only.
-  ```bp
-  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-b · `Decl.variants`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — a payload variant lists its fields as `decl.fields` does; a section is not an entry, its variants carry the section's name. One entry per constructible variant.
-- **Measured.** `Decl.variants` carries names only, sections listed among them.
-- **Options.**
-  (a) Typed entries, sections as a field.
-  ```bp
-  decl.variants[0].fields[0].name   // "amount"
-  ```
-  (b) As today: names.
-  ```bp
-  decl.variants[0]   // "Paid" — a name, sections among them
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-c · `clock.formatIso8601`: which text is the one answer? (decision 497; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): always milliseconds, `.sssZ`** — `2026-10-12T20:31:02.000Z` on every target; a fixed width sorts as text and parses back with one rule.
-- **Measured.** commonJS answers `.sssZ` always (node's `toISOString`); erlang never writes milliseconds.
-- **Options.**
-  (a) Always `.sssZ`.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
-  ```
-  (b) Milliseconds only when nonzero.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-d · A bare variant in expression position (`Two(t)`, no enum qualifier): refused or lowered? (144 B-10 G2)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused at the call, located, naming `.Two(t)` or `E.Two(t)`** — `docs.md` already says it is not lowered; the checker accepting what no backend emits is the defect. One spelling: the qualified or the dot form.
-- **Measured.** `Two(t)` checks, then fails on commonJS, erlang and beam; `docs.md` calls it unlowered.
-- **Options.**
-  (a) Refused.
-  ```bp
-  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
-  ```
-  (b) Lowered on every target.
-  ```bp
-  val m = Two(t);   // a Mode, on every target
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-e · How does a type alias of `@Component<Styled>` implement a behavior? (144 B-10 G2)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): it does not — an alias is its target**: `Styleable` is implemented by `Styled`, and `@Component<Styled>` reaches it through `R`; an alias declares nothing (a second name, not a type). styled's marker is rewritten over `Styled`'s implementation.
-- **Measured.** `pub val StyledView = @Component<Styled>` cannot carry `implement`; no spelling exists.
-- **Options.**
-  (a) An alias with `implement`.
-  ```bp
-  pub val StyledView = @Component<Styled> implement Styleable;
-  ```
-  (b) Only the target type implements.
-  ```bp
-  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-10's row.
-
-#### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): keep it the value, for lambdas and untyped `fn(x) { … }` only** — 409's tail rule binds the bodies with a written return type (`fn`, method, typed `fn` expression); a lambda has no written return, its value has always been its last statement, and the formatter has always ended that line with `;`. Reading 409 strictly there means a codemod over 3,800 lambda bodies (std 180, `conformance/` 207, rakun 1855 …) for no rule a lambda gains. Viable: as built. Changes: 409's text names the bodies it binds.
-- **Measured.** No named `fn`, method or typed `fn`-expression body ends without `;` anywhere; lambda bodies ending with `;` are std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
-- **Options.**
-  (a) Strict: with `;` a lambda's last expression is a statement.
-  ```bp
-  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
-  ```
-  (b) A lambda's last statement is its value, `;` or not.
-  ```bp
-  xs.map({ x -> x + 1; })   // answers x + 1, as today
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-21's lambda row.
-
-#### B-21-b · A method with no `->`: when is a non-`void` tail refused? (decisions 409, 06 C9; 144 B-21)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: the checker reads the body's valued `return`s before the tail. Changes: a cell.
-- **Measured.** B-21's thread reported (a); its Conformance step measured `feat` refusing a non-`void` tail next to a valued `return` too, in a method and in a free fn — (b) as built.
-- **Options.**
-  (a) Refused only without a valued `return`.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
-  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
-  ```
-  (b) Always refused without `->`.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-21's method row.
-
-#### B-10-f · How does a decorator read whether a `@Component<R>` return's `R` implements `@Renderable`? (decisions 268, 280; 144 B-10 G3)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): through `@typeInfo` of the declared return** — `@typeInfo(decl.returnType).implements(@Renderable)`; `@Decl` stays a declaration's handle and type questions go through `@typeInfo`, the one reflection of a type. Viable: `decl.returnType` as a type value (today a name) and `TypeInfo.implements(B)`. Changes: two members; jhonstart's marker in `client.bp` goes.
-- **Measured.** No reflection answers it: `decl.returnType` is the type's name as text, and no member asks whether a type implements a behavior.
-- **Options.**
-  (a) `@typeInfo` of the return type.
-  ```bp
-  if (!@typeInfo(decl.returnType).typeArg(0).implements(@Renderable)) decl.fail("…");
-  ```
-  (b) A member of `@Decl`.
-  ```bp
-  if (!decl.returnImplements(@Renderable)) decl.fail("…");
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10 G3's `@Renderable` row.
-
-#### B-10-g · A template declared `-> @ExprCustom<View>` whose built code is an `Element`: is the expansion a `View`? (decisions 275, 276; 144 B-10 G3)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes — the expansion is what the template declares** — `html` declared `-> @ExprCustom<View>` answers a `View` (`@Component<Element>`), and a built `Element` is checked against it as a component's body; jhonstart's `renderNode(html …)` and its `-> Element` components move to `View`. A template's declared type is its call's type (426); keeping `Element` at the call would make the declaration decorative. Viable: the built code's check against `View` accepts an `Element` as a component's answer. Changes: jhonstart's components (a consumer commit), a cell.
-- **Measured.** With `-> @ExprCustom<View>` every `html` expansion fails `expected Component, got Element`.
-- **Options.**
-  (a) A `View`.
-  ```bp
-  fn Card() -> View { html`<div/>` }   // the expansion is a View
-  ```
-  (b) The call keeps `Element`.
-  ```bp
-  fn Card() -> Element { html`<div/>` }   // the declared View ignored at the call
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10 G3's `@ExprCustom<View>` row.
-
-#### B-17-a · A body that runs at build calls a host function with a build form: allowed? (decisions 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a host function with a build form (`std:` cell, `@External.Wasm` `fn:`) is `Any`; run-in-build refuses only the others**, replacing `comptime-host-cell-unavailable` with 376's message. 434/452 made exactly these callable at build; 376 written before them would undo it.
-- **Measured.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` call host functions with a wasm form at build and pass; 376 as written refuses them.
-- **Options.**
-  (a) A build form makes it `Any`.
-  ```bp
-  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
-  ```
-  (b) 376 as written.
-  ```bp
-  comptime { random.seeded(1).next() }   // refused: a Run function at build
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-b · How is a function's stage written? (decision 376 (4); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `#[@Stage.Any]`, as built** — `pub type Stage { Build, Run, Any }` in `builtins.d.bp`; only `Any` is written (Build and Run follow from resources), so `#[@Stage.Build]` / `#[@Stage.Run]` are refused as unknown annotations.
-- **Measured.** Built as (a); std's `math` host functions carry it.
-- **Options.**
-  (a) `#[@Stage.Any]`.
-  ```bp
-  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
-  ```
-  (b) `#[pure]`.
-  ```bp
-  #[pure] pub declare fn sqrt(x: f64) -> f64;
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-c · What is the `Build` resource: a read of a comptime parameter, or any `@typeInfo`? (decisions 364, 376 (1); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a read of a comptime `@Decl` / `@Expr` parameter**; `@typeInfo(NamedType)` is a build constant, folded, not a resource. Otherwise every `main` that reads a type's meta becomes `Build` and cannot run.
-- **Measured.** Built as (a); `comptime t: type` is refused (364).
-- **Options.**
-  (a) A comptime parameter.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
-  ```
-  (b) Any `@typeInfo`.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-d · Does a stage follow declarations only? (decision 376 (2); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a comptime-`@Expr` function and reads the clock is `build-and-run`, as 376 writes.
-- **Measured.** Built as (a).
-- **Options.**
-  (a) Declarations only.
-  ```bp
-  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
-  ```
-  (b) Function values too.
-  ```bp
-  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-22-c · A `case` value whose arms have different types on wasm: boxed as a union array element? (decisions 150, 8 §11; 144 B-22)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — each arm's value boxed as wasm already boxes a union array element, the `val` typed by the checker's union; it reuses a representation and adds none.
-- **Measured.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) prints an address on wasm; commonJS, erlang and beam print the value.
-- **Options.**
-  (a) Boxed per arm.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
-  ```
-  (b) Refused on wasm until a representation of its own.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-22's `case_value_union` row.
-
-#### B-22-d · A bare name inside a multi-subject arm: a binding, or refused like a name alone? (144 B-22)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused, as a name alone is** — `docs.md` says a name alone is not a pattern, and the braced form already refuses it inside a multi-subject arm; the arrow form follows: `_` for any, a pattern to bind. One rule for every arm. Changes: `case_multi_subject_patterns` rewritten with patterns.
-- **Measured.** The arrow form binds `Shape.Square(side), m -> …` and `_, y -> …` (`case_multi_subject_patterns` pins it); the braced form refuses the same arm.
-- **Options.**
-  (a) Refused.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
-  ```
-  (b) A binding.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-22's multi-subject row.
-
-#### B-18-a · How is a template method found: by a name in the call site's scope, or through the receiver's type? (decisions 397, 415; 144 B-18)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): by a name in the call site's scope, as built** — `value.method "…"` resolves `method` as a template whose `self` takes the receiver, local or imported; nothing reaches a library's template without an import, as for every other name. A receiver's type never imports code by itself. Changes: 145's example imports `query`.
-- **Measured.** Built as (a); 145's example writes `self.db.query """…"""` with no import of `query`.
-- **Options.**
-  (a) A name in scope.
-  ```bp
-  import {query} from "erika";
-  self.db.query """select …"""
-  ```
-  (b) Through the receiver's type.
-  ```bp
-  self.db.query """select …"""   // erika's query found through Db, no import
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-18's lookup row; 145's example.
-
-#### B-18-b · Confirm B-18's surface: `q.note`'s text, `bindings()` as `Decl[]`, `@Decl.module` on every handle (decisions 415, 426; 144 B-18)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): as built** — a note is appended to the mismatch line as `— note: …`, so a cell's `refused` line pins it; `bindings()` answers `Decl[]` and `Binding.ref()` goes with the `Binding` record (one handle, the `@Decl`); every `@Decl` carries `module`, not only a looked-up one.
-- **Measured.** Built as (a).
-- **Options.**
-  (a) As built.
-  ```bp
-  // error: type mismatch: expected User, got Order — note: the query selects from orders
-  ```
-  (b) A note on its own line, `Binding` kept beside `Decl`.
-  ```bp
-  // error: type mismatch: expected User, got Order
-  //   note: the query selects from orders
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-18's surface row.
-
-#### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
-- **Measured.** Built as (a); `std_async_on_every_target` green on four targets and both hosts.
-- **Options.**
-  (a) As built.
-  ```bp
-  @External.Wasm(wasi: .GateNew)
-  ```
-  (b) The test cells bound too, now.
-  ```bp
-  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-25's adapter row.
-
-#### B-25-b · `fetch`'s surface before `io/http` binds on wasm: `Request`, `HttpError`, the old `fetch(url)` (decisions 334, 393; 144 B-25)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): std fixes it in 144 first, `fetch(url)` removed in the same commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; the call sites (std, `http`) migrate in the landing (one spelling, 67).
-- **Measured.** std has only `fetch(url) -> @Result<Response, string>`; no `Request` or `HttpError` exists.
-- **Options.**
-  (a) The typed surface, the old form removed.
-  ```bp
-  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
-  ```
-  (b) The typed surface beside `fetch(url)`.
-  ```bp
-  val r = await fetch(u);   // still accepted
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-25's `io/http` rows (steps 4, 5, 6, 17).
-
-#### B-25-c · log's two wasm markers: a host value per name and `wasi:filesystem`, or 405's interim in log? (decisions 334, 405; 144 B-25)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): 405's interim in log now** — the file cells bound to a `fn:` that reaches no file on wasm, located refusal at use; the host-value-per-name adapter and `wasi:filesystem` wait for a decision of their own. No B-25 box and no decision fixes either adapter's shape.
-- **Measured.** log's two markers name both needs; neither adapter exists.
-- **Options.**
-  (a) 405's interim.
-  ```bp
-  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
-  ```
-  (b) Both adapters designed in 144 now.
-  ```bp
-  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 156's wasm markers.
-
-#### B-02-c · `"std:…"` written on `@External.Node` / `@External.Erlang`: host code, or refused like the other prefixes? (decisions 305, 481; 144 B-02)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every target, naming the labelled form** — `conformance/docs.md` § Host bindings already says the four prefixed strings are refused at the argument on every target; a string that reads as a cell and runs as host code is the ambiguity 305 removed. Changes: `checkExternalCells` refuses `"std:"` off wasm too; a cell.
-- **Measured.** `checkExternalCells` refuses `"std:…"` only on `@External.Wasm`; on Node and Erlang it is host code ("`std:` was only ever a wasm cell").
-- **Options.**
-  (a) Refused everywhere.
-  ```bp
-  #[@External.Node("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
-  ```
-  (b) Host code off wasm, the text corrected.
-  ```bp
-  #[@External.Node("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-02's `std:` row.
-
-#### B-25-d · A prebuilt wasm library: its manifest, its ABI and its glue (decision 333 (B); 144 B-25 step 9)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a)** — the manifest: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` in `botopink.json`, the exports named by the bindings; the ABI: a position-independent side module (`wasm-ld --shared`, `env.memory` / `__memory_base`), the shape std-wasm already has, so `std_wasm_link.zig` folds it into the one module; the glue: a `string` goes in as pointer and length after the library's `alloc(len)` export, comes back as an `i64` packing pointer and length, freed by its `free(ptr, len)` export; a `?T` answer's absence is a pointer of `0`. A standalone module with its own memory cannot be merged without relocations or multi-memory.
-- **Measured.** 333 (B) fixes the idea (a prebuilt library merged into the emitted module), not the manifest, the ABI or the glue.
-- **Options.**
-  (a) A side module, `alloc` / `free` exports, an `i64` string answer.
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
-  ```
-  (b) A standalone module kept separate, imported at instantiation (no merge).
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-25 steps 9 and 11.
-
-#### B-19-a · Where is a type error inside a decorator's member or associated-type source located? (decisions 216, 281; 144 B-19)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the annotation that added it** (`#[maker]`), as `decorator-member-duplicate` is, with the decorator's `addMember` / `addType` call named in the message — the program's reader sees where the code came from; the decorator's author sees which call wrote it.
-- **Measured.** The diagnostic points past the file's last line (the member's source has no span in the program).
-- **Options.**
-  (a) At the annotation, the call named.
-  ```bp
-  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
-  ```
-  (b) At the `addMember` argument in the decorator's module.
-  ```bp
-  decl.addMember("make", fn() -> Self { … })   // error here, in the library
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-19's row 3.
-
-#### B-19-b · `@TypeInfo.all(member: …)` by reference: what is written, and what does a type that does not conform do? (decisions 256, 281; 144 B-19 step 7)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): `member: Factory.make`, a behavior's associated fn; a catalogued type must `implement Factory`, and one that does not is refused at the query, naming it** — a reference is checked, a string was not (281); conformance by declaration, not by a matching name.
-- **Measured.** `member: "make"` is a string today.
-- **Options.**
-  (a) Implementers only, refused otherwise.
-  ```bp
-  pub behavior Factory { fn make() -> Self; }
-  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
-  ```
-  (b) Any type declaring a matching associated fn; others skipped.
-  ```bp
-  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-19 step 7.
-
-#### B-21-c · Does the formatter print a `case` arm block's last expression as written? (decision 409; 144 B-21)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — as written, like a body's tail** — the printer adds and removes no `;` anywhere (409's formatter rule), an arm block included; one rule for every block.
-- **Measured.** The formatter adds `;` to a `case` arm block's last expression; 409's text covers function bodies.
-- **Options.**
-  (a) As written.
-  ```bp
-  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
-  ```
-  (b) `;` added in arms.
-  ```bp
-  case s { Circle(r) -> { val d = r * 2; d; } }
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-21's arm row.
-
-#### B-27-a · A `.bpp` header declaration written after a statement: moved or refused? (decisions 199, 212; 144 B-27)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused at the declaration, located, naming the statement before it** — the header reads top to bottom as written; a declaration after a statement would run in an order the file does not show. Changes: a refusal cell; the unfold stops moving it.
-- **Measured.** The unfold moves it after the function, its location mapped back.
-- **Options.**
-  (a) Refused.
-  ```bp
-  val n = props.count;
-fn label() -> string { … }   // refused: a declaration after a statement
-  ```
-  (b) Moved, as built.
-  ```bp
-  val n = props.count;
-fn label() -> string { … }   // moved to module level
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-27's unfold row.
-
-#### B-27-b · How does an importer spell a `.bpp` file whose name is not an identifier (`not-found.bpp`)? (decisions 199, 289; 144 B-27)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): it does not — such a file is a route's leaf, read by the router by path, never imported; importing it is refused naming the file** — a module name is an identifier everywhere else.
-- **Measured.** No importer spelling exists; `not-found.bpp` is jhonstart's convention.
-- **Options.**
-  (a) Not importable.
-  ```bp
-  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
-  ```
-  (b) A quoted path.
-  ```bp
-  import "not-found" as NotFound;
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-27's `not-found.bpp` row.
-
-#### B-27-c · 97 s6 under decision 506's answer (c): what are its boxes? (decision 506; 144 B-27)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): the step is rewritten to (c)'s std half, its (a) / (b) boxes removed** — the coordinator writes it from 506 (c)'s text at the next spec pass; this question records that the step as written cannot be built.
-- **Measured.** 506 answered (c); 97 s6's boxes are written for (a) and (b).
-- **Options.**
-  (a) Rewritten to (c).
-  ```bp
-  // 97 s6: (c)'s std half
-  ```
-  (b) Kept as written.
-  ```bp
-  // 97 s6: under (a) … under (b) …
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-27's 97 s6.
-
-#### B-17-e · A raise while folding an expression at build: always a build error? (decision 380 (2); 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes, as 380 (2) writes — once the comptime runtime's primitives answer as the targets do** (that row first); until then folding stays limited to what the runtime answers right, so no wrong answer becomes a build error.
-- **Measured.** As built only arithmetic errors (badarith) are build errors; any other raise leaves the hole to render.
-- **Options.**
-  (a) Every raise a build error, after the runtime row.
-  ```bp
-  val h = "${parse("x")}";   // build error: the raise named
-  ```
-  (b) Arithmetic errors only.
-  ```bp
-  val h = "${parse("x")}";   // left to run
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-f · Which `Any` function does 380 fold at build? (decisions 376, 380; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — an `Any` function that writes no `@panic` / `@todo` / `throw`, no `@print`, no module `var`, no function-value call and no method of a declared type; its calls through other such functions fold too.
-- **Measured.** Built as (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
-- **Options.**
-  (a) As built.
-  ```bp
-  fn shout(s: string) -> string { s.toUpper() }   // folded
-  ```
-  (b) Every `Any` function.
-  ```bp
-  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-g · Where does a context read find a default declared in a module it neither imports nor reaches through its type? (decisions 378, 379; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): in the type's own module or a module already analysed; otherwise refused at the read, naming the type** — a default is found where the program can see it, never by a whole-program search.
-- **Measured.** Not built; Step 6 waits on it.
-- **Options.**
-  (a) The type's module or one analysed, else refused.
-  ```bp
-  use context<Theme>();   // refused: no default for Theme visible here
-  ```
-  (b) Any module of the program.
-  ```bp
-  use context<Theme>();   // the default found in any module
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
 ### 02-std-and-packaging
 
 #### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s30)
@@ -1927,43 +1970,6 @@ fn label() -> string { … }   // moved to module level
 - **Blocks.** nothing today; (b) is an `og_test.bp` change owned by 51.
 
 ### 08-bpp
-
-#### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
-- **Answered (the maintainer, 2026-10-12; awaiting its number in `decisions-taken.md`):** **(f), a sixth option: the prelude is the items marked `#[bpp.htmlPrelude]` where they are declared, one by one.** A marked `pub val` / `pub fn` / `pub type` of a module the package's root (s23-i) reaches through `pub mod` only — the root itself included — is in the prelude: a `.bpp` sees it by its plain name without importing (`#[bpp.htmlPrelude] pub fn Card(…)` in `src/components.bp`, `pub mod components;` in the root, `<Card/>` in a `.bpp`). The root re-exports nothing for it. A `pub` item without the marker is the library's API, not the prelude. Imports are private — the `import {bpp} from "std";` each marked module needs included — so none reaches a `.bpp`. No name is shadowed: two marked items of one name, or a `.bpp` that declares or imports a name the prelude already gives, is refused, located, naming both places (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Refused, located: the marker on an item without `pub`, on a `mod`, in a module reached through a private `mod` (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), or on an item re-exporting another package's item (242). `src/prelude.bp` and its `pub val prelude = bpp.Prelude()` go. Front 116 lists a package's prelude — every item, its name and where it is declared — by `botopink prelude` and in the language server (a `.bpp` name's origin on hover). Amends 361 and 270. **Under B-55-a (e)** (2026-10-12): the prelude is any marked `pub` item outside `src/internal/`; there is no root to reach it from.
-- **Measured** (front 116 step 1). 361 puts the prelude's marker in the prelude
-  module — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — so the module must import std's
-  `bpp` (jhonstart's `src/prelude.bp` now ends `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
-  prelude = bpp.Prelude();`). 270 says "that module's imports are the prelude" and refuses, at the
-  line, "an item of another package (242)". Read together, the marker's own import is both a prelude
-  item (every `.bpp` file would resolve `bpp` through it) and a refused line. Step 1 checks only that
-  the module holds imports and its marker; the prelude scope and its refusals are step 2's.
-- **Options.**
-  (a) The import of std's `bpp` (or a leaf of it) is the marker's, not the prelude's: left out of the
-  item list handed to `compiler-core`, and exempt from 242's refusal — every other `from "std"` item
-  in a prelude stays refused:
-  ```bp
-  // src/prelude.bp
-  import {element.Element};          // a prelude item
-  import {bpp} from "std";           // the marker's import — not a prelude item, not refused
-  #[bpp.htmlPrelude]
-  pub val prelude = bpp.Prelude();
-  // Card.bpp: `bpp.Prelude()` in its header is `unbound variable 'bpp'`
-  ```
-  (b) The marker's import is a prelude item like any other: a `.bpp` file resolves `bpp` without
-  importing it, and 242's refusal exempts std:
-  ```bp
-  // Card.bpp header: `val p = bpp.Prelude();` compiles through the prelude
-  ```
-  (c) 242 stands for the prelude: a prelude module may import nothing from another package, so the
-  marker is spelled through a path the language does not have today (a qualified annotation with no
-  import, `#[std.bpp.htmlPrelude]`), a parser and checker change:
-  ```bp
-  #[std.bpp.htmlPrelude]
-  pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
-  ```
-- **Recommendation.** (a): the prelude stays the package's own modules (242), and the one import the
-  marker needs reaches no `.bpp` file.
-- **Blocks.** 116 step 2's prelude box (the item list and its refusals); nothing in step 1.
 
 #### 116-b · Are the roles checked on a project with no `.bpp` file? (*proposed* ★)
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a), as built — confirm** — the roles are checked whenever the key is present; a key that cannot be honoured is refused where it is written, before a file depends on it (67, 361 (4)). Viable, built: `compiler-cli/src/cli/libs.zig` (`if (project.bpp) checkBppRoles`), `bpp.zig` `checkPackage`, cell `bpp_html_missing` (no `.bpp` file, refused at the key). Changes: none; one decision row.
