@@ -1400,8 +1400,8 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       B-22
 - [x] a bare name as a catch-all arm (`k -> k + 1`) is accepted by the checker, which `docs.md` says is not a
       pattern; commonJS then fails `k is not defined` — refused at the arm, located — found by B-22
-- [ ] `Float.toString` differs across targets: `9007199254740992.0` against `9.007199254740992e15`, `1200.0` against
-      `1.2e3` on commonJS — one text on every target (decision 441, with B-78) — found by B-22
+- [ ] `Float.toString` differs across targets: `1200.0` on commonJS, `1.2e3` on erlang, beam and wasm; `9007199254740992.0` on
+      commonJS and wasm, `9.007199254740992e15` on erlang and beam — one text on every target (decision 441, with B-78) — found by B-22
 - [x] wasm: calling an `f64`-taking function bound out of an optional (`if (h) { g -> g(3.0) }`,
       `halver(true)?.(3.0)`) refused "would narrow this `f64` value to an `i32` slot" — found by B-20
 - [x] wasm: `val n: ?i32 = if (c) 3 else null` reads as `0` when absent (`n ?? -1` prints `0`) — found by B-20
@@ -1433,14 +1433,18 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (2003); B-22's two reds were format-check's (`scripts/format-check.sh` catches
+      them); every landed row has its cell, thirteen cells named in `conformance/docs.md`; the completed `test` runs since
+      the base red on others' stages (format, B-60's `code_cache.sh`). Box 1 closes on the next completed green `test` run.
+- [ ] proposed once answered: `enum_section_value_print` (B-22-b); one cell over `Float.toString`'s values (B-78)
 
 ### B-23 — 247, 255, 310 and the checker's rows
 
