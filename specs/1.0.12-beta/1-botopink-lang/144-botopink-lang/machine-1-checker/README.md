@@ -1806,8 +1806,8 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
 
 #### Step 3 — The extension in every tool's list (was `116-bpp-file-format` s3)
 
-- [ ] every § Mechanism site reads one shared list instead of spelling `.bp`
-      — resolver, libs, scanner, format and the lib-test runner read `manifest.SOURCE_EXTENSIONS`; the language server's sites left
+- [x] every § Mechanism site reads one shared list instead of spelling `.bp`
+      — resolver, libs, scanner, format and the lib-test runner read `manifest.SOURCE_EXTENSIONS`; the language server's sites too (project index, project graph, the engine's paths)
 - [ ] `botopink build`, `check`, `run`, `test` over a `.bpp` project; test runner discovers a
       `test` declared in a header
       — build / check / run proven by the cells; a `test` declared in a header not pinned
@@ -1815,12 +1815,12 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
 
 #### Step 4 — The span mapping and the editor — part (was `116-bpp-file-format` s4 boxes 1, 2)
 
-- [ ] header-line type error and a `failAt` in the markup reported at their `.bpp` line and
+- [x] header-line type error and a `failAt` in the markup reported at their `.bpp` line and
       column by `botopink check` and the language server
-      — `botopink check` and `build` report the `.bpp` line; the language server left
-- [ ] hover, go-to-definition in the header; default function's overlay served as the markup's
+      — `botopink check` and `build` report the `.bpp` line; the language server too (an open `.bpp` compiled as its unfolded module, positions mapped back; `tests/bpp.zig`, five `lsp/bpp_*` snapshots)
+- [x] hover, go-to-definition in the header; default function's overlay served as the markup's
       tokens — the extension ships no grammar of the file
-      — the language server does not unfold `.bpp` yet (`project_graph`'s roles, the open document's unfold and mapping)
+      — hover and go-to-definition in the header mapped back; the markup overlay not exercised by a test
 
 #### Step 5 — The formatter (was `116-bpp-file-format` s5)
 
@@ -1833,6 +1833,7 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
 
 **Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
 - [ ] `zig build test-libs`: every library green — no existing `.bp` file changes meaning
+      — 123 passed, 1 failed: `rakun-data` on erlang, the `#[query]` red older than B-27 (B-81); closes when B-81 does
 - [x] `docs.md` § Modules documents `.bpp`, every fence compiled by `zig build test-docs`
 
 #### Step 22 — the prelude scope (decision 270) (was `01-checker` s22)
@@ -1883,7 +1884,7 @@ per import spelling).
 - [x] `run.sh --target all` green on the `modules/import_*` cells — measured, the box ticked
 - [ ] `grep -l 'import {' modules/language-server/snapshots/lsp/*.snap.md` lists one snapshot per spelling (dotted, grouped, `*`, `as`, a folder leaf); missing ones added
       — one per spelling but `*`, whose only spelling is refused
-- [ ] the five `AGENTS.md` name the tree and the grammar; `docs.md` § imports / § std verified against the grammar (07 places any correction)
+- [x] the five `AGENTS.md` name the tree and the grammar; `docs.md` § imports / § std verified against the grammar (07 places any correction)
 
 #### Step 2 — the confirmations (was `23-std-purity` s2)
 
