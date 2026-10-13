@@ -1256,6 +1256,34 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Recomendação.** (a) — a identidade da própria declaração, sem colisão acidental; (b) só muda a colisão de lugar; (c) recusa um programa que o leitor espera que compile.
 - **Bloqueia.** 150 s29.
 
+#### B-12-a · As leituras restritivas de `Bytes`: confirmar (decisões 346, 67; 144 B-12 passo 32)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): mantê-las** — o passo 32 tomou a leitura mais estrita onde 346 se cala, cada uma fixada por uma célula de recusa; uma decisão posterior pode alargar qualquer uma.
+- **Medido.** 346 fixa o tipo, `fromUtf8` / `toUtf8` e a fronteira com o host. O passo 32 recusa: `Bytes` alargando para `unknown` (então `@print(b)` é recusado), `is` e um padrão de tipo sobre `Bytes`, um valor `Bytes` em `comptime`, ordenação (`<`, `>`), `+` entre `Bytes` e `string`, e um buraco de template `Bytes`.
+- **Opções.**
+  (a) Manter toda recusa.
+  ```bp
+  val b = Bytes.fromUtf8("hi");
+  @print(b);            // refused: Bytes does not widen to unknown
+  @print("${b}");       // refused: no Bytes hole
+  @print(b.length());   // 2
+  ```
+  (b) Alargar o par de impressão: `@print(b)` e um buraco escrevem os bytes como um texto fixo (ex.: `<<104,105>>` em todo alvo); o resto mantido.
+- **Recomendação.** (a) — recusar em vez de aceitar (67); uma forma impressa é uma decisão posterior que precisa de um texto nos quatro alvos.
+- **Bloqueia.** Nada construído; o passo Conformance do B-12 lê a resposta.
+
+#### B-12-b · `@embedFile` / `@embedBytes`: onde fica a leitura, uma constante não UTF-8, um caminho repassado (decisão 342; 144 B-12 passos 33 e 6)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) para cada um dos três pontos** — (1) o checker lê por um handle de leitura de arquivos que o CLI e o language server passam, com a raiz do pacote que escreveu em `Module` (o compiler-web passa um leitor que recusa); (2) o `Bytes` de um embed é uma constante de build que todo backend emite, a única exceção à recusa `comptime-bytes` do passo 32; (3) um parâmetro `comptime path` que repassa o caminho resolve em cada ponto de chamada, no pacote de quem chama, como 342 diz.
+- **Medido.** O compiler-core não lê arquivo hoje e o compiler-web compartilha o checker. Não existe literal `Bytes`, e o passo 32 recusa um valor `Bytes` em comptime. 342 resolve um caminho relativo ao `botopink.json` do pacote que o escreveu.
+- **Opções.**
+  (1) (a) Um handle de leitura passado ao checker. (b) O CLI e o LSP leem todo arquivo embutido antes da checagem e entregam o conteúdo.
+  (2) (a) O `Bytes` de um embed é uma constante em todo backend (um binary Erlang, um `Uint8Array`, um segmento de dados wasm); `comptime-bytes` continua recusando todo outro `Bytes` de build. (b) `@embedBytes` é recusado para um arquivo que não é UTF-8 até existir um literal `Bytes`.
+  (3) (a) Checado em cada ponto de chamada, no pacote de quem chama. (b) Um `comptime path` repassado é recusado até um passo posterior.
+  ```bp
+  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
+  ```
+- **Recomendação.** (a) para os três — 342 como escrita: a leitura onde o checker vê o argumento, um arquivo binário embutível, o pacote de quem chama para um caminho repassado.
+- **Bloqueia.** 144 B-12 passos 33 e 6; rakun 93 (o `.bp` versionado do `rakun ws generate`).
+
 #### std-e · Hooks de ciclo de vida de teste
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): nenhum hook de ciclo de vida; o corpo de um teste chama seu helper de reset** — nada implícito roda em volta de um `test` (67), todo bloco `test` se lê inteiro, e a unidade de teste da 513 guarda só blocos `test`. (b) roda uma função de módulo que o teste nunca nomeia e (c) acrescenta gramática para o que uma chamada já diz. Viável: como construído (nenhum `#[before]` / `beforeEach` no std, no `lib-test-runner` ou nas bibliotecas); as contagens da entrada estão defasadas — `resetChain()` é chamado 77 vezes no rakun todo (31 no rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Mudanças: a linha "No test lifecycle hooks" do `language-gaps.md` vira by design.
 - **Medido.** Os testes de biblioteca resetam o estado à mão no topo do corpo: `resetChain()` do rakun-web 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, entre outros; `resetSingletons` / `resetContext` do rakun-test só em seu próprio `context_test.bp`; `installDocument(…)` do jhonstart-dom-test 11×.

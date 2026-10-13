@@ -1257,6 +1257,34 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
 - **Blocks.** 150 s29.
 
+#### B-12-a · `Bytes`' restrictive readings: confirm (decisions 346, 67; 144 B-12 step 32)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): keep them** — step 32 took the strictest reading wherever 346 is silent, each pinned by a refusal cell; a later decision can widen any one.
+- **Measured.** 346 fixes the type, `fromUtf8` / `toUtf8` and the host boundary. Step 32 refuses: `Bytes` widening to `unknown` (so `@print(b)` is refused), `is` and a type pattern on `Bytes`, a `Bytes` value at `comptime`, ordering (`<`, `>`), `+` between `Bytes` and `string`, and a `Bytes` template hole.
+- **Options.**
+  (a) Keep every refusal.
+  ```bp
+  val b = Bytes.fromUtf8("hi");
+  @print(b);            // refused: Bytes does not widen to unknown
+  @print("${b}");       // refused: no Bytes hole
+  @print(b.length());   // 2
+  ```
+  (b) Widen the printing pair: `@print(b)` and a hole write the bytes as a fixed text (e.g. `<<104,105>>` on every target); the rest kept.
+- **Recommendation.** (a) — refuse over accept (67); a printed form is a later decision that needs one text on four targets.
+- **Blocks.** Nothing built; B-12's Conformance step reads the answer.
+
+#### B-12-b · `@embedFile` / `@embedBytes`: where the read lives, a non-UTF-8 constant, a forwarded path (decision 342; 144 B-12 steps 33 and 6)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) for each of the three points** — (1) the checker reads through a file-reader handle the CLI and the language server pass in, with the writing package's root on `Module` (compiler-web passes a reader that refuses); (2) an embed's `Bytes` is a build-time constant every backend emits, the one exception to step 32's `comptime-bytes` refusal; (3) a `comptime path` parameter that forwards the path resolves at each call site, in the caller's package, as 342 says.
+- **Measured.** compiler-core reads no file today and compiler-web shares the checker. No `Bytes` literal exists, and step 32 refuses a `Bytes` value at comptime. 342 resolves a path relative to the `botopink.json` of the package that wrote it.
+- **Options.**
+  (1) (a) A reader handle passed into the checker. (b) The CLI and the LSP read every embedded file before checking and hand the contents over.
+  (2) (a) An embed's `Bytes` is a constant on every backend (an Erlang binary, a `Uint8Array`, a wasm data segment); `comptime-bytes` keeps refusing every other build-time `Bytes`. (b) `@embedBytes` is refused for a file that is not UTF-8 until a `Bytes` literal exists.
+  (3) (a) Checked at each call site in the caller's package. (b) A forwarded `comptime path` is refused until a later step.
+  ```bp
+  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
+  ```
+- **Recommendation.** (a) for all three — 342 as written: the read where the checker sees the argument, a binary file embeddable, the caller's package for a forwarded path.
+- **Blocks.** 144 B-12 steps 33 and 6; rakun 93 (`rakun ws generate`'s checked-in `.bp`).
+
 #### std-e · Test lifecycle hooks
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): no lifecycle hook; a test body calls its reset helper** — nothing implicit runs around a `test` (67), every `test` block reads whole, and 513's test unit holds `test` blocks only. (b) runs a module function the test never names and (c) adds grammar for what a call already says. Viable: as built (no `#[before]` / `beforeEach` in std, `lib-test-runner` or the libraries); the counts in the entry are stale — `resetChain()` is called 77 times across rakun (31 in rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Changes: `language-gaps.md`'s "No test lifecycle hooks" row becomes by design.
 - **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.

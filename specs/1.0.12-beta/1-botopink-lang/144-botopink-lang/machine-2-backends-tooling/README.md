@@ -290,7 +290,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 `@Result<…, failure.HostError>` or `@Task` of one); `ast.externalRefOf` trims every bool flag. Questions
 `decision 487`, `decision 488`.
 
-**Impacted tests:** new `reject/external_throws_return`; `comptime/tests/effect_{future,generator}.zig`;
+**Impacted tests:** new `modules/external_result_return`, `modules/external_result_return_accepted`; `comptime/tests/effect_{future,generator}.zig`;
 `infer_decls` drift. **Model:** opus. **Consumer commits:** none (B-08 carries them).
 
 #### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 1)
@@ -301,8 +301,10 @@ declare fn jsParse(s: string) -> @Result<Json, HostError>;
 val doc = try jsParse(texto);                      // a JS SyntaxError / an erlang raise is Error(HostError(…))
 ```
 
-- [ ] `throws: true` on every `@External` variant, a `bool` at the last position (as `inline:`); refused unless the
-      declared return is `@Result<…, HostError>` or `@Task<@Result<…, HostError>>` — `reject/external_throws_return`
+- [x] `result: true` (490's name for `throws: true`) on every `@External` variant, a labelled `bool` read in any order
+      (487); refused unless the declared return is `@Result<…, HostError>` or `@Task<@Result<…, HostError>>`, std's
+      `failure.HostError` by identity (488), and beside an `op:` / `fn:` cell (491) — `modules/external_result_return`,
+      the accepted shapes `modules/external_result_return_accepted`
 
 #### B-03 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -331,9 +333,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 #### Step 18 — `failure`: `HostError`, `Failure`, `attempt` (decision 431; with `01-checker` step 42) — part (was `97-std-dedupe` s18 box 1)
 
-- [ ] `libs/std/src/failure.bp`: `pub type HostError(message: string, kind: string)`, `pub type Failure(message: string,
-      kind: string)` (`panic` / `host` / `crash`), `pub fn attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task`
-      form — a cell per target; `root.bp` gains `pub mod failure;`
+- [x] `libs/std/src/failure.bp`: `HostErrorName`, `pub type HostError(message, kind, name, detail)` (489),
+      `pub type Failure(message: string, kind: string)` (`panic` / `host` / `crash`, 492) — `modules/std_failure_types`
+      on the four targets; `root.bp` gains `pub mod failure;`; `attempt` and its `@Task` form are B-07's
 
 #### B-04 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -551,15 +553,16 @@ http 104, validation 125, rakun 127.
 Today no primitive, std type or literal holds bytes (`val b: Bytes = "a";` mismatches everywhere) and
 every host cell marshals through `string`.
 
-- [ ] `Bytes` in `builtins.d.bp` / `primitives.bp`: an immutable byte sequence; `Bytes.fromUtf8(s: string)
-      -> Bytes`; `b.toUtf8()` answering `@Result` (an `Error` on invalid UTF-8)
-- [ ] no conversion between `string` and `Bytes` without those calls: a string literal where `Bytes` is
-      expected, and `Bytes` where `string` is, are located mismatches (`reject/` cells)
-- [ ] a host cell may take and answer `Bytes`; the lowering is each backend's (an Erlang binary, a
-      `Uint8Array` on commonJS, a buffer in wasm memory — 02–05), one `run/bytes_round_trip` cell on the
-      four targets
-- [ ] the rest of the surface (length, slice, concatenation, `encoding`'s bridges) written in the step's
-      commit under 67; `docs.md` § Primitives (07's prose) and `language-gaps.md`'s byte row point here
+- [x] `Bytes` in `primitives.bp` (as `bigint`, no declaration in `builtins.d.bp`): an immutable byte sequence;
+      `Bytes.fromUtf8(s: string) -> Bytes`; `b.toUtf8()` answering `@Result<string, string>` (an `Error` on invalid UTF-8)
+- [x] no conversion between `string` and `Bytes` without those calls: `modules/bytes_string_literal`,
+      `modules/bytes_where_string_expected`
+- [x] a host cell may take and answer `Bytes` (an Erlang binary, a `Uint8Array` on commonJS, a buffer in wasm
+      memory): `modules/bytes_round_trip` on the four targets
+- [x] the rest of the surface — length, slice and `b[a..e]`, concatenation, `==` / `!=`, `encoding`'s four bridges —
+      with its cells (`bytes_*`); `docs.md` § Primitives; `language-gaps.md`'s byte row closed in the compiler. The
+      restrictive readings it took (no widening to `unknown`, so `@print(b)` is refused; no `is` or type pattern; no
+      `comptime` value; no ordering; `+` with a string and a template hole refused) — question B-12-a
 
 #### Step 33 — `@embedFile` / `@embedBytes` checked (decision 342) (was `01-checker` s33)
 

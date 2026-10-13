@@ -97,7 +97,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
-- [ ] 14 s6 342 — `@embedFile` / `@embedBytes` · 01-checker (the builtin's declaration and checking), 346 (`Bytes`, not built)
+- [ ] 14 s6 342 — `@embedFile` / `@embedBytes` (144 B-12 steps 33 and 6) · question B-12-b; `Bytes` built (B-12 step 32)
 - [ ] 17 s2 — the `@BeamMemory` text and the migration handed over · 07 s6 · the rakun track
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
 - [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
@@ -356,6 +356,9 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 144 B-13 — a method declared `-> @Result` already lowered as a `@Result` on every target (`result_method_throw`, `behavior_method_result_typed`, `behavior_method_result_chained`); no code change; rakun's stale comment is 150 s28 — its Conformance step open
 - [x] 144 B-26 (340) — `Dict.bump`; `counts = counts.bump(k, n)` on a keyed var as `ets:update_counter/4` on erlang and beam, `beam_memory_ets_keyed_bump`; rakun's registry is 150 s28 — its Conformance step open
 - [x] 144 B-81 — rakun-data's `#[query]` red on erlang: the cause is rakun's (a registration `val` named per method name, colliding since B-39), filed as 150 s29; no compiler change
+- [x] 144 B-04 (431) — std `failure`: `HostErrorName`, `HostError(message, kind, name, detail)`, `Failure` (489, 492), `std_failure_types` on four targets; `attempt` is B-07's — its Conformance step open
+- [x] 144 B-03 (431) — `result: true` on every `@External` variant, labelled, any order (487); only on `@Result<…, HostError>` / `@Task` of one, std's `HostError` by identity (488); refused beside `op:` / `fn:` (491) — its Conformance step open
+- [x] 144 B-12 step 32 (346) — the `Bytes` primitive on the four targets: `fromUtf8` / `toUtf8`, length, slice, concatenation, `encoding`'s bridges, a host cell taking and answering `Bytes`, eleven `bytes_*` cells; steps 33 and 6 (`@embedFile` / `@embedBytes`) wait on question B-12-b · questions B-12-a, B-12-b
 - [x] 144 B-29 step J — botopink-lang's `scripts/gate.sh` takes one total of jobs (`--jobs <N>`, default the machine's) split among its stages, no gate lock (`scripts/AGENTS.md`); `--no-conformance` stays the hook's gate; a library's `test-out` is already a per-run directory, removed after (468, 469, 508) — its Conformance step open
 - [x] 144 B-80 — onze-cli's CSS accessors test: the cause is the library's — its app is created as `styled`, a package of jhonstart's closure, and the build refuses two packages of one name; handed to 162 s11, the compiler unchanged
 - [x] 144 B-39, B-41, B-43, B-51, B-52 — a module-level `val` read by the next one bound on erlang; a library's abort worded alike on every target; a `Set` of structurally equal records keeping one on commonJS and wasm; commonJS printing an `f64` with its `.0`; wasm printing a string field or an awaited string as text — each step's Conformance step open
