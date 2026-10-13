@@ -97,7 +97,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 01-compiler row — `conformance/test/expr_sugar.bp` red on `feat`: erlang does not compile it, beam fails two pipe assertions (found by B-29 step H's full run) · none
 - [ ] 01-checker row — importing std `failure` brings `HostErrorName`'s variant `Error` into scope as a bare name: `Error(x)` is then refused `callee-not-a-function` (found by B-05) · none
 - [ ] 01-checker row — `import {failure.HostError}` alone: reading `e.name` fails `unknown type 'HostErrorName'` (a field's type not reachable without its module) (found by B-05) · none
-- [ ] 14 row — `comptime/tests/located_errors.zig` "a raise inside a decorator…" red on `feat` (expected 4, found 11), before B-05 · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
