@@ -239,7 +239,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | the lambda-only wrapper (B-11-a), generics refused (B-11-b) | `decorator_wrap_not_lambda`, `decorator_wrap_generic` |
 | the wrong return, outside a function, `fn(..)` outside `@Decl` | `decorator_wrap_wrong_return`, `decorator_wrap_outside_function`, `decorator_any_params_outside_decl` |
 
-- [ ] proposed cells: a `declare fn` wrapped (`decorator-wrap-without-function`); a generic owner type
+- [x] proposed cells: a `declare fn` wrapped (`decorator-wrap-without-function`); a generic owner type
+      — `decorator_wrap_declare_fn`, `decorator_wrap_generic_owner`
 
 ### B-14 — 359: a spread copies a record's fields
 
@@ -281,14 +282,27 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (1999 cells); three B-14 defects fixed (an overridden label typed and evaluated,
+      an untyped lambda parameter as a source, `?T` named as written), each with a unit test; eleven cells added. Box 1
+      closes on the next completed green `test` run.
+
+| B-14 change | Cells |
+|---|---|
+| `...src`, left to right, defaults, a generic record | `record_spread` |
+| a derived type across modules, through an import alias | `record_spread_across_modules`, `record_spread_import_alias` |
+| a spread nested; a call source evaluated once | `record_spread_nested`, `record_spread_call_source` |
+| the evaluation order (B-14-b as built); an overridden label typed and evaluated | `record_spread_evaluation_order`, `record_spread_overridden_label_type` |
+| `..base` beside `...src` (B-14-a as built) | `record_spread_beside_record_update` |
+| other type, optional, a derived partial, `required` (B-14-c as built), a partial | `record_spread_other_type`, `record_spread_optional`, `record_spread_derived_partial`, `record_spread_required`, `record_spread_partial` |
+| a missing field, a label twice, a positional argument, a plain call | `record_spread_missing_field`, `record_spread_label_twice`, `record_spread_positional_argument`, `call_spread` |
 
 ### B-15 — 302: a tag is a `@Decl`
 
@@ -347,7 +361,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | `decl.meta(T)` inside an annotation (B-15-c) | `tag_annotation_reads_meta` |
 | a type named like a `DeclKind` variant | `type_named_like_decl_kind` |
 
-- [ ] proposed cell: `@emit` on a tag (`tag-annotation-output`)
+- [x] proposed cell: `@emit` on a tag (`tag-annotation-output`)
+      — `tag_annotation_emit`
 
 ### B-16 — 280, 307, 308: typed decorator arguments' rest, derived types' rest, `Type.Field<T>`
 
@@ -867,8 +882,16 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | meta at build, the order, hooks pending | the `template_lookup_meta*` cells |
 | a call typed by its expansion, the bound, the note | `template_call_typed_by_expansion`, `template_call_expected_mismatch`, `template_build_outside_bound`, `template_note_on_mismatch` |
 
-- [ ] a receiver whose type implements a behavior method named like the template method (`hasInherentMethod` counts
+- [x] a receiver whose type implements a behavior method named like the template method (`hasInherentMethod` counts
       inherent methods only); a refusal cell for `template-call-unexpanded`
+      — fixed (`receiverHasMethod`, `template_method_behavior_method`); `template-call-unexpanded` is a backstop no program
+      reaches — a unit test pins it, not a cell
+- [ ] the backstop's unit test for `template-call-unexpanded`
+- [ ] a local or a parameter named like a template function does not hide it (`fn run(shout: fn(string) -> string) {
+      shout("x") }`, `val shout = …; shout("a")` run the template) — found by B-14's Conformance step
+- [ ] a template function taken as a value (`val f = shout;`) compiles, then aborts on node and BEAM, erlc rejects it, wasm
+      calls it unbound — refused at the reference — found by B-14's Conformance step
+- [ ] a module-level `val g = { -> shout "x" }; g()` prints a fun on beam and `256` on wasm — found by B-14's Conformance step
 
 ### B-19 — 216, 281, 298, 353, 356: decorator outputs
 
@@ -1110,6 +1133,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] wasm: `std_decorator_leaf_import`, `std_decorator_through_namespace`, `std_decorator_unknown_through_handle` red on
       `feat` — "`canonical` has no wasm external" at std's `testing/asserts.bp` — found by B-19
 - [ ] wasm: `pub fn main() {}`, a module nothing calls and a dependency: `compilation failed UndefinedCall` — found by B-27
+- [ ] wasm: an untyped lambda typed only by its expected `fn(Pessoa) -> Pessoa` cannot place a field two records share
+      (`p.nome`, `..p`: "cannot place `.nome`") — found by B-14's Conformance step
 - [ ] a field read after a `?.` call link (`p(true)?.me().x`) is refused while a method there is accepted
       (`find(0)?.str().length()`); TypeScript continues the chain for both — one rule — found by B-20's Conformance step
 
