@@ -716,13 +716,16 @@ fn Button() -> @Component<Element> {
 - [x] until box 4b lands, a `@Component` value handed where the parameter's declared type is not a written
       `fn(…) -> @Component<…>` is refused at build (`component-value-to-generic`, naming the template's `for`)
       — never built: box 4b makes it moot (`itens.map(Card)` answers lambdas)
-- [ ] every context declares its default, named by its value's type (378, 379): std's `context` module
+- [x] every context declares its default, named by its value's type (378, 379): std's `context` module
       answers `createContext(value)`, `provide(ctx)`, `context(T)`, and `Context<T>()` goes; one module-level
       declaration per type (a second refused naming both), found through the catalogue; a read answers the
       nearest context of its type or the declared default on every target (`context-unbound` goes,
       `run/context_default`), a type with no declaration refused at the read (`reject/context_undeclared_type`);
       `comptime createContext(…)` refuses a run-time argument; the codemod over `tests/language` (20 cells),
       `styled`, jhonstart
+      — `createContext(v)` / `provide(ctx)` / `context(T)` keyed by the type's name, one declaration per type, a default found
+      in the reading module or an analysed one (B-17-g's narrow reading); 4 cells added, 3 removed, 22 rewritten; styled's
+      and jhonstart's commits landed
 - [ ] dependency injection over contexts (416): `createContext(value, Behavior)` keys the context by the behavior,
       the value checked to implement it (`reject/context_behavior_not_implemented`); `use inject(T)` builds the record
       `T` from the context of each field's type — provided above, else the declared default, else the field's default,
@@ -745,10 +748,17 @@ fn Button() -> @Component<Element> {
 - [x] the codemod: `@Component<C, R>` → `@Component<R>`, `implement @Context<C>` → `implement @Renderable`,
       `use @getContext(T)` reported at its line (no mechanical rewrite: the provider is the author's)
 
-- [ ] the comptime runtime's primitives answer as the targets do (`1000.toI64()` raises `integer_overflow` at build) —
+- [x] the comptime runtime's primitives answer as the targets do (`1000.toI64()` raises `integer_overflow` at build) —
       found by B-17
+      — `toI64`'s bounds were the cause (`comptime_primitives_at_build`); math's `op:`-only functions no longer fold (question
+      B-17-h); `@Result` methods refused at build
 - [ ] emilia: four beam cells fail with OTP's "implementation limit"; rakun: two workspace cells red — older than B-17,
       found by its library gate run
+- [ ] math's `op:`-only functions given `std:` cells so they run at build · question B-17-h
+- [ ] `Context<T>(contextValue)` and a context lowered to its plain value at run time · question B-17-i
+- [ ] contexts keyed by the type's declared name, so two same-named types of two packages share one key · question B-17-j
+- [ ] `@Result` methods (`unwrapOr` …) refused at build by the comptime runtime — found by B-17
+- [ ] `comptime createContext(0l)` fails: the `l` suffix reaches the comptime module — found by B-17
 - [ ] a raise other than an arithmetic error while folding: a build error (380 (2)) or the hole left to render · question B-17-e
 - [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
 - [ ] where a context read finds a default declared in a module it neither imports nor reaches through its type · question B-17-g
@@ -1405,6 +1415,7 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       B-22
 - [x] a bare name as a catch-all arm (`k -> k + 1`) is accepted by the checker, which `docs.md` says is not a
       pattern; commonJS then fails `k is not defined` — refused at the arm, located — found by B-22
+- [ ] `1000.toF64()` printed `1000.0` on commonJS, `1.0e3` on erlang and wasm (with B-78) — found by B-17
 - [ ] `Float.toString` differs across targets: `1200.0` on commonJS, `1.2e3` on erlang, beam and wasm; `9007199254740992.0` on
       commonJS and wasm, `9.007199254740992e15` on erlang and beam — one text on every target (decision 441, with B-78) — found by B-22
 - [x] wasm: calling an `f64`-taking function bound out of an optional (`if (h) { g -> g(3.0) }`,

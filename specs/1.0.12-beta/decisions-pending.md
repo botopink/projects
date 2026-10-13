@@ -418,6 +418,51 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.
 
+#### B-17-h · math's `op:`-only host functions at build: given `std:` cells? (decisions 452, 481; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — one `std:` binding cell per function in std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), so the comptime runtime answers them and they fold (380); an opcode has no host form at build otherwise.
+- **Measured.** They are refused at build (452) and no longer treated as foldable.
+- **Options.**
+  (a) A `std:` cell each.
+  ```bp
+  val r = "${math.sqrt(16.0)}";   // computed at build
+  ```
+  (b) Run time only.
+  ```bp
+  val r = "${math.sqrt(16.0)}";   // computed at run time
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-i · Confirm `Context<T>(contextValue)` and a context lowered to its plain value at run time (decisions 378, 379; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — std's `Context<T>` holds `contextValue: T`; at run time a context is its plain value, so an `f64` / `i64` context crosses wasm's scope as any value.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) As built.
+  ```bp
+  pub val Theme = createContext(Light);   // at run time: the value Light
+  ```
+  (b) A record kept at run time.
+  ```bp
+  pub val Theme = createContext(Light);   // at run time: Context(contextValue: Light)
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-j · Contexts keyed by the type's declared name or by its module and name? (decisions 310, 379; 144 B-17)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): by module and name** — two same-named types of two packages are two types (310), so they are two contexts; styled's sheet keys still match across packages because they name one type, styled's.
+- **Measured.** Built keyed by the declared name: two same-named types of two packages share a key and hit `context-declared-twice`.
+- **Options.**
+  (a) By module and name.
+  ```bp
+  import {a.Theme as A}; import {b.Theme as B};   // two contexts
+  ```
+  (b) By the declared name, as built.
+  ```bp
+  import {a.Theme as A}; import {b.Theme as B};   // refused: context-declared-twice
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
 #### 04s12-a · A `@Component` method, lambda or `default fn` has no hooks node (375 (2), 04-js step 12)
 - **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(c), and a type may be a component — every form behaves and is called as a `fn` component.** (1) A method, a lambda or a `default fn` answering `@Component<R>` lowers as a top-level component: a lambda over the `RenderScope` (388) answering its tree and its children's scope, with `use provide` / `use context` / `await` in its body, marked by its own body (s23-j); calling it only makes the lambda and marks no caller. (2) A type implementing `Component<R>` is a component: its fields are its props and its `render(self) -> R` is its body — `type Menu(items: string[]) implement Component<Element> { fn render(self: Self) -> Element { val t = use context(Theme); return <ul class={t.cls}>…</ul>; } }` — written and called as `fn Menu(items: string[]) -> @Component<Element>` is: `<Menu items={["a", "b"]}/>`, the same lowering `(props) => (scope) => …`, the same marks. The scope is never a field (388 (5): nothing captured; the renderer hands it at each run, a `Suspense` fill included). (3) Each has its own hooks node, and a method's or a type's node enters `decl.hooks` (277 amended: a method call followed through its receiver's type), so a decorator sees `Menu`'s hooks as it sees `fn App`'s. **(2) in detail** (the maintainer, 2026-10-12): a type implementing `Component<R>` is sugar for a `fn` component. Its fields are the parameters — defaults, optionals, `children`, generics as in a `fn`, immutable — and its `fn render(self: Self) -> @Component<R>` is the body, `self` reading the fields and the type's helper methods. `X(fields…)` and `<X …/>` answer the component (the lambda `(props) => (scope) => …`), never a record, so a caller cannot tell the two forms apart. The same lowering on commonJS, erlang, beam and wasm, the same `.d.ts` (`export declare function X(props: {…}): Component<R>`), the same marks (s23-j: a `render` with `await` is asynchronous), the same `decl.hooks` for decorators (`#[page] type` and `#[page] fn` interchangeable), the same comptime (434-b). Hooks only in `render`; a helper method not answering `@Component` is an ordinary function. Refused, located: `implement Component` with no `render`; a `render` of another signature; a `RenderScope` field (388 (5)); a `use` outside `render`; `X.render()` called directly (`call the component, not its body: <X …/> or X(…)`). **(2) amended — a component's props are one record** (the maintainer, 2026-10-12): a component, `fn` or type, takes its props as one record parameter, never a list of parameters. `type MenuProps(items: string[], title: string = "Menu");` — then `fn Menu(props: MenuProps) -> @Component<Element> { val t = use context(Theme); return <nav class={t.cls}><h2>{title}</h2><ul>{items.map({ i -> <li>{i}</li> })}</ul></nav>; }`, or the same component as a type: `type Menu(props: MenuProps) implement Component<Element> { fn render(self: Self) -> @Component<Element> { …<h2>{self.title}</h2><ul>{self.items.map({ i -> self.item(i) })}</ul>… } fn item(self: Self, i: string) -> Element { return <li>{i}</li>; } }` (`item` does not answer `@Component`: an ordinary helper). The record's fields are in scope: bare in the `fn` body (`title`, `items`), on `self` in `render` and the helpers (`self.title`, `self.items`); `props` names the whole record. Defaults, optionals, `children` and generics are the record's, written once on `MenuProps`. A caller never builds the record: the attributes are its fields — `<Menu items={["a", "b"]}/>` (`title` taking its default), `<Menu items={["a", "b"]} title="Principal"/>`, `<Layout view={ { -> <Menu items={xs}/> } }/>` (inside a lambda prop alike) — and the compiler builds the `MenuProps` from them, checked field by field as a record construction is (a missing field, an unknown attribute, a wrong type: located on the attribute). A component with no props takes no parameter (`fn App() -> @Component<Element>`). The lowering is unchanged — `(props) => (scope) => …`, `props` the record — and the `.d.ts` names it: `export declare function Menu(props: MenuProps): Component<Element>`, `MenuProps` exported beside it. Refused, located: a component with more than one parameter, or whose one parameter is not a record type (`a component takes its props as one record: type MenuProps(…); fn Menu(props: MenuProps)`).
 - **Measured.** 04-js step 12 asks a method, a lambda and a `default fn` to follow the mark "alike", but 277's
