@@ -53,14 +53,31 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the conformance suite green on `feat` locally (1909 cells, no red B-02's); no `test` run green since the base:
+      each failed at `format-check` on other steps' cells (B-22's, B-12's, B-04's, erika's moved cell — fixed — and B-17's
+      `stage_imported`, `stage_of_functions`, open) or was superseded; every `tag` run green. Box 1 closes on the next
+      green `test` run.
+
+| B-02 change | Cells |
+|---|---|
+| `label = value` refused at the label, naming `label:` | `annotation_label_equals`, `annotation_label_equals_decorator` |
+| labels read from `label: value` only | the `beam_memory_*` cells, `external_inline_unread`, the `decorator_arg*` cells, `annotation_unknown_family` |
+| `fn: name` on every target, checked against the declaration | `external_fn_body_every_target`, `external_method_local`, `external_wasm_host_binding`, `external_wasm_host_twice` |
+| a misspelt `fn:` is the unbound-name error | `external_fn_unbound` |
+| prefixed `"fn:…"` refused on Node / Erlang | `external_prefixed_fn_refused`, `external_erlang_prefixed_fn_refused` |
+| prefixed `"op:…"` / `"wasi:…"` off wasm name the wasm cell | `external_node_prefixed_op_refused` |
+| prefixed strings on `@External.Wasm` (481) | `external_wasm_prefixed_{fn,op,wasi,std}_refused` |
+| the formatter prints `label: value`; the LSP rename; no prefixed string in `libs/**` | no cell: `format/tests/declarations.zig`, `language-server/src/tests/rename.zig`, the `build.zig` scan |
+
+- [ ] `"std:…"` on `@External.Node` / `Erlang`: host code (as built) or refused like the other prefixes · question B-02-c
 
 ### B-10 — 430: the compiler gaps a library works around today
 

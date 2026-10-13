@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**102 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**103 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1466,6 +1466,21 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** Os marcadores de wasm do 156.
+
+#### B-02-c · `"std:…"` escrito em `@External.Node` / `@External.Erlang`: código de host, ou recusado como os outros prefixos? (decisões 305, 481; 144 B-02)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusado em todo target, nomeando a forma rotulada** — o `conformance/docs.md` § Host bindings já diz que as quatro strings com prefixo são recusadas no argumento em todo target; uma string que se lê como cell e roda como código de host é a ambiguidade que a 305 removeu. Muda: `checkExternalCells` recusa `"std:"` fora do wasm também; uma cell.
+- **Medido.** `checkExternalCells` recusa `"std:…"` só em `@External.Wasm`; no Node e no Erlang é código de host ("`std:` was only ever a wasm cell").
+- **Opções.**
+  (a) Recusado em todo lugar.
+  ```bp
+  #[@External.Node("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
+  ```
+  (b) Código de host fora do wasm, o texto corrigido.
+  ```bp
+  #[@External.Node("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `std:` do 144 B-02.
 
 ### 02-std-and-packaging
 
