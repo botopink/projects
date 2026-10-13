@@ -1495,6 +1495,21 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Recomendação.** (a) — a palavra-chave continua palavra-chave (67), o método mantém seu significado; quem chama em JS uma task genérica ou um componente é uma linha à parte, e a célula invertida passa a se chamar `task_failure_rejects`.
 - **Bloqueia.** 144 B-06 passo 2.
 
+#### B-07-a · `attempt` no wasm: o "passa no wasmtime" de 491 admite `-W exceptions=y`, e onde uma função da std sem binding wasm é recusada? (decisões 491, 492, 503; 144 B-07)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — o `attempt` do wasm usa o tratamento de exceções do wasm, toda execução do wasmtime passa `-W exceptions=y` (como passa `-S http`); e, à parte, o STD-001 recusa na chamada, não no import (a direção de 503 para todo módulo da std)**, para que `std/failure` continue importável no wasm qualquer que seja a resposta. Viável: a medição passa no node 22 e 25 por padrão e no wasmtime 45 com a flag; a recusa de import do checker vira uma recusa na chamada.
+- **Medido.** Um módulo com `try_table` / `throw` roda no node 22.23.3 e 25.8.0 por padrão; o wasmtime 45.0.1 o recusa ("exceptions proposal not enabled") a menos que rode com `-W exceptions=y`. O STD-001 recusa todo import wasm de um módulo da std que tenha uma função sem corpo e sem binding wasm, mesmo quando nada a chama: com `failure.attempt` / `attemptTask` adicionados, `std_failure_types`, `external_result_host_error` e `external_result_return_accepted` ficam vermelhos no wasm. O B-07 está construído em commonJS, erlang e beam (std 498/498 em cada, jhonstart 208/208) e retido sem push por isso.
+- **Opções.**
+  (a) A flag conta; `attempt` no wasm por exceções; STD-001 na chamada.
+  (b) A flag não conta; `attempt` recusado no wasm na chamada (491 (c)) até o wasmtime habilitar exceções por padrão; STD-001 na chamada.
+  (c) Esperar: o B-07 fica sem pousar até o padrão do wasmtime mudar.
+  ```bp
+  import {failure};
+  val r = failure.attempt({ -> risky() });   // (a): runs on wasm; (b): refused here on wasm, the import accepted
+  ```
+- **Recomendação.** (a) — node e wasmtime o rodam, o wasmtime por uma flag que o botopink já define por execução (`-S http`); recusar na chamada mantém um `failure` importável em todo alvo.
+- **Também perguntado (o relatório do B-07).** (1) O `host` "exato" de 492: um raise de um binding sem `result: true` não é marcado e é lido como `host`, então `crash` nunca é respondido (uma falha da VM é lida como `host`) — envolver toda chamada assim, a um custo que o B-05 não mediu? (2) Um `assert` que falha lido como `panic`, sua mensagem sem a localização, em todo alvo. (3) erlang e beam levantam um `badarith` puro para uma divisão inteira por zero, lido como `host` onde o commonJS lê `panic` (uma linha para um raise marcado). (4) A `Failure.message` de um raise de host no erlang é a razão impressa com `~tp`, estendendo a regra de `HostError` de 489 a `Failure`. (5) Os sinais de navegação do jhonstart agora voltam do `attempt` com kind `panic` (a front do jhonstart, B-25 / 504).
+- **Bloqueia.** 144 B-07 (seu commit, construído, sem push).
+
 #### std-e · Hooks de ciclo de vida de teste
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): nenhum hook de ciclo de vida; o corpo de um teste chama seu helper de reset** — nada implícito roda em volta de um `test` (67), todo bloco `test` se lê inteiro, e a unidade de teste da 513 guarda só blocos `test`. (b) roda uma função de módulo que o teste nunca nomeia e (c) acrescenta gramática para o que uma chamada já diz. Viável: como construído (nenhum `#[before]` / `beforeEach` no std, no `lib-test-runner` ou nas bibliotecas); as contagens da entrada estão defasadas — `resetChain()` é chamado 77 vezes no rakun todo (31 no rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Mudanças: a linha "No test lifecycle hooks" do `language-gaps.md` vira by design.
 - **Medido.** Os testes de biblioteca resetam o estado à mão no topo do corpo: `resetChain()` do rakun-web 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, entre outros; `resetSingletons` / `resetContext` do rakun-test só em seu próprio `context_test.bp`; `installDocument(…)` do jhonstart-dom-test 11×.

@@ -72,6 +72,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — measured (`codegen/wat/AGENTS.md`) and `std-wasm/src/heap.zig` landed (a heap per process, copying collection, not wired yet); left: `alloc` out of `wat_prelude` with the codegen's roots, beam-to-wasm on the process heap, the exhaustion trap, a bounded long-running cell · question B-30-a
+- [ ] 144 B-07 (431) — `failure.attempt` / `attemptTask`, asserts over it, 126's conversion retired, jhonstart's `__jhTry*` replaced: built and green on commonJS, erlang and beam, held unpushed — on wasm the import of `std/failure` is refused once `attempt` exists · question B-07-a
 
 ### 144 botopink-lang
 
@@ -102,6 +103,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 14 row — `located_errors`' "a raise … is located at the call that raised" fails when run filtered beside other wat / wasm / comptime tests, alone and in the full suite it passes (shared state between tests) · none
 - [ ] 26 row — compiler-cli's "transitive failure" test (a library-root lookup of `kit-x`) failed once in a full `zig build test` and passed on the next run (flaky) · none
 - [ ] 05-wasm row — an unannotated `val failing = { n -> async { throw "inner"; } }` leaves its `@Result` types unresolved: `Error(e)` prints `0` (or `show` traps) where the other targets print `inner`; and `n.toString()` inside a lambda a method returns is refused `cannot resolve the call toString/0` · none
+- [ ] 02-erlang · 03-beam row — an integer division by zero raises a bare `badarith`, which `attempt` reads as `host` where commonJS reads `panic` (found by B-07) · question B-07-a (3)
 - [ ] 163 row — cells land on botopink-lang `feat` unformatted while the 144 exception commits `--no-verify`: `format-check.sh` reds `feat`'s pipeline after each; `scripts/thread-rules.md`'s exception now asks `botopink format --check` on each `.bp` a thread adds or changes; the row closes when the other machine's threads follow it · B-60 (the exception goes)
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7

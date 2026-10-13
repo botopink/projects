@@ -1496,6 +1496,21 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a) — the keyword stays a keyword (67), the method keeps its meaning; a JS caller of a generic task or a component is a separate row, and the inverted cell takes the name `task_failure_rejects`.
 - **Blocks.** 144 B-06 step 2.
 
+#### B-07-a · `attempt` on wasm: does 491's "passes on wasmtime" allow `-W exceptions=y`, and where is a std function with no wasm binding refused? (decisions 491, 492, 503; 144 B-07)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — wasm's `attempt` uses wasm exception handling, every wasmtime run passes `-W exceptions=y` (as it passes `-S http`); and, separately, STD-001 refuses at the call, not the import (503's direction for every std module)**, so `std/failure` stays importable on wasm whatever the answer. Viable: the measurement passes on node 22 and 25 by default and on wasmtime 45 with the flag; the checker's import refusal becomes a call refusal.
+- **Measured.** A `try_table` / `throw` module runs on node 22.23.3 and 25.8.0 by default; wasmtime 45.0.1 refuses it ("exceptions proposal not enabled") unless run with `-W exceptions=y`. STD-001 refuses every wasm import of a std module holding a bodyless function with no wasm binding, even when nothing calls it: with `failure.attempt` / `attemptTask` added, `std_failure_types`, `external_result_host_error` and `external_result_return_accepted` go red on wasm. B-07 is built on commonJS, erlang and beam (std 498/498 on each, jhonstart 208/208) and held unpushed on this.
+- **Options.**
+  (a) The flag counts; `attempt` on wasm by exceptions; STD-001 at the call.
+  (b) The flag does not count; `attempt` refused on wasm at the call (491 (c)) until wasmtime enables exceptions by default; STD-001 at the call.
+  (c) Wait: B-07 stays unlanded until wasmtime's default changes.
+  ```bp
+  import {failure};
+  val r = failure.attempt({ -> risky() });   // (a): runs on wasm; (b): refused here on wasm, the import accepted
+  ```
+- **Recommendation.** (a) — node and wasmtime both run it, wasmtime by a flag botopink already sets per run (`-S http`); refusing at the call keeps one importable `failure` on every target.
+- **Also asked (B-07's report).** (1) 492's `host` "exact": a raise from a binding without `result: true` is unmarked and reads as `host`, so `crash` is never answered (a VM fault reads `host`) — wrap every such call, at a cost B-05 did not measure? (2) A failed `assert` read as `panic`, its message without the location, on every target. (3) erlang and beam raise a bare `badarith` for an integer division by zero, read as `host` where commonJS reads `panic` (a row for a tagged raise). (4) An erlang host raise's `Failure.message` is the reason printed with `~tp`, extending 489's `HostError` rule to `Failure`. (5) jhonstart's navigation signals now return from `attempt` with kind `panic` (jhonstart's front, B-25 / 504).
+- **Blocks.** 144 B-07 (its commit, built, unpushed).
+
 #### std-e · Test lifecycle hooks
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): no lifecycle hook; a test body calls its reset helper** — nothing implicit runs around a `test` (67), every `test` block reads whole, and 513's test unit holds `test` blocks only. (b) runs a module function the test never names and (c) adds grammar for what a call already says. Viable: as built (no `#[before]` / `beforeEach` in std, `lib-test-runner` or the libraries); the counts in the entry are stale — `resetChain()` is called 77 times across rakun (31 in rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Changes: `language-gaps.md`'s "No test lifecycle hooks" row becomes by design.
 - **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.
