@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**74 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**76 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1033,6 +1033,38 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Bloqueia.** A linha de linhagem do 144 B-14.
+
+#### B-11-a · `decl.wrapWith(f)`: o wrapper é só um lambda escrito na chamada, ou qualquer valor do tipo da chamada? (decisão 316; 144 B-11)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um lambda escrito na chamada** — `decl.wrapWith({ call -> … })`; qualquer outra expressão é `decorator-wrap-not-lambda`, localizado no argumento. É a regra da 370 (2) para uma função membro que um decorator adiciona: o código que o decorator escreve é checado como o do programa, nunca um valor calculado no build. Viável: como construído. Muda: nada.
+- **Medido.** Construído como (a). O tipo da chamada é interno (`__Decl__Call<A, R>`, um por função embrulhada), então um helper que devolve um wrapper (`cachedCall(cache)`) não consegue nomear o tipo do seu parâmetro; (b) precisaria desse tipo nomeável.
+- **Opções.**
+  (a) Um lambda na chamada.
+  ```bp
+  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
+  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
+  ```
+  (b) Qualquer valor de um tipo de chamada nomeável.
+  ```bp
+  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
+  decl.wrapWith(cachedCall(cache));                                  // accepted
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do wrapper do 144 B-11.
+
+#### B-11-b · `decl.wrapWith` pode embrulhar uma função genérica ou um membro de um tipo genérico? (decisão 316; 144 B-11)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): sim, como uma linha do 144** — o wrapper é checado contra a assinatura com seus parâmetros de tipo, e a função embrulhada continua genérica. A 316 não nomeia exceção para genéricos, e um cache ou um retry é tão útil em `fn byId<T>(…)`. Viável: o tipo de chamada gerado recebe os parâmetros de tipo da função. Muda: uma cell; `decorator-wrap-generic` sai.
+- **Medido.** Uma função ou dono genérico é recusado hoje, `decorator-wrap-generic`, localizado no decorator.
+- **Opções.**
+  (a) Recusado, como construído.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
+  ```
+  (b) Embrulhado, genérico.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha genérica do 144 B-11.
 
 ### 02-std-and-packaging
 

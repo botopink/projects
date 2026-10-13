@@ -1217,12 +1217,25 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
 
 **Repository:** rakun (`--repo rakun`) · **Model:** sonnet
 
-- [ ] `rakun_runtime.erl`'s registry: every per-key counter a keyed `#[@BeamMemory.Ets(keyed = true)]` var holds as
+- [ ] `rakun_runtime.erl`'s registry: every per-key counter a keyed `#[@BeamMemory.Ets(keyed: true)]` var holds as
       `insert(k, (at(k) ?? 0) + n)` becomes `counts = counts.bump(k, n)` (integer `V`, an `n` that does not read
       `counts`; 340, 144 B-26)
 - [ ] `rakun-data/src/sql/template.bp`: the comment above `tryQuery` saying a method `-> @Result` is not lowered as a
       `@Result` on erlang goes — it is (144 B-13; decision 304's dependency met); rakun 08 s6, 09 s6, 65 s4 no longer
       wait on it
+
+### 150 s29 — `decl.wrapWith` in rakun (144 B-11; decision 316)
+
+**Repository:** rakun (`--repo rakun`) and the meta specs · **Model:** sonnet
+
+- [ ] rakun 15's `examples/publish-reliability-example.bp` (this front's `15-rakun-messaging/`): `issue`'s retry is
+      `#[retryable(policy)]` on `issue`, the decorator `decl.wrapWith({ call -> publishWithRetry(…, { -> call.run() }) })`
+      with the policy an `@Expr` argument (370); its `LANGUAGE GAP` marker and the Marker index row go, and
+      `language-gaps.md`'s row "A decorator cannot rewrite or wrap the body it annotates" with them
+- [ ] rakun 12 s5 and the 318 wrappers (04 s8, 08 s7, 12 s6, 13 s6, 15 s8, 19 s7, 79 s4, 91 s2, 93 s4) build on
+      `wrapWith`: a function- or method-level `#[useCache]` / `#[cached]` as `decl.wrapWith({ call -> cacheThrough(policy,
+      call.args, { -> call.run() }) })`, every value an `@Expr` parameter; rakun-cache's two markers (`cache.bp`,
+      `granularity_test.bp`) are the module-level-annotation gap's, not 316's, and stay
 
 ### 150 Conformance — the front's last step (decision 465)
 

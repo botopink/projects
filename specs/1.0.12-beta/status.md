@@ -211,6 +211,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 150 rakun
 
+- [ ] 150 s29 — `decl.wrapWith` in rakun (144 B-11, 316): the publish-retry example as `#[retryable(policy)]`, its marker and the gap row gone; the 318 wrappers build on it · nothing
 - [ ] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340); `tryQuery`'s stale comment removed (B-13, 304) · nothing
 
 ### 163 meta-ci (medium)
@@ -339,6 +340,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] 144 B-02 (305) — annotations speak botopink: `label = value` refused naming `label:` (`annotation_label_equals`); `fn: name` resolved to a private function on every target, a misspelt one the unbound-name error (`external_fn_unbound`), renamed with it; `op:` / `wasi:` checked by one rule with `fn:`; the old prefixed strings refused naming the labelled form (`external_prefixed_fn_refused`); no prefixed string left in `libs/**` (a scan `zig build test` runs); the formatter prints `label: value`; `keyed: true` everywhere; no library used the old forms — its Conformance step open
+- [x] 144 B-11 (316) — `decl.wrapWith({ call -> … })`: `call.args` and `call.run()`, typed against `@Decl<fn(…) -> R>` and the new `fn(..) -> R`; the function keeps its name and identity, the body behind a private `__bp_wrapped_<f>`; wrappers compose first-written outermost, on methods, across modules (`decorator_wraps_function`, `decorator_wrap_wrong_return`, `decorator_wrap_outside_function`, `decorator_any_params_outside_decl`); 280's example 5 in the `@Expr` form; rakun's half is 150 s29 — left: questions B-11-a, B-11-b, its Conformance step
 - [x] 144 B-01 (part) — `effect-try-without-fallible-channel` names `try … catch` and `result: true`; the reference § Results, § Host bindings — its Conformance step open
 - [x] 144 B-13 — a method declared `-> @Result` already lowered as a `@Result` on every target (`result_method_throw`, `behavior_method_result_typed`, `behavior_method_result_chained`); no code change; rakun's stale comment is 150 s28 — its Conformance step open
 - [x] 144 B-26 (340) — `Dict.bump`; `counts = counts.bump(k, n)` on a keyed var as `ets:update_counter/4` on erlang and beam, `beam_memory_ets_keyed_bump`; rakun's registry is 150 s28 — its Conformance step open

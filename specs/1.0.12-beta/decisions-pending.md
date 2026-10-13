@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**74 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**76 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1034,6 +1034,38 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-14's lineage row.
+
+#### B-11-a · `decl.wrapWith(f)`: is the wrapper only a lambda written at the call, or any value of the call type? (decision 316; 144 B-11)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a lambda written at the call** — `decl.wrapWith({ call -> … })`; any other expression is `decorator-wrap-not-lambda`, located at the argument. It is 370 (2)'s rule for a member function a decorator adds: the code the decorator writes is checked as the program's, never a value computed at build. Viable: as built. Changes: none.
+- **Measured.** Built as (a). The call type is internal (`__Decl__Call<A, R>`, one per wrapped function), so a helper returning a wrapper (`cachedCall(cache)`) cannot name its parameter's type; (b) would need that type nameable.
+- **Options.**
+  (a) A lambda at the call.
+  ```bp
+  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
+  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
+  ```
+  (b) Any value of a nameable call type.
+  ```bp
+  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
+  decl.wrapWith(cachedCall(cache));                                  // accepted
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-11's wrapper row.
+
+#### B-11-b · May `decl.wrapWith` wrap a generic function or a member of a generic type? (decision 316; 144 B-11)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): yes, as a 144 row** — the wrapper is checked against the signature with its type parameters, and the wrapped function stays generic. 316 names no exception for generics, and a cache or a retry is as useful on `fn byId<T>(…)`. Viable: the generated call type takes the function's type parameters. Changes: a cell; `decorator-wrap-generic` goes.
+- **Measured.** A generic function or owner is refused today, `decorator-wrap-generic`, located at the decorator.
+- **Options.**
+  (a) Refused, as built.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
+  ```
+  (b) Wrapped, generic.
+  ```bp
+  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-11's generic row.
 
 ### 02-std-and-packaging
 

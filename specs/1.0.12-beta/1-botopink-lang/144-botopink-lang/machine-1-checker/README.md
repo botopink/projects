@@ -137,30 +137,35 @@ A decorator answers only 216's four outputs today; a free function's decorator h
 proxy (`decorator-member-without-type`). After, it may wrap the function, typed:
 
 ```bp
-pub fn useCache(comptime decl: @Decl<fn(..) -> string>, comptime ttl: Duration = hours(1)) {
-    decl.wrapWith({ call -> cacheThrough(policyFor(decl, ttl), call.args, { -> call.run() }) });
+pub fn useCache(comptime decl: @Decl<fn(..) -> string>, comptime policy: @Expr<CachePolicy>) {
+    decl.wrapWith({ call -> cacheThrough(policy, call.args, { -> call.run() }) });
 }
 
-#[useCache(ttl: minutes(5))]
+#[useCache(policyFor("posts", minutes(5)))]
 pub fn posts() -> string { return loadPosts(); }
 ```
 
-- [ ] `decl.wrapWith(f)` in `builtins.d.bp` (with 134): `f` receives the call value (the arguments and
+- [x] `decl.wrapWith(f)` in `builtins.d.bp` (with 134): `f` receives the call value (the arguments and
       running the original body — spelling decided here, recorded in `docs.md` § Decorators) and answers
       the function's return type; a wrapper whose type does not match the annotated signature
       (`@Decl<fn(..) -> T>`, 280) is an error at the decorator
-- [ ] the wrapped function keeps its name, signature and identity for callers (a reference to it is
+- [x] the wrapped function keeps its name, signature and identity for callers (a reference to it is
       the wrapped behaviour); the original body is reachable only through the call value
-- [ ] two or more wrappers compose in annotation order, the first written outermost — one cell
-- [ ] on a method it wraps that method; on a function or method of another module the wrapper runs
+- [x] two or more wrappers compose in annotation order, the first written outermost — one cell
+- [x] on a method it wraps that method; on a function or method of another module the wrapper runs
       wherever it is called (the importer sees the wrapped behaviour)
-- [ ] a decorator still reads no body (lg2-d) and writes none as a string (281)
-- [ ] `run/decorator_wraps_function` (a counting wrapper, a cache wrapper, two composed) on the four
+- [x] a decorator still reads no body (lg2-d) and writes none as a string (281)
+- [x] `run/decorator_wraps_function` (a counting wrapper, a cache wrapper, two composed) on the four
       targets; `reject/` cells for a wrapper of the wrong return type and for `wrapWith` outside a
       function or method decorator
-- [ ] `01-checker/examples/decorator-arguments-280.md` example 5 runs (no longer illustrative);
+- [x] `01-checker/examples/decorator-arguments-280.md` example 5 runs (no longer illustrative);
       `language-gaps.md`'s row "A decorator cannot rewrite or wrap the body it annotates" closes once
-      its marker (rakun 15's `publish-reliability-example.bp`) is rewritten
+      its marker (rakun 15's `publish-reliability-example.bp`) is rewritten — example 5 runs in the
+      `@Expr` form above (a value argument is `@Expr`, 370; the wrapper a lambda); the marker's rewrite is
+      150's (`#[retryable(policy)]` on `issue` over `decl.wrapWith`), its row there
+- [ ] the wrapper is a lambda written at the call (`decorator-wrap-not-lambda`), or any value of the call
+      type · question B-11-a
+- [ ] a generic function or owner is refused (`decorator-wrap-generic`) · question B-11-b
 
 #### B-11 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

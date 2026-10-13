@@ -274,9 +274,10 @@ pub type Cache<T>(name: string)              // `name` é o nome no Redis/ETS: c
 
 pub fn cacheable<A, T>(
     comptime decl: @Decl<fn(a: A) -> T>,
-    comptime cache: Cache<T>,                 // o T do cache tem que ser o T devolvido
+    comptime cache: @Expr<Cache<T>>,          // o T do cache tem que ser o T devolvido; um valor é `@Expr` (370)
 ) {
-    decl.wrapWith(cachedCall(cache))          // embrulhar a função: decisão 316
+    // embrulhar a função (316): o wrapper é um lambda escrito na chamada, `call.run()` roda o corpo original
+    decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });
 }
 ```
 
@@ -295,6 +296,7 @@ fn byCategory(c: string) -> Product[] { return db.query(…); }
 val users = Cache<User[]>("users");
 #[cacheable(users)] fn byCategory(c: string) -> Product[]   // ❌ esperado Cache<Product[]>, recebido Cache<User[]>
 #[cacheable("products")]                                     // ❌ esperado Cache<…>, recebido string
+decl.wrapWith(cachedCall(cache))                              // ❌ `decorator-wrap-not-lambda`: o wrapper é um lambda (pergunta B-11-a)
 ```
 
 ---
