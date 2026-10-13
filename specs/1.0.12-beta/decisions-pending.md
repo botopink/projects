@@ -641,6 +641,21 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-23's 310 row.
 
+#### B-23-b · A raise in the module's own template: located at the call site, or at the call that raised? (decision 451 (3); 144 B-23)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the call that raised, inside the template's body, as a decorator in the same module is (451 (3))** — one rule for every comptime body; another module's template already names its file and line. Changes: the cells that pin such a raise move their location.
+- **Measured.** Another module's template names `src/tpl.bp:3:5` (`template_raise_names_body_file`); the module's own template is reported at the call site with no line in its body.
+- **Options.**
+  (a) At the raising call.
+  ```bp
+  // error at 4:9 in the template's body — while `shout` ran the template's body
+  ```
+  (b) At the call site, as built.
+  ```bp
+  // error at the call `shout "x"`
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-23's template-raise row.
+
 #### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
 - **Measured.** Built as (a); `std_async_on_every_target` green on four targets and both hosts.

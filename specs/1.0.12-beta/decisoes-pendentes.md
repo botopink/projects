@@ -641,6 +641,21 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Trava.** A linha da 310 do 144 B-23.
 
+#### B-23-b · Um raise no template do próprio módulo: localizado no ponto de chamada, ou na chamada que levantou? (decisão 451 (3); 144 B-23)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na chamada que levantou, dentro do corpo do template, como um decorator no mesmo módulo é (451 (3))** — uma regra para todo corpo de comptime; o template de outro módulo já nomeia o seu arquivo e linha. Muda: as cells que fixam um raise assim mudam a localização.
+- **Medido.** O template de outro módulo nomeia `src/tpl.bp:3:5` (`template_raise_names_body_file`); o template do próprio módulo é reportado no ponto de chamada, sem linha no seu corpo.
+- **Opções.**
+  (a) Na chamada que levantou.
+  ```bp
+  // error at 4:9 in the template's body — while `shout` ran the template's body
+  ```
+  (b) No ponto de chamada, como construído.
+  ```bp
+  // error at the call `shout "x"`
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do raise de template do 144 B-23.
+
 #### B-25-a · Confirmar os adaptadores de gate do B-25 no wasm e as cells deixadas sem binding (decisões 334, 335 (3); 144 B-25)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — `.GateNew`, `.GateOpen`, `.GateAwait` (um gate é uma task pendente que nenhum host responde; abri-lo descarta o timer de cada espera pendente); as cells só de teste da std (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) ficam sem binding no wasm até o `botopink test` rodar wasm (335 (3)), então as "doze cells" da 334 são as de uso do `async`.
 - **Medido.** Construído como (a); `std_async_on_every_target` verde nos quatro targets e nos dois hosts.

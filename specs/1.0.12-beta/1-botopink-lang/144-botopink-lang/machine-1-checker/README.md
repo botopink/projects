@@ -1575,7 +1575,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | a comptime body's file | `decorator_raise_names_body_file` |
 | 310 | `import_two_types_one_name`, `import_two_enums_one_name`, `import_same_type_name_two_packages_one_aliased`, `import_std_type_beside_aliased_type`, `import_two_types_one_name_reached_indirectly`; pins `import_two_types_one_name_unaliased`, `own_type_beside_aliased_type_import` |
 
-- [ ] proposed: a template body's raise naming its file (only `decorator_invocation.zig` pins it)
+- [x] proposed: a template body's raise naming its file (only `decorator_invocation.zig` pins it)
+      — a defect: another module's template named no file; fixed (`template_raise_names_body_file`)
+- [ ] a raise in the module's own template located at the call that raised, as a decorator's (451 (3)) · question B-23-b
 
 ### B-24 — 319, 320, 332: numbers and strings exact everywhere
 
@@ -1840,7 +1842,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | components on wasm (504) | `component_awaits_host_task`, 33 component cells with wasm |
 | a `try` tail awaiting; a wide number through the scope | `component_try_then_awaits_host_task`, `context_wide_number_through_scope` |
 
-- [ ] proposed: a `?f64` / `?i64` through a context; `try … catch` then an await in a component; the gates under `browser`
+- [x] proposed: a `?f64` / `?i64` through a context; `try … catch` then an await in a component; the gates under `browser`
+      — pins `context_optional_wide_number_through_scope`, `component_try_catch_then_awaits_host_task`; `browser` already runs
+      every wasm cell beside `wasi` (`std_async_on_every_target` pins the gates)
 
 ### B-27 — Tooling, std residue, `.bpp` in the toolchain, `json` out of std
 
@@ -2113,7 +2117,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | diagnostics at the `.bpp` line | `bpp_diagnostics_located`, `template_fail_at_column_on_open_line` |
 | the hint, one extension list, the header formatter, packaging, the language server | no cell: `tests/cli_contract.sh`, `scripts/check-packaging.sh`, `lsp/bpp_*` snapshots |
 
-- [ ] proposed: a `test` declared in a `.bpp` header found by the test runner, a `conformance/test/` suite (with step 3)
+- [x] proposed: a `test` declared in a `.bpp` header found by the test runner, a `conformance/test/` suite (with step 3)
+      — pin `conformance/test/bpp_header_test`
+- [ ] `conformance/modules/bpp_unfold_props/out/` (built `.js`) is tracked: removed, and `out/` ignored
 
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
