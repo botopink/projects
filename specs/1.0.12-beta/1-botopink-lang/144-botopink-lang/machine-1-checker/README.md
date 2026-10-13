@@ -1723,10 +1723,12 @@ file system, cannot keep a value across calls; the wasm backend does not lower a
       — the render scope typed through std's `context` slots on wasm (`scope_carry.zig`), a state machine only for a body that
       awaits (`component_awaits_host_task`); 33 component cells gain wasm, five narrowed by their host binding; std's marker
       and the gap row gone
-- [ ] a template call inside a template's built code is never expanded (node / BEAM abort, erlc refuses, wasm cannot
+- [x] a template call inside a template's built code is never expanded (node / BEAM abort, erlc refuses, wasm cannot
       resolve it; `net_new_nested_template_call_inside_a_template_body`) — found by the template-name rows
-- [ ] a local named like a module function with comptime parameters has its arguments stripped by the name-based
+      — expanded in turn (`template_call_in_built_code`)
+- [x] a local named like a module function with comptime parameters has its arguments stripped by the name-based
       transform — found by the template-name rows
+      — the local keeps its arguments (`comptime_fn_name_shadowed_by_local`)
 - [x] `feat` red: four codegen `use … is a plain call` snapshots quote std's `context.bp` comment changed with B-25's
       marker; `std_json_on_every_target`'s wasm departure no longer refuses — re-recorded / removed at once
       — re-recorded; the two stale std/json wasm departures removed
