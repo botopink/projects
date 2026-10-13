@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**87 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**89 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1239,6 +1239,37 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (b).
 - **Blocks.** 144 B-10's row.
+
+#### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): keep it the value, for lambdas and untyped `fn(x) { … }` only** — 409's tail rule binds the bodies with a written return type (`fn`, method, typed `fn` expression); a lambda has no written return, its value has always been its last statement, and the formatter has always ended that line with `;`. Reading 409 strictly there means a codemod over 3,800 lambda bodies (std 180, `conformance/` 207, rakun 1855 …) for no rule a lambda gains. Viable: as built. Changes: 409's text names the bodies it binds.
+- **Measured.** No named `fn`, method or typed `fn`-expression body ends without `;` anywhere; lambda bodies ending with `;` are std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
+- **Options.**
+  (a) Strict: with `;` a lambda's last expression is a statement.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
+  ```
+  (b) A lambda's last statement is its value, `;` or not.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers x + 1, as today
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-21's lambda row.
+
+#### B-21-b · A method with no `->`: when is a non-`void` tail refused? (decisions 409, 06 C9; 144 B-21)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`, as built** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: as built. Changes: none.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) Refused only without a valued `return`.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
+  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
+  ```
+  (b) Always refused without `->`.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-21's method row.
 
 ### 02-std-and-packaging
 

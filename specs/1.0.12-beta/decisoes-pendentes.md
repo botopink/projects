@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**87 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**89 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1238,6 +1238,37 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (b).
 - **Trava.** A linha do 144 B-10.
+
+#### B-21-a · A última expressão de um lambda escrita com `;`: continua sendo o seu valor? (decisão 409; 144 B-21)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): continua sendo o valor, só para lambdas e `fn(x) { … }` sem tipo** — a regra do tail da 409 vale para os corpos com tipo de retorno escrito (`fn`, método, expressão `fn` tipada); um lambda não tem retorno escrito, o seu valor sempre foi a sua última instrução, e o formatter sempre terminou essa linha com `;`. Ler a 409 ao pé da letra ali significa um codemod sobre 3.800 corpos de lambda (std 180, `conformance/` 207, rakun 1855 …) sem regra nenhuma que o lambda ganhe. Viável: como construído. Muda: o texto da 409 nomeia os corpos que ela rege.
+- **Medido.** Nenhum corpo de `fn` nomeado, método ou expressão `fn` tipada termina sem `;` em lugar nenhum; os corpos de lambda que terminam com `;` são std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
+- **Opções.**
+  (a) Estrito: com `;` a última expressão de um lambda é uma instrução.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
+  ```
+  (b) A última instrução de um lambda é o seu valor, com `;` ou não.
+  ```bp
+  xs.map({ x -> x + 1; })   // answers x + 1, as today
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha do lambda do 144 B-21.
+
+#### B-21-b · Um método sem `->`: quando um tail não-`void` é recusado? (decisões 409, 06 C9; 144 B-21)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): só quando o método não tem `return` com valor, como construído** — um método sem `->` infere o retorno dos seus `return`s (06 C9); sem nenhum ele não responde nada e um tail não-`void` ali é recusado nele; com um `return` com valor, o tail é mais uma das suas respostas, tipado junto com elas. Viável: como construído. Muda: nada.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Recusado só sem `return` com valor.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
+  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
+  ```
+  (b) Sempre recusado sem `->`.
+  ```bp
+  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do método do 144 B-21.
 
 ### 02-std-and-packaging
 

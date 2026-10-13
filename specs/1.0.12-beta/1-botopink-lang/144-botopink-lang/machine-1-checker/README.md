@@ -1014,10 +1014,10 @@ xs.map(fn(n: i32) -> string { return n.toString(); });
 val f: fn(x: i32) -> i32 = fn(x: string) -> i32 { … };     // ❌ at the expression: expected fn(i32) -> i32
 ```
 
-- [ ] `fn(x: T, …) -> R { … }` typed where it stands — a `val` / `var`, an argument, a return, `decl.addMember`;
+- [x] `fn(x: T, …) -> R { … }` typed where it stands — a `val` / `var`, an argument, a return, `decl.addMember`;
       written types checked against the position's when it has one — `run/fn_expr_typed_anywhere`,
       `reject/fn_expr_typed_mismatch`
-- [ ] `fn-expr-typed` and `reject/fn_expr_typed` deleted; `docs.md` § Lambdas and § Decorators rewritten; the
+- [x] `fn-expr-typed` and `reject/fn_expr_typed` deleted; `docs.md` § Lambdas and § Decorators rewritten; the
       braced lambda still untyped (328)
 
 #### Step 38 — a body's last expression without `;` is its value (decision 409) (was `01-checker` s38)
@@ -1030,19 +1030,26 @@ fn bad(x: i32) -> i32 { "a" }           // ❌ expected i32, got string — at "
 fn semi(x: i32) -> i32 { x + 1; }       // ❌ as today: the body falls off its end
 ```
 
-- [ ] the parser keeps a body's last expression statement written without `;` as the tail (`ast` flag), in a named
+- [x] the parser keeps a body's last expression statement written without `;` as the tail (`ast` flag), in a named
       `fn`, a method, a `fn` expression and a lambda; a braced `if` / `case` / loop at the end stays a statement (16)
-- [ ] the checker types the tail against `-> R` (`stmtsMayFallThrough` answers `false` after it); a non-`void` tail in
+- [x] the checker types the tail against `-> R` (`stmtsMayFallThrough` answers `false` after it); a non-`void` tail in
       a body answering nothing refused at it — `run/fn_tail_value`, `run/method_tail_value`,
       `run/fn_expr_tail_value`, `reject/fn_tail_type_mismatch`, `reject/fn_tail_in_void`
-- [ ] every backend returns the tail (erlang the last expression, commonJS a `return`, wasm the block value) —
+- [x] every backend returns the tail (erlang the last expression, commonJS a `return`, wasm the block value) —
       the four targets
-- [ ] measured first: the bodies in std, `tests/language` and the libraries whose last line has no `;` today,
-      the count in this README; `docs.md` § Functions, § Lambdas
+- [x] measured first: the bodies in std, `tests/language` and the libraries whose last line has no `;` today,
+      the count in this README; `docs.md` § Functions, § Lambdas — no named `fn`, method or `fn`-expression body
+      ends without `;`; lambda bodies do: std 180, `conformance/` 207, examples 5; emilia 373, erika 79, jhonstart
+      288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20
+- [ ] a lambda's (and an untyped `fn(x) { … }`'s) last expression written with `;`: still its value as today, or a
+      statement as 409 reads, with the codemod the counts above measure · question B-21-a
+- [ ] a non-`void` tail in a method with no `->` that infers its return from its `return`s (06 C9): refused only when
+      no valued `return` exists, as built · question B-21-b
+- [ ] an `implement` method still needs `;` on every statement: the printer drops its `-> R` — found by B-21
 
 #### Step 11 — a body's tail printed as written (decision 409) (was `16-formatter` s11)
 
-- [ ] a body's last expression without `;` (`fn inc(x: i32) -> i32 { x + 1 }`) prints without it, one written with
+- [x] a body's last expression without `;` (`fn inc(x: i32) -> i32 { x + 1 }`) prints without it, one written with
       `;` keeps it — the printer adds and removes none; a one-line body stays on one line when it fits;
       `format/tests/declarations.zig` cases (`assertFormat`, `assertIdempotent`); the typed `fn` expression (408)
       printed in every position
