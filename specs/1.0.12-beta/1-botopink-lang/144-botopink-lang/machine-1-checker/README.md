@@ -971,14 +971,14 @@ type's body is a parse error.
 - [x] checker: an operator over a value whose type is not `?T` is a located error naming the type (`s?.length()`,
       `s ?? "y"`, `s!` with `s: string`); `?.` over a member answering `?U` is `?U` (flattened); `??` beside
       `&&` / `||` without parentheses is a located error asking for them
-- [ ] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>` — built (`?? @panic(…)`,
+- [x] `x!`: `null` aborts with `value is null — <expr> at <file>:<line>:<col>` — built (`?? @panic(…)`,
       `run/optional_bang_aborts`); commonJS prints the text, erlang and beam abort with it as an Erlang binary
       (the `—` makes it non-latin1), wasm aborts without it: one text on the four targets is the backends'
       panic printing (02, 03, 05)
 - [x] `?T` has no methods: `.map`, `.flatMap`, `.unwrapOr` on a `?T` are `unknown method` naming `?.` / `??`; on
       `@Result` they stay; `result.map(…)` and the rest of the namespace are unbound names. A method after a
       `?.` link continues its chain (`e?.key.length()`), as TypeScript's does
-- [ ] a migration script (`scripts/codemod-optional-operators.py`, as 129's) rewrites `.unwrapOr(d)` on a `?T` to
+- [x] a migration script (`scripts/codemod-optional-operators.py`, as 129's) rewrites `.unwrapOr(d)` on a `?T` to
       `?? d` and `result.<op>(r, …)` to `r.<op>(…)` in every tree — one commit per repository, before the
       refusals land. Built and run over botopink-lang (std, the five shared libraries, the language suite,
       `examples/`); the five library repositories' migrations are prepared, one per repository
@@ -986,9 +986,9 @@ type's body is a parse error.
       `pub type Type { pub type Field<T>(…) { … } }` reads `Type.Field<T>` (308); `reject/` cells for a nested
       type named like a member
 - [x] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
-- [ ] wasm: `?.()` over a function answering a plain value is refused (`run/optional_call_operator`'s
+- [x] wasm: `?.()` over a function answering a plain value is refused (`run/optional_call_operator`'s
       `.wasm.expect`) — the answer has to be boxed (05)
-- [ ] erlang, beam, wasm: `recv?.m()` over an absent receiver — `s?.length()` raises `badarg` on erlang and
+- [x] erlang, beam, wasm: `recv?.m()` over an absent receiver — `s?.length()` raises `badarg` on erlang and
       beam and answers `8` on wasm (the backends' `?.` method lowering; a method continuing a `?.member` chain
       is right on the four)
 - [ ] erlang: `a ?? ns.f()` with a package-module namespace call as the default (std's own
@@ -1232,6 +1232,9 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       pattern; commonJS then fails `k is not defined` — refused at the arm, located — found by B-22
 - [ ] `Float.toString` differs across targets: `9007199254740992.0` against `9.007199254740992e15`, `1200.0` against
       `1.2e3` on commonJS — one text on every target (decision 441, with B-78) — found by B-22
+- [ ] wasm: calling an `f64`-taking function bound out of an optional (`if (h) { g -> g(3.0) }`,
+      `halver(true)?.(3.0)`) refused "would narrow this `f64` value to an `i32` slot" — found by B-20
+- [ ] wasm: `val n: ?i32 = if (c) 3 else null` reads as `0` when absent (`n ?? -1` prints `0`) — found by B-20
 
 #### Compiler residuals — met here, worked around in std, owned elsewhere (was `97-std-dedupe` compiler residuals)
 
