@@ -12,8 +12,8 @@ what is the task's own: the step, its boxes, its worktree, its model.
   is a fast-forward and the hook's gate already ran on the base being landed on.
 - **Exception, the maintainer's (2026-10-12), until 144 B-60 lands:** a thread on a 144 step in
   botopink-lang commits with `--no-verify`, runs only the tests its change reaches (the unit tests it
-  touches, the snapshots it changes, its cells on every target) plus `zig fmt --check modules` (the
-  hook's first stage — fix what it names) and `botopink format --check <file>` on each `.bp` it adds or changes
+  touches, the snapshots it changes, its cells on every target) plus `zig fmt --check modules`,
+  `scripts/format-check.sh` and `scripts/check-docs.sh` (the hook's cheap stages — fix what they name) and `botopink format --check <file>` on each `.bp` it adds or changes
   (the hook's format stage — format that file alone, never a bare `botopink format` over a directory), and lands its
   own commit:
   `git fetch origin && git rebase origin/feat`, re-run what the rebase touched, then

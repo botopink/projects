@@ -787,14 +787,30 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (2307); two B-17 reds fixed (`test-docs` — `scripts/check-docs.sh` catches it and
+      now runs before every push; an enum in a comptime-lifted record field, `comptime_enum_in_record`); five cells; every
+      B-17 cell referenced. Box 1 closes on the next completed green `test` run (B-81's red first).
+
+| B-17 change | Cells |
+|---|---|
+| a namespace import's decorators (386) | `decorator_through_namespace` |
+| every function's stage (376) | `stage_of_functions`, `stage_imported`, `stage_build_and_run`, `stage_comptime_block_in_run` |
+| an `Any` call known at build (355, 380) | `hole_any_call_at_build`, `hole_any_call_raises`, `styled_holes_known_at_build` |
+| a method / `default fn` / enum method marked by its body (375) | `component_method_sync`, `component_default_fn_sync` |
+| the comptime primitives; a suffixed literal and `@Result` at build | `comptime_primitives_at_build`, `comptime_wide_literal`, `comptime_result_methods`, `comptime_enum_in_record` |
+| contexts by type with a default (378, 379) | `context_default`, `context_default_imported`, `context_undeclared_type`, `context_declared_twice`, `context_declared_twice_across_modules`, `context_enum_default` |
+| injection (416) | `inject_record`, `inject_behavior_keyed`, `inject_test_root_fake`, `inject_field_undeclared`, `inject_behavior`, `context_behavior_not_implemented`, `inject_default_imported`, `inject_not_record_enum` |
+
+- [ ] `context-not-declared` for a behavior proposes `createContext(Repository(…))`, which a behavior cannot take: it names
+      `createContext(value, Repository)`; then the cell `context_behavior_undeclared` — found by B-17's Conformance step
 
 ### B-18 — 311, 415, 426, 429: templates
 
