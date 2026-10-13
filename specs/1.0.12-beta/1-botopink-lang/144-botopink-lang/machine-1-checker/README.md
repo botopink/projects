@@ -726,16 +726,19 @@ fn Button() -> @Component<Element> {
       — `createContext(v)` / `provide(ctx)` / `context(T)` keyed by the type's name, one declaration per type, a default found
       in the reading module or an analysed one (B-17-g's narrow reading); 4 cells added, 3 removed, 22 rewritten; styled's
       and jhonstart's commits landed
-- [ ] dependency injection over contexts (416): `createContext(value, Behavior)` keys the context by the behavior,
+- [x] dependency injection over contexts (416): `createContext(value, Behavior)` keys the context by the behavior,
       the value checked to implement it (`reject/context_behavior_not_implemented`); `use inject(T)` builds the record
       `T` from the context of each field's type — provided above, else the declared default, else the field's default,
       else an error at build naming the field (`reject/inject_field_undeclared`); a behavior refused
       (`reject/inject_behavior`) — `run/inject_record`, `run/inject_behavior_keyed`, `run/inject_test_root_fake`
       (a test's root providing a fake) on the four targets; `docs.md` § Contexts
+      — `use inject(R)`, `createContext(value, Behavior)` (`inject_record`, `inject_behavior_keyed`, `inject_test_root_fake`,
+      `inject_field_undeclared`, `inject_behavior`, `context_behavior_not_implemented`)
 - [ ] a context read known at build (379 (6)): every `createContext` that can reach it of build and of one
       value, or none — computed from the hooks list from the roots; the reading function then `Any` with build
       arguments — `run/context_read_at_build` (`corDoTema()` a constant when `Theme` is never provided),
       `run/context_read_run_time` (a provide from `use request()` keeps it at run time)
+      — waits on step 8's folding everywhere (questions B-17-e, B-17-f): a cell cannot tell a build value from a run one until then
 - [ ] a `Build` / `Any` component called at build (378 (4)): the comptime runtime runs its lambda with
       `RenderScope.root()` (388; the comptime-runtime half of box 4b), a context answering
       its providers within the tree or its default — `run/comptime_render_component`
@@ -757,8 +760,15 @@ fn Button() -> @Component<Element> {
 - [ ] math's `op:`-only functions given `std:` cells so they run at build · question B-17-h
 - [ ] `Context<T>(contextValue)` and a context lowered to its plain value at run time · question B-17-i
 - [ ] contexts keyed by the type's declared name, so two same-named types of two packages share one key · question B-17-j
-- [ ] `@Result` methods (`unwrapOr` …) refused at build by the comptime runtime — found by B-17
-- [ ] `comptime createContext(0l)` fails: the `l` suffix reaches the comptime module — found by B-17
+- [x] `@Result` methods (`unwrapOr` …) refused at build by the comptime runtime — found by B-17
+      — run at build (`comptime_result_methods`)
+- [x] `comptime createContext(0l)` fails: the `l` suffix reaches the comptime module — found by B-17
+      — stripped where the comptime module is written, put back after (`comptime_wide_literal`)
+- [ ] `createContext(value, B)`'s implements check reads only the direct `implements` clause; a type implementing `B`
+      through `extends` or an extension block is refused — found by B-17
+- [ ] wasm: `map` / `flatMap` on a `@Result<i64>` at run time answers garbage — found by B-17
+- [ ] wasm: a behavior method named `find` called on a value read through a context answers `0` — found by B-17
+- [ ] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
 - [ ] a raise other than an arithmetic error while folding: a build error (380 (2)) or the hole left to render · question B-17-e
 - [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
 - [ ] where a context read finds a default declared in a module it neither imports nor reaches through its type · question B-17-g
