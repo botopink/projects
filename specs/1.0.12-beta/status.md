@@ -72,7 +72,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
 - [ ] 144 B-30 (448, 449) — measured (`codegen/wat/AGENTS.md`) and `std-wasm/src/heap.zig` landed (a heap per process, copying collection, not wired yet); left: `alloc` out of `wat_prelude` with the codegen's roots, beam-to-wasm on the process heap, the exhaustion trap, a bounded long-running cell · question B-30-a
-- [ ] 144 B-07 (431) — `failure.attempt` / `attemptTask`, asserts over it, 126's conversion retired, jhonstart's `__jhTry*` replaced: built and green on commonJS, erlang and beam, held unpushed — on wasm the import of `std/failure` is refused once `attempt` exists · question B-07-a
+- [ ] 144 B-07 (431) — `failure.attempt` / `attemptTask`, asserts over it, 126's conversion retired, jhonstart's `__jhTry*` replaced: built on commonJS, erlang and beam, held unpushed; left: the wasm half by decision 518 (`needs:` on `@External.Wasm`, the `botopink.needs` section, the host flags, STD-001 at the call) · question B-07-b (`Failure`'s kinds)
 
 ### 144 botopink-lang
 
