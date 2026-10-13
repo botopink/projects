@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**122 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1101,6 +1101,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) A per-target departure, pinned. (b) One text on every target, as a panic's.
 - **Recommendation.** (a) — 444 already lets erlang and beam abort on their own arithmetic.
 - **Blocks.** Nothing built.
+
+#### B-64-a · How a single-file `test/` suite narrows its targets (decision 475 (1); 144 B-64)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): a suite that narrows becomes a project suite** — its own directory with a `botopink.json` naming `"targets"`, as a cell does (475 (1)); a single file declares no narrowing. Viable: seven suites move into a directory each.
+- **Measured.** With `conformance/test/` suites running on wasm, seven single-file suites (`bodyless_fn`, `external_host`, `external_markers`, `mocks_decorator_double`, `mocks_handwritten_double`, `module_init`, `std_process_import`) need a narrowing on a host binding wasm lacks. A file has no manifest, so B-64's follow-up added a `// targets: <t> …` line the runner reads and audits; 475 (1) puts a narrowing in the manifest, never a separate file.
+- **Options.** (a) Project suites with a manifest. (b) The `// targets:` line, written into 475 as the single-file form.
+- **Recommendation.** (a) — one place for a narrowing, the manifest (475 (1), 67).
+- **Blocks.** The seven suites' form; nothing red.
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.

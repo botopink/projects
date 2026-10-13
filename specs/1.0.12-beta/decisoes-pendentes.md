@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**121 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**122 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1101,6 +1101,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Um desvio por alvo, fixado. (b) Um texto em todo alvo, como o de um panic.
 - **Recomendação.** (a) — 444 já deixa erlang e beam abortarem na sua própria aritmética.
 - **Bloqueia.** Nada construído.
+
+#### B-64-a · Como uma suíte `test/` de um arquivo só restringe seus alvos (decisão 475 (1); 144 B-64)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): uma suíte que restringe vira uma suíte de projeto** — seu próprio diretório com um `botopink.json` nomeando `"targets"`, como uma célula faz (475 (1)); um arquivo só não declara restrição. Viável: sete suítes passam para um diretório cada.
+- **Medido.** Com as suítes de `conformance/test/` rodando no wasm, sete suítes de um arquivo (`bodyless_fn`, `external_host`, `external_markers`, `mocks_decorator_double`, `mocks_handwritten_double`, `module_init`, `std_process_import`) precisam de uma restrição por um binding de host que o wasm não tem. Um arquivo não tem manifesto, então o seguimento do B-64 acrescentou uma linha `// targets: <t> …` que o runner lê e audita; 475 (1) põe uma restrição no manifesto, nunca num arquivo à parte.
+- **Opções.** (a) Suítes de projeto com manifesto. (b) A linha `// targets:`, escrita em 475 como a forma de um arquivo só.
+- **Recomendação.** (a) — um lugar para uma restrição, o manifesto (475 (1), 67).
+- **Bloqueia.** A forma das sete suítes; nada vermelho.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.
