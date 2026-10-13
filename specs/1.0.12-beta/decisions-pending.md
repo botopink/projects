@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1066,6 +1066,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   (b) Enums only; a record or an array in a hole is refused at the hole (no text is promised).
 - **Recommendation.** (a) — one text per value (434 (5), B-53's rule), the hole and `@print` agreeing everywhere.
 - **Blocks.** A 144 row (commonJS and wasm write an array or a record in a hole their own way).
+
+#### B-42-a · A dependency function wasm cannot lower, which the program never calls: does it stop the build? (decision 430; 144 B-42)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): no — an uncalled function is not lowered; only a reached one is refused, at its call**, as a host binding missing on a target is (475); the program runs.
+- **Measured.** B-42 links a `path` dependency's module whole on wasm. A body wasm cannot lower stops the program's build today; the cell's old `docs.md` claimed it does not, a claim nothing built (removed).
+- **Options.** (a) Refused only where reached. (b) Refused at the dependency's build, whatever the program calls (today).
+- **Recommendation.** (a) — a refusal at the call that needs it, as 475 places a missing host binding.
+- **Blocks.** Nothing built; B-42's reference.
+
+#### B-48-a · An imported helper's or an imported decorator's raise at build: located where? (decision 451 (3); 144 B-48)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the raising call in its own file**, named with that file — the helper's line in the library, the decorator's body line in its module — the local call or annotation named as the frame that ran it.
+- **Measured.** B-48 locates a raise at the innermost call of this module: an imported helper's raise lands on the local call; an imported decorator's raise is located at the annotation, its file named in the message (`decorator_raise_names_body_file`); a template expansion's calls are not located.
+- **Options.** (a) The raising call in its own file. (b) As built: the innermost call of the module being compiled.
+- **Recommendation.** (a) — 451 (3) says "the call that raised"; the frame line keeps the local site.
+- **Blocks.** Nothing built; B-48's scope note.
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.

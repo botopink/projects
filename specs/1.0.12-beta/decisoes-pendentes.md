@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1066,6 +1066,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   (b) Só enums; um record ou um array num buraco é recusado no buraco (nenhum texto é prometido).
 - **Recomendação.** (a) — um texto por valor (434 (5), a regra do B-53), o buraco e o `@print` concordando em todo lugar.
 - **Bloqueia.** Uma linha da 144 (commonJS e wasm escrevem um array ou um record num buraco do seu jeito).
+
+#### B-42-a · Uma função de dependência que o wasm não consegue traduzir e que o programa nunca chama: ela para o build? (decisão 430; 144 B-42)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não — uma função não chamada não é traduzida; só uma alcançada é recusada, na sua chamada**, como um binding de host ausente num alvo é (475); o programa roda.
+- **Medido.** O B-42 liga o módulo de uma dependência `path` inteiro no wasm. Um corpo que o wasm não consegue traduzir para o build do programa hoje; o `docs.md` antigo da célula afirmava que não, algo que nada construiu (removido).
+- **Opções.** (a) Recusada só onde alcançada. (b) Recusada no build da dependência, o que quer que o programa chame (hoje).
+- **Recomendação.** (a) — uma recusa na chamada que precisa dela, como 475 situa um binding de host ausente.
+- **Bloqueia.** Nada construído; a referência do B-42.
+
+#### B-48-a · O raise de um helper importado ou de um decorator importado em build: localizado onde? (decisão 451 (3); 144 B-48)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na chamada que levantou, no seu próprio arquivo**, nomeado com esse arquivo — a linha do helper na biblioteca, a linha do corpo do decorator no seu módulo — a chamada local ou a anotação nomeada como o frame que o executou.
+- **Medido.** O B-48 localiza um raise na chamada mais interna deste módulo: o raise de um helper importado cai na chamada local; o raise de um decorator importado é localizado na anotação, seu arquivo nomeado na mensagem (`decorator_raise_names_body_file`); as chamadas de uma expansão de template não são localizadas.
+- **Opções.** (a) A chamada que levantou, no seu próprio arquivo. (b) Como construído: a chamada mais interna do módulo sendo compilado.
+- **Recomendação.** (a) — 451 (3) diz "a chamada que levantou"; a linha de frame mantém o local.
+- **Bloqueia.** Nada construído; a nota de escopo do B-48.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.

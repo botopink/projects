@@ -1430,7 +1430,12 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 - [x] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
       dependency on wasm
 - [x] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a `fold` lambda's string accumulator chains `split` / `join` on wasm (430) | `fold_split_join_lambda` |
+  | a program with a `path` dependency prints on wasm, the dependency's module linked whole (430) | `dependency_prints_with_fold_join` |
+  | a dependency function wasm cannot lower and the program never calls | none — question B-42-a |
 
 ### B-43 — a `Set` of structurally equal records keeps one on every target (decision 210)
 
@@ -1440,7 +1445,10 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 
 - [x] a cell red on the parent: a `Set` of records, two structurally equal, its size on every target
 - [x] commonJS and wasm compare members structurally (210); the cell and `test/stdlib-tour` green on every target
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | `Set` membership is `==`: structurally equal records are one member on every target (210) | `set_record_dedup`, `test/stdlib-tour` |
 
 ### B-44 — wasm prints a lifted `bool` as `1` (structural, decision 430)
 
@@ -1450,7 +1458,10 @@ The `yamlconf` cell prints `1` on wasm where every other target prints `true`.
 
 - [x] a cell red on the parent: a `bool` that crosses a host value printed on wasm
 - [x] wasm prints `true` / `false`; `yamlconf` green on wasm
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | wasm prints a lifted `bool` as `true` / `false` (430) | `global_tuple_bool_field`, `yamlconf` |
 
 ### B-45 — erlang: `lib.member()` through a library's default handle is unbound (structural, decision 430)
 
@@ -1462,7 +1473,10 @@ example's move into erika's `conformance/`.
 - [x] a cell red on the parent: a local `path` library whose default handle's member is called, on every target
 - [x] the erlang lowering binds the handle (`default_handle_member` green on erlang; beam is B-50)
 - [ ] `examples/generic-loader-binding` moves into `erika/conformance/` as a cell on every target (an erika change, after the 144 front)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | `lib.member()` through a library's default handle reaches its module (430) | `default_handle_member` |
 
 ### B-46 — a decorator body reaches a nested std namespace (`io.random`) (structural, decision 430)
 
@@ -1474,7 +1488,11 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [x] a cell red on the parent: a decorator body calling a function of a nested std namespace
 - [x] the comptime's environment holds the nested namespaces; the `random.float()` cell written (refused unseeded at
       build, decision 447, or the seeded answer)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a decorator body reaches a nested std namespace (430) | `decorator_nested_std_namespace` |
+  | `random.float()` in a decorator body refused unseeded at build (447, 451 (3), 456) | `decorator_random_float_unseeded` |
 
 ### B-47 — a refusal cell claims the label under the caret (decision 485)
 
@@ -1485,8 +1503,13 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [x] CLI tests red on the parent: a label that changes, a label that disappears, a `label` record in an output file
 - [x] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
       their whole refusal and label, green; every other refusal cell whose caret carries a label gains its record
-- [ ] `conformance/docs.md` states the record (with B-29 step I, which writes that file; `conformance/AGENTS.md` states it today)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [x] `conformance/docs.md` states the record (with B-29 step I, which writes that file; `conformance/AGENTS.md` states it today)
+- [ ] Conformance step (459, 474, 477, 478, 480) — box 3 done (the table below); box 4 part: 4 of the 82 re-recorded cells' `docs.md` written, the other 78 wait on the root reference's text for each refusal; boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a refusal `.snap` claims `label <text>` after its `at` (485) | the 82 refusal cells the step re-recorded; `cell_snap.zig` unit tests |
+  | a misplaced, repeated or output-file `label` record is malformed (485) | `cell_snap.zig` unit tests only |
+  | four cells claim their whole refusal and label | `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name`, `reserved_word_param_name` |
 
 ### B-48 — a raise inside a decorator body is located at the raising call (decision 451 (3))
 
@@ -1503,7 +1526,15 @@ The step's current scope: the location travels with the raise, and only this mod
 imported helper's raise lands on the local call, an imported decorator's raise at the annotation, and a template
 expansion's calls are not located.
 
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a raise in a decorator body located at the call that raised (451 (3)) | `decorator_random_float_unseeded` |
+  | the innermost call of this module wins (a helper the body calls) | `decorator_helper_raise_located` |
+  | a raise in a `comptime` located at the call | `comptime_random_float_unseeded`, `typeinfo_all_duplicate_at_entry` |
+  | a hole known at build that raises refused at the call (355, 451 (3)) | `hole_known_at_build_raises` |
+  | an imported helper's or an imported decorator's raise | `decorator_raise_names_body_file`; the answer — question B-48-a |
+  | a template expansion's calls are not located | none — a row |
 
 ### B-51 — commonJS prints an `f64` without its `.0` (structural, decision 430)
 
@@ -1514,7 +1545,10 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
 
 - [x] the two cells green on commonJS; an `f64` reaching `@print` through a std call or a `case` keeps its `.0`
 - [x] a codegen test the hook runs, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | commonJS keeps an `f64`'s `.0` through a module-handle call or a `case` payload (430) | `import_module_paths`, `enum_declaration`; a codegen test |
 
 ### B-52 — wasm prints a string field or an awaited string as a number (structural, decision 430)
 
@@ -1525,7 +1559,10 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
 
 - [x] the three cells green on wasm: a string reaching a generic field or crossing an `await` prints as text
 - [x] a codegen test the hook runs, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | wasm prints a string in a generic field or out of an `await` as text (430) | `generic_fn_and_type`, `async_block_both`, `task_result_await`; a codegen test |
 
 ### B-53 — `@print` of a `@Result` prints the host's form (structural, decision 430)
 
@@ -1536,7 +1573,11 @@ prints the way the source writes it.
 
 - [x] a cell red on the parent: `@print` of `Ok(…)` and `Error(…)` on every target, the source's form
 - [x] every backend prints a `@Result` as `Ok(81)` / `Error(…)`
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | `@print` of a `@Result` writes `Ok(…)` / `Error(…)` on every target (430) | `print_result` |
+  | a template hole writes `@print`'s text for every value | none — question B-53-a |
 
 ### B-54 — `botopink format` rewrites an annotation's labelled argument `keyed: true` to `keyed = true`
 
@@ -1546,7 +1587,10 @@ prints the way the source writes it.
 labelled form.
 
 - [x] the formatter keeps an annotation's labelled arguments as written (`label: value`); a format test red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | the formatter keeps an annotation's `label: value` (305) | a format test (a cell checks answers, not layout) |
 
 ### B-77 — `botopink cache`: one place for the caches, parallelism by the machine's pool, no `--cold` / `--jobs` (the maintainer, 2026-10-12)
 
@@ -1605,7 +1649,10 @@ check `conformance/test/`.
 - [x] the refusal in `run.zig` (and the wat component emitter where a module without `main` exports no
       `wasi:cli/run`), one message on every target and host; a unit test the hook runs (478)
 - [x] a cell: a package with no `fn main` refused by `run` on every target
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | `run` of a package with no `fn main` refused at the entry module, one message on every target and both wasm hosts (517) | `run_without_main`; a `run.zig` unit test |
 
 ### B-80 — onze-cli's CSS accessors test red under `test-libs` on commonJS and erlang
 
@@ -1652,7 +1699,12 @@ print a dependency's file as `../../../conformance/modules/<cell>/deps/…` wher
       a location relative to the cell, the column of the key that is refused); the fix in the compiler, the cells
       green unchanged
 - [x] a test the hook runs for each, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a refusal in a cell's manifest keeps the refused key's column | `bpp_html_missing`, `bpp_html_twice`, `bpp_prelude_twice`, `bpp_prelude_holds_declaration`, `bpp_role_not_pub` |
+  | a dependency's file prints as `deps/…` | `dependency_imports_itself_with_from`, `dependency_imports_undeclared_package` |
+  | a `path` dependency that leaves the cell | none — a row |
 
 ### B-63 — `botopink cell check` runs cells in parallel (`--jobs`)
 
@@ -1686,7 +1738,13 @@ cannot serve both.
       unchanged
 - [x] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
 - [x] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a module's production bytes equal under `build` and `test`; only the package under test has a test unit (513) | `codegen/tests/test_units.zig` |
+  | a test reads private functions and module-level `val`s (513 (2)) | `test/module_init.bp`, every `test/*.bp`; `test_tooling.sh` on four targets |
+  | a dependency's tests never run | `test_tooling.sh` |
+  | `conformance/test/` suites on wasm | none — a row |
 
 ### B-67 — erlang: a library's record imported beside a std record of the same name builds std's (D3)
 
@@ -1699,7 +1757,10 @@ and beam print the right answer. A wrong program, found by `test-closure-invaria
 - [x] a cell red on the parent (the two imports, a print of the record and a call into the library); green on every
       target
 - [x] the construction names the imported type's owner; an erlang codegen test
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a library record imported beside a std namespace's type of the same name builds the imported one on erlang (430) | `import_record_beside_std_record_of_same_name` |
 
 ### B-68 — wasm: a method call on a template's answer does not resolve (D4)
 
@@ -1709,7 +1770,10 @@ and beam print the right answer. A wrong program, found by `test-closure-invaria
 wasm backend cannot resolve the call `toString/0`"; the other targets run it.
 
 - [x] a cell red on the parent; the call resolved on wasm, the cell green on every target
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a method call on a package template's answer resolves on wasm (430) | `template_answer_method` |
 
 ### B-30 — wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449)
 
