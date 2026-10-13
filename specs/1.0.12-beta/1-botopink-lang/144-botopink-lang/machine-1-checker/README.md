@@ -1525,7 +1525,7 @@ file system, cannot keep a value across calls; the wasm backend does not lower a
       trapping on both hosts when the task still waits on the host
 - [ ] `fetch`'s `Request` / `Response` in the compiler's layout (393), with `wasi:http` (`io/http`, `02/97`
       step 17)
-- [ ] `async_block_all_of` gains the wasm column (`.targets` widened) — waits on std's `async` bindings
+- [x] `async_block_all_of` gains the wasm column (`.targets` widened) — waits on std's `async` bindings
       (`02/97` step 17: `std/async` is refused on wasm for want of `delay`, `race`, `raceOf`)
 
 #### Step 5 — the cells (was `140-wasm-host` s5)
@@ -1534,7 +1534,7 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 
 - [ ] `run/wasm_host_http` (a request to a local HTTP double, its status and body) under wasmtime; the
       commonJS and erlang answers equal
-- [ ] `05-wasm`'s `wat/AGENTS.md` § Where this backend refuses to answer loses `io/http` and `async`
+- [x] `05-wasm`'s `wat/AGENTS.md` § Where this backend refuses to answer loses `io/http` and `async`
 
 #### Step 6 — the `browser` profile (with 3–5, never after) (was `140-wasm-host` s6)
 
@@ -1550,10 +1550,10 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 - [ ] `io/http`'s `fetch` binds `@External.Wasm(host: .Wasi, wasi: .HttpOutgoing)` and the `browser` host's JS `fetch`;
       the request and response mapped by each adapter; on `browser` a forbidden header or a `Set-Cookie` read answers
       `HttpError.NotAllowedOnHost(…)` naming it (335 (1)); `run/std_io_http_on_every_target` against a local double
-- [ ] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
+- [x] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
       gate cells as pollables) and on `browser` (the same adapters, 394), through 392's scheduler; `RetryPolicy` / `nextDelay` unchanged;
       `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
-- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither)
+- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither) — `async` bound on both hosts; `io/http` waits on question B-25-b
 
 #### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after step 5) (was `05-wasm` s9)
 
@@ -1579,6 +1579,14 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
       emitted `.js`) and calls it through the same glue
 - [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/wasm_library_binding`
       one answer on commonJS and wasm
+
+- [ ] the adapter names `.GateNew` / `.GateOpen` / `.GateAwait`, and std's test-only cells (`monoMillis`, `hostTarget`, the
+      counters) left unbound on wasm until `botopink test` runs wasm (335 (3)) · question B-25-a
+- [ ] `fetch`'s surface: `Request`, `HttpError` and the migration from `fetch(url)` · question B-25-b
+- [ ] log's two markers: a wasm adapter keeping one host value per name, `wasi:filesystem` · question B-25-c
+- [ ] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
+      needs (the lambda's answer type not read) — found by B-25
+- [ ] erlang: DebugAllocator reports a leak in `erlang.zig`'s `closeTypeUnit` under `cell check` — found by B-25
 
 #### B-25 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

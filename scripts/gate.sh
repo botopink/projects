@@ -18,7 +18,7 @@
 #                                      one command (a `zig build`, a test run, a
 #                                      `cell check`, a library commit and its hook)
 #                                      under the pool: it waits for a free job,
-#                                      holds <N> (default half the capacity) while
+#                                      holds <N> (default a quarter of the capacity) while
 #                                      it runs, and gives them back when it ends
 #
 # <target> is a repository of this checkout (`repository/<name>/`, which has a
@@ -479,7 +479,7 @@ cmdExec() {
         esac
     done
     [ -n "$name" ] && [ "$#" -gt 0 ] || { echo "usage: scripts/gate.sh exec [--jobs <N>] <name> -- <command>…" >&2; return 1; }
-    [ -n "$want" ] || { want=$(( $(poolCapacity) / 2 )); [ "$want" -ge 1 ] || want=1; }
+    [ -n "$want" ] || { want=$(( $(poolCapacity) / 4 )); [ "$want" -ge 1 ] || want=1; }
     id="$$.exec"
     grant="$(poolAcquire "$id" "$name" "$want" "")"
     trap 'poolRelease "$id"' EXIT

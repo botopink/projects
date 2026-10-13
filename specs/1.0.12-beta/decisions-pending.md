@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**99 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**102 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1422,6 +1422,51 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-18's surface row.
+
+#### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
+- **Measured.** Built as (a); `std_async_on_every_target` green on four targets and both hosts.
+- **Options.**
+  (a) As built.
+  ```bp
+  @External.Wasm(wasi: .GateNew)
+  ```
+  (b) The test cells bound too, now.
+  ```bp
+  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-25's adapter row.
+
+#### B-25-b · `fetch`'s surface before `io/http` binds on wasm: `Request`, `HttpError`, the old `fetch(url)` (decisions 334, 393; 144 B-25)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): std fixes it in 144 first, `fetch(url)` removed in the same commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; the call sites (std, `http`) migrate in the landing (one spelling, 67).
+- **Measured.** std has only `fetch(url) -> @Result<Response, string>`; no `Request` or `HttpError` exists.
+- **Options.**
+  (a) The typed surface, the old form removed.
+  ```bp
+  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
+  ```
+  (b) The typed surface beside `fetch(url)`.
+  ```bp
+  val r = await fetch(u);   // still accepted
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-25's `io/http` rows (steps 4, 5, 6, 17).
+
+#### B-25-c · log's two wasm markers: a host value per name and `wasi:filesystem`, or 405's interim in log? (decisions 334, 405; 144 B-25)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): 405's interim in log now** — the file cells bound to a `fn:` that reaches no file on wasm, located refusal at use; the host-value-per-name adapter and `wasi:filesystem` wait for a decision of their own. No B-25 box and no decision fixes either adapter's shape.
+- **Measured.** log's two markers name both needs; neither adapter exists.
+- **Options.**
+  (a) 405's interim.
+  ```bp
+  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
+  ```
+  (b) Both adapters designed in 144 now.
+  ```bp
+  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 156's wasm markers.
 
 ### 02-std-and-packaging
 

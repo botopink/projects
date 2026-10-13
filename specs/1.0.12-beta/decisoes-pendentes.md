@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**99 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**102 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1421,6 +1421,51 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha da superfície do 144 B-18.
+
+#### B-25-a · Confirmar os adaptadores de gate do B-25 no wasm e as cells deixadas sem binding (decisões 334, 335 (3); 144 B-25)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — `.GateNew`, `.GateOpen`, `.GateAwait` (um gate é uma task pendente que nenhum host responde; abri-lo descarta o timer de cada espera pendente); as cells só de teste da std (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) ficam sem binding no wasm até o `botopink test` rodar wasm (335 (3)), então as "doze cells" da 334 são as de uso do `async`.
+- **Medido.** Construído como (a); `std_async_on_every_target` verde nos quatro targets e nos dois hosts.
+- **Opções.**
+  (a) Como construído.
+  ```bp
+  @External.Wasm(wasi: .GateNew)
+  ```
+  (b) As cells de teste também com binding, agora.
+  ```bp
+  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha dos adaptadores do 144 B-25.
+
+#### B-25-b · A superfície do `fetch` antes do `io/http` ter binding no wasm: `Request`, `HttpError`, o antigo `fetch(url)` (decisões 334, 393; 144 B-25)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): a std fixa primeiro, no 144, com `fetch(url)` removido no mesmo commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; os sites de chamada (std, `http`) migram no pouso (uma grafia, 67).
+- **Medido.** a std só tem `fetch(url) -> @Result<Response, string>`; não existe `Request` nem `HttpError`.
+- **Opções.**
+  (a) A superfície tipada, a forma antiga removida.
+  ```bp
+  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
+  ```
+  (b) A superfície tipada ao lado de `fetch(url)`.
+  ```bp
+  val r = await fetch(u);   // still accepted
+  ```
+- **Recomendação.** (a).
+- **Trava.** As linhas do `io/http` do 144 B-25 (passos 4, 5, 6, 17).
+
+#### B-25-c · Os dois marcadores de wasm do log: um valor de host por nome e `wasi:filesystem`, ou o interino da 405 no log? (decisões 334, 405; 144 B-25)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o interino da 405 no log agora** — as cells de arquivo com binding a um `fn:` que não alcança arquivo no wasm, recusa localizada no uso; o adaptador de valor de host por nome e o `wasi:filesystem` esperam uma decisão própria. Nenhuma caixa do B-25 nem decisão fixa a forma de nenhum dos dois.
+- **Medido.** os dois marcadores do log nomeiam as duas necessidades; nenhum dos adaptadores existe.
+- **Opções.**
+  (a) O interino da 405.
+  ```bp
+  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
+  ```
+  (b) Os dois adaptadores desenhados no 144 agora.
+  ```bp
+  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
+  ```
+- **Recomendação.** (a).
+- **Trava.** Os marcadores de wasm do 156.
 
 ### 02-std-and-packaging
 

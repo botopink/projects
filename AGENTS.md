@@ -89,7 +89,7 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   is held while a gate executes, never skipped — unlocked runs piling up took the machine down).
 - **`exec`** runs one command under the pool — a thread's `zig build`, `zig build test`, `botopink cell
   check`, or a library `git commit` and the hook it runs: it waits for a free job, holds `--jobs <N>`
-  (default half the capacity) while the command runs, and gives them back when it ends; the command's
+  (default a quarter of the capacity) while the command runs, and gives them back when it ends; the command's
   exit status is its own. A thread runs every heavy command through it, so threads work in parallel and
   only their executions queue.
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
