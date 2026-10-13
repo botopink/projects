@@ -554,7 +554,7 @@ fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + a
 - [ ] the `Build` resource is a read of a comptime `@Decl` / `@Expr` parameter; `@typeInfo(NamedType)` a build constant · question B-17-c
 - [ ] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
       function and reading the clock is build-and-run · question B-17-d
-- [ ] a `comptime x: @Expr<string>` function called at run time whose body uses `x.value` as a receiver
+- [x] a `comptime x: @Expr<string>` function called at run time whose body uses `x.value` as a receiver
       (`names.value.split(",")`) emits an unbound variable on commonJS and erlang — found by B-17
 
 #### Step 8 — a `styled` literal whose holes are known at build, computed at build (decision 355) (was `14-comptime-on-beam` s8)
@@ -1621,14 +1621,14 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
 - [ ] log's two markers: a wasm adapter keeping one host value per name, `wasi:filesystem` · question B-25-c
 - [x] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
       needs (the lambda's answer type not read) — found by B-25 — bound from the argument's answer type (`generic_thunk_result_binds`)
-- [ ] beam: a tuple holding a function value fails `invalid_store` (`val p = #(g, 2); p.0("abc")`) — found by B-21's
+- [x] beam: a tuple holding a function value fails `invalid_store` (`val p = #(g, 2); p.0("abc")`) — found by B-21's
       Conformance step
-- [ ] wasm: in `#(g, h)`, calling a string-answering `h` prints a number — found by B-21's Conformance step
-- [ ] wasm: `op.run(5).toString()` on a function-typed field inside `for (ops) { op -> … }`: "cannot resolve the call
+- [x] wasm: in `#(g, h)`, calling a string-answering `h` prints a number — found by B-21's Conformance step
+- [x] wasm: `op.run(5).toString()` on a function-typed field inside `for (ops) { op -> … }`: "cannot resolve the call
       `toString/0`" — found by B-21's Conformance step
 - [ ] a type implementing a behavior imported from another module does not adopt the behavior's instance `default fn`s
       (`Sq(n: 3).twice()` is "'twice' is not declared in any behavior implemented for 'Sq'") — found by B-19
-- [ ] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25
+- [x] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25
 - [ ] Step 9's manifest key, the library's ABI (a position-independent side module, as std-wasm, or a standalone module)
       and the glue (strings in and out, freeing, `?T`'s null) · question B-25-d
 - [ ] erlang: DebugAllocator reports a leak in `erlang.zig`'s `closeTypeUnit` under `cell check` — found by B-25
