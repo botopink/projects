@@ -157,14 +157,28 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally; a namespace read only in a decorator argument was unbound — fixed, a unit test in
+      `mod_namespace.zig`; one cell added (`decorator_argument_decorator_alias`). Box 1 closes on the next completed green
+      `test` run.
+
+| B-10 change | Cells |
+|---|---|
+| two modules declaring one type name stay two types | `two_modules_one_type_name`, `test/two_test_modules_one_type_name` |
+| an associated fn named without a call is a value | `associated_fn_as_value` |
+| a record update in an added member; many locals (pins) | `decorator_member_record_update`, `decorator_lambda_many_locals` |
+| a method's behavior-typed parameter takes an implementer | `method_behavior_parameter_implementer` |
+| a `Decorator` / `Decorator[]` parameter | `decorator_argument_decorator_name`, `decorator_argument_decorator_alias` |
+| a dependency's module as a namespace | `package_module_namespace` |
+| a leading-dot variant of an enum never named; template-built inline props | `dot_shorthand_enum_not_imported`, `template_builds_inline_props` |
+
 
 ### B-11 — 316: `decl.wrapWith(f)`
 
@@ -1045,14 +1059,25 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (no red B-19's); every landed change has its cell. Box 1 closes on the next
+      completed green `test` run.
+
+| B-19 change | Cells |
+|---|---|
+| an imported behavior's associated `default fn`; a type adopting its defaults | `behavior_associated_fn_imported`, `behavior_default_adopted_across_modules` |
+| wasm reads a function value's record | `associated_fn_value_answers_record` |
+| an imported decorator builds its private record | `decorator_imported_builds_private_record` |
+| the catalogue: no theme; a comptime `val`'s build value | `template_catalogue_no_theme`, `template_reads_val_build_value`, `template_val_value_not_comptime` |
+| an associated type named by its owner; tuple / field-key meta | `assoc_type_named_by_owner_in_diagnostic`, `meta_field_tuple_and_field_key` |
+
 
 ### B-20 — 330: the optional operators' rest and their codemod
 
@@ -2015,14 +2040,26 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally; B-27's format-check red (the `bpp_*` deps) fixed; no cell missing for a landed
+      box. Box 1 closes on the next completed green `test` run.
+
+| B-27 change | Cells |
+|---|---|
+| a `.bpp` unfolds | `bpp_unfold_props`, `bpp_unfold_without_props`, `bpp_decorator_last_line` |
+| the grammar's refusals | `bpp_first_line_separator`, `bpp_style_after_markup`, `bpp_second_style_section`, `bpp_style_unclosed`, `bpp_beside_bp` |
+| diagnostics at the `.bpp` line | `bpp_diagnostics_located`, `template_fail_at_column_on_open_line` |
+| the hint, one extension list, the header formatter, packaging, the language server | no cell: `tests/cli_contract.sh`, `scripts/check-packaging.sh`, `lsp/bpp_*` snapshots |
+
+- [ ] proposed: a `test` declared in a `.bpp` header found by the test runner, a `conformance/test/` suite (with step 3)
+
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
 
@@ -2072,6 +2109,8 @@ tree explicit (`src/lib.bp`, or `src/main.bp` with no `lib.bp`) and removes the 
       `compiler-cli/AGENTS.md` and `cli/AGENTS.md`, and every doc that names it; `botopink migrate` answers the CLI's
       unknown-command error
 - [ ] Conformance step (459, 474, 477, 478, 480)
+      — `tests/cli_contract.sh` C8: `migrate` and `migrate --dry-run` answer `unknown command: migrate`, `src/` untouched
+      (red on the base); no doc names the command; the pipeline's next completed green `test` run left
 
 ### B-60 — the code cache, level B: a dependency's analysis on disk in `.botopinkbuild/analysis/` (decision 509 (1); the maintainer, 2026-10-12)
 

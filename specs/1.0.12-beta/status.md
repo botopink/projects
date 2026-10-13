@@ -46,7 +46,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-64 — a module's tests a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`, privates through a reserved export, `botopink test` on wasm (513) landed; left: the Conformance step · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
 - [ ] 144 B-55 — study: whole-package analysis — designed, the cycle run on every backend, question B-55-a filed; the timings left, on a quiet machine · beside the cache group (a study; it changes nothing)
-- [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) — removed; left: the Conformance step · nothing
+- [ ] 144 B-56 — `botopink migrate` removed: the command, `cli/migrate.zig`, its tests and docs (s23-i) — removed; its Conformance step done (C8) but the next completed green `test` run · nothing
 
 ### 144 — the module-model group (B-69 … B-76, B-55-a (e)): after the cache group's Conformance step and B-55's timings
 
