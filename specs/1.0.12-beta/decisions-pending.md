@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1080,6 +1080,27 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) The raising call in its own file. (b) As built: the innermost call of the module being compiled.
 - **Recommendation.** (a) — 451 (3) says "the call that raised"; the frame line keeps the local site.
 - **Blocks.** Nothing built; B-48's scope note.
+
+#### B-32-a · `comptime-badarith` names its cause only for a whole-expression `/` (decision 472; 144 B-32)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): every division by zero names its cause** — `%` by zero and a division inside a larger expression read `… (division by zero)` too, located at the dividing operator.
+- **Measured.** `comptime 7 / 0` and `comptime 1.0 / 0.0` print `comptime-badarith: … — \`<expr>\` (division by zero)`; `comptime 7 % 0` and `comptime 2.0 + 1.0 / 0.0` print the same refusal without the cause.
+- **Options.** (a) The cause named for every division and remainder by zero, at its operator. (b) As built.
+- **Recommendation.** (a) — 472's message names the cause; the expression's shape should not hide it.
+- **Blocks.** Nothing built.
+
+#### B-26-a · `Dict.bump` on a plain `Dict` of non-integer values (decision 340; 144 B-26)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every `Dict` whose `V` is not an integer type**, as on a keyed var — 340 says integer `V`.
+- **Measured.** `Dict<string, f64>.bump("a", 1.5)` on a plain dict is accepted and prints `1.5` on commonJS, erlang and beam (wasm prints `8976.0`, a defect filed apart); on a keyed var a non-integer `V` is refused.
+- **Options.** (a) Refused at the call for a non-integer `V`. (b) Accepted on a plain dict as `insert(k, (at(k) ?? 0) + by)` for any numeric `V`.
+- **Recommendation.** (a) — one rule for `bump`, the strictest reading (67).
+- **Blocks.** Nothing built.
+
+#### B-41-a · The text of a run-time abort that is not a panic on erlang and beam (decisions 430, 444; 144 B-41)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): pinned per target as a departure** — erlang and beam write `error:badarith` (`Class:Reason`) for a run-time `badarith` or a failed match, under 444's "each target keeps its own arithmetic"; a cell claims it in `snapshot/targets/`.
+- **Measured.** B-41 made a library's `@panic` message reach stderr unchanged on every target. Another run-time failure on erlang and beam writes `Class:Reason` to stderr; no cell claims it.
+- **Options.** (a) A per-target departure, pinned. (b) One text on every target, as a panic's.
+- **Recommendation.** (a) — 444 already lets erlang and beam abort on their own arithmetic.
+- **Blocks.** Nothing built.
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.

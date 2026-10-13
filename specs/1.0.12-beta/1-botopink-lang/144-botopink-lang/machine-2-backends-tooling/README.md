@@ -670,12 +670,19 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+
+| Behaviour (decision) | Cells |
+|---|---|
+| a record's and an enum's method `-> @Result`: `return`, `throw`, `try`, pass-through (304) | `result_method_throw` |
+| a behavior method `-> @Result` through a behavior-typed parameter, `default fn` included (304) | `behavior_method_result_dispatch` (a pin), `template_method_call` |
+| a behavior method answers its declared type | `behavior_method_result_typed`, `behavior_method_result_chained` |
+
 
 ### B-26 — 340: the keyed `Dict`'s per-row increment
 
@@ -705,12 +712,22 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+
+| Behaviour (decision) | Cells |
+|---|---|
+| `counts = counts.bump(k, n)` on a keyed var is one atomic `ets:update_counter`, an absent key from 0 (340) | `beam_memory_ets_keyed_bump` |
+| `Dict.bump` on any `Dict` is `insert(key, (at(key) ?? 0) + by)` (340) | `dict_bump` |
+| `bump` on a keyed `Dict` of non-integer rows refused (340) | `beam_memory_ets_keyed_bump_non_integer` |
+| a `bump` whose key or amount reads the var is the recompose refusal (340, 168) | `beam_memory_ets_keyed_bump_reads_itself` |
+| the written-out increment stays refused (340) | `beam_memory_ets_keyed_read_modify_write` (a pin), `beam_memory_ets_keyed_recompose` |
+| `bump` on a plain `Dict` of non-integer `V` | none — question B-26-a |
+
 
 ### B-28 — The formatter: the `;` after a braced block, C-12, the trailing comma, annotations as written
 
@@ -1264,12 +1281,17 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+
+| Behaviour (decision) | Cells |
+|---|---|
+| a template is a `string` on wasm whatever its parts, a lone float hole included (430) | `interpolation_single_float_hole` |
+
 
 ### B-32 — structural equality at build is iterative; an arithmetic error at build reads as Erlang's (decisions 471, 472)
 
@@ -1296,12 +1318,19 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+
+| Behaviour (decision) | Cells |
+|---|---|
+| structural equality at build is iterative (471) | `comptime_deep_structure_equality`; term order in std-wasm's `term.zig` tests |
+| a float or integer division by zero at build is `comptime-badarith … (division by zero)`, located (472) | `comptime_float_division_by_zero`, `comptime_integer_division_by_zero` |
+| `%` by zero and a nested division name no cause | none — question B-32-a |
+
 
 ### B-33 — `@External.Wasm`'s cells as labelled arguments (decision 481)
 
@@ -1315,7 +1344,13 @@ Today std writes the cells as prefixed strings (50 `"fn:…"`, 28 `"std:…"`, 6
       the labelled form — `reject/` cells for each
 - [x] a codemod rewrites every cell in std and the libraries; every `.out`, RUN LOG and snapshot otherwise unchanged
 - [x] `docs.md` and the `AGENTS.md` files name only the labelled forms
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | each prefixed string refused, naming the labelled form (481) | `external_wasm_prefixed_fn_refused`, `_op_refused`, `_wasi_refused`, `_std_refused`, `external_node_prefixed_op_refused` |
+  | `fn:` resolved in the module and type-checked | `external_fn_unbound`, `external_wasm_op_and_fn`, `external_fn_body_every_target`, `external_wasm_fn_cell_signature` |
+  | a value of the wrong kind, a label outside the four, a second cell, an unknown opcode or adapter | `external_wasm_fn_cell_string`, `external_wasm_op_cell_not_string`, `external_wasm_wasi_cell_not_enum`, `external_wasm_std_cell_not_string`, `external_wasm_unknown_label`, `external_wasm_two_cells`, `external_wasm_op_unknown`, `external_wasm_wasi_unknown` |
+  | opcode and adapter signatures; `std:` outside std refused | `external_wasm_op_type_on_every_target`, `external_wasm_adapter_signature_on_every_target`, `external_wasm_task_adapter_shape`, `external_std_binding_refused`, `external_wasm_std_outside_std` |
 
 ### B-34 — the BEAM assembler rejects `styled`'s module (structural, decision 430)
 
@@ -1328,7 +1363,10 @@ Found moving jhonstart's examples into its `conformance/` (463): every jhonstart
 - [x] the beam emitter assigns the register `make_fun3` reads; `styled` assembles; jhonstart's 18 `conformance/` cells
       green on beam — red on the parent, green after
 - [x] the cheap test the hook runs that would have caught it (a beam export-audit or codegen snapshot case, 478)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a closure's free-name walk binds an `if` binding in its then-branch only; beam assembles (430) | `component_loop_await_accumulates`, `if_binding_before_loop_closure` |
 
 ### B-35 — `@println` has no wasm lowering (structural, decision 430)
 
@@ -1339,7 +1377,10 @@ Found moving erika's examples into its `conformance/` (463): `the wasm backend h
 
 - [x] `@println` lowered on wasm as `@print` is, with its newline; erika's `conformance/` cells green on wasm — red on
       the parent, green after; a codegen snapshot case (478)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | `@println` lowered on wasm as `@print`, its line ended (430) | `println_every_target` |
 
 ### B-36 — styled's hook red on `feat`: "tab4's class is not a constant of the emitted module" (structural, decision 430)
 
@@ -1363,7 +1404,10 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 - [x] `bpmp link [<checkout>]`: `.botopinkbuild/deps/<name>` → `<checkout>/repository/<name>` for each dependency of
       every manifest of the project (a workspace's members included); a missing local repository named, never guessed
 - [x] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a `git` dependency from `.botopinkbuild/deps/` first, `BOTOPINK_LIB_ROOTS` first, the walk-up as fallback; `bpmp link` (483) | `cli_contract.sh`, `project_graph` and manifest tests — a cell names `path` dependencies only |
 
 ### B-38 — `botopink cell check`: a full run that drops a cell; a `path` dependency inside a cell (found moving rakun's reference)
 
@@ -1377,7 +1421,11 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
       check resolves it against the cell's own directory (or, after B-37, the cell's `.botopinkbuild/deps/`), so a
       library's cells drop their per-cell `deps/` workspaces of symlinks; the scratch copy (which skips hidden
       directories today) inherits the project's dependency tiers, `.botopinkbuild/deps/` included
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | every cell found is reported; a cell with no verdict is a red naming it | `cli_contract.sh` |
+  | a cell's `path` dependency resolves against its own directory | `local_dependency`, `decorator_same`, the 69 cells with `deps/…` |
 
 ### B-39 — a module-level `val` read by the next one is unbound on erlang (structural, decision 430)
 
@@ -1388,7 +1436,10 @@ refuses it (found in rakun's `constraint` cell, which registers inside `main` in
 
 - [x] a cell red on the parent: two module-level `val`s, the second reading the first, on every target
 - [x] the erlang emission binds the first before the second reads it; the cell green on every target
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a module-level `val` read by the next one is bound, `_`-prefixed names included (430) | `module_val_reads_module_val`, `val_runs_at_module_load`, `module_init_order` |
 
 ### B-40 — a cell's targets are its `botopink.json`'s `"targets"`, never a `targets` file (decision 475 (1))
 
@@ -1405,7 +1456,11 @@ manifest, as any project's.
 - [x] jhonstart's 18 and rakun's 35 cells moved: the file's targets into `botopink.json`, the file deleted; each
       library's hook green
 - [x] emilia's 79 cells declare beam too: beam builds them, so leaving it out fails the audit (475 (1))
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a cell's targets are its manifest's `"targets"`, with its refusals (475 (1)) | the 43 narrowed cells |
+  | a `targets` file refused; `cell new` writes the manifest | `cli_contract.sh` |
 
 ### B-41 — a library's abort reads the same on every target (structural, decision 430)
 
@@ -1418,7 +1473,12 @@ for a defect).
 - [x] the abort's text measured on each target; the library's message reaches stderr unchanged on every target (the
       runtime's frame around it the same, or none); the cell's `stderr` claim in `output/`, green on every target
 - [x] a compiler-core test red on the parent (a `@panic` with a library's message, every backend)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | a library's `@panic` message reaches stderr unchanged on every target (430) | `panic_library_message` |
+  | every abort writes stderr only | the `int_overflow_*` cells |
+  | a non-panic run-time abort on erlang and beam reads `Class:Reason` | none — question B-41-a |
 
 ### B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (structural, decision 430)
 

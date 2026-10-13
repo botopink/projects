@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**121 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1080,6 +1080,27 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) A chamada que levantou, no seu próprio arquivo. (b) Como construído: a chamada mais interna do módulo sendo compilado.
 - **Recomendação.** (a) — 451 (3) diz "a chamada que levantou"; a linha de frame mantém o local.
 - **Bloqueia.** Nada construído; a nota de escopo do B-48.
+
+#### B-32-a · `comptime-badarith` nomeia sua causa só para uma `/` que é a expressão inteira (decisão 472; 144 B-32)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): toda divisão por zero nomeia sua causa** — `%` por zero e uma divisão dentro de uma expressão maior também leem `… (division by zero)`, localizados no operador que divide.
+- **Medido.** `comptime 7 / 0` e `comptime 1.0 / 0.0` imprimem `comptime-badarith: … — \`<expr>\` (division by zero)`; `comptime 7 % 0` e `comptime 2.0 + 1.0 / 0.0` imprimem a mesma recusa sem a causa.
+- **Opções.** (a) A causa nomeada para toda divisão e resto por zero, no seu operador. (b) Como construído.
+- **Recomendação.** (a) — a mensagem de 472 nomeia a causa; a forma da expressão não deveria escondê-la.
+- **Bloqueia.** Nada construído.
+
+#### B-26-a · `Dict.bump` num `Dict` comum de valores não inteiros (decisão 340; 144 B-26)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusado em todo `Dict` cujo `V` não é um tipo inteiro**, como num var keyed — 340 diz `V` inteiro.
+- **Medido.** `Dict<string, f64>.bump("a", 1.5)` num dict comum é aceito e imprime `1.5` no commonJS, erlang e beam (o wasm imprime `8976.0`, um defeito registrado à parte); num var keyed um `V` não inteiro é recusado.
+- **Opções.** (a) Recusado na chamada para um `V` não inteiro. (b) Aceito num dict comum como `insert(k, (at(k) ?? 0) + by)` para qualquer `V` numérico.
+- **Recomendação.** (a) — uma regra para `bump`, a leitura mais estrita (67).
+- **Bloqueia.** Nada construído.
+
+#### B-41-a · O texto de um abort em tempo de execução que não é um panic no erlang e no beam (decisões 430, 444; 144 B-41)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): fixado por alvo como um desvio** — erlang e beam escrevem `error:badarith` (`Class:Reason`) para um `badarith` em tempo de execução ou um match que falha, sob o "cada alvo mantém sua própria aritmética" de 444; uma célula o declara em `snapshot/targets/`.
+- **Medido.** O B-41 fez a mensagem de `@panic` de uma biblioteca chegar ao stderr sem mudança em todo alvo. Outra falha em tempo de execução no erlang e no beam escreve `Class:Reason` no stderr; nenhuma célula o declara.
+- **Opções.** (a) Um desvio por alvo, fixado. (b) Um texto em todo alvo, como o de um panic.
+- **Recomendação.** (a) — 444 já deixa erlang e beam abortarem na sua própria aritmética.
+- **Bloqueia.** Nada construído.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.
