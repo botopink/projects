@@ -1298,6 +1298,20 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Recomendação.** (a) — o modelo do erlang onde ele cabe num wasm de uma thread só, tamanhos vindos da medição.
 - **Bloqueia.** 144 B-30 caixas 3–6.
 
+#### B-06-a · A superfície 432 de `Task`: `catch` é palavra reservada, a forma aninhada não tem grafia (decisão 432; 144 B-06)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): renomear o método de task que falha para `recover`** (`mapError` mantido), declarado em `@Task<@Result<T, E>>` por um segundo `behavior` sobre a forma aninhada quando o parser aceitar ali uma aplicação de tipo; `map` / `then` continuam declarados e são implementados nos quatro backends no mesmo passo. Viável: `catch` é palavra-chave em toda posição (`reserved-word-as-name`); um membro chamado `recover` não precisa de nada novo.
+- **Medido.** O B-06 construiu o lowering de 432. O passo 2 pede `map`, `then` em todo `@Task<T>` e `mapError`, `catch` em `@Task<@Result<T, E>>` "uma segunda declaração sobre a forma aninhada". `fn catch` é recusado como palavra reservada; `behavior Task<@Result<…>>` não é analisado; `map` / `then` estão declarados em `builtins.d.bp` e nenhum backend os implementa. Dois vizinhos: uma task construída por código genérico (`-> @Task<T>` com `T` um `@Result`) e um `@Component<@Result>` ainda resolvem com `{ ok }` / `{ error }` para quem chama em JS; a célula invertida mantém o nome `task_throw_resolves_error`.
+- **Opções.**
+  (a) `recover` para o método de task que falha; a declaração aninhada quando o parser a aceitar.
+  ```bp
+  val t: @Task<@Result<i32, string>> = load();
+  val safe = t.recover({ e -> 0 });      // @Task<i32>
+  ```
+  (b) `catch` deixa de ser reservado só como nome de membro (`t.catch(…)`, como o JS escreve).
+  (c) Retirar os dois métodos de task que falha; `try await` e `case` leem uma task que falha.
+- **Recomendação.** (a) — a palavra-chave continua palavra-chave (67), o método mantém seu significado; quem chama em JS uma task genérica ou um componente é uma linha à parte, e a célula invertida passa a se chamar `task_failure_rejects`.
+- **Bloqueia.** 144 B-06 passo 2.
+
 #### std-e · Hooks de ciclo de vida de teste
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): nenhum hook de ciclo de vida; o corpo de um teste chama seu helper de reset** — nada implícito roda em volta de um `test` (67), todo bloco `test` se lê inteiro, e a unidade de teste da 513 guarda só blocos `test`. (b) roda uma função de módulo que o teste nunca nomeia e (c) acrescenta gramática para o que uma chamada já diz. Viável: como construído (nenhum `#[before]` / `beforeEach` no std, no `lib-test-runner` ou nas bibliotecas); as contagens da entrada estão defasadas — `resetChain()` é chamado 77 vezes no rakun todo (31 no rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Mudanças: a linha "No test lifecycle hooks" do `language-gaps.md` vira by design.
 - **Medido.** Os testes de biblioteca resetam o estado à mão no topo do corpo: `resetChain()` do rakun-web 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, entre outros; `resetSingletons` / `resetContext` do rakun-test só em seu próprio `context_test.bp`; `installDocument(…)` do jhonstart-dom-test 11×.

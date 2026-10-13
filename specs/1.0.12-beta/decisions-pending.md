@@ -1299,6 +1299,20 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a) — erlang's model where it fits a single-threaded wasm, sizes from the measurement.
 - **Blocks.** 144 B-30 boxes 3–6.
 
+#### B-06-a · `Task`'s 432 surface: `catch` is a reserved word, the nested form has no spelling (decision 432; 144 B-06)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): rename the failing-task method `recover`** (`mapError` kept), declared on `@Task<@Result<T, E>>` through a second `behavior` over the nested form once the parser accepts a type application there; `map` / `then` stay declared and are implemented on the four backends in the same step. Viable: `catch` is a keyword in every position (`reserved-word-as-name`); a member named `recover` needs nothing new.
+- **Measured.** B-06 built 432's lowering. Step 2 asks `map`, `then` on every `@Task<T>` and `mapError`, `catch` on `@Task<@Result<T, E>>` "a second declaration over the nested form". `fn catch` is refused as a reserved word; `behavior Task<@Result<…>>` does not parse; `map` / `then` are declared in `builtins.d.bp` and no backend implements them. Two neighbours: a task built by generic code (`-> @Task<T>` with `T` a `@Result`) and a `@Component<@Result>` still resolve with `{ ok }` / `{ error }` for a JS caller; the inverted cell keeps the name `task_throw_resolves_error`.
+- **Options.**
+  (a) `recover` for the failing-task method; the nested declaration once the parser takes it.
+  ```bp
+  val t: @Task<@Result<i32, string>> = load();
+  val safe = t.recover({ e -> 0 });      // @Task<i32>
+  ```
+  (b) `catch` unreserved as a member name only (`t.catch(…)`, as JS writes it).
+  (c) Drop the two failing-task methods; `try await` and `case` read a failing task.
+- **Recommendation.** (a) — the keyword stays a keyword (67), the method keeps its meaning; a JS caller of a generic task or a component is a separate row, and the inverted cell takes the name `task_failure_rejects`.
+- **Blocks.** 144 B-06 step 2.
+
 #### std-e · Test lifecycle hooks
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): no lifecycle hook; a test body calls its reset helper** — nothing implicit runs around a `test` (67), every `test` block reads whole, and 513's test unit holds `test` blocks only. (b) runs a module function the test never names and (c) adds grammar for what a call already says. Viable: as built (no `#[before]` / `beforeEach` in std, `lib-test-runner` or the libraries); the counts in the entry are stale — `resetChain()` is called 77 times across rakun (31 in rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Changes: `language-gaps.md`'s "No test lifecycle hooks" row becomes by design.
 - **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.

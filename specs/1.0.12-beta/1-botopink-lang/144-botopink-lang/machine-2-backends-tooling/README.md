@@ -400,7 +400,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang, with consumer commits in jhonstart, rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
-- [ ] erlang and beam end a failing task's process with `{error, E}`; the wasm scheduler settles the task with
+- [x] erlang and beam end a failing task's process with `{error, E}`; the wasm scheduler settles the task with
       the error — `run/task_result_rejects` on the four targets
 
 **Impacted tests:** new `run/task_result_rejects`, `run/task_result_caught_by_js`; `run/task_throw_resolves_error`
@@ -415,16 +415,20 @@ rakun (task callers) — measured in the step.
 async function buscar(id) { if (id <= 0) throw HttpError.BadId; return await http_get(…); }   // not { Error: … }
 ```
 
-- [ ] a `@Task<@Result<T, E>>` lowers to an `async function` whose `Error(e)` / `throw e` rejects with `e` and whose success
+- [x] a `@Task<@Result<T, E>>` lowers to an `async function` whose `Error(e)` / `throw e` rejects with `e` and whose success
       resolves with the bare `T`; `await` under `try` / `case` reads a rejection as `Error(e)`; the `.d.ts` names `E` —
       `run/task_result_rejects`, `run/task_result_caught_by_js` (a JS caller's `try/catch`), the `snapshots/codegen` that
       print `{ Ok }` / `{ Error }` for a task re-recorded
-- [ ] `js/AGENTS.md`'s 179 row (no `unwrapOrThrow`) rewritten for 432
+- [x] `js/AGENTS.md`'s 179 row (no `unwrapOrThrow`) rewritten for 432 — the lowering is a function answering a
+      marked Promise (`__bp_task`; an `await` that may meet a failing task reads it through `__bp_await`), the `.d.ts`
+      `Promise<T>` under `@throws {E}`; `conformance/modules/task_result_rejects` (four targets),
+      `task_result_caught_by_js` (commonJS), `task_throw_resolves_error` inverted; jhonstart and rakun needed no change
 
 #### Step 2 — declare the rest — part (was `134-builtins-declared` s2 box 4)
 
 - [ ] `Task`'s surface for 432: `map`, `then` on every `@Task<T>`; `mapError`, `catch` on `@Task<@Result<T, E>>` (a
-      second declaration over the nested form); no `flatMap` — the drift test follows
+      second declaration over the nested form); no `flatMap` — the drift test follows · question B-06-a (`catch` is a
+      reserved word; the nested declaration has no spelling; `map` / `then` are declared but no backend implements them)
 
 #### B-06 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
