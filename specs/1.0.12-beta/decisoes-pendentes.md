@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**97 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**99 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1389,6 +1389,38 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha de vários sujeitos do 144 B-22.
+
+#### B-18-a · Como um método de template é encontrado: por um nome no escopo de quem chama, ou pelo tipo do receptor? (decisões 397, 415; 144 B-18)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): por um nome no escopo de quem chama, como construído** — `value.method "…"` resolve `method` como um template cujo `self` recebe o receptor, local ou importado; nada alcança o template de uma biblioteca sem import, como todo outro nome. O tipo de um receptor nunca importa código sozinho. Muda: o exemplo do 145 importa `query`.
+- **Medido.** Construído como (a); o exemplo do 145 escreve `self.db.query """…"""` sem import de `query`.
+- **Opções.**
+  (a) Um nome no escopo.
+  ```bp
+  import {query} from "erika";
+  self.db.query """select …"""
+  ```
+  (b) Pelo tipo do receptor.
+  ```bp
+  self.db.query """select …"""   // erika's query found through Db, no import
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do lookup do 144 B-18; o exemplo do 145.
+
+#### B-18-b · Confirmar a superfície do B-18: o texto de `q.note`, `bindings()` como `Decl[]`, `@Decl.module` em todo handle (decisões 415, 426; 144 B-18)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): como construído** — uma nota é acrescentada à linha do mismatch como `— note: …`, então a linha `refused` de uma cell a fixa; `bindings()` responde `Decl[]` e `Binding.ref()` sai com o record `Binding` (um handle só, o `@Decl`); todo `@Decl` carrega `module`, não só um procurado.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Como construído.
+  ```bp
+  // error: type mismatch: expected User, got Order — note: the query selects from orders
+  ```
+  (b) Uma nota na sua própria linha, `Binding` mantido ao lado de `Decl`.
+  ```bp
+  // error: type mismatch: expected User, got Order
+  //   note: the query selects from orders
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da superfície do 144 B-18.
 
 ### 02-std-and-packaging
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**97 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**99 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1390,6 +1390,38 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-22's multi-subject row.
+
+#### B-18-a · How is a template method found: by a name in the call site's scope, or through the receiver's type? (decisions 397, 415; 144 B-18)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): by a name in the call site's scope, as built** — `value.method "…"` resolves `method` as a template whose `self` takes the receiver, local or imported; nothing reaches a library's template without an import, as for every other name. A receiver's type never imports code by itself. Changes: 145's example imports `query`.
+- **Measured.** Built as (a); 145's example writes `self.db.query """…"""` with no import of `query`.
+- **Options.**
+  (a) A name in scope.
+  ```bp
+  import {query} from "erika";
+  self.db.query """select …"""
+  ```
+  (b) Through the receiver's type.
+  ```bp
+  self.db.query """select …"""   // erika's query found through Db, no import
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-18's lookup row; 145's example.
+
+#### B-18-b · Confirm B-18's surface: `q.note`'s text, `bindings()` as `Decl[]`, `@Decl.module` on every handle (decisions 415, 426; 144 B-18)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): as built** — a note is appended to the mismatch line as `— note: …`, so a cell's `refused` line pins it; `bindings()` answers `Decl[]` and `Binding.ref()` goes with the `Binding` record (one handle, the `@Decl`); every `@Decl` carries `module`, not only a looked-up one.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) As built.
+  ```bp
+  // error: type mismatch: expected User, got Order — note: the query selects from orders
+  ```
+  (b) A note on its own line, `Binding` kept beside `Decl`.
+  ```bp
+  // error: type mismatch: expected User, got Order
+  //   note: the query selects from orders
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-18's surface row.
 
 ### 02-std-and-packaging
 

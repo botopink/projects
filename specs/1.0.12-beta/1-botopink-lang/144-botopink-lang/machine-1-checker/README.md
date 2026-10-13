@@ -731,7 +731,7 @@ naming a parameter cannot be written. After, the template call `f "…"` may be 
 - [x] `docs.md` § Decorators and § Template functions document the form (§ Template annotations);
       `comptime/AGENTS.md` states how the literal and the `@Decl` reach the body
 
-- [ ] a template method (397, 415): `comptime self: @Expr<R>` then `comptime q: @Expr<…>` — the receiver the call site's code (`self.text()`)
+- [x] a template method (397, 415): `comptime self: @Expr<R>` then `comptime q: @Expr<…>` — the receiver the call site's code (`self.text()`)
       is called `value.method "…"` / `value.method """…"""` as `f "…"` is — the literal captured
       unevaluated, `self` the receiver; erika's `QueryContext.query` its first user —
       `run/template_method_call`
@@ -750,15 +750,15 @@ val table = decl.meta(QueryTable) ?? q.fail("`User` is not an entity — annotat
 decl.setMeta(…);                                                    // ❌ the looked-up handle is read-only
 ```
 
-- [ ] `e.lookup(name)` answers `?@Decl` — `name`, `kind`, `module`, `fields`, `meta(T)`, `metaAll(T)` — of the declaration
+- [x] `e.lookup(name)` answers `?@Decl` — `name`, `kind`, `module`, `fields`, `meta(T)`, `metaAll(T)` — of the declaration
       the name resolves to at the call site (112), `null` when none; `setMeta` / `addMeta` / `addMember` / `addType` on it
       refused at the call — `run/template_lookup_decl`, `reject/template_lookup_decl_write`
-- [ ] `decl.meta(T)` / `metaAll(T)` answered at build when `T` is data (380); a meta with a run-time `@Expr` field refused at
+- [x] `decl.meta(T)` / `metaAll(T)` answered at build when `T` is data (380); a meta with a run-time `@Expr` field refused at
       the read naming the field — `run/template_lookup_meta`, `reject/template_lookup_meta_expr_field`; `@typeInfo(X).meta(T)`
       in a template body stays `typeinfo-meta-at-build`
-- [ ] the looked-up declaration's decorators run before the template body: another module as today, one module ordered
+- [x] the looked-up declaration's decorators run before the template body: another module as today, one module ordered
       (372's pattern) — `modules/template_lookup_meta_other_module`, `run/template_lookup_meta_same_module`
-- [ ] `docs.md` § Template functions documents `lookup`'s handle; `comptime/AGENTS.md` states the order
+- [x] `docs.md` § Template functions documents `lookup`'s handle; `comptime/AGENTS.md` states the order
 
 #### Step 40 — a template call is typed by the code it built (decision 426) (was `01-checker` s40)
 
@@ -767,17 +767,22 @@ val n: i32 = erika "select name from cities";     // ❌ expected i32, got Array
 val nomes = erika "select name from cities";      // nomes: Array<string>
 ```
 
-- [ ] `finishExpansion` types the call by the expansion: no free `T` survives a template call; the built type is
+- [x] `finishExpansion` types the call by the expansion: no free `T` survives a template call; the built type is
       checked against the signature's answer (a bound) at the template's `build`, then unified with the expected type
       at the call — `run/template_call_typed_by_expansion`, `reject/template_call_expected_mismatch`,
       `reject/template_build_outside_bound`
-- [ ] `q.note(message)` attached to an error reported at the call — `reject/template_note_on_mismatch` (the note
+- [x] `q.note(message)` attached to an error reported at the call — `reject/template_note_on_mismatch` (the note
       in the expected text); `docs.md` § Template functions
 
 #### Step 2 — declare the rest — part (was `134-builtins-declared` s2 box 5)
 
-- [ ] `Expr`'s surface for 415 and 426: `lookup(name)` answers `?Decl<unknown>` (the `Binding` record goes), `build<R>`'s
+- [x] `Expr`'s surface for 415 and 426: `lookup(name)` answers `?Decl<unknown>` (the `Binding` record goes), `build<R>`'s
       `R` is the type the built code infers to, `note(message)` declared — the drift test follows
+
+- [ ] a template method found only by a name in the call site's scope (as built), or reached through the receiver's type
+      with no import (`self.db.query`, 145's example) · question B-18-a
+- [ ] the surface B-18 chose: `q.note` appended as `— note: …`; `bindings()` answers `Decl[]`, `Binding.ref()` gone;
+      `@Decl.module` on every handle · question B-18-b
 
 #### B-18 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
