@@ -809,7 +809,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | contexts by type with a default (378, 379) | `context_default`, `context_default_imported`, `context_undeclared_type`, `context_declared_twice`, `context_declared_twice_across_modules`, `context_enum_default` |
 | injection (416) | `inject_record`, `inject_behavior_keyed`, `inject_test_root_fake`, `inject_field_undeclared`, `inject_behavior`, `context_behavior_not_implemented`, `inject_default_imported`, `inject_not_record_enum` |
 
-- [ ] `context-not-declared` for a behavior proposes `createContext(Repository(…))`, which a behavior cannot take: it names
+- [x] `context-not-declared` for a behavior proposes `createContext(Repository(…))`, which a behavior cannot take: it names
       `createContext(value, Repository)`; then the cell `context_behavior_undeclared` — found by B-17's Conformance step
 
 ### B-18 — 311, 415, 426, 429: templates
