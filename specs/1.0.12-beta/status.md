@@ -30,7 +30,7 @@ grouped by tier and front (433); a line keeps its old id, which the front's alia
 
 In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (470) have landed (Done).
 
-- [ ] 144 B-29 step H — the in-process boxes, `examples/` into cells and B-00k's per-target cells landed; left: `generic-loader-binding` into erika (green on the four targets now), `examples/` deleted, the step's Conformance · nothing
+- [ ] 144 B-29 step H — every box landed (the in-process boxes, `examples/` into cells and deleted, `generic-loader-binding` erika's cell, B-00k's per-target cells); left: the step's Conformance · nothing
 - [ ] 163 s8 last boxes — a green `test.yml` run on `feat` for every library (dependency closure fixed; jhonstart's cells green on commonJS, erlang and beam, wasm waits on B-38); the workflow's dependency step held to one text by `gate.sh check` · nothing
 - [ ] 163 s9 — the measurements, at the end: every gate and the conformance suite timed on a quiet machine (no step in between measures) · the ninth step of the conformance order, after 163 s8
 - [ ] 163 s12 — `scripts/land-check.py`, the coordinator's check before a landing (484) · nothing

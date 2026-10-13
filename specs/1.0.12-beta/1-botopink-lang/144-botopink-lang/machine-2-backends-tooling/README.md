@@ -914,7 +914,7 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `modules` and `yamlconf` in `conformance/` (decision 466: no mirror, 467); the scripts pointed at the cells or a
       fixture of their own, no check lost — `tsc-check.sh` and `format-check` still check `generic-loader-binding`
       while it is here
-- [ ] `generic-loader-binding` (three `from "erika"` forms — a library, not the language) moves to erika as a
+- [x] `generic-loader-binding` (three `from "erika"` forms — a library, not the language) moves to erika as a
       consumer commit (rule 10), then `examples/` deleted; its tests pass on the four targets
 - [x] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
       (`"${5.0}"`, `1.0e21`, `1.0e-7` — commonJS departs), `trim` keeping a NBSP, the final sigma (commonJS `ς`),
@@ -939,8 +939,8 @@ After the step's other boxes have landed on `feat`; it holds back no front that 
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
-- [ ] what the move left: `generic-loader-binding` into erika once B-45 lands; the decorator `random.float()` cell once
-      B-46 lands; the reds B-43 and B-44 found
+- [ ] what the move left: the decorator `random.float()` cell once B-46 lands; the reds B-43 and B-44 found
+      (`generic-loader-binding` is erika's cell `conformance/modules/generic_loader_binding`)
 
 #### Step I — the reference into `conformance/`; one gate for hook, CI and hand (decisions 461, 462, 466)
 
