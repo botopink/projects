@@ -927,6 +927,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   @print("n=" + x);    // n=5
   ```
 - **Recomendação.** (a) — um só texto para um float em todos os alvos, como erlang, beam, wasm e o `@print` desde a B-51 já o escrevem; um programa cuja saída difere por alvo para o mesmo valor é um defeito, não uma regra da linguagem (a leitura mais restritiva da decisão 67).
+- **Também perguntado.** Se a frase de 441 ainda cobre `trim` e o mapeamento de caixa sob (a): `string_trim_keeps_nbsp` (commonJS `[x]`) e `string_lower_final_sigma` (commonJS `ς`) registram desvios do commonJS que se apoiam nela; sob (a) só para floats eles ficam, sob um (a) mais amplo passam a ser a resposta do std-wasm também no commonJS. Sob (b), `float_text_at_run_time` ganha um desvio `snapshot/targets/commonJS/`.
 - **Bloqueia.** A 144 B-78 (suas duas últimas caixas e seu passo Conformance).
 
 #### B-22-a · Um construtor de variante nu numa expressão (`Num(4)` por `Value.Num(4)`)

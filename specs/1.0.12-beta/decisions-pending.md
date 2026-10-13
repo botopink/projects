@@ -928,6 +928,7 @@ No general rule (283): each case below is its own question, (a) the language's o
   @print("n=" + x);    // n=5
   ```
 - **Recommendation.** (a) — one text for a float on every target, as erlang, beam, wasm and `@print` since B-51 already write it; a program whose output differs by target for the same value is a defect, not a language rule (decision 67's strictest reading).
+- **Also asked.** Whether 441's sentence still covers `trim` and case mapping under (a): `string_trim_keeps_nbsp` (commonJS `[x]`) and `string_lower_final_sigma` (commonJS `ς`) record commonJS departures that rest on it; under (a) for floats alone they stay, under a wider (a) they become std-wasm's answer on commonJS too. Under (b), `float_text_at_run_time` gains a `snapshot/targets/commonJS/` departure.
 - **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
 
 #### B-22-a · A bare variant constructor in an expression (`Num(4)` for `Value.Num(4)`)

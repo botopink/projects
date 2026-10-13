@@ -902,14 +902,14 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `assert cond, "msg"` and of `try` in a `test` block as `test/` cells. The scripts keep what is the CLI's
       contract (`cli_contract.sh`, `test_tooling.sh`'s `--filter` / totals / `*.snap.new` listing,
       `result_store.sh`, `backend_exec.sh`'s `wasm --invoke main`); every assertion of today has a home — none lost
-- [ ] botopink-lang's `examples/` becomes cells (decisions 457, 461): `hello`, `stdlib-tour` (its `test {}` blocks
-      a `test/` suite), `modules` (the `mod` / `pub mod` tree) and `yamlconf` (the labelled tuple and the located
-      `cfg.server.prot` refusal) as cells with their checked output, landing in `conformance/modules/<name>/` with the move (decision 466: no mirror,
-      the `botopink/conformance` repository deleted, 467); `generic-loader-binding` (three `from "erika"` forms — a
-      library, not the language) moves to `repository/erika/examples/` as a consumer commit (rule 10);
-      `examples/` deleted; `test-libs.sh`, `tsc-check.sh`, `backend_exec.sh`, `cli_contract.sh`,
-      `comptime_bench.sh` and `format-check` pointed at the cells or a fixture of their own, no check lost (458)
-- [ ] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
+- [x] botopink-lang's `examples/` becomes cells (decisions 457, 461): `hello`, `stdlib-tour` (a `test/` suite),
+      `modules` and `yamlconf` in `conformance/` (decision 466: no mirror, 467); the scripts pointed at the cells or a
+      fixture of their own, no check lost — `tsc-check.sh` and `format-check` still check `generic-loader-binding`
+      while it is here
+- [ ] `generic-loader-binding` (three `from "erika"` forms — a library, not the language) moves to erika as a
+      consumer commit (rule 10), then `examples/` deleted · its wasm build: `.join("-")` on an erika `Query`'s
+      `toArray()` is `the wasm backend cannot resolve the call join/1` (a 144 row) — erika declares every target
+- [x] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
       (`"${5.0}"`, `1.0e21`, `1.0e-7` — commonJS departs), `trim` keeping a NBSP, the final sigma (commonJS `ς`),
       `NaN` / `Infinity` (erlang and beam abort), and an unseeded `random.float()` reached from a decorator body
 - [ ] `modules/` projects and `test/` suites stay on the CLI (`botopink run` / `botopink test --json`): they are the
