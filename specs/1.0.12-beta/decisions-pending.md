@@ -1242,8 +1242,8 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 ### 02-std-and-packaging
 
-#### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s29)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `@Decl` of a member names its owner type** — a decorator on a method reads `decl.owner` (`?string`, `null` at module level), and `query.bp` names its registration `__rkQueryReg_<Owner>_<method>`; the name is the declaration's identity, so it never collides by accident and needs no hashing. Viable: the checker knows the owner when it runs a member's decorator; `builtins.d.bp`'s `Decl<T>` gains the field. Changes: a 144 step (the field, a cell), then 150 s29 in rakun.
+#### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s30)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `@Decl` of a member names its owner type** — a decorator on a method reads `decl.owner` (`?string`, `null` at module level), and `query.bp` names its registration `__rkQueryReg_<Owner>_<method>`; the name is the declaration's identity, so it never collides by accident and needs no hashing. Viable: the checker knows the owner when it runs a member's decorator; `builtins.d.bp`'s `Decl<T>` gains the field. Changes: a 144 step (the field, a cell), then 150 s30 in rakun.
 - **Measured.** `query.bp`'s decorator emits `val __rkQueryReg_<method> = rkRegisterQuery(…)` at module level. Two repositories in one module, each with `#[query] find`, emit `__rkQueryReg_find` twice; erlang refuses `function '__rkQueryReg_find'/0 already defined`. It built until 144 B-39 made a `_`-prefixed module-level `val` an ordinary binding (the language's rule). A module-level statement cannot be written (`val _ = …` and a bare call do not parse), and a member's `@Decl` has `name` and `kind`, no owner. `query.bp`'s header says two same-named methods in one module collide and that this is right; `test/sql_build_test.bp:148` says they build.
 - **Options.**
   (a) `@Decl` names a member's owner type; the registration is `__rkQueryReg_<Owner>_<method>`.
@@ -1256,7 +1256,7 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
   (c) The header wins: two `#[query]` methods of one name in one module are refused, located; the test becomes a refusal.
 - **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
-- **Blocks.** 150 s29.
+- **Blocks.** 150 s30.
 
 #### B-12-a · `Bytes`' restrictive readings: confirm (decisions 346, 67; 144 B-12 step 32)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): keep them** — step 32 took the strictest reading wherever 346 is silent, each pinned by a refusal cell; a later decision can widen any one.

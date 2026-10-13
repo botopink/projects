@@ -97,7 +97,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 01-compiler row — `conformance/test/expr_sugar.bp` red on `feat`: erlang does not compile it, beam fails two pipe assertions (found by B-29 step H's full run) · none
 - [ ] 01-checker row — importing std `failure` brings `HostErrorName`'s variant `Error` into scope as a bare name: `Error(x)` is then refused `callee-not-a-function` (found by B-05) · none
 - [ ] 01-checker row — `import {failure.HostError}` alone: reading `e.name` fails `unknown type 'HostErrorName'` (a field's type not reachable without its module) (found by B-05) · none
-- [ ] 144 B-28 step 2 — the `;` migration: emilia, jhonstart, onze and botopink-lang at 0 on `feat`; rakun's 4 sites after 150 s29; then step 3 (the parser refuses it) · 150 s29
+- [ ] 144 B-28 step 2 — the `;` migration: emilia, jhonstart, onze and botopink-lang at 0 on `feat`; rakun's 4 sites after 150 s30; then step 3 (the parser refuses it) · 150 s30
 - [ ] 05-wasm row — onze's blog (67 modules) does not build on wasm (found measuring B-30) · none
 - [ ] 14 row — `located_errors`' "a raise … is located at the call that raised" fails when run filtered beside other wat / wasm / comptime tests, alone and in the full suite it passes (shared state between tests) · none
 - [ ] 26 row — compiler-cli's "transitive failure" test (a library-root lookup of `kit-x`) failed once in a full `zig build test` and passed on the next run (flaky) · none
@@ -225,7 +225,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 150 s29 — `decl.wrapWith` in rakun (144 B-11, 316): the publish-retry example as `#[retryable(policy)]`, its marker and the gap row gone; the 318 wrappers build on it · nothing
 - [ ] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340); `tryQuery`'s stale comment removed (B-13, 304) · nothing
-- [ ] 150 s29 — two `#[query]` methods of one name in one module build: `query.bp`'s registration `val` named per method name collides on erlang (found by 144 B-81) · question B-81-a
+- [ ] 150 s30 — two `#[query]` methods of one name in one module build: `query.bp`'s registration `val` named per method name collides on erlang (found by 144 B-81) · question B-81-a
 
 ### 163 meta-ci (medium)
 
@@ -363,7 +363,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 144 B-01 (part) — `effect-try-without-fallible-channel` names `try … catch` and `result: true`; the reference § Results, § Host bindings — its Conformance step open
 - [x] 144 B-13 — a method declared `-> @Result` already lowered as a `@Result` on every target (`result_method_throw`, `behavior_method_result_typed`, `behavior_method_result_chained`); no code change; rakun's stale comment is 150 s28 — its Conformance step open
 - [x] 144 B-26 (340) — `Dict.bump`; `counts = counts.bump(k, n)` on a keyed var as `ets:update_counter/4` on erlang and beam, `beam_memory_ets_keyed_bump`; rakun's registry is 150 s28 — its Conformance step open
-- [x] 144 B-81 — rakun-data's `#[query]` red on erlang: the cause is rakun's (a registration `val` named per method name, colliding since B-39), filed as 150 s29; no compiler change
+- [x] 144 B-81 — rakun-data's `#[query]` red on erlang: the cause is rakun's (a registration `val` named per method name, colliding since B-39), filed as 150 s30; no compiler change
 - [x] 144 B-04 (431) — std `failure`: `HostErrorName`, `HostError(message, kind, name, detail)`, `Failure` (489, 492), `std_failure_types` on four targets; `attempt` is B-07's — its Conformance step open
 - [x] 144 B-03 (431) — `result: true` on every `@External` variant, labelled, any order (487); only on `@Result<…, HostError>` / `@Task` of one, std's `HostError` by identity (488); refused beside `op:` / `fn:` (491) — its Conformance step open
 - [x] 144 B-12 step 32 (346) — the `Bytes` primitive on the four targets: `fromUtf8` / `toUtf8`, length, slice, concatenation, `encoding`'s bridges, a host cell taking and answering `Bytes`, eleven `bytes_*` cells; steps 33 and 6 (`@embedFile` / `@embedBytes`) wait on question B-12-b · questions B-12-a, B-12-b

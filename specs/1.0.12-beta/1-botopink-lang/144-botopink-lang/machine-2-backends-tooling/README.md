@@ -712,7 +712,7 @@ byte-identical, cells green before and after.
 
 - [ ] every tree at 0 sites (step 1's command re-run): emilia, jhonstart, onze and botopink-lang (its 64, all in 45
       `conformance/` cells) at 0 on `feat`; the other thirteen libraries and vscode-extension had none; rakun's 4 wait
-      on 150 s29 (its hook red on `sql_build_test.bp:148`)
+      on 150 s30 (its hook red on `sql_build_test.bp:148`)
 
 #### Step 3 — the parser refuses the `;` (was `16-formatter` s3)
 
@@ -1607,7 +1607,7 @@ compiler defect is fixed here; a library's is a row of rakun's front (150) and t
       `val __rkQueryReg_<method>`, named by the method alone, so two `find` methods on two types of one module emit
       the same name twice (`function '__rkQueryReg_find'/0 already defined` on erlang). It built while a `_`-prefixed
       module-level `val` emitted no function; B-39 made it an ordinary binding, which is the language's rule
-- [x] fixed where it belongs: rakun's, 150 s29; no compiler change
+- [x] fixed where it belongs: rakun's, 150 s30; no compiler change
 - [x] Conformance step: none — the fix is not the compiler's
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path

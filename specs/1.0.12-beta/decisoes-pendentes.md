@@ -1241,8 +1241,8 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 
 ### 02-std-and-packaging
 
-#### B-81-a · Dois métodos `#[query]` de mesmo nome num módulo: como o registro do rakun ganha um nome único? (144 B-81; 150 s29)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `@Decl` de um membro nomeia seu tipo dono** — um decorator num método lê `decl.owner` (`?string`, `null` no nível do módulo), e o `query.bp` nomeia seu registro `__rkQueryReg_<Owner>_<method>`; o nome é a identidade da declaração, então nunca colide por acaso e não precisa de hash. Viável: o checker conhece o dono quando roda o decorator de um membro; o `Decl<T>` de `builtins.d.bp` ganha o campo. Mudanças: um passo da 144 (o campo, uma célula), depois 150 s29 no rakun.
+#### B-81-a · Dois métodos `#[query]` de mesmo nome num módulo: como o registro do rakun ganha um nome único? (144 B-81; 150 s30)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `@Decl` de um membro nomeia seu tipo dono** — um decorator num método lê `decl.owner` (`?string`, `null` no nível do módulo), e o `query.bp` nomeia seu registro `__rkQueryReg_<Owner>_<method>`; o nome é a identidade da declaração, então nunca colide por acaso e não precisa de hash. Viável: o checker conhece o dono quando roda o decorator de um membro; o `Decl<T>` de `builtins.d.bp` ganha o campo. Mudanças: um passo da 144 (o campo, uma célula), depois 150 s30 no rakun.
 - **Medido.** O decorator de `query.bp` emite `val __rkQueryReg_<method> = rkRegisterQuery(…)` no nível do módulo. Dois repositórios num módulo, cada um com `#[query] find`, emitem `__rkQueryReg_find` duas vezes; o erlang recusa `function '__rkQueryReg_find'/0 already defined`. Compilava até a 144 B-39 tornar um `val` de módulo prefixado com `_` uma ligação comum (a regra da linguagem). Uma instrução no nível do módulo não pode ser escrita (`val _ = …` e uma chamada solta não são analisadas), e o `@Decl` de um membro tem `name` e `kind`, sem dono. O cabeçalho de `query.bp` diz que dois métodos de mesmo nome num módulo colidem e que isso está certo; `test/sql_build_test.bp:148` diz que compilam.
 - **Opções.**
   (a) O `@Decl` nomeia o tipo dono de um membro; o registro é `__rkQueryReg_<Owner>_<method>`.
@@ -1255,7 +1255,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
   (c) O cabeçalho vence: dois métodos `#[query]` de mesmo nome num módulo são recusados, localizados; o teste vira uma recusa.
 - **Recomendação.** (a) — a identidade da própria declaração, sem colisão acidental; (b) só muda a colisão de lugar; (c) recusa um programa que o leitor espera que compile.
-- **Bloqueia.** 150 s29.
+- **Bloqueia.** 150 s30.
 
 #### B-12-a · As leituras restritivas de `Bytes`: confirmar (decisões 346, 67; 144 B-12 passo 32)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): mantê-las** — o passo 32 tomou a leitura mais estrita onde 346 se cala, cada uma fixada por uma célula de recusa; uma decisão posterior pode alargar qualquer uma.
