@@ -1153,15 +1153,19 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | `recv?.m()` over an absent receiver | `optional_method_absent_receiver`, `optional_enum_method_call`, `optional_enum_method_absent_receiver`, `optional_record_method_absent_receiver` |
 | `a ?? ns.f()`; wasm `f64` function values; an `if` with a `null` arm | `nullish_default_namespace_call`, `optional_float_function_value`, `fn_value_float_argument`, `optional_if_null_initializer` |
 
-- [ ] `val t: Sort<Book> = Sort(by: .title)`: a field key under an annotation is refused where `Sort<Book>(by: .title)`
+- [x] `val t: Sort<Book> = Sort(by: .title)`: a field key under an annotation is refused where `Sort<Book>(by: .title)`
       resolves — found by B-19
-- [ ] wasm: `std_decorator_leaf_import`, `std_decorator_through_namespace`, `std_decorator_unknown_through_handle` red on
+      — the annotation pins the constructor's type parameters (`field_key_under_annotation`)
+- [x] wasm: `std_decorator_leaf_import`, `std_decorator_through_namespace`, `std_decorator_unknown_through_handle` red on
       `feat` — "`canonical` has no wasm external" at std's `testing/asserts.bp` — found by B-19
-- [ ] wasm: `pub fn main() {}`, a module nothing calls and a dependency: `compilation failed UndefinedCall` — found by B-27
+      — std's `mocks` reaches no other std module again (a private `raisedText` cell), a hook test in `tests/wat.zig`
+- [x] wasm: `pub fn main() {}`, a module nothing calls and a dependency: `compilation failed UndefinedCall` — found by B-27
+      — an empty body is a function that does nothing (`fn_empty_main`, `fn_empty_body_call`)
 - [ ] wasm: an untyped lambda typed only by its expected `fn(Pessoa) -> Pessoa` cannot place a field two records share
       (`p.nome`, `..p`: "cannot place `.nome`") — found by B-14's Conformance step
-- [ ] a field read after a `?.` call link (`p(true)?.me().x`) is refused while a method there is accepted
+- [x] a field read after a `?.` call link (`p(true)?.me().x`) is refused while a method there is accepted
       (`find(0)?.str().length()`); TypeScript continues the chain for both — one rule — found by B-20's Conformance step
+      — it continues the chain, as a method does (`optional_chain_field_after_call`); `a?.b.c` too
 
 ### B-21 — 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value
 
