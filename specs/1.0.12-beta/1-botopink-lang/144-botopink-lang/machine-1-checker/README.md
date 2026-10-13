@@ -1028,14 +1028,30 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (1939 cells); B-20's own red fixed: `recv?.m()` over a record's or an enum's
+      method guarded on wasm and commonJS (`optional_enum_method_absent_receiver`, `optional_record_method_absent_receiver`,
+      two hook tests); five cells added; no `test` run green since the base — 18 cancelled by the next push, the one
+      finished red at format-check on B-27's `bpp_*` cells. Box 1 closes on the next completed green `test` run.
+
+| B-20 change | Cells |
+|---|---|
+| `?.[i]`, `?.(args)`, postfix `!` | `optional_operators`, `optional_call_operator`, `optional_bang_aborts`, `optional_bang_in_lambda` |
+| an operator over a never-null value refused; `??` beside `&&` / `||` | `optional_operator_never_null`, `nullish_never_null`, `bang_never_null`, `nullish_beside_logical` |
+| `?T` has no methods; a method continues a `?.` chain | `optional_has_no_methods`, `option_expect_removed`, `result_namespace_removed`, `optional_chain_method`, `optional_chain_record_fields` |
+| wasm `?.()` answering a plain value | `optional_call_plain_answers`, `nullish_optional_call_default` |
+| `recv?.m()` over an absent receiver | `optional_method_absent_receiver`, `optional_enum_method_call`, `optional_enum_method_absent_receiver`, `optional_record_method_absent_receiver` |
+| `a ?? ns.f()`; wasm `f64` function values; an `if` with a `null` arm | `nullish_default_namespace_call`, `optional_float_function_value`, `fn_value_float_argument`, `optional_if_null_initializer` |
+
+- [ ] a field read after a `?.` call link (`p(true)?.me().x`) is refused while a method there is accepted
+      (`find(0)?.str().length()`); TypeScript continues the chain for both — one rule — found by B-20's Conformance step
 
 ### B-21 — 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value
 
