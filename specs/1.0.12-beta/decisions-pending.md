@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**113 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**114 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -11,6 +11,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
 - **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
+- **Machine 2** — maximum priority: the questions front 144's machine 2 waits on, most urgent first.
 - **Part 1** — what blocks front 144 (`repository/botopink-lang`, decision 433: the open steps of the old tracks
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), by old track, then those
   tracks' implementation choices awaiting confirmation.
@@ -859,6 +860,140 @@ fn label() -> string { … }   // moved to module level
 - **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
 - **Blocks.** Nothing today; the cell and `build`'s branch.
 
+## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
+
+The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
+before every other part of this page; most urgent first: B-07-a holds a commit already built, B-29-a every
+Conformance step, the rest one step each but 17-c, which holds nothing built (B-26's surface stands until widened).
+Machine 1's B-60-a holds machine 2's B-77 too.
+
+#### B-07-a · `attempt` on wasm: does 491's "passes on wasmtime" allow `-W exceptions=y`, and where is a std function with no wasm binding refused? (decisions 491, 492, 503; 144 B-07)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — wasm's `attempt` uses wasm exception handling, every wasmtime run passes `-W exceptions=y` (as it passes `-S http`); and, separately, STD-001 refuses at the call, not the import (503's direction for every std module)**, so `std/failure` stays importable on wasm whatever the answer. Viable: the measurement passes on node 22 and 25 by default and on wasmtime 45 with the flag; the checker's import refusal becomes a call refusal.
+- **Measured.** A `try_table` / `throw` module runs on node 22.23.3 and 25.8.0 by default; wasmtime 45.0.1 refuses it ("exceptions proposal not enabled") unless run with `-W exceptions=y`. STD-001 refuses every wasm import of a std module holding a bodyless function with no wasm binding, even when nothing calls it: with `failure.attempt` / `attemptTask` added, `std_failure_types`, `external_result_host_error` and `external_result_return_accepted` go red on wasm. B-07 is built on commonJS, erlang and beam (std 498/498 on each, jhonstart 208/208) and held unpushed on this.
+- **Options.**
+  (a) The flag counts; `attempt` on wasm by exceptions; STD-001 at the call.
+  (b) The flag does not count; `attempt` refused on wasm at the call (491 (c)) until wasmtime enables exceptions by default; STD-001 at the call.
+  (c) Wait: B-07 stays unlanded until wasmtime's default changes.
+  ```bp
+  import {failure};
+  val r = failure.attempt({ -> risky() });   // (a): runs on wasm; (b): refused here on wasm, the import accepted
+  ```
+- **Recommendation.** (a) — node and wasmtime both run it, wasmtime by a flag botopink already sets per run (`-S http`); refusing at the call keeps one importable `failure` on every target.
+- **Also asked (B-07's report).** (1) 492's `host` "exact": a raise from a binding without `result: true` is unmarked and reads as `host`, so `crash` is never answered (a VM fault reads `host`) — wrap every such call, at a cost B-05 did not measure? (2) A failed `assert` read as `panic`, its message without the location, on every target. (3) erlang and beam raise a bare `badarith` for an integer division by zero, read as `host` where commonJS reads `panic` (a row for a tagged raise). (4) An erlang host raise's `Failure.message` is the reason printed with `~tp`, extending 489's `HostError` rule to `Failure`. (5) jhonstart's navigation signals now return from `attempt` with kind `panic` (jhonstart's front, B-25 / 504).
+- **Blocks.** 144 B-07 (its commit, built, unpushed).
+
+#### B-29-a · `feat`'s pipeline cancels every run before it ends (decisions 474, 477; 144 B-29, every Conformance step)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): a push to `feat` runs in a group of its own commit** — `concurrency: group: test-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}`, `cancel-in-progress` kept for pull requests; every commit on `feat` gets its own verdict, which 474 and 477 read.
+- **Measured.** botopink-lang's `.github/workflows/test.yml` has `concurrency: group: test-${{ github.ref }}, cancel-in-progress: true`. A run takes ~11 minutes; the two machines push to `feat` every few minutes, so on 2026-10-12/13 every run since `f6e8e497` was cancelled but one, which failed. Every Conformance step (459, 474, 477) reads "`feat`'s runs since the group's base, green or each red named" and cannot.
+- **Options.**
+  (a) One group per pushed commit on `feat`: every commit runs to the end (more CI minutes, runs in parallel).
+  (b) `cancel-in-progress: false` with one group: runs queue; GitHub keeps one pending run per group, so the commits in between are skipped, but one run always finishes.
+  (c) No CI change: the machines agree on windows with no push.
+- **Recommendation.** (a) — a verdict per commit is what 477 reads; (b) loses the commits in between, (c) is a lock by agreement.
+- **Blocks.** Every 144 Conformance step (B-01 … B-81, B-29 G–J); 163 s8's green runs.
+
+#### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s30)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `@Decl` of a member names its owner type** — a decorator on a method reads `decl.owner` (`?string`, `null` at module level), and `query.bp` names its registration `__rkQueryReg_<Owner>_<method>`; the name is the declaration's identity, so it never collides by accident and needs no hashing. Viable: the checker knows the owner when it runs a member's decorator; `builtins.d.bp`'s `Decl<T>` gains the field. Changes: a 144 step (the field, a cell), then 150 s30 in rakun.
+- **Measured.** `query.bp`'s decorator emits `val __rkQueryReg_<method> = rkRegisterQuery(…)` at module level. Two repositories in one module, each with `#[query] find`, emit `__rkQueryReg_find` twice; erlang refuses `function '__rkQueryReg_find'/0 already defined`. It built until 144 B-39 made a `_`-prefixed module-level `val` an ordinary binding (the language's rule). A module-level statement cannot be written (`val _ = …` and a bare call do not parse), and a member's `@Decl` has `name` and `kind`, no owner. `query.bp`'s header says two same-named methods in one module collide and that this is right; `test/sql_build_test.bp:148` says they build.
+- **Options.**
+  (a) `@Decl` names a member's owner type; the registration is `__rkQueryReg_<Owner>_<method>`.
+  ```bp
+  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
+  ```
+  (b) rakun alone: the name carries a hash of the SQL text; two methods of one name and the same SQL in one module still collide.
+  ```bp
+  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
+  ```
+  (c) The header wins: two `#[query]` methods of one name in one module are refused, located; the test becomes a refusal.
+- **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
+- **Blocks.** 150 s30.
+
+#### B-12-b · `@embedFile` / `@embedBytes`: where the read lives, a non-UTF-8 constant, a forwarded path (decision 342; 144 B-12 steps 33 and 6)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) for each of the three points** — (1) the checker reads through a file-reader handle the CLI and the language server pass in, with the writing package's root on `Module` (compiler-web passes a reader that refuses); (2) an embed's `Bytes` is a build-time constant every backend emits, the one exception to step 32's `comptime-bytes` refusal; (3) a `comptime path` parameter that forwards the path resolves at each call site, in the caller's package, as 342 says.
+- **Measured.** compiler-core reads no file today and compiler-web shares the checker. No `Bytes` literal exists, and step 32 refuses a `Bytes` value at comptime. 342 resolves a path relative to the `botopink.json` of the package that wrote it.
+- **Options.**
+  (1) (a) A reader handle passed into the checker. (b) The CLI and the LSP read every embedded file before checking and hand the contents over.
+  (2) (a) An embed's `Bytes` is a constant on every backend (an Erlang binary, a `Uint8Array`, a wasm data segment); `comptime-bytes` keeps refusing every other build-time `Bytes`. (b) `@embedBytes` is refused for a file that is not UTF-8 until a `Bytes` literal exists.
+  (3) (a) Checked at each call site in the caller's package. (b) A forwarded `comptime path` is refused until a later step.
+  ```bp
+  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
+  ```
+- **Recommendation.** (a) for all three — 342 as written: the read where the checker sees the argument, a binary file embeddable, the caller's package for a forwarded path.
+- **Blocks.** 144 B-12 steps 33 and 6; rakun 93 (`rakun ws generate`'s checked-in `.bp`).
+
+#### B-12-a · `Bytes`' restrictive readings: confirm (decisions 346, 67; 144 B-12 step 32)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): keep them** — step 32 took the strictest reading wherever 346 is silent, each pinned by a refusal cell; a later decision can widen any one.
+- **Measured.** 346 fixes the type, `fromUtf8` / `toUtf8` and the host boundary. Step 32 refuses: `Bytes` widening to `unknown` (so `@print(b)` is refused), `is` and a type pattern on `Bytes`, a `Bytes` value at `comptime`, ordering (`<`, `>`), `+` between `Bytes` and `string`, and a `Bytes` template hole.
+- **Options.**
+  (a) Keep every refusal.
+  ```bp
+  val b = Bytes.fromUtf8("hi");
+  @print(b);            // refused: Bytes does not widen to unknown
+  @print("${b}");       // refused: no Bytes hole
+  @print(b.length());   // 2
+  ```
+  (b) Widen the printing pair: `@print(b)` and a hole write the bytes as a fixed text (e.g. `<<104,105>>` on every target); the rest kept.
+- **Recommendation.** (a) — refuse over accept (67); a printed form is a later decision that needs one text on four targets.
+- **Blocks.** Nothing built; B-12's Conformance step reads the answer.
+
+#### B-78-a · Does commonJS adopt std-wasm's float text? (decision 441; 144 B-78)
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): amend 441 — commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays** — `"${x}"`, `x.toString()`, `"n=" + x` and `@print(x)` write `5.0` and `1.0e21` on the four targets (434 (5): one text for a value). Measured on feat: all four targets already print `5.0` / `1.0e21` for a local `f64` and the cell `float_text_everywhere` is green on commonJS and wasm; the one gap is an imported record's `f64` field, where commonJS's template and `+` still write `5` (`.toString()` keeps `5.0`) — the checker knows the field's type (the importer holds the record's shape), so the codegen can apply the helper there. (b) would make one program print two texts by target for one value — 67's defect, not a rule. Viable: `codegen/js` (`@print`'s helper, shared since B-51); the imported-field case is B-78's open box. Changes: 441's last sentence; B-78 closes with the imported-field box and its Conformance step.
+- **Measured.** A float in text on the four targets: erlang, beam and wasm write `5.0` and `1.0e21`; commonJS's own `@print` writes the same since B-51; a template hole, `.toString()` and `string + f64` on commonJS write the JS engine's `5` and `1e21`. 144 B-78 makes them share `@print`'s helper (`run/float_text_everywhere`, red on the parent on commonJS). Decision 441's last sentence says "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — B-78 contradicts it, and waits on this answer.
+- **Options.**
+  (a) Amend 441: commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5.0
+  @print(x.toString()); // 5.0
+  @print("n=" + x);    // n=5.0
+  ```
+  (b) Keep the JS engine's text: B-78 is reverted, `@print` alone writes `5.0`.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5
+  @print(x.toString()); // 5
+  @print("n=" + x);    // n=5
+  ```
+- **Recommendation.** (a) — one text for a float on every target, as erlang, beam, wasm and `@print` since B-51 already write it; a program whose output differs by target for the same value is a defect, not a language rule (decision 67's strictest reading).
+- **Also asked.** Whether 441's sentence still covers `trim` and case mapping under (a): `string_trim_keeps_nbsp` (commonJS `[x]`) and `string_lower_final_sigma` (commonJS `ς`) record commonJS departures that rest on it; under (a) for floats alone they stay, under a wider (a) they become std-wasm's answer on commonJS too. Under (b), `float_text_at_run_time` gains a `snapshot/targets/commonJS/` departure.
+- **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
+
+#### B-30-a · The wasm heap's design points (decisions 448, 449; 144 B-30)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) each of the six points below as built in `modules/std-wasm/src/heap.zig`** — 448 leaves the design to measurement; the reasons sit in `modules/std-wasm/AGENTS.md` § The heap. Wiring it into the codegen (B-30 box 3) puts the block header into nearly every allocating wasm snapshot, so it waits on this answer.
+- **Measured.** A string loop grows ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page — linear, few live values.
+- **Options.** (a) as built; (b) a change named point by point.
+  1. Generational: every survivor of a minor collection is promoted at once (erlang keeps it young one more time).
+  2. An 8-byte header per block (its size and a layout naming the pointer words), and a start bitmap per chunk so a value can point inside its block.
+  3. Sizes: nursery 64 KiB, doubled while more than half survives, at most 8 MiB; a major collection past max(256 KiB, twice what the last major kept).
+  4. Collections only at collection points whose roots the caller names; `alloc` never collects.
+  5. A message copy does not keep sharing, as in erlang; a cycle (possible only through a mutable cell) runs out of memory and traps.
+  6. A cell outside every heap that the barrier records becomes a permanent root of that heap.
+- **Recommendation.** (a) — erlang's model where it fits a single-threaded wasm, sizes from the measurement.
+- **Blocks.** 144 B-30 boxes 3–6.
+
+#### B-06-a · `Task`'s 432 surface: `catch` is a reserved word, the nested form has no spelling (decision 432; 144 B-06)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): rename the failing-task method `recover`** (`mapError` kept), declared on `@Task<@Result<T, E>>` through a second `behavior` over the nested form once the parser accepts a type application there; `map` / `then` stay declared and are implemented on the four backends in the same step. Viable: `catch` is a keyword in every position (`reserved-word-as-name`); a member named `recover` needs nothing new.
+- **Measured.** B-06 built 432's lowering. Step 2 asks `map`, `then` on every `@Task<T>` and `mapError`, `catch` on `@Task<@Result<T, E>>` "a second declaration over the nested form". `fn catch` is refused as a reserved word; `behavior Task<@Result<…>>` does not parse; `map` / `then` are declared in `builtins.d.bp` and no backend implements them. Two neighbours: a task built by generic code (`-> @Task<T>` with `T` a `@Result`) and a `@Component<@Result>` still resolve with `{ ok }` / `{ error }` for a JS caller; the inverted cell keeps the name `task_throw_resolves_error`.
+- **Options.**
+  (a) `recover` for the failing-task method; the nested declaration once the parser takes it.
+  ```bp
+  val t: @Task<@Result<i32, string>> = load();
+  val safe = t.recover({ e -> 0 });      // @Task<i32>
+  ```
+  (b) `catch` unreserved as a member name only (`t.catch(…)`, as JS writes it).
+  (c) Drop the two failing-task methods; `try await` and `case` read a failing task.
+- **Recommendation.** (a) — the keyword stays a keyword (67), the method keeps its meaning; a JS caller of a generic task or a component is a separate row, and the inverted cell takes the name `task_failure_rejects`.
+- **Blocks.** 144 B-06 step 2.
+
+#### 17-c · What else names a `keyed: true` var
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.
+- **Measured.** Built: only `counts.at(k)` (`ets:lookup`) and `counts = counts.insert(k, v)` (`ets:insert`); everything else (`counts[k]`, `hasKey`, `delete`, `size()`, passing it on) refused at the identifier; a keyed var is never `pub`. 1.0.5's 63: an index answers `V` and fails on an absent key; `at` answers `?V` (`null`).
+- **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
+- **Recommendation.** (a).
+- **Blocks.** Nothing — the built surface stands until widened.
+
+---
+
 ## Part 1 — What blocks tracks 00–03
 
 ### 01-compiler
@@ -1099,13 +1234,6 @@ fn label() -> string { … }   // moved to module level
 - **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.
 - **Recommendation.** Confirm `lem-c` for a bodyless host declaration (a type declared once still compiles for a target its method lacks); state that 146 governs any bodied function, free or method, reaching one; `docs.md` says both.
 - **Blocks.** `lem-c`'s confirmation.
-
-#### 17-c · What else names a `keyed: true` var
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.
-- **Measured.** Built: only `counts.at(k)` (`ets:lookup`) and `counts = counts.insert(k, v)` (`ets:insert`); everything else (`counts[k]`, `hasKey`, `delete`, `size()`, passing it on) refused at the identifier; a keyed var is never `pub`. 1.0.5's 63: an index answers `V` and fails on an absent key; `at` answers `?V` (`null`).
-- **Options.** (a) The two forms, as built, and `counts = counts.bump(k, n)` (340). (b) (a) plus `counts[k]` with 63's meaning (`ets:lookup`, `V`, failure on a missing row). (c) (b) plus `hasKey` (`ets:member`) and `delete` (`ets:delete`), each a new `std/beam` primitive.
-- **Recommendation.** (a).
-- **Blocks.** Nothing — the built surface stands until widened.
 
 #### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
 - **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **A component is never asynchronous because of its children.** A component is a function answering its tree (an array of nodes, 388); composing another component — a value received included — only puts its lambda in the tree. 375's `async` mark counts the component's own body only: `await`, `async { }`, an asynchronous hook, a host call answering `@Task` / `@Component` (items 2–5 as built). A marked component answers a Promise of its tree (a state machine on wasm, 140-e (d)); every other answers its tree directly. **The root is always asynchronous:** a `#[page]`'s render (and `renderToString`) walks the tree and awaits only the marked lambdas. The transitive mark (`subtreeAsync`: a component using, directly or not, a marked one; a component received as a value counted from the argument at each use, an unknown value counted asynchronous) is computed at build as an optimisation only, readable by decorators: false, a `#[page]` renders without streaming and a `Suspense` emits its child directly, with no fallback; without it the renderer finds out while descending, with the same answer. Item 1 as built (a call through a function value or a method answering `@Component` marks the node) goes. Amends 504 (140-e): its renderer reads this build-time `subtreeAsync` where it is known, and finds out while descending only for an unknown value.
@@ -1657,115 +1785,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (1).
 - **Blocks.** The row (emilia 48's markup case covered by 301).
 
-#### B-78-a · Does commonJS adopt std-wasm's float text? (decision 441; 144 B-78)
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): amend 441 — commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays** — `"${x}"`, `x.toString()`, `"n=" + x` and `@print(x)` write `5.0` and `1.0e21` on the four targets (434 (5): one text for a value). Measured on feat: all four targets already print `5.0` / `1.0e21` for a local `f64` and the cell `float_text_everywhere` is green on commonJS and wasm; the one gap is an imported record's `f64` field, where commonJS's template and `+` still write `5` (`.toString()` keeps `5.0`) — the checker knows the field's type (the importer holds the record's shape), so the codegen can apply the helper there. (b) would make one program print two texts by target for one value — 67's defect, not a rule. Viable: `codegen/js` (`@print`'s helper, shared since B-51); the imported-field case is B-78's open box. Changes: 441's last sentence; B-78 closes with the imported-field box and its Conformance step.
-- **Measured.** A float in text on the four targets: erlang, beam and wasm write `5.0` and `1.0e21`; commonJS's own `@print` writes the same since B-51; a template hole, `.toString()` and `string + f64` on commonJS write the JS engine's `5` and `1e21`. 144 B-78 makes them share `@print`'s helper (`run/float_text_everywhere`, red on the parent on commonJS). Decision 441's last sentence says "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — B-78 contradicts it, and waits on this answer.
-- **Options.**
-  (a) Amend 441: commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays.
-  ```bp
-  val x = 5.0;
-  @print("${x}");      // 5.0
-  @print(x.toString()); // 5.0
-  @print("n=" + x);    // n=5.0
-  ```
-  (b) Keep the JS engine's text: B-78 is reverted, `@print` alone writes `5.0`.
-  ```bp
-  val x = 5.0;
-  @print("${x}");      // 5
-  @print(x.toString()); // 5
-  @print("n=" + x);    // n=5
-  ```
-- **Recommendation.** (a) — one text for a float on every target, as erlang, beam, wasm and `@print` since B-51 already write it; a program whose output differs by target for the same value is a defect, not a language rule (decision 67's strictest reading).
-- **Also asked.** Whether 441's sentence still covers `trim` and case mapping under (a): `string_trim_keeps_nbsp` (commonJS `[x]`) and `string_lower_final_sigma` (commonJS `ς`) record commonJS departures that rest on it; under (a) for floats alone they stay, under a wider (a) they become std-wasm's answer on commonJS too. Under (b), `float_text_at_run_time` gains a `snapshot/targets/commonJS/` departure.
-- **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
-
 ### 02-std-and-packaging
-
-#### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s30)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `@Decl` of a member names its owner type** — a decorator on a method reads `decl.owner` (`?string`, `null` at module level), and `query.bp` names its registration `__rkQueryReg_<Owner>_<method>`; the name is the declaration's identity, so it never collides by accident and needs no hashing. Viable: the checker knows the owner when it runs a member's decorator; `builtins.d.bp`'s `Decl<T>` gains the field. Changes: a 144 step (the field, a cell), then 150 s30 in rakun.
-- **Measured.** `query.bp`'s decorator emits `val __rkQueryReg_<method> = rkRegisterQuery(…)` at module level. Two repositories in one module, each with `#[query] find`, emit `__rkQueryReg_find` twice; erlang refuses `function '__rkQueryReg_find'/0 already defined`. It built until 144 B-39 made a `_`-prefixed module-level `val` an ordinary binding (the language's rule). A module-level statement cannot be written (`val _ = …` and a bare call do not parse), and a member's `@Decl` has `name` and `kind`, no owner. `query.bp`'s header says two same-named methods in one module collide and that this is right; `test/sql_build_test.bp:148` says they build.
-- **Options.**
-  (a) `@Decl` names a member's owner type; the registration is `__rkQueryReg_<Owner>_<method>`.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
-  ```
-  (b) rakun alone: the name carries a hash of the SQL text; two methods of one name and the same SQL in one module still collide.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
-  ```
-  (c) The header wins: two `#[query]` methods of one name in one module are refused, located; the test becomes a refusal.
-- **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
-- **Blocks.** 150 s30.
-
-#### B-12-a · `Bytes`' restrictive readings: confirm (decisions 346, 67; 144 B-12 step 32)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): keep them** — step 32 took the strictest reading wherever 346 is silent, each pinned by a refusal cell; a later decision can widen any one.
-- **Measured.** 346 fixes the type, `fromUtf8` / `toUtf8` and the host boundary. Step 32 refuses: `Bytes` widening to `unknown` (so `@print(b)` is refused), `is` and a type pattern on `Bytes`, a `Bytes` value at `comptime`, ordering (`<`, `>`), `+` between `Bytes` and `string`, and a `Bytes` template hole.
-- **Options.**
-  (a) Keep every refusal.
-  ```bp
-  val b = Bytes.fromUtf8("hi");
-  @print(b);            // refused: Bytes does not widen to unknown
-  @print("${b}");       // refused: no Bytes hole
-  @print(b.length());   // 2
-  ```
-  (b) Widen the printing pair: `@print(b)` and a hole write the bytes as a fixed text (e.g. `<<104,105>>` on every target); the rest kept.
-- **Recommendation.** (a) — refuse over accept (67); a printed form is a later decision that needs one text on four targets.
-- **Blocks.** Nothing built; B-12's Conformance step reads the answer.
-
-#### B-12-b · `@embedFile` / `@embedBytes`: where the read lives, a non-UTF-8 constant, a forwarded path (decision 342; 144 B-12 steps 33 and 6)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) for each of the three points** — (1) the checker reads through a file-reader handle the CLI and the language server pass in, with the writing package's root on `Module` (compiler-web passes a reader that refuses); (2) an embed's `Bytes` is a build-time constant every backend emits, the one exception to step 32's `comptime-bytes` refusal; (3) a `comptime path` parameter that forwards the path resolves at each call site, in the caller's package, as 342 says.
-- **Measured.** compiler-core reads no file today and compiler-web shares the checker. No `Bytes` literal exists, and step 32 refuses a `Bytes` value at comptime. 342 resolves a path relative to the `botopink.json` of the package that wrote it.
-- **Options.**
-  (1) (a) A reader handle passed into the checker. (b) The CLI and the LSP read every embedded file before checking and hand the contents over.
-  (2) (a) An embed's `Bytes` is a constant on every backend (an Erlang binary, a `Uint8Array`, a wasm data segment); `comptime-bytes` keeps refusing every other build-time `Bytes`. (b) `@embedBytes` is refused for a file that is not UTF-8 until a `Bytes` literal exists.
-  (3) (a) Checked at each call site in the caller's package. (b) A forwarded `comptime path` is refused until a later step.
-  ```bp
-  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
-  ```
-- **Recommendation.** (a) for all three — 342 as written: the read where the checker sees the argument, a binary file embeddable, the caller's package for a forwarded path.
-- **Blocks.** 144 B-12 steps 33 and 6; rakun 93 (`rakun ws generate`'s checked-in `.bp`).
-
-#### B-30-a · The wasm heap's design points (decisions 448, 449; 144 B-30)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) each of the six points below as built in `modules/std-wasm/src/heap.zig`** — 448 leaves the design to measurement; the reasons sit in `modules/std-wasm/AGENTS.md` § The heap. Wiring it into the codegen (B-30 box 3) puts the block header into nearly every allocating wasm snapshot, so it waits on this answer.
-- **Measured.** A string loop grows ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page — linear, few live values.
-- **Options.** (a) as built; (b) a change named point by point.
-  1. Generational: every survivor of a minor collection is promoted at once (erlang keeps it young one more time).
-  2. An 8-byte header per block (its size and a layout naming the pointer words), and a start bitmap per chunk so a value can point inside its block.
-  3. Sizes: nursery 64 KiB, doubled while more than half survives, at most 8 MiB; a major collection past max(256 KiB, twice what the last major kept).
-  4. Collections only at collection points whose roots the caller names; `alloc` never collects.
-  5. A message copy does not keep sharing, as in erlang; a cycle (possible only through a mutable cell) runs out of memory and traps.
-  6. A cell outside every heap that the barrier records becomes a permanent root of that heap.
-- **Recommendation.** (a) — erlang's model where it fits a single-threaded wasm, sizes from the measurement.
-- **Blocks.** 144 B-30 boxes 3–6.
-
-#### B-06-a · `Task`'s 432 surface: `catch` is a reserved word, the nested form has no spelling (decision 432; 144 B-06)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): rename the failing-task method `recover`** (`mapError` kept), declared on `@Task<@Result<T, E>>` through a second `behavior` over the nested form once the parser accepts a type application there; `map` / `then` stay declared and are implemented on the four backends in the same step. Viable: `catch` is a keyword in every position (`reserved-word-as-name`); a member named `recover` needs nothing new.
-- **Measured.** B-06 built 432's lowering. Step 2 asks `map`, `then` on every `@Task<T>` and `mapError`, `catch` on `@Task<@Result<T, E>>` "a second declaration over the nested form". `fn catch` is refused as a reserved word; `behavior Task<@Result<…>>` does not parse; `map` / `then` are declared in `builtins.d.bp` and no backend implements them. Two neighbours: a task built by generic code (`-> @Task<T>` with `T` a `@Result`) and a `@Component<@Result>` still resolve with `{ ok }` / `{ error }` for a JS caller; the inverted cell keeps the name `task_throw_resolves_error`.
-- **Options.**
-  (a) `recover` for the failing-task method; the nested declaration once the parser takes it.
-  ```bp
-  val t: @Task<@Result<i32, string>> = load();
-  val safe = t.recover({ e -> 0 });      // @Task<i32>
-  ```
-  (b) `catch` unreserved as a member name only (`t.catch(…)`, as JS writes it).
-  (c) Drop the two failing-task methods; `try await` and `case` read a failing task.
-- **Recommendation.** (a) — the keyword stays a keyword (67), the method keeps its meaning; a JS caller of a generic task or a component is a separate row, and the inverted cell takes the name `task_failure_rejects`.
-- **Blocks.** 144 B-06 step 2.
-
-#### B-07-a · `attempt` on wasm: does 491's "passes on wasmtime" allow `-W exceptions=y`, and where is a std function with no wasm binding refused? (decisions 491, 492, 503; 144 B-07)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — wasm's `attempt` uses wasm exception handling, every wasmtime run passes `-W exceptions=y` (as it passes `-S http`); and, separately, STD-001 refuses at the call, not the import (503's direction for every std module)**, so `std/failure` stays importable on wasm whatever the answer. Viable: the measurement passes on node 22 and 25 by default and on wasmtime 45 with the flag; the checker's import refusal becomes a call refusal.
-- **Measured.** A `try_table` / `throw` module runs on node 22.23.3 and 25.8.0 by default; wasmtime 45.0.1 refuses it ("exceptions proposal not enabled") unless run with `-W exceptions=y`. STD-001 refuses every wasm import of a std module holding a bodyless function with no wasm binding, even when nothing calls it: with `failure.attempt` / `attemptTask` added, `std_failure_types`, `external_result_host_error` and `external_result_return_accepted` go red on wasm. B-07 is built on commonJS, erlang and beam (std 498/498 on each, jhonstart 208/208) and held unpushed on this.
-- **Options.**
-  (a) The flag counts; `attempt` on wasm by exceptions; STD-001 at the call.
-  (b) The flag does not count; `attempt` refused on wasm at the call (491 (c)) until wasmtime enables exceptions by default; STD-001 at the call.
-  (c) Wait: B-07 stays unlanded until wasmtime's default changes.
-  ```bp
-  import {failure};
-  val r = failure.attempt({ -> risky() });   // (a): runs on wasm; (b): refused here on wasm, the import accepted
-  ```
-- **Recommendation.** (a) — node and wasmtime both run it, wasmtime by a flag botopink already sets per run (`-S http`); refusing at the call keeps one importable `failure` on every target.
-- **Also asked (B-07's report).** (1) 492's `host` "exact": a raise from a binding without `result: true` is unmarked and reads as `host`, so `crash` is never answered (a VM fault reads `host`) — wrap every such call, at a cost B-05 did not measure? (2) A failed `assert` read as `panic`, its message without the location, on every target. (3) erlang and beam raise a bare `badarith` for an integer division by zero, read as `host` where commonJS reads `panic` (a row for a tagged raise). (4) An erlang host raise's `Failure.message` is the reason printed with `~tp`, extending 489's `HostError` rule to `Failure`. (5) jhonstart's navigation signals now return from `attempt` with kind `panic` (jhonstart's front, B-25 / 504).
-- **Blocks.** 144 B-07 (its commit, built, unpushed).
 
 #### std-e · Test lifecycle hooks
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): no lifecycle hook; a test body calls its reset helper** — nothing implicit runs around a `test` (67), every `test` block reads whole, and 513's test unit holds `test` blocks only. (b) runs a module function the test never names and (c) adds grammar for what a call already says. Viable: as built (no `#[before]` / `beforeEach` in std, `lib-test-runner` or the libraries); the counts in the entry are stale — `resetChain()` is called 77 times across rakun (31 in rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Changes: `language-gaps.md`'s "No test lifecycle hooks" row becomes by design.

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**113 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**114 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -11,6 +11,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
 
 - **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
+- **Máquina 2** — prioridade máxima: as perguntas que a máquina 2 da frente 144 espera, as mais urgentes primeiro.
 - **Parte 1** — o que bloqueia a frente 144 (`repository/botopink-lang`, decisão 433: os passos abertos das antigas trilhas
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), por antiga trilha, depois as
   escolhas de implementação dessas trilhas que aguardam confirmação.
@@ -859,6 +860,140 @@ fn label() -> string { … }   // moved to module level
 - **Recomendação.** (a) — a leitura mais restritiva: uma declaração quebrada é um erro onde quer que seja lida, e os dois comandos respondem igual a um conjunto de módulos.
 - **Bloqueia.** Nada hoje; a célula e o ramo do `build`.
 
+## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
+
+As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
+máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: B-07-a segura um commit já construído,
+B-29-a todo passo Conformance, as demais um passo cada, menos 17-c, que não segura nada construído (a superfície do B-26
+vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquina 2.
+
+#### B-07-a · `attempt` no wasm: o "passa no wasmtime" de 491 admite `-W exceptions=y`, e onde uma função da std sem binding wasm é recusada? (decisões 491, 492, 503; 144 B-07)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — o `attempt` do wasm usa o tratamento de exceções do wasm, toda execução do wasmtime passa `-W exceptions=y` (como passa `-S http`); e, à parte, o STD-001 recusa na chamada, não no import (a direção de 503 para todo módulo da std)**, para que `std/failure` continue importável no wasm qualquer que seja a resposta. Viável: a medição passa no node 22 e 25 por padrão e no wasmtime 45 com a flag; a recusa de import do checker vira uma recusa na chamada.
+- **Medido.** Um módulo com `try_table` / `throw` roda no node 22.23.3 e 25.8.0 por padrão; o wasmtime 45.0.1 o recusa ("exceptions proposal not enabled") a menos que rode com `-W exceptions=y`. O STD-001 recusa todo import wasm de um módulo da std que tenha uma função sem corpo e sem binding wasm, mesmo quando nada a chama: com `failure.attempt` / `attemptTask` adicionados, `std_failure_types`, `external_result_host_error` e `external_result_return_accepted` ficam vermelhos no wasm. O B-07 está construído em commonJS, erlang e beam (std 498/498 em cada, jhonstart 208/208) e retido sem push por isso.
+- **Opções.**
+  (a) A flag conta; `attempt` no wasm por exceções; STD-001 na chamada.
+  (b) A flag não conta; `attempt` recusado no wasm na chamada (491 (c)) até o wasmtime habilitar exceções por padrão; STD-001 na chamada.
+  (c) Esperar: o B-07 fica sem pousar até o padrão do wasmtime mudar.
+  ```bp
+  import {failure};
+  val r = failure.attempt({ -> risky() });   // (a): runs on wasm; (b): refused here on wasm, the import accepted
+  ```
+- **Recomendação.** (a) — node e wasmtime o rodam, o wasmtime por uma flag que o botopink já define por execução (`-S http`); recusar na chamada mantém um `failure` importável em todo alvo.
+- **Também perguntado (o relatório do B-07).** (1) O `host` "exato" de 492: um raise de um binding sem `result: true` não é marcado e é lido como `host`, então `crash` nunca é respondido (uma falha da VM é lida como `host`) — envolver toda chamada assim, a um custo que o B-05 não mediu? (2) Um `assert` que falha lido como `panic`, sua mensagem sem a localização, em todo alvo. (3) erlang e beam levantam um `badarith` puro para uma divisão inteira por zero, lido como `host` onde o commonJS lê `panic` (uma linha para um raise marcado). (4) A `Failure.message` de um raise de host no erlang é a razão impressa com `~tp`, estendendo a regra de `HostError` de 489 a `Failure`. (5) Os sinais de navegação do jhonstart agora voltam do `attempt` com kind `panic` (a front do jhonstart, B-25 / 504).
+- **Bloqueia.** 144 B-07 (seu commit, construído, sem push).
+
+#### B-29-a · O pipeline do `feat` cancela todo run antes de terminar (decisões 474, 477; 144 B-29, todo passo Conformance)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): um push para o `feat` roda num grupo do seu próprio commit** — `concurrency: group: test-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}`, `cancel-in-progress` mantido para pull requests; todo commit no `feat` ganha seu próprio veredito, que 474 e 477 leem.
+- **Medido.** O `.github/workflows/test.yml` do botopink-lang tem `concurrency: group: test-${{ github.ref }}, cancel-in-progress: true`. Um run leva ~11 minutos; as duas máquinas fazem push no `feat` a cada poucos minutos, então em 2026-10-12/13 todo run desde `f6e8e497` foi cancelado menos um, que falhou. Todo passo Conformance (459, 474, 477) lê "os runs do `feat` desde a base do grupo, verdes ou cada vermelho nomeado" e não consegue.
+- **Opções.**
+  (a) Um grupo por commit enviado ao `feat`: todo commit roda até o fim (mais minutos de CI, runs em paralelo).
+  (b) `cancel-in-progress: false` com um grupo: os runs entram em fila; o GitHub mantém um run pendente por grupo, então os commits do meio são pulados, mas um run sempre termina.
+  (c) Nenhuma mudança no CI: as máquinas combinam janelas sem push.
+- **Recomendação.** (a) — um veredito por commit é o que 477 lê; (b) perde os commits do meio, (c) é uma trava por combinação.
+- **Bloqueia.** Todo passo Conformance da 144 (B-01 … B-81, B-29 G–J); os runs verdes do 163 s8.
+
+#### B-81-a · Dois métodos `#[query]` de mesmo nome num módulo: como o registro do rakun ganha um nome único? (144 B-81; 150 s30)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `@Decl` de um membro nomeia seu tipo dono** — um decorator num método lê `decl.owner` (`?string`, `null` no nível do módulo), e o `query.bp` nomeia seu registro `__rkQueryReg_<Owner>_<method>`; o nome é a identidade da declaração, então nunca colide por acaso e não precisa de hash. Viável: o checker conhece o dono quando roda o decorator de um membro; o `Decl<T>` de `builtins.d.bp` ganha o campo. Mudanças: um passo da 144 (o campo, uma célula), depois 150 s30 no rakun.
+- **Medido.** O decorator de `query.bp` emite `val __rkQueryReg_<method> = rkRegisterQuery(…)` no nível do módulo. Dois repositórios num módulo, cada um com `#[query] find`, emitem `__rkQueryReg_find` duas vezes; o erlang recusa `function '__rkQueryReg_find'/0 already defined`. Compilava até a 144 B-39 tornar um `val` de módulo prefixado com `_` uma ligação comum (a regra da linguagem). Uma instrução no nível do módulo não pode ser escrita (`val _ = …` e uma chamada solta não são analisadas), e o `@Decl` de um membro tem `name` e `kind`, sem dono. O cabeçalho de `query.bp` diz que dois métodos de mesmo nome num módulo colidem e que isso está certo; `test/sql_build_test.bp:148` diz que compilam.
+- **Opções.**
+  (a) O `@Decl` nomeia o tipo dono de um membro; o registro é `__rkQueryReg_<Owner>_<method>`.
+  ```bp
+  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
+  ```
+  (b) Só o rakun: o nome leva um hash do texto SQL; dois métodos de mesmo nome e mesmo SQL num módulo ainda colidem.
+  ```bp
+  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
+  ```
+  (c) O cabeçalho vence: dois métodos `#[query]` de mesmo nome num módulo são recusados, localizados; o teste vira uma recusa.
+- **Recomendação.** (a) — a identidade da própria declaração, sem colisão acidental; (b) só muda a colisão de lugar; (c) recusa um programa que o leitor espera que compile.
+- **Bloqueia.** 150 s30.
+
+#### B-12-b · `@embedFile` / `@embedBytes`: onde fica a leitura, uma constante não UTF-8, um caminho repassado (decisão 342; 144 B-12 passos 33 e 6)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) para cada um dos três pontos** — (1) o checker lê por um handle de leitura de arquivos que o CLI e o language server passam, com a raiz do pacote que escreveu em `Module` (o compiler-web passa um leitor que recusa); (2) o `Bytes` de um embed é uma constante de build que todo backend emite, a única exceção à recusa `comptime-bytes` do passo 32; (3) um parâmetro `comptime path` que repassa o caminho resolve em cada ponto de chamada, no pacote de quem chama, como 342 diz.
+- **Medido.** O compiler-core não lê arquivo hoje e o compiler-web compartilha o checker. Não existe literal `Bytes`, e o passo 32 recusa um valor `Bytes` em comptime. 342 resolve um caminho relativo ao `botopink.json` do pacote que o escreveu.
+- **Opções.**
+  (1) (a) Um handle de leitura passado ao checker. (b) O CLI e o LSP leem todo arquivo embutido antes da checagem e entregam o conteúdo.
+  (2) (a) O `Bytes` de um embed é uma constante em todo backend (um binary Erlang, um `Uint8Array`, um segmento de dados wasm); `comptime-bytes` continua recusando todo outro `Bytes` de build. (b) `@embedBytes` é recusado para um arquivo que não é UTF-8 até existir um literal `Bytes`.
+  (3) (a) Checado em cada ponto de chamada, no pacote de quem chama. (b) Um `comptime path` repassado é recusado até um passo posterior.
+  ```bp
+  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
+  ```
+- **Recomendação.** (a) para os três — 342 como escrita: a leitura onde o checker vê o argumento, um arquivo binário embutível, o pacote de quem chama para um caminho repassado.
+- **Bloqueia.** 144 B-12 passos 33 e 6; rakun 93 (o `.bp` versionado do `rakun ws generate`).
+
+#### B-12-a · As leituras restritivas de `Bytes`: confirmar (decisões 346, 67; 144 B-12 passo 32)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): mantê-las** — o passo 32 tomou a leitura mais estrita onde 346 se cala, cada uma fixada por uma célula de recusa; uma decisão posterior pode alargar qualquer uma.
+- **Medido.** 346 fixa o tipo, `fromUtf8` / `toUtf8` e a fronteira com o host. O passo 32 recusa: `Bytes` alargando para `unknown` (então `@print(b)` é recusado), `is` e um padrão de tipo sobre `Bytes`, um valor `Bytes` em `comptime`, ordenação (`<`, `>`), `+` entre `Bytes` e `string`, e um buraco de template `Bytes`.
+- **Opções.**
+  (a) Manter toda recusa.
+  ```bp
+  val b = Bytes.fromUtf8("hi");
+  @print(b);            // refused: Bytes does not widen to unknown
+  @print("${b}");       // refused: no Bytes hole
+  @print(b.length());   // 2
+  ```
+  (b) Alargar o par de impressão: `@print(b)` e um buraco escrevem os bytes como um texto fixo (ex.: `<<104,105>>` em todo alvo); o resto mantido.
+- **Recomendação.** (a) — recusar em vez de aceitar (67); uma forma impressa é uma decisão posterior que precisa de um texto nos quatro alvos.
+- **Bloqueia.** Nada construído; o passo Conformance do B-12 lê a resposta.
+
+#### B-78-a · O commonJS adota o texto de float do std-wasm? (decisão 441; 144 B-78)
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): emendar a 441 — o commonJS escreve um `f64` como os outros alvos, em todo lugar em que ele vira texto; o B-78 fica** — `"${x}"`, `x.toString()`, `"n=" + x` e `@print(x)` escrevem `5.0` e `1.0e21` nos quatro alvos (434 (5): um texto para um valor). Medido na feat: os quatro alvos já imprimem `5.0` / `1.0e21` para um `f64` local e a célula `float_text_everywhere` está verde em commonJS e wasm; a única lacuna é o campo `f64` de um record importado, onde o template e o `+` do commonJS ainda escrevem `5` (`.toString()` mantém `5.0`) — o checker conhece o tipo do campo (o importador guarda a forma do record), então o codegen pode aplicar o helper ali. (b) faria um programa imprimir dois textos por alvo para um valor — defeito da 67, não regra. Viável: `codegen/js` (o helper do `@print`, compartilhado desde o B-51); o caso do campo importado é a caixa aberta do B-78. Mudanças: a última frase da 441; o B-78 fecha com a caixa do campo importado e seu passo de Conformance.
+- **Medido.** Um float em texto nos quatro alvos: erlang, beam e wasm escrevem `5.0` e `1.0e21`; o `@print` do próprio commonJS escreve o mesmo desde a B-51; um furo de template, `.toString()` e `string + f64` no commonJS escrevem o `5` e o `1e21` do motor JS. A 144 B-78 faz com que compartilhem o helper do `@print` (`run/float_text_everywhere`, vermelho no pai no commonJS). A última frase da decisão 441 diz "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — a B-78 a contradiz e espera esta resposta.
+- **Opções.**
+  (a) Emendar a 441: o commonJS escreve um `f64` como os outros alvos, em todo lugar onde ele vira texto; a B-78 fica.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5.0
+  @print(x.toString()); // 5.0
+  @print("n=" + x);    // n=5.0
+  ```
+  (b) Manter o texto do motor JS: a B-78 é revertida, só o `@print` escreve `5.0`.
+  ```bp
+  val x = 5.0;
+  @print("${x}");      // 5
+  @print(x.toString()); // 5
+  @print("n=" + x);    // n=5
+  ```
+- **Recomendação.** (a) — um só texto para um float em todos os alvos, como erlang, beam, wasm e o `@print` desde a B-51 já o escrevem; um programa cuja saída difere por alvo para o mesmo valor é um defeito, não uma regra da linguagem (a leitura mais restritiva da decisão 67).
+- **Também perguntado.** Se a frase de 441 ainda cobre `trim` e o mapeamento de caixa sob (a): `string_trim_keeps_nbsp` (commonJS `[x]`) e `string_lower_final_sigma` (commonJS `ς`) registram desvios do commonJS que se apoiam nela; sob (a) só para floats eles ficam, sob um (a) mais amplo passam a ser a resposta do std-wasm também no commonJS. Sob (b), `float_text_at_run_time` ganha um desvio `snapshot/targets/commonJS/`.
+- **Bloqueia.** A 144 B-78 (suas duas últimas caixas e seu passo Conformance).
+
+#### B-30-a · Os pontos de design do heap wasm (decisões 448, 449; 144 B-30)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) cada um dos seis pontos abaixo como construído em `modules/std-wasm/src/heap.zig`** — 448 deixa o design para a medição; as razões estão em `modules/std-wasm/AGENTS.md` § The heap. Ligá-lo ao codegen (B-30 caixa 3) põe o cabeçalho de bloco em quase todo snapshot wasm que aloca, então isso espera esta resposta.
+- **Medido.** Um laço de strings cresce ~68 B por iteração, um laço de requisições ~727 B por requisição (~335 como `@Task`s), uma renderização de página ~17,6 KiB por página — linear, poucos valores vivos.
+- **Opções.** (a) como construído; (b) uma mudança nomeada ponto a ponto.
+  1. Geracional: todo sobrevivente de uma coleta menor é promovido de uma vez (o erlang o mantém jovem mais uma vez).
+  2. Um cabeçalho de 8 bytes por bloco (seu tamanho e um layout nomeando as palavras que são ponteiros), e um bitmap de início por chunk para que um valor possa apontar para dentro do seu bloco.
+  3. Tamanhos: berçário de 64 KiB, dobrado enquanto mais da metade sobrevive, no máximo 8 MiB; uma coleta maior além de max(256 KiB, o dobro do que a última coleta maior manteve).
+  4. Coletas só em pontos de coleta cujas raízes quem chama nomeia; `alloc` nunca coleta.
+  5. Uma cópia de mensagem não mantém compartilhamento, como no erlang; um ciclo (possível só por uma célula mutável) esgota a memória e faz trap.
+  6. Uma célula fora de todo heap que a barreira registra vira uma raiz permanente desse heap.
+- **Recomendação.** (a) — o modelo do erlang onde ele cabe num wasm de uma thread só, tamanhos vindos da medição.
+- **Bloqueia.** 144 B-30 caixas 3–6.
+
+#### B-06-a · A superfície 432 de `Task`: `catch` é palavra reservada, a forma aninhada não tem grafia (decisão 432; 144 B-06)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): renomear o método de task que falha para `recover`** (`mapError` mantido), declarado em `@Task<@Result<T, E>>` por um segundo `behavior` sobre a forma aninhada quando o parser aceitar ali uma aplicação de tipo; `map` / `then` continuam declarados e são implementados nos quatro backends no mesmo passo. Viável: `catch` é palavra-chave em toda posição (`reserved-word-as-name`); um membro chamado `recover` não precisa de nada novo.
+- **Medido.** O B-06 construiu o lowering de 432. O passo 2 pede `map`, `then` em todo `@Task<T>` e `mapError`, `catch` em `@Task<@Result<T, E>>` "uma segunda declaração sobre a forma aninhada". `fn catch` é recusado como palavra reservada; `behavior Task<@Result<…>>` não é analisado; `map` / `then` estão declarados em `builtins.d.bp` e nenhum backend os implementa. Dois vizinhos: uma task construída por código genérico (`-> @Task<T>` com `T` um `@Result`) e um `@Component<@Result>` ainda resolvem com `{ ok }` / `{ error }` para quem chama em JS; a célula invertida mantém o nome `task_throw_resolves_error`.
+- **Opções.**
+  (a) `recover` para o método de task que falha; a declaração aninhada quando o parser a aceitar.
+  ```bp
+  val t: @Task<@Result<i32, string>> = load();
+  val safe = t.recover({ e -> 0 });      // @Task<i32>
+  ```
+  (b) `catch` deixa de ser reservado só como nome de membro (`t.catch(…)`, como o JS escreve).
+  (c) Retirar os dois métodos de task que falha; `try await` e `case` leem uma task que falha.
+- **Recomendação.** (a) — a palavra-chave continua palavra-chave (67), o método mantém seu significado; quem chama em JS uma task genérica ou um componente é uma linha à parte, e a célula invertida passa a se chamar `task_failure_rejects`.
+- **Bloqueia.** 144 B-06 passo 2.
+
+#### 17-c · O que mais nomeia um var `keyed: true`
+- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.
+- **Medido.** Construído: só `counts.at(k)` (`ets:lookup`) e `counts = counts.insert(k, v)` (`ets:insert`); todo o resto (`counts[k]`, `hasKey`, `delete`, `size()`, passá-lo adiante) recusado no identificador; um var keyed nunca é `pub`. A 63 da 1.0.5: um índice responde `V` e falha numa chave ausente; `at` responde `?V` (`null`).
+- **Opções.** (a) As duas formas, como construído, e `counts = counts.bump(k, n)` (340). (b) (a) mais `counts[k]` com o significado da 63 (`ets:lookup`, `V`, falha numa linha ausente). (c) (b) mais `hasKey` (`ets:member`) e `delete` (`ets:delete`), cada um uma nova primitiva de `std/beam`.
+- **Recomendação.** (a).
+- **Bloqueia.** Nada — a superfície construída vale até ser ampliada.
+
+---
+
 ## Parte 1 — O que bloqueia as trilhas 00–03
 
 ### 01-compiler
@@ -1099,13 +1234,6 @@ fn label() -> string { … }   // moved to module level
 - **Regras.** 146: uma função cujo corpo alcança uma função de host sem binding para o alvo "é recusada em sua declaração, chamada ou não". `lem-c` (construído, a confirmar): um método de host sem binding "é recusado onde é CHAMADO" — recusar a declaração era a opção não tomada; a 311 mantém o mesmo na chamada.
 - **Recomendação.** Confirmar `lem-c` para uma declaração de host sem corpo (um tipo declarado uma vez ainda compila para um alvo que seu método não tem); declarar que a 146 rege qualquer função com corpo, livre ou método, que alcance uma; `docs.md` diz as duas coisas.
 - **Bloqueia.** A confirmação de `lem-c`.
-
-#### 17-c · O que mais nomeia um var `keyed: true`
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.
-- **Medido.** Construído: só `counts.at(k)` (`ets:lookup`) e `counts = counts.insert(k, v)` (`ets:insert`); todo o resto (`counts[k]`, `hasKey`, `delete`, `size()`, passá-lo adiante) recusado no identificador; um var keyed nunca é `pub`. A 63 da 1.0.5: um índice responde `V` e falha numa chave ausente; `at` responde `?V` (`null`).
-- **Opções.** (a) As duas formas, como construído, e `counts = counts.bump(k, n)` (340). (b) (a) mais `counts[k]` com o significado da 63 (`ets:lookup`, `V`, falha numa linha ausente). (c) (b) mais `hasKey` (`ets:member`) e `delete` (`ets:delete`), cada um uma nova primitiva de `std/beam`.
-- **Recomendação.** (a).
-- **Bloqueia.** Nada — a superfície construída vale até ser ampliada.
 
 #### s23-j · O que a marca da 375 conta como "não consegue seguir", e um `@Component` de host
 - **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Um componente nunca é assíncrono por causa dos seus filhos.** Um componente é uma função que responde sua árvore (um array de nós, 388); compor outro componente — inclusive um valor recebido — só põe sua lambda na árvore. A marca `async` da 375 conta só o próprio corpo do componente: `await`, `async { }`, um hook assíncrono, uma chamada ao host que responde `@Task` / `@Component` (itens 2–5 como construídos). Um componente marcado responde uma Promise da sua árvore (uma máquina de estados no wasm, 140-e (d)); todo outro responde sua árvore direto. **A raiz é sempre assíncrona:** o render de um `#[page]` (e `renderToString`) percorre a árvore e faz await só nas lambdas marcadas. A marca transitiva (`subtreeAsync`: um componente que usa, direta ou indiretamente, um marcado; um componente recebido como valor contado a partir do argumento em cada uso, um valor desconhecido contado assíncrono) é calculada no build só como otimização, legível por decorators: falsa, um `#[page]` renderiza sem streaming e um `Suspense` emite seu filho direto, sem fallback; sem ela o renderer descobre ao descer, com a mesma resposta. O item 1 como construído (uma chamada por valor de função ou método que responde `@Component` marca o nó) sai. Amenda a 504 (140-e): seu renderer lê essa `subtreeAsync` de build onde ela é conhecida, e descobre ao descer só para um valor desconhecido.
@@ -1656,115 +1784,7 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Recomendação.** (1).
 - **Bloqueia.** A linha (o caso de markup da emilia 48 coberto pela 301).
 
-#### B-78-a · O commonJS adota o texto de float do std-wasm? (decisão 441; 144 B-78)
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): emendar a 441 — o commonJS escreve um `f64` como os outros alvos, em todo lugar em que ele vira texto; o B-78 fica** — `"${x}"`, `x.toString()`, `"n=" + x` e `@print(x)` escrevem `5.0` e `1.0e21` nos quatro alvos (434 (5): um texto para um valor). Medido na feat: os quatro alvos já imprimem `5.0` / `1.0e21` para um `f64` local e a célula `float_text_everywhere` está verde em commonJS e wasm; a única lacuna é o campo `f64` de um record importado, onde o template e o `+` do commonJS ainda escrevem `5` (`.toString()` mantém `5.0`) — o checker conhece o tipo do campo (o importador guarda a forma do record), então o codegen pode aplicar o helper ali. (b) faria um programa imprimir dois textos por alvo para um valor — defeito da 67, não regra. Viável: `codegen/js` (o helper do `@print`, compartilhado desde o B-51); o caso do campo importado é a caixa aberta do B-78. Mudanças: a última frase da 441; o B-78 fecha com a caixa do campo importado e seu passo de Conformance.
-- **Medido.** Um float em texto nos quatro alvos: erlang, beam e wasm escrevem `5.0` e `1.0e21`; o `@print` do próprio commonJS escreve o mesmo desde a B-51; um furo de template, `.toString()` e `string + f64` no commonJS escrevem o `5` e o `1e21` do motor JS. A 144 B-78 faz com que compartilhem o helper do `@print` (`run/float_text_everywhere`, vermelho no pai no commonJS). A última frase da decisão 441 diz "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — a B-78 a contradiz e espera esta resposta.
-- **Opções.**
-  (a) Emendar a 441: o commonJS escreve um `f64` como os outros alvos, em todo lugar onde ele vira texto; a B-78 fica.
-  ```bp
-  val x = 5.0;
-  @print("${x}");      // 5.0
-  @print(x.toString()); // 5.0
-  @print("n=" + x);    // n=5.0
-  ```
-  (b) Manter o texto do motor JS: a B-78 é revertida, só o `@print` escreve `5.0`.
-  ```bp
-  val x = 5.0;
-  @print("${x}");      // 5
-  @print(x.toString()); // 5
-  @print("n=" + x);    // n=5
-  ```
-- **Recomendação.** (a) — um só texto para um float em todos os alvos, como erlang, beam, wasm e o `@print` desde a B-51 já o escrevem; um programa cuja saída difere por alvo para o mesmo valor é um defeito, não uma regra da linguagem (a leitura mais restritiva da decisão 67).
-- **Também perguntado.** Se a frase de 441 ainda cobre `trim` e o mapeamento de caixa sob (a): `string_trim_keeps_nbsp` (commonJS `[x]`) e `string_lower_final_sigma` (commonJS `ς`) registram desvios do commonJS que se apoiam nela; sob (a) só para floats eles ficam, sob um (a) mais amplo passam a ser a resposta do std-wasm também no commonJS. Sob (b), `float_text_at_run_time` ganha um desvio `snapshot/targets/commonJS/`.
-- **Bloqueia.** A 144 B-78 (suas duas últimas caixas e seu passo Conformance).
-
 ### 02-std-and-packaging
-
-#### B-81-a · Dois métodos `#[query]` de mesmo nome num módulo: como o registro do rakun ganha um nome único? (144 B-81; 150 s30)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `@Decl` de um membro nomeia seu tipo dono** — um decorator num método lê `decl.owner` (`?string`, `null` no nível do módulo), e o `query.bp` nomeia seu registro `__rkQueryReg_<Owner>_<method>`; o nome é a identidade da declaração, então nunca colide por acaso e não precisa de hash. Viável: o checker conhece o dono quando roda o decorator de um membro; o `Decl<T>` de `builtins.d.bp` ganha o campo. Mudanças: um passo da 144 (o campo, uma célula), depois 150 s30 no rakun.
-- **Medido.** O decorator de `query.bp` emite `val __rkQueryReg_<method> = rkRegisterQuery(…)` no nível do módulo. Dois repositórios num módulo, cada um com `#[query] find`, emitem `__rkQueryReg_find` duas vezes; o erlang recusa `function '__rkQueryReg_find'/0 already defined`. Compilava até a 144 B-39 tornar um `val` de módulo prefixado com `_` uma ligação comum (a regra da linguagem). Uma instrução no nível do módulo não pode ser escrita (`val _ = …` e uma chamada solta não são analisadas), e o `@Decl` de um membro tem `name` e `kind`, sem dono. O cabeçalho de `query.bp` diz que dois métodos de mesmo nome num módulo colidem e que isso está certo; `test/sql_build_test.bp:148` diz que compilam.
-- **Opções.**
-  (a) O `@Decl` nomeia o tipo dono de um membro; o registro é `__rkQueryReg_<Owner>_<method>`.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
-  ```
-  (b) Só o rakun: o nome leva um hash do texto SQL; dois métodos de mesmo nome e mesmo SQL num módulo ainda colidem.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
-  ```
-  (c) O cabeçalho vence: dois métodos `#[query]` de mesmo nome num módulo são recusados, localizados; o teste vira uma recusa.
-- **Recomendação.** (a) — a identidade da própria declaração, sem colisão acidental; (b) só muda a colisão de lugar; (c) recusa um programa que o leitor espera que compile.
-- **Bloqueia.** 150 s30.
-
-#### B-12-a · As leituras restritivas de `Bytes`: confirmar (decisões 346, 67; 144 B-12 passo 32)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): mantê-las** — o passo 32 tomou a leitura mais estrita onde 346 se cala, cada uma fixada por uma célula de recusa; uma decisão posterior pode alargar qualquer uma.
-- **Medido.** 346 fixa o tipo, `fromUtf8` / `toUtf8` e a fronteira com o host. O passo 32 recusa: `Bytes` alargando para `unknown` (então `@print(b)` é recusado), `is` e um padrão de tipo sobre `Bytes`, um valor `Bytes` em `comptime`, ordenação (`<`, `>`), `+` entre `Bytes` e `string`, e um buraco de template `Bytes`.
-- **Opções.**
-  (a) Manter toda recusa.
-  ```bp
-  val b = Bytes.fromUtf8("hi");
-  @print(b);            // refused: Bytes does not widen to unknown
-  @print("${b}");       // refused: no Bytes hole
-  @print(b.length());   // 2
-  ```
-  (b) Alargar o par de impressão: `@print(b)` e um buraco escrevem os bytes como um texto fixo (ex.: `<<104,105>>` em todo alvo); o resto mantido.
-- **Recomendação.** (a) — recusar em vez de aceitar (67); uma forma impressa é uma decisão posterior que precisa de um texto nos quatro alvos.
-- **Bloqueia.** Nada construído; o passo Conformance do B-12 lê a resposta.
-
-#### B-12-b · `@embedFile` / `@embedBytes`: onde fica a leitura, uma constante não UTF-8, um caminho repassado (decisão 342; 144 B-12 passos 33 e 6)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) para cada um dos três pontos** — (1) o checker lê por um handle de leitura de arquivos que o CLI e o language server passam, com a raiz do pacote que escreveu em `Module` (o compiler-web passa um leitor que recusa); (2) o `Bytes` de um embed é uma constante de build que todo backend emite, a única exceção à recusa `comptime-bytes` do passo 32; (3) um parâmetro `comptime path` que repassa o caminho resolve em cada ponto de chamada, no pacote de quem chama, como 342 diz.
-- **Medido.** O compiler-core não lê arquivo hoje e o compiler-web compartilha o checker. Não existe literal `Bytes`, e o passo 32 recusa um valor `Bytes` em comptime. 342 resolve um caminho relativo ao `botopink.json` do pacote que o escreveu.
-- **Opções.**
-  (1) (a) Um handle de leitura passado ao checker. (b) O CLI e o LSP leem todo arquivo embutido antes da checagem e entregam o conteúdo.
-  (2) (a) O `Bytes` de um embed é uma constante em todo backend (um binary Erlang, um `Uint8Array`, um segmento de dados wasm); `comptime-bytes` continua recusando todo outro `Bytes` de build. (b) `@embedBytes` é recusado para um arquivo que não é UTF-8 até existir um literal `Bytes`.
-  (3) (a) Checado em cada ponto de chamada, no pacote de quem chama. (b) Um `comptime path` repassado é recusado até um passo posterior.
-  ```bp
-  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
-  ```
-- **Recomendação.** (a) para os três — 342 como escrita: a leitura onde o checker vê o argumento, um arquivo binário embutível, o pacote de quem chama para um caminho repassado.
-- **Bloqueia.** 144 B-12 passos 33 e 6; rakun 93 (o `.bp` versionado do `rakun ws generate`).
-
-#### B-30-a · Os pontos de design do heap wasm (decisões 448, 449; 144 B-30)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) cada um dos seis pontos abaixo como construído em `modules/std-wasm/src/heap.zig`** — 448 deixa o design para a medição; as razões estão em `modules/std-wasm/AGENTS.md` § The heap. Ligá-lo ao codegen (B-30 caixa 3) põe o cabeçalho de bloco em quase todo snapshot wasm que aloca, então isso espera esta resposta.
-- **Medido.** Um laço de strings cresce ~68 B por iteração, um laço de requisições ~727 B por requisição (~335 como `@Task`s), uma renderização de página ~17,6 KiB por página — linear, poucos valores vivos.
-- **Opções.** (a) como construído; (b) uma mudança nomeada ponto a ponto.
-  1. Geracional: todo sobrevivente de uma coleta menor é promovido de uma vez (o erlang o mantém jovem mais uma vez).
-  2. Um cabeçalho de 8 bytes por bloco (seu tamanho e um layout nomeando as palavras que são ponteiros), e um bitmap de início por chunk para que um valor possa apontar para dentro do seu bloco.
-  3. Tamanhos: berçário de 64 KiB, dobrado enquanto mais da metade sobrevive, no máximo 8 MiB; uma coleta maior além de max(256 KiB, o dobro do que a última coleta maior manteve).
-  4. Coletas só em pontos de coleta cujas raízes quem chama nomeia; `alloc` nunca coleta.
-  5. Uma cópia de mensagem não mantém compartilhamento, como no erlang; um ciclo (possível só por uma célula mutável) esgota a memória e faz trap.
-  6. Uma célula fora de todo heap que a barreira registra vira uma raiz permanente desse heap.
-- **Recomendação.** (a) — o modelo do erlang onde ele cabe num wasm de uma thread só, tamanhos vindos da medição.
-- **Bloqueia.** 144 B-30 caixas 3–6.
-
-#### B-06-a · A superfície 432 de `Task`: `catch` é palavra reservada, a forma aninhada não tem grafia (decisão 432; 144 B-06)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): renomear o método de task que falha para `recover`** (`mapError` mantido), declarado em `@Task<@Result<T, E>>` por um segundo `behavior` sobre a forma aninhada quando o parser aceitar ali uma aplicação de tipo; `map` / `then` continuam declarados e são implementados nos quatro backends no mesmo passo. Viável: `catch` é palavra-chave em toda posição (`reserved-word-as-name`); um membro chamado `recover` não precisa de nada novo.
-- **Medido.** O B-06 construiu o lowering de 432. O passo 2 pede `map`, `then` em todo `@Task<T>` e `mapError`, `catch` em `@Task<@Result<T, E>>` "uma segunda declaração sobre a forma aninhada". `fn catch` é recusado como palavra reservada; `behavior Task<@Result<…>>` não é analisado; `map` / `then` estão declarados em `builtins.d.bp` e nenhum backend os implementa. Dois vizinhos: uma task construída por código genérico (`-> @Task<T>` com `T` um `@Result`) e um `@Component<@Result>` ainda resolvem com `{ ok }` / `{ error }` para quem chama em JS; a célula invertida mantém o nome `task_throw_resolves_error`.
-- **Opções.**
-  (a) `recover` para o método de task que falha; a declaração aninhada quando o parser a aceitar.
-  ```bp
-  val t: @Task<@Result<i32, string>> = load();
-  val safe = t.recover({ e -> 0 });      // @Task<i32>
-  ```
-  (b) `catch` deixa de ser reservado só como nome de membro (`t.catch(…)`, como o JS escreve).
-  (c) Retirar os dois métodos de task que falha; `try await` e `case` leem uma task que falha.
-- **Recomendação.** (a) — a palavra-chave continua palavra-chave (67), o método mantém seu significado; quem chama em JS uma task genérica ou um componente é uma linha à parte, e a célula invertida passa a se chamar `task_failure_rejects`.
-- **Bloqueia.** 144 B-06 passo 2.
-
-#### B-07-a · `attempt` no wasm: o "passa no wasmtime" de 491 admite `-W exceptions=y`, e onde uma função da std sem binding wasm é recusada? (decisões 491, 492, 503; 144 B-07)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — o `attempt` do wasm usa o tratamento de exceções do wasm, toda execução do wasmtime passa `-W exceptions=y` (como passa `-S http`); e, à parte, o STD-001 recusa na chamada, não no import (a direção de 503 para todo módulo da std)**, para que `std/failure` continue importável no wasm qualquer que seja a resposta. Viável: a medição passa no node 22 e 25 por padrão e no wasmtime 45 com a flag; a recusa de import do checker vira uma recusa na chamada.
-- **Medido.** Um módulo com `try_table` / `throw` roda no node 22.23.3 e 25.8.0 por padrão; o wasmtime 45.0.1 o recusa ("exceptions proposal not enabled") a menos que rode com `-W exceptions=y`. O STD-001 recusa todo import wasm de um módulo da std que tenha uma função sem corpo e sem binding wasm, mesmo quando nada a chama: com `failure.attempt` / `attemptTask` adicionados, `std_failure_types`, `external_result_host_error` e `external_result_return_accepted` ficam vermelhos no wasm. O B-07 está construído em commonJS, erlang e beam (std 498/498 em cada, jhonstart 208/208) e retido sem push por isso.
-- **Opções.**
-  (a) A flag conta; `attempt` no wasm por exceções; STD-001 na chamada.
-  (b) A flag não conta; `attempt` recusado no wasm na chamada (491 (c)) até o wasmtime habilitar exceções por padrão; STD-001 na chamada.
-  (c) Esperar: o B-07 fica sem pousar até o padrão do wasmtime mudar.
-  ```bp
-  import {failure};
-  val r = failure.attempt({ -> risky() });   // (a): runs on wasm; (b): refused here on wasm, the import accepted
-  ```
-- **Recomendação.** (a) — node e wasmtime o rodam, o wasmtime por uma flag que o botopink já define por execução (`-S http`); recusar na chamada mantém um `failure` importável em todo alvo.
-- **Também perguntado (o relatório do B-07).** (1) O `host` "exato" de 492: um raise de um binding sem `result: true` não é marcado e é lido como `host`, então `crash` nunca é respondido (uma falha da VM é lida como `host`) — envolver toda chamada assim, a um custo que o B-05 não mediu? (2) Um `assert` que falha lido como `panic`, sua mensagem sem a localização, em todo alvo. (3) erlang e beam levantam um `badarith` puro para uma divisão inteira por zero, lido como `host` onde o commonJS lê `panic` (uma linha para um raise marcado). (4) A `Failure.message` de um raise de host no erlang é a razão impressa com `~tp`, estendendo a regra de `HostError` de 489 a `Failure`. (5) Os sinais de navegação do jhonstart agora voltam do `attempt` com kind `panic` (a front do jhonstart, B-25 / 504).
-- **Bloqueia.** 144 B-07 (seu commit, construído, sem push).
 
 #### std-e · Hooks de ciclo de vida de teste
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): nenhum hook de ciclo de vida; o corpo de um teste chama seu helper de reset** — nada implícito roda em volta de um `test` (67), todo bloco `test` se lê inteiro, e a unidade de teste da 513 guarda só blocos `test`. (b) roda uma função de módulo que o teste nunca nomeia e (c) acrescenta gramática para o que uma chamada já diz. Viável: como construído (nenhum `#[before]` / `beforeEach` no std, no `lib-test-runner` ou nas bibliotecas); as contagens da entrada estão defasadas — `resetChain()` é chamado 77 vezes no rakun todo (31 no rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Mudanças: a linha "No test lifecycle hooks" do `language-gaps.md` vira by design.
