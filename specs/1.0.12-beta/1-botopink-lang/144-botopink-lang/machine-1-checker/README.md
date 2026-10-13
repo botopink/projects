@@ -764,11 +764,16 @@ fn Button() -> @Component<Element> {
       — run at build (`comptime_result_methods`)
 - [x] `comptime createContext(0l)` fails: the `l` suffix reaches the comptime module — found by B-17
       — stripped where the comptime module is written, put back after (`comptime_wide_literal`)
-- [ ] `createContext(value, B)`'s implements check reads only the direct `implements` clause; a type implementing `B`
+- [x] `createContext(value, B)`'s implements check reads only the direct `implements` clause; a type implementing `B`
       through `extends` or an extension block is refused — found by B-17
-- [ ] wasm: `map` / `flatMap` on a `@Result<i64>` at run time answers garbage — found by B-17
-- [ ] wasm: a behavior method named `find` called on a value read through a context answers `0` — found by B-17
-- [ ] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
+      — the checker's one answer, `extends` included (`context_behavior_implemented_indirectly`)
+- [ ] a type implementing `B` only through an extension block (`Sym implement B for T`) as a `B` value · question B-17-m
+- [x] wasm: `map` / `flatMap` on a `@Result<i64>` at run time answers garbage — found by B-17
+      — `result_i64_map_flat_map`
+- [x] wasm: a behavior method named `find` called on a value read through a context answers `0` — found by B-17
+      — the value's behavior method first (`context_behavior_method_find`)
+- [x] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
+      — `fun f/A` in the comptime module (`comptime_function_value_argument`)
 - [ ] a raise other than an arithmetic error while folding: a build error (380 (2)) or the hole left to render · question B-17-e
 - [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
 - [ ] where a context read finds a default declared in a module it neither imports nor reaches through its type · question B-17-g
