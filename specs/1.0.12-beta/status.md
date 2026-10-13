@@ -101,7 +101,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 05-wasm row — onze's blog (67 modules) does not build on wasm (found measuring B-30) · none
 - [ ] 14 row — `located_errors`' "a raise … is located at the call that raised" fails when run filtered beside other wat / wasm / comptime tests, alone and in the full suite it passes (shared state between tests) · none
 - [ ] 26 row — compiler-cli's "transitive failure" test (a library-root lookup of `kit-x`) failed once in a full `zig build test` and passed on the next run (flaky) · none
-- [ ] 163 row — cells land on botopink-lang `feat` unformatted while the 144 exception commits `--no-verify`: `format-check.sh` reds `feat`'s pipeline after each; a thread runs `botopink format --check` on the files it adds before pushing (thread-rules) · B-60 (the exception goes)
+- [ ] 163 row — cells land on botopink-lang `feat` unformatted while the 144 exception commits `--no-verify`: `format-check.sh` reds `feat`'s pipeline after each; `scripts/thread-rules.md`'s exception now asks `botopink format --check` on each `.bp` a thread adds or changes; the row closes when the other machine's threads follow it · B-60 (the exception goes)
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
