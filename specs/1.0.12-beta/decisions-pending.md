@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**78 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**79 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1098,6 +1098,23 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-16's annotated-`val` row.
+
+#### B-23-a · Decision 310: does a type of this module beside an aliased import of a same-named type count as two modules? (decision 310; 144 B-23)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — `type T` declared here and `import {other.T as U}` are two types, legal under 310 like two imports: the alias is the program's name for the other module's type, and identity is by module. Refusing it would make 310 depend on where a declaration sits. Viable: with 310's module-qualified identity (B-23's open row), nothing more. Changes: a cell beside `import_two_types_one_name`.
+- **Measured.** Today the checker and the four backends name a type by its declared name, so both forms collide (`import-name-collision` for two imports); 310 is open.
+- **Options.**
+  (a) Two types.
+  ```bp
+  import {shapes.Box as ShapeBox};
+  pub type Box(v: i32)
+  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
+  ```
+  (b) Refused: a local type and an alias of a same-named type collide.
+  ```bp
+  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-23's 310 row.
 
 ### 02-std-and-packaging
 

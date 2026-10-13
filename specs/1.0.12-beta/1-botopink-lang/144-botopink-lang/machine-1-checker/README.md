@@ -1171,6 +1171,8 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       B-14; re-measured with its cell
 - [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
       `Token.Color(_inner: __Token__Color.White)`, wasm an address · question B-22-b
+- [ ] an imported enum's variant with a payload prints as a number on wasm (`@print(AMode.Slow(2))` printed
+      `8764`, `AMode` from another module) — found by B-23
 
 #### Compiler residuals — met here, worked around in std, owned elsewhere (was `97-std-dedupe` compiler residuals)
 
@@ -1232,11 +1234,13 @@ number's token (`lexer.zig` `splitNumber`, `numberSuffixType`, `numberBackendTex
 2^53 refused on commonJS (`run/wide_literal_past_js_safe_integer.commonJS.expect`); `docs.md` §
 Numeric literals.
 
-- [ ] an integer literal past its type's range refused on every target (decision 319): `refuseBeyondJsSafeInteger`
+- [x] an integer literal past its type's range refused on every target (decision 319): `refuseBeyondJsSafeInteger`
       (`comptime/infer.zig`) deleted, its 247 citation with it; `run/wide_literal_past_js_safe_integer` answers
       the value on the four targets (after `04-js` step 9)
-- [ ] `language-gaps.md`'s rows "`f32` has no literal" and "An `i64` has no literal" lose their
-      literal half; a cold gate green on `49455602` (no gate has run on the merge)
+- [x] `language-gaps.md`'s rows "`f32` has no literal" and "An `i64` has no literal" lose their
+      literal half
+- [ ] a cold gate green over the literal's change — B-23's Conformance step runs it (`feat`'s pipeline with
+      conformance)
 
 #### Step 19 — a type application before a member (decision 255 (1)) — built (`6185db3c`, on feat through `49455602`) (was `01-checker` s19)
 
@@ -1248,12 +1252,12 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
 `botopink format` round-trip (`parser/tests/decision255.zig`, `format.zig` `typeArgsDoc`), `docs.md`
 § Generics.
 
-- [ ] a type application through a module namespace (`collections.Dict<K, V>.empty()` — the head is a
+- [x] a type application through a module namespace (`collections.Dict<K, V>.empty()` — the head is a
       value's name, so the list is a comparison there): built, or refused with a located message
 
 #### Rows other fronts found — part (was `01-checker` rows boxes 1, 3, 4)
 
-- [ ] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the
+- [x] comptime body diagnostic names the body's file: `infer.zig` (`decoratorError`) passes the
       display path, or locates at the body call for the module's own decorator — asserted in
       `comptime_module.zig`, `decorator_invocation.zig` (from `14-comptime-on-beam` step 1)
 - [x] a module is its package plus its path (170, 337): an item with no `from` names one module of
@@ -1264,8 +1268,10 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
       (`modules/two_packages_one_module_name`, four targets; from `08-bpp/119` step 1 box 4)
 - [ ] two aliased imports of two same-named **types** are legal (310): every backend qualifies a type by
       its module; `modules/import_two_types_one_name` becomes an accept cell on every target (until
-      then the refusal is a `language-gaps.md` row)
-- [ ] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
+      then the refusal is a `language-gaps.md` row) — its own work: a type's identity by module throughout the checker
+      and the four backends, which name a type by its declared name alone today; whether a type of this
+      module beside an aliased import of a same-named type counts is question B-23-a
+- [x] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
       `codegen/wat/host_binding.zig`'s `parse`, so a misspelt `op:` no wasm build reaches is refused
       (from `05-wasm` step 5)
 - [x] `infer.zig`'s template memo key appends the whole scope's JSON per call site — O(scope) per

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**78 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**79 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1097,6 +1097,23 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `val` anotado do 144 B-16.
+
+#### B-23-a · Decisão 310: um tipo deste módulo ao lado de um import com alias de um tipo de mesmo nome conta como dois módulos? (decisão 310; 144 B-23)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — `type T` declarado aqui e `import {other.T as U}` são dois tipos, legais sob a 310 como dois imports: o alias é o nome que o programa dá ao tipo do outro módulo, e a identidade é por módulo. Recusar faria a 310 depender de onde uma declaração está. Viável: com a identidade qualificada por módulo da 310 (a linha aberta do B-23), nada mais. Muda: uma cell ao lado de `import_two_types_one_name`.
+- **Medido.** Hoje o checker e os quatro backends nomeiam um tipo pelo nome declarado, então as duas formas colidem (`import-name-collision` para dois imports); a 310 está aberta.
+- **Opções.**
+  (a) Dois tipos.
+  ```bp
+  import {shapes.Box as ShapeBox};
+  pub type Box(v: i32)
+  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
+  ```
+  (b) Recusado: um tipo local e um alias de um tipo de mesmo nome colidem.
+  ```bp
+  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da 310 do 144 B-23.
 
 ### 02-std-and-packaging
 
