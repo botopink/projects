@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**76 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**78 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1066,6 +1066,38 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (b).
 - **Blocks.** 144 B-11's generic row.
+
+#### B-16-a · A field key at run time: what are its `typeName`, its `annotations` and its printed form? (decision 308; 144 B-16)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a run-time key is its name** — at run time `Type.Field<T>` carries `name` only; `key.typeName` and `key.annotations` are build-time members, refused outside a decorator or template body (`field-key-build-only`), and `@print(key)` prints `.name`. Annotations are `Decorator` values, which exist only at build; a run-time copy would be a second, partial truth. Viable: the run-time record keeps one field; the checker refuses the two members by stage. Changes: a refusal cell; `field_key_runtime` prints a key.
+- **Measured.** As built, a run-time key holds `typeName` as the checker spells it and `annotations: []`; `@print(key)` prints the whole record. The cells use only `name`, `==`, `case`, `of`, `all`.
+- **Options.**
+  (a) Its name only.
+  ```bp
+  val k = Recipe.Key.of("title") ?? .title;
+  @print(k);           // .title
+  k.annotations;       // refused at run time: field-key-build-only
+  ```
+  (b) The whole record, as built.
+  ```bp
+  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-16's run-time key row.
+
+#### B-16-b · `Type.keys(R)` on an annotated `val`: refused? (decisions 307, 308; 144 B-16)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused** — `#[x] pub val K = Type.keys(R)` is `derived-type-arguments` at the annotation: `Type.keys` names an existing type (an alias), not a new declaration, so there is nothing for a decorator to annotate; a derived record (`pick`, `omit`, …) stays annotatable. Viable: as built. Changes: none.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) Refused.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
+  ```
+  (b) Accepted, the decorator seeing `Recipe`'s keys type.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-16's annotated-`val` row.
 
 ### 02-std-and-packaging
 

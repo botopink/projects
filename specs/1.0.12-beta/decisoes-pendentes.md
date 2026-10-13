@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**76 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**78 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1065,6 +1065,38 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (b).
 - **Trava.** A linha genérica do 144 B-11.
+
+#### B-16-a · Uma chave de campo em runtime: qual é o seu `typeName`, as suas `annotations` e a sua forma impressa? (decisão 308; 144 B-16)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma chave em runtime é o seu nome** — em runtime `Type.Field<T>` carrega só `name`; `key.typeName` e `key.annotations` são membros de build, recusados fora de um corpo de decorator ou de template (`field-key-build-only`), e `@print(key)` imprime `.name`. Anotações são valores `Decorator`, que só existem no build; uma cópia em runtime seria uma segunda verdade, parcial. Viável: o record de runtime guarda um campo; o checker recusa os dois membros pelo estágio. Muda: uma cell de recusa; `field_key_runtime` imprime uma chave.
+- **Medido.** Como construído, uma chave em runtime guarda `typeName` como o checker o escreve e `annotations: []`; `@print(key)` imprime o record inteiro. As cells usam só `name`, `==`, `case`, `of`, `all`.
+- **Opções.**
+  (a) Só o nome.
+  ```bp
+  val k = Recipe.Key.of("title") ?? .title;
+  @print(k);           // .title
+  k.annotations;       // refused at run time: field-key-build-only
+  ```
+  (b) O record inteiro, como construído.
+  ```bp
+  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da chave em runtime do 144 B-16.
+
+#### B-16-b · `Type.keys(R)` num `val` anotado: recusado? (decisões 307, 308; 144 B-16)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado** — `#[x] pub val K = Type.keys(R)` é `derived-type-arguments` na anotação: `Type.keys` nomeia um tipo existente (um alias), não uma nova declaração, então não há o que um decorator anotar; um record derivado (`pick`, `omit`, …) continua anotável. Viável: como construído. Muda: nada.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Recusado.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
+  ```
+  (b) Aceito, o decorator vendo o tipo das chaves de `Recipe`.
+  ```bp
+  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `val` anotado do 144 B-16.
 
 ### 02-std-and-packaging
 

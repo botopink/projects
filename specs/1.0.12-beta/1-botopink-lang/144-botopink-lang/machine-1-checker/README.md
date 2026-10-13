@@ -209,7 +209,7 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
 - [x] `run/record_spread` on the four targets (a new record, the source unchanged and evaluated once);
       `reject/record_spread_other_type`, `reject/record_spread_partial`, `reject/record_spread_missing_field`
 - [x] a plain function call takes no spread (267): `reject/call_spread`
-- [ ] a source whose type is an import alias of a derived type is refused: the lineage is matched by the type's
+- [x] a source whose type is an import alias of a derived type is refused: the lineage is matched by the type's
       name, so `import {Contato as C}` then `Pessoa(...c, …)` with `c: C` does not reach `Contato`'s source — follow
       the alias; one cell
 - [ ] `..base` (decision 37) beside 359's `...src` · question B-14-a
@@ -274,7 +274,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 ### B-16 — 280, 307, 308: typed decorator arguments' rest, derived types' rest, `Type.Field<T>`
 
-**Repository:** botopink-lang, with consumer commits in rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
+**Repository:** botopink-lang, with consumer commits in rakun, validation (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/field_key_runtime`, `examples/types.bp` on four targets, the seven 280 examples.
 **Model:** opus. **Consumer commits:** rakun-data (`orm/entity.bp` to `Type.Field<unknown>`); unblocks validation
@@ -342,9 +342,9 @@ it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questi
 - [x] `run/derived_type_functions`, `run/derived_type_decorated`, `modules/derived_type_imported` on the
       four targets; eleven `reject/derived_type_*` cells; all red on the parent — the derived-record
       row of `language-gaps.md` closes when 125 s5's example runs (its `#[validated]` half is 125's)
-- [ ] `Type.keys(Recipe)` is `Type.Field<Recipe>` (decision 308) — the same type, not a copy: not a record
+- [x] `Type.keys(Recipe)` is `Type.Field<Recipe>` (decision 308) — the same type, not a copy: not a record
       derivation, not answered
-- [ ] a `Type.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
+- [x] a `Type.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
       `T`'s fields (a field added to `T` makes a `case` without it an error); `key.name`, `Key.of(text) ->
       ?Key`, `Key.all()` in declaration order — `run/field_key_runtime` on the four targets
 - [ ] `decl.fields` as `Type.Field<unknown>` (134 s2's box) — not part of this mechanism (the reflection
@@ -367,8 +367,11 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
       `decl.fields` hands out is the compiler's `__Decl__Field` (`comptime.zig` `decl_reflection_src`, aliased
       `Field` and drift-checked against `builtins.d.bp`'s `Field`), so std's hoisted `Type__Field` has to become
       that record, and rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) moves to `Type.Field<unknown>`; `pick` /
-      `omit` are declared (Done); the spelling of a `type` answer is fixed here with `01-checker` step 28
-- [ ] the four bare names (`partial`, `pick`, `omit`, `mergeRecords`) leave `tryResolveTypeManipulationCall`
+      `omit` are declared (Done); the spelling of a `type` answer is fixed here with `01-checker` step 28; builtins' `Field` leaves in this step, no alias kept: validation's `decorators.bp` (`Array<Field>`) and
+      rakun-data's `orm/entity.bp` migrate to `Type.Field<unknown>` as its consumer commits (rule 10)
+- [ ] a field key's `typeName`, `annotations` and printed form at run time · question B-16-a
+- [ ] `Type.keys` on an annotated `val` refused (`derived-type-arguments`, as built) · question B-16-b
+- [x] the four bare names (`partial`, `pick`, `omit`, `mergeRecords`) leave `tryResolveTypeManipulationCall`
       when `01-checker` step 28 keys its resolver on `Type`
 - [ ] [`examples/types.bp`](134-builtins-declared/examples/types.bp) — the whole `Type` surface, signatures and results —
       compiles and passes on the four targets; its "does not compile" lines are `01-checker` step 28's
