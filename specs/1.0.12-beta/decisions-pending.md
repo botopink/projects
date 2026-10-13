@@ -1286,6 +1286,19 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a) for all three — 342 as written: the read where the checker sees the argument, a binary file embeddable, the caller's package for a forwarded path.
 - **Blocks.** 144 B-12 steps 33 and 6; rakun 93 (`rakun ws generate`'s checked-in `.bp`).
 
+#### B-30-a · The wasm heap's design points (decisions 448, 449; 144 B-30)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) each of the six points below as built in `modules/std-wasm/src/heap.zig`** — 448 leaves the design to measurement; the reasons sit in `modules/std-wasm/AGENTS.md` § The heap. Wiring it into the codegen (B-30 box 3) puts the block header into nearly every allocating wasm snapshot, so it waits on this answer.
+- **Measured.** A string loop grows ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page — linear, few live values.
+- **Options.** (a) as built; (b) a change named point by point.
+  1. Generational: every survivor of a minor collection is promoted at once (erlang keeps it young one more time).
+  2. An 8-byte header per block (its size and a layout naming the pointer words), and a start bitmap per chunk so a value can point inside its block.
+  3. Sizes: nursery 64 KiB, doubled while more than half survives, at most 8 MiB; a major collection past max(256 KiB, twice what the last major kept).
+  4. Collections only at collection points whose roots the caller names; `alloc` never collects.
+  5. A message copy does not keep sharing, as in erlang; a cycle (possible only through a mutable cell) runs out of memory and traps.
+  6. A cell outside every heap that the barrier records becomes a permanent root of that heap.
+- **Recommendation.** (a) — erlang's model where it fits a single-threaded wasm, sizes from the measurement.
+- **Blocks.** 144 B-30 boxes 3–6.
+
 #### std-e · Test lifecycle hooks
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): no lifecycle hook; a test body calls its reset helper** — nothing implicit runs around a `test` (67), every `test` block reads whole, and 513's test unit holds `test` blocks only. (b) runs a module function the test never names and (c) adds grammar for what a call already says. Viable: as built (no `#[before]` / `beforeEach` in std, `lib-test-runner` or the libraries); the counts in the entry are stale — `resetChain()` is called 77 times across rakun (31 in rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Changes: `language-gaps.md`'s "No test lifecycle hooks" row becomes by design.
 - **Measured.** Library tests reset state by hand at the top of the body: rakun-web's `resetChain()` 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, among others; rakun-test's `resetSingletons` / `resetContext` only in its own `context_test.bp`; jhonstart-dom-test's `installDocument(…)` 11×.

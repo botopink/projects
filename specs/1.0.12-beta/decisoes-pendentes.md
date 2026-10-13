@@ -1285,6 +1285,19 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Recomendação.** (a) para os três — 342 como escrita: a leitura onde o checker vê o argumento, um arquivo binário embutível, o pacote de quem chama para um caminho repassado.
 - **Bloqueia.** 144 B-12 passos 33 e 6; rakun 93 (o `.bp` versionado do `rakun ws generate`).
 
+#### B-30-a · Os pontos de design do heap wasm (decisões 448, 449; 144 B-30)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) cada um dos seis pontos abaixo como construído em `modules/std-wasm/src/heap.zig`** — 448 deixa o design para a medição; as razões estão em `modules/std-wasm/AGENTS.md` § The heap. Ligá-lo ao codegen (B-30 caixa 3) põe o cabeçalho de bloco em quase todo snapshot wasm que aloca, então isso espera esta resposta.
+- **Medido.** Um laço de strings cresce ~68 B por iteração, um laço de requisições ~727 B por requisição (~335 como `@Task`s), uma renderização de página ~17,6 KiB por página — linear, poucos valores vivos.
+- **Opções.** (a) como construído; (b) uma mudança nomeada ponto a ponto.
+  1. Geracional: todo sobrevivente de uma coleta menor é promovido de uma vez (o erlang o mantém jovem mais uma vez).
+  2. Um cabeçalho de 8 bytes por bloco (seu tamanho e um layout nomeando as palavras que são ponteiros), e um bitmap de início por chunk para que um valor possa apontar para dentro do seu bloco.
+  3. Tamanhos: berçário de 64 KiB, dobrado enquanto mais da metade sobrevive, no máximo 8 MiB; uma coleta maior além de max(256 KiB, o dobro do que a última coleta maior manteve).
+  4. Coletas só em pontos de coleta cujas raízes quem chama nomeia; `alloc` nunca coleta.
+  5. Uma cópia de mensagem não mantém compartilhamento, como no erlang; um ciclo (possível só por uma célula mutável) esgota a memória e faz trap.
+  6. Uma célula fora de todo heap que a barreira registra vira uma raiz permanente desse heap.
+- **Recomendação.** (a) — o modelo do erlang onde ele cabe num wasm de uma thread só, tamanhos vindos da medição.
+- **Bloqueia.** 144 B-30 caixas 3–6.
+
 #### std-e · Hooks de ciclo de vida de teste
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): nenhum hook de ciclo de vida; o corpo de um teste chama seu helper de reset** — nada implícito roda em volta de um `test` (67), todo bloco `test` se lê inteiro, e a unidade de teste da 513 guarda só blocos `test`. (b) roda uma função de módulo que o teste nunca nomeia e (c) acrescenta gramática para o que uma chamada já diz. Viável: como construído (nenhum `#[before]` / `beforeEach` no std, no `lib-test-runner` ou nas bibliotecas); as contagens da entrada estão defasadas — `resetChain()` é chamado 77 vezes no rakun todo (31 no rakun-web), `rkAppReset` 20, `resetTables` 13, `installDocument` 19. Mudanças: a linha "No test lifecycle hooks" do `language-gaps.md` vira by design.
 - **Medido.** Os testes de biblioteca resetam o estado à mão no topo do corpo: `resetChain()` do rakun-web 77×, `rkAppReset(…)` 20×, `resetTables(…)` 14×, entre outros; `resetSingletons` / `resetContext` do rakun-test só em seu próprio `context_test.bp`; `installDocument(…)` do jhonstart-dom-test 11×.

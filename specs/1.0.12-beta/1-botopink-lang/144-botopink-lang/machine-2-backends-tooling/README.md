@@ -710,7 +710,10 @@ Each track runs it at the end of its last thread in that tree (07 for erika); ve
 script's docstring — changed lines differ only by a deleted `;`, `botopink format` before/after
 byte-identical, cells green before and after.
 
-- [ ] the five trees at 0 sites (step 1's command re-run answers 0)
+- [ ] the library trees at 0 sites (step 1's command re-run, one file at a time — over several files the script raises
+      `IndexError`): emilia, jhonstart and onze at 0 (their commits on `feat`); the other thirteen libraries and
+      vscode-extension had none; rakun's 4 wait on 150 s29 (its hook red on `sql_build_test.bp:148`); botopink-lang's
+      own 64 (`libs/std`, `conformance/`, the rest) before step 3
 
 #### Step 3 — the parser refuses the `;` (was `16-formatter` s3)
 
@@ -1689,12 +1692,14 @@ After the B-00 group, B-00i included (the collection knows the terms' layout, 45
 when it dies. The wasm target's bump heap never frees; this step gives the wasm target and beam-to-wasm's translated
 code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
 
-- [ ] measured first: how far a program grows without collection — a long loop building strings, a request loop of
-      a server, onze's pages on wasm — recorded in `codegen/wat/AGENTS.md` before any design is written
-- [ ] `modules/std-wasm/src/heap.zig`: a heap per process (a `@Task`; a BEAM process in translated code), `alloc` on
-      the current process's heap, collection by copying the live values (no write barrier but on the mutable cells
-      a `var` holds), a value copied between heaps as an erlang message is, a heap released whole when its process
-      ends; unit, property and stress tests in Zig; in std-wasm's `program` table, no comptime face
+- [x] measured first, recorded in `codegen/wat/AGENTS.md` § How far a program grows without collection: a string loop
+      ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page, all
+      linear; running out already traps in `$__alloc`; onze's blog does not build on wasm, so a page of its shape
+      stands in
+- [x] `modules/std-wasm/src/heap.zig`: a heap per process over one pool, `alloc` on the current heap, minor and major
+      copying collections with no recursion, a write barrier on mutable cells, a copy between heaps as an erlang
+      message, a heap released whole, exhaustion traps; unit, property and stress tests; in the `program` table as
+      `heap.*`, no comptime face; not wired into the codegen yet. Its design points — question B-30-a
 - [ ] `alloc` leaves `wat_prelude` (449 (2)); the wasm codegen names its roots (the task's frames, the scheduler's
       queues, the cells) at each collection point; a program that allocates nothing renders byte for byte as before
 - [ ] beam-to-wasm (449 (3)): translated code allocates on the current process's heap; `test_heap` / `allocate` are

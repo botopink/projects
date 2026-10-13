@@ -71,7 +71,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
-- [ ] 144 B-30 (448, 449) — wasm memory as erlang's, in std-wasm's `heap.zig`: a heap per process (`@Task`, a translated BEAM process), collected by copying, freed whole when it ends; `alloc` leaves `wat_prelude`; its memory growth measured before the design (448) · after B-00
+- [ ] 144 B-30 (448, 449) — measured (`codegen/wat/AGENTS.md`) and `std-wasm/src/heap.zig` landed (a heap per process, copying collection, not wired yet); left: `alloc` out of `wat_prelude` with the codegen's roots, beam-to-wasm on the process heap, the exhaustion trap, a bounded long-running cell · question B-30-a
 
 ### 144 botopink-lang
 
@@ -97,6 +97,9 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 01-compiler row — `conformance/test/expr_sugar.bp` red on `feat`: erlang does not compile it, beam fails two pipe assertions (found by B-29 step H's full run) · none
 - [ ] 01-checker row — importing std `failure` brings `HostErrorName`'s variant `Error` into scope as a bare name: `Error(x)` is then refused `callee-not-a-function` (found by B-05) · none
 - [ ] 01-checker row — `import {failure.HostError}` alone: reading `e.name` fails `unknown type 'HostErrorName'` (a field's type not reachable without its module) (found by B-05) · none
+- [ ] 144 B-28 step 2 — the `;` migration: emilia, jhonstart, onze landed; rakun's 4 sites after 150 s29; botopink-lang's own 64 before step 3 · 150 s29
+- [ ] 05-wasm row — onze's blog (67 modules) does not build on wasm (found measuring B-30) · none
+- [ ] 14 row — `located_errors`' "a raise … is located at the call that raised" fails when run filtered beside other wat / wasm / comptime tests, alone and in the full suite it passes (shared state between tests) · none
 - [ ] 03-beam row — std's `unicode_test` does not assemble on beam: `Internal consistency check failed … {unassigned,{y,6}}` (baseline 106c84b3; std's declared targets are commonJS and erlang) · none
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
 - [ ] 14 s8 rest — an `Any` call with build arguments and every build-known expression computed at build (376, 380) · 01-checker s36 (stages, not built); `comptime padAll(2)` now reaches styled's `use context` · 14s8-e
