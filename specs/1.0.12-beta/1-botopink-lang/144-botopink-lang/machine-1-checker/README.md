@@ -911,6 +911,8 @@ calls the checker answers, so the two coexist).
 - [ ] a meta field of a record type, a `Type.Field<T>` (364 (2)'s data family) or a tuple: refused
       today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
       reader's scope (an `@Expr<T>` field carries such a value as written)
+      — tuple and `Type.Field<T>` fields rebuilt where read, a generic meta record keyed by its parameter
+      (`meta_field_tuple_and_field_key`); left: record-typed fields (the nested record aliased into the reader, as 385)
 - [x] an `@Expr<T>` meta field read in another module resolves its names where the annotation wrote them
       (385): each module publishes its scope (`Reflection.scopes`, `comptime/written_names.zig`), and the
       reader binds every name the annotation's arguments wrote under an unspellable alias, a private one
@@ -951,6 +953,8 @@ if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
       template's module as a literal (356), refused at the read otherwise
       (`typeinfo-all-template-value`); a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
       evaluates (row 133)
+      — strings, numbers, `bool`, `null` and arrays / tuples of them read at build (`template_reads_val_build_value`,
+      `template_val_value_not_comptime`); left: record and variant values (row 133, the template-body gap of `language-gaps.md`)
 - [x] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
       import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
 - [x] `run/template_reads_program_catalogue` (one and two built as `modules/template_reads_program_catalogue`, `modules/template_catalogue_two_themes`; none still answers an empty catalogue — 358's refusal open) — a package's template function counting the importing
@@ -1050,6 +1054,11 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | `recv?.m()` over an absent receiver | `optional_method_absent_receiver`, `optional_enum_method_call`, `optional_enum_method_absent_receiver`, `optional_record_method_absent_receiver` |
 | `a ?? ns.f()`; wasm `f64` function values; an `if` with a `null` arm | `nullish_default_namespace_call`, `optional_float_function_value`, `fn_value_float_argument`, `optional_if_null_initializer` |
 
+- [ ] `val t: Sort<Book> = Sort(by: .title)`: a field key under an annotation is refused where `Sort<Book>(by: .title)`
+      resolves — found by B-19
+- [ ] wasm: `std_decorator_leaf_import`, `std_decorator_through_namespace`, `std_decorator_unknown_through_handle` red on
+      `feat` — "`canonical` has no wasm external" at std's `testing/asserts.bp` — found by B-19
+- [ ] wasm: `pub fn main() {}`, a module nothing calls and a dependency: `compilation failed UndefinedCall` — found by B-27
 - [ ] a field read after a `?.` call link (`p(true)?.me().x`) is refused while a method there is accepted
       (`find(0)?.str().length()`); TypeScript continues the chain for both — one rule — found by B-20's Conformance step
 
@@ -1642,8 +1651,9 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
 - [x] wasm: in `#(g, h)`, calling a string-answering `h` prints a number — found by B-21's Conformance step
 - [x] wasm: `op.run(5).toString()` on a function-typed field inside `for (ops) { op -> … }`: "cannot resolve the call
       `toString/0`" — found by B-21's Conformance step
-- [ ] a type implementing a behavior imported from another module does not adopt the behavior's instance `default fn`s
+- [x] a type implementing a behavior imported from another module does not adopt the behavior's instance `default fn`s
       (`Sq(n: 3).twice()` is "'twice' is not declared in any behavior implemented for 'Sq'") — found by B-19
+      — adopted, extended behaviors included (`behavior_default_adopted_across_modules`); a generic behavior's not yet
 - [x] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25
 - [ ] Step 9's manifest key, the library's ABI (a position-independent side module, as std-wasm, or a standalone module)
       and the glue (strings in and out, freeing, `?T`'s null) · question B-25-d
