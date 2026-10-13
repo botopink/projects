@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**82 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**87 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1163,6 +1163,81 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-15's meta-read row.
+
+#### B-10-a · `Field` reflects a field's default: what is the member called, `default` being a keyword? (decisions 280, 308; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `defaultValue: ?@Expr<unknown>`** — the default as the expression written, `null` when none; `default` is a keyword and no field takes a keyword's name. An `@Expr` keeps the default code, never a value computed at build (281).
+- **Measured.** `Field` has no default member; validation's marker reads defaults by hand. A field named `default` is a parse error.
+- **Options.**
+  (a) `defaultValue: ?@Expr<unknown>`.
+  ```bp
+  for (f in decl.fields) { if (f.defaultValue != null) … }
+  ```
+  (b) `hasDefault: bool` only.
+  ```bp
+  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-b · `Decl.variants`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — a payload variant lists its fields as `decl.fields` does; a section is not an entry, its variants carry the section's name. One entry per constructible variant.
+- **Measured.** `Decl.variants` carries names only, sections listed among them.
+- **Options.**
+  (a) Typed entries, sections as a field.
+  ```bp
+  decl.variants[0].fields[0].name   // "amount"
+  ```
+  (b) As today: names.
+  ```bp
+  decl.variants[0]   // "Paid" — a name, sections among them
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-c · `clock.formatIso8601`: which text is the one answer? (decision 497; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): always milliseconds, `.sssZ`** — `2026-10-12T20:31:02.000Z` on every target; a fixed width sorts as text and parses back with one rule.
+- **Measured.** commonJS answers `.sssZ` always (node's `toISOString`); erlang never writes milliseconds.
+- **Options.**
+  (a) Always `.sssZ`.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
+  ```
+  (b) Milliseconds only when nonzero.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-d · A bare variant in expression position (`Two(t)`, no enum qualifier): refused or lowered? (144 B-10 G2)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused at the call, located, naming `.Two(t)` or `E.Two(t)`** — `docs.md` already says it is not lowered; the checker accepting what no backend emits is the defect. One spelling: the qualified or the dot form.
+- **Measured.** `Two(t)` checks, then fails on commonJS, erlang and beam; `docs.md` calls it unlowered.
+- **Options.**
+  (a) Refused.
+  ```bp
+  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
+  ```
+  (b) Lowered on every target.
+  ```bp
+  val m = Two(t);   // a Mode, on every target
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10's row.
+
+#### B-10-e · How does a type alias of `@Component<Styled>` implement a behavior? (144 B-10 G2)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): it does not — an alias is its target**: `Styleable` is implemented by `Styled`, and `@Component<Styled>` reaches it through `R`; an alias declares nothing (a second name, not a type). styled's marker is rewritten over `Styled`'s implementation.
+- **Measured.** `pub val StyledView = @Component<Styled>` cannot carry `implement`; no spelling exists.
+- **Options.**
+  (a) An alias with `implement`.
+  ```bp
+  pub val StyledView = @Component<Styled> implement Styleable;
+  ```
+  (b) Only the target type implements.
+  ```bp
+  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-10's row.
 
 ### 02-std-and-packaging
 

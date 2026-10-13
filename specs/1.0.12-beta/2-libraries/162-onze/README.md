@@ -717,6 +717,13 @@ After 163 s7 (the shared hook checks `conformance/`).
       is not a program given its context or turned into ` ```text `
 - [ ] every cell green on the targets the library's manifests declare, through the library's own hook
 
+### 162 s12 — onze-content's field marker as a type decorator (from 144 B-10 G5)
+
+**Repository:** onze (`--repo onze`) · **Model:** sonnet
+
+- [ ] the field marker onze-content cannot read becomes a type decorator over `decl.fields` (decision 306, 121
+      step 10): no compiler change; its `LANGUAGE GAP` marker and the gap row go
+
 ### 162 Conformance — the front's last step (decision 465)
 
 **Repository:** onze (`--repo onze`) · **Model:** opus

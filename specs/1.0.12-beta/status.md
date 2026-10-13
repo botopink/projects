@@ -119,6 +119,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 146 validation
 
+- [ ] 146 s3 — three API halves from 144 B-10: a comptime parameter's default, an argument read as a value (125 s12, s7), `#[each(email)]` (125 s8) · nothing
 - [ ] 125 s4–s12 residue — `#[tag]`'s refusal and `#[wireName]` (`Decl.variants` gap) · the type-level `#[check]` (its message and rule through 395's typed member: validation's patch held on erlang's decode case, 144 B-10 G1 — 146 s1), `#[map]` / `#[tryMap]` / `#[codec]`, signature refusals (01-checker s24) · `Type`'s derived types (01-checker s28, 134 s4) · reflection by `@typeInfo(T).fields` and 298
 
 ### 155 http
@@ -197,6 +198,10 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 129 s1–4 (337) — built, patches landing with the coordinator: `mod m;` binds the namespace `m` (the walk, `private-module`, re-export by `val` and by `type` as one declaration, `redundant-module-import`); the shorthand `import {x};` refused (`shorthand-import`, fix written; `outsideShorthandReach` and the resolver's bare-name edge deleted); `docs.md` § Modules / § Imports; the language server follows the namespace; migrated: botopink-lang (the suite, six compiler-core tests), rakun 389 items in 39 files, jhonstart 9 in 4 — a consumer patch per library (188); 138 s3 already landed
 
+### 148 styled
+
+- [ ] 148 s3 — `Sheet.add` over what `toStyled()` answers, a component (144 B-10 G2) · nothing
+
 ### 149 jhonstart
 
 - [ ] 27 s2 box 2 — `use linkStatus()` outside `#[client]` refused · 26 s8 (`#[clientOnly]`, `src/stage.bp`) on 01-checker s23 (`Decl.hooks`)
@@ -258,6 +263,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 ### 162 onze
 
+- [ ] 162 s12 — onze-content's field marker as a type decorator over `decl.fields` (306; 144 B-10 G5) · nothing
 - [ ] 49 s2–5 (W3 → W7) — query, headers, dispatcher; the digest's sink; the public root; the dynamic mark · 102 s3 · s3: 26 s4 + 17 · s4: 65 s1 · s5: 22 s4 · 49-e
 - [ ] 50 s2–7, s9 (W3 → W8) — `dev`, `prerender/`, the signal, `bin/onze`, the bundler tail, the defaults table; the `@/` alias gone (218) · 102 s3 · s2: 50-b · s4, s7: 506 · s5: 71 s2 · s6: 27 s1
 - [ ] 51 s2–6 (W7) — single flight and the route, the prop table, the metrics generator, the OG defaults · 22 · s4: 52-a
@@ -340,6 +346,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] 144 B-02 (305) — annotations speak botopink: `label = value` refused naming `label:` (`annotation_label_equals`); `fn: name` resolved to a private function on every target, a misspelt one the unbound-name error (`external_fn_unbound`), renamed with it; `op:` / `wasi:` checked by one rule with `fn:`; the old prefixed strings refused naming the labelled form (`external_prefixed_fn_refused`); no prefixed string left in `libs/**` (a scan `zig build test` runs); the formatter prints `label: value`; `keyed: true` everywhere; no library used the old forms — its Conformance step open
+- [x] 144 B-10 (part; 430) — two modules declaring one type name keep two types on erlang (`two_modules_one_type_name`, `two_test_modules_one_type_name`); an associated fn named without a call a function value (`associated_fn_as_value`); a method's behavior-typed parameter takes an implementer; a `Decorator` parameter takes a decorator's name; a package's module as a namespace in type and value position (`package_module_namespace`); validation's four markers and their gap rows gone — left: `Decl.variants`' payload, `Field`'s default, `formatIso8601`, a bare variant, a wrapper alias's behavior (questions B-10-a … B-10-e), the dot-shorthand enum on commonJS / erlang, G3; handed: 146 s3, 148 s3, 162 s12
 - [x] 144 B-15 (302) — a tag is a `@Decl`: `DeclKind.Element` / `Component`, `decl.component`, `decl.attr(name)`; a template builds a tag's handle (`q.tagDecl`), runs its annotation (`q.annotate`) and reads `meta` / `metaAll`; `addMember` / `addType` / `@emit` on a tag refused (`tag-annotation-output`), a second `setMeta` of one type refused (`tag_decl_meta`, `tag_annotation_add_member`, `tag_annotation_meta_twice`, `type_named_like_decl_kind`); jhonstart's `html` over it, its marker and the gap row gone — left: questions B-15-a, B-15-b, B-15-c, `mapSpanToLoc`'s one-line literal, its Conformance step
 - [x] 144 B-22 (part) — `String.parseInt` / `parseFloat` answer on wasm, a `@Result` holds an `f64` / `i64` whole (`string_parse_float_every_target`, `result_wide_payloads`); a catch-all binder over a record on wasm (`case_catch_all_binder_record`); a record field named `tag` prints as a field on commonJS (`record_field_named_tag`); a std module-level `var` on erlang no longer reproduces (`module_var_in_dependency`); `format-check.sh` green for std — left: `case_value_union` (its design pass), the enum section (question B-22-b), the imported enum variant on wasm, `expr_sugar`'s pipes on erlang / beam, the bare-name arm, `Float.toString`'s text
 - [x] 144 B-23 (part; 247, 255, 319) — a literal past its type's range refused on every target, `wide_literal_past_js_safe_integer` the value on four; a type application through a namespace (`collections.Dict<string, i32>.empty()`, `type_application_through_namespace`, `_mismatch`); a comptime body's diagnostic names its file (`decorator_raise_names_body_file`); `@External.Wasm`'s `op:` / `wasi:` types read on every target (`external_wasm_op_type_on_every_target`, `external_wasm_adapter_signature_on_every_target`; `external_wasm_task_adapter_shape` now refused on every target); the literal halves of two `language-gaps.md` rows gone — left: 310 (a type's identity by module, question B-23-a), the cold gate in its Conformance step

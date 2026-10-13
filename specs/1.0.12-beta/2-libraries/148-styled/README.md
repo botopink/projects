@@ -103,6 +103,13 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 - [ ] `zig build test-libs`: emilia, jhonstart, onze green
 - [ ] `grep -rn "bpp\|jhonstart" repository/css repository/styled repository/emilia/modules` empty (338)
 
+### 148 s3 — `Sheet.add` over a component (from 144 B-10 G2)
+
+**Repository:** styled (`--repo styled`) · **Model:** sonnet
+
+- [ ] `Sheet.add` takes what `toStyled()` answers — a component — once a method's behavior-typed parameter takes an
+      implementer (144 B-10, `method_behavior_parameter_implementer`); styled's marker for it and its gap row go
+
 ### 148 Conformance — the front's last step (decision 465)
 
 **Repository:** styled (`--repo styled`) · **Model:** opus

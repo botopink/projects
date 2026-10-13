@@ -87,22 +87,44 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
   props type; a type alias of `@Component` in a return and `@ExprCustom<View>` (re-measured after 388).
 - **G5 onze** — a field marker cannot be read by the library that takes the type.
 
-- [ ] G1, first: two test modules declaring one type name stay two types under `botopink test --target erlang`
+- [x] G1, first: two test modules declaring one type name stay two types under `botopink test --target erlang`
       (`language-gaps.md`'s row, validation `test/schema_test.bp`'s marker) — measured repro: validation's
       `test/refine_and_messages_example_test.bp` case "decode runs the type-level rules…" is red on erlang because
       another test module's `Signup` answers `Signup.decode`; it holds 146 s1's typed-member route (430)
 - [ ] G1: every row closed by a cell on the four targets; validation's markers removed in the landing (one
       consumer commit); the rows and their Marker index rows gone
-- [ ] G2: the same for styled's and emilia's markers
+      — built: a static member as a value (`associated_fn_as_value`), the spread in an added member and the many
+      locals (pins `decorator_member_record_update`, `decorator_lambda_many_locals`), a `Decorator` parameter taking
+      a decorator's name (`decorator_argument_decorator_name`); validation's four markers and their rows gone. Left:
+- [ ] `Decl.variants`' entries carry a variant's payload fields and annotations · question B-10-b
+- [ ] `Field` reflects a field's default · question B-10-a
+- [ ] `clock.formatIso8601` one text on erlang and commonJS (497) · question B-10-c
+- [ ] `Decorator` an unknown type in a package's module: validation's last marker of it rewritten over
+      `decorator_argument_decorator_name`'s rule, or the row re-measured
+- [ ] handed to 146 (their compiler halves built): the comptime parameter default and the raw lexeme (125 s12, s7),
+      `#[each("email")]` → `#[each(email)]` (125 s8)
+- [ ] G2: the same for styled's and emilia's markers — built: a method's behavior-typed parameter takes an
+      implementer (`method_behavior_parameter_implementer`); a template-reached enum variant or private record no
+      longer reproduces across a package. Left:
+- [ ] a bare variant in expression position (`Two(t)`) checks but fails on commonJS, erlang and beam · question B-10-d
+- [ ] an imported enum's variant by dot-shorthand, the enum not imported (reached through a signature): unbound
+      `Mode` on commonJS and erlang (beam and wasm right) — the backends import a type the module reaches only
+      through a signature
+- [ ] a wrapper's type alias implementing a behavior (`StyledView implement Styleable` over `@Component<Styled>`) ·
+      question B-10-e
+- [ ] handed to 148: styled's `Sheet.add` half (an API change; `toStyled()` answers a component)
+- [ ] waits elsewhere: a template reading another expansion's value (119's design), a decorator body calling a host
+      function (B-00c), a library template reading the program's catalogue (B-19)
 - [ ] G3: the same for jhonstart's markers (after B-15 and 388)
-- [ ] G5: the same for onze-content's marker
+- [ ] G5: the same for onze-content's marker — no compiler change: decision 306 makes it a type decorator over
+      `decl.fields` (121 step 10), handed to 162
 
 **Impacted tests:** a `run/` or `reject/` cell per row; the libraries' suites. **Model:** opus for checker rows,
 sonnet for a backend row with its repro. **Consumer commits:** validation, styled, emilia, jhonstart, onze.
 
 #### Rows other fronts found — part (was `01-checker` rows box 2)
 
-- [ ] package module namespace in type and value position (`import {report} from "validation"`, then
+- [x] package module namespace in type and value position (`import {report} from "validation"`, then
       `report.X`) as for std modules — exports known only to `comptime.zig`'s `resolveImports`
 
 #### B-10 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)

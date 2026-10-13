@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**82 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**87 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1162,6 +1162,81 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha da leitura de meta do 144 B-15.
+
+#### B-10-a · `Field` reflete o default de um campo: como se chama o membro, sendo `default` uma palavra reservada? (decisões 280, 308; 144 B-10 G1)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `defaultValue: ?@Expr<unknown>`** — o default como a expressão escrita, `null` quando não há; `default` é palavra reservada e nenhum campo recebe o nome de uma. Um `@Expr` guarda o código do default, nunca um valor calculado no build (281).
+- **Medido.** `Field` não tem membro de default; o marcador do validation lê defaults à mão. Um campo chamado `default` é erro de parse.
+- **Opções.**
+  (a) `defaultValue: ?@Expr<unknown>`.
+  ```bp
+  for (f in decl.fields) { if (f.defaultValue != null) … }
+  ```
+  (b) Só `hasDefault: bool`.
+  ```bp
+  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-b · `Decl.variants`: o que uma entrada carrega, incluindo uma seção? (decisões 268, 298; 144 B-10 G1)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — uma variante com payload lista seus campos como `decl.fields`; uma seção não é entrada, suas variantes carregam o nome da seção. Uma entrada por variante construível.
+- **Medido.** `Decl.variants` carrega só nomes, com as seções listadas entre eles.
+- **Opções.**
+  (a) Entradas tipadas, seções como campo.
+  ```bp
+  decl.variants[0].fields[0].name   // "amount"
+  ```
+  (b) Como hoje: nomes.
+  ```bp
+  decl.variants[0]   // "Paid" — a name, sections among them
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-c · `clock.formatIso8601`: qual texto é a resposta única? (decisão 497; 144 B-10 G1)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sempre milissegundos, `.sssZ`** — `2026-10-12T20:31:02.000Z` em todo target; uma largura fixa ordena como texto e é lida de volta por uma regra só.
+- **Medido.** o commonJS responde sempre `.sssZ` (o `toISOString` do node); o erlang nunca escreve milissegundos.
+- **Opções.**
+  (a) Sempre `.sssZ`.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
+  ```
+  (b) Milissegundos só quando não são zero.
+  ```bp
+  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-d · Uma variante sem qualificador em posição de expressão (`Two(t)`): recusada ou gerada? (144 B-10 G2)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusada na chamada, localizada, nomeando `.Two(t)` ou `E.Two(t)`** — o `docs.md` já diz que não é gerada; o checker aceitar o que nenhum backend emite é o defeito. Uma grafia: a qualificada ou a com ponto.
+- **Medido.** `Two(t)` passa no checker e falha no commonJS, erlang e beam; o `docs.md` diz que não é gerada.
+- **Opções.**
+  (a) Recusada.
+  ```bp
+  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
+  ```
+  (b) Gerada em todo target.
+  ```bp
+  val m = Two(t);   // a Mode, on every target
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-10.
+
+#### B-10-e · Como um alias de tipo de `@Component<Styled>` implementa um behavior? (144 B-10 G2)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não implementa — um alias é o seu alvo**: `Styleable` é implementado por `Styled`, e `@Component<Styled>` chega a ele por `R`; um alias não declara nada (um segundo nome, não um tipo). O marcador do styled é reescrito sobre a implementação de `Styled`.
+- **Medido.** `pub val StyledView = @Component<Styled>` não aceita `implement`; não existe grafia.
+- **Opções.**
+  (a) Um alias com `implement`.
+  ```bp
+  pub val StyledView = @Component<Styled> implement Styleable;
+  ```
+  (b) Só o tipo alvo implementa.
+  ```bp
+  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha do 144 B-10.
 
 ### 02-std-and-packaging
 
