@@ -1453,9 +1453,11 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
       per name; `import_two_types_one_name` accepted on four targets, one alias alone too; the two-packages row falls with
       it. A local type beside an aliased import stays `import-name-collision` (question B-23-a; `decorator_member_type_same_name`
       with it). Left:
-- [ ] a std type in the pair (`import {collections.Dict as D} from "std"` beside an aliased `Dict`) still refused
-- [ ] an imported function's signature renamed through a namespace call (`m.f()`), an imported template function and
+- [x] a std type in the pair (`import {collections.Dict as D} from "std"` beside an aliased `Dict`) still refused
+      — legal (`import_std_type_beside_aliased_type`); an un-aliased non-std type beside an aliased std one stays refused
+- [x] an imported function's signature renamed through a namespace call (`m.f()`), an imported template function and
       decorator support, as it is for a plain import by name
+      — `import_two_types_one_name_reached_indirectly`
 - [x] `@External.Wasm` binding read on every target: checker walk over `external_variants` with
       `codegen/wat/host_binding.zig`'s `parse`, so a misspelt `op:` no wasm build reaches is refused
       (from `05-wasm` step 5)
