@@ -1693,80 +1693,89 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
 
 #### Step 0 — Measure what the unfold stands on (was `116-bpp-file-format` s0)
 
-- [ ] `tests/language/modules/` cell: a package's `pub default fn` over `comptime template:
+- [x] `tests/language/modules/` cell: a package's `pub default fn` over `comptime template:
       @Expr<string>`, imported `import t from "<package>";`, called with a literal from a consumer,
       on every target the language suite runs
-- [ ] decision 199's header rule over every `.bpp` under `specs/1.0.12-beta/*/*/examples/`: each
+- [x] decision 199's header rule over every `.bpp` under `specs/1.0.12-beta/*/*/examples/`: each
       header item listed as declaration (`import`, `type`, `pub`) or statement (`val`, `use`);
       every unnamed item (`if`, expression statement, private `fn`, `test`, decorated
       declaration) listed with its file
-- [ ] a module hand-assembled as the unfold would: a header-line type error and one inside the
+- [x] a module hand-assembled as the unfold would: a header-line type error and one inside the
       literal each reported at the `.bpp` line
 
 #### Step 2 — The unfold (was `116-bpp-file-format` s2)
 
-- [ ] the return type is read from the default function's signature (decision 275): the fixture
+- [x] the return type is read from the default function's signature (decision 275): the fixture
       package's `@ExprCustom<i32>` gives `-> i32`; jhonstart's gives `-> @Component<Element>`
       for a header with and without `use` / `await`; the toolchain spells no type name
-- [ ] `tests/language/modules/bpp_*`: fixture package whose default function is **not**
+- [x] `tests/language/modules/bpp_*`: fixture package whose default function is **not**
       jhonstart's (answers the literal's length) — `.bpp` with `type Props` unfolds to
       `pub default fn (props: Props)`, without to `pub default fn ()`, no header = all
       literal; fixture served unchanged (proof the toolchain knows no library)
-- [ ] the file's grammar (212, 338): the header from the first line to the first separator line;
+- [x] the file's grammar (212, 338): the header from the first line to the first separator line;
       `---` → markup to the end of the file; `--- style ---` → style section closed by `---`, then
       markup; no separator line → markup only (a markup-only file compiles)
-- [ ] a first line `---` refused at line 1: `error: the header starts on the first line; a .bpp has
+- [x] a first line `---` refused at line 1: `error: the header starts on the first line; a .bpp has
       no opening ---`
-- [ ] each refused at its line: a `--- style ---` after the markup; a second style section; an
+- [x] each refused at its line: a `--- style ---` after the markup; a second style section; an
       unclosed style section (at its `--- style ---` line)
 - [ ] the style section unfolds to `use <style> """<the section>""";` after the header's
       statements, before `return html """…""";`, with `import <style> from "<bpp.style>";` binding
       no name the header can reach — § Mechanism's `Props(title)` example unfolds as spelled there
+      — built; its success cell waits on the `@ExprCustom<@Component<T>>` gap (question B-10-g)
 - [ ] fixture style package (not `jhonstart-styled`) whose default function answers something
       trivial (the section's length): a `.bpp` with a style section compiles onto it unchanged —
       the toolchain knows no library for the style section either
+      — waits on question B-10-g
 - [ ] a diagnostic inside the style section reported at its `.bpp` line, like the markup's
-- [ ] the default function anonymous (289): `import {components.PostCard};` binds `PostCard` in the
+      — waits on question B-10-g
+- [x] the default function anonymous (289): `import {components.PostCard};` binds `PostCard` in the
       importer, an alias another name; a file name that is no identifier (`not-found.bpp`) unfolds;
       `decl.name` is the file name; `page.bpp` whose header imports and writes `#[page(…)]` compiles
-- [ ] declarations at module level, statements in the body in order; a statement reads `props`
-- [ ] a decorator on the header's last line, before the separator line, annotates the function
+- [x] declarations at module level, statements in the body in order; a statement reads `props`
+- [x] a decorator on the header's last line, before the separator line, annotates the function
       (221 (1)); without one the function carries none — no decorator from the file name, no
       `bppKinds` read (285)
-- [ ] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
+- [x] `X.bp` beside `X.bpp`, and `.bpp` with no key — each refused with § Mechanism's message
 - [ ] prelude (270): fixture with `prelude.bp` — markup-only `.bpp` compiles; module and emitted
       code import only used items; header name beats prelude's; `prelude.bp` holding a `fn`, another
       package's item or an activation refused at its line. The scope (`compiler-core`: last scope, import-item list) is
       `01-compiler/01-checker`'s, handed by this front
+      — waits on question 116-a
 - [ ] `grep -riE 'rakun|jhonstart|erika|emilia|onze'` over `modules/compiler-core/src` and the
       edited `compiler-cli` files is empty
+      — `libs.zig` and `resolver.zig` name libraries today; the unfold's code names none
 
 #### Step 3 — The extension in every tool's list (was `116-bpp-file-format` s3)
 
 - [ ] every § Mechanism site reads one shared list instead of spelling `.bp`
+      — resolver, libs, scanner, format and the lib-test runner read `manifest.SOURCE_EXTENSIONS`; the language server's sites left
 - [ ] `botopink build`, `check`, `run`, `test` over a `.bpp` project; test runner discovers a
       `test` declared in a header
-- [ ] `mod x;` resolves `x.bp`, then `x.bpp`, then `x/mod.bp`
+      — build / check / run proven by the cells; a `test` declared in a header not pinned
+- [x] `mod x;` resolves `x.bp`, then `x.bpp`, then `x/mod.bp`
 
 #### Step 4 — The span mapping and the editor — part (was `116-bpp-file-format` s4 boxes 1, 2)
 
 - [ ] header-line type error and a `failAt` in the markup reported at their `.bpp` line and
       column by `botopink check` and the language server
+      — `botopink check` and `build` report the `.bpp` line; the language server left
 - [ ] hover, go-to-definition in the header; default function's overlay served as the markup's
       tokens — the extension ships no grammar of the file
+      — the language server does not unfold `.bpp` yet (`project_graph`'s roles, the open document's unfold and mapping)
 
 #### Step 5 — The formatter (was `116-bpp-file-format` s5)
 
-- [ ] `botopink format` rewrites a badly indented header as a module, leaves every byte of the style
+- [x] `botopink format` rewrites a badly indented header as a module, leaves every byte of the style
       section and the markup unchanged; `format --check` fails on the header, passes the style
       section and the markup
-- [ ] `scripts/format-check.sh` walks `.bpp` files — header under the gate's format stage like any `.bp`
+- [x] `scripts/format-check.sh` walks `.bpp` files — header under the gate's format stage like any `.bp`
 
 #### Gate additions (was `116-bpp-file-format` gate)
 
 **Gate:** standard (fronts.md § Gate), in `repository/botopink-lang` and `repository/vscode-extension`, plus:
 - [ ] `zig build test-libs`: every library green — no existing `.bp` file changes meaning
-- [ ] `docs.md` § Modules documents `.bpp`, every fence compiled by `zig build test-docs`
+- [x] `docs.md` § Modules documents `.bpp`, every fence compiled by `zig build test-docs`
 
 #### Step 22 — the prelude scope (decision 270) (was `01-checker` s22)
 
@@ -1785,12 +1794,12 @@ item of another package, an activation, default function's name bound by the hea
 
 #### Step 9 — a dependency's sidecars and imports answer as its own build does (was `26-cli-tooling` s9)
 
-- [ ] a transitive dependency's sidecar ships: a project outside the rakun workspace depending on a
+- [x] a transitive dependency's sidecar ships: a project outside the rakun workspace depending on a
       member by `path` failed `build` with "`rakun_actuator` / `rakun_probes` is not a sidecar of
       this project" — `libs.sidecarOwner` asked only the project's direct `dependencies`, then the
       roots by name; it now walks the closure the build resolved (`closureOwner`) ·
       `tests/cli_contract.sh` "a dependency of a path dependency", `libs.zig` unit test
-- [ ] a dependency's module importing a package it does not declare is decision 242's located
+- [x] a dependency's module importing a package it does not declare is decision 242's located
       `unresolved import source` (at the dependency's file), not `unbound variable` —
       `libs.loadOne` runs `resolver.checkSources` against the dependency's own manifest ·
       `modules/dependency_imports_undeclared_package`, four targets
@@ -1801,7 +1810,7 @@ exercise every sidecar path)
 
 #### Rows other fronts found (was `26-cli-tooling` rows)
 
-- [ ] `botopink check` / `build` print a type error's message and box but not its hint: the
+- [x] `botopink check` / `build` print a type error's message and box but not its hint: the
       `PersistentTerm` write (`infer.zig`'s hint names `#[@BeamMemory.Ets]`) and
       `std-unsupported-on-target` carry one and the terminal shows none; a parse error's
       `= hint:` line prints (measured by `07` step 6; `docs.md` § `@BeamMemory` cites the hint)
@@ -1813,8 +1822,9 @@ exercise every sidecar path)
 `import_type_alias`); language-server tests with the `project_graph.zig` cells (one `lsp/` snapshot
 per import spelling).
 
-- [ ] `run.sh --target all` green on the `modules/import_*` cells — measured, the box ticked
+- [x] `run.sh --target all` green on the `modules/import_*` cells — measured, the box ticked
 - [ ] `grep -l 'import {' modules/language-server/snapshots/lsp/*.snap.md` lists one snapshot per spelling (dotted, grouped, `*`, `as`, a folder leaf); missing ones added
+      — one per spelling but `*`, whose only spelling is refused
 - [ ] the five `AGENTS.md` name the tree and the grammar; `docs.md` § imports / § std verified against the grammar (07 places any correction)
 
 #### Step 2 — the confirmations (was `23-std-purity` s2)
@@ -1861,8 +1871,8 @@ row for 02 and 05, not edited here.
 
 #### Step 1 — std (390) (was `20-snap` s1)
 
-- [ ] `mocks.verify`'s message pinned with `throwsWith` on both targets (§ 1, CONVERT)
-- [ ] `libs/std/AGENTS.md`: the inline literals and the four `__snapshots__/` path-rule files are the evidence
+- [x] `mocks.verify`'s message pinned with `throwsWith` on both targets (§ 1, CONVERT)
+- [x] `libs/std/AGENTS.md`: the inline literals and the four `__snapshots__/` path-rule files are the evidence
 
 #### Step 4 residue — the engine under every `-test` member (was `97-std-dedupe` s4 residue)
 
@@ -1891,7 +1901,9 @@ onze 50's boxes take their (b) shape.
 
 - [ ] main checkout after the library steps land: exit 0; one README removed: exit 1 naming it; one
       `-test` member emptied: exit 1 naming it
+      — `scripts/check-packaging.sh` written; exits 1 today naming 23 example members without a README and 4 `-test` members without a helper — exit 0 after the library steps; it checks the helper's `assert<Subject>(loc: SourceLocation` signature (snapshots moved to `snap`, 391)
 - [ ] `docs/botopink-json.md` § Examples states the README and helper rules, links the script
+      — the rules are in `conformance/docs.md` § Examples and `-test` members (`docs/botopink-json.md` became it)
 
 #### Step 3 — front 95 closed as a confirmation (was `98-packaging-tail` s3)
 
@@ -1899,9 +1911,14 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
 `files`, listed by `zig build test-libs`; `mocking-lib-final` already resolves. Only the
 `docs/botopink-json.md` line to write.
 
-- [ ] `git -C repository/onze rev-parse mocking-lib-final` resolves; `git submodule status
+- [x] `git -C repository/onze rev-parse mocking-lib-final` resolves; `git submodule status
       repository/onze` is the orchestrator's commit; `docs/botopink-json.md` says in one line the
       orchestrator repository carries the mocking library as tagged history
+
+- [ ] a `.bpp` declaration written after a statement: moved after the function, its location mapped back (as built), or
+      refused · question B-27-a
+- [ ] `not-found.bpp`: how an importer spells a file name that is not an identifier · question B-27-b
+- [ ] 97 s6 rewritten to decision 506's answer (c) — its boxes are written for (a) / (b) · question B-27-c
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

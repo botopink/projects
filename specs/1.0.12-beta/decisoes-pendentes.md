@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**110 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1542,6 +1542,53 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do braço do 144 B-21.
+
+#### B-27-a · Uma declaração no header de um `.bpp` escrita depois de uma instrução: movida ou recusada? (decisões 199, 212; 144 B-27)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusada na declaração, localizada, nomeando a instrução antes dela** — o header se lê de cima para baixo como escrito; uma declaração depois de uma instrução rodaria numa ordem que o arquivo não mostra. Muda: uma cell de recusa; o unfold deixa de movê-la.
+- **Medido.** O unfold a move para depois da função, com a localização mapeada de volta.
+- **Opções.**
+  (a) Recusada.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // refused: a declaration after a statement
+  ```
+  (b) Movida, como construído.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // moved to module level
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do unfold do 144 B-27.
+
+#### B-27-b · Como quem importa escreve um `.bpp` cujo nome não é identificador (`not-found.bpp`)? (decisões 199, 289; 144 B-27)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não escreve — um arquivo assim é a folha de uma rota, lida pelo router pelo caminho, nunca importada; importá-lo é recusado nomeando o arquivo** — um nome de módulo é um identificador em todo outro lugar.
+- **Medido.** Não existe grafia de import; `not-found.bpp` é convenção do jhonstart.
+- **Opções.**
+  (a) Não importável.
+  ```bp
+  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
+  ```
+  (b) Um caminho entre aspas.
+  ```bp
+  import "not-found" as NotFound;
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `not-found.bpp` do 144 B-27.
+
+#### B-27-c · O 97 s6 sob a resposta (c) da decisão 506: quais são as suas caixas? (decisão 506; 144 B-27)
+- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o passo é reescrito para a metade std de (c), as caixas (a) / (b) removidas** — o coordenador o escreve a partir do texto da 506 (c) na próxima passada de specs; esta pergunta registra que o passo como escrito não pode ser construído.
+- **Medido.** A 506 foi respondida (c); as caixas do 97 s6 estão escritas para (a) e (b).
+- **Opções.**
+  (a) Reescrito para (c).
+  ```bp
+  // 97 s6: (c)'s std half
+  ```
+  (b) Mantido como escrito.
+  ```bp
+  // 97 s6: under (a) … under (b) …
+  ```
+- **Recomendação.** (a).
+- **Trava.** O 97 s6 do 144 B-27.
 
 ### 02-std-and-packaging
 

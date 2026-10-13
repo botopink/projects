@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**110 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1543,6 +1543,53 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-21's arm row.
+
+#### B-27-a · A `.bpp` header declaration written after a statement: moved or refused? (decisions 199, 212; 144 B-27)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused at the declaration, located, naming the statement before it** — the header reads top to bottom as written; a declaration after a statement would run in an order the file does not show. Changes: a refusal cell; the unfold stops moving it.
+- **Measured.** The unfold moves it after the function, its location mapped back.
+- **Options.**
+  (a) Refused.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // refused: a declaration after a statement
+  ```
+  (b) Moved, as built.
+  ```bp
+  val n = props.count;
+fn label() -> string { … }   // moved to module level
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-27's unfold row.
+
+#### B-27-b · How does an importer spell a `.bpp` file whose name is not an identifier (`not-found.bpp`)? (decisions 199, 289; 144 B-27)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): it does not — such a file is a route's leaf, read by the router by path, never imported; importing it is refused naming the file** — a module name is an identifier everywhere else.
+- **Measured.** No importer spelling exists; `not-found.bpp` is jhonstart's convention.
+- **Options.**
+  (a) Not importable.
+  ```bp
+  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
+  ```
+  (b) A quoted path.
+  ```bp
+  import "not-found" as NotFound;
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-27's `not-found.bpp` row.
+
+#### B-27-c · 97 s6 under decision 506's answer (c): what are its boxes? (decision 506; 144 B-27)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): the step is rewritten to (c)'s std half, its (a) / (b) boxes removed** — the coordinator writes it from 506 (c)'s text at the next spec pass; this question records that the step as written cannot be built.
+- **Measured.** 506 answered (c); 97 s6's boxes are written for (a) and (b).
+- **Options.**
+  (a) Rewritten to (c).
+  ```bp
+  // 97 s6: (c)'s std half
+  ```
+  (b) Kept as written.
+  ```bp
+  // 97 s6: under (a) … under (b) …
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-27's 97 s6.
 
 ### 02-std-and-packaging
 
