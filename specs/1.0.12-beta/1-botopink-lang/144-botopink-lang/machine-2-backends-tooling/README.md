@@ -365,14 +365,18 @@ beam: `try … catch Class:Reason` building `HostError` (`decision 489`); wasm: 
 refused on `op:` / `fn:` (`decision 491`). Consequence of 431 + 432, recorded (no question): a `throws: true` `@Task`
 binding on commonJS rejects with `HostError(e.message, e.name)`.
 
-**Impacted tests:** new `run/external_throws_host_error` (four targets); `run/host_node_task_result` rewritten;
+**Impacted tests:** new `modules/external_result_host_error` (four targets); `run/host_node_task_result` rewritten;
 the host-task JS snapshots; the erlang / beam columns (`run/host_erlang_task_result` unchanged). **Model:** opus
 for the shape, sonnet per backend. **Consumer commits:** none.
 
 #### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 2)
 
-- [ ] each backend wraps the cell (commonJS `try/catch`, a rejected Promise; erlang and beam `try … catch Class:Reason`;
-      wasm the `wasi:` adapter's error) — handed to 02–05 —, `run/external_throws_host_error` on the four targets
+- [x] each backend wraps a `result: true` cell: commonJS `__bp_host_result` / `__bp_host_result_task` (a throw, a
+      rejection, a throw before the Promise), erlang and beam `try … of … catch Class:Reason:Stack` (an `{error, R}`
+      answer an `Error` too), host methods the same; `HostError` per 489; wasm wraps nothing (no `wasi:` adapter fails,
+      `result:` refused on `op:` / `fn:`) — `modules/external_result_host_error` on the four targets,
+      `host_node_task_result` rewritten; std `io/http`'s `fetch` over a private `result: true` binding (486). A
+      `result: true` `@Task` on commonJS resolves to `{error: HostError}` until B-06 makes it reject (432)
 
 #### B-05 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -453,6 +457,10 @@ replacement).
 
 #### Step 18 — `failure`: `HostError`, `Failure`, `attempt` (decision 431; with `01-checker` step 42) — part (was `97-std-dedupe` s18 boxes 2, 3)
 
+- [ ] `failure.attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task` form (moved from B-04's box); on wasm
+      per 491
+- [ ] decision 126's flagless `__bp_host_task` conversion removed (490): B-05 kept it because jhonstart's
+      `__jhTryTask` relies on it — it goes with jhonstart's `attempt` consumer commit below
 - [ ] `testing.asserts`' `throws` / `throwsWith` over `attempt`, the private `tryCatch` cell gone; jhonstart's
       `__jhTryValue` / `__jhTryTask` replaced by `attempt` in `05-jhonstart/26` step 14 (a consumer row below)
 - [ ] `run/std_failure_attempt` (a panic, a host raise, a value) on the four targets; `libs/std/AGENTS.md`'s table
