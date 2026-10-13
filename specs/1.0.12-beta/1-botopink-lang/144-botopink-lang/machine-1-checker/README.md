@@ -219,14 +219,27 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally but for three `std_decorator_*` wasm cells (B-27's, a B-22 row); four cells
+      added; no `test` run green since the base (cancelled by the next push, or red at format-check on others' cells).
+      Box 1 closes on the next completed green `test` run.
+
+| B-11 change | Cells |
+|---|---|
+| `wrapWith`, composition, a method, an importer | `decorator_wraps_function` |
+| a call in the same module, the function as a value, its recursive call | `decorator_wraps_function_value` |
+| a wrapper reading a decorator body's local | `decorator_wrap_captures` |
+| the lambda-only wrapper (B-11-a), generics refused (B-11-b) | `decorator_wrap_not_lambda`, `decorator_wrap_generic` |
+| the wrong return, outside a function, `fn(..)` outside `@Decl` | `decorator_wrap_wrong_return`, `decorator_wrap_outside_function`, `decorator_any_params_outside_decl` |
+
+- [ ] proposed cells: a `declare fn` wrapped (`decorator-wrap-without-function`); a generic owner type
 
 ### B-14 — 359: a spread copies a record's fields
 
@@ -314,14 +327,27 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally (no red B-15's); six cells added, `docs.md` for B-15's four; `conformance/docs.md`
+      § A tag is a `@Decl`. Box 1 closes on the next completed green `test` run.
+
+| B-15 change | Cells |
+|---|---|
+| `tagDecl` / `annotate` / `metaAll` / `attr` / `component` | `tag_decl_meta`, `tag_decl_meta_read` |
+| `tag-annotation-output` | `tag_annotation_add_member`, `tag_annotation_add_type`, `tag_annotation_string_meta` |
+| `decorator-meta-twice` on a tag | `tag_annotation_meta_twice` |
+| an annotation naming nothing / no decorator | `tag_annotation_unknown_name`, `tag_annotation_not_decorator` |
+| `decl.meta(T)` inside an annotation (B-15-c) | `tag_annotation_reads_meta` |
+| a type named like a `DeclKind` variant | `type_named_like_decl_kind` |
+
+- [ ] proposed cell: `@emit` on a tag (`tag-annotation-output`)
 
 ### B-16 — 280, 307, 308: typed decorator arguments' rest, derived types' rest, `Type.Field<T>`
 
@@ -810,14 +836,28 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+      — the suite green on `feat` locally; B-18's own defect fixed: `x.greet "…"` where the receiver's type declares
+      `greet` refused `template-call-unexpanded` (`template_method_own_method`, a unit test in `tests/templates.zig`); six
+      cells added. Box 1 closes on the next completed green `test` run.
+
+| B-18 change | Cells |
+|---|---|
+| a template method | `template_method_call`, `template_method_own_method`, `template_method_receiver_mismatch`, `template_method_not_in_scope` |
+| `lookup` → `?Decl` and its members; writes refused | `template_lookup_decl`, `template_lookup_decl_members`, `template_lookup_decl_write`, `template_lookup_decl_wrap_with` |
+| `bindings()` as `Decl[]`; `module` on every `@Decl` | `template_bindings_decls`, `decorator_decl_module` |
+| meta at build, the order, hooks pending | the `template_lookup_meta*` cells |
+| a call typed by its expansion, the bound, the note | `template_call_typed_by_expansion`, `template_call_expected_mismatch`, `template_build_outside_bound`, `template_note_on_mismatch` |
+
+- [ ] a receiver whose type implements a behavior method named like the template method (`hasInherentMethod` counts
+      inherent methods only); a refusal cell for `template-call-unexpanded`
 
 ### B-19 — 216, 281, 298, 353, 356: decorator outputs
 
