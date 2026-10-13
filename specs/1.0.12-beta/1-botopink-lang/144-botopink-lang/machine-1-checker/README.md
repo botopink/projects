@@ -489,7 +489,7 @@ phases (questions s23-g – s23-i).
       `serverOnly` (`#[local.serverOnly]`) → false (371: `same`, `is` stays a keyword); `reject/decorator_same_not_decorator`
       (`same("serverOnly")`, the mismatch at the argument). `same` is a member of `behavior Decorator` (s23-g); a
       project module's decorator through a namespace is 386 (below)
-- [ ] a namespace import registers the module's body-carrying decorators under `<ns>.<name>`, as std's are
+- [x] a namespace import registers the module's body-carrying decorators under `<ns>.<name>`, as std's are
       (386): `#[markers.tag]` runs `tag`, `markers.serverOnly` is a `Decorator` value for `same` —
       `modules/decorator_through_namespace` (the meta `tag` sets read back; `same(markers.serverOnly)` true)
 - [x] `HookNode.async: bool` (375): `true` when the body writes `await` / `async { … }`, `use`s an asynchronous
@@ -519,17 +519,26 @@ fn campos(comptime t: type) -> string[] { return @typeInfo(t).fields.map({ f -> 
 fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + agora().toString(); }   // Run
 ```
 
-- [ ] each function's stage from its resources (376 (1)) and its calls (376 (2)); `use h(…)` takes `h`'s;
+- [x] each function's stage from its resources (376 (1)) and its calls (376 (2)); `use h(…)` takes `h`'s;
       `provide` / `context` `Any`; a host function `Run` unless std (or its library) declares it `Any`;
       `HookNode.stage` published with the module's nodes — `run/stage_of_functions`,
       `modules/stage_imported`
-- [ ] `build-and-run` at the second resource, naming the first; a `comptime { … }` block separates them —
+- [x] `build-and-run` at the second resource, naming the first; a `comptime { … }` block separates them —
       `reject/stage_build_and_run`, `run/stage_comptime_block_in_run`
 - [ ] a body that runs at build (decorator, template, `comptime`) calls `Build` / `Any` functions, a
       program's helper included, and refuses a `Run` one at the call (`run-in-build`) —
       `run/decorator_calls_any_helper`, `reject/decorator_calls_run`; `language-gaps.md`'s sibling-fn row
       closes
 - [ ] std declares `Any` on its pure host primitives (`string`, `math`), every other host binding `Run`
+
+- [ ] a run-in-build body calling a host function that has a build form (`std:`, `@External.Wasm` `fn:`): `Any`, or
+      376 as written (`decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded` change) · question B-17-a
+- [ ] the spelling `#[@Stage.Any]`, `pub type Stage { Build, Run, Any }` in `builtins.d.bp` · question B-17-b
+- [ ] the `Build` resource is a read of a comptime `@Decl` / `@Expr` parameter; `@typeInfo(NamedType)` a build constant · question B-17-c
+- [ ] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
+      function and reading the clock is build-and-run · question B-17-d
+- [ ] a `comptime x: @Expr<string>` function called at run time whose body uses `x.value` as a receiver
+      (`names.value.split(",")`) emits an unbound variable on commonJS and erlang — found by B-17
 
 #### Step 8 — a `styled` literal whose holes are known at build, computed at build (decision 355) (was `14-comptime-on-beam` s8)
 

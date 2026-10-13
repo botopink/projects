@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**91 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**95 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1300,6 +1300,66 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `@ExprCustom<View>` row.
+
+#### B-17-a · A body that runs at build calls a host function with a build form: allowed? (decisions 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a host function with a build form (`std:` cell, `@External.Wasm` `fn:`) is `Any`; run-in-build refuses only the others**, replacing `comptime-host-cell-unavailable` with 376's message. 434/452 made exactly these callable at build; 376 written before them would undo it.
+- **Measured.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` call host functions with a wasm form at build and pass; 376 as written refuses them.
+- **Options.**
+  (a) A build form makes it `Any`.
+  ```bp
+  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
+  ```
+  (b) 376 as written.
+  ```bp
+  comptime { random.seeded(1).next() }   // refused: a Run function at build
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-b · How is a function's stage written? (decision 376 (4); 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `#[@Stage.Any]`, as built** — `pub type Stage { Build, Run, Any }` in `builtins.d.bp`; only `Any` is written (Build and Run follow from resources), so `#[@Stage.Build]` / `#[@Stage.Run]` are refused as unknown annotations.
+- **Measured.** Built as (a); std's `math` host functions carry it.
+- **Options.**
+  (a) `#[@Stage.Any]`.
+  ```bp
+  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
+  ```
+  (b) `#[pure]`.
+  ```bp
+  #[pure] pub declare fn sqrt(x: f64) -> f64;
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-c · What is the `Build` resource: a read of a comptime parameter, or any `@typeInfo`? (decisions 364, 376 (1); 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a read of a comptime `@Decl` / `@Expr` parameter**; `@typeInfo(NamedType)` is a build constant, folded, not a resource. Otherwise every `main` that reads a type's meta becomes `Build` and cannot run.
+- **Measured.** Built as (a); `comptime t: type` is refused (364).
+- **Options.**
+  (a) A comptime parameter.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
+  ```
+  (b) Any `@typeInfo`.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
+
+#### B-17-d · Does a stage follow declarations only? (decision 376 (2); 144 B-17)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a comptime-`@Expr` function and reads the clock is `build-and-run`, as 376 writes.
+- **Measured.** Built as (a).
+- **Options.**
+  (a) Declarations only.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
+  ```
+  (b) Function values too.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-17's row.
 
 ### 02-std-and-packaging
 

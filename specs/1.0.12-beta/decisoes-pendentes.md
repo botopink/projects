@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**91 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**95 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1299,6 +1299,66 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `@ExprCustom<View>` do 144 B-10 G3.
+
+#### B-17-a · Um corpo que roda no build chama uma função host com forma de build: permitido? (decisões 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma função host com forma de build (cell `std:`, `@External.Wasm` `fn:`) é `Any`; o run-in-build recusa só as outras**, substituindo `comptime-host-cell-unavailable` pela mensagem da 376. A 434/452 tornaram exatamente essas chamáveis no build; a 376, escrita antes delas, desfaria isso.
+- **Medido.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` chamam funções host com forma wasm no build e passam; a 376 como escrita as recusa.
+- **Opções.**
+  (a) Uma forma de build faz `Any`.
+  ```bp
+  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
+  ```
+  (b) A 376 como escrita.
+  ```bp
+  comptime { random.seeded(1).next() }   // refused: a Run function at build
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-b · Como se escreve o estágio de uma função? (decisão 376 (4); 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `#[@Stage.Any]`, como construído** — `pub type Stage { Build, Run, Any }` em `builtins.d.bp`; só `Any` é escrito (Build e Run decorrem dos recursos), então `#[@Stage.Build]` / `#[@Stage.Run]` são recusados como anotações desconhecidas.
+- **Medido.** Construído como (a); as funções host do `math` da std o carregam.
+- **Opções.**
+  (a) `#[@Stage.Any]`.
+  ```bp
+  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
+  ```
+  (b) `#[pure]`.
+  ```bp
+  #[pure] pub declare fn sqrt(x: f64) -> f64;
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-c · O que é o recurso `Build`: a leitura de um parâmetro comptime, ou qualquer `@typeInfo`? (decisões 364, 376 (1); 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): a leitura de um parâmetro comptime `@Decl` / `@Expr`**; `@typeInfo(NamedType)` é uma constante de build, dobrada, não um recurso. Senão todo `main` que lê a meta de um tipo vira `Build` e não roda.
+- **Medido.** Construído como (a); `comptime t: type` é recusado (364).
+- **Opções.**
+  (a) Parâmetro comptime.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
+  ```
+  (b) Qualquer `@typeInfo`.
+  ```bp
+  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
+
+#### B-17-d · O estágio segue só declarações? (decisão 376 (2); 144 B-17)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o estágio de uma chamada é o da declaração chamada; uma chamada de método ou por um valor de função não acrescenta nada (`Any`); um corpo de run que chama uma função comptime-`@Expr` e lê o relógio é `build-and-run`, como a 376 escreve.
+- **Medido.** Construído como (a).
+- **Opções.**
+  (a) Só declarações.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
+  ```
+  (b) Valores de função também.
+  ```bp
+  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do 144 B-17.
 
 ### 02-std-and-packaging
 
