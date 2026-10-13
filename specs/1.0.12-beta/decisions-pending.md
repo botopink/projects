@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**89 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**91 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1270,6 +1270,36 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-21's method row.
+
+#### B-10-f · How does a decorator read whether a `@Component<R>` return's `R` implements `@Renderable`? (decisions 268, 280; 144 B-10 G3)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): through `@typeInfo` of the declared return** — `@typeInfo(decl.returnType).implements(@Renderable)`; `@Decl` stays a declaration's handle and type questions go through `@typeInfo`, the one reflection of a type. Viable: `decl.returnType` as a type value (today a name) and `TypeInfo.implements(B)`. Changes: two members; jhonstart's marker in `client.bp` goes.
+- **Measured.** No reflection answers it: `decl.returnType` is the type's name as text, and no member asks whether a type implements a behavior.
+- **Options.**
+  (a) `@typeInfo` of the return type.
+  ```bp
+  if (!@typeInfo(decl.returnType).typeArg(0).implements(@Renderable)) decl.fail("…");
+  ```
+  (b) A member of `@Decl`.
+  ```bp
+  if (!decl.returnImplements(@Renderable)) decl.fail("…");
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10 G3's `@Renderable` row.
+
+#### B-10-g · A template declared `-> @ExprCustom<View>` whose built code is an `Element`: is the expansion a `View`? (decisions 275, 276; 144 B-10 G3)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes — the expansion is what the template declares** — `html` declared `-> @ExprCustom<View>` answers a `View` (`@Component<Element>`), and a built `Element` is checked against it as a component's body; jhonstart's `renderNode(html …)` and its `-> Element` components move to `View`. A template's declared type is its call's type (426); keeping `Element` at the call would make the declaration decorative. Viable: the built code's check against `View` accepts an `Element` as a component's answer. Changes: jhonstart's components (a consumer commit), a cell.
+- **Measured.** With `-> @ExprCustom<View>` every `html` expansion fails `expected Component, got Element`.
+- **Options.**
+  (a) A `View`.
+  ```bp
+  fn Card() -> View { html`<div/>` }   // the expansion is a View
+  ```
+  (b) The call keeps `Element`.
+  ```bp
+  fn Card() -> Element { html`<div/>` }   // the declared View ignored at the call
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-10 G3's `@ExprCustom<View>` row.
 
 ### 02-std-and-packaging
 

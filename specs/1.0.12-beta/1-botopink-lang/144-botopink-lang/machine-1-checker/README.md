@@ -107,7 +107,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       implementer (`method_behavior_parameter_implementer`); a template-reached enum variant or private record no
       longer reproduces across a package. Left:
 - [ ] a bare variant in expression position (`Two(t)`) checks but fails on commonJS, erlang and beam · question B-10-d
-- [ ] an imported enum's variant by dot-shorthand, the enum not imported (reached through a signature): unbound
+- [x] an imported enum's variant by dot-shorthand, the enum not imported (reached through a signature): unbound
       `Mode` on commonJS and erlang (beam and wasm right) — the backends import a type the module reaches only
       through a signature
 - [ ] a wrapper's type alias implementing a behavior (`StyledView implement Styleable` over `@Component<Styled>`) ·
@@ -115,7 +115,11 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [ ] handed to 148: styled's `Sheet.add` half (an API change; `toStyled()` answers a component)
 - [ ] waits elsewhere: a template reading another expansion's value (119's design), a decorator body calling a host
       function (B-00c), a library template reading the program's catalogue (B-19)
-- [ ] G3: the same for jhonstart's markers (after B-15 and 388)
+- [ ] G3: the same for jhonstart's markers (after B-15 and 388) — built: template-built code builds an inline props
+      type (`template_builds_inline_props`; jhonstart's two html test markers and the row gone). Left:
+- [ ] a decorator reads whether a `@Component<R>` return's `R` implements `@Renderable` · question B-10-f
+- [ ] `html` declared `-> @ExprCustom<View>` (`View = @Component<Element>`): every expansion fails `expected
+      Component, got Element` · question B-10-g
 - [ ] G5: the same for onze-content's marker — no compiler change: decision 306 makes it a type decorator over
       `decl.fields` (121 step 10), handed to 162
 
