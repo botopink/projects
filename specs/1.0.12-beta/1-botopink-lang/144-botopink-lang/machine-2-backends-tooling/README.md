@@ -275,12 +275,36 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+
+The group's changes against the cells (B-01, B-03 … B-06; box 3, written once for the five):
+
+| Behaviour (decision) | Cells |
+|---|---|
+| `effect-try-without-fallible-channel` names `try … catch` and `result: true` (431 (1), 490) | `throw_outside_result`, `try_in_plain_fn`, `task_throw_without_result`, `task_try_await_without_result`, `component_try_element`, `throw_in_generator`, `try_in_generator`, `try_in_lambda_without_result`, `iterator_throw_without_result` |
+| `result:` on every `@External` variant, a labelled bool in any order, beside `inline:` (487, 490) | `external_result_return_accepted` |
+| a bare positional `true` / `false` refused at the argument (487) | `external_flag_bare_bool_refused` |
+| a `result:` that is not a bool refused (487) | `external_result_not_bool` |
+| `result: true` only on `@Result<…, HostError>` / `@Task<@Result<…, HostError>>` (431 (2), 490) | `external_result_return`, `external_result_task_plain_value`; on a behavior method the comptime error snapshot only |
+| `HostError` is std's `failure.HostError` by module identity (488) | `external_result_own_host_error`, `external_result_return_accepted` |
+| std's own path import of `failure.HostError` counts (488) | `codegen/tests/std_package.zig` only — a cell cannot import std's sibling by path |
+| `result:` beside `fn:` / `op:` refused (491) | `external_result_on_fn_cell`, `external_result_on_wasm_op_cell` |
+| std `failure`: `HostErrorName`, `HostError`, `Failure` (489, 492) | `std_failure_types` |
+| a sync `result: true` binding answers `Ok` / `Error(HostError)` on commonJS, erlang and beam; wasm wraps nothing (431 (2), 489, 490, 491) | `external_result_host_error` |
+| an erlang `exit` is `HostErrorName.Exit` (489) | `external_result_erlang_exit` |
+| host methods wrapped the same way (490) | `external_result_host_method` |
+| a `result: true` `@Task` binding's rejection or raise is `Error(HostError)` (431, 432) | `external_result_host_error`, `host_node_task_result`, `external_result_host_method` |
+| std `io/http`'s `fetch` over a private `result: true` binding (486) | none — a row |
+| a failing task rejects on commonJS and reads back through `await` on every target (432) | `task_result_rejects`, `task_throw_resolves_error`, `task_async_block_in_lambda`, `task_lambda_result_unannotated` |
+| a JS caller's `try` / `catch`; a dropped failing task is no unhandled rejection (432) | `task_result_caught_by_js` |
+| the `.d.ts` declares `Promise<T>` under `@throws {E}` (432) | none — a row |
+| std/async `runAll` / `raceOf` / `race` over a failing task (432) | none — a row (`std_async_on_every_target` covers `allOf` only) |
+
 
 ### B-03 — 431 (2): `throws:` on every `@External` variant, checked
 
@@ -317,9 +341,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
@@ -348,9 +372,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
@@ -389,9 +413,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
@@ -441,9 +465,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
       fixed at once (430), pushed again; no cell edited to match the compiler
 - [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
