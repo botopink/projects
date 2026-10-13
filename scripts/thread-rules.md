@@ -37,6 +37,9 @@ what is the task's own: the step, its boxes, its worktree, its model.
   run goes to the background.
 - Measure no time: timings belong to the final measurement step (163 s9).
 - Kill a stuck `beam.smp` by PID, never `pkill -f` with the pattern in the same command line.
+- Wait on a PID (`wait`, `kill -0 <pid>`) or a file, never on `pgrep -f <pattern>`: the waiting shell holds the pattern
+  in its own command line, so it matches itself and never ends. Before the report, kill every loop and background
+  job you started — none outlives the thread.
 - `zig build test` prints `error[reserved-word-as-name]` at `libs/std/src/path.bp:5` (`reservedProbe`): that is
   `comptime/tests/located_errors.zig` building the diagnostic on purpose, not a failure — read the exit status.
 
