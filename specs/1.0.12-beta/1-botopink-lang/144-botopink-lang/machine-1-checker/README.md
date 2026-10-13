@@ -1525,7 +1525,7 @@ Numeric literals.
 - [ ] a cold gate green over the literal's change — B-23's Conformance step runs it (`feat`'s pipeline with
       conformance)
       — run on `feat` in the main checkout: green to `test-cli`, red at `test-libs` on `rakun-data`'s `#[query]` (B-81) and a
-      `rakun-cache` timing test (150 s30); closes when both are green
+      `rakun-cache` timing test (150 s31); closes when both are green
 
 #### Step 19 — a type application before a member (decision 255 (1)) — built (`6185db3c`, on feat through `49455602`) (was `01-checker` s19)
 
