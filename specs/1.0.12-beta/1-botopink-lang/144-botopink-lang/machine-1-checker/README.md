@@ -1712,9 +1712,15 @@ file system, cannot keep a value across calls; the wasm backend does not lower a
 
 #### Step 4 — `@Task` on `wasi` (was `140-wasm-host` s4)
 
-- [ ] `@Component` bodies (375's mark) as state machines — decision 504 (recommended: every `@Component` a
+- [x] `@Component` bodies (375's mark) as state machines — decision 504 (recommended: every `@Component` a
       state machine on wasm); today they stay eager and an `await` of a task there runs the ready tasks,
       trapping on both hosts when the task still waits on the host
+      — the render scope typed through std's `context` slots on wasm (`scope_carry.zig`), a state machine only for a body that
+      awaits (`component_awaits_host_task`); 33 component cells gain wasm, five narrowed by their host binding; std's marker
+      and the gap row gone
+- [ ] wasm: a component body with a bare `try` runs its tail as an inner closure that stays a plain lambda, so a
+      host-pending task awaited in it traps — found by B-25
+- [ ] wasm: an `f64` / `i64` provided or rendered through the scope is refused (it does not fit one slot) — found by B-25
 - [ ] `fetch`'s `Request` / `Response` in the compiler's layout (393), with `wasi:http` (`io/http`, `02/97`
       step 17)
 - [x] `async_block_all_of` gains the wasm column (`.targets` widened) — waits on std's `async` bindings
