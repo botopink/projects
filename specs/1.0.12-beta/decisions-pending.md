@@ -945,6 +945,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 
 #### B-07-b · B-07's five further points on `Failure` (decisions 489, 492; 144 B-07)
 - **Measured.** Decision 518 answered B-07-a's wasm half; these stay open.
+- **Also measured (B-07, built).** On wasm no host raises, so `std_failure_attempt`'s host-raise case is a private `fn:` body that panics there and answers `Error panic: boom` where the other targets answer `Error host: boom` — recorded as a wasm departure; whether that is the language's answer or a cell to narrow belongs here.
 - **Also asked (B-07's report).** (1) 492's `host` "exact": a raise from a binding without `result: true` is unmarked and reads as `host`, so `crash` is never answered (a VM fault reads `host`) — wrap every such call, at a cost B-05 did not measure? (2) A failed `assert` read as `panic`, its message without the location, on every target. (3) erlang and beam raise a bare `badarith` for an integer division by zero, read as `host` where commonJS reads `panic` (a row for a tagged raise). (4) An erlang host raise's `Failure.message` is the reason printed with `~tp`, extending 489's `HostError` rule to `Failure`. (5) jhonstart's navigation signals now return from `attempt` with kind `panic` (jhonstart's front, B-25 / 504).
 - **Blocks.** Nothing built; B-07's `Failure` kinds on every target.
 

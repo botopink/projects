@@ -945,6 +945,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 
 #### B-07-b · Os cinco pontos adicionais do B-07 sobre `Failure` (decisões 489, 492; 144 B-07)
 - **Medido.** A decisão 518 respondeu a metade wasm da B-07-a; estes ficam abertos.
+- **Também medido (B-07, construído).** No wasm nenhum host levanta, então o caso de raise de host do `std_failure_attempt` é ali um corpo `fn:` privado que dá panic e responde `Error panic: boom` onde os outros alvos respondem `Error host: boom` — registrado como desvio do wasm; se essa é a resposta da linguagem ou uma célula a restringir pertence a esta pergunta.
 - **Também perguntado (o relatório do B-07).** (1) O `host` "exato" de 492: um raise de um binding sem `result: true` não é marcado e é lido como `host`, então `crash` nunca é respondido (uma falha da VM é lida como `host`) — envolver toda chamada assim, a um custo que o B-05 não mediu? (2) Um `assert` que falha lido como `panic`, sua mensagem sem a localização, em todo alvo. (3) erlang e beam levantam um `badarith` puro para uma divisão inteira por zero, lido como `host` onde o commonJS lê `panic` (uma linha para um raise marcado). (4) A `Failure.message` de um raise de host no erlang é a razão impressa com `~tp`, estendendo a regra de `HostError` de 489 a `Failure`. (5) Os sinais de navegação do jhonstart agora voltam do `attempt` com kind `panic` (a front do jhonstart, B-25 / 504).
 - **Bloqueia.** Nada construído; os kinds de `Failure` do B-07 em todo alvo.
 

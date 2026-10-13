@@ -485,13 +485,15 @@ replacement).
 
 #### Step 18 — `failure`: `HostError`, `Failure`, `attempt` (decision 431; with `01-checker` step 42) — part (was `97-std-dedupe` s18 boxes 2, 3)
 
-- [ ] `failure.attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task` form (moved from B-04's box); on wasm
-      per 491
-- [ ] decision 126's flagless `__bp_host_task` conversion removed (490): B-05 kept it because jhonstart's
+- [x] `failure.attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task` form on the four targets; on wasm by
+      exception handling, its binding declaring `needs: [.Exceptions]`, the host handed the flags the program's
+      `botopink.needs` section names; `needs:` outside `WasmNeed` refused; STD-001 at the call (518) —
+      `std_failure_attempt`, `std_failure_attempt_task`, `external_wasm_needs_unknown`, `std_unsupported_refused_at_the_call`
+- [x] decision 126's flagless `__bp_host_task` conversion removed (490): B-05 kept it because jhonstart's
       `__jhTryTask` relies on it — it goes with jhonstart's `attempt` consumer commit below
-- [ ] `testing.asserts`' `throws` / `throwsWith` over `attempt`, the private `tryCatch` cell gone; jhonstart's
+- [x] `testing.asserts`' `throws` / `throwsWith` over `attempt`, the private `tryCatch` cell gone; jhonstart's
       `__jhTryValue` / `__jhTryTask` replaced by `attempt` in `05-jhonstart/26` step 14 (a consumer row below)
-- [ ] `run/std_failure_attempt` (a panic, a host raise, a value) on the four targets; `libs/std/AGENTS.md`'s table
+- [x] `std_failure_attempt` (a panic, a host raise, a value) on the four targets; `libs/std/AGENTS.md`'s table
 
 #### B-07 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
