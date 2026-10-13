@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**95 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**97 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1359,6 +1359,36 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do 144 B-17.
+
+#### B-22-c · Um valor de `case` cujos braços têm tipos diferentes no wasm: empacotado como um elemento de array união? (decisões 150, 8 §11; 144 B-22)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o valor de cada braço empacotado como o wasm já empacota um elemento de array união, o `val` tipado pela união do checker; reaproveita uma representação e não acrescenta nenhuma.
+- **Medido.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) imprime um endereço no wasm; commonJS, erlang e beam imprimem o valor.
+- **Opções.**
+  (a) Empacotado por braço.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
+  ```
+  (b) Recusado no wasm até uma representação própria.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha do `case_value_union` do 144 B-22.
+
+#### B-22-d · Um nome sozinho dentro de um braço de vários sujeitos: um binding, ou recusado como um nome sozinho? (144 B-22)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado, como um nome sozinho é** — o `docs.md` diz que um nome sozinho não é padrão, e a forma com chaves já o recusa dentro de um braço de vários sujeitos; a forma com seta segue: `_` para qualquer um, um padrão para fazer binding. Uma regra para todo braço. Muda: `case_multi_subject_patterns` reescrita com padrões.
+- **Medido.** A forma com seta faz binding de `Shape.Square(side), m -> …` e `_, y -> …` (`case_multi_subject_patterns` fixa isso); a forma com chaves recusa o mesmo braço.
+- **Opções.**
+  (a) Recusado.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
+  ```
+  (b) Um binding.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha de vários sujeitos do 144 B-22.
 
 ### 02-std-and-packaging
 

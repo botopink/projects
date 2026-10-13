@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**95 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**97 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1360,6 +1360,36 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.
+
+#### B-22-c · A `case` value whose arms have different types on wasm: boxed as a union array element? (decisions 150, 8 §11; 144 B-22)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — each arm's value boxed as wasm already boxes a union array element, the `val` typed by the checker's union; it reuses a representation and adds none.
+- **Measured.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) prints an address on wasm; commonJS, erlang and beam print the value.
+- **Options.**
+  (a) Boxed per arm.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
+  ```
+  (b) Refused on wasm until a representation of its own.
+  ```bp
+  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-22's `case_value_union` row.
+
+#### B-22-d · A bare name inside a multi-subject arm: a binding, or refused like a name alone? (144 B-22)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused, as a name alone is** — `docs.md` says a name alone is not a pattern, and the braced form already refuses it inside a multi-subject arm; the arrow form follows: `_` for any, a pattern to bind. One rule for every arm. Changes: `case_multi_subject_patterns` rewritten with patterns.
+- **Measured.** The arrow form binds `Shape.Square(side), m -> …` and `_, y -> …` (`case_multi_subject_patterns` pins it); the braced form refuses the same arm.
+- **Options.**
+  (a) Refused.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
+  ```
+  (b) A binding.
+  ```bp
+  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-22's multi-subject row.
 
 ### 02-std-and-packaging
 

@@ -1202,6 +1202,9 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       an absent element (`es.at(3)?.a ?? 0` prints `0` on wasm)
 - [ ] union of primitives a `case` produces (`test/case_value_union`) prints an address on wasm: the wasm backend
       has no inferred type for a case value whose arms bind — a design pass of its own
+- [ ] `case_value_union`'s representation on wasm: each arm boxed as a union array element (150, 8 §11) · question B-22-c
+- [ ] a bare name inside a multi-subject arm (`Shape.Square(side), m -> …`) binds, against `docs.md`'s "a name alone is not a
+      pattern" · question B-22-d
 - [x] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
       `01-checker` step 13's `run/val_nested_ctor_pattern` needs it lowered (each binding off its
       field's slot, as the one-level form)
@@ -1221,11 +1224,11 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       B-14; re-measured with its cell
 - [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
       `Token.Color(_inner: __Token__Color.White)`, wasm an address · question B-22-b
-- [ ] an imported enum's variant with a payload prints as a number on wasm (`@print(AMode.Slow(2))` printed
+- [x] an imported enum's variant with a payload prints as a number on wasm (`@print(AMode.Slow(2))` printed
       `8764`, `AMode` from another module) — found by B-23
-- [ ] `test/expr_sugar.bp`'s pipes red on erlang and beam on `feat` (three cases; red on the base too) — found by
+- [x] `test/expr_sugar.bp`'s pipes red on erlang and beam on `feat` (three cases; red on the base too) — found by
       B-22
-- [ ] a bare name as a catch-all arm (`k -> k + 1`) is accepted by the checker, which `docs.md` says is not a
+- [x] a bare name as a catch-all arm (`k -> k + 1`) is accepted by the checker, which `docs.md` says is not a
       pattern; commonJS then fails `k is not defined` — refused at the arm, located — found by B-22
 - [ ] `Float.toString` differs across targets: `9007199254740992.0` against `9.007199254740992e15`, `1200.0` against
       `1.2e3` on commonJS — one text on every target (decision 441, with B-78) — found by B-22
