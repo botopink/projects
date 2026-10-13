@@ -900,12 +900,16 @@ After the group's other steps have landed on `feat`; it holds back no front that
       inherent methods only); a refusal cell for `template-call-unexpanded`
       — fixed (`receiverHasMethod`, `template_method_behavior_method`); `template-call-unexpanded` is a backstop no program
       reaches — a unit test pins it, not a cell
-- [ ] the backstop's unit test for `template-call-unexpanded`
-- [ ] a local or a parameter named like a template function does not hide it (`fn run(shout: fn(string) -> string) {
+- [x] the backstop's unit test for `template-call-unexpanded`
+      — in `tests/templates.zig`, a local's call let through
+- [x] a local or a parameter named like a template function does not hide it (`fn run(shout: fn(string) -> string) {
       shout("x") }`, `val shout = …; shout("a")` run the template) — found by B-14's Conformance step
-- [ ] a template function taken as a value (`val f = shout;`) compiles, then aborts on node and BEAM, erlc rejects it, wasm
+      — the nearest binding wins (`template_name_shadowed_by_local`)
+- [x] a template function taken as a value (`val f = shout;`) compiles, then aborts on node and BEAM, erlc rejects it, wasm
       calls it unbound — refused at the reference — found by B-14's Conformance step
-- [ ] a module-level `val g = { -> shout "x" }; g()` prints a fun on beam and `256` on wasm — found by B-14's Conformance step
+      — refused at the reference, `template-function-value` (`template_function_value`)
+- [x] a module-level `val g = { -> shout "x" }; g()` prints a fun on beam and `256` on wasm — found by B-14's Conformance step
+      — any module-level lambda `val` applied on beam and wasm (`template_in_module_val_lambda`)
 
 ### B-19 — 216, 281, 298, 353, 356: decorator outputs
 
@@ -1161,8 +1165,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
       — std's `mocks` reaches no other std module again (a private `raisedText` cell), a hook test in `tests/wat.zig`
 - [x] wasm: `pub fn main() {}`, a module nothing calls and a dependency: `compilation failed UndefinedCall` — found by B-27
       — an empty body is a function that does nothing (`fn_empty_main`, `fn_empty_body_call`)
-- [ ] wasm: an untyped lambda typed only by its expected `fn(Pessoa) -> Pessoa` cannot place a field two records share
+- [x] wasm: an untyped lambda typed only by its expected `fn(Pessoa) -> Pessoa` cannot place a field two records share
       (`p.nome`, `..p`: "cannot place `.nome`") — found by B-14's Conformance step
+      — a lambda argument typed by its declared parameter (`lambda_param_shared_field`)
 - [x] a field read after a `?.` call link (`p(true)?.me().x`) is refused while a method there is accepted
       (`find(0)?.str().length()`); TypeScript continues the chain for both — one rule — found by B-20's Conformance step
       — it continues the chain, as a method does (`optional_chain_field_after_call`); `a?.b.c` too
@@ -1718,6 +1723,12 @@ file system, cannot keep a value across calls; the wasm backend does not lower a
       — the render scope typed through std's `context` slots on wasm (`scope_carry.zig`), a state machine only for a body that
       awaits (`component_awaits_host_task`); 33 component cells gain wasm, five narrowed by their host binding; std's marker
       and the gap row gone
+- [ ] a template call inside a template's built code is never expanded (node / BEAM abort, erlc refuses, wasm cannot
+      resolve it; `net_new_nested_template_call_inside_a_template_body`) — found by the template-name rows
+- [ ] a local named like a module function with comptime parameters has its arguments stripped by the name-based
+      transform — found by the template-name rows
+- [ ] `feat` red: four codegen `use … is a plain call` snapshots quote std's `context.bp` comment changed with B-25's
+      marker; `std_json_on_every_target`'s wasm departure no longer refuses — re-recorded / removed at once
 - [ ] wasm: a component body with a bare `try` runs its tail as an inner closure that stays a plain lambda, so a
       host-pending task awaited in it traps — found by B-25
 - [ ] wasm: an `f64` / `i64` provided or rendered through the scope is refused (it does not fit one slot) — found by B-25

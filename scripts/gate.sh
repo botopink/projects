@@ -49,7 +49,7 @@
 # itself to the machine), so a run of it holds the whole pool. The commit hook's
 # gate (decision 470) runs outside the pool; a thread that commits runs it
 # through `exec`. Admissions are staggered: one gate starts at most every 60 s
-# while another runs. Every run waits for a free job, `--no-conformance` included
+# while another runs, first come first served. Every run waits for a free job, `--no-conformance` included
 # (the maintainer, 2026-10-12: the lock is held while a gate executes, never
 # skipped — unlocked runs piling up took the machine down).
 #
@@ -285,6 +285,23 @@ poolUsed() {
 
 POOL_STAGGER=60
 
+# poolOlderWaiter <id> — true when another live gate waits since before <id> (or <id> has not waited yet and
+# another waits at all).
+poolOlderWaiter() {
+    local me="$pool/wait.$1" mine f t
+    mine="$(leaseField "$me" start 2>/dev/null)"
+    [ -n "$mine" ] || mine="$(date +%s)"
+    for f in "$pool"/wait.*; do
+        [ -e "$f" ] && [ "$f" != "$me" ] || continue
+        alive "$(leaseField "$f" owner)" || continue
+        t="$(leaseField "$f" start)"
+        if [ "$t" -lt "$mine" ] || { [ "$t" -eq "$mine" ] && [ ! -e "$me" ]; } || { [ "$t" -eq "$mine" ] && [[ "$f" < "$me" ]]; }; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # poolAcquire <id> <name> <want> <log> — blocks until a job is free; prints the
 # jobs granted (min(want, free)) and leaves lease.<id>.
 poolAcquire() {
@@ -300,6 +317,9 @@ poolAcquire() {
         # builds' memory peaks never coincide.
         last="$(cat "$pool/last_admit" 2>/dev/null || echo 0)"
         if [ "$used" -gt 0 ] && [ $(( $(date +%s) - last )) -lt "$POOL_STAGGER" ]; then free=0; fi
+        # First come, first served: a gate is admitted only when no live gate has waited longer, so a thread
+        # running commands back to back never starves one that waits.
+        if [ "$free" -ge 1 ] && poolOlderWaiter "$id"; then free=0; fi
         if [ "$free" -ge 1 ]; then
             date +%s >"$pool/last_admit"
             grant="$want"; [ "$grant" -le "$free" ] || grant="$free"
