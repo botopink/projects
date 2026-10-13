@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**79 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**82 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1115,6 +1115,54 @@ No general rule (283): each case below is its own question, (a) the language's o
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-23's 310 row.
+
+#### B-15-a · How does a template body build a tag's `@Decl` and run its annotation? (decision 302; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `q.tagDecl(kind, name, attrs)` and `q.annotate(decl, at: Span)`, as built** — the capture (`q`) builds the handle and runs the annotation written at a span of its own text, resolved in the caller's scope with its arguments checked there; the annotation's text is read from the span, never passed as a string (281). Both live on the capture because only it knows the caller's scope and text. Viable: as built (the run stops with `need`, the compiler runs the annotation, the body runs again with the answer). Changes: none.
+- **Measured.** Built as (a); `jhonstart`'s `html` uses it (`#[isRaw]` records `RawBody`).
+- **Options.**
+  (a) On the capture.
+  ```bp
+  val d = q.tagDecl(.Element, "div", attrs);
+  q.annotate(d, at: ann.span);
+  val names = d.metaAll(ClassName);
+  ```
+  (b) Free functions in std's `template` namespace.
+  ```bp
+  val d = template.tagDecl(q, .Element, "div", attrs);
+  template.annotate(q, d, ann.span);
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-15's spelling row.
+
+#### B-15-b · Does a template body's `Binding` carry its `Decorator`, for `Decorator.same`? (decisions 268, 302, 371; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): no — meta is read by type** — a template body tells annotations apart by the meta they record (`d.meta(RawBody)`), as 302 says; `Binding` carries no `Decorator`, and B-15's box naming `Decorator.same` is dropped. One way to identify what an annotation did, by its typed answer, not by which function it was. Viable: as built. Changes: the box's text.
+- **Measured.** `Binding` (a looked-up name in a template body) has no `Decorator`; `html` reads meta by type.
+- **Options.**
+  (a) `Binding.decorator`.
+  ```bp
+  if (b.decorator?.same(isRaw)) { … }
+  ```
+  (b) By meta type.
+  ```bp
+  if (d.meta(RawBody) != null) { … }
+  ```
+- **Recommendation.** (b).
+- **Blocks.** 144 B-15's `Decorator.same` row.
+
+#### B-15-c · May an annotation read the meta an earlier annotation recorded on the same declaration or tag? (decisions 298, 302; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): no, as built** — inside a decorator, `decl.meta(T)` is refused; a declaration's meta is read by the code that consumes it (`@typeInfo(X).meta(T)`, a template body over `d.meta(T)`), after every annotation ran. Annotations then do not depend on their written order. Viable: as built. Changes: none.
+- **Measured.** `d.meta(T)` on a decorator's own `@Decl` parameter is refused.
+- **Options.**
+  (a) Refused inside a decorator.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
+  ```
+  (b) Read, in annotation order.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
+  ```
+- **Recommendation.** (a).
+- **Blocks.** 144 B-15's meta-read row.
 
 ### 02-std-and-packaging
 

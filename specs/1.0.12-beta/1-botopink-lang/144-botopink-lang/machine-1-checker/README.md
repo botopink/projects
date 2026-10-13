@@ -246,13 +246,21 @@ goes); unblocks jhonstart's 118 s4–s5 residue and 119.
 A template function hands each annotated tag to its annotations as a `@Decl` and reads back what
 they recorded — the same function shape as a declaration's decorator, named by no library (113, 198).
 
-- [ ] `DeclKind` gains `Element`, `Component`; `Decl.component: ?Decl` (a component tag's function);
+- [x] `DeclKind` gains `Element`, `Component`; `Decl.component: ?Decl` (a component tag's function);
       a tag's static attributes readable (`decl.attr(name) -> ?string`)
-- [ ] `@Expr`/`@ExprCustom` capture: a template function constructs a tag's `@Decl`, calls an annotation
+- [x] `@Expr`/`@ExprCustom` capture: a template function constructs a tag's `@Decl`, calls an annotation
       with it (the `Decorator` of 268, `Decorator.same` for identity, 371), reads `meta(T)` / `metaAll(T)` (298)
-- [ ] on a tag `addMember`, `addType` refused at the call; `setMeta` of one type twice refused at the second
-- [ ] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
+- [x] on a tag `addMember`, `addType` refused at the call; `setMeta` of one type twice refused at the second
+- [x] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
       template function; the same annotation function also accepted on a declaration
+- [ ] the template side's spelling: `q.tagDecl(kind, name, attrs)` builds the handle, `q.annotate(decl, at: Span)`
+      runs the annotation written at a span of the template's text · question B-15-a
+- [ ] `Decorator.same` inside a template body: a looked-up name's `Binding` carries no `Decorator` (meta read by
+      type works, 302) · question B-15-b
+- [ ] `d.meta(T)` on a decorator's own `@Decl` parameter is refused, so an annotation cannot read what an earlier
+      one recorded on the same tag · question B-15-c
+- [ ] `template.mapSpanToLoc` places a span of a one-line `"""…"""` literal two columns early (the capture has
+      `multiline=false`) — found by B-15
 
 #### B-15 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -1111,7 +1119,7 @@ and after each step · every re-recorded RUN LOG verified by running (`erlc +fro
       `return` answers `{V, Group}` and the call site rebinds the group (`valueBlockExpr`;
       `run/block_value_reassigns_enclosing_var`, a `for`'s `return` in `tests/erlang.zig`; bugs-sweep)
 
-- [ ] std module's module-level `var` lowers to `std@beam` on erlang, not imported by the module
+- [x] std module's module-level `var` lowers to `std@beam` on erlang, not imported by the module
       (from `05-wasm` step 5; re-measure)
 
 #### Rows found by other fronts (was `04-js` rows)
@@ -1161,18 +1169,24 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [x] `@print` of a generic record prints a field typed by a type parameter as a word:
       `Q(items: [7])` over `Q<T>(items: Array<T>)` prints `Q(items: 308)`, `B(v: "s")` prints
       `B(v: 292)` at exit 0 (one descriptor per declaration, not per instantiation) — found by step 5
-- [ ] a primitive `default fn` from `primitives.bp` reached on wasm (`"1.5".parseFloat()`) is refused: its
+- [x] a primitive `default fn` from `primitives.bp` reached on wasm (`"1.5".parseFloat()`) is refused: its
       location is the caller's line now; left, the lowering — `stringSlice0` / `stringSlice1`, `stringIsDigits`,
       `stringToInteger`, `stringToFloat` and `stringNumeralRefused` have no wasm binding and need std-wasm functions,
       one answering a `@Result` — found by step 5
-- [ ] commonJS prints a generic record as `Box.t(…)` (`@print(Box(value: 1))` over `Box<T>(value: T)`) — found by
+- [x] commonJS prints a generic record as `Box.t(…)` (`@print(Box(value: 1))` over `Box<T>(value: T)`) — found by
       B-14; one cell on the four targets
-- [ ] a `case` arm with a catch-all binder over a record value is lowered wrongly on commonJS and wasm — found by
+- [x] a `case` arm with a catch-all binder over a record value is lowered wrongly on commonJS and wasm — found by
       B-14; re-measured with its cell
 - [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
       `Token.Color(_inner: __Token__Color.White)`, wasm an address · question B-22-b
 - [ ] an imported enum's variant with a payload prints as a number on wasm (`@print(AMode.Slow(2))` printed
       `8764`, `AMode` from another module) — found by B-23
+- [ ] `test/expr_sugar.bp`'s pipes red on erlang and beam on `feat` (three cases; red on the base too) — found by
+      B-22
+- [ ] a bare name as a catch-all arm (`k -> k + 1`) is accepted by the checker, which `docs.md` says is not a
+      pattern; commonJS then fails `k is not defined` — refused at the arm, located — found by B-22
+- [ ] `Float.toString` differs across targets: `9007199254740992.0` against `9.007199254740992e15`, `1200.0` against
+      `1.2e3` on commonJS — one text on every target (decision 441, with B-78) — found by B-22
 
 #### Compiler residuals — met here, worked around in std, owned elsewhere (was `97-std-dedupe` compiler residuals)
 

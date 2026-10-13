@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**79 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**82 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1114,6 +1114,54 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha da 310 do 144 B-23.
+
+#### B-15-a · Como um corpo de template constrói o `@Decl` de uma tag e roda a sua anotação? (decisão 302; 144 B-15)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `q.tagDecl(kind, name, attrs)` e `q.annotate(decl, at: Span)`, como construído** — a captura (`q`) constrói o handle e roda a anotação escrita num span do seu próprio texto, resolvida no escopo de quem chama, com os argumentos checados ali; o texto da anotação é lido do span, nunca passado como string (281). Os dois ficam na captura porque só ela conhece o escopo e o texto de quem chama. Viável: como construído (a execução para com `need`, o compilador roda a anotação, o corpo roda de novo com a resposta). Muda: nada.
+- **Medido.** Construído como (a); o `html` do `jhonstart` usa (`#[isRaw]` grava `RawBody`).
+- **Opções.**
+  (a) Na captura.
+  ```bp
+  val d = q.tagDecl(.Element, "div", attrs);
+  q.annotate(d, at: ann.span);
+  val names = d.metaAll(ClassName);
+  ```
+  (b) Funções livres no namespace `template` da std.
+  ```bp
+  val d = template.tagDecl(q, .Element, "div", attrs);
+  template.annotate(q, d, ann.span);
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da grafia do 144 B-15.
+
+#### B-15-b · O `Binding` de um corpo de template carrega o seu `Decorator`, para `Decorator.same`? (decisões 268, 302, 371; 144 B-15)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não — a meta é lida pelo tipo** — um corpo de template distingue anotações pela meta que gravam (`d.meta(RawBody)`), como diz a 302; `Binding` não carrega `Decorator`, e a caixa do B-15 que nomeia `Decorator.same` sai. Uma só forma de identificar o que uma anotação fez, pela sua resposta tipada, não por qual função ela era. Viável: como construído. Muda: o texto da caixa.
+- **Medido.** `Binding` (um nome procurado num corpo de template) não tem `Decorator`; o `html` lê a meta pelo tipo.
+- **Opções.**
+  (a) `Binding.decorator`.
+  ```bp
+  if (b.decorator?.same(isRaw)) { … }
+  ```
+  (b) Pelo tipo da meta.
+  ```bp
+  if (d.meta(RawBody) != null) { … }
+  ```
+- **Recomendação.** (b).
+- **Trava.** A linha do `Decorator.same` do 144 B-15.
+
+#### B-15-c · Uma anotação pode ler a meta que uma anotação anterior gravou na mesma declaração ou tag? (decisões 298, 302; 144 B-15)
+- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): não, como construído** — dentro de um decorator, `decl.meta(T)` é recusado; a meta de uma declaração é lida pelo código que a consome (`@typeInfo(X).meta(T)`, um corpo de template sobre `d.meta(T)`), depois de toda anotação rodar. As anotações então não dependem da ordem em que foram escritas. Viável: como construído. Muda: nada.
+- **Medido.** `d.meta(T)` no próprio parâmetro `@Decl` de um decorator é recusado.
+- **Opções.**
+  (a) Recusado dentro de um decorator.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
+  ```
+  (b) Lido, na ordem das anotações.
+  ```bp
+  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
+  ```
+- **Recomendação.** (a).
+- **Trava.** A linha da leitura de meta do 144 B-15.
 
 ### 02-std-and-packaging
 
