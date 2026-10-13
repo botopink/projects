@@ -1040,7 +1040,7 @@ conformance order (fronts.md § Execution order), on a quiet machine — no step
 
 #### Step 8 — the gate's other residue — part (was `114-gate-docs-and-ci` s8 box 1)
 
-- [ ] `scripts/check-docs.sh`'s header says `check` is target-independent (`:63`, `:76`): it is not
+- [x] (moot: `check-docs.sh` now only checks that each `<!-- example: … -->` names a cell; the claim is gone) `scripts/check-docs.sh`'s header says `check` is target-independent (`:63`, `:76`): it is not
       since decision 167 — `#[@BeamMemory…]` checks under an erlang manifest and is refused under the
       harness's `commonJS` one, so `docs.md` § `@BeamMemory` is a `project` fence with an erlang
       `botopink.json` (from `07` step 6); the comment says the manifest's target is read
@@ -1092,8 +1092,8 @@ appear, read from `OkData.transformed.decls`).
 A fourth, found by step 5: `src/codegen/tests/wat.zig`'s `"wat: print ---- a record and a
 variant have no printed form yet, so they trap"` — all four backends print §7's text now.
 
-- [ ] the three tests named for what they assert; snapshots (codegen: one per target per runtime tree; comptime: one) `git mv`ed in the same commit, byte-identical
-- [ ] `scripts/snap_audit.sh --mode=orphans` after the rename: 0 orphans, 0 unrecorded
+- [x] the three tests (and the fourth, `wat.zig`'s) named for what they assert; snapshots (codegen: one per target per runtime tree; comptime: one) `git mv`ed in the same commit, byte-identical
+- [x] `scripts/snap_audit.sh --mode=orphans` after the rename: 0 orphans, 0 unrecorded
 
 #### Step 8 — the lib-agnostic gate names every library (handed by `08-bpp`) (was `07-residuals` s8)
 
