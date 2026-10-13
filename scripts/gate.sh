@@ -48,7 +48,8 @@
 # sets (decision 67). botopink-lang's gate takes no total of jobs yet (it sizes
 # itself to the machine), so a run of it holds the whole pool. The commit hook's
 # gate (decision 470) runs outside the pool; a thread that commits runs it
-# through `exec`. Every run waits for a free job, `--no-conformance` included
+# through `exec`. Admissions are staggered: one gate starts at most every 60 s
+# while another runs. Every run waits for a free job, `--no-conformance` included
 # (the maintainer, 2026-10-12: the lock is held while a gate executes, never
 # skipped — unlocked runs piling up took the machine down).
 #
@@ -282,17 +283,25 @@ poolUsed() {
     echo "$n"
 }
 
+POOL_STAGGER=60
+
 # poolAcquire <id> <name> <want> <log> — blocks until a job is free; prints the
 # jobs granted (min(want, free)) and leaves lease.<id>.
 poolAcquire() {
-    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0
+    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0 last
     cap="$(poolCapacity)"
     while :; do
         poolLock
         poolReap
         used="$(poolUsed)"
         free=$(( cap - used ))
+        # Admissions are staggered (the maintainer, 2026-10-13: "libera o gate paralelo aos poucos"): a gate
+        # starts only when the last one started at least POOL_STAGGER seconds ago, or nothing runs, so the
+        # builds' memory peaks never coincide.
+        last="$(cat "$pool/last_admit" 2>/dev/null || echo 0)"
+        if [ "$used" -gt 0 ] && [ $(( $(date +%s) - last )) -lt "$POOL_STAGGER" ]; then free=0; fi
         if [ "$free" -ge 1 ]; then
+            date +%s >"$pool/last_admit"
             grant="$want"; [ "$grant" -le "$free" ] || grant="$free"
             [ "$grant" -le "$cap" ] || grant="$cap"
             rm -f "$pool/wait.$id"
