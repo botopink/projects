@@ -88,7 +88,7 @@ values out in linear memory and emits WasmGC types; 522's own heap is never wire
 - [ ] **tasks and the scheduler** (392) over GC records: a settled value is shared, never copied (immutable); a
       mutable cell a GC struct with one mutable field; no heap per task, no copy at a send, no cycle to detect (the
       host's collector follows cycles)
-- [ ] **`needs: [.Gc]`** (518) on every program emitting GC types — wasmtime `-W gc=y`, node and the browser by default
+- [x] **`needs: [.Gc]`** (518) on every program emitting GC types — wasmtime `-W gc=y`, node and the browser by default
 - [ ] **every `run/` cell's `.out` on wasm unchanged**; a long-running cell (a loop of 10M allocations, a recursion
       without a loop, a request loop) whose memory stays bounded; `std_wasm.wasm` still linked for the std's functions
       until s3 — values crossing into it marshalled at the boundary, measured, the boundary deleted by s3
