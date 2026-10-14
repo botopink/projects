@@ -1634,8 +1634,8 @@ checker half. **Consumer commits:** rakun (3 files), jhonstart (2), onze (2) —
 
 - [ ] decision 501's alternatives, if the maintainer answers (b) or (c): `is bigint` by value range, a
       `bigint` in `unknown`, compile-time `bigint` in the folder and the comptime runtimes (14 · 18)
-- [ ] wasm: a `bigint` member of a union (`lowerAsUnknown` refuses it located, "has no `bigint` in a
-      union yet"; erlang, beam and commonJS run it) — a `05-wasm` row
+- [~] wasm: a `bigint` member of a union (`lowerAsUnknown` refuses it) — superseded by group wasm-gc (B-83): `unknown`
+      is a reference to any GC type, a `bigint` among them; the cell is B-83's
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language` (the four targets) and
 `scripts/tsc-check.sh`.
@@ -1812,30 +1812,12 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
       `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
 - [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither) — `async` bound on both hosts; `io/http` waits on question B-25-b
 
-#### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after B-83 — its ABI is WasmGC's, question to be opened) (was `05-wasm` s9)
+#### Steps 9 and 11 — a prebuilt wasm library (decision 333 (B)) — withdrawn as written (was `05-wasm` s9, `04-js` s11)
 
-- [ ] `@External.Wasm(module: .<Library>, fn: "<export>")` — a fourth form beside `op:`, `fn:`, `wasi:` (238); the
-      library named from the package's wasm manifest (version, hash); an unknown library, a missing export or a
-      signature with a type that cannot cross is a located error at the annotation
-- [ ] the glue generated per binding: `string` copied in as UTF-8 through the library's allocator export, the
-      answer read back and freed; numbers and `bool` passed as values; `?T` of them as the library's null
-      convention named in the manifest; no pointer reaches botopink code
-- [ ] the merge: the library's functions, memory and data folded into the emitted module (the binary emitter is
-      front 18's — a named carve-out), one `.wasm` out; `wasmtime` and the WAT comptime runtime run it
-- [ ] `run/wasm_library_binding`: a test fixture library (a small `.wasm` built for the cell — a string and a number
-      across) called from wasm and from commonJS, one answer; the size the merge adds recorded in `wat/AGENTS.md`
-
-**Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under wasmtime and
-compared with commonJS's · no new RUN LOG answers at exit 0 a value another backend answers
-differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fixed
-
-#### Step 11 — the same wasm library from commonJS (decision 333 (B); after `05-wasm` step 9) (was `04-js` s11)
-
-- [ ] a binding with `@External.Wasm(module: …)` and no `@External.Node` lowers on commonJS to the same
-      library: the module instantiates the package's `.wasm` once (synchronously, from its bytes beside the
-      emitted `.js`) and calls it through the same glue
-- [ ] the emitted package ships the `.wasm` next to its `.js`; `tsc-check.sh` green; `run/wasm_library_binding`
-      one answer on commonJS and wasm
+- [~] withdrawn: both steps were a linear-memory design (the library's memory and data folded into the module, strings
+      as pointer and length through `alloc` / `free` exports, the WAT comptime runtime running it). Under group wasm-gc
+      (B-83) a prebuilt library's ABI is GC references and its glue is none; `@External.Wasm(module: …)` and
+      `run/wasm_library_binding` return as a question of their own once B-83 lands. Nothing of them is built.
 
 - [ ] the adapter names `.GateNew` / `.GateOpen` / `.GateAwait`, and std's test-only cells (`monoMillis`, `hostTarget`, the
       counters) left unbound on wasm until `botopink test` runs wasm (335 (3)) · question B-25-a
