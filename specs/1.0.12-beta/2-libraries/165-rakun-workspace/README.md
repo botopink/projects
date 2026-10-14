@@ -91,11 +91,12 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
-- [ ] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
-- [ ] `@TypeInfo.all` reaches the declarations of the program's dependencies: a dependency's analysis exports its
+- [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
+- [x] `@TypeInfo.all` reaches the declarations of the program's dependencies: a dependency's analysis exports its
       catalogue, level B (B-60) stores it with the entry, the program's catalogue is the union — the mechanism
       `rakun.boot()` discovers modules with; a cell: a dependency's `#[m]`-annotated declaration listed by the program
-- [ ] the reference: § Decorators, the catalogue's reach
+- [x] the reference: § Decorators, the catalogue's reach
+- Open: question B-86-a (the gate's spelling of `query`; a dependency's `module` path and the transitive reach)
 
 ### s5 — plug-and-play: `rakun.module`, `rakun.boot()`, `rakun.config`
 

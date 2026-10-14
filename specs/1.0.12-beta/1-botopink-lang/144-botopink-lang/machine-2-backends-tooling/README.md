@@ -1794,11 +1794,11 @@ stays here; B-30 is closed as superseded by it.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing; 165 s5 waits on it
 
-- [ ] `@TypeInfo.all` reaches the declarations of the program's dependencies: a dependency's analysis exports its
+- [x] `@TypeInfo.all` reaches the declarations of the program's dependencies: a dependency's analysis exports its
       catalogue, level B (B-60) stores it with the entry, the program's catalogue is the union; a cell: a dependency's
       `#[m]`-annotated declaration listed by the program — what rakun's `rakun.boot()` discovers modules with (mono-a)
-- [ ] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
-- [ ] the reference: § Decorators, the catalogue's reach
+- [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
+- [x] the reference: § Decorators, the catalogue's reach
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
