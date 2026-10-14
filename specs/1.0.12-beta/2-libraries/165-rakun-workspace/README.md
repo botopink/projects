@@ -60,12 +60,18 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 **Repository:** rakun (and the six, read) · **Model:** sonnet
 
-- [ ] after every open thread of 148, 149, 150, 153, 154, 162 has landed: `git subtree add --prefix=modules/<name>`
+- [x] after every open thread of 148, 149, 150, 153, 154, 162 has landed: `git subtree add --prefix=modules/<name>`
       of erika, dbcontext, emilia, styled, jhonstart and onze into rakun (each repository's history kept, as 326 kept
       the libraries'); each one's `modules/*` lifted to rakun's `modules/`, its `examples/` and `conformance/` into
       the per-package folders; the workspace `botopink.json` lists every member
-- [ ] rakun's gate green with every package under its old name — nothing renamed in this step
-- [ ] `AGENTS.md` of rakun: the workspace, the layers, the per-package rule; one `AGENTS.md` per package
+- [x] rakun's gate green with every package under its old name — nothing renamed in this step
+- [x] `AGENTS.md` of rakun: the workspace, the layers, the per-package rule; one `AGENTS.md` per package
+- [ ] the shared runner (`scripts/git-hooks/lib/runner-standalone.sh`) walks `examples/<package>/<name>/` and
+      `refusals/<package>/<name>/` and finds cells anywhere under `conformance/`; rakun's copy does, the other libraries'
+      copies take the same text (CI check 4: one text) before rakun's pointer moves in the meta repository
+- Open, not this step's: `conformance/rakun/{cors,filter_chain,middleware,problem_details,response_headers,web_tls}` red
+  on `feat` through their per-cell `deps/` (150 s27); every `conformance/emilia/` cell refused on beam (144 B-89);
+  dbcontext holds no package yet (its notes at `modules/dbcontext/AGENTS.md`, not a member; s3); question 165-a
 
 ### s2 — the rename, by codemod
 
@@ -77,6 +83,8 @@ lacks is a build error naming it; removing the dependency removes the module; no
 - [ ] a codemod over every `.bp`, `.bpp`, example and test: `from "jhonstart"` → `from "rakun-bpp"` and the rest of
       the table; `onze.json` → `rakun-ssr.json`, `onze create-key` → `rakun-ssr create-key`, `ONZE_KEY` →
       `RAKUN_SSR_KEY`; the `*-test` packages become `testing/` modules; the `rakun-starter-*` removed
+- [ ] `rakun-ssr create` writes workspace dependencies or the `botopink/rakun` git source, never an archived
+      repository's; its `--libs` help text says a rakun checkout
 - [ ] rakun's gate green; no import of a package that no longer exists (the build refuses one)
 
 ### s3 — dbcontext folded into `rakun-data`

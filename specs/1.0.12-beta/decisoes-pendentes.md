@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**109 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**110 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1008,6 +1008,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   ```
 - **Recomendação.** (a) para cada: (1) recusa toda grafia de pacote sem renomear a palavra própria da linguagem; (2) é o texto da caixa; (3) é o que `rakun.boot()` precisa — um módulo contribuído por um pacote duas camadas abaixo é descoberto.
 - **Trava.** Nada — construído como (a); o 165 s5 lê (3).
+
+
+#### 165-a · Onde ficam as linhas do conjunto de versões dos pacotes juntados (decisão 113; frente 165 s2)
+- **Medido.** O `version_set.bp` do rakun guarda uma linha por pacote da família rakun; seu teste compara cada manifesto com a tabela. Após o 165 s1 o workspace tem 21 pacotes juntados (erika, emilia, styled, jhonstart, onze e seus `*-test` / subpacotes) sem linha: uma linha que nomeia `onze` no `src` do núcleo do rakun quebra o grep da decisão 113 (o núcleo do rakun não nomeia nenhum consumidor), então o teste lê só os manifestos `rakun*`.
+- **Opções.** (a) ★ Nenhuma até o s2: após a renomeação todo pacote é `rakun-*`, as linhas são escritas então, e o filtro sai. (b) Um conjunto de versões fora do núcleo (um arquivo no nível do workspace que o gate lê), todo membro uma linha agora.
+- **Recomendação.** (a): o s2 renomeia todo pacote para um nome `rakun-*`, então as linhas não precisam de exceção; uma versão para o workspace (o README) faz da tabela uma linha por pacote no s2.
+- **Trava.** Nada antes do s2; o s2 escreve as linhas.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 

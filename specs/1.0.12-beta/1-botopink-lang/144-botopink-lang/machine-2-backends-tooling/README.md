@@ -1800,6 +1800,19 @@ stays here; B-30 is closed as superseded by it.
 - [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
 - [x] the reference: § Decorators, the catalogue's reach
 
+### B-89 — beam: emilia's module refused by the BEAM assembler (structural, decision 430)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+Every `conformance/modules/` cell of emilia on `feat` (79 cells, `conformance/emilia/` once in rakun, front 165) is
+refused on beam: `the OTP compiler refused the emitted program — nothing to run`. The assembler stops at emilia's
+module-level tables (`everySpacingToken/0`, `front38TextLeaves/0`, `layoutLeaves/0`, `outlineLeaves/0`,
+`ringLeaves/0`, …): `An implementation limit was reached … Instruction: {test_heap,3,1}`. commonJS and erlang answer.
+
+- [ ] the beam emitter splits or builds a large literal table within the assembler's limits; emilia's module assembles;
+      every emilia cell green on beam (`botopink cell check conformance/` in emilia, then in rakun)
+- [ ] a unit test the hook runs: a module with a literal table past the limit assembles (478)
+
 ### B-87 — erlang: a `var` reassigned inside a nested arm reaches a `defer` late (decision 539, amended)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

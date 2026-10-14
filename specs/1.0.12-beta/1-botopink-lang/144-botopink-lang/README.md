@@ -327,3 +327,4 @@ Where each step is (its machine's folder holds its whole text).
 | B-86 | [2](machine-2-backends-tooling/README.md) | the catalogue across packages (`@TypeInfo.all` reaching a dependency's declarations) and the lib-agnostic gate's list `rakun|query` (front 165 s4, mono-a) |
 | B-87 | [2](machine-2-backends-tooling/README.md) | erlang: a `var` reassigned inside a nested arm reaches a `defer` late (539) |
 | B-88 | [2](machine-2-backends-tooling/README.md) | a jump from a block or a `case` arm reaches its loop or generator on commonJS and erlang (541 (2)) |
+| B-89 | [2](machine-2-backends-tooling/README.md) | beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit) — every emilia cell red on beam |

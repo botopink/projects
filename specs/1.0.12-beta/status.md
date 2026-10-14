@@ -78,6 +78,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 144 botopink-lang
 
+- [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · runs in 163 s9 (the measurements at the end of the conformance order, a quiet machine)
 - [ ] 134 — `registerStdlib` now runs the associated-type rewrite on std modules (`comptime.zig`, landed with batch 8 for `Type.Field<T>`): owner 01-checker · none
@@ -359,6 +360,10 @@ Closed on 9 Oct (no longer pending): 08-h → 285, 224 · 08-j → 295 · lg2-g 
 ## Done — landed on `feat`
 
 Each line landed; a front's README keeps only its open steps. Grouped by front, in the lanes' order.
+
+### 165 rakun-workspace
+
+- [x] 165 s1 — erika, dbcontext, emilia, styled, jhonstart and onze joined into rakun by `git subtree add` (history kept), lifted to `modules/<name>` with names unchanged, cells in `conformance/<package>/`, examples and refusals per package; rakun's gate green but the reds already on `feat` (150 s27, 144 B-89); `AGENTS.md` per package
 
 ### 144 botopink-lang
 
