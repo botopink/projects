@@ -12,6 +12,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 - **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
 - **Machine 2** — maximum priority: the questions front 144's machine 2 waits on, most urgent first. New development is centred on front 164 wasm-gc (s1 → s4, wasmtime-a, wasmgc-a).
+- **Front 165** — rakun-workspace: one `rakun` repository, 17 plug-and-play packages (mono-a).
 - **Part 1** — what blocks front 144 (`repository/botopink-lang`, decision 433: the open steps of the old tracks
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), by old track, then those
   tracks' implementation choices awaiting confirmation.
@@ -940,6 +941,12 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** Each point (a) as proposed or (b) its opposite.
 - **Recommendation.** (a) — the strictest readings where 529 is silent, and the same rule for every callable.
 - **Blocks.** A record parameter on a method; nothing built otherwise.
+
+## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
+
+#### mono-a · One `rakun` repository: a workspace of 17 plug-and-play packages; erika outside as `query` (decisions 326, 338, 391, 398, 433, 512; front 165)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** rakun, erika's consumers, emilia, styled, jhonstart, onze and dbcontext become one repository, `botopink/rakun`, a botopink workspace (512): one directory per package under `modules/`, the package named by its directory, each with its own `botopink.json`, `src/`, tests and `AGENTS.md`, the cells under `conformance/<package>/`, one version and tag, one gate, hook and CI. The packages, by layer (each depending on lower layers only, a cycle refused): `rakun` (core) · `rakun-data` (dbcontext + rakun-data) · `rakun-restclient` (rakun-client) · `rakun-style` (styled) · `rakun-bpp` (jhonstart, -html, -link, -forms, -test, -dom-test) · `rakun-stylesheet` (emilia, jhonstart-emilia) · `rakun-service` (rakun-web, rakun-actuator) · `rakun-scheduling` · `rakun-session` · `rakun-cache` · `rakun-security` · `rakun-websocket` · `rakun-metrics` · `rakun-messaging` · `rakun-mail` · `rakun-app` · `rakun-ssr` (onze and its eight). erika stays a repository of its own, renamed `query` (a pure typed-query DSL; front 145 continues as `query`); `css`, `actions`, `routing`, `validation`, `snap`, `markdown`, `http`, `log`, `json`, `yaml` stay external. The `rakun-starter-*` go; each `*-test` becomes its package's `testing/` module. **Plug-and-play:** adding a package to `botopink.json` is all a program does — a package declares its contribution at its root (`#[rakun.module] pub fn … -> Module`), `rakun.boot()` discovers every module of the program's dependencies through the catalogue, orders them by layer and starts them with their defaults and the program's typed overrides (`#[rakun.config]`); everything resolves at build (a thing contributed twice, a required package absent: build errors naming them), no run-time discovery. Needs 144 B-86: `@TypeInfo.all` reaching a dependency's declarations (its catalogue exported with its analysis, level B storing it). History kept by `git subtree add`; the six repositories archived; the six fronts' open steps refiled under 150 (front 165 s8). Amends 326 (the libraries as repositories), 338, 391, 398 (dbcontext as a repository of its own), 433 (one front per repository: rakun's is 150, with lanes by layer).
+- **Context.** Raised by the maintainer, 2026-10-14: seven repositories for one web platform, 40 thin packages and starters to combine them; names (erika, emilia, jhonstart, onze) saying nothing of the role.
 
 ## Part 1 — What blocks tracks 00–03
 

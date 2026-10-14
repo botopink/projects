@@ -1790,6 +1790,16 @@ The wasm-gc group is a front of its own in this machine’s folder, **run by thi
 wasmtime), s2 (B-83, WasmGC codegen), s3 (B-84, std-wasm in botopink and `.wat`), s4 (Conformance). Nothing of it
 stays here; B-30 is closed as superseded by it.
 
+### B-86 — the catalogue across packages, the lib-agnostic gate's list (front 165 s4; the maintainer, 2026-10-14)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing; 165 s5 waits on it
+
+- [ ] `@TypeInfo.all` reaches the declarations of the program's dependencies: a dependency's analysis exports its
+      catalogue, level B (B-60) stores it with the entry, the program's catalogue is the union; a cell: a dependency's
+      `#[m]`-annotated declaration listed by the program — what rakun's `rakun.boot()` discovers modules with (mono-a)
+- [ ] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
+- [ ] the reference: § Decorators, the catalogue's reach
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

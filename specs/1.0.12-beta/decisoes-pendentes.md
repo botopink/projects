@@ -12,6 +12,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 - **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
 - **Máquina 2** — prioridade máxima: as perguntas que a máquina 2 da frente 144 espera, as mais urgentes primeiro. O desenvolvimento novo está centrado na frente 164 wasm-gc (s1 → s4, wasmtime-a, wasmgc-a).
+- **Frente 165** — rakun-workspace: um repositório `rakun`, 17 pacotes plug-and-play (mono-a).
 - **Parte 1** — o que bloqueia a frente 144 (`repository/botopink-lang`, decisão 433: os passos abertos das antigas trilhas
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), por antiga trilha, depois as
   escolhas de implementação dessas trilhas que aguardam confirmação.
@@ -940,6 +941,12 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** Cada ponto (a) como proposto ou (b) o seu oposto.
 - **Recomendação.** (a) — as leituras mais estritas onde a 529 se cala, e a mesma regra para todo chamável.
 - **Bloqueia.** Um parâmetro de record num método; nada construído fora isso.
+
+## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
+
+#### mono-a · Um repositório `rakun`: um workspace de 17 pacotes plug-and-play; erika fora como `query` (decisões 326, 338, 391, 398, 433, 512; frente 165)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** rakun, os consumidores do erika, emilia, styled, jhonstart, onze e dbcontext viram um repositório, `botopink/rakun`, um workspace do botopink (512): um diretório por pacote sob `modules/`, o pacote nomeado pelo seu diretório, cada um com o próprio `botopink.json`, `src/`, testes e `AGENTS.md`, as células sob `conformance/<package>/`, uma versão e tag, um gate, hook e CI. Os pacotes, por camada (cada um dependendo só de camadas abaixo, um ciclo recusado): `rakun` (núcleo) · `rakun-data` (dbcontext + rakun-data) · `rakun-restclient` (rakun-client) · `rakun-style` (styled) · `rakun-bpp` (jhonstart, -html, -link, -forms, -test, -dom-test) · `rakun-stylesheet` (emilia, jhonstart-emilia) · `rakun-service` (rakun-web, rakun-actuator) · `rakun-scheduling` · `rakun-session` · `rakun-cache` · `rakun-security` · `rakun-websocket` · `rakun-metrics` · `rakun-messaging` · `rakun-mail` · `rakun-app` · `rakun-ssr` (onze e seus oito). O erika continua um repositório próprio, renomeado `query` (uma DSL pura de consultas tipadas; a frente 145 continua como `query`); `css`, `actions`, `routing`, `validation`, `snap`, `markdown`, `http`, `log`, `json`, `yaml` continuam externos. Os `rakun-starter-*` saem; cada `*-test` vira o módulo `testing/` do seu pacote. **Plug-and-play:** adicionar um pacote ao `botopink.json` é tudo o que um programa faz — um pacote declara sua contribuição na raiz (`#[rakun.module] pub fn … -> Module`), o `rakun.boot()` descobre todo módulo das dependências do programa pelo catálogo, ordena por camada e os inicia com seus defaults e os overrides tipados do programa (`#[rakun.config]`); tudo resolve no build (uma coisa contribuída duas vezes, um pacote exigido ausente: erros de build que os nomeiam), nenhuma descoberta em runtime. Precisa do 144 B-86: `@TypeInfo.all` alcançando as declarações de uma dependência (seu catálogo exportado com a análise, o nível B o guardando). História preservada por `git subtree add`; os seis repositórios arquivados; os passos abertos das seis frentes refilados sob a 150 (frente 165 s8). Emenda a 326 (as bibliotecas como repositórios), 338, 391, 398 (dbcontext como repositório próprio), 433 (uma frente por repositório: a do rakun é a 150, com lanes por camada).
+- **Contexto.** Levantada pelo mantenedor, 2026-10-14: sete repositórios para uma plataforma web, 40 pacotes finos e starters para combiná-los; nomes (erika, emilia, jhonstart, onze) que nada dizem do papel.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 

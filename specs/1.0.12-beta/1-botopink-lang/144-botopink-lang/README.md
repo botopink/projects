@@ -324,3 +324,4 @@ Where each step is (its machine's folder holds its whole text).
 | B-83 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s2 |
 | B-84 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s3 |
 | B-85 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s4 |
+| B-86 | [2](machine-2-backends-tooling/README.md) | the catalogue across packages (`@TypeInfo.all` reaching a dependency's declarations) and the lib-agnostic gate's list `rakun|query` (front 165 s4, mono-a) |

@@ -91,6 +91,7 @@ milestone (three when the console is closed).
 | **161** vscode-extension | `repository/vscode-extension/**` | the compiler (144) |
 | **162** onze | `repository/onze/**` — `onze`, `onze-server`, `onze-cli`, `onze-bundler`, `onze-assets`, `onze-og`, `onze-release`, `onze-content`, `onze-test`, the examples | rakun, jhonstart |
 | **136** cardume | `repository/cardume/**` when born; `rakun-cardume`, `jhonstart-cardume` (its bridges) | the frameworks' cores |
+| **165** rakun-workspace | during its steps: rakun, erika, emilia, styled, jhonstart, onze, dbcontext whole (s1–s3, s5–s7), botopink-lang's s4 (144 B-86), the meta (s8); after it, `repository/rakun/**` is 150's with lanes by layer | the other libraries |
 | **163** meta-ci | the meta `.github/workflows/**`, meta `scripts/**`, `AGENTS.md` § Layout and § CI, the submodule pointers' sweep, the specs' drift rule (141-a) | every repository under `repository/` |
 | **105** i18n · **107** release | `repository/{i18n,release}/**` when born; their consumer lines | — |
 | **98** packaging tail · **135** snap | nothing of their own: the closing check and the order of the snapshot steps | — |

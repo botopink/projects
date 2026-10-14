@@ -10,7 +10,7 @@ conformance order (L1, [`fronts.md`](fronts.md) § Execution order).** **New dev
 | Tier | Partial | Not started | No open step left |
 |---|---|---|---|
 | Maximum | 144 botopink-lang (B-00 done but its last box) | 164 wasm-gc (machine 2: s1 wasmtime → s2 WasmGC → s3 std-wasm in botopink and `.wat` → s4) — where new development is centred | — |
-| High | 145 erika · 146 validation · 148 styled · 149 jhonstart · 150 rakun · 154 emilia · 155 http · 156 log · 158 markdown · 162 onze | 151 json · 152 yaml · 153 dbcontext · 157 routing · 161 vscode-extension | 147 css · 159 actions · 160 snap (consumer commits only) |
+| High | 145 erika · 146 validation · 148 styled · 149 jhonstart · 150 rakun · 154 emilia · 155 http · 156 log · 158 markdown · 162 onze | **165 rakun-workspace** (opens now, 2026-10-14: rakun, erika, emilia, styled, jhonstart, onze, dbcontext into one `rakun` workspace of 17 plug-and-play packages, erika outside as `query`; 148, 149, 150, 153, 154, 162 pause until its s1) · 151 json · 152 yaml · 153 dbcontext · 157 routing · 161 vscode-extension | 147 css · 159 actions · 160 snap (consumer commits only) |
 | Medium | 163 meta-ci · 135 snap (coordination) | 136 cardume · 105 i18n · 107 release · 98 packaging tail | — |
 
 **Gate:** `scripts/gate.sh --cold` green on botopink-lang `576c8d17` (batch 3: every stage; test-libs
@@ -45,6 +45,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 164 s2 (was 144 B-83) — the wasm codegen emits WasmGC for every value (string, array, record, enum, closure, task, Dict), `needs: [.Gc]`; a long task's memory bounded; `std_wasm.wasm` still linked, marshalled at the boundary, until B-84 (wasmgc-a)
 - [ ] 164 s3 (was 144 B-84) — std-wasm rewritten — its logic in botopink (`.bp` of std), its leaves in hand-written `.wat` under `modules/std-wasm/wat/` read by the compiler's own reader; `std_wasm.wasm`, `heap.zig`, the term library and `modules/beam-to-wasm/` deleted (wasmgc-a)
 - [ ] 164 s4 (was 144 B-85) — the group's Conformance step
+- [ ] 144 B-86 — the catalogue across packages (a dependency's catalogue exported with its analysis, level B storing it; `@TypeInfo.all` the union) and the lib-agnostic gate's list `rakun|query` (front 165 s4, mono-a)
 - [x] 144 B-79 — `botopink run` of a program with no `fn main` refused before running, located at the entry module, one message on every target and host (517), cell `run_without_main` green; its Conformance step closed on feat's first green pipeline run · nothing
 - [x] 144 B-64 — a module's tests a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`, privates through a reserved export, `botopink test` on wasm (513) landed; its Conformance step closed on feat's first green pipeline run · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
