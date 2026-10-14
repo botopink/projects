@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**117 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1048,6 +1048,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como construído, o import direto nomeado. (b) Todo importador nomeia o módulo onde o erro de fato está (a raiz da cadeia), não seu import direto.
 - **Recomendação.** (a) — cada linha verdadeira onde está; (b) aponta para um arquivo que o importador não nomeia.
 - **Bloqueia.** Nada construído.
+
+#### 527-a · Envolver toda chamada ao host custa 15–21 % no erlang e no beam (decisões 492, 527 (1); 144 B-07)
+- **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(b): envolver só os bindings declarados fora da std** — os bindings da própria std são auditados pela 495 (cada um ou `result: true` ou listado como sem falha), então seus raises já são marcados; um binding de biblioteca ou de programa sem `result: true` é envolvido e seu raise não marcado é `crash`.
+- **Medido.** A 527 (1) pede que toda chamada de um binding sem `result: true` seja envolvida no erlang e no beam, para um raise ser marcado `host` e um não marcado ser `crash`. Um wrapper `try … catch` que remarca, num laço de 20M chamadas triviais ao host, custa 15–21 % no erlang (≈1,7 ns por chamada, ~200 ms → ~236 ms, o mesmo com `+native`); o beam usa o mesmo mecanismo. A 527 devolve isso acima de um custo alto; não está construído — um raise não marcado ainda responde `host`. Também escolhido sem decisão: um `assert` com mensagem do programa imprime `assertion failed: <cond>: <msg> at <where>`.
+- **Opções.** (a) Aceitar o custo: envolver toda chamada assim. (b) Envolver só bindings declarados fora da std. (c) Marcar do lado do host: o corpo Erlang / Node de um binding levanta um termo marcado por conta própria; o compilador não envolve nada.
+- **Recomendação.** (b) — os bindings da std já são auditados (495), e os laços quentes são da std.
+- **Bloqueia.** A 527 (1); `crash` nunca é respondido até lá.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** Nenhuma das três: só o padrão, por enquanto. Um `var` de nível de módulo fica, seus dados imutáveis (`counts = counts.insert(k, v)` é o `Counts2 = maps:put(…)` do Erlang), e sem anotação alguma ele é **um valor para o programa inteiro em todo alvo** (emenda o padrão por processo da 430 no BEAM): BEAM uma tabela ETS de uma linha ou `persistent_term` — escolha do backend, nunca do programa —, commonJS uma variável, wasm uma raiz permanente fora de todo heap (522 (6)). `keyed: true`, a colocação por processo e `@BeamMemory` são removidos (emenda a 38, 63, 167): nenhuma anotação de memória existe; as regras keyed do checker (`noteKeyedRowRead`, `checkKeyedWrite`, `refuseKeyedWholeRead`) e os lowerings por linha saem. Conhecido e aceito: no BEAM dois processos escrevendo um `var` ao mesmo tempo fazem ler-modificar-gravar do valor inteiro, e uma escrita pode se perder; uma tabela keyed volta por uma decisão posterior sobre uma necessidade medida. `Dict.bump` (340, B-26) é então um método comum de `Dict`.

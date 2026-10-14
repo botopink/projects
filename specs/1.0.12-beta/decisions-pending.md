@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**117 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1048,6 +1048,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As built, the direct import named. (b) Every importer names the module where the error actually is (the root of the chain), not its direct import.
 - **Recommendation.** (a) — each line true where it stands; (b) points at a file the importer does not name.
 - **Blocks.** Nothing built.
+
+#### 527-a · Wrapping every host call costs 15–21 % on erlang and beam (decisions 492, 527 (1); 144 B-07)
+- **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(b): wrap only the bindings declared outside std** — std's own bindings are audited by 495 (each one either `result: true` or listed as promising no failure), so their raises are already marked; a library's or a program's binding without `result: true` is wrapped and its unmarked raise is `crash`.
+- **Measured.** 527 (1) asks every call of a binding without `result: true` to be wrapped on erlang and beam, so a raise is marked `host` and an unmarked one is `crash`. A `try … catch` re-marking wrapper on a loop of 20M trivial host calls costs 15–21 % on erlang (≈1.7 ns a call, ~200 ms → ~236 ms, the same with `+native`); beam uses the same mechanism. 527 sends it back above a high cost; it is not built — an unmarked raise still answers `host`. Also chosen without a decision: an `assert` with a program message prints `assertion failed: <cond>: <msg> at <where>`.
+- **Options.** (a) Accept the cost: wrap every such call. (b) Wrap only bindings declared outside std. (c) Mark on the host side: a binding's Erlang / Node body raises a marked term itself; the compiler wraps nothing.
+- **Recommendation.** (b) — std's bindings are audited already (495), and the hot loops are std's.
+- **Blocks.** 527 (1); `crash` is never answered until then.
 
 #### 17-c · What else names a `keyed: true` var
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** None of the three: the default alone, for now. A module-level `var` stays, its data immutable (`counts = counts.insert(k, v)` is Erlang's `Counts2 = maps:put(…)`), and without any annotation it is **one value for the whole program on every target** (amends 430's per-process default on the BEAM): BEAM a one-row ETS table or `persistent_term` — the backend's choice, never the program's —, commonJS a variable, wasm a permanent root outside every heap (522 (6)). `keyed: true`, the per-process placement and `@BeamMemory` are removed (amends 38, 63, 167): no memory annotation exists; the checker's keyed rules (`noteKeyedRowRead`, `checkKeyedWrite`, `refuseKeyedWholeRead`) and the row lowerings go. Known and accepted: on the BEAM two processes writing one `var` at once read-modify-write the whole value, and a write may be lost; a keyed table returns by a later decision on a measured need. `Dict.bump` (340, B-26) is then a plain `Dict` method.
