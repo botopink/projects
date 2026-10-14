@@ -12,7 +12,7 @@ each step — the engine and the memory are never a source of text (434 (5)).
 `modules/{std-wasm,wasm3,beam-to-wasm}/**`, `modules/compiler-web/**`, `build.zig`'s wasm and engine steps,
 `.github/workflows/release.yml`'s engine fetch; the wasm column of every cell. 144 keeps the rest of the repository;
 a 144 step that reaches the wasm target, the comptime runtime or std-wasm waits on this front's s2, never edits them.
-**Depends on:** nothing open. **Decisions:** wasmtime-a, wasmgc-a (awaiting numbers); amends 434, 440, 448, 449,
+**Depends on:** nothing open. **Decisions:** 543 (wasmtime-a), 544 (wasmgc-a); amends 434, 440, 448, 449,
 450, 452, 522; 518 (`needs`) and 392 (the scheduler) unchanged.
 
 Until s2 lands a wasm program allocates as today (a bump heap, exhaustion a trap, 448 (4)) — a known limit of a long
