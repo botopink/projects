@@ -1416,9 +1416,8 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [x] from `01-checker`: element read of a union array (`run/array_literal_union_elements`), program-declared
       `default fn` of a primitive (`test/program_primitive_behavior_extends_std`, green on four targets), `?.b` on
       an absent element (`es.at(3)?.a ?? 0` prints `0` on wasm)
-- [ ] union of primitives a `case` produces (`test/case_value_union`) prints an address on wasm: the wasm backend
-      has no inferred type for a case value whose arms bind — a design pass of its own
-- [ ] `case_value_union`'s representation on wasm: each arm boxed as a union array element (150, 8 §11) · question B-22-c
+- [~] union of primitives a `case` produces (`test/case_value_union`) prints an address on wasm — superseded by group
+      wasm-gc (B-83): a union value is a reference to any GC type; the cell is B-83's
 - [ ] a bare name inside a multi-subject arm (`Shape.Square(side), m -> …`) binds, against `docs.md`'s "a name alone is not a
       pattern" · question B-22-d
 - [x] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
@@ -1813,7 +1812,7 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
       `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
 - [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither) — `async` bound on both hosts; `io/http` waits on question B-25-b
 
-#### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after step 5) (was `05-wasm` s9)
+#### Step 9 — a prebuilt wasm library merged into the module (decision 333 (B); no user yet, after B-83 — its ABI is WasmGC's, question to be opened) (was `05-wasm` s9)
 
 - [ ] `@External.Wasm(module: .<Library>, fn: "<export>")` — a fourth form beside `op:`, `fn:`, `wasi:` (238); the
       library named from the package's wasm manifest (version, hash); an unknown library, a missing export or a
@@ -1841,7 +1840,7 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
 - [ ] the adapter names `.GateNew` / `.GateOpen` / `.GateAwait`, and std's test-only cells (`monoMillis`, `hostTarget`, the
       counters) left unbound on wasm until `botopink test` runs wasm (335 (3)) · question B-25-a
 - [ ] `fetch`'s surface: `Request`, `HttpError` and the migration from `fetch(url)` · question B-25-b
-- [ ] log's two markers: a wasm adapter keeping one host value per name, `wasi:filesystem` · question B-25-c
+- [x] log's two markers — superseded by fs-a: `io.fs` binds `wasi:filesystem` on wasm, log calls it; 156's markers removed
 - [x] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
       needs (the lambda's answer type not read) — found by B-25 — bound from the argument's answer type (`generic_thunk_result_binds`)
 - [x] beam: a tuple holding a function value fails `invalid_store` (`val p = #(g, 2); p.0("abc")`) — found by B-21's
@@ -1853,8 +1852,8 @@ differently · `RUNTIME TRAP` fixtures re-read: still impossible on wasm, or fix
       (`Sq(n: 3).twice()` is "'twice' is not declared in any behavior implemented for 'Sq'") — found by B-19
       — adopted, extended behaviors included (`behavior_default_adopted_across_modules`); a generic behavior's not yet
 - [x] wasm: the explicit conversions (`pause.toI32()`) have no wasm lowering, so `async.retry` still stops there — found by B-25
-- [ ] Step 9's manifest key, the library's ABI (a position-independent side module, as std-wasm, or a standalone module)
-      and the glue (strings in and out, freeing, `?T`'s null) · question B-25-d
+- [~] Step 9's manifest key, ABI and glue — withdrawn as written (a linear-memory ABI); under group wasm-gc a prebuilt
+      library's ABI is GC references, a question of its own once B-83 lands; steps 9 and 11 wait on it
 - [ ] erlang: DebugAllocator reports a leak in `erlang.zig`'s `closeTypeUnit` under `cell check` — found by B-25
 
 #### B-25 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)

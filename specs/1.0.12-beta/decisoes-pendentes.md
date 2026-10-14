@@ -90,6 +90,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** A linha do 144 B-10.
 
 #### B-10-d · Uma variante sem qualificador em posição de expressão (`Two(t)`): recusada ou gerada? (144 B-10 G2)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a), com a B-22-a (a mesma pergunta): uma variante nua em posição de expressão é recusada na chamada, localizada, nomeando `E.Two(t)` ou `.Two(t)` (o tipo esperado nomeando o enum); uma variante nua continua sendo de um padrão de `case` (decisão 8). Uma regra, as duas perguntas.
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusada na chamada, localizada, nomeando `.Two(t)` ou `E.Two(t)`** — o `docs.md` já diz que não é gerada; o checker aceitar o que nenhum backend emite é o defeito. Uma grafia: a qualificada ou a com ponto.
 - **Medido.** `Two(t)` passa no checker e falha no commonJS, erlang e beam; o `docs.md` diz que não é gerada.
 - **Opções.**
@@ -182,6 +183,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** A linha genérica do 144 B-11.
 
 #### B-14-a · `Name(..base, f: v)` (decisão 37) ao lado do `Name(...base, f: v)` da 359: o `..` sai? (144 B-14)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** 529: `..` é a única grafia de "o resto" — a construção de um record espalha com `..` (`Name(..base, f: v)`), uma tag com `{..p}`, e o `...` sai, mantido só para o intervalo inclusivo; o `botopink format` migra. O contrário da proposta.
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `..` sai** — uma grafia para copiar os campos de um record; `Name(..base, …)` é recusado, localizado, nomeando `...base`, e um codemod reescreve o std e as bibliotecas no passo que o pousa. Duas grafias para uma coisa é o que a decisão 67 recusa; `...` é o da 359, também o da tag (`<Card {...p} />`). Viável: o braço `..` do parser nos argumentos de um construtor; `grep -rn '(\.\.[a-z]'` nos repositórios. Mudanças: uma célula de recusa; decisão 37 emendada.
 - **Medido.** Os dois compilam na `feat`: o `..base` da decisão 37 (fonte limitada a um nome) e o `...src` da 359 (qualquer expressão do tipo do record ou de um tipo derivado pela 307).
 - **Opções.**
@@ -576,6 +578,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** O passo 7 do 144 B-19.
 
 #### B-21-a · A última expressão de um lambda escrita com `;`: continua sendo o seu valor? (decisão 409; 144 B-21)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** 525-a (1): um lambda responde sua última expressão escrita sem `;` (409, 525); `{ x -> x + 1; }` não responde nada — depois de o `botopink format` remover, uma vez, o `;` da última instrução-expressão de todo lambda existente. O contrário da proposta.
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): continua sendo o valor, só para lambdas e `fn(x) { … }` sem tipo** — a regra do tail da 409 vale para os corpos com tipo de retorno escrito (`fn`, método, expressão `fn` tipada); um lambda não tem retorno escrito, o seu valor sempre foi a sua última instrução, e o formatter sempre terminou essa linha com `;`. Ler a 409 ao pé da letra ali significa um codemod sobre 3.800 corpos de lambda (std 180, `conformance/` 207, rakun 1855 …) sem regra nenhuma que o lambda ganhe. Viável: como construído. Muda: o texto da 409 nomeia os corpos que ela rege.
 - **Medido.** Nenhum corpo de `fn` nomeado, método ou expressão `fn` tipada termina sem `;` em lugar nenhum; os corpos de lambda que terminam com `;` são std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
 - **Opções.**
@@ -607,6 +610,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** A linha do método do 144 B-21.
 
 #### B-21-c · O formatter imprime a última expressão do bloco de um braço de `case` como escrita? (decisão 409; 144 B-21)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** 525 e 525-a (3): o formatador remove, uma vez, o último `;` de um braço de `case` usado como valor e o `break <value>` do braço, fazendo da cauda do braço o seu valor; fora disso imprime a última expressão de um bloco como escrita (a regra do formatador da 409).
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — como escrita, como o tail de um corpo** — o printer não acrescenta nem remove `;` em lugar nenhum (a regra do formatter da 409), incluindo o bloco de um braço; uma regra para todo bloco.
 - **Medido.** O formatter acrescenta `;` à última expressão do bloco de um braço de `case`; o texto da 409 cobre corpos de função.
 - **Opções.**
@@ -622,6 +626,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** A linha do braço do 144 B-21.
 
 #### B-22-a · Um construtor de variante nu numa expressão (`Num(4)` por `Value.Num(4)`)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a), com a B-10-d (a mesma pergunta): recusada, localizada, nomeando a forma qualificada — `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` e `val c: Value = .Num(4)` ficam; uma variante nua continua sendo de um padrão de `case` (decisão 8).
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): um construtor de variante nu numa expressão é recusado, localizado, nomeando a forma qualificada** — `val a = Num(4);` é `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` e `val c: Value = .Num(4)` (o tipo esperado nomeia o enum) continuam as duas formas legais; uma variante nua continua sendo de um padrão de `case` (decisão 8, o sujeito fixa o enum). Recusar antes de aceitar (67): hoje o `check` passa e commonJS, erlang e beam falham em run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) enquanto wasm imprime um endereço — quatro respostas erradas; (b) acrescentaria uma quarta grafia a todo backend. Viável: `infer.zig` `registerEnum` liga o nome nu (`env.bind(v.name, ctorType)`, `noteVariantClaim`), e `refuseAmbiguousVariant` recusa dois reivindicantes — o caminho de chamada de um só reivindicante vira a recusa para um uso fora de padrão, o caminho de padrão mantido; uma célula de recusa. Mudanças: `conformance/docs.md` § type — enums; dois defeitos a registrar ao lado: em wasm um `val b = Value.Num(4); @print(b)` sem anotação imprime um endereço, e `"${b}"` de uma variante com payload imprime `[object Object]` / uma tupla erlang / um endereço por alvo (nenhum impressor para uma variante num template; a linha 01-compiler do `status.md` nomeia a metade do enum).
 - **Medido.** O checker admite `val v = Num(4);` para `type Value { Num(n: i32), … }`; erlang, beam e commonJS então falham com um `Num` não vinculado em tempo de execução (`conformance/docs.md` § type — enums registra o defeito hoje). A regra de padrões da decisão 8 permite uma variante nua num padrão de `case`, onde o sujeito fixa o enum; uma expressão não tem sujeito.
 - **Opções.**
@@ -654,21 +659,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a) — o caminho distingue duas folhas de mesmo nome, e é o texto que o programa escreveu.
 - **Bloqueia.** A linha de seção de enum do 144 B-22; a linha 05-wasm do status.md.
-
-#### B-22-c · Um valor de `case` cujos braços têm tipos diferentes no wasm: empacotado como um elemento de array união? (decisões 150, 8 §11; 144 B-22)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o valor de cada braço empacotado como o wasm já empacota um elemento de array união, o `val` tipado pela união do checker; reaproveita uma representação e não acrescenta nenhuma.
-- **Medido.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) imprime um endereço no wasm; commonJS, erlang e beam imprimem o valor.
-- **Opções.**
-  (a) Empacotado por braço.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
-  ```
-  (b) Recusado no wasm até uma representação própria.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `case_value_union` do 144 B-22.
 
 #### B-22-d · Um nome sozinho dentro de um braço de vários sujeitos: um binding, ou recusado como um nome sozinho? (144 B-22)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado, como um nome sozinho é** — o `docs.md` diz que um nome sozinho não é padrão, e a forma com chaves já o recusa dentro de um braço de vários sujeitos; a forma com seta segue: `_` para qualquer um, um padrão para fazer binding. Uma regra para todo braço. Muda: `case_multi_subject_patterns` reescrita com padrões.
@@ -703,6 +693,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** A linha da 310 do 144 B-23.
 
 #### B-23-b · Um raise no template do próprio módulo: localizado no ponto de chamada, ou na chamada que levantou? (decisão 451 (3); 144 B-23)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** B-48-a: na chamada que levantou, dentro do corpo do template, no seu próprio arquivo (451 (3)), com toda chamada da cadeia como uma linha `called from` até o uso do template pelo programa — uma regra para todo corpo de comptime, o template do próprio módulo incluído. Como proposto.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na chamada que levantou, dentro do corpo do template, como um decorator no mesmo módulo é (451 (3))** — uma regra para todo corpo de comptime; o template de outro módulo já nomeia o seu arquivo e linha. Muda: as cells que fixam um raise assim mudam a localização.
 - **Medido.** O template de outro módulo nomeia `src/tpl.bp:3:5` (`template_raise_names_body_file`); o template do próprio módulo é reportado no ponto de chamada, sem linha no seu corpo.
 - **Opções.**
@@ -748,6 +739,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Trava.** As linhas do `io/http` do 144 B-25 (passos 4, 5, 6, 17).
 
 #### B-25-c · Os dois marcadores de wasm do log: um valor de host por nome e `wasi:filesystem`, ou o interino da 405 no log? (decisões 334, 405; 144 B-25)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** Nenhuma: a fs-a substitui os dois marcadores — o `io.fs` ganha bindings wasm (`wasi:filesystem`, `needs: [.Filesystem]`), então as células de arquivo do log chamam o `io.fs` no wasm como em todo alvo, sem adaptador próprio do log e sem interino; no host browser a chamada é recusada na chamada (fs-a). Os dois marcadores da 156 são removidos.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o interino da 405 no log agora** — as cells de arquivo com binding a um `fn:` que não alcança arquivo no wasm, recusa localizada no uso; o adaptador de valor de host por nome e o `wasi:filesystem` esperam uma decisão própria. Nenhuma caixa do B-25 nem decisão fixa a forma de nenhum dos dois.
 - **Medido.** os dois marcadores do log nomeiam as duas necessidades; nenhum dos adaptadores existe.
 - **Opções.**
@@ -761,21 +753,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** Os marcadores de wasm do 156.
-
-#### B-25-d · Uma biblioteca wasm pré-compilada: o seu manifesto, a sua ABI e a sua cola (decisão 333 (B); 144 B-25 passo 9)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a)** — o manifesto: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` no `botopink.json`, os exports nomeados pelos bindings; a ABI: um side module independente de posição (`wasm-ld --shared`, `env.memory` / `__memory_base`), a forma que o std-wasm já tem, então o `std_wasm_link.zig` o dobra no módulo único; a cola: uma `string` entra como ponteiro e tamanho depois do export `alloc(len)` da biblioteca, volta como um `i64` que empacota ponteiro e tamanho, liberada pelo seu export `free(ptr, len)`; a ausência numa resposta `?T` é um ponteiro `0`. Um módulo autônomo com memória própria não pode ser mesclado sem relocações ou multi-memória.
-- **Medido.** A 333 (B) fixa a ideia (uma biblioteca pré-compilada mesclada no módulo emitido), não o manifesto, a ABI nem a cola.
-- **Opções.**
-  (a) Um side module, exports `alloc` / `free`, uma resposta de string em `i64`.
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
-  ```
-  (b) Um módulo autônomo mantido à parte, importado na instanciação (sem mesclar).
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
-  ```
-- **Recomendação.** (a).
-- **Trava.** Os passos 9 e 11 do 144 B-25.
 
 #### B-27-a · Uma declaração no header de um `.bpp` escrita depois de uma instrução: movida ou recusada? (decisões 199, 212; 144 B-27)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusada na declaração, localizada, nomeando a instrução antes dela** — o header se lê de cima para baixo como escrito; uma declaração depois de uma instrução rodaria numa ordem que o arquivo não mostra. Muda: uma cell de recusa; o unfold deixa de movê-la.

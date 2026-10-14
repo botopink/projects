@@ -90,6 +90,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-10's row.
 
 #### B-10-d · A bare variant in expression position (`Two(t)`, no enum qualifier): refused or lowered? (144 B-10 G2)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), with B-22-a (the same question): a bare variant in expression position is refused at the call, located, naming `E.Two(t)` or `.Two(t)` (the expected type naming the enum); a bare variant stays a `case` pattern's (decision 8). One rule, both questions.
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused at the call, located, naming `.Two(t)` or `E.Two(t)`** — `docs.md` already says it is not lowered; the checker accepting what no backend emits is the defect. One spelling: the qualified or the dot form.
 - **Measured.** `Two(t)` checks, then fails on commonJS, erlang and beam; `docs.md` calls it unlowered.
 - **Options.**
@@ -182,6 +183,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-11's generic row.
 
 #### B-14-a · `Name(..base, f: v)` (decision 37) beside 359's `Name(...base, f: v)`: does `..` go? (144 B-14)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 529: `..` is the one spelling of "the rest" — a record's construction spreads with `..` (`Name(..base, f: v)`), a tag with `{..p}`, and `...` goes, kept only for the inclusive range; `botopink format` migrates. The reverse of the proposal.
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `..` goes** — one spelling for copying a record's fields; `Name(..base, …)` is refused, located, naming `...base`, and a codemod rewrites std and the libraries in the step that lands it. Two spellings for one thing is what decision 67 refuses; `...` is 359's, also the tag's (`<Card {...p} />`). Viable: the parser's `..` arm in a constructor's arguments; `grep -rn '(\.\.[a-z]'` over the repositories. Changes: a refusal cell; decision 37 amended.
 - **Measured.** Both compile on `feat`: decision 37's `..base` (source limited to a name) and 359's `...src` (any expression of the record's type or a 307 derived type).
 - **Options.**
@@ -576,6 +578,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-19 step 7.
 
 #### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 525-a (1): a lambda answers its last expression written without `;` (409, 525); `{ x -> x + 1; }` answers nothing — after `botopink format` removes, once, the `;` of every existing lambda's last expression statement. The reverse of the proposal.
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): keep it the value, for lambdas and untyped `fn(x) { … }` only** — 409's tail rule binds the bodies with a written return type (`fn`, method, typed `fn` expression); a lambda has no written return, its value has always been its last statement, and the formatter has always ended that line with `;`. Reading 409 strictly there means a codemod over 3,800 lambda bodies (std 180, `conformance/` 207, rakun 1855 …) for no rule a lambda gains. Viable: as built. Changes: 409's text names the bodies it binds.
 - **Measured.** No named `fn`, method or typed `fn`-expression body ends without `;` anywhere; lambda bodies ending with `;` are std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
 - **Options.**
@@ -607,6 +610,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-21's method row.
 
 #### B-21-c · Does the formatter print a `case` arm block's last expression as written? (decision 409; 144 B-21)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 525 and 525-a (3): the formatter removes, once, the last `;` of a `case` arm used as a value and the arm's `break <value>`, making the arm's tail its value; elsewhere it prints a block's last expression as written (409's formatter rule).
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — as written, like a body's tail** — the printer adds and removes no `;` anywhere (409's formatter rule), an arm block included; one rule for every block.
 - **Measured.** The formatter adds `;` to a `case` arm block's last expression; 409's text covers function bodies.
 - **Options.**
@@ -622,6 +626,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-21's arm row.
 
 #### B-22-a · A bare variant constructor in an expression (`Num(4)` for `Value.Num(4)`)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), with B-10-d (the same question): refused, located, naming the qualified form — `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` and `val c: Value = .Num(4)` stay; a bare variant stays a `case` pattern's (decision 8).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): a bare variant constructor in an expression is refused, located, naming the qualified form** — `val a = Num(4);` is `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` and `val c: Value = .Num(4)` (the expected type names the enum) stay the two legal forms; a bare variant stays a `case` pattern's (decision 8, the subject fixes the enum). Refuse over accept (67): today `check` passes and commonJS, erlang and beam fail at run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) while wasm prints an address — four wrong answers; (b) would add a fourth spelling to every backend. Viable: `infer.zig` `registerEnum` binds the bare name (`env.bind(v.name, ctorType)`, `noteVariantClaim`), and `refuseAmbiguousVariant` refuses two claimants — the single-claimant call path becomes the refusal for a non-pattern use, the pattern path kept; one refusal cell. Changes: `conformance/docs.md` § type — enums; two defects to file beside it: on wasm an unannotated `val b = Value.Num(4); @print(b)` prints an address, and `"${b}"` of a payload variant prints `[object Object]` / an erlang tuple / an address by target (no printer for a variant in a template; the 01-compiler row in `status.md` names the enum half).
 - **Measured.** The checker admits `val v = Num(4);` for `type Value { Num(n: i32), … }`; erlang, beam and commonJS then fail on an unbound `Num` at run time (`conformance/docs.md` § type — enums records the defect today). Decision 8's pattern rule allows a bare variant in a `case` pattern, where the subject fixes the enum; an expression has no subject.
 - **Options.**
@@ -654,21 +659,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a) — the path tells two leaves of one name apart, and it is the text the program wrote.
 - **Blocks.** 144 B-22's enum-section row; status.md's 05-wasm row.
-
-#### B-22-c · A `case` value whose arms have different types on wasm: boxed as a union array element? (decisions 150, 8 §11; 144 B-22)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — each arm's value boxed as wasm already boxes a union array element, the `val` typed by the checker's union; it reuses a representation and adds none.
-- **Measured.** `test/case_value_union` (`case s { Circle(r) -> r * 2; Label(t) -> t; }`) prints an address on wasm; commonJS, erlang and beam print the value.
-- **Options.**
-  (a) Boxed per arm.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // f64 | string, printed by its arm
-  ```
-  (b) Refused on wasm until a representation of its own.
-  ```bp
-  val v = case s { Circle(r) -> r * 2; Label(t) -> t; };   // refused on wasm
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-22's `case_value_union` row.
 
 #### B-22-d · A bare name inside a multi-subject arm: a binding, or refused like a name alone? (144 B-22)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused, as a name alone is** — `docs.md` says a name alone is not a pattern, and the braced form already refuses it inside a multi-subject arm; the arrow form follows: `_` for any, a pattern to bind. One rule for every arm. Changes: `case_multi_subject_patterns` rewritten with patterns.
@@ -703,6 +693,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-23's 310 row.
 
 #### B-23-b · A raise in the module's own template: located at the call site, or at the call that raised? (decision 451 (3); 144 B-23)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** B-48-a: at the call that raised, inside the template body, in its own file (451 (3)), with every call of the chain as a `called from` line down to the program's use of the template — one rule for every comptime body, the module's own template included. As proposed.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the call that raised, inside the template's body, as a decorator in the same module is (451 (3))** — one rule for every comptime body; another module's template already names its file and line. Changes: the cells that pin such a raise move their location.
 - **Measured.** Another module's template names `src/tpl.bp:3:5` (`template_raise_names_body_file`); the module's own template is reported at the call site with no line in its body.
 - **Options.**
@@ -748,6 +739,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-25's `io/http` rows (steps 4, 5, 6, 17).
 
 #### B-25-c · log's two wasm markers: a host value per name and `wasi:filesystem`, or 405's interim in log? (decisions 334, 405; 144 B-25)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** Neither: fs-a supersedes both markers — `io.fs` gains wasm bindings (`wasi:filesystem`, `needs: [.Filesystem]`), so log's file cells call `io.fs` on wasm as on every target, no adapter of log's own and no interim; on the browser host the call is refused at the call (fs-a). 156's two markers are removed.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): 405's interim in log now** — the file cells bound to a `fn:` that reaches no file on wasm, located refusal at use; the host-value-per-name adapter and `wasi:filesystem` wait for a decision of their own. No B-25 box and no decision fixes either adapter's shape.
 - **Measured.** log's two markers name both needs; neither adapter exists.
 - **Options.**
@@ -761,21 +753,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 156's wasm markers.
-
-#### B-25-d · A prebuilt wasm library: its manifest, its ABI and its glue (decision 333 (B); 144 B-25 step 9)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a)** — the manifest: `"wasm": { "libraries": { "<Name>": { "path", "sha256" } } }` in `botopink.json`, the exports named by the bindings; the ABI: a position-independent side module (`wasm-ld --shared`, `env.memory` / `__memory_base`), the shape std-wasm already has, so `std_wasm_link.zig` folds it into the one module; the glue: a `string` goes in as pointer and length after the library's `alloc(len)` export, comes back as an `i64` packing pointer and length, freed by its `free(ptr, len)` export; a `?T` answer's absence is a pointer of `0`. A standalone module with its own memory cannot be merged without relocations or multi-memory.
-- **Measured.** 333 (B) fixes the idea (a prebuilt library merged into the emitted module), not the manifest, the ABI or the glue.
-- **Options.**
-  (a) A side module, `alloc` / `free` exports, an `i64` string answer.
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;
-  ```
-  (b) A standalone module kept separate, imported at instantiation (no merge).
-  ```bp
-  #[@External.Wasm(module: .Codec, fn: "encode")] fn encode(s: string) -> string;   // a second module beside the program's
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-25 steps 9 and 11.
 
 #### B-27-a · A `.bpp` header declaration written after a statement: moved or refused? (decisions 199, 212; 144 B-27)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused at the declaration, located, naming the statement before it** — the header reads top to bottom as written; a declaration after a statement would run in an order the file does not show. Changes: a refusal cell; the unfold stops moving it.
