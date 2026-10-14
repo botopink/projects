@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**115 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1028,6 +1028,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** Como listadas por ponto.
 - **Recomendação.** Q1 (a) — o codegen já especializa; Q2 (b) com a cópia no `await` — o próprio modelo do erlang; Q3 (a) — as próprias palavras da caixa 3 (os frames da task, as filas do escalonador, as células); Q4 a mesma recusa em todo alvo — uma resposta (434 (5)).
 - **Bloqueia.** A caixa 3 do 144 B-30, a célula limitada, a célula do ciclo localizado.
+
+#### imp-a · O texto de `import-of-failed-module` (144)
+- **Proposto (opus, 2026-10-14; aguardando o mantenedor):** **(a): como construído** — "`<name>` comes from `<module>`, which failed to check — its own errors are reported there", no item do import, um texto para um nome e para um namespace; cada importador nomeia seu import direto, então uma cadeia leva ao erro real passo a passo.
+- **Medido.** Um módulo que importava de um módulo recusado relatava `unbound variable` em cada uso, transitivamente, enterrando o único erro real (o `context.bp` do rakun sob a 525). Agora cada importador tem um erro no seu item de import nomeando o módulo de onde importa; o módulo recusado mantém seu próprio erro. `import {components.Card};` não distingue um nome de um namespace quando `components` é recusado, daí um texto só.
+- **Opções.** (a) Como construído, o import direto nomeado. (b) Todo importador nomeia o módulo onde o erro de fato está (a raiz da cadeia), não seu import direto.
+- **Recomendação.** (a) — cada linha verdadeira onde está; (b) aponta para um arquivo que o importador não nomeia.
+- **Bloqueia.** Nada construído.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.

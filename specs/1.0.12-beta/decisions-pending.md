@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**115 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1028,6 +1028,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** As listed per point.
 - **Recommendation.** Q1 (a) — the codegen already specialises; Q2 (b) with the copy at `await` — erlang's own model; Q3 (a) — box 3's own words (the task's frames, the scheduler's queues, the cells); Q4 the same refusal on every target — one answer (434 (5)).
 - **Blocks.** 144 B-30 box 3, the bounded cell, the located cycle cell.
+
+#### imp-a · The wording of `import-of-failed-module` (144)
+- **Proposed (opus, 2026-10-14; awaiting the maintainer):** **(a): as built** — "`<name>` comes from `<module>`, which failed to check — its own errors are reported there", at the import item, one wording for a name and a namespace; each importer names its direct import, so a chain leads to the real error step by step.
+- **Measured.** A module importing from a refused module reported `unbound variable` at every use, transitively, burying the one real error (rakun's `context.bp` under 525). Now each importer has one error at its import item naming the module it imports from; the refused module keeps its own error. `import {components.Card};` cannot tell a name from a namespace once `components` is refused, hence one wording.
+- **Options.** (a) As built, the direct import named. (b) Every importer names the module where the error actually is (the root of the chain), not its direct import.
+- **Recommendation.** (a) — each line true where it stands; (b) points at a file the importer does not name.
+- **Blocks.** Nothing built.
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.
