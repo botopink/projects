@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**109 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -962,6 +962,34 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) A function holding a `defer` adds `.exceptions`. (b) Only when `attempt` is also reached (today). (c) A `defer` refused on wasm when nothing adds `.exceptions`.
 - **Recommendation.** (a) — one answer on every target (434 (5)).
 - **Blocks.** The cell above, red on wasm until it lands (164 s2b).
+
+#### 537-a · `catch` over a left side that is not a bare `try e` (decision 537; 144)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): `catch` delimits a try region** — every `try` in its left side is caught by it, on every backend (the checker reads the region as the fallible channel; the backends wrap the left side); it is the reading 537's own example asserts, and it makes `x.a + try f() catch 0` mean one thing.
+- **Measured.** `try e catch h` folds into one `tryCatch`; any other left side (`(try await t) + 1 catch 0`, 537's example) parses as 537 says, but its inner `try` is checked against the function's channel: refused `effect-try-without-fallible-channel` without a `@Result` channel, and with one the `try` propagates to the function and the `catch` is reached by nothing. 537 fixes the parse, not what `catch` catches.
+- **Options.** (a) As proposed. (b) Refuse a `catch` whose left side is not `try e` / `try await e`, "parenthesise the `try`" — against 537's "no refusal remains". (c) Keep as built and document that `catch` binds only a leading `try`.
+- **Recommendation.** (a); cell `catch_region_covers_left_side`.
+- **Blocks.** A 144 row (the checker and four backends), machine 2.
+
+#### 537-b · `??`'s precedence against 537's parenthetical (decisions 537 (2), 28, 330)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): keep `??` tight; 537 (2) amended to "`catch` is the infix of the lowest precedence, below `??`"** — no program changes meaning, and 330's parenthesisation rule already covers the one ambiguous neighbour.
+- **Measured.** 537 gives `catch` "`??`'s precedence, below every arithmetic operator", but `??` is the tightest binary level (decision 28), refused beside `&&` / `||` (330). std relies on it: `libs/std/src/hash.bp` (`h.at(2 * i) ?? 0 * 65536.0 + …`), `io/random.bp` (`64 + b.at(6) ?? 0 % 16`). The build made `catch` the lowest and left `??` alone.
+- **Options.** (a) `??` moves to `catch`'s level, with a formatter rewrite parenthesising every `??` beside an arithmetic operator. (b) As proposed. (c) `??` at `||`'s level (JS), `catch` below it — the same migration as (a).
+- **Recommendation.** (b).
+- **Blocks.** Nothing built; 537's text only.
+
+#### 541-a · When the lambda-`;` migration leaves the formatter (decision 541)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): the rewrite kept under an explicit `botopink format --migrate 541`, removed once every repository under `repository/` and every open branch is migrated** — a branch rebased past the rule without the migration gets the silent `void` 541 was written to prevent, and `feat`'s formatter cannot repair it.
+- **Measured.** The migration lived in one botopink-lang commit and left at the next, which made the rule take effect; the libraries are migrated with a binary built at the first. vscode-extension, cardume, open branches and user code have no migration in `feat`'s compiler.
+- **Options.** (a) As proposed. (b) As built: the coordinator runs the migration binary over every branch at its rebase, the rule written in `fronts.md`. (c) The rewrite re-added unconditionally until 524's reformats land.
+- **Recommendation.** (a); (b) acceptable if the binary is kept and the rule written down.
+- **Blocks.** Every library landing across the rule; 524's reformats.
+
+#### 541-b · An untyped `fn(x) { x * 2; }`: still its value? (decisions 541 (1), 409; 144)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): 409 strict — an untyped `fn` expression answers nothing with `;`, the lambda's rule** — one rule for every unwritten return type.
+- **Measured.** 409: "in every body … a `fn` expression and a lambda … with `;` it is a statement"; 541 reversed B-21-a's option (b), which grouped lambdas and untyped `fn(x) { … }` together. The cell `lambda_last_statement_semicolon` (line 5, `out 8` for `dbl(4)`) and `conformance/docs.md` § Lambdas assert the untyped `fn` expression keeps the value, citing 409; the compiler keeps it (the discard runs for a lambda only).
+- **Options.** (a) As proposed; the cell's line becomes a refusal or moves to a cell `fn_expr_untyped_semicolon`. (b) Keep as built; 541 amended to name the exception.
+- **Recommendation.** (a).
+- **Blocks.** `lambda_last_statement_semicolon` line 5; `docs.md` § Lambdas.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

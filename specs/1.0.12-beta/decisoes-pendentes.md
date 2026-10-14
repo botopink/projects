@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**109 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -962,6 +962,34 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Uma função que contém um `defer` adiciona `.exceptions`. (b) Só quando o `attempt` também é alcançado (hoje). (c) Um `defer` recusado no wasm quando nada adiciona `.exceptions`.
 - **Recomendação.** (a) — uma resposta em todos os targets (434 (5)).
 - **Bloqueia.** A célula acima, vermelha no wasm até pousar (164 s2b).
+
+#### 537-a · `catch` sobre um lado esquerdo que não é um `try e` nu (decisão 537; 144)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): `catch` delimita uma região de try** — todo `try` no seu lado esquerdo é capturado por ele, em todo backend (o checker lê a região como o canal falível; os backends envolvem o lado esquerdo); é a leitura que o próprio exemplo da 537 afirma, e faz `x.a + try f() catch 0` significar uma coisa só.
+- **Medido.** `try e catch h` se dobra num único `tryCatch`; qualquer outro lado esquerdo (`(try await t) + 1 catch 0`, o exemplo da 537) é analisado como a 537 diz, mas seu `try` interno é checado contra o canal da função: recusado `effect-try-without-fallible-channel` sem um canal `@Result`, e com um o `try` propaga para a função e o `catch` não é alcançado por nada. A 537 fixa a análise, não o que o `catch` captura.
+- **Opções.** (a) Como proposto. (b) Recusar um `catch` cujo lado esquerdo não é `try e` / `try await e`, "coloque o `try` entre parênteses" — contra o "nenhuma recusa permanece" da 537. (c) Manter como construído e documentar que o `catch` liga só um `try` inicial.
+- **Recomendação.** (a); célula `catch_region_covers_left_side`.
+- **Bloqueia.** Uma linha da 144 (o checker e quatro backends), máquina 2.
+
+#### 537-b · A precedência do `??` contra o parêntese da 537 (decisões 537 (2), 28, 330)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(b): manter o `??` apertado; 537 (2) emendada para "`catch` é o infixo de menor precedência, abaixo do `??`"** — nenhum programa muda de significado, e a regra de parênteses da 330 já cobre o único vizinho ambíguo.
+- **Medido.** A 537 dá ao `catch` "a precedência do `??`, abaixo de todo operador aritmético", mas o `??` é o nível binário mais apertado (decisão 28), recusado ao lado de `&&` / `||` (330). A std depende disso: `libs/std/src/hash.bp` (`h.at(2 * i) ?? 0 * 65536.0 + …`), `io/random.bp` (`64 + b.at(6) ?? 0 % 16`). O build fez o `catch` o mais baixo e deixou o `??` como estava.
+- **Opções.** (a) O `??` vai para o nível do `catch`, com uma reescrita do formatador colocando parênteses em todo `??` ao lado de um operador aritmético. (b) Como proposto. (c) O `??` no nível do `||` (JS), o `catch` abaixo dele — a mesma migração de (a).
+- **Recomendação.** (b).
+- **Bloqueia.** Nada construído; só o texto da 537.
+
+#### 541-a · Quando a migração do `;` do lambda sai do formatador (decisão 541)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): a reescrita mantida sob um `botopink format --migrate 541` explícito, removida quando todo repositório em `repository/` e todo branch aberto estiverem migrados** — um branch rebaseado além da regra sem a migração recebe o `void` silencioso que a 541 foi escrita para evitar, e o formatador do `feat` não consegue repará-lo.
+- **Medido.** A migração viveu em um commit do botopink-lang e saiu no seguinte, que fez a regra valer; as bibliotecas são migradas com um binário construído no primeiro. vscode-extension, cardume, branches abertos e código de usuário não têm migração no compilador do `feat`.
+- **Opções.** (a) Como proposto. (b) Como construído: o coordenador roda o binário da migração sobre cada branch no seu rebase, a regra escrita em `fronts.md`. (c) A reescrita readicionada incondicionalmente até as reformatações da 524 pousarem.
+- **Recomendação.** (a); (b) aceitável se o binário for mantido e a regra escrita.
+- **Bloqueia.** Todo pouso de biblioteca através da regra; as reformatações da 524.
+
+#### 541-b · Um `fn(x) { x * 2; }` sem tipo: ainda o seu valor? (decisões 541 (1), 409; 144)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): a 409 estrita — uma expressão `fn` sem tipo não responde nada com `;`, a regra do lambda** — uma regra para todo tipo de retorno não escrito.
+- **Medido.** 409: "em todo corpo … uma expressão `fn` e um lambda … com `;` é um statement"; a 541 reverteu a opção (b) da B-21-a, que agrupava lambdas e `fn(x) { … }` sem tipo. A célula `lambda_last_statement_semicolon` (linha 5, `out 8` para `dbl(4)`) e o `conformance/docs.md` § Lambdas afirmam que a expressão `fn` sem tipo mantém o valor, citando a 409; o compilador o mantém (o descarte roda só para um lambda).
+- **Opções.** (a) Como proposto; a linha da célula vira uma recusa ou vai para uma célula `fn_expr_untyped_semicolon`. (b) Manter como construído; a 541 emendada para nomear a exceção.
+- **Recomendação.** (a).
+- **Bloqueia.** `lambda_last_statement_semicolon` linha 5; `docs.md` § Lambdas.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

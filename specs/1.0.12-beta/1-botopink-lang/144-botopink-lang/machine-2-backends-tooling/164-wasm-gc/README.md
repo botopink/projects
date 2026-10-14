@@ -113,6 +113,16 @@ values out in linear memory and emits WasmGC types; 522's own heap is never wire
       a `return` with a panicking inner defer)
 - [ ] question 539-b's answer: a `defer` and the program's `needs`
 
+### s2c — 537 and 541 on wasm (found reviewing their build, 2026-10-14)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** s2
+
+Each box a cell on every target, out on wasm (never a `snapshot/targets/` departure) until it lands.
+
+- [ ] `continue` inside a block or a `case` arm in a loop builds (today `compilation failed UnknownName`); cell
+      `block_continue_reaches_loop`
+- [ ] `await tasks[1]!` on an array of tasks answers the task's value; a `[]!` line in `await_postfix_binds_tighter`
+
 ### s3 — std-wasm rewritten: its logic in botopink, its leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig` and beam-to-wasm deleted (the maintainer, 2026-10-14; wasmgc-a)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** s2

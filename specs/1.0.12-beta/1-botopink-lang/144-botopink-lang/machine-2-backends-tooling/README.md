@@ -1813,6 +1813,21 @@ statement, so an arm that panics or throws hands the defer the old value
 - [ ] the reassignment written where it happens, inside the arm
 - [ ] erlc's "unused variable" warning on a defer body that rebinds a `var` (cell `defer` 4) gone
 
+### B-88 — a jump from a block or a `case` arm reaches its loop or generator on commonJS and erlang (decision 541 (2))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+541 (2) makes a block a scope of the enclosing function: `await`, `yield`, `break` and `continue` in it reach the
+function and the loop. The bare forms landed on commonJS, erlang and beam; these are unbuilt or unmeasured.
+
+- [ ] `break :outer` / `continue :outer` from a `case` arm's block to an outer loop — cell
+      `block_jump_label_reaches_loop`, red on commonJS and erlang (beam measured)
+- [ ] `yield` in a block inside a lambda generator reaches the lambda, the nearest function — cell
+      `block_yield_in_lambda_generator`
+- [ ] `return` inside a yielding arm returns from the enclosing generator on commonJS (the `function*` delegation) —
+      cell `case_arm_return_in_yielding_arm`
+- [ ] `block-break-value` printed as `error[block-break-value]`, as every other refusal
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
