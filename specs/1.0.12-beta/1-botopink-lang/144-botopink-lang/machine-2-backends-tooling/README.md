@@ -1587,7 +1587,7 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [x] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
       their whole refusal and label, green; every other refusal cell whose caret carries a label gains its record
 - [x] `conformance/docs.md` states the record (with B-29 step I, which writes that file; `conformance/AGENTS.md` states it today)
-- [ ] Conformance step (459, 474, 477, 478, 480) — box 3 done (the table below); box 4 part: 4 of the 82 re-recorded cells' `docs.md` written, the other 78 wait on the root reference's text for each refusal; boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [ ] Conformance step (459, 474, 477, 478, 480) — box 3 done (the table below); boxes 3 and 4 done (the reference states each re-recorded refusal's rule, the cells' `docs.md` quote it); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
   | Behaviour (decision) | Cells |
   |---|---|
   | a refusal `.snap` claims `label <text>` after its `at` (485) | the 82 refusal cells the step re-recorded; `cell_snap.zig` unit tests |
