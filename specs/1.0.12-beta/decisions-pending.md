@@ -957,6 +957,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** A 144 row (commonJS and wasm write an array or a record in a hole their own way).
 
 #### B-42-a · A dependency function wasm cannot lower, which the program never calls: does it stop the build? (decision 430; 144 B-42)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a): a dependency function the program never reaches is not lowered on wasm and stops nothing; a function the program reaches whose body wasm cannot lower is refused at the call, located, naming the function and what it lacks — as 475 places a missing host binding and 518 / 503 refuse at the call, never at the import. The same at build (434): such a function is an error only where a decorator, a template or a `comptime` reaches it. Never a wrong answer: a reached function is a build error, not a run-time surprise.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): no — an uncalled function is not lowered; only a reached one is refused, at its call**, as a host binding missing on a target is (475); the program runs.
 - **Measured.** B-42 links a `path` dependency's module whole on wasm. A body wasm cannot lower stops the program's build today; the cell's old `docs.md` claimed it does not, a claim nothing built (removed).
 - **Options.** (a) Refused only where reached. (b) Refused at the dependency's build, whatever the program calls (today).

@@ -957,6 +957,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Uma linha da 144 (commonJS e wasm escrevem um array ou um record num buraco do seu jeito).
 
 #### B-42-a · Uma função de dependência que o wasm não consegue traduzir e que o programa nunca chama: ela para o build? (decisão 430; 144 B-42)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a): uma função de dependência que o programa nunca alcança não é traduzida no wasm e não para nada; uma função que o programa alcança cujo corpo o wasm não consegue traduzir é recusada na chamada, localizada, nomeando a função e o que lhe falta — como a 475 situa um binding de host ausente e a 518 / 503 recusam na chamada, nunca no import. O mesmo no build (434): tal função é um erro só onde um decorator, um template ou um `comptime` a alcança. Nunca uma resposta errada: uma função alcançada é um erro de build, não uma surpresa em runtime.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não — uma função não chamada não é traduzida; só uma alcançada é recusada, na sua chamada**, como um binding de host ausente num alvo é (475); o programa roda.
 - **Medido.** O B-42 liga o módulo de uma dependência `path` inteiro no wasm. Um corpo que o wasm não consegue traduzir para o build do programa hoje; o `docs.md` antigo da célula afirmava que não, algo que nada construiu (removido).
 - **Opções.** (a) Recusada só onde alcançada. (b) Recusada no build da dependência, o que quer que o programa chame (hoje).
