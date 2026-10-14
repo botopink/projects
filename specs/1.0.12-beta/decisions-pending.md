@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**122 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -977,88 +977,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
 - **Blocks.** 150 s30.
 
-#### B-12-b · `@embedFile` / `@embedBytes`: where the read lives, a non-UTF-8 constant, a forwarded path (decision 342; 144 B-12 steps 33 and 6)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** `@embedFile` / `@embedBytes` are replaced by the builtin `@embed(comptime path: string) -> Asset`, `Asset` a compiler type like `Bytes`, no import (amends 342, 346's `@embedBytes`). A builtin, not a std function: a std function reading the file system is `Run` (376 (4)), and the reader, the per-target embedding and B-60's key are the compiler's work. `@embed` is a `Build` builtin (376); a call whose arguments are all known at build is computed where it is written, no `comptime` needed (extends 380 (1) from `Any` calls to `Build` calls; a `comptime` written stays legal, 380 (4)); an argument not known at build is an error at the argument. The path resolves against the `botopink.json` of the package that writes it, a path passed on through a `comptime` parameter in its caller's package (342's rules otherwise kept: no absolute path, no `..`, a missing file a located error). The read is a binding served by a reader handed to the compiler: the CLI and the LSP read the disk, `compiler-web` refuses with a located error. The `Asset` (`path`, `bytes`, `size`, `hash`) is a build constant and the artifact carries its copy embedded on every target — an Erlang binary, a JS `Uint8Array`, a wasm data segment; the program never reads the file at run time. `text()` on bytes that are not UTF-8 is a located build error. Every file read joins B-60's closure key, with a case in `test-analysis-equivalence`.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) for each of the three points** — (1) the checker reads through a file-reader handle the CLI and the language server pass in, with the writing package's root on `Module` (compiler-web passes a reader that refuses); (2) an embed's `Bytes` is a build-time constant every backend emits, the one exception to step 32's `comptime-bytes` refusal; (3) a `comptime path` parameter that forwards the path resolves at each call site, in the caller's package, as 342 says.
-- **Measured.** compiler-core reads no file today and compiler-web shares the checker. No `Bytes` literal exists, and step 32 refuses a `Bytes` value at comptime. 342 resolves a path relative to the `botopink.json` of the package that wrote it.
-- **Options.**
-  (1) (a) A reader handle passed into the checker. (b) The CLI and the LSP read every embedded file before checking and hand the contents over.
-  (2) (a) An embed's `Bytes` is a constant on every backend (an Erlang binary, a `Uint8Array`, a wasm data segment); `comptime-bytes` keeps refusing every other build-time `Bytes`. (b) `@embedBytes` is refused for a file that is not UTF-8 until a `Bytes` literal exists.
-  (3) (a) Checked at each call site in the caller's package. (b) A forwarded `comptime path` is refused until a later step.
-  ```bp
-  val logo: Bytes = @embedBytes("assets/logo.png");   // read relative to this package's botopink.json
-  ```
-- **Recommendation.** (a) for all three — 342 as written: the read where the checker sees the argument, a binary file embeddable, the caller's package for a forwarded path.
-- **Blocks.** 144 B-12 steps 33 and 6; rakun 93 (`rakun ws generate`'s checked-in `.bp`).
-
-#### B-12-a · `Bytes`' restrictive readings: confirm (decisions 346, 67; 144 B-12 step 32)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a′): step 32's refusals stay except the one B-12-b removes — a `Bytes` value may exist at build and is a build constant, carried in the artifact as an Erlang binary, a JS `Uint8Array`, a wasm data segment (`@embed`'s `Asset.bytes` needs it). Still refused: `Bytes` widening to `unknown` (so `@print(b)`), a `Bytes` template hole, `is` and a type pattern on `Bytes` (on Erlang a `Bytes` and a `string` are the same binary at run time), ordering (`<`, `>`; `==` stays), `+` between `Bytes` and `string` (346: no implicit conversion). Printing is written: `b.length()`, `b.toUtf8()`. A printed form chosen by the static type (`<<104, 105>>` on every target, no widening to `unknown`) is a later decision that only accepts what is refused today.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): keep them** — step 32 took the strictest reading wherever 346 is silent, each pinned by a refusal cell; a later decision can widen any one.
-- **Measured.** 346 fixes the type, `fromUtf8` / `toUtf8` and the host boundary. Step 32 refuses: `Bytes` widening to `unknown` (so `@print(b)` is refused), `is` and a type pattern on `Bytes`, a `Bytes` value at `comptime`, ordering (`<`, `>`), `+` between `Bytes` and `string`, and a `Bytes` template hole.
-- **Options.**
-  (a) Keep every refusal.
-  ```bp
-  val b = Bytes.fromUtf8("hi");
-  @print(b);            // refused: Bytes does not widen to unknown
-  @print("${b}");       // refused: no Bytes hole
-  @print(b.length());   // 2
-  ```
-  (b) Widen the printing pair: `@print(b)` and a hole write the bytes as a fixed text (e.g. `<<104,105>>` on every target); the rest kept.
-- **Recommendation.** (a) — refuse over accept (67); a printed form is a later decision that needs one text on four targets.
-- **Blocks.** Nothing built; B-12's Conformance step reads the answer.
-
-#### B-78-a · Does commonJS adopt std-wasm's float text? (decision 441; 144 B-78)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), broad: amends 441's last sentence — commonJS answers std-wasm's text wherever it differs from the JS engine's, as erlang, beam and wasm do (434 (5)): an `f64` written as text (`"${x}"`, `x.toString()`, `"n=" + x`, `@print(x)`) is `5.0` / `1.0e21`, including an imported record's `f64` field; `trim` uses std-wasm's set (a NBSP stays); case mapping is std-wasm's (`"ΟΔΟΣ".toLower()` is `"οδοσ"`). commonJS calls helpers, not the engine's `trim` / `toLowerCase` / number text. B-78 stays and widens to `trim` and case mapping; the commonJS departures `string_trim_keeps_nbsp` and `string_lower_final_sigma` are removed, the cells answering std-wasm's text on every target.
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): amend 441 — commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays** — `"${x}"`, `x.toString()`, `"n=" + x` and `@print(x)` write `5.0` and `1.0e21` on the four targets (434 (5): one text for a value). Measured on feat: all four targets already print `5.0` / `1.0e21` for a local `f64` and the cell `float_text_everywhere` is green on commonJS and wasm; the one gap is an imported record's `f64` field, where commonJS's template and `+` still write `5` (`.toString()` keeps `5.0`) — the checker knows the field's type (the importer holds the record's shape), so the codegen can apply the helper there. (b) would make one program print two texts by target for one value — 67's defect, not a rule. Viable: `codegen/js` (`@print`'s helper, shared since B-51); the imported-field case is B-78's open box. Changes: 441's last sentence; B-78 closes with the imported-field box and its Conformance step.
-- **Measured.** A float in text on the four targets: erlang, beam and wasm write `5.0` and `1.0e21`; commonJS's own `@print` writes the same since B-51; a template hole, `.toString()` and `string + f64` on commonJS write the JS engine's `5` and `1e21`. 144 B-78 makes them share `@print`'s helper (`run/float_text_everywhere`, red on the parent on commonJS). Decision 441's last sentence says "commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question" — B-78 contradicts it, and waits on this answer.
-- **Options.**
-  (a) Amend 441: commonJS writes an `f64` as the other targets do, everywhere it becomes text; B-78 stays.
-  ```bp
-  val x = 5.0;
-  @print("${x}");      // 5.0
-  @print(x.toString()); // 5.0
-  @print("n=" + x);    // n=5.0
-  ```
-  (b) Keep the JS engine's text: B-78 is reverted, `@print` alone writes `5.0`.
-  ```bp
-  val x = 5.0;
-  @print("${x}");      // 5
-  @print(x.toString()); // 5
-  @print("n=" + x);    // n=5
-  ```
-- **Recommendation.** (a) — one text for a float on every target, as erlang, beam, wasm and `@print` since B-51 already write it; a program whose output differs by target for the same value is a defect, not a language rule (decision 67's strictest reading).
-- **Also asked.** Whether 441's sentence still covers `trim` and case mapping under (a): `string_trim_keeps_nbsp` (commonJS `[x]`) and `string_lower_final_sigma` (commonJS `ς`) record commonJS departures that rest on it; under (a) for floats alone they stay, under a wider (a) they become std-wasm's answer on commonJS too. Under (b), `float_text_at_run_time` gains a `snapshot/targets/commonJS/` departure.
-- **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
-
-#### B-30-a · The wasm heap's design points (decisions 448, 449; 144 B-30)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a) with point 5 changed: points 1–4 and 6 as built in `modules/std-wasm/src/heap.zig`. 5′: a message copy keeps no sharing, as on erlang, and detects a cycle (it marks what it visited when it crosses a mutable cell) — a cycle raises a located error naming the send, `message contains a cycle`, never an exhausted memory and a trap.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) each of the six points below as built in `modules/std-wasm/src/heap.zig`** — 448 leaves the design to measurement; the reasons sit in `modules/std-wasm/AGENTS.md` § The heap. Wiring it into the codegen (B-30 box 3) puts the block header into nearly every allocating wasm snapshot, so it waits on this answer.
-- **Measured.** A string loop grows ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page — linear, few live values.
-- **Options.** (a) as built; (b) a change named point by point.
-  1. Generational: every survivor of a minor collection is promoted at once (erlang keeps it young one more time).
-  2. An 8-byte header per block (its size and a layout naming the pointer words), and a start bitmap per chunk so a value can point inside its block.
-  3. Sizes: nursery 64 KiB, doubled while more than half survives, at most 8 MiB; a major collection past max(256 KiB, twice what the last major kept).
-  4. Collections only at collection points whose roots the caller names; `alloc` never collects.
-  5. A message copy does not keep sharing, as in erlang; a cycle (possible only through a mutable cell) runs out of memory and traps.
-  6. A cell outside every heap that the barrier records becomes a permanent root of that heap.
-- **Recommendation.** (a) — erlang's model where it fits a single-threaded wasm, sizes from the measurement.
-- **Blocks.** 144 B-30 boxes 3–6.
-
-#### B-06-a · `Task`'s 432 surface: `catch` is a reserved word, the nested form has no spelling (decision 432; 144 B-06)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (c), for now, widened to every task method: amends 432's methods — `map` and `then` are withdrawn from `@Task<T>`, and `mapError` and `catch` from `@Task<@Result<T, E>>`, so no nested-form declaration is needed and `builtins.d.bp` declares none; a failing task is read only by `try await … catch` or `case` on `await`'s `@Result`, one way to handle a failure; composing without awaiting is an `async { … }` block (375), itself a `@Task` whose value is its tail (blk-a) (`val safe = async { try await load() catch 0 };` is a `@Task<i32>`). A task's value is read by `await`, and every composition — map, bind, recover, map the error — is an `async` block (`async { (try await t catch 0) * 2 }`). The reversed cell is named `task_failure_rejects`. A task method may return by a later decision, a recovering one under a name that is not a keyword.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): rename the failing-task method `recover`** (`mapError` kept), declared on `@Task<@Result<T, E>>` through a second `behavior` over the nested form once the parser accepts a type application there; `map` / `then` stay declared and are implemented on the four backends in the same step. Viable: `catch` is a keyword in every position (`reserved-word-as-name`); a member named `recover` needs nothing new.
-- **Measured.** B-06 built 432's lowering. Step 2 asks `map`, `then` on every `@Task<T>` and `mapError`, `catch` on `@Task<@Result<T, E>>` "a second declaration over the nested form". `fn catch` is refused as a reserved word; `behavior Task<@Result<…>>` does not parse; `map` / `then` are declared in `builtins.d.bp` and no backend implements them. Two neighbours: a task built by generic code (`-> @Task<T>` with `T` a `@Result`) and a `@Component<@Result>` still resolve with `{ ok }` / `{ error }` for a JS caller; the inverted cell keeps the name `task_throw_resolves_error`.
-- **Options.**
-  (a) `recover` for the failing-task method; the nested declaration once the parser takes it.
-  ```bp
-  val t: @Task<@Result<i32, string>> = load();
-  val safe = t.recover({ e -> 0 });      // @Task<i32>
-  ```
-  (b) `catch` unreserved as a member name only (`t.catch(…)`, as JS writes it).
-  (c) Drop the two failing-task methods; `try await` and `case` read a failing task.
-- **Recommendation.** (a) — the keyword stays a keyword (67), the method keeps its meaning; a JS caller of a generic task or a component is a separate row, and the inverted cell takes the name `task_failure_rejects`.
-- **Blocks.** 144 B-06 step 2.
-
 #### blk-a · A `{` without `->` is a block: `@block` removed, every block's value by 409 (decisions 124, 409, 2; 144 B-06)
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** In every position, a `{` followed by parameters and `->` (or `->` alone) is a lambda, and a `{` without `->` is a block — a scope, never a closure; a trailing lambda follows the same rule, so one with no parameter writes `f(x) { -> … }`. `@block` is removed (a located refusal whose fix writes `{ … }`; `builtins.d.bp` loses it; the `block_*` cells become its refusal cell and blocks' cells). A block used as a value answers its last expression written without `;` (409), as a function and a lambda do — a bare `{ … }`, a `case` arm `p { … }`, `comptime { … }` (its `break v` removed) and `async { … }` alike. A `return` in a block leaves the enclosing function (a block is a scope); a `return` in `async { … }` leaves the `async` block, a task of its own. A `var` of the enclosing function reassigned in a block is a plain reassignment on every target. A block handed where a function is expected is refused at the block with the hint "expected a function, got a block's value — missing `->`?"; a block whose value is `void` handed where `unknown` is expected is refused. `botopink format` migrates: a trailing lambda without `->` gains it, the last `;` of a `case` arm used as a value and `comptime { break v; }` become a tail.
 - **Context.** Raised by B-06-a: a failing task composes in an `async` block, and the block's value then needed the tail rule. Today four rules give a block its value (a tail in functions and lambdas, `return` in `async` and `@block`, `break` in `comptime`, the last statement even with `;` in a `case` arm) and `@block` is a lambda called in place (`parser/exprs.zig`: `{` in an expression is a lambda only with `->`, otherwise refused; after a call it is a trailing lambda with or without `->`).
@@ -1066,17 +984,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 #### props-g · A component's props as plain parameters or a record parameter `..props: R`; `..` is the one spelling of "the rest" (decisions 192, 199, 207, 213, 359; 144 · 149)
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (1) **Plain parameters:** a component (any function) may take its props as ordinary parameters — `pub fn Card(title: string, featured: bool = false) -> View` —, and a tag passes each attribute as the labelled argument of that name (`<Card title="Olá" featured />` is `Card(title: "Olá", featured: true)`); an attribute naming no parameter, or of the wrong type, is a build error at the attribute. (2) **A record parameter:** `..props: R`, `R` a record type (or one derived by 307), makes `R`'s fields the function's parameters from outside — a tag and a call pass them by label — and the body reads them as the record `props`; at most one per function, beside other parameters (`fn Card(..base: CardProps, onClick: fn() -> void)`), a name present in both refused at the declaration. A spread (`Card(..p, featured: true)`, `<Card {..p} featured />`) is legal only into a record parameter, `p` of its type or one derived from it (359's rule); a function of plain parameters takes no spread. (3) **`..` is the one spelling of "the rest"** (amends 359): a record's construction spreads with `..` (`Pessoa(..old, nome: "Ana")`), a tag with `{..p}`, a pattern's rest stays `..`, a variadic parameter stays `..values: T[]`; `...` is only the inclusive range `a...b` (a spread has no left operand). `botopink format` migrates `...` spreads to `..`. (4) The inline `type(…)` parameter (207) stays. (5) A `.bpp` file with `type Props(…)` unfolds to `pub default fn (..props: Props) -> View` (amends 199, 213): its caller passes the fields by label, the body still reads `props.title`.
 - **Context.** Raised by the maintainer on jhonstart's components: today a component takes one props record (`props: CardProps`, 192) or an inline `type(…)` (207), and a `.bpp` unfolds to `(props: Props)`; record spread is `...` (359) while a pattern's rest is `..`.
-
-#### B-28-a · The library reformat rewrites more than C-12's comma rule: land it, or file the rewrites as formatter defects? (decisions 165, 166, 243, 345; 144 B-28 step 4)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), with the formatter as an applier, never a check: the seven rewrites are the canonical form. `botopink format` never fails a gate — the `format-check` stage leaves botopink-lang's gate (`scripts/format-check.sh`) and any library gate or CI that holds one (amends 66). It is applied, never checked: each repository's commit hook runs `botopink format` over the commit's `.bp` files and commits the result — it formats the version entering the commit and never pulls in unstaged changes (the mechanism the implementing step's) —, and the LSP formats on save; no front ends with a reformat step. The three libraries out of the canonical form today (emilia, jhonstart, onze) get one reformat-only commit each, now, with the library's cells and tests green, at a moment when its front holds no open branch. A language rule stays an error of the parser or the checker (`@block`, a `{` without `->` used as a function, a reserved word as a name); the formatter keeps layout and synonyms alone. C-13 becomes formatting: a `;` after the closing brace of a block-shaped statement is accepted by the parser and removed by the formatter — the `blockStatementSemicolon` refusal is withdrawn.
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): land it — the printer's canonical form is the language's one written form, and step 4 is the reformat to it**; the criterion "token-identical" is read as "the same program" (each rewrite below keeps the meaning), every library's cells and tests green after, one commit per library. Viable: every copy is idempotent.
-- **Measured.** With the main checkout's compiler, nine libraries need no change; validation's one hunk (a binary run written open without a trailing comma joined) is token-identical and landed. emilia (101 files, 549 hunks), jhonstart (43, 103) and onze (61, 355) are idempotent but not token-identical: besides the comma rule the printer rewrites (1) a brace-less `if (c) stmt;` onto two lines, (2) `if (c) { "1" } else { "0" }` without its braces, (3) `fn(code: i32) -> void` without `-> void`, (4) a nested import `{state: {A, b}}` as `{state.A, state.b}`, (5) a one-line `"""x"""` as `"x"` and a `"…"` holding a raw newline as `"""…"""`, (6) a long `+` run one operand per line inside call arguments, (7) `import { A, B }` as `import {A, B}`.
-- **Options.**
-  (a) Land the three reformats as they are, each library's cells and tests run first.
-  (b) Each rewrite (1)–(7) is a formatter defect unless a decision names it; the printer keeps those forms as written, then step 4 runs again.
-  (c) Land the comma rule's hunks alone; the other rewrites wait on their own decisions.
-- **Recommendation.** (a) — one written form per program is what `botopink format` is for (C-12), and none of the seven changes what the program does.
-- **Blocks.** 144 B-28 step 4 (emilia, jhonstart, onze); rakun waits on 150 s30.
 
 #### B-53-a · A template hole writes `@print`'s text for every value, or only for enums? (B-53; decision 430)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): every value — a hole writes the text `@print` writes for it** (a record, an array, `null`, an enum), on the four targets; a string writes itself.
