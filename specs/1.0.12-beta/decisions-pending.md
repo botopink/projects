@@ -1043,6 +1043,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** 144 B-30 box 3, the bounded cell, the located cycle cell.
 
 #### imp-a · The wording of `import-of-failed-module` (144)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), as built, with the failed module's file path at the end: one error per importer at its import item, naming its direct import — "`<name>` comes from `<module>`, which failed to check — its own errors are reported there (`<path>`)", one text for a name and for a namespace; a chain reaches the real error step by step, each line true where it stands; the refused module keeps its own error.
 - **Proposed (opus, 2026-10-14; awaiting the maintainer):** **(a): as built** — "`<name>` comes from `<module>`, which failed to check — its own errors are reported there", at the import item, one wording for a name and a namespace; each importer names its direct import, so a chain leads to the real error step by step.
 - **Measured.** A module importing from a refused module reported `unbound variable` at every use, transitively, burying the one real error (rakun's `context.bp` under 525). Now each importer has one error at its import item naming the module it imports from; the refused module keeps its own error. `import {components.Card};` cannot tell a name from a namespace once `components` is refused, hence one wording.
 - **Options.** (a) As built, the direct import named. (b) Every importer names the module where the error actually is (the root of the chain), not its direct import.
