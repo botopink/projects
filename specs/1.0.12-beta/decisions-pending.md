@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**102 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**103 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -941,6 +941,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** Each point (a) as proposed or (b) its opposite.
 - **Recommendation.** (a) — the strictest readings where 529 is silent, and the same rule for every callable.
 - **Blocks.** A record parameter on a method; nothing built otherwise.
+
+#### 543-a · What front 164 s1 (wasmtime) leaves open (decision 543)
+- **Proposed (opus, 2026-10-14; awaiting the maintainer):** **(1) Winch with the cache** — a cold compile 315 ms against Cranelift's ~1000 ms, a run 37 against 33 ms; (2) the CLI and the LSP call `interrupt()` on SIGINT, so a runaway body ends as a located error; (3) `attempt` at build catches what it catches in a wasm program — an integer division by zero traps there, so it is excluded at build too (one answer, 434 (5)); (4) the compiled-module cache is reaped by B-77's `botopink cache`.
+- **Measured.** s1 landed on wasmtime v49 with Cranelift and the compiled-module cache (warm 48 ms, cold 1.0–1.3 s for 12 builds); Winch was not one of 543's two options; no SIGINT handler is installed (Ctrl-C ends the process; `interrupt()` exists, nothing calls it); `attempt` at build also catches an integer division by zero, which traps in a wasm program; the cache has no reaping until B-77.
+- **Options.** Each point (a) as proposed or (b): (1) keep Cranelift; (2) no handler; (3) keep catching at build; (4) a size bound now.
+- **Recommendation.** (a) for each.
+- **Blocks.** Nothing built.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

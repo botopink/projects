@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**102 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**103 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -941,6 +941,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** Cada ponto (a) como proposto ou (b) o seu oposto.
 - **Recomendação.** (a) — as leituras mais estritas onde a 529 se cala, e a mesma regra para todo chamável.
 - **Bloqueia.** Um parâmetro de record num método; nada construído fora isso.
+
+#### 543-a · O que o s1 da front 164 (wasmtime) deixa em aberto (decisão 543)
+- **Proposto (opus, 2026-10-14; aguardando o mantenedor):** **(1) Winch com o cache** — uma compilação a frio de 315 ms contra ~1000 ms do Cranelift, uma execução de 37 contra 33 ms; (2) o CLI e o LSP chamam `interrupt()` no SIGINT, para um corpo descontrolado terminar como um erro localizado; (3) o `attempt` no build captura o que captura num programa wasm — uma divisão inteira por zero faz trap lá, então é excluída no build também (uma resposta, 434 (5)); (4) o cache de módulos compilados é limpo pelo `botopink cache` do B-77.
+- **Medido.** O s1 pousou no wasmtime v49 com Cranelift e o cache de módulos compilados (quente 48 ms, frio 1,0–1,3 s para 12 builds); o Winch não era uma das duas opções da 543; nenhum handler de SIGINT está instalado (Ctrl-C encerra o processo; `interrupt()` existe, nada o chama); o `attempt` no build também captura uma divisão inteira por zero, que faz trap num programa wasm; o cache não tem limpeza até o B-77.
+- **Opções.** Cada ponto (a) como proposto ou (b): (1) manter o Cranelift; (2) nenhum handler; (3) continuar capturando no build; (4) um limite de tamanho já.
+- **Recomendação.** (a) para cada um.
+- **Bloqueia.** Nada construído.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

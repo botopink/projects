@@ -42,30 +42,35 @@ The comptime runtime's engine is the host's (wasmtime-a): wasmtime in the native
 page's `WebAssembly` in `compiler-web` as today (`bp_host`); wasm3 goes. std-wasm, the comptime module, its link and
 every comptime answer are unchanged (440, 450): the same wasm, compiled instead of interpreted.
 
-- [ ] **the engine behind one interface** in `comptime/runtime/persistent_wat.zig`: compile and instantiate a linked
+- [x] **the engine behind one interface** in `comptime/runtime/persistent_wat.zig`: compile and instantiate a linked
       comptime module, register the host imports (`env.bp_term_alloc`, `env.bp_term_static`, `env.bp_call<N>`, the
       `@embed` reader, every other `env.*` the module imports), call, read and write the module's memory, a trap an
       error — the same contract `compiler-web`'s `bp_host.run_module` serves, so the two engines are one interface
-- [ ] **wasmtime's C API** fetched by `build.zig.zon`, one prebuilt library per release target (`linux-{x86_64,aarch64}`,
+- [x] **wasmtime's C API** fetched by `build.zig.zon`, one prebuilt library per release target (`linux-{x86_64,aarch64}`,
       `macos-{x86_64,aarch64}`, `windows-x86_64`), pinned by hash, linked into `botopink` and `botopink-lsp`; no cargo
       in the toolchain; `release.yml` and `test.yml` fetch nothing more than `zig build` does
-- [ ] **wasm3 removed:** `modules/wasm3/` deleted, `build.zig`'s `link` / `exposeHeaders` and compiler-core's `@cImport`
+- [x] **wasm3 removed:** `modules/wasm3/` deleted, `build.zig`'s `link` / `exposeHeaders` and compiler-core's `@cImport`
       gone; `comptime/runtime/AGENTS.md` limit 1 (a runaway body) re-read for wasmtime (epoch interruption makes a
       Ctrl-C land; no budget, 380 (2))
-- [ ] **what wasm3 lacked is no longer refused at build:** exception handling (518) on — `attempt` in a decorator, a
+- [x] **what wasm3 lacked is no longer refused at build:** exception handling (518) on — `attempt` in a decorator, a
       template or a `comptime` answers as in a wasm program, a cell proving it; any other refusal that stood only on
       wasm3's missing feature found and removed, each with its cell
-- [ ] **start-up measured:** a build with many small comptime modules (jhonstart's `html`, styled) before and after; the
+- [x] **start-up measured:** a build with many small comptime modules (jhonstart's `html`, styled) before and after; the
       compiled-module cache under `.botopinkbuild/build/` (B-77's place) or Pulley chosen by the measurement, written
       in `comptime/runtime/AGENTS.md`, never a flag (67)
-- [ ] every comptime snapshot and every conformance cell unchanged — the answers are std-wasm's, the engine is not a
+- [x] every comptime snapshot and every conformance cell unchanged — the answers are std-wasm's, the engine is not a
       source of text (434 (5)); `compiler-web`'s smoke test green
-- [ ] docs: 434 amended in the reference's "Decided" table; root `AGENTS.md` ("wasm3 inside the compiler",
+- [x] docs: 434 amended in the reference's "Decided" table; root `AGENTS.md` ("wasm3 inside the compiler",
       § The comptime runtime), `modules/AGENTS.md` (the wasm3 row), `compiler-core/src/comptime/runtime/AGENTS.md`,
       `compiler-web/AGENTS.md`
 
 **Impacted tests:** every comptime snapshot (unchanged), `test-conformance`, `test-web`, `release.yml`'s five targets.
 **Consumer commits:** none.
+
+Measured (12 builds — jhonstart's 8 examples, styled's 4; the `instance` + `run` stages): wasm3 163–189 ms; wasmtime
+cold 1.0–1.3 s; Pulley 1.5 s; wasmtime with the compiled-module cache under `.botopinkbuild/build/comptime/` warm 48 ms —
+the cache is the choice. The binary grows from 53 MB to 74 MB; an artifact linking wasmtime on Linux links with LLD.
+Open points: question 543-a.
 
 ### s2 — the wasm codegen emits WasmGC: every value a GC struct or array, no linear-memory value (the maintainer, 2026-10-14; wasmgc-a)
 
