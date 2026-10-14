@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**119 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -960,23 +960,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   (c) Nenhuma mudança no CI: as máquinas combinam janelas sem push.
 - **Recomendação.** (a) — um veredito por commit é o que 477 lê; (b) perde os commits do meio, (c) é uma trava por combinação.
 - **Bloqueia.** Todo passo Conformance da 144 (B-01 … B-81, B-29 G–J); os runs verdes do 163 s8.
-
-#### B-81-a · Dois métodos `#[query]` de mesmo nome num módulo: como o registro do rakun ganha um nome único? (144 B-81; 150 s30)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(a), o dono tipado.** O `@Decl` de um membro nomeia seu dono: `owner: ?Declared<unknown>` no `Decl<T>` do `builtins.d.bp` (`null` no nível do módulo; tipado como o `TypeInfo` da s23-f, não uma string), preenchido pelo checker quando roda o decorator de um membro. O `query.bp` do rakun nomeia seu registro `__rkQueryReg_<Owner>_<method>` (`decl.owner!.name + "_" + decl.name`): a identidade da declaração, nenhuma colisão por acaso, sem hash; `test/sql_build_test.bp:148` compila. Passos: um passo do 144 (o campo, uma célula com dois membros de mesmo nome em dois tipos), depois o 150 s30 no rakun.
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): o `@Decl` de um membro nomeia seu tipo dono** — um decorator num método lê `decl.owner` (`?string`, `null` no nível do módulo), e o `query.bp` nomeia seu registro `__rkQueryReg_<Owner>_<method>`; o nome é a identidade da declaração, então nunca colide por acaso e não precisa de hash. Viável: o checker conhece o dono quando roda o decorator de um membro; o `Decl<T>` de `builtins.d.bp` ganha o campo. Mudanças: um passo da 144 (o campo, uma célula), depois 150 s30 no rakun.
-- **Medido.** O decorator de `query.bp` emite `val __rkQueryReg_<method> = rkRegisterQuery(…)` no nível do módulo. Dois repositórios num módulo, cada um com `#[query] find`, emitem `__rkQueryReg_find` duas vezes; o erlang recusa `function '__rkQueryReg_find'/0 already defined`. Compilava até a 144 B-39 tornar um `val` de módulo prefixado com `_` uma ligação comum (a regra da linguagem). Uma instrução no nível do módulo não pode ser escrita (`val _ = …` e uma chamada solta não são analisadas), e o `@Decl` de um membro tem `name` e `kind`, sem dono. O cabeçalho de `query.bp` diz que dois métodos de mesmo nome num módulo colidem e que isso está certo; `test/sql_build_test.bp:148` diz que compilam.
-- **Opções.**
-  (a) O `@Decl` nomeia o tipo dono de um membro; o registro é `__rkQueryReg_<Owner>_<method>`.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
-  ```
-  (b) Só o rakun: o nome leva um hash do texto SQL; dois métodos de mesmo nome e mesmo SQL num módulo ainda colidem.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
-  ```
-  (c) O cabeçalho vence: dois métodos `#[query]` de mesmo nome num módulo são recusados, localizados; o teste vira uma recusa.
-- **Recomendação.** (a) — a identidade da própria declaração, sem colisão acidental; (b) só muda a colisão de lugar; (c) recusa um programa que o leitor espera que compile.
-- **Bloqueia.** 150 s30.
 
 #### props-g · Os props de um componente como parâmetros comuns ou um parâmetro de record `..props: R`; `..` é a única grafia de "o resto" (decisões 192, 199, 207, 213, 359; 144 · 149)
 - **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (1) **Parâmetros comuns:** um componente (qualquer função) pode receber seus props como parâmetros comuns — `pub fn Card(title: string, featured: bool = false) -> View` —, e uma tag passa cada atributo como o argumento nomeado de mesmo nome (`<Card title="Olá" featured />` é `Card(title: "Olá", featured: true)`); um atributo que não nomeia parâmetro, ou de tipo errado, é um erro de build no atributo. (2) **Um parâmetro de record:** `..props: R`, `R` um tipo record (ou um derivado pela 307), faz dos campos de `R` os parâmetros da função vistos de fora — uma tag e uma chamada os passam por nome — e o corpo os lê como o record `props`; no máximo um por função, ao lado de outros parâmetros (`fn Card(..base: CardProps, onClick: fn() -> void)`), um nome presente nos dois recusado na declaração. Um spread (`Card(..p, featured: true)`, `<Card {..p} featured />`) só é legal num parâmetro de record, `p` do seu tipo ou de um derivado dele (a regra da 359); uma função de parâmetros comuns não recebe spread. (3) **`..` é a única grafia de "o resto"** (emenda a 359): a construção de um record espalha com `..` (`Pessoa(..old, nome: "Ana")`), uma tag com `{..p}`, o resto de um padrão continua `..`, um parâmetro variádico continua `..values: T[]`; `...` é só o intervalo inclusivo `a...b` (um spread não tem operando à esquerda). O `botopink format` migra os spreads `...` para `..`. (4) O parâmetro `type(…)` inline (207) fica. (5) Um arquivo `.bpp` com `type Props(…)` se desdobra em `pub default fn (..props: Props) -> View` (emenda a 199, 213): quem chama passa os campos por nome, o corpo continua lendo `props.title`.

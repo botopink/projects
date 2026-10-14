@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**119 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -960,23 +960,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   (c) No CI change: the machines agree on windows with no push.
 - **Recommendation.** (a) — a verdict per commit is what 477 reads; (b) loses the commits in between, (c) is a lock by agreement.
 - **Blocks.** Every 144 Conformance step (B-01 … B-81, B-29 G–J); 163 s8's green runs.
-
-#### B-81-a · Two `#[query]` methods of one name in one module: how does rakun's registration get a unique name? (144 B-81; 150 s30)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), the owner typed.** A member's `@Decl` names its owner: `owner: ?Declared<unknown>` in `builtins.d.bp`'s `Decl<T>` (`null` at module level; typed as s23-f's `TypeInfo`, not a string), set by the checker when it runs a member's decorator. rakun's `query.bp` names its registration `__rkQueryReg_<Owner>_<method>` (`decl.owner!.name + "_" + decl.name`): the declaration's identity, no accidental collision, no hashing; `test/sql_build_test.bp:148` builds. Steps: a 144 step (the field, a cell with two same-named members of two types), then 150 s30 in rakun.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `@Decl` of a member names its owner type** — a decorator on a method reads `decl.owner` (`?string`, `null` at module level), and `query.bp` names its registration `__rkQueryReg_<Owner>_<method>`; the name is the declaration's identity, so it never collides by accident and needs no hashing. Viable: the checker knows the owner when it runs a member's decorator; `builtins.d.bp`'s `Decl<T>` gains the field. Changes: a 144 step (the field, a cell), then 150 s30 in rakun.
-- **Measured.** `query.bp`'s decorator emits `val __rkQueryReg_<method> = rkRegisterQuery(…)` at module level. Two repositories in one module, each with `#[query] find`, emit `__rkQueryReg_find` twice; erlang refuses `function '__rkQueryReg_find'/0 already defined`. It built until 144 B-39 made a `_`-prefixed module-level `val` an ordinary binding (the language's rule). A module-level statement cannot be written (`val _ = …` and a bare call do not parse), and a member's `@Decl` has `name` and `kind`, no owner. `query.bp`'s header says two same-named methods in one module collide and that this is right; `test/sql_build_test.bp:148` says they build.
-- **Options.**
-  (a) `@Decl` names a member's owner type; the registration is `__rkQueryReg_<Owner>_<method>`.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.owner! + "_" + decl.name + " = rkRegisterQuery(…)");
-  ```
-  (b) rakun alone: the name carries a hash of the SQL text; two methods of one name and the same SQL in one module still collide.
-  ```bp
-  @emit("val __rkQueryReg_" + decl.name + "_" + hash.contentHash(sql.value) + " = rkRegisterQuery(…)");
-  ```
-  (c) The header wins: two `#[query]` methods of one name in one module are refused, located; the test becomes a refusal.
-- **Recommendation.** (a) — the declaration's own identity, no accidental collision; (b) only moves the collision; (c) refuses a program the reader expects to build.
-- **Blocks.** 150 s30.
 
 #### props-g · A component's props as plain parameters or a record parameter `..props: R`; `..` is the one spelling of "the rest" (decisions 192, 199, 207, 213, 359; 144 · 149)
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (1) **Plain parameters:** a component (any function) may take its props as ordinary parameters — `pub fn Card(title: string, featured: bool = false) -> View` —, and a tag passes each attribute as the labelled argument of that name (`<Card title="Olá" featured />` is `Card(title: "Olá", featured: true)`); an attribute naming no parameter, or of the wrong type, is a build error at the attribute. (2) **A record parameter:** `..props: R`, `R` a record type (or one derived by 307), makes `R`'s fields the function's parameters from outside — a tag and a call pass them by label — and the body reads them as the record `props`; at most one per function, beside other parameters (`fn Card(..base: CardProps, onClick: fn() -> void)`), a name present in both refused at the declaration. A spread (`Card(..p, featured: true)`, `<Card {..p} featured />`) is legal only into a record parameter, `p` of its type or one derived from it (359's rule); a function of plain parameters takes no spread. (3) **`..` is the one spelling of "the rest"** (amends 359): a record's construction spreads with `..` (`Pessoa(..old, nome: "Ana")`), a tag with `{..p}`, a pattern's rest stays `..`, a variadic parameter stays `..values: T[]`; `...` is only the inclusive range `a...b` (a spread has no left operand). `botopink format` migrates `...` spreads to `..`. (4) The inline `type(…)` parameter (207) stays. (5) A `.bpp` file with `type Props(…)` unfolds to `pub default fn (..props: Props) -> View` (amends 199, 213): its caller passes the fields by label, the body still reads `props.title`.

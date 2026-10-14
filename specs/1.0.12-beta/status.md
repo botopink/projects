@@ -235,7 +235,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 150 s31 — `rakun-cache`'s racing-readers test timed out in a cold gate: an order asserted, not a deadline (144 B-23) · nothing
 - [ ] 150 s29 — `decl.wrapWith` in rakun (144 B-11, 316): the publish-retry example as `#[retryable(policy)]`, its marker and the gap row gone; the 318 wrappers build on it · nothing
 - [ ] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340); `tryQuery`'s stale comment removed (B-13, 304) · nothing
-- [ ] 150 s30 — two `#[query]` methods of one name in one module build: `query.bp`'s registration `val` named per method name collides on erlang (found by 144 B-81) · question B-81-a
+- [ ] 150 s30 — two `#[query]` methods of one name in one module build: `query.bp`'s registration `val` named per method name collides on erlang (found by 144 B-81) · decision 526: the compiler's `@Decl.owner` (144), then rakun's `query.bp`
 
 ### 163 meta-ci (medium)
 
