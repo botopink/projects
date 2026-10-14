@@ -1878,16 +1878,16 @@ wrapping every such call (492)", but commonJS wraps nothing: its `attempt` reads
 diagnostics label it `a/client.bp`, ambiguous with two dependencies both holding `src/`. The path is the label the
 failed module's own diagnostics print.
 
-- [ ] `imported_declaration_error_location`: `b/b.snap` answers `(a/client.bp)`, `main.snap` `(b/b.bp)` — red today,
+- [x] `imported_declaration_error_location`: `b/b.snap` answers `(a/client.bp)`, `main.snap` `(b/b.bp)` — red today,
       green after; a program module's cells (`(src/shapes.bp)`) unchanged
 
 ### B-92 — a raise at build: a module's own template located, and no frame for a call never entered (decision 532)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-- [ ] a raise inside a module's own template is located at the call in its body, with the use as `from` (532: "no
+- [x] a raise inside a module's own template is located at the call in its body, with the use as `from` (532: "no
       call of an expansion is left unlocated") — cell `template_own_raise_located`, red today
-- [ ] a call's frame is pushed after its receiver and arguments are evaluated: `foo(1 / 0)` frames no `foo`;
+- [x] a call's frame is pushed after its receiver and arguments are evaluated: `foo(1 / 0)` frames no `foo`;
       `hole_any_call_raises` loses its `from src/main.bp:47:12` (`(a / b).toString()`, a call never entered)
 
 ### B-94 — erlang and beam: `Bytes.length` read as a property is a text length
