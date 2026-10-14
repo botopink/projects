@@ -9,6 +9,17 @@ other machine's steps are in [`../machine-1-checker/`](../machine-1-checker/READ
 on — a step of this machine that reaches them waits on 164 s2; then the rest in the order written. B-30 is closed
 as superseded by 164.
 
+## The pipeline state read by the Conformance steps (474, 477, 478)
+
+botopink-lang's `feat` pipeline ran to the end once decision 528 gave each pushed commit its own run (before it, every run
+was cancelled by the next push). Its runs since the groups' bases were red on: the `refused` fixture of `cli_contract.sh`
+(after `import-of-failed-module`), `external_wasm_wasi_unknown` (518's `.Attempt` adapter), `test/std_process_import`'s
+stale narrowing (518's STD-001 at the call), `scripts/tsc-check.sh` (`Bytes`, `Context`, `Children` in the `.d.ts`), and
+`format-check.sh` before 524. Each was fixed at once; the cheap tests: `cli_contract.sh` and the cells are the hook's own
+stages, skipped only under the B-60 exception's `--no-verify`; the `.d.ts` one gained `codegen/tests/dts_compiler_types.zig`.
+The first run green end to end — `scripts/gate.sh` with conformance, every cell on every target it declares — is the
+commit that fixed `tsc-check`; it holds every group below whose boxes 3 and 4 are ticked.
+
 ## Steps
 ### B-00a — First — `modules/std-wasm`: std's host functions in Zig, compiled to wasm (decision 434)
 
@@ -275,16 +286,16 @@ with a located message, recorded as the design; or (b) restructured so no host c
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 The group's changes against the cells (B-01, B-03 … B-06; box 3, written once for the five):
@@ -341,16 +352,16 @@ val doc = try jsParse(texto);                      // a JS SyntaxError / an erla
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 ### B-04 — 431: std `failure` — `HostError`, `Failure`
@@ -372,16 +383,16 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 ### B-05 — 431 (2): each backend wraps a `throws: true` cell
@@ -413,16 +424,16 @@ for the shape, sonnet per backend. **Consumer commits:** none.
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 ### B-06 — 432: a failing task rejects, on four targets
@@ -463,16 +474,16 @@ async function buscar(id) { if (id <= 0) throw HttpError.BadId; return await htt
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 ### B-07 — 431: `attempt`, and the asserts over it
@@ -665,16 +676,16 @@ value is not wrapped in `{ok, V}` — while a module-level fn is lowered correct
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 | Behaviour (decision) | Cells |
@@ -707,16 +718,16 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 | Behaviour (decision) | Cells |
@@ -910,16 +921,16 @@ over max-connections, `rakun-messaging·erlang` dlq, `rakun-data·erlang` devtoo
 
 After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
 
 | Behaviour (decision) | Test |
@@ -981,16 +992,16 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
 
 After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
 - [ ] what the move left: the decorator `random.float()` cell once B-46 lands; the reds B-43 and B-44 found
       (`generic-loader-binding` is erika's cell `conformance/modules/generic_loader_binding`)
@@ -1029,16 +1040,16 @@ After step H (the cells in `conformance/`).
 
 After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
 
 | Behaviour (decision) | Test |
@@ -1066,16 +1077,16 @@ After the step gate of decision 460 lands (both change `scripts/gate.sh`). The p
 
 After the step's other boxes have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the step landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the step's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the step's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the step changes, its runs on `feat` since
       the step's base, green or each red named
 
 | Behaviour (decision) | Test |
@@ -1304,16 +1315,16 @@ in this array"); erlang and commonJS answer `5.0!` / the array. 441's `"${5.0}"`
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 | Behaviour (decision) | Cells |
@@ -1341,16 +1352,16 @@ build prints the raw `{error,badarith}`.
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
 - [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
 | Behaviour (decision) | Cells |
@@ -1372,7 +1383,7 @@ Today std writes the cells as prefixed strings (50 `"fn:…"`, 28 `"std:…"`, 6
       the labelled form — `reject/` cells for each
 - [x] a codemod rewrites every cell in std and the libraries; every `.out`, RUN LOG and snapshot otherwise unchanged
 - [x] `docs.md` and the `AGENTS.md` files name only the labelled forms
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | each prefixed string refused, naming the labelled form (481) | `external_wasm_prefixed_fn_refused`, `_op_refused`, `_wasi_refused`, `_std_refused`, `external_node_prefixed_op_refused` |
@@ -1391,7 +1402,7 @@ Found moving jhonstart's examples into its `conformance/` (463): every jhonstart
 - [x] the beam emitter assigns the register `make_fun3` reads; `styled` assembles; jhonstart's 18 `conformance/` cells
       green on beam — red on the parent, green after
 - [x] the cheap test the hook runs that would have caught it (a beam export-audit or codegen snapshot case, 478)
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a closure's free-name walk binds an `if` binding in its then-branch only; beam assembles (430) | `component_loop_await_accumulates`, `if_binding_before_loop_closure` |
@@ -1405,7 +1416,7 @@ Found moving erika's examples into its `conformance/` (463): `the wasm backend h
 
 - [x] `@println` lowered on wasm as `@print` is, with its newline; erika's `conformance/` cells green on wasm — red on
       the parent, green after; a codegen snapshot case (478)
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | `@println` lowered on wasm as `@print`, its line ended (430) | `println_every_target` |
@@ -1432,7 +1443,7 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
 - [x] `bpmp link [<checkout>]`: `.botopinkbuild/deps/<name>` → `<checkout>/repository/<name>` for each dependency of
       every manifest of the project (a workspace's members included); a missing local repository named, never guessed
 - [x] tests: a project with only `.botopinkbuild/deps/` links resolves; a link wins over the walk-up; CLI contract cases
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a `git` dependency from `.botopinkbuild/deps/` first, `BOTOPINK_LIB_ROOTS` first, the walk-up as fallback; `bpmp link` (483) | `cli_contract.sh`, `project_graph` and manifest tests — a cell names `path` dependencies only |
@@ -1449,7 +1460,7 @@ argument. The compiler's output is the intended one, so no compiler-core test ca
       check resolves it against the cell's own directory (or, after B-37, the cell's `.botopinkbuild/deps/`), so a
       library's cells drop their per-cell `deps/` workspaces of symlinks; the scratch copy (which skips hidden
       directories today) inherits the project's dependency tiers, `.botopinkbuild/deps/` included
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | every cell found is reported; a cell with no verdict is a red naming it | `cli_contract.sh` |
@@ -1464,7 +1475,7 @@ refuses it (found in rakun's `constraint` cell, which registers inside `main` in
 
 - [x] a cell red on the parent: two module-level `val`s, the second reading the first, on every target
 - [x] the erlang emission binds the first before the second reads it; the cell green on every target
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a module-level `val` read by the next one is bound, `_`-prefixed names included (430) | `module_val_reads_module_val`, `val_runs_at_module_load`, `module_init_order` |
@@ -1484,7 +1495,7 @@ manifest, as any project's.
 - [x] jhonstart's 18 and rakun's 35 cells moved: the file's targets into `botopink.json`, the file deleted; each
       library's hook green
 - [x] emilia's 79 cells declare beam too: beam builds them, so leaving it out fails the audit (475 (1))
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a cell's targets are its manifest's `"targets"`, with its refusals (475 (1)) | the 43 narrowed cells |
@@ -1501,7 +1512,7 @@ for a defect).
 - [x] the abort's text measured on each target; the library's message reaches stderr unchanged on every target (the
       runtime's frame around it the same, or none); the cell's `stderr` claim in `output/`, green on every target
 - [x] a compiler-core test red on the parent (a `@panic` with a library's message, every backend)
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a library's `@panic` message reaches stderr unchanged on every target (430) | `panic_library_message` |
@@ -1518,7 +1529,7 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 - [x] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
       dependency on wasm
 - [x] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a `fold` lambda's string accumulator chains `split` / `join` on wasm (430) | `fold_split_join_lambda` |
@@ -1533,7 +1544,7 @@ Found moving emilia's reference (79 cells): on wasm, any cell with a `path` depe
 
 - [x] a cell red on the parent: a `Set` of records, two structurally equal, its size on every target
 - [x] commonJS and wasm compare members structurally (210); the cell and `test/stdlib-tour` green on every target
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | `Set` membership is `==`: structurally equal records are one member on every target (210) | `set_record_dedup`, `test/stdlib-tour` |
@@ -1546,7 +1557,7 @@ The `yamlconf` cell prints `1` on wasm where every other target prints `true`.
 
 - [x] a cell red on the parent: a `bool` that crosses a host value printed on wasm
 - [x] wasm prints `true` / `false`; `yamlconf` green on wasm
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | wasm prints a lifted `bool` as `true` / `false` (430) | `global_tuple_bool_field`, `yamlconf` |
@@ -1561,7 +1572,7 @@ example's move into erika's `conformance/`.
 - [x] a cell red on the parent: a local `path` library whose default handle's member is called, on every target
 - [x] the erlang lowering binds the handle (`default_handle_member` green on erlang; beam is B-50)
 - [ ] `examples/generic-loader-binding` moves into `erika/conformance/` as a cell on every target (an erika change, after the 144 front)
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | `lib.member()` through a library's default handle reaches its module (430) | `default_handle_member` |
@@ -1576,7 +1587,7 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [x] a cell red on the parent: a decorator body calling a function of a nested std namespace
 - [x] the comptime's environment holds the nested namespaces; the `random.float()` cell written (refused unseeded at
       build, decision 447, or the seeded answer)
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a decorator body reaches a nested std namespace (430) | `decorator_nested_std_namespace` |
@@ -1592,7 +1603,7 @@ A decorator body calling `random.float()` fails at build: `unbound variable '__b
 - [x] `case_bare_name_arm`, `case_constant_pattern`, `reserved_word_field_name` and `reserved_word_param_name` claim
       their whole refusal and label, green; every other refusal cell whose caret carries a label gains its record
 - [x] `conformance/docs.md` states the record (with B-29 step I, which writes that file; `conformance/AGENTS.md` states it today)
-- [ ] Conformance step (459, 474, 477, 478, 480) — box 3 done (the table below); boxes 3 and 4 done (the reference states each re-recorded refusal's rule, the cells' `docs.md` quote it); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the reference states each re-recorded refusal's rule; boxes 1, 2 and 5: § The pipeline state; boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
   | Behaviour (decision) | Cells |
   |---|---|
   | a refusal `.snap` claims `label <text>` after its `at` (485) | the 82 refusal cells the step re-recorded; `cell_snap.zig` unit tests |
@@ -1614,7 +1625,7 @@ The step's current scope: the location travels with the raise, and only this mod
 imported helper's raise lands on the local call, an imported decorator's raise at the annotation, and a template
 expansion's calls are not located.
 
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a raise in a decorator body located at the call that raised (451 (3)) | `decorator_random_float_unseeded` |
@@ -1633,7 +1644,7 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
 
 - [x] the two cells green on commonJS; an `f64` reaching `@print` through a std call or a `case` keeps its `.0`
 - [x] a codegen test the hook runs, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | commonJS keeps an `f64`'s `.0` through a module-handle call or a `case` payload (430) | `import_module_paths`, `enum_declaration`; a codegen test |
@@ -1647,7 +1658,7 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
 
 - [x] the three cells green on wasm: a string reaching a generic field or crossing an `await` prints as text
 - [x] a codegen test the hook runs, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | wasm prints a string in a generic field or out of an `await` as text (430) | `generic_fn_and_type`, `async_block_both`, `task_result_await`; a codegen test |
@@ -1661,7 +1672,7 @@ prints the way the source writes it.
 
 - [x] a cell red on the parent: `@print` of `Ok(…)` and `Error(…)` on every target, the source's form
 - [x] every backend prints a `@Result` as `Ok(81)` / `Error(…)`
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | `@print` of a `@Result` writes `Ok(…)` / `Error(…)` on every target (430) | `print_result` |
@@ -1675,7 +1686,7 @@ prints the way the source writes it.
 labelled form.
 
 - [x] the formatter keeps an annotation's labelled arguments as written (`label: value`); a format test red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | the formatter keeps an annotation's `label: value` (305) | a format test (a cell checks answers, not layout) |
@@ -1737,7 +1748,7 @@ check `conformance/test/`.
 - [x] the refusal in `run.zig` (and the wat component emitter where a module without `main` exports no
       `wasi:cli/run`), one message on every target and host; a unit test the hook runs (478)
 - [x] a cell: a package with no `fn main` refused by `run` on every target
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | `run` of a package with no `fn main` refused at the entry module, one message on every target and both wasm hosts (517) | `run_without_main`; a `run.zig` unit test |
@@ -1793,7 +1804,7 @@ print a dependency's file as `../../../conformance/modules/<cell>/deps/…` wher
       a location relative to the cell, the column of the key that is refused); the fix in the compiler, the cells
       green unchanged
 - [x] a test the hook runs for each, red on the parent
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a refusal in a cell's manifest keeps the refused key's column | `bpp_html_missing`, `bpp_html_twice`, `bpp_prelude_twice`, `bpp_prelude_holds_declaration`, `bpp_role_not_pub` |
@@ -1832,7 +1843,7 @@ cannot serve both.
       unchanged
 - [x] a test the hook runs per target, red on the parent: a module's production bytes equal under `build` and `test`
 - [x] the code cache (B-58) serves a dependency's production unit to `build`, `run` and `test` alike
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a module's production bytes equal under `build` and `test`; only the package under test has a test unit (513) | `codegen/tests/test_units.zig` |
@@ -1851,7 +1862,7 @@ and beam print the right answer. A wrong program, found by `test-closure-invaria
 - [x] a cell red on the parent (the two imports, a print of the record and a call into the library); green on every
       target
 - [x] the construction names the imported type's owner; an erlang codegen test
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a library record imported beside a std namespace's type of the same name builds the imported one on erlang (430) | `import_record_beside_std_record_of_same_name` |
@@ -1864,7 +1875,7 @@ and beam print the right answer. A wrong program, found by `test-closure-invaria
 wasm backend cannot resolve the call `toString/0`"; the other targets run it.
 
 - [x] a cell red on the parent; the call resolved on wasm, the cell green on every target
-- [ ] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4 done (the table below, the cells' `docs.md`, `conformance/docs.md`); boxes 1, 2 and 5 read `feat`'s pipeline (question B-29-a)
+- [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
   | a method call on a package template's answer resolves on wasm (430) | `template_answer_method` |
