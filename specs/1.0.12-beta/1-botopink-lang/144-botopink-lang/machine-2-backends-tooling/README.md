@@ -5,7 +5,7 @@ machines share and the alias table are the front's README; each step below is as
 other machine's steps are in [`../machine-1-checker/`](../machine-1-checker/README.md). A step keeps its id (`B-NN`) wherever it sits.
 
 **Order on this machine (the maintainer, 2026-10-14):** the B-00 group (done but its last box); new development is centred on
-**front 164 wasm-gc** (`../../164-wasm-gc/`), which this machine runs and which owns the wasm target, the comptime runtime and std-wasm from here
+**front 164 wasm-gc** (`164-wasm-gc/`), which this machine runs and which owns the wasm target, the comptime runtime and std-wasm from here
 on — a step of this machine that reaches them waits on 164 s2; then the rest in the order written. B-30 is closed
 as superseded by 164.
 
@@ -1775,7 +1775,7 @@ compiler defect is fixed here; a library's is a row of rakun's front (150) and t
 
 ### B-82 … B-85 — moved to front 164 wasm-gc (2026-10-14)
 
-The wasm-gc group is a front of its own, **run by this machine**: [`../../164-wasm-gc/README.md`](../../164-wasm-gc/README.md) — s1 (B-82,
+The wasm-gc group is a front of its own in this machine’s folder, **run by this machine**: [`164-wasm-gc/README.md`](164-wasm-gc/README.md) — s1 (B-82,
 wasmtime), s2 (B-83, WasmGC codegen), s3 (B-84, std-wasm in botopink and `.wat`), s4 (Conformance). Nothing of it
 stays here; B-30 is closed as superseded by it.
 

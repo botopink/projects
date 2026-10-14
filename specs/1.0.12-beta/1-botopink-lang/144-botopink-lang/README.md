@@ -25,7 +25,7 @@ folder of the machine that runs its steps (`machine-1-checker/01-checker/context
 then the error contract of 431 / 432 (B-01–B-09), then the structural fixes the library fronts wait on
 (decision 430: B-10–B-19), then the rest (B-20–B-29).
 
-**New development is centred on front 164 wasm-gc (the maintainer, 2026-10-14):** `../164-wasm-gc/` — s1 (wasmtime, the
+**New development is centred on front 164 wasm-gc (the maintainer, 2026-10-14):** `machine-2-backends-tooling/164-wasm-gc/` — s1 (wasmtime, the
 engine), s2 (WasmGC codegen), s3 (std-wasm in botopink and `.wat`), s4 (Conformance) — the second front that edits
 botopink-lang (amends 433). It owns the wasm target, the comptime runtime, std-wasm, wasm3, beam-to-wasm and
 compiler-web; a step of this front that reaches them waits on 164 s2 and never edits them. The old model's steps are
@@ -320,7 +320,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-79 | [2](machine-2-backends-tooling/README.md) | `botopink run` of a program with no `fn main`: one located error on every target and host (decision 517) |
 | B-80 | [2](machine-2-backends-tooling/README.md) | onze-cli's CSS accessors test red under `test-libs` on commonJS and erlang |
 | B-81 | [2](machine-2-backends-tooling/README.md) | rakun-data's `#[query]` test red under `test-libs` on erlang |
-| B-82 | [164](../164-wasm-gc/README.md) | moved to front 164 wasm-gc, s1 |
-| B-83 | [164](../164-wasm-gc/README.md) | moved to front 164 wasm-gc, s2 |
-| B-84 | [164](../164-wasm-gc/README.md) | moved to front 164 wasm-gc, s3 |
-| B-85 | [164](../164-wasm-gc/README.md) | moved to front 164 wasm-gc, s4 |
+| B-82 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s1 |
+| B-83 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s2 |
+| B-84 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s3 |
+| B-85 | [164](machine-2-backends-tooling/164-wasm-gc/README.md) | moved to front 164 wasm-gc, s4 |
