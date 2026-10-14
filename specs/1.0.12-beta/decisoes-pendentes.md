@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**111 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**115 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -997,6 +997,34 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) O codegen detecta ciclos ele mesmo (um coletor de ciclos sobre referências GC — o que a 544 removeu). (c) O target wasm espera um wasmtime cujo coletor siga ciclos antes de o s2 pousar as suas tasks (P4).
 - **Recomendação.** (a).
 - **Bloqueia.** A célula de memória limitada do 164 s2 (P6); nada antes dela.
+
+#### 535-a · Uma divisão de float por zero no erlang e no beam: `crash: badarith` ou `panic`? (decisões 535, 527 (3), 492, 444; 144)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o `/` de float no erlang e no beam checado como o de inteiro, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — uma forma para toda divisão por zero; a divergência (444: commonJS e wasm respondem `Infinity`) fica então só no abortar.
+- **Medido.** A 535 cita `panic: division by zero`; a 492 lista "uma divisão por zero" sob `panic`; a 527 (3) checa só a de inteiro. As divergências de erlang e beam da `float_nan_infinity_words` agora afirmam `stderr crash: badarith` — a resposta do compilador (um `badarith` sem marca), não uma que uma decisão fixa.
+- **Opções.** (a) Como proposto. (b) Manter `crash: badarith` — a 527 (3) é só de inteiro. (c) Literalmente `panic: division by zero`, uma terceira forma de mensagem.
+- **Recomendação.** (a).
+- **Bloqueia.** Os dois snapshots de divergência ficam provisórios; uma linha da 144 quando respondida.
+
+#### 535-b · Onde vive o texto de abort do commonJS: no guard do runner ou no programa emitido (decisão 535)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(b): o módulo de entrada (o que tem `main`, nunca um módulo de biblioteca — um `process.on` global numa biblioteca é um efeito colateral) emite o handler; o guard do runner mantido para o `.mjs` do browser** — a 535 é sobre o que o programa escreve; uma regeneração mecânica dos snapshots de codegen do commonJS.
+- **Medido.** A 535 pousou no commonJS como um guard `node --import` que o `botopink run` e os testes passam ao node; o `main.js` emitido não muda, e um `node main.js` rodado à mão imprime o relatório do próprio node. O guard do erlang também é do runner, mas um build erlang não tem entrada autocontida; um programa commonJS tem uma e é rodado pelo node fora do botopink.
+- **Opções.** (a) Só o guard do runner, como pousou. (b) Como proposto. (c) Os dois.
+- **Recomendação.** (b).
+- **Bloqueia.** Nada; as células `abort_text_*` respondem o mesmo.
+
+#### 532-a · O registro `from <file>:<line>:<col>` estende a 475 (2) (decisões 532, 475)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): a 475 (2) emendada com `from`, o cabeçalho inalterado** — células mais antigas não são afetadas: o registro aparece só onde existem frames.
+- **Medido.** A 475 (2) lista os registros do `.snap` exaustivamente; o build da 532 adicionou `from` (depois de `at` / `label`, o mais interno primeiro, comparado exatamente) no formato da célula e no `conformance/docs.md`. 13 células têm linhas `from`; o cabeçalho ainda é `botopink-cell 1`.
+- **Opções.** (a) Como proposto. (b) `botopink-cell 2`. (c) Os frames dobrados na mensagem.
+- **Recomendação.** (a).
+- **Bloqueia.** Nada pousado; o texto da 475.
+
+#### 533-a · `comptime-badarith` nomeia a expressão inteira enquanto o caret está no operador (decisões 533, 472)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(b): a mensagem nomeia o fonte da operação que divide (`6 / (3 - 3)`, `a / b`), texto e caret concordando; as linhas `from` dão o `comptime`** — pouco em jogo.
+- **Medido.** A 472 diz "a operação e o lugar"; depois da 533 o lugar é o operador mas o texto entre crases é a expressão inteira do `comptime` (`1 + 6 / (3 - 3) * 2`, `ratio(6, 0)`): `comptime_nested_division_by_zero`, `comptime_division_by_zero_in_helper`, `hole_any_call_raises`.
+- **Opções.** (a) O texto do `comptime`, como pousou. (b) Como proposto. (c) Sem texto entre crases.
+- **Recomendação.** (b).
+- **Bloqueia.** Nada.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

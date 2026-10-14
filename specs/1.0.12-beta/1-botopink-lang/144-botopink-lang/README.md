@@ -79,7 +79,7 @@ The front runs on two machines, each with its own coordinator, gate pool and mai
 | Machine | Folder | Lanes and groups |
 |---|---|---|
 | 1 — the checker and the language | [`machine-1-checker/`](machine-1-checker/README.md) — with the old fronts `01-checker`, `01-compiler`, `116-bpp-file-format`, `129-import-without-from`, `130-decorator-outputs`, `134-builtins-declared`, `139-bigint`, `140-wasm-host` | lane A (B-02, B-10, B-11, B-14 … B-18, B-20, B-21, B-23); the steps this machine had in flight when the front was split — B-22 (its design pass) and B-60 (the cache's level B; B-77 waits on it); B-19, B-24, B-25 and B-27, beside the old fronts whose work they hold (130, 139, 140, 116); then the module-model group (B-55, B-56, B-69 … B-76), in its order |
-| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`) | the rest of B-00 first; lane B but B-19, B-22, B-24, B-25; lane C but B-27; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81, B-87, B-88) |
+| 2 — backends, runtimes, std, tooling, the gate | [`machine-2-backends-tooling/`](machine-2-backends-tooling/README.md) — with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`) | the rest of B-00 first; lane B but B-19, B-22, B-24, B-25; lane C but B-27; the error contract of 431 / 432 whole (B-01 … B-09, B-03 included); the cache group (B-57 … B-64 save B-60; B-77 once B-60 lands); the structural residue (B-31 … B-54, B-62 … B-68, B-78 … B-81, B-87, B-88, B-90 … B-92) |
 
 **The rules the two machines share:**
 
@@ -328,3 +328,6 @@ Where each step is (its machine's folder holds its whole text).
 | B-87 | [2](machine-2-backends-tooling/README.md) | erlang: a `var` reassigned inside a nested arm reaches a `defer` late (539) |
 | B-88 | [2](machine-2-backends-tooling/README.md) | a jump from a block or a `case` arm reaches its loop or generator on commonJS and erlang (541 (2)) |
 | B-89 | [2](machine-2-backends-tooling/README.md) | beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit) — every emilia cell red on beam |
+| B-90 | [2](machine-2-backends-tooling/README.md) | commonJS: an unmarked raise is `crash`, and `abort_text_panic` (546, 535) |
+| B-91 | [2](machine-2-backends-tooling/README.md) | `import-of-failed-module` names the failed module's file as the diagnostics label does (545) |
+| B-92 | [2](machine-2-backends-tooling/README.md) | a raise at build: a module's own template located, no frame for a call never entered (532) |

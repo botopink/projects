@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**111 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**115 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -997,6 +997,34 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) The codegen detects cycles itself (a cycle collector over GC references — what 544 removed). (c) The wasm target waits for a wasmtime whose collector follows cycles before s2 lands its tasks (P4).
 - **Recommendation.** (a).
 - **Blocks.** 164 s2's bounded-memory cell (P6); nothing before it.
+
+#### 535-a · A float division by zero on erlang and beam: `crash: badarith` or `panic`? (decisions 535, 527 (3), 492, 444; 144)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): float `/` on erlang and beam checked like the integer one, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — one shape for every division by zero; the departure (444: commonJS and wasm answer `Infinity`) is then only in aborting.
+- **Measured.** 535 cites `panic: division by zero`; 492 lists "a division by zero" under `panic`; 527 (3) checks only the integer one. `float_nan_infinity_words`'s erlang and beam departures now claim `stderr crash: badarith` — the compiler's answer (an unmarked `badarith`), not one a decision fixes.
+- **Options.** (a) As proposed. (b) Keep `crash: badarith` — 527 (3) is integer-only. (c) Literally `panic: division by zero`, a third message shape.
+- **Recommendation.** (a).
+- **Blocks.** The two departure snapshots stay provisional; a 144 row once answered.
+
+#### 535-b · Where the commonJS abort text lives: the runner's guard or the emitted program (decision 535)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): the entry module (the one with `main`, never a library module — a global `process.on` in a library is a side effect) emits the handler; the runner's guard kept for the browser's `.mjs`** — 535 is about what the program writes; one mechanical regeneration of the commonJS codegen snapshots.
+- **Measured.** 535 landed on commonJS as a `node --import` guard that `botopink run` and the tests hand to node; the emitted `main.js` is unchanged, and a hand-run `node main.js` prints node's own report. erlang's guard is the runner's too, but an erlang build has no self-contained entry; a commonJS program has one and is run by node outside botopink.
+- **Options.** (a) The runner's guard only, as landed. (b) As proposed. (c) Both.
+- **Recommendation.** (b).
+- **Blocks.** Nothing; the `abort_text_*` cells answer the same.
+
+#### 532-a · The `from <file>:<line>:<col>` record extends 475 (2) (decisions 532, 475)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): 475 (2) amended with `from`, the header unchanged** — older cells are unaffected: the record appears only where frames exist.
+- **Measured.** 475 (2) lists the `.snap` records exhaustively; 532's build added `from` (after `at` / `label`, innermost first, compared exactly) in the cell format and `conformance/docs.md`. 13 cells carry `from` lines; the header is still `botopink-cell 1`.
+- **Options.** (a) As proposed. (b) `botopink-cell 2`. (c) The frames folded into the message.
+- **Recommendation.** (a).
+- **Blocks.** Nothing landed; 475's text.
+
+#### 533-a · `comptime-badarith` names the whole expression while the caret is at the operator (decisions 533, 472)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): the message names the dividing operation's source (`6 / (3 - 3)`, `a / b`), text and caret agreeing; the `from` lines give the `comptime`** — low stakes.
+- **Measured.** 472 reads "the operation and place"; after 533 the place is the operator but the backticked text is the `comptime`'s whole expression (`1 + 6 / (3 - 3) * 2`, `ratio(6, 0)`): `comptime_nested_division_by_zero`, `comptime_division_by_zero_in_helper`, `hole_any_call_raises`.
+- **Options.** (a) The `comptime`'s text, as landed. (b) As proposed. (c) No backticked text.
+- **Recommendation.** (b).
+- **Blocks.** Nothing.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

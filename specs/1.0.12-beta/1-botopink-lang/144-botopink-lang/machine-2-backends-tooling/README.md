@@ -1841,6 +1841,41 @@ function and the loop. The bare forms landed on commonJS, erlang and beam; these
       cell `case_arm_return_in_yielding_arm`
 - [ ] `block-break-value` printed as `error[block-break-value]`, as every other refusal
 
+### B-90 — commonJS: an unmarked raise is `crash`, and `abort_text_panic` (decisions 546, 535, 527 (1))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+527 (1) and 546 make the failure kind exact on every target and an unmarked raise `crash`. 546 reads "commonJS keeps
+wrapping every such call (492)", but commonJS wraps nothing: its `attempt` reads every raise that is not a panic as
+`host`, and so does its abort guard.
+
+- [ ] a call of a binding declared outside std without `result: true` wrapped on commonJS (the `host` mark); the
+      `attempt` / `attemptTask` Node forms and the abort guard read an unmarked raise as `crash`
+- [ ] `std_failure_attempt_crash` widened to commonJS; a cell `abort_text_crash` on commonJS (a raise from emitted
+      code: a mistyped binding's value whose method call raises)
+- [ ] a cell `abort_text_panic` (`@panic`'s text, `panic: <message>`) on every target, out on wasm until 164 s2c's box
+      lands
+
+### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+545's file comes from the reflection's source paths: a dependency's module reads `src/client.bp` while its own
+diagnostics label it `a/client.bp`, ambiguous with two dependencies both holding `src/`. The path is the label the
+failed module's own diagnostics print.
+
+- [ ] `imported_declaration_error_location`: `b/b.snap` answers `(a/client.bp)`, `main.snap` `(b/b.bp)` — red today,
+      green after; a program module's cells (`(src/shapes.bp)`) unchanged
+
+### B-92 — a raise at build: a module's own template located, and no frame for a call never entered (decision 532)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+- [ ] a raise inside a module's own template is located at the call in its body, with the use as `from` (532: "no
+      call of an expansion is left unlocated") — cell `template_own_raise_located`, red today
+- [ ] a call's frame is pushed after its receiver and arguments are evaluated: `foo(1 / 0)` frames no `foo`;
+      `hole_any_call_raises` loses its `from src/main.bp:47:12` (`(a / b).toString()`, a call never entered)
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
