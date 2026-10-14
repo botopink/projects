@@ -944,6 +944,7 @@ Conformance step, the rest one step each but 17-c, which holds nothing built (B-
 Machine 1's B-60-a holds machine 2's B-77 too.
 
 #### B-53-a · A template hole writes `@print`'s text for every value, or only for enums? (B-53; decision 430)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a): a template hole writes the text `@print` writes for every value — a record, an array, a tuple, `null`, an enum — on the four targets, and a string writes itself; commonJS and wasm call the helper erlang and beam already share, never the JS `toString` nor an address. A type implementing `Display` writes its `display()` in a hole as in `@print`. Unchanged: a `Bytes` hole stays refused (520), a `?T` hole of a jhonstart template stays an error (204).
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): every value — a hole writes the text `@print` writes for it** (a record, an array, `null`, an enum), on the four targets; a string writes itself.
 - **Measured.** An enum value in a hole now writes `@print`'s text on the four targets (`enum_value_template_hole`). The reference states the hole rule only as "written out as text" (`docs.md` § Literals) beside § What `@print` writes. On erlang and beam the same change makes every non-string hole write `@print`'s text (`[1, 2]`, `null`, a record); commonJS and wasm still write an array or a record their old way (`"${[A, B]}"` is `Target.Top,Target.Bottom` on commonJS, an address on wasm).
 - **Options.**
