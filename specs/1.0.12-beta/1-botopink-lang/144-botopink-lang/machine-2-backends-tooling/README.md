@@ -450,9 +450,7 @@ async function buscar(id) { if (id <= 0) throw HttpError.BadId; return await htt
 
 #### Step 2 — declare the rest — part (was `134-builtins-declared` s2 box 4)
 
-- [ ] `Task`'s surface for 432: `map`, `then` on every `@Task<T>`; `mapError`, `catch` on `@Task<@Result<T, E>>` (a
-      second declaration over the nested form); no `flatMap` — the drift test follows · question B-06-a (`catch` is a
-      reserved word; the nested declaration has no spelling; `map` / `then` are declared but no backend implements them)
+- [x] `Task`'s surface by decision 523: `map`, `then`, `mapError` and `catch` withdrawn (a call refused, `task_method_refused`), composition by an `async` block (`task_compose_by_async_block`), `task_throw_resolves_error` renamed `task_failure_rejects`
 
 #### B-06 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
