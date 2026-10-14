@@ -2400,3 +2400,32 @@ One mechanical pass, as B-33's codemod: no design choice.
 
 - [ ] botopink-lang's and every library's gate with conformance, cold and warm; every cell green on every target
 - [ ] the root `conformance/docs.md` rewritten for the module model (480)
+
+### B-98 — a module named like its package reports every `pub` name declared twice
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+Found by 165 s5: package `rakun` with a module `rakun` (`src/rakun.bp`, the `rakun.module` / `rakun.config` namespace
+mono-a names): once a program using it is refused for any reason, every dependency module reports "`Module` is declared
+`pub` by `rakun/rakun` and by `rakun/rakun`" — one module counted twice, so a refusal's real message drowns.
+
+- [ ] a module named like its package is one module: no duplicate-`pub` report; a cell (package `p`, module `p`, a
+      program refused for an unrelated reason answers that reason alone)
+
+### B-99 — a library's catalogue read at the caller: `rakun.boot()` (mono-a)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-86
+
+165's plug-and-play spells `rakun.boot()` in the program's `main`: a library function whose body reads
+`@TypeInfo.all(with: rakun.module)` and `@TypeInfo.all(with: rakun.config)` **of the program it is called from**,
+judged at build (the start order, the two build errors). Measured: a library function's `@TypeInfo.all` is the
+library's own build; a template needs at least one argument and takes only literal strings; a catalogue spelled
+inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers empty; a namespace-qualified template call
+(`rakun.plan "…"`) is refused ("expected Expr, got string"); one `@TypeInfo.all` cannot mix functions and vals
+(`typeinfo-all-mixed`). The nearest form today, `boot(plan "app", @TypeInfo.all(with: plug.module),
+@TypeInfo.all(with: plug.config))`, puts the catalogue in the program's hands.
+
+- [ ] the language form by which a library call reads the caller program's catalogue at build (a question first if no
+      decision fixes it: a comptime parameter defaulting to the call site's catalogue, a template with no argument, …)
+- [ ] a cell: a library's `boot()` with no argument listing the program's `#[m]` declarations of every package
+

@@ -79,6 +79,9 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 144 botopink-lang
 
+- [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
+- [ ] 144 B-98 — a module named like its package reports every `pub` name declared twice · nothing
+- [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · after B-86
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read

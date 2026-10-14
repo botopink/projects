@@ -1800,6 +1800,27 @@ stays here; B-30 is closed as superseded by it.
 - [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
 - [x] the reference: § Decorators, the catalogue's reach
 
+### B-97 — beam: a `Declared`'s field read in a dependency answers the whole record
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+Found by 165 s5: a dependency's function reading a field of a `Declared<unknown>` the program hands it — `d.name`
+directly, through a function, inside `map` or `for` — answers the whole `Declared` record on beam (in rakun's boot,
+`{badmatch,{…Declared…}}`); erlang answers the field. Repro, a program and one dependency `lib`:
+
+```bp
+// lib/src/root.bp
+pub fn mark(comptime decl: @Decl) { decl.setMeta("k", decl.name); }
+pub fn show(all: Declared<unknown>[]) { @print(all.map({ d -> d.name }).join(",")); }
+// src/main.bp
+import {mark, show} from "lib";
+#[mark] pub fn one() -> string { return "1"; }
+pub fn main() { show(@TypeInfo.all(with: mark)); }      // erlang: one · beam: the record
+```
+
+- [ ] a `Declared`'s field read anywhere answers the field on beam; a cell on every target
+- [ ] rakun's `conformance/rakun/boot_modules` green on beam (a 150 consumer row)
+
 ### B-93 — commonJS: a positional pattern lowered against another package's same-named variant
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)

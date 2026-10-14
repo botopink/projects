@@ -335,3 +335,6 @@ Where each step is (its machine's folder holds its whole text).
 | B-94 | [2](machine-2-backends-tooling/README.md) | erlang and beam: `Bytes.length` read as a property is a text length |
 | B-95 | [2](machine-2-backends-tooling/README.md) | beam: a field read on a type the module does not declare answers the whole record |
 | B-96 | [2](machine-2-backends-tooling/README.md) | an ambient behavior as a parameter type (539 (6)) |
+| B-97 | [2](machine-2-backends-tooling/README.md) | beam: a `Declared`'s field read in a dependency answers the whole record (front 165 s5) |
+| B-98 | [1](machine-1-checker/README.md) | a module named like its package (`rakun/rakun`) reports every `pub` name declared twice (front 165 s5) |
+| B-99 | [1](machine-1-checker/README.md) | a library's catalogue read at the caller: `rakun.boot()` with no argument answering the program's `@TypeInfo.all` (front 165 s5, mono-a) |

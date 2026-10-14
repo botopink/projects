@@ -112,7 +112,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 ### s5 — plug-and-play: `rakun.module`, `rakun.boot()`, `rakun.config`
 
-**Repository:** rakun · **Model:** sonnet (the design is this README's) · **After:** s4
+**Repository:** rakun · **Model:** sonnet (the design is this README's) · **After:** s4, 144 B-98, B-99 (the language gap: a library call reading the caller's catalogue, `language-gaps.md`); `boot_modules` on beam after B-97
 
 - [ ] `rakun`: the `Module` record, the `#[rakun.module]` decorator, `rakun.boot()` (discovery by the catalogue, the
       layer order, the start), `#[rakun.config]` and the typed overrides; the two build errors (one thing contributed
