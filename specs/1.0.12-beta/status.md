@@ -5,7 +5,7 @@
 
 **Fronts with open work:** 25, in three tiers (decision 433) — the old tracks' 72 fronts keep their numbers
 and `## Done`; their open steps live in the fronts below. **144 B-00 (434) is done but for its last box, the seventh step of the
-conformance order (L1, [`fronts.md`](fronts.md) § Execution order).**
+conformance order (L1, [`fronts.md`](fronts.md) § Execution order).** **New development is centred on 144's group wasm-gc on machine 2 — B-82 (wasmtime) → B-83 (WasmGC) → B-84 (std-wasm in botopink and `.wat`) → B-85 — ahead of every other open step of machine 2 (the maintainer, 2026-10-14).
 
 | Tier | Partial | Not started | No open step left |
 |---|---|---|---|

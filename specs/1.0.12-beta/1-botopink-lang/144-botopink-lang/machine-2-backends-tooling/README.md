@@ -4,6 +4,11 @@ The steps of [front 144](../README.md) this machine runs: its goal, priority, ow
 machines share and the alias table are the front's README; each step below is as it was there, unchanged. The
 other machine's steps are in [`../machine-1-checker/`](../machine-1-checker/README.md). A step keeps its id (`B-NN`) wherever it sits.
 
+**Order on this machine (the maintainer, 2026-10-14):** the B-00 group (done but its last box), then **group wasm-gc — B-82
+(wasmtime), B-83 (WasmGC codegen), B-84 (std-wasm in botopink and `.wat`), B-85 (Conformance)** — where new
+development is centred, ahead of every other open step here; then the rest in the order written. B-30 is closed as
+superseded by the group.
+
 ## Steps
 ### B-00a — First — `modules/std-wasm`: std's host functions in Zig, compiled to wasm (decision 434)
 

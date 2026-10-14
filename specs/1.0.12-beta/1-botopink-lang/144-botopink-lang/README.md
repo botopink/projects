@@ -25,6 +25,12 @@ folder of the machine that runs its steps (`machine-1-checker/01-checker/context
 then the error contract of 431 / 432 (B-01–B-09), then the structural fixes the library fronts wait on
 (decision 430: B-10–B-19), then the rest (B-20–B-29).
 
+**Group wasm-gc is where new development is centred (the maintainer, 2026-10-14):** after the B-00 group, machine 2 runs
+**B-82 → B-83 → B-84 → B-85** (wasmtime-a, wasmgc-a) ahead of every other open step of machine 2 — a new step of
+this front that touches the wasm target, the comptime runtime or std-wasm is written into this group, never beside
+it; the steps of the old model (B-30's open boxes, B-25's steps 9 and 11, the linear-memory rows) are withdrawn.
+Machine 1's steps continue in their own order; a machine-1 step that reaches the wasm target waits on B-83.
+
 ## First — comptime on wasm (decision 434)
 
 The maintainer: "a primeira coisa: deixar de usar o beam em comptime, deixando só o wasm com essa função". Every

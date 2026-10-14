@@ -11,7 +11,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
 - **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
-- **Machine 2** — maximum priority: the questions front 144's machine 2 waits on, most urgent first.
+- **Machine 2** — maximum priority: the questions front 144's machine 2 waits on, most urgent first. New development is centred on its group wasm-gc (B-82 → B-85, wasmtime-a, wasmgc-a).
 - **Part 1** — what blocks front 144 (`repository/botopink-lang`, decision 433: the open steps of the old tracks
   `00-gate`, `01-compiler`, `02-std-and-packaging`, `03-bundled-libs`), by old track, then those
   tracks' implementation choices awaiting confirmation.
