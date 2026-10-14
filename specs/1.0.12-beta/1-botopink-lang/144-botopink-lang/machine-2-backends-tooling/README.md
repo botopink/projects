@@ -1770,7 +1770,7 @@ compiler defect is fixed here; a library's is a row of rakun's front (150) and t
 
 ### B-82 — the comptime runtime's engine: wasmtime embedded, wasm3 removed (the maintainer, 2026-10-14; question wasmtime-a)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** the B-00 group; independent of B-30
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** the B-00 group · **Group:** wasm-gc (B-82 → B-83 → B-84 → B-85), which supersedes B-30's open boxes
 
 The comptime runtime's engine is the host's (wasmtime-a): wasmtime in the native compiler through its C API, the
 page's `WebAssembly` in `compiler-web` as today (`bp_host`); wasm3 goes. std-wasm, the comptime module, its link and
@@ -1807,6 +1807,68 @@ every comptime answer are unchanged (440, 450): the same wasm, compiled instead 
 
 - [ ] the whole suite green on `feat`'s pipeline after the landing; the cells of what B-82 changed (an `attempt` at
       build) written; `feat`'s runs since the step's base read with `gh`, each red named and fixed or filed
+
+### B-83 — the wasm codegen emits WasmGC: every value a GC struct or array, no linear-memory value (the maintainer, 2026-10-14; wasmgc-a)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-82 (the engines run WasmGC; wasm3 did not)
+
+The program's memory is the host's collector (wasmgc-a): wasmtime's and the browser's. The wasm codegen stops laying
+values out in linear memory and emits WasmGC types; 522's own heap is never wired (B-30 closed as superseded).
+
+- [ ] **the types:** one GC type per value shape — string (an `i8` array), array, tuple, record, enum and variant,
+      closure, `@Task` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
+      `Bytes` an `i8` array (346); a value never has an address
+- [ ] **the operations:** construction, field read, array get and length, comparison and `@print`'s text over GC
+      values; the `wat_prelude` keeps representation, operators, output and runtime (442) in GC form; `alloc` and
+      every linear-memory helper gone from the program
+- [ ] **tasks and the scheduler** (392) over GC records: a settled value is shared, never copied (immutable); a
+      mutable cell a GC struct with one mutable field; no heap per task, no copy at a send, no cycle to detect (the
+      host's collector follows cycles)
+- [ ] **`needs: [.Gc]`** (518) on every program emitting GC types — wasmtime `-W gc=y`, node and the browser by default
+- [ ] **every `run/` cell's `.out` on wasm unchanged**; a long-running cell (a loop of 10M allocations, a recursion
+      without a loop, a request loop) whose memory stays bounded; `std_wasm.wasm` still linked for the std's functions
+      until B-84 — values crossing into it marshalled at the boundary, measured, the boundary deleted by B-84
+- [ ] docs: 448, 449, 522 amended in the reference's "Decided" table (the program's memory is the host's);
+      `codegen/wat/AGENTS.md`, `modules/std-wasm/AGENTS.md` § The heap (superseded)
+
+**Impacted tests:** every wasm snapshot and `run/` cell; `test-libs` wasm column; `test-web`. **Consumer commits:** none.
+
+### B-84 — std-wasm rewritten: its logic in botopink, its leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig` and beam-to-wasm deleted (the maintainer, 2026-10-14; wasmgc-a)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-83
+
+- [ ] **the logic in botopink:** string, array, Dict, hash, Unicode (its tables build constants by `@embed`, 519),
+      number text (441), the Erlang-term functions the comptime still needs — `.bp` modules of std compiled by the
+      compiler itself, module by module, each module's cells green before the Zig function it replaces is deleted
+- [ ] **the leaves in `.wat`:** `modules/std-wasm/wat/`, one file per leaf or small group, named functions, comments —
+      a byte read or written, a GC array made, a float's text, what no `.bp` form reaches —, each function bound by a
+      `std:` cell, proved by a conformance cell on the four targets, within 442's scope; no wat inside Zig, no wat
+      generated for a fixed leaf (Zig builds `wat_ast` only where emission is parametrized: the codegen, `wat_prelude`)
+- [ ] **the `.wat` reader:** the compiler reads a `.wat` file into its `wat_ast` — a reader of its own (s-expressions),
+      no tool — and transpiles it as 440 transpiles std-wasm today; a `.wat` that does not read is a located error
+- [ ] **deleted at the end:** `modules/std-wasm/src/*.zig` (`std_wasm.wasm`, `heap.zig`, the term library) and
+      `modules/beam-to-wasm/` (452's standalone utility, built on the own heap, used by no botopink build); `zig build
+      std-wasm` goes; `modules/std-wasm/` holds `wat/` alone
+- [ ] every comptime snapshot and every conformance cell unchanged — one text on every target (434 (5))
+- [ ] docs: 440, 450, 452 amended in the reference's "Decided" table; root `AGENTS.md`, `modules/AGENTS.md`,
+      `modules/std-wasm/AGENTS.md`, `libs/std/AGENTS.md`
+
+**Impacted tests:** every comptime snapshot (unchanged), `test-conformance`, `test-libs`, `test-web`. **Consumer commits:** none.
+
+### B-85 — the wasm-gc group's Conformance step (decisions 459, 474, 477, 478, 479, 480)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus
+
+After B-82, B-83 and B-84 have landed on `feat`; it holds back no front that builds on them (479).
+
+- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell on
+      every target it declares; a red reproduced locally, fixed at once (430), pushed again; no cell edited to match
+      the compiler
+- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+      green on the fix (478) — or the report says why none can
+- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+      decision 457's shape (a bounded long task, an `attempt` at build, a `.wat` leaf's answer on four targets); the
+      missing ones proposed as rows
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
@@ -1914,13 +1976,14 @@ code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
       copying collections with no recursion, a write barrier on mutable cells, a copy between heaps as an erlang
       message, a heap released whole, exhaustion traps; unit, property and stress tests; in the `program` table as
       `heap.*`, no comptime face; not wired into the codegen yet. Its design points — question B-30-a
-- [ ] `alloc` leaves `wat_prelude` (449 (2)); the wasm codegen names its roots (the task's frames, the scheduler's
-      queues, the cells) at each collection point; a program that allocates nothing renders byte for byte as before
+- [~] withdrawn (the maintainer, 2026-10-14, wasmgc-a): `alloc` never leaves `wat_prelude` for `heap.zig` — the program's
+      memory is the host's collector, group wasm-gc (B-82 … B-85); until B-83 lands a wasm program allocates as today
+      (a bump heap, exhaustion a trap, 448 (4)), a known limit of a long task written in the reference
 - [x] beam-to-wasm (449 (3)): translated code allocates on the current process's heap; `test_heap` / `allocate` are
       collection points with their live registers as roots; beam-to-wasm still imports std-wasm alone (438)
 - [x] a run that exhausts memory traps, never answers with damaged data; std-wasm's frames stay on the one stack (447)
-- [ ] every `run/` cell's `.out` on wasm unchanged; a long-running cell whose memory stays bounded where the bump heap
-      grew without limit; `modules/std-wasm/AGENTS.md` names std-wasm botopink's wasm runtime (std, stack, heap)
+- [~] withdrawn with box 3: the bounded long-running cell is B-83's; `heap.zig` and `modules/beam-to-wasm` stay
+      untouched until B-84 deletes them
 
 **Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `modules/std-wasm` and
 `modules/beam-to-wasm` unit tests; `test-libs` wasm column. **Model:** opus (a design the decision leaves to
@@ -1928,22 +1991,5 @@ measurement). **Consumer commits:** none.
 - [x] a message copy detects a cycle (522 (5′)): `heap.copy` marks each mutable cell under the walk, answers `error.Cycle`
       with nothing written; the located `message contains a cycle` cell waits on box 3's sends · question B-30-b
 
-Box 3 (`alloc` out of `wat_prelude`, the layouts, the roots, the `var` stores) waits on question B-30-b.
+The step is closed as superseded: its built boxes (the measurement, `heap.zig`, beam-to-wasm's terms, the trap, the cycle) stay as landed; question B-30-b's answer has no effect. Its Conformance step is none — the group's is B-85.
 
-#### B-30 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
-
-**Repository:** botopink-lang (`--lang`) · **Model:** opus
-
-After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
-
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
-      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
-      fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
-      green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
-      decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
-      (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
-      the group's base, green or each red named

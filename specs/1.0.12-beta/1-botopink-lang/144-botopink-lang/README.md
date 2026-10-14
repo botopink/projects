@@ -269,7 +269,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-27 | [1](machine-1-checker/README.md) | Tooling, std residue, `.bpp` in the toolchain, `json` out of std |
 | B-28 | [2](machine-2-backends-tooling/README.md) | The formatter: the `;` after a braced block, C-12, the trailing comma, annotations as written |
 | B-29 | [2](machine-2-backends-tooling/README.md) | The gate, CI and the residual sweep |
-| B-30 | [2](machine-2-backends-tooling/README.md) | wasm memory managed as erlang's: a heap per process, collected, in std-wasm (decisions 448, 449) |
+| B-30 | [2](machine-2-backends-tooling/README.md) | wasm memory as erlang's, a heap per process in std-wasm (448, 449, 522) — closed as superseded by group wasm-gc (wasmgc-a): its built boxes stay, its open boxes withdrawn |
 | B-31 | [2](machine-2-backends-tooling/README.md) | a template whose only part is a float hole is a string on wasm (structural, decision 430) |
 | B-32 | [2](machine-2-backends-tooling/README.md) | structural equality at build is iterative; an arithmetic error at build reads as Erlang's (decisions 471, 472) |
 | B-33 | [2](machine-2-backends-tooling/README.md) | `@External.Wasm`'s cells as labelled arguments (decision 481) |
@@ -313,4 +313,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-79 | [2](machine-2-backends-tooling/README.md) | `botopink run` of a program with no `fn main`: one located error on every target and host (decision 517) |
 | B-80 | [2](machine-2-backends-tooling/README.md) | onze-cli's CSS accessors test red under `test-libs` on commonJS and erlang |
 | B-81 | [2](machine-2-backends-tooling/README.md) | rakun-data's `#[query]` test red under `test-libs` on erlang |
-| B-82 | [2](machine-2-backends-tooling/README.md) | the comptime runtime's engine: wasmtime embedded through its C API, the page's engine on the web; wasm3 removed (wasmtime-a) |
+| B-82 | [2](machine-2-backends-tooling/README.md) | group wasm-gc, 1: the comptime runtime's engine is wasmtime (native) and the page's (web); wasm3 removed (wasmtime-a) |
+| B-83 | [2](machine-2-backends-tooling/README.md) | group wasm-gc, 2: the wasm codegen emits WasmGC for every value; `needs: [.Gc]`; no linear-memory value (wasmgc-a) |
+| B-84 | [2](machine-2-backends-tooling/README.md) | group wasm-gc, 3: std-wasm rewritten — logic in botopink, leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig`, beam-to-wasm deleted (wasmgc-a) |
+| B-85 | [2](machine-2-backends-tooling/README.md) | group wasm-gc, 4: the group's Conformance step |
