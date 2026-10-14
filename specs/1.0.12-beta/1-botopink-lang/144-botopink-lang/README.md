@@ -313,3 +313,4 @@ Where each step is (its machine's folder holds its whole text).
 | B-79 | [2](machine-2-backends-tooling/README.md) | `botopink run` of a program with no `fn main`: one located error on every target and host (decision 517) |
 | B-80 | [2](machine-2-backends-tooling/README.md) | onze-cli's CSS accessors test red under `test-libs` on commonJS and erlang |
 | B-81 | [2](machine-2-backends-tooling/README.md) | rakun-data's `#[query]` test red under `test-libs` on erlang |
+| B-82 | [2](machine-2-backends-tooling/README.md) | the comptime runtime's engine: wasmtime embedded through its C API, the page's engine on the web; wasm3 removed (wasmtime-a) |
