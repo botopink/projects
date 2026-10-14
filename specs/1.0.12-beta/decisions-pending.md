@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**110 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**111 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -990,6 +990,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed; the cell's line becomes a refusal or moves to a cell `fn_expr_untyped_semicolon`. (b) Keep as built; 541 amended to name the exception.
 - **Recommendation.** (a).
 - **Blocks.** `lambda_last_statement_semicolon` line 5; `docs.md` § Lambdas.
+
+#### 544-a · wasmtime's collector and cycles: what the wasm target is specified against (decision 544; 164 s2)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): the codegen breaks its own cycles (a settled task drops its waiters and frame), the gate pins the wasmtime CLI version beside the C API's, and 544's "the host's collector follows cycles" is amended to "the host's collector; a cycle a program builds may live until exit on wasmtime until its collector follows cycles"** — node and the browser collect cycles; wasmtime is the only host that does not yet.
+- **Measured.** wasmtime v45 (the machine's CLI, not pinned): the default collector is DRC, which "cannot currently collect cycles; they will leak until the store is dropped". wasmtime v49 (the pinned C API, s1): the default is the copying collector, documented "still under construction and not yet functional". 544 rests s2's "no cycle to detect" on the host following cycles.
+- **Options.** (a) As proposed. (b) The codegen detects cycles itself (a cycle collector over GC references — what 544 removed). (c) The wasm target waits for a wasmtime whose collector follows cycles before s2 lands its tasks (P4).
+- **Recommendation.** (a).
+- **Blocks.** 164 s2's bounded-memory cell (P6); nothing before it.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

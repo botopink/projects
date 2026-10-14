@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**110 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**111 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -990,6 +990,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto; a linha da célula vira uma recusa ou vai para uma célula `fn_expr_untyped_semicolon`. (b) Manter como construído; a 541 emendada para nomear a exceção.
 - **Recomendação.** (a).
 - **Bloqueia.** `lambda_last_statement_semicolon` linha 5; `docs.md` § Lambdas.
+
+#### 544-a · O coletor do wasmtime e os ciclos: contra o que o target wasm é especificado (decisão 544; 164 s2)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o codegen quebra os seus próprios ciclos (uma task resolvida descarta os seus waiters e o seu frame), o gate fixa a versão do CLI do wasmtime ao lado da da C API, e o "o coletor do host segue ciclos" da 544 é emendado para "o coletor do host; um ciclo que um programa constrói pode viver até a saída no wasmtime até o seu coletor seguir ciclos"** — o node e o browser coletam ciclos; o wasmtime é o único host que ainda não.
+- **Medido.** wasmtime v45 (o CLI da máquina, não fixado): o coletor padrão é o DRC, que "atualmente não consegue coletar ciclos; eles vazam até a store ser descartada". wasmtime v49 (a C API fixada, s1): o padrão é o coletor de cópia, documentado como "ainda em construção e ainda não funcional". A 544 apoia o "nenhum ciclo a detectar" do s2 no host seguir ciclos.
+- **Opções.** (a) Como proposto. (b) O codegen detecta ciclos ele mesmo (um coletor de ciclos sobre referências GC — o que a 544 removeu). (c) O target wasm espera um wasmtime cujo coletor siga ciclos antes de o s2 pousar as suas tasks (P4).
+- **Recomendação.** (a).
+- **Bloqueia.** A célula de memória limitada do 164 s2 (P6); nada antes dela.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

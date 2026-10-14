@@ -79,6 +79,13 @@ Open points: question 543-a.
 The program's memory is the host's collector (wasmgc-a): wasmtime's and the browser's. The wasm codegen stops laying
 values out in linear memory and emits WasmGC types; 522's own heap is never wired (B-30 closed as superseded).
 
+Order (each piece keeps every cell's answer; a module not yet lowerable in GC form falls back to the linear lowering,
+deleted at P5): P0 a value representation (`Repr`) in place of the type strings, the two modes · P1 the GC core —
+strings, the printers, the std-wasm boundary (an arena reset after each call, deleted by s3) · P2 arrays, tuples,
+optionals, records and variants (one struct type per declaration), `case`, `unknown`, `Bytes`, `Dict` (scalars boxed
+inside `anyref`, never `i31ref`) · P3 closures, `var` cells, components · P4 tasks · P5 the linear lowering deleted ·
+P6 the bounded-memory cells and the docs. Question 544-a (wasmtime's collector and cycles) holds P6.
+
 - [ ] **the types:** one GC type per value shape — string (an `i8` array), array, tuple, record, enum and variant,
       closure, `@Task` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
       `Bytes` an `i8` array (346); a value never has an address
