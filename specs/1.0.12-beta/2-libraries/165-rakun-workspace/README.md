@@ -66,9 +66,11 @@ lacks is a build error naming it; removing the dependency removes the module; no
       the per-package folders; the workspace `botopink.json` lists every member
 - [x] rakun's gate green with every package under its old name — nothing renamed in this step
 - [x] `AGENTS.md` of rakun: the workspace, the layers, the per-package rule; one `AGENTS.md` per package
-- [ ] the shared runner (`scripts/git-hooks/lib/runner-standalone.sh`) walks `examples/<package>/<name>/` and
-      `refusals/<package>/<name>/` and finds cells anywhere under `conformance/`; rakun's copy does, the other libraries'
-      copies take the same text (CI check 4: one text) before rakun's pointer moves in the meta repository
+- [x] the shared runner (`scripts/git-hooks/lib/runner-standalone.sh`) walks `examples/<package>/<name>/` and
+      `refusals/<package>/<name>/` and finds cells anywhere under `conformance/`, one text in every library's `feat`
+- The meta repository's pointers of rakun and the libraries move at s8, with the six submodules removed: a checkout
+  holding rakun past s1 beside the six repositories sees each joined package twice (`"styled" is declared by two
+  libraries`), and the runner is one text only across the new `feat`s
 - Open, not this step's: `conformance/rakun/{cors,filter_chain,middleware,problem_details,response_headers,web_tls}` red
   on `feat` through their per-cell `deps/` (150 s27); every `conformance/emilia/` cell refused on beam (144 B-89);
   dbcontext holds no package yet (its notes at `modules/dbcontext/AGENTS.md`, not a member; s3); question 165-a
@@ -138,6 +140,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
 - [ ] the open steps of 148 styled, 149 jhonstart, 153 dbcontext, 154 emilia and 162 onze refiled under 150 rakun,
       one section per former front with its alias table, their context folders moved into `2-libraries/150-rakun/`;
       145 erika renamed 145 query
+- [ ] every library's pointer and rakun's moved to its `feat` in the same commit that removes the six submodules
 - [ ] `fronts.md` (ownership: one row for rakun with lanes by layer — data, style/bpp/stylesheet, service and its
       optionals, app/ssr — a lane never editing another's `modules/`; conflicts), `status.md`, `language-gaps.md`
       (owners), `README.md` (the high tier from 18 to 13 fronts), `AGENTS.md` § Layout and CI check 4 (12 library
