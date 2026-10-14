@@ -1031,6 +1031,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** 144 B-78 (its last two boxes and its Conformance step).
 
 #### B-30-a · The wasm heap's design points (decisions 448, 449; 144 B-30)
+- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** (a) with point 5 changed: points 1–4 and 6 as built in `modules/std-wasm/src/heap.zig`. 5′: a message copy keeps no sharing, as on erlang, and detects a cycle (it marks what it visited when it crosses a mutable cell) — a cycle raises a located error naming the send, `message contains a cycle`, never an exhausted memory and a trap.
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a) each of the six points below as built in `modules/std-wasm/src/heap.zig`** — 448 leaves the design to measurement; the reasons sit in `modules/std-wasm/AGENTS.md` § The heap. Wiring it into the codegen (B-30 box 3) puts the block header into nearly every allocating wasm snapshot, so it waits on this answer.
 - **Measured.** A string loop grows ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page — linear, few live values.
 - **Options.** (a) as built; (b) a change named point by point.

@@ -1031,6 +1031,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** A 144 B-78 (suas duas últimas caixas e seu passo Conformance).
 
 #### B-30-a · Os pontos de design do heap wasm (decisões 448, 449; 144 B-30)
+- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** (a) com o ponto 5 mudado: os pontos 1–4 e 6 como construídos em `modules/std-wasm/src/heap.zig`. 5′: uma cópia de mensagem não mantém compartilhamento, como no erlang, e detecta um ciclo (marca o que visitou quando atravessa uma célula mutável) — um ciclo levanta um erro localizado que nomeia o envio, `message contains a cycle`, nunca uma memória esgotada e um trap.
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a) cada um dos seis pontos abaixo como construído em `modules/std-wasm/src/heap.zig`** — 448 deixa o design para a medição; as razões estão em `modules/std-wasm/AGENTS.md` § The heap. Ligá-lo ao codegen (B-30 caixa 3) põe o cabeçalho de bloco em quase todo snapshot wasm que aloca, então isso espera esta resposta.
 - **Medido.** Um laço de strings cresce ~68 B por iteração, um laço de requisições ~727 B por requisição (~335 como `@Task`s), uma renderização de página ~17,6 KiB por página — linear, poucos valores vivos.
 - **Opções.** (a) como construído; (b) uma mudança nomeada ponto a ponto.
