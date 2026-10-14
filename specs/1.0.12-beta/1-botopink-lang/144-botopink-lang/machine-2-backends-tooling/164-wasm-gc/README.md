@@ -145,6 +145,9 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       generated for a fixed leaf (Zig builds `wat_ast` only where emission is parametrized: the codegen, `wat_prelude`)
 - [ ] **the `.wat` reader:** the compiler reads a `.wat` file into its `wat_ast` — a reader of its own (s-expressions),
       no tool — and transpiles it as 440 transpiles std-wasm today; a `.wat` that does not read is a located error
+- [ ] `io.fs` importable on wasm: a module whose body calls a host function with no wasm binding builds, and only the
+      call is refused (518 (4)); `io.fs` on `wasi:filesystem` (540, `needs: [.Filesystem]`) — today the whole module is
+      refused (`std_fs_walk_root_spellings`' wasm departure), and the six `fs_*` cells of 540 leave wasm out
 - [ ] **deleted at the end:** `modules/std-wasm/src/*.zig` (`std_wasm.wasm`, `heap.zig`, the term library) and
       `modules/beam-to-wasm/` (452's standalone utility, built on the own heap, used by no botopink build); `zig build
       std-wasm` goes; `modules/std-wasm/` holds `wat/` alone

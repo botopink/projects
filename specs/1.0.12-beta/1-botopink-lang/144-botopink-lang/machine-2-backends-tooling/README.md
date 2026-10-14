@@ -1890,6 +1890,38 @@ failed module's own diagnostics print.
 - [ ] a call's frame is pushed after its receiver and arguments are evaluated: `foo(1 / 0)` frames no `foo`;
       `hole_any_call_raises` loses its `from src/main.bp:47:12` (`(a / b).toString()`, a call never entered)
 
+### B-94 — erlang and beam: `Bytes.length` read as a property is a text length
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`b.length` on a `Bytes` lowers to `string:length/1` on erlang and beam: a `badarg` on bytes that are not UTF-8, and a
+character count on bytes that are. std's `io/fs.bp` calls `b.length()` to avoid it.
+
+- [ ] a cell: `b.length` of a `Bytes` holding a byte ≥ 0x80 answers its byte count, red on erlang and beam today
+- [ ] std's `io/fs.bp` back to the property where it chose the call to avoid the defect
+
+### B-95 — beam: a field read on a type the module does not declare answers the whole record
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+On beam a field read on a value whose type the module does not declare (std reading `Asset.path`, `Asset` being the
+compiler's record) lowers to `'__bp_field'/2`, which answers the whole record. std reads `Asset`'s fields through two
+host cells (`assetPath`, `assetHandle`) to avoid it.
+
+- [ ] a cell: a field read on an imported record the module does not declare, red on beam today
+- [ ] std's two host cells removed, `Asset`'s fields read directly
+
+### B-96 — an ambient behavior as a parameter type (decision 539 (6))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the checker)
+
+539 (6): `Closeable` is "a plain behavior for generic code". It is ambient in `builtins.d.bp` (as `Display`), but
+`fn f(c: Closeable)` is refused `unknown type`, and a type's inline `implement Closeable` is not checked against it.
+
+- [ ] an ambient behavior names a parameter type (`fn f(c: Closeable)`, `fn f<T: Closeable>(c: T)`) — cell, red today
+- [ ] an inline `implement` of an ambient behavior checked against its declaration — a refusal cell
+- [ ] `builtins.d.bp`'s comment on `Closeable` true
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1024,6 +1024,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Medido.** A 472 diz "a operação e o lugar"; depois da 533 o lugar é o operador mas o texto entre crases é a expressão inteira do `comptime` (`1 + 6 / (3 - 3) * 2`, `ratio(6, 0)`): `comptime_nested_division_by_zero`, `comptime_division_by_zero_in_helper`, `hole_any_call_raises`.
 - **Opções.** (a) O texto do `comptime`, como pousou. (b) Como proposto. (c) Sem texto entre crases.
 - **Recomendação.** (b).
+- **Bloqueia.** Nada.
+
+#### 540-a · Detalhes de `io.fs` que a 540 deixa em aberto: o link pendente, `hash()`, uma linha ruim, as respostas de escrita (decisão 540; 144)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** (1) um link pendente sob `walk` é **`NotFound(<root>/<link>)`** — o que uma leitura através dele responde; o "nomeando o link" da 178 mantido em `path`, e `Other.message` continua sendo o texto do host como a 540 (1) diz; (2) `hash()` faz o hash **do arquivo inteiro**, qualquer que seja a posição de leitura (como construído: é igual a `Asset.hash`); (3) uma linha `InvalidUtf8` **encerra** `lines()` (como construído: um `throw` num corpo `@Stream` o encerra); (4) as funções de escrita e de diretório respondem **`@Result<void, FsError>`**, só `File.write` uma contagem.
+- **Medido.** Construído: `Other(root, "fs.walk: dangling link \"x\"")` (células `fs_error_variants`, `std_fs_walk_root_spellings`) — o texto da própria std onde a 540 (1) faz de `Other.message` o do host, e `path` a raiz, que existe; `hash()` do arquivo inteiro enquanto `bytes()` / `text()` leem o resto a partir da posição (`fs_file_handle`); `lines()` termina na linha `InvalidUtf8` (o `BufRead::lines` do Rust entrega o erro e continua; o `Files.lines` do Java termina); `writeBytes`, `writeText`, `appendText`, `mkdir`, `mkdirRecursive`, `rm`, `removeTree` e `copy` respondem `Ok(0)` de `i32`, uma sobra de `@Result<i32, string>` (`fs_whole_file_shortcuts` imprime `0`) — Rust, Java, Erlang e Node não respondem nada aí.
+- **Opções.** (1) (a) como construído; (b) `NotFound(<root>/<link>)`; (c) uma variante `DanglingLink(path, link)`. (2) (a) o arquivo inteiro; (b) o resto, como `text()`. (3) (a) encerra; (b) continua, como o Rust. (4) (a) `i32` 0; (b) `void`; (c) `void`, `copy` uma contagem de bytes.
+- **Recomendação.** (1b) (2a) (3a) (4b).
+- **Bloqueia.** Nada construído; as células fixadas regravadas para (1) e (4) quando respondida.
+
+#### 540-b · `a.open()` exige `import {io.fs}` (decisão 538; 144)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): manter a recusa `embed-open-needs-fs`** — `File` é um tipo da std; um valor cujo tipo o módulo não consegue nomear é a razão do Go para `import "embed"`.
+- **Medido.** A 538 escreve `pub fn open(self: Asset) -> File` sem condição de import. O checker reescreve `a.open()` para `<fs>.openAsset(a)` (o alias mais curto de `io/fs`); sem o import é recusado na chamada (`embed_open_without_fs_import`).
+- **Opções.** (a) Como construído. (b) Um import implícito de `io/fs` onde `a.open()` é escrito. (c) `File` ambiente em `builtins.d.bp`, `open` um método real de `Asset`.
+- **Recomendação.** (a).
 - **Bloqueia.** Nada.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
