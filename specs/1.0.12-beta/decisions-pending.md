@@ -965,6 +965,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing built; B-42's reference.
 
 #### B-48-a · An imported helper's or an imported decorator's raise at build: located where? (decision 451 (3); 144 B-48)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), with frames: a raise at build is located at the call that raised, in its own file (451 (3)) — the helper's line in the library, the decorator body's line in its module —, and every call of the chain is a `called from <file>:<line>:<column>` line, innermost first, down to the program's call, annotation or `comptime`. A call inside a template expansion takes the frame of the template's use, the one line it has — no call of an expansion is left unlocated.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the raising call in its own file**, named with that file — the helper's line in the library, the decorator's body line in its module — the local call or annotation named as the frame that ran it.
 - **Measured.** B-48 locates a raise at the innermost call of this module: an imported helper's raise lands on the local call; an imported decorator's raise is located at the annotation, its file named in the message (`decorator_raise_names_body_file`); a template expansion's calls are not located.
 - **Options.** (a) The raising call in its own file. (b) As built: the innermost call of the module being compiled.
@@ -972,6 +973,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing built; B-48's scope note.
 
 #### B-32-a · `comptime-badarith` names its cause only for a whole-expression `/` (decision 472; 144 B-32)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a): every division and remainder by zero at build — `/` and `%`, integer and float, alone or inside a larger expression — reads `… (division by zero)` (472's wording), located at the operator that divides, never at the whole expression.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): every division by zero names its cause** — `%` by zero and a division inside a larger expression read `… (division by zero)` too, located at the dividing operator.
 - **Measured.** `comptime 7 / 0` and `comptime 1.0 / 0.0` print `comptime-badarith: … — \`<expr>\` (division by zero)`; `comptime 7 % 0` and `comptime 2.0 + 1.0 / 0.0` print the same refusal without the cause.
 - **Options.** (a) The cause named for every division and remainder by zero, at its operator. (b) As built.
@@ -979,6 +981,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing built.
 
 #### B-26-a · `Dict.bump` on a plain `Dict` of non-integer values (decision 340; 144 B-26)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a): `Dict.bump(key, by)` exists for an integer `V` alone (340); on a `Dict` whose `V` is not an integer type the call is refused, located. `bump` is a plain `Dict` method (17-c); on a module `var`, `d = d.bump(k, 1)` is an `x = f(x)` and so atomic on the BEAM (17-c (ii)). wasm's `8976.0` is the separately filed defect.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every `Dict` whose `V` is not an integer type**, as on a keyed var — 340 says integer `V`.
 - **Measured.** `Dict<string, f64>.bump("a", 1.5)` on a plain dict is accepted and prints `1.5` on commonJS, erlang and beam (wasm prints `8976.0`, a defect filed apart); on a keyed var a non-integer `V` is refused.
 - **Options.** (a) Refused at the call for a non-integer `V`. (b) Accepted on a plain dict as `insert(k, (at(k) ?? 0) + by)` for any numeric `V`.
@@ -986,6 +989,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing built.
 
 #### B-41-a · The text of a run-time abort that is not a panic on erlang and beam (decisions 430, 444; 144 B-41)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** Neither as written: one text on every target, the departure only in whether the target aborts. An uncaught run-time abort writes to stderr the `Failure` an `attempt` would have caught (527), `<kind>: <message>` — `panic: division by zero` (a run-time division by zero on erlang and beam is a marked `panic`, 527 (3)), `crash: <reason>` for a failing match or any unmarked raise, `host: <message>` for a host raise —, never the raw `Class:Reason` term, as 472 never prints the raw term at build. Where erlang and beam abort and commonJS and wasm answer `Infinity` (444), the cell declares that departure in `snapshot/targets/`; the abort's text is not a departure.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): pinned per target as a departure** — erlang and beam write `error:badarith` (`Class:Reason`) for a run-time `badarith` or a failed match, under 444's "each target keeps its own arithmetic"; a cell claims it in `snapshot/targets/`.
 - **Measured.** B-41 made a library's `@panic` message reach stderr unchanged on every target. Another run-time failure on erlang and beam writes `Class:Reason` to stderr; no cell claims it.
 - **Options.** (a) A per-target departure, pinned. (b) One text on every target, as a panic's.
@@ -993,6 +997,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing built.
 
 #### B-64-a · How a single-file `test/` suite narrows its targets (decision 475 (1); 144 B-64)
+- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a): a `test/` suite that narrows its targets is a project suite — its own directory with a `botopink.json` naming `"targets"`, as a cell does (475 (1)); a single file declares no narrowing, and the `// targets:` line is removed (one place for a restriction, the manifest; the compiler reads no configuration from a comment). The seven suites become seven directories.
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): a suite that narrows becomes a project suite** — its own directory with a `botopink.json` naming `"targets"`, as a cell does (475 (1)); a single file declares no narrowing. Viable: seven suites move into a directory each.
 - **Measured.** With `conformance/test/` suites running on wasm, seven single-file suites (`bodyless_fn`, `external_host`, `external_markers`, `mocks_decorator_double`, `mocks_handwritten_double`, `module_init`, `std_process_import`) need a narrowing on a host binding wasm lacks. A file has no manifest, so B-64's follow-up added a `// targets: <t> …` line the runner reads and audits; 475 (1) puts a narrowing in the manifest, never a separate file.
 - **Options.** (a) Project suites with a manifest. (b) The `// targets:` line, written into 475 as the single-file form.

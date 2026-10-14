@@ -965,6 +965,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Nada construído; a referência do B-42.
 
 #### B-48-a · O raise de um helper importado ou de um decorator importado em build: localizado onde? (decisão 451 (3); 144 B-48)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a), com frames: um raise em build é localizado na chamada que levantou, no seu próprio arquivo (451 (3)) — a linha do helper na biblioteca, a linha do corpo do decorator no seu módulo —, e toda chamada da cadeia é uma linha `called from <file>:<line>:<column>`, da mais interna primeiro, até a chamada, a anotação ou o `comptime` do programa. Uma chamada dentro de uma expansão de template recebe o frame do uso do template, a única linha que ela tem — nenhuma chamada de uma expansão fica sem localização.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na chamada que levantou, no seu próprio arquivo**, nomeado com esse arquivo — a linha do helper na biblioteca, a linha do corpo do decorator no seu módulo — a chamada local ou a anotação nomeada como o frame que o executou.
 - **Medido.** O B-48 localiza um raise na chamada mais interna deste módulo: o raise de um helper importado cai na chamada local; o raise de um decorator importado é localizado na anotação, seu arquivo nomeado na mensagem (`decorator_raise_names_body_file`); as chamadas de uma expansão de template não são localizadas.
 - **Opções.** (a) A chamada que levantou, no seu próprio arquivo. (b) Como construído: a chamada mais interna do módulo sendo compilado.
@@ -972,6 +973,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Nada construído; a nota de escopo do B-48.
 
 #### B-32-a · `comptime-badarith` nomeia sua causa só para uma `/` que é a expressão inteira (decisão 472; 144 B-32)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a): toda divisão e resto por zero em build — `/` e `%`, inteiro e float, só ou dentro de uma expressão maior — lê `… (division by zero)` (o texto da 472), localizado no operador que divide, nunca na expressão inteira.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): toda divisão por zero nomeia sua causa** — `%` por zero e uma divisão dentro de uma expressão maior também leem `… (division by zero)`, localizados no operador que divide.
 - **Medido.** `comptime 7 / 0` e `comptime 1.0 / 0.0` imprimem `comptime-badarith: … — \`<expr>\` (division by zero)`; `comptime 7 % 0` e `comptime 2.0 + 1.0 / 0.0` imprimem a mesma recusa sem a causa.
 - **Opções.** (a) A causa nomeada para toda divisão e resto por zero, no seu operador. (b) Como construído.
@@ -979,6 +981,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Nada construído.
 
 #### B-26-a · `Dict.bump` num `Dict` comum de valores não inteiros (decisão 340; 144 B-26)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a): `Dict.bump(key, by)` existe só para um `V` inteiro (340); num `Dict` cujo `V` não é um tipo inteiro a chamada é recusada, localizada. `bump` é um método comum de `Dict` (17-c); num `var` de módulo, `d = d.bump(k, 1)` é um `x = f(x)` e por isso atômico no BEAM (17-c (ii)). O `8976.0` do wasm é o defeito registrado à parte.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusado em todo `Dict` cujo `V` não é um tipo inteiro**, como num var keyed — 340 diz `V` inteiro.
 - **Medido.** `Dict<string, f64>.bump("a", 1.5)` num dict comum é aceito e imprime `1.5` no commonJS, erlang e beam (o wasm imprime `8976.0`, um defeito registrado à parte); num var keyed um `V` não inteiro é recusado.
 - **Opções.** (a) Recusado na chamada para um `V` não inteiro. (b) Aceito num dict comum como `insert(k, (at(k) ?? 0) + by)` para qualquer `V` numérico.
@@ -986,6 +989,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Nada construído.
 
 #### B-41-a · O texto de um abort em tempo de execução que não é um panic no erlang e no beam (decisões 430, 444; 144 B-41)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** Nenhuma como escrita: um texto em todo alvo, o desvio só em se o alvo aborta. Um abort em tempo de execução não capturado escreve no stderr o `Failure` que um `attempt` teria capturado (527), `<kind>: <message>` — `panic: division by zero` (uma divisão por zero em tempo de execução no erlang e no beam é um `panic` marcado, 527 (3)), `crash: <reason>` para um match que falha ou qualquer raise não marcado, `host: <message>` para um raise de host —, nunca o termo cru `Class:Reason`, como a 472 nunca imprime o termo cru em build. Onde erlang e beam abortam e commonJS e wasm respondem `Infinity` (444), a célula declara esse desvio em `snapshot/targets/`; o texto do abort não é um desvio.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): fixado por alvo como um desvio** — erlang e beam escrevem `error:badarith` (`Class:Reason`) para um `badarith` em tempo de execução ou um match que falha, sob o "cada alvo mantém sua própria aritmética" de 444; uma célula o declara em `snapshot/targets/`.
 - **Medido.** O B-41 fez a mensagem de `@panic` de uma biblioteca chegar ao stderr sem mudança em todo alvo. Outra falha em tempo de execução no erlang e no beam escreve `Class:Reason` no stderr; nenhuma célula o declara.
 - **Opções.** (a) Um desvio por alvo, fixado. (b) Um texto em todo alvo, como o de um panic.
@@ -993,6 +997,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Nada construído.
 
 #### B-64-a · Como uma suíte `test/` de um arquivo só restringe seus alvos (decisão 475 (1); 144 B-64)
+- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** (a): uma suíte `test/` que restringe seus alvos é uma suíte de projeto — seu próprio diretório com um `botopink.json` nomeando `"targets"`, como uma célula faz (475 (1)); um arquivo só não declara restrição, e a linha `// targets:` é removida (um lugar para uma restrição, o manifesto; o compilador não lê configuração de um comentário). As sete suítes viram sete diretórios.
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): uma suíte que restringe vira uma suíte de projeto** — seu próprio diretório com um `botopink.json` nomeando `"targets"`, como uma célula faz (475 (1)); um arquivo só não declara restrição. Viável: sete suítes passam para um diretório cada.
 - **Medido.** Com as suítes de `conformance/test/` rodando no wasm, sete suítes de um arquivo (`bodyless_fn`, `external_host`, `external_markers`, `mocks_decorator_double`, `mocks_handwritten_double`, `module_init`, `std_process_import`) precisam de uma restrição por um binding de host que o wasm não tem. Um arquivo não tem manifesto, então o seguimento do B-64 acrescentou uma linha `// targets: <t> …` que o runner lê e audita; 475 (1) põe uma restrição no manifesto, nunca num arquivo à parte.
 - **Opções.** (a) Suítes de projeto com manifesto. (b) A linha `// targets:`, escrita em 475 como a forma de um arquivo só.
