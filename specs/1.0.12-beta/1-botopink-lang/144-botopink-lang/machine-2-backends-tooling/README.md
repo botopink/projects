@@ -1818,6 +1818,9 @@ import {mark, show} from "lib";
 pub fn main() { show(@TypeInfo.all(with: mark)); }      // erlang: one · beam: the record
 ```
 
+Likely B-95's cause (`Declared` is the compiler's record, which the dependency does not declare: `'__bp_field'/2`); built
+with B-95.
+
 - [ ] a `Declared`'s field read anywhere answers the field on beam; a cell on every target
 - [ ] rakun's `conformance/rakun/boot_modules` green on beam (a 150 consumer row)
 
