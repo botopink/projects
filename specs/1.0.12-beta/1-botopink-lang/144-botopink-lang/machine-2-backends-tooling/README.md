@@ -1800,6 +1800,19 @@ stays here; B-30 is closed as superseded by it.
 - [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
 - [x] the reference: § Decorators, the catalogue's reach
 
+### B-87 — erlang: a `var` reassigned inside a nested arm reaches a `defer` late (decision 539, amended)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+539's amendment reads a deferred expression when it runs. erlang carries a `var` the rest of the block reassigns in the
+process dictionary, written after each statement: a reassignment inside a nested arm reaches it only after the outer
+statement, so an arm that panics or throws hands the defer the old value
+(`var f = "a"; defer @print(f); if (c) { f = "b"; @panic("x") }` prints `a`).
+
+- [ ] the cell above, red on erlang (beam checked the same), green after
+- [ ] the reassignment written where it happens, inside the arm
+- [ ] erlc's "unused variable" warning on a defer body that rebinds a `var` (cell `defer` 4) gone
+
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

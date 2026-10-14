@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**103 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -948,6 +948,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** Each point (a) as proposed or (b): (1) keep Cranelift; (2) no handler; (3) keep catching at build; (4) a size bound now.
 - **Recommendation.** (a) for each.
 - **Blocks.** Nothing built.
+
+#### 539-a · `throw` and a propagating `try` inside a `defer` body: refused or allowed? (decision 539 (5); 144)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(c): refuse a `throw` and a `try` that propagates, located (`defer-throw`, `defer-try`); a `try … catch` handled inside the body stays** — 539 (5)'s reason is "cannot leave the path", and a throw leaves it: in `finally` / `after` the deferred error replaces the error being propagated, masking it silently. Zig refuses `try` in a `defer`, Swift refuses throwing.
+- **Measured.** 539 landed on every target with `return`, `break` / `continue` out of the body, `yield` and `await` refused; a `throw` or a propagating `try` in the body compiles, and its error replaces the block's own on commonJS, erlang and beam.
+- **Options.** (a) Refuse both forms, `catch` included. (b) Allow: the deferred error replaces the block's (today, undocumented). (c) As proposed.
+- **Recommendation.** (c).
+- **Blocks.** Nothing built; two refusal cells once answered.
+
+#### 539-b · Does a `defer` add `.exceptions` to the program's `needs`? (decisions 539 (3), 518; 164)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): a function holding a `defer` adds `.exceptions`** — 518 (2) gathers what the program reaches; a `defer`'s lowering reaches the panic tag exactly as `attempt` does, with no annotation, so 518 (3) holds.
+- **Measured.** On wasm with exceptions off a panic traps and the block's defers do not run; erlang and node run the defer before an uncaught panic ends the process. The cell `defer @print("x"); @panic("y")` in `main` answers `x` then the abort on every target but wasm.
+- **Options.** (a) A function holding a `defer` adds `.exceptions`. (b) Only when `attempt` is also reached (today). (c) A `defer` refused on wasm when nothing adds `.exceptions`.
+- **Recommendation.** (a) — one answer on every target (434 (5)).
+- **Blocks.** The cell above, red on wasm until it lands (164 s2b).
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

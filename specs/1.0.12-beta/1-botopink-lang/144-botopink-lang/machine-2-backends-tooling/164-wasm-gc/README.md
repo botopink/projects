@@ -97,6 +97,22 @@ values out in linear memory and emits WasmGC types; 522's own heap is never wire
 
 **Impacted tests:** every wasm snapshot and `run/` cell; `test-libs` wasm column; `test-web`. **Consumer commits:** none.
 
+### s2b — `defer` on wasm: every exit 539 (3) names (decision 539; found reviewing its build, 2026-10-14)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** s2 (the same codegen)
+
+539 landed on wasm with four gaps; each is a cell red on wasm (never a `snapshot/targets/` departure) until its box lands.
+
+- [ ] a panic in a block or `case` arm runs the arm's defers with exceptions on — today a panic region covers
+      statement lists and the function's own body only
+- [ ] a `defer` inside an inlined higher-order lambda, or an `if` branch answering a value, built — today refused on
+      wasm with a located error no decision states
+- [ ] a `val` shadowing, after the `defer` in the same block, a name the deferred code reads: the deferred code reads
+      the binding in scope at the `defer` (names bind there, only the value is read late — 539's amendment)
+- [ ] a deferred statement that panics on an inline exit path inside an enclosing region runs once (`attempt` around
+      a `return` with a panicking inner defer)
+- [ ] question 539-b's answer: a `defer` and the program's `needs`
+
 ### s3 — std-wasm rewritten: its logic in botopink, its leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig` and beam-to-wasm deleted (the maintainer, 2026-10-14; wasmgc-a)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** s2

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**103 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -948,6 +948,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** Cada ponto (a) como proposto ou (b): (1) manter o Cranelift; (2) nenhum handler; (3) continuar capturando no build; (4) um limite de tamanho já.
 - **Recomendação.** (a) para cada um.
 - **Bloqueia.** Nada construído.
+
+#### 539-a · `throw` e um `try` que propaga dentro do corpo de um `defer`: recusados ou permitidos? (decisão 539 (5); 144)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(c): recusar um `throw` e um `try` que propaga, localizados (`defer-throw`, `defer-try`); um `try … catch` tratado dentro do corpo continua** — a razão da 539 (5) é "não pode sair do caminho", e um throw sai dele: em `finally` / `after` o erro adiado substitui o erro sendo propagado, mascarando-o silenciosamente. O Zig recusa `try` num `defer`, o Swift recusa lançar.
+- **Medido.** A 539 pousou em todos os targets com `return`, `break` / `continue` para fora do corpo, `yield` e `await` recusados; um `throw` ou um `try` que propaga no corpo compila, e seu erro substitui o do próprio bloco no commonJS, no erlang e no beam.
+- **Opções.** (a) Recusar as duas formas, `catch` incluído. (b) Permitir: o erro adiado substitui o do bloco (hoje, não documentado). (c) Como proposto.
+- **Recomendação.** (c).
+- **Bloqueia.** Nada construído; duas células de recusa quando respondida.
+
+#### 539-b · Um `defer` adiciona `.exceptions` aos `needs` do programa? (decisões 539 (3), 518; 164)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): uma função que contém um `defer` adiciona `.exceptions`** — a 518 (2) reúne o que o programa alcança; o rebaixamento de um `defer` alcança a tag de panic exatamente como o `attempt`, sem anotação, então a 518 (3) se mantém.
+- **Medido.** No wasm com exceptions desligadas um panic faz trap e os defers do bloco não rodam; o erlang e o node rodam o defer antes de um panic não capturado encerrar o processo. A célula `defer @print("x"); @panic("y")` em `main` responde `x` e depois o abort em todos os targets menos o wasm.
+- **Opções.** (a) Uma função que contém um `defer` adiciona `.exceptions`. (b) Só quando o `attempt` também é alcançado (hoje). (c) Um `defer` recusado no wasm quando nada adiciona `.exceptions`.
+- **Recomendação.** (a) — uma resposta em todos os targets (434 (5)).
+- **Bloqueia.** A célula acima, vermelha no wasm até pousar (164 s2b).
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
