@@ -122,8 +122,11 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 **Repository:** erika · **Model:** haiku
 
-- [ ] the repository renamed `botopink/query`, the package `query`, the imports in rakun (`rakun-data`) and in every
-      example; front 145 renamed; its gate green
+- [x] the repository renamed `botopink/query` (the meta's `.gitmodules` names it), the package `query` and `query-test`,
+      its imports, examples, refusals and cells; its gate green
+- [ ] rakun: `modules/erika` and `modules/erika-test` (joined by s1) removed, `rakun-data` and every example declaring
+      `query` as an external dependency, the imports `from "query"`; rakun's gate green · after s3
+- [ ] front 145 renamed 145 query (with s8)
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 
