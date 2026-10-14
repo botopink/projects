@@ -79,6 +79,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 144 botopink-lang
 
+- [ ] 144 B-100 — the tooling reads the libraries at their new homes (rakun's workspace, `query`) · lands with 165 s8
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-98 — a module named like its package reports every `pub` name declared twice · nothing
 - [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · after B-86
@@ -349,6 +350,8 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 - [x] 165 s1 — erika, dbcontext, emilia, styled, jhonstart and onze joined into rakun by `git subtree add` (history kept), lifted to `modules/<name>` with names unchanged, cells in `conformance/<package>/`, examples and refusals per package; rakun's gate green but the reds already on `feat` (150 s27, 144 B-89); `AGENTS.md` per package
 - [x] 165 s2 — every package renamed per the table by codemod (rakun-style, rakun-bpp with html/link/forms/testing, rakun-stylesheet with testing/bridge, rakun-service with actuator, rakun-ssr with cli/bundler/assets/content/og/release/testing, rakun-restclient; rakun-test → `rakun/src/testing/`), the starters removed, `rakun-ssr create` on the `botopink/rakun` source, `version_set.bp` one row per package (165-a (a)); erika and dbcontext untouched · question 165-b
+- [x] 165 s3 — dbcontext's plan folded into `rakun-data` (its `AGENTS.md`, the entity / context / repository layer to come), `modules/dbcontext/` removed; `rakun-data` declares `query`
+- [x] 165 s6 — erika renamed `query` (repository `botopink/query`, packages `query` and `query-test`); rakun holds no copy of it
 
 ### 144 botopink-lang
 

@@ -1800,6 +1800,19 @@ stays here; B-30 is closed as superseded by it.
 - [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
 - [x] the reference: § Decorators, the catalogue's reach
 
+### B-100 — the tooling reads the libraries at their new homes (front 165 s8)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **Lands with:** 165 s8's pointer commit
+
+botopink-lang's tooling names the former repositories' paths: `test-analysis-equivalence` and the cold cells of
+`build.zig` read cells of jhonstart, rakun and emilia under `conformance/modules/`; `scripts/tsc-check.sh` reads
+erika's `generic_loader_binding` beside it (`../erika`, `repository/erika`); `scripts/test-libs.sh` and comments list
+the six repositories. After 165, those cells are rakun's `conformance/<package>/` (rakun-bpp, rakun-stylesheet, rakun)
+and query's `conformance/modules/` (`repository/query`).
+
+- [ ] every path and list names rakun's workspace and `query`; no former repository's name left in the tooling
+- [ ] `zig build test-analysis-equivalence` and `scripts/tsc-check.sh` green in the meta checkout after 165 s8
+
 ### B-97 — beam: a `Declared`'s field read in a dependency answers the whole record
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)

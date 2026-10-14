@@ -95,9 +95,9 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 **Repository:** rakun · **Model:** sonnet
 
-- [ ] dbcontext's modules moved into `rakun-data/src/` (`entity/`, `context/`, `repository/`), the imports of
+- [x] dbcontext's modules moved into `rakun-data/src/` (`entity/`, `context/`, `repository/`), the imports of
       `dbcontext` → `rakun-data`, one root; `rakun-data` declares `query`
-- [ ] rakun's gate green; the cells of both under `conformance/rakun-data/`
+- [x] rakun's gate green; the cells of both under `conformance/rakun-data/`
 
 ### s4 — the compiler: the lib-agnostic gate, the catalogue across packages (144 B-86)
 
@@ -126,7 +126,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 - [x] the repository renamed `botopink/query` (the meta's `.gitmodules` names it), the package `query` and `query-test`,
       its imports, examples, refusals and cells; its gate green
-- [ ] rakun: `modules/erika` and `modules/erika-test` (joined by s1) removed, `rakun-data` and every example declaring
+- [x] rakun: `modules/erika` and `modules/erika-test` (joined by s1) removed, `rakun-data` and every example declaring
       `query` as an external dependency, the imports `from "query"`; rakun's gate green · after s3
 - [x] front 145 renamed 145 query
 
@@ -145,7 +145,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
 - [x] the open steps of 148 styled, 149 jhonstart, 153 dbcontext, 154 emilia and 162 onze refiled under 150 rakun,
       one section per former front with its alias table, their context folders moved into `2-libraries/150-rakun/`;
       145 erika renamed 145 query
-- [ ] every library's pointer and rakun's moved to its `feat` in the same commit that removes the six submodules
+- [ ] every library's pointer and rakun's moved to its `feat` in the same commit that removes the six submodules, with 144 B-100 (botopink-lang's tooling reading the libraries at their new homes)
 - [ ] `fronts.md` (ownership: one row for rakun with lanes by layer — data, style/bpp/stylesheet, service and its
       optionals, app/ssr — a lane never editing another's `modules/`; conflicts), `status.md`, `language-gaps.md`
       (owners), `README.md` (the high tier from 18 to 13 fronts), `AGENTS.md` § Layout and CI check 4 (12 library
