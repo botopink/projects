@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**117 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1042,6 +1042,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Entre parênteses, legal. (b) Recusado como hoje; o exemplo da 523 lê `val v = try await t catch 0; v * 2`.
 - **Recomendação.** (a) — o próprio exemplo da decisão, e os parênteses já delimitam uma expressão em todo outro lugar.
 - **Bloqueia.** Nada construído; o exemplo da referência.
+
+#### B-12-c · Os detalhes de `Asset` que a 519 deixa em aberto (decisão 519; 144 B-12)
+- **Proposto (opus, 2026-10-14; aguardando o mantenedor):** **(a): como construído** — `hash` o SHA-256 dos bytes em hex minúsculo, `size` um `i64`; `text()` de um `Asset` não conhecido em build recusado (`embed-text-not-at-build`); um caminho por um parâmetro `comptime` chega à função como um último parâmetro oculto `__embed_<p>: Asset`.
+- **Medido.** O B-12 construiu `size` como `i32`, `hash` como SHA-256 em hex minúsculo, `text()` recusado onde o `Asset` não é uma constante de build (nenhuma célula o fixa), e o parâmetro oculto (muda a aridade emitida da função).
+- **Opções.** (a) Como construído, `size` alargado para `i64`. (b) Como construído, `size` `i32`. (c) O parâmetro oculto trocado por especializar a função por ponto de chamada entre módulos.
+- **Recomendação.** (a) — um arquivo maior que 2 GiB é improvável mas `i64` não custa nada; o parâmetro oculto mantém um corpo por função.
+- **Bloqueia.** Nada construído.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.

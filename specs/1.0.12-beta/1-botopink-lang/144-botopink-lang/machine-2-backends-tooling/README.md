@@ -600,26 +600,21 @@ every host cell marshals through `string`.
       restrictive readings it took (no widening to `unknown`, so `@print(b)` is refused; no `is` or type pattern; no
       `comptime` value; no ordering; `+` with a string and a template hole refused) — question B-12-a
 
-#### Step 33 — `@embedFile` / `@embedBytes` checked (decision 342) (was `01-checker` s33)
+#### Step 33 and Step 6 — `@embed(comptime path) -> Asset` (decisions 519, 520)
 
-- [ ] `@embedFile(comptime path: string) -> string` and `@embedBytes(comptime path: string) -> Bytes` in
-      `builtins.d.bp`, callable in any context; a `path` not known at compile time is 280 (0)'s error at
-      the argument; an absolute path or one leaving the package (`..`) refused at the argument (`reject/`
-      cells); the read itself is `14-comptime-on-beam` step 6's
-
-#### Step 6 — files at compile time (decision 342) (was `14-comptime-on-beam` s6)
-
-- [ ] 342: `@embedFile` / `@embedBytes` read the file relative to the `botopink.json` of the package that
-      wrote the path (the application's for a decorator annotating its declarations; the member's in a
-      workspace); a missing file, or a non-UTF-8 one for `@embedFile`, is a compile error at the call; the
-      content hash enters the cell's cache key (with 26 for watch and the LSP); `rakun ws generate`'s
-      checked-in `.bp` can go (rakun 93). Waits on `01-checker` (the builtins' declaration in
-      `builtins.d.bp` and their checking) and 346 (`Bytes`, not built); this front's half is the
-      package root on `Module` and the read at the call
-
-**Gate:** standard (fronts.md § Gate) + `scripts/snap_audit.sh --mode=runtime-parity` green, every
-re-recorded listing classified, `COMPTIME REPLY` byte-identical at every step ·
-`scripts/beam_export_audit.sh` green (comptime listings included)
+- [x] `@embed(comptime path)` declared and checked as a `Build` builtin, `Asset` (`path`, `bytes`, `size`, `hash`,
+      `text()`) a compiler type; a call known at build computed where written; an argument not known at build, an
+      absolute path, a `..` segment, a missing file, `text()` on non-UTF-8 bytes and `compiler-web`'s missing reader
+      refused, located — `embed_path_absolute`, `embed_path_outside_package`, `embed_file_missing`,
+      `embed_text_not_utf8`, `embed_path_not_known`
+- [x] read by the writing package's `botopink.json` (a path through a `comptime` parameter in the caller's package),
+      through a reader the CLI and the LSP hand the compiler; embedded on the four targets (an Erlang binary, a JS
+      `Uint8Array`, a wasm data segment); a `Bytes` value at build a build constant (520) — `embed_text_file`,
+      `embed_binary_file`, `embed_through_comptime_param`, `bytes_comptime`
+- [ ] every file read joins B-60's closure key: a file under `src/` moves it today (`test-analysis-equivalence`); a
+      file outside `src/` does not — the key records no read made at build (B-60's design)
+- [ ] `@embed` through a `comptime` parameter of a decorator or template body: refused `comptime-arg-not-known` —
+      the wasm comptime runtime has no host import to read a file
 
 #### B-12 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
