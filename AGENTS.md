@@ -223,6 +223,36 @@ design, a decision, a red that needs a compiler change) has that part redone on
 `opus`. Every thread works by patch; the coordinator lands it through the hooks, so a
 thread's slip is caught at the landing.
 
+### `fable` as a consultant (the maintainer, 2026-10-14)
+
+`fable` works where no oracle checks the work, with small inputs, and never implements
+(unless a plan and its `sonnet` / `opus` build have both failed):
+
+1. **A plan, then another model builds it.** For a design step (a front's codegen or runtime
+   change, a decision's first build, a step whose README leaves the design open), a `Plan`
+   thread on `fable` reads the step and the decisions it names and returns a short plan:
+   the design answers, the interfaces, the order of landable pieces with each piece's oracle,
+   the risks, the model per piece. The coordinator keeps the plan in its scratch area and
+   files its open points as questions. The pieces then run on `sonnet`, or on `opus` where
+   the piece is still typed design.
+2. **A targeted review after a landing.** Its input is only the expected answers that changed
+   (cells, snapshots, refusal texts, departures), the report's Outside and Questions, and the
+   decisions' text. It answers, per point: (A) the language, fine; (D) a defect — the 144 or
+   164 row and the cell it calls for, red or out; (Q) a maintainer question, written in the
+   pending page's shape. The coordinator files the rows and the questions (English first,
+   the Portuguese page its translation).
+3. **A trigger, not a routine.** The review runs only when a cell's or a snapshot's answer
+   changed beyond what the step stated, a thread chose something no decision fixes, or the
+   step is design. Mechanical work, migrations, and fixes whose answers the step states and
+   whose cells go red to green get none.
+
+| Thread | Model |
+|---|---|
+| The plan of a design step | `fable` (`Plan` agent) |
+| The pieces of that plan | `sonnet`, or `opus` for a piece that is still typed design |
+| The review of a landing whose answers changed or that made a choice no decision fixes | `fable`, read-only |
+| A fix whose answers its step states (a 144 / 164 row with named cells) | `sonnet`, no review |
+
 ## Build and test
 
 All Zig commands run from `repository/botopink-lang/`:
