@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**117 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1049,6 +1049,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como construído, `size` alargado para `i64`. (b) Como construído, `size` `i32`. (c) O parâmetro oculto trocado por especializar a função por ponto de chamada entre módulos.
 - **Recomendação.** (a) — um arquivo maior que 2 GiB é improvável mas `i64` não custa nada; o parâmetro oculto mantém um corpo por função.
 - **Bloqueia.** Nada construído.
+
+#### 525-a · O que a decisão 525 deixa em aberto sobre blocos (decisões 525, 409, 2; 144)
+- **Proposto (opus, 2026-10-14; aguardando o mantenedor):** **(a) para cada um:** (1) um lambda responde sua última expressão escrita sem `;`, como 409 e 525 dizem ("como uma função e um lambda fazem") — hoje um lambda responde sua última instrução mesmo com `;`; (2) `await`, `yield`, `break` / `continue` para um laço de fora dentro de um bloco alcançam a função ou o laço de fora (um bloco é um escopo, não uma closure); (3) o `break <value>` de um braço de `case` (decisão 2) é removido como o do `comptime`; (4) um bloco como última instrução do corpo de uma função é a sua cauda; (5) o formatador reescreve um bloco final sem parâmetro como `{ -> … }`.
+- **Medido.** Como construído pela 525: lambdas respondem sua última instrução mesmo com `;` (`{ x -> x + 1; }` dá `2`); `await`, `yield`, `break` / `continue` dentro de um bloco são recusados, como num braço de `case`; o `break <value>` de um braço de `case` ainda é aceito; um bloco que termina o corpo de uma função é uma instrução entre chaves, não a sua cauda; o formatador migra todo bloco final para `{ -> … }`.
+- **Opções.** (a) Cada ponto como proposto. (b) Cada ponto como construído.
+- **Recomendação.** (a) — uma regra de valor para todo corpo (409), um bloco só um escopo (525).
+- **Bloqueia.** Nada construído; as bordas da 525.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**117 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1049,6 +1049,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As built, `size` widened to `i64`. (b) As built, `size` `i32`. (c) The hidden parameter replaced by specialising the function per call site across modules.
 - **Recommendation.** (a) — a file larger than 2 GiB is unlikely but `i64` costs nothing; the hidden parameter keeps one body per function.
 - **Blocks.** Nothing built.
+
+#### 525-a · What decision 525 leaves open about blocks (decisions 525, 409, 2; 144)
+- **Proposed (opus, 2026-10-14; awaiting the maintainer):** **(a) for each:** (1) a lambda answers its last expression written without `;`, as 409 and 525 say ("as a function and a lambda do") — today a lambda answers its last statement even with `;`; (2) `await`, `yield`, `break` / `continue` to an enclosing loop inside a block reach the enclosing function or loop (a block is a scope, not a closure); (3) a `case` arm's `break <value>` (decision 2) is removed like `comptime`'s; (4) a block as the last statement of a function body is its tail; (5) the formatter rewrites a trailing block with no parameter to `{ -> … }`.
+- **Measured.** As built by 525: lambdas answer their last statement even with `;` (`{ x -> x + 1; }` gives `2`); `await`, `yield`, `break` / `continue` inside a block are refused, as in a `case` arm; a `case` arm's `break <value>` is still accepted; a block ending a function body is a braced statement, not its tail; the formatter migrates every trailing block to `{ -> … }`.
+- **Options.** (a) Each point as proposed. (b) Each point as built.
+- **Recommendation.** (a) — one value rule for every body (409), a block a scope only (525).
+- **Blocks.** Nothing built; 525's edges.
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.
