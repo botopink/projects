@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**115 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1050,6 +1050,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) ★ Nenhuma até o s2: após a renomeação todo pacote é `rakun-*`, as linhas são escritas então, e o filtro sai. (b) Um conjunto de versões fora do núcleo (um arquivo no nível do workspace que o gate lê), todo membro uma linha agora.
 - **Recomendação.** (a): o s2 renomeia todo pacote para um nome `rakun-*`, então as linhas não precisam de exceção; uma versão para o workspace (o README) faz da tabela uma linha por pacote no s2.
 - **Trava.** Nada antes do s2; o s2 escreve as linhas.
+
+
+#### 165-b · Três pacotes fora da tabela do 165: `onze-server`, `jhonstart-dom-test`, `rakun-cli` (frente 165 s2)
+- **Medido.** O 165 s2 dobrou todo pacote da tabela menos três. `onze-server` precisa do `rakun` (só erlang) enquanto `rakun-ssr` compila também para commonJS (seu CLI roda no node): dobrado, 21 vermelhos em commonJS (`rkReqLive` has no External for the node backend) — a linguagem não tem alvo por módulo nem dependência por alvo. Os externals de `jhonstart-dom-test` são só node enquanto `rakun-bpp` compila para erlang. `rakun-cli` não está em nenhuma linha da tabela. Construído: os três ficam pacotes próprios (`onze-server` dependendo de `rakun-ssr`, `rakun-app`, `rakun-service`; `jhonstart-dom-test` de `rakun-bpp`).
+- **Opções.** (a) ★ Três pacotes nomeados na tabela: `rakun-ssr-server` (era `onze-server`), `rakun-bpp-dom-test` (era `jhonstart-dom-test`), `rakun-cli` como está, cada um sua linha com seus alvos. (b) Uma feature da linguagem primeiro — o conjunto de alvos de um módulo ou de uma dependência — e os três dobrados em `rakun-ssr`, `rakun-bpp` (um passo do 144).
+- **Recomendação.** (a): um pacote é hoje a unidade de um conjunto de alvos; três linhas nomeadas mantêm a regra do 165 (todo pacote um nome `rakun-*`, uma linha cada) sem feature nova da linguagem.
+- **Trava.** Nada; os nomes mudam na segunda caixa do s5 ou no s7.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 

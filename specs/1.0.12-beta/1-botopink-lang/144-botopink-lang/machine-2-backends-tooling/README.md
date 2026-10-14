@@ -1800,6 +1800,20 @@ stays here; B-30 is closed as superseded by it.
 - [x] the lib-agnostic gate of `zig build test` refuses `rakun|query` in `compiler-core/src` (was `rakun|jhonstart|erika`)
 - [x] the reference: § Decorators, the catalogue's reach
 
+### B-93 — commonJS: a positional pattern lowered against another package's same-named variant
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+Found by 165 s2: in one commonJS program that loads both `markdown` (`MdNode`'s variants `Text`, `List`, `Table`,
+`Row`, `Image`) and rakun-stylesheet (its `Token` sections hold variants of the same names), a bare positional pattern
+`Text(value)` on `MdNode` reads the field as `$0` (the other variant's positional layout) instead of `value`; writing
+the label (`Text(value: value)`) answers, `MdNode.Text(value)` does not. Repro: rakun's `rakun-ssr` with `config`,
+`integration` and `content` in one root.
+
+- [ ] a pattern's field layout is the matched type's own variant, whatever other variant shares its name; a cell: two
+      packages with a same-named variant of different shapes, a positional pattern on each, on every target
+- [ ] rakun-ssr's `src/content/element.bp` patterns back to the positional form (a 150 consumer row)
+
 ### B-89 — beam: emilia's module refused by the BEAM assembler (structural, decision 430)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)

@@ -79,6 +79,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 144 botopink-lang
 
+- [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
 - [ ] 114 s7 — a cold gate recorded on the current tip, ≤ 450 s, exit-check counts re-derived · runs in 163 s9 (the measurements at the end of the conformance order, a quiet machine)
@@ -344,6 +345,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 165 rakun-workspace
 
 - [x] 165 s1 — erika, dbcontext, emilia, styled, jhonstart and onze joined into rakun by `git subtree add` (history kept), lifted to `modules/<name>` with names unchanged, cells in `conformance/<package>/`, examples and refusals per package; rakun's gate green but the reds already on `feat` (150 s27, 144 B-89); `AGENTS.md` per package
+- [x] 165 s2 — every package renamed per the table by codemod (rakun-style, rakun-bpp with html/link/forms/testing, rakun-stylesheet with testing/bridge, rakun-service with actuator, rakun-ssr with cli/bundler/assets/content/og/release/testing, rakun-restclient; rakun-test → `rakun/src/testing/`), the starters removed, `rakun-ssr create` on the `botopink/rakun` source, `version_set.bp` one row per package (165-a (a)); erika and dbcontext untouched · question 165-b
 
 ### 144 botopink-lang
 

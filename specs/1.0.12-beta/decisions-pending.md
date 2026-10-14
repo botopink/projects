@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**115 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1050,6 +1050,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) ★ None until s2: after the rename every package is `rakun-*`, the rows are written then, and the filter goes. (b) A version set outside the core (a workspace-level file the gate reads), every member a row now.
 - **Recommendation.** (a): s2 renames every package to a `rakun-*` name, so the rows need no exception; one version for the workspace (the README) makes the table one row per package at s2.
 - **Blocks.** Nothing before s2; s2 writes the rows.
+
+
+#### 165-b · Three packages outside 165's table: `onze-server`, `jhonstart-dom-test`, `rakun-cli` (front 165 s2)
+- **Measured.** 165 s2 folded every package of the table but three. `onze-server` needs `rakun` (erlang-only) while `rakun-ssr` builds for commonJS too (its CLI runs on node): folded, 21 commonJS reds (`rkReqLive` has no External for the node backend) — the language has no per-module target or per-target dependency. `jhonstart-dom-test`'s externals are node-only while `rakun-bpp` builds for erlang. `rakun-cli` is in no row of the table. Built: the three stay packages of their own (`onze-server` depending on `rakun-ssr`, `rakun-app`, `rakun-service`; `jhonstart-dom-test` on `rakun-bpp`).
+- **Options.** (a) ★ Three packages named in the table: `rakun-ssr-server` (was `onze-server`), `rakun-bpp-dom-test` (was `jhonstart-dom-test`), `rakun-cli` as it is, each its row with its targets. (b) A language feature first — a module's or a dependency's target set — and the three folded into `rakun-ssr`, `rakun-bpp` (a 144 step).
+- **Recommendation.** (a): a package is the unit of a target set today; three named rows keep 165's rule (every package a `rakun-*` name, one row each) without a new language feature.
+- **Blocks.** Nothing; the names move in s5's second box or s7.
 
 ## Part 1 — What blocks tracks 00–03
 

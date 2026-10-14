@@ -79,15 +79,17 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 **Repository:** rakun · **Model:** haiku (the gate is the oracle)
 
-- [ ] directories and `name` in every `botopink.json` per the table; the `jhonstart-*`, `onze-*`, `emilia`, `styled`
+- [x] directories and `name` in every `botopink.json` per the table; the `jhonstart-*`, `onze-*`, `emilia`, `styled`
       packages folded into their new package as modules (`rakun-bpp/src/html/`, `rakun-ssr/src/cli/`, …); erika
       stays out (s6)
-- [ ] a codemod over every `.bp`, `.bpp`, example and test: `from "jhonstart"` → `from "rakun-bpp"` and the rest of
+- [x] a codemod over every `.bp`, `.bpp`, example and test: `from "jhonstart"` → `from "rakun-bpp"` and the rest of
       the table; `onze.json` → `rakun-ssr.json`, `onze create-key` → `rakun-ssr create-key`, `ONZE_KEY` →
       `RAKUN_SSR_KEY`; the `*-test` packages become `testing/` modules; the `rakun-starter-*` removed
-- [ ] `rakun-ssr create` writes workspace dependencies or the `botopink/rakun` git source, never an archived
+- [x] `rakun-ssr create` writes workspace dependencies or the `botopink/rakun` git source, never an archived
       repository's; its `--libs` help text says a rakun checkout
-- [ ] rakun's gate green; no import of a package that no longer exists (the build refuses one)
+- [x] rakun's gate green; no import of a package that no longer exists (the build refuses one)
+- Open: `onze-server`, `jhonstart-dom-test` and `rakun-cli` stay packages of their own (question 165-b); the five
+  `MdNode` patterns of `rakun-ssr/src/content/element.bp` write their labels out until 144 B-93
 
 ### s3 — dbcontext folded into `rakun-data`
 

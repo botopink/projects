@@ -331,3 +331,4 @@ Where each step is (its machine's folder holds its whole text).
 | B-90 | [2](machine-2-backends-tooling/README.md) | commonJS: an unmarked raise is `crash`, and `abort_text_panic` (546, 535) |
 | B-91 | [2](machine-2-backends-tooling/README.md) | `import-of-failed-module` names the failed module's file as the diagnostics label does (545) |
 | B-92 | [2](machine-2-backends-tooling/README.md) | a raise at build: a module's own template located, no frame for a call never entered (532) |
+| B-93 | [2](machine-2-backends-tooling/README.md) | commonJS: a positional pattern on an imported variant lowered against another package's same-named variant (`Text(value)` → `$0`) |
