@@ -1718,7 +1718,7 @@ B-78-a** (`decisions-pending.md`): if the answer is to keep the engine's text, t
 
 - [x] a template hole, `.toString()` and `string + f64` write the `f64` with its decimal part (`5.0`, `1.0e21`) through
       `@print`'s helper; the cell `float_text_everywhere`
-- [ ] a float commonJS cannot type (an imported record's `f64` field) still loses its `.0`
+- [x] a float commonJS cannot type (an imported record's `f64` field, a generic method's answer) keeps its `.0` (521)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-79 — `botopink run` of a program with no `fn main`: one located error on every target and host (decision 517)
