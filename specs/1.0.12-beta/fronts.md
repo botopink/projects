@@ -1,7 +1,7 @@
 # Fronts — 1.0.12-beta: who may touch what, when
 
 The open work is cut by repository in three tiers (decision 433): front 144 for `repository/botopink-lang`,
-one front per library repository (145–162), and the medium tier (`3-medium/`). This file is the
+one front per library repository (145–162, 150 holding the former 148, 149, 153, 154 and 162), and the medium tier (`3-medium/`). This file is the
 milestone-level view: the rules for a front, who owns which repository, the sequences, the execution order,
 and § Gate, the standard landing every front README cites. Where each front stands is
 [`status.md`](status.md). The old track fronts keep their numbers; their ids resolve through each new
@@ -79,17 +79,13 @@ milestone (three when the console is closed).
 |---|---|---|
 | **164** wasm-gc | `modules/compiler-core/src/comptime/runtime/**`, `modules/compiler-core/src/codegen/wat/**`, `modules/{std-wasm,wasm3,beam-to-wasm}/**`, `modules/compiler-web/**`, `build.zig`'s wasm and engine steps, `release.yml`'s engine fetch, the wasm column of every cell | the checker, the other backends, `libs/std/**` beyond s3's std modules (144's) |
 | **144** botopink-lang | `repository/botopink-lang` but 164's files — `modules/{compiler-core,compiler-cli,language-server,lib-test-runner,bpmp,manifest,test-shard}/**` (less `comptime/runtime/**` and `codegen/wat/**`), `libs/std/**`, `tests/language/**`, `scripts/**`, `docs.md`, `docs/**`, `build.zig`, `.github/workflows/**`; the consumer commits its steps name (rule 10) | a library repository beyond those commits; the meta repository |
-| **145** erika | `repository/erika/**` | rakun-data (150's), dbcontext (153's) |
+| **145** query (erika renamed) | `repository/query/**` | rakun-data (150's, `rakun/modules/rakun-data`) |
 | **146** validation | `repository/validation/**` | the consumers' code beyond their import lines |
-| **147** css · **148** styled | `repository/css/**` · `repository/styled/**` | jhonstart, emilia |
-| **149** jhonstart | `repository/jhonstart/**` — the core, `jhonstart-link`, `jhonstart-forms`, `jhonstart-html` until 26 s0 merges it, `jhonstart-styled` (119), `jhonstart-dom-test` | rakun; `styled`'s and emilia's trees |
-| **150** rakun | `repository/rakun/**` (the tree 128 left; [`04-rakun/README.md`](2-libraries/150-rakun/04-rakun/track.md) § Where a merged member's front works), `rakun-app`'s middleware and actions (123, 127) | onze, jhonstart, emilia; the core's frozen `src/{decorators,http,bootstrap}.bp` except 144 B-19's consumer commits (339) |
-| **151** json · **152** yaml · **158** markdown | `repository/{json,yaml,markdown}/**`; the consumers' dependency and import lines (rule 10) | the consumers' code beyond the import; onze-content's collections (162) |
-| **153** dbcontext | `repository/dbcontext/**`; rakun-data's entity, repository and native-query code moving out (consumer commit) | erika (145); rakun-data's drivers and container (150) |
-| **154** emilia | `repository/emilia/**` | jhonstart, `styled` |
+| **147** css | `repository/css/**` | the rakun repository (150's `rakun-style`) |
+| **150** rakun | `repository/rakun/**` (the tree 128 left; [`04-rakun/README.md`](2-libraries/150-rakun/04-rakun/track.md) § Where a merged member's front works), in four lanes by layer, a lane never editing another's `modules/`: **data** — `modules/rakun-data` (the former 153 dbcontext, steps 150 s48 … s51), `modules/rakun-restclient`; **style / bpp / stylesheet** — `modules/{rakun-style,rakun-bpp,rakun-stylesheet}` (the former 148 styled, 149 jhonstart, 154 emilia: 150 s32 … s58); **service and its optionals** — `modules/{rakun,rakun-service,rakun-scheduling,rakun-session,rakun-cache,rakun-security,rakun-websocket,rakun-metrics,rakun-messaging,rakun-mail}` and the core's steps; **app / ssr** — `modules/{rakun-app,rakun-ssr}` (`rakun-app`'s middleware and actions, 123 and 127; the former 162 onze: 150 s59 … s71, the examples); the cells under `conformance/<package>/` follow their package's lane | the other libraries; the core's frozen `src/{decorators,http,bootstrap}.bp` except 144 B-19's consumer commits (339) |
+| **151** json · **152** yaml · **158** markdown | `repository/{json,yaml,markdown}/**`; the consumers' dependency and import lines (rule 10) | the consumers' code beyond the import; `rakun-ssr`'s content collections (150 s64) |
 | **155** http · **156** log · **157** routing · **159** actions · **160** snap | `repository/{http,log,routing,actions,snap}/**`; their consumer lines (rule 10) | anything else in the consumers |
 | **161** vscode-extension | `repository/vscode-extension/**` | the compiler (144) |
-| **162** onze | `repository/onze/**` — `onze`, `onze-server`, `onze-cli`, `onze-bundler`, `onze-assets`, `onze-og`, `onze-release`, `onze-content`, `onze-test`, the examples | rakun, jhonstart |
 | **136** cardume | `repository/cardume/**` when born; `rakun-cardume`, `jhonstart-cardume` (its bridges) | the frameworks' cores |
 | **165** rakun-workspace | during its steps: rakun, erika, emilia, styled, jhonstart, onze, dbcontext whole (s1–s3, s5–s7), botopink-lang's s4 (144 B-86), the meta (s8); after it, `repository/rakun/**` is 150's with lanes by layer | the other libraries |
 | **163** meta-ci | the meta `.github/workflows/**`, meta `scripts/**`, `AGENTS.md` § Layout and § CI, the submodule pointers' sweep, the specs' drift rule (141-a) | every repository under `repository/` |
@@ -152,6 +148,13 @@ Written with the old front ids (alias tables); they bind the new fronts holding 
   26-cli-tooling; its prelude list and `01-checker` step 22 land in sequence.
 - **Inside `01-compiler`**: its README § Ownership; 07 steps 1 and 4
   after 02–05 land; 16 step 3 after every tree is migrated.
+- **Inside 150 rakun's lanes** (165 s8): the lanes are by layer — data; style / bpp / stylesheet; service and its
+  optionals; app / ssr (§ Ownership) — and a lane never edits another lane's `modules/`; a step that needs a change in
+  another lane's package takes it as a consumer commit (rule 10) before its own commit, and the owning lane's open
+  step on that file lands first. A package depends on packages of lower layers only (165's table), so a lane's step
+  waits on the lower layer's open steps it names, never the reverse. The files the lanes share — the workspace
+  `botopink.json`, `conformance/docs.md`, the per-package `AGENTS.md` of a package another lane reads — are edited by
+  one lane at a time.
 - **The dynamic mark** (decision 186): 22 step 4 and 49 step 5 land the run-time bridge; 26 step 8
   replaces it when `01-checker` lands the hooks capability.
 - **141 against every track**: it edits a front's spec text only while that front is not in a
@@ -172,8 +175,8 @@ Written with the old front ids (alias tables); they bind the new fronts holding 
       becoming `conformance/`, every cell in decision 457's shape with its own `botopink.json`) — in flight;
    4. 144 B-29 step I's rest: the reference into `conformance/`, `test.yml` calling `scripts/gate.sh` (461, 462, 466);
    5. 163 s7: `scripts/gate.sh` in every repository, the meta one the scheduler (463, 466, 469, 473);
-   6. each library moves its `docs.md` and examples into `<lib>/conformance/` (the `conformance` steps of 145, 149,
-      150, 154, 162);
+   6. each library moves its `docs.md` and examples into `<lib>/conformance/` (the `conformance` steps of 145 and
+      150 — 150 s46 and s69);
    7. closing B-00: B-00c's last box, each library's own hook on this compiler — `scripts/gate.sh libs` (473);
    8. 163 s8: each library's CI fetches its dependencies (474);
    9. 163 s9: the measurements, at the end, on a quiet machine — no step before it spends time measuring.
@@ -188,23 +191,24 @@ Written with the old front ids (alias tables); they bind the new fronts holding 
 2. **144's lanes**, in its README's order: the error contract (B-01–B-09), then the structural fixes the
    libraries wait on (B-10–B-19), then the rest (B-20–B-29). Lane A (checker) is serial; lanes B and C run
    beside it on disjoint files.
-3. **The library fronts, in this order**, each opening when the 144 steps it names have landed: 145 erika
-   (B-18) · 146 validation (B-10 G1, B-16) · 147 css · 148 styled (B-10 G2) · 149 jhonstart (B-14, B-15, B-17)
-   · 150 rakun (waves A → B → C, then 123, 127; B-11, B-12, B-13, B-19) · 151 json (B-27) · 152 yaml · 153
-   dbcontext (145 s1) · 154 emilia (148) · 155 http · 156 log (B-25) · 157 routing · 158 markdown · 159
-   actions · 160 snap · 161 vscode-extension (B-27) · 162 onze, last (53 needs every other front).
-4. **The medium tier**: 136 cardume (149, 120, 146), 105 i18n (155 s2), 107 release (`07-g`, 150 s7, 162
-   s4), 163 meta-ci (s2 last), 98's closing check, 135's order; a decision-blocked step stays in its front
+3. **The library fronts, in this order**, each opening when the 144 steps it names have landed: 145 query
+   (B-18) · 146 validation (B-10 G1, B-16) · 147 css · 150 rakun, in its lanes by layer — data (150 s48 … s51, after
+   145 s1), service and its optionals (waves A → B → C, then 123, 127; B-11, B-12, B-13, B-19), style / bpp /
+   stylesheet (150 s32 … s58: B-10 G2, B-14, B-15, B-17; styled's 150 s32 before emilia's 150 s52), app / ssr last
+   (150 s59 … s71; 150 s67 needs every other front) · 151 json (B-27) · 152 yaml · 155 http · 156 log (B-25) ·
+   157 routing · 158 markdown · 159 actions · 160 snap · 161 vscode-extension (B-27).
+4. **The medium tier**: 136 cardume (150's jhonstart section, 150 s41, 146), 105 i18n (155 s2), 107 release (`07-g`, 150 s7, 150
+   s62), 163 meta-ci (s2 last), 98's closing check, 135's order; a decision-blocked step stays in its front
    and waits in `status.md`'s L5.
 
 At most six worktrees at once; a front whose prerequisites have landed may take a thread freed early. The
-chains that set the pace: B-00 → B-14 → 149 (118 s1) → 26 → 67 → 150 s23 (127); B-15 → 149 s5 (119) → s6 (120)
-→ s8 (126); B-18 → 145 s1 → 153; 150 s1 (04) → s13 (22) → 162 s1 (49) → s9 (53).
+chains that set the pace: B-00 → B-14 → 150 s39 (118) → s36 (26) → s38 (67) → 150 s23 (127); B-15 → 150 s40 (119) → s41 (120)
+→ s43 (126); B-18 → 145 s1 → 150 s48 (153); 150 s1 (04) → s13 (22) → 150 s59 (49) → s67 (53).
 
 ### Dependency graph (old ids)
 
 The graph inside the library tier, written with the old front ids; each resolves through the new READMEs'
-alias tables (137 → 145 s1, 26 → 149 s1, 04 → 150 s1, …). Compiler steps are 144's.
+alias tables (137 → 145 s1, 26 → 150 s36, 04 → 150 s1, …). Compiler steps are 144's.
 
 | Front | Needs | Unblocks |
 |---|---|---|

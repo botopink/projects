@@ -129,7 +129,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       through a signature
 - [ ] a wrapper's type alias implementing a behavior (`StyledView implement Styleable` over `@Component<Styled>`) ·
       question B-10-e
-- [ ] handed to 148: styled's `Sheet.add` half (an API change; `toStyled()` answers a component)
+- [ ] handed to 150 s34: styled's `Sheet.add` half (an API change; `toStyled()` answers a component)
 - [ ] waits elsewhere: a template reading another expansion's value (119's design), a decorator body calling a host
       function (B-00c), a library template reading the program's catalogue (B-19)
 - [ ] G3: the same for jhonstart's markers (after B-15 and 388) — built: template-built code builds an inline props
@@ -138,7 +138,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [ ] `html` declared `-> @ExprCustom<View>` (`View = @Component<Element>`): every expansion fails `expected
       Component, got Element` · question B-10-g
 - [ ] G5: the same for onze-content's marker — no compiler change: decision 306 makes it a type decorator over
-      `decl.fields` (121 step 10), handed to 162
+      `decl.fields` (121 step 10), handed to 150 s70
 
 **Impacted tests:** a `run/` or `reject/` cell per row; the libraries' suites. **Model:** opus for checker rows,
 sonnet for a backend row with its repro. **Consumer commits:** validation, styled, emilia, jhonstart, onze.
@@ -821,7 +821,7 @@ its expansion. Steps 29 and 41 landed (checker-s29, checker-s41); what step 29 l
 
 **Impacted tests:** `run/template_*`, `reject/template_*`; the drift test (`Expr`'s surface). **Model:** opus.
 **Consumer commits:** erika (`erika.bp`'s padding), jhonstart (`html.bp`'s padding); unblocks erika 137 (145 s1),
-dbcontext 143 (153).
+dbcontext 143 (150 s48).
 
 #### Step 29 — the template annotation `#[f "…"]` (decision 311) (was `01-checker` s29)
 

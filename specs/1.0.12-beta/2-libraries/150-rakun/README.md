@@ -1,4 +1,4 @@
-# Front 150 — rakun: the 16 members' fronts, middleware and typed actions
+# Front 150 — rakun: the 16 members' fronts, middleware and typed actions — and, refiled by 165 s8, styled, jhonstart, dbcontext, emilia and onze
 
 **Priority:** high — the library tier (decision 433); runs after the 144 steps it names.
 **Repository:** `rakun` — worktree `--repo rakun` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
@@ -134,6 +134,31 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 | `127-bpp-actions` s5 | 150 s23 |
 | `127-bpp-actions` s6 | 150 s23 |
 | `20-snap` s2 | 150 s24 |
+| `148 styled` (the front itself, refiled by 165 s8) | 150 s32 … s35 (`steps-styled.md`) |
+| `149 jhonstart` (the front itself) | 150 s36 … s47 (`steps-jhonstart.md`) |
+| `153 dbcontext` (the front itself) | 150 s48 … s51 (`steps-dbcontext.md`) |
+| `154 emilia` (the front itself) | 150 s52 … s58 (`steps-emilia.md`) |
+| `162 onze` (the front itself) | 150 s59 … s71 (`steps-onze.md`) |
+
+
+## The refiled fronts (165 s8)
+
+The open steps of five former library fronts are refiled here, one file each beside this README with its own alias
+table (old id → the step here), each step's repository now `rakun` (`--repo rakun`) and its package one of 165's
+table; the context folders those fronts kept (`05-jhonstart/`, `08-bpp/`, `26-jhonstart-router/`, `06-emilia/`,
+`07-onze/`, `143-dbcontext/`, …) sit in this directory. Done steps stay in `status.md` Done. A step edits the
+package of its lane (`fronts.md` § Ownership), never another lane's `modules/`.
+
+| Former front | Package | Lane | Steps | File |
+|---|---|---|---|---|
+| 148 styled | `rakun-style` | style / bpp / stylesheet | 150 s32 … s35 | [`steps-styled.md`](steps-styled.md) |
+| 149 jhonstart | `rakun-bpp` | style / bpp / stylesheet | 150 s36 … s47 | [`steps-jhonstart.md`](steps-jhonstart.md) |
+| 153 dbcontext | `rakun-data` | data | 150 s48 … s51 | [`steps-dbcontext.md`](steps-dbcontext.md) |
+| 154 emilia | `rakun-stylesheet` | style / bpp / stylesheet | 150 s52 … s58 | [`steps-emilia.md`](steps-emilia.md) |
+| 162 onze | `rakun-ssr` | app / ssr | 150 s59 … s71 | [`steps-onze.md`](steps-onze.md) |
+
+Each former front's Conformance step is kept as a step of its file (150 s35, s47, s51, s58, s71); 165 s7 reads the
+workspace's whole `conformance/` once they have landed.
 
 ## Steps
 

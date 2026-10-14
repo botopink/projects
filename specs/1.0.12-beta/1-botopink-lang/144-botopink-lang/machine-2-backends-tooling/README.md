@@ -1423,7 +1423,7 @@ Found moving erika's examples into its `conformance/` (463): `the wasm backend h
 
 ### B-36 — styled's hook red on `feat`: "tab4's class is not a constant of the emitted module" (structural, decision 430)
 
-**Repository:** styled (front 148's) · **Model:** opus
+**Repository:** rakun (150's styled section) · **Model:** opus
 
 The cause was styled's: its `repository-stages.sh` read the calls in 354 (8)'s form, a hidden context map first
 (`undefined` / `null`, `BpContextMap__`); decision 388 made a component a lambda over its `RenderScope` and dropped that
@@ -1759,13 +1759,13 @@ check `conformance/test/`.
 
 Found landing B-24 (2026-10-12): `zig build test-libs` fails onze-cli's test at `test/build_test.bp:140` (the CSS
 accessors) on commonJS and erlang, the same with `libs/std` at `feat`'s — older than B-24. The cause is found first:
-a compiler defect is fixed here; a library's is a row of onze's front (162) and this step closes pointing at it.
+a compiler defect is fixed here; a library's is a row of 150's onze section and this step closes pointing at it.
 
 - [x] the cause found (compiler or library), named in this box — the library's: the test creates its app with
       `create styled`, so the app package is named `styled`, and jhonstart depends on the `styled` library
       (`jhonstart/modules/jhonstart/botopink.json`); the build refuses two packages named `styled` in one workspace,
       on every target. The compiler is right
-- [x] fixed where it belongs — handed to onze's front as 162 s11 (the test's app renamed); `test-libs` green for
+- [x] fixed where it belongs — handed to 150's onze section as its former 162 s11 (the test's app renamed); `test-libs` green for
       onze-cli is that step's box
 - [x] Conformance step — none: the fix is not the compiler's
 

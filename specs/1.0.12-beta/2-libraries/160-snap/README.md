@@ -11,7 +11,7 @@ commit (decision 188), producer first.
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 
 135 s0 is done (391). The snapshot steps write through it in their own repositories: std 144 B-27 (135 s1),
-rakun 150 s24, jhonstart 149 s10, emilia 154 s4, onze 162 s10; the coordination is 3-medium/135-snap. It receives
+rakun 150 s24, jhonstart 150 s45, emilia 150 s55, onze 150 s68; the coordination is 3-medium/135-snap. It receives
 consumer commits only: 144 B-08 (17 sites), B-20, B-28.
 
 ### 160 Conformance — the front's last step (decision 465)

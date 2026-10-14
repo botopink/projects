@@ -6,7 +6,7 @@ is open.
 **Model:** sonnet — the README fixes the design (`AGENTS.md` § Which model a thread runs on); the Conformance step opus
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 **Owns:** `repository/release/**` when born (`botopink/release`), the consumer lines step 2 names.
-**Depends on:** `07-g` (a) · rakun 150 s7 (81) · onze 162 s4 (71). Goal: [`03-bundled-libs/107-release`](107-release/context.md).
+**Depends on:** `07-g` (a) · rakun 150 s7 (81) · onze 150 s62 (71). Goal: [`03-bundled-libs/107-release`](107-release/context.md).
 
 ## Alias table
 

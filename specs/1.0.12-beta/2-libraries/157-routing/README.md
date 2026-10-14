@@ -10,7 +10,7 @@ front pauses on the 144 step that fixes it (fronts.md rules 1, 9); another libra
 commit (decision 188), producer first.
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 
-117's other halves (rakun-app's `static_gen.bp`, onze's `paginate.bp` and `scan.bp`) are 162 s5's; this front
+117's other halves (rakun-app's `static_gen.bp`, onze's `paginate.bp` and `scan.bp`) are 150 s63's; this front
 lands first (producer).
 
 ## Alias table

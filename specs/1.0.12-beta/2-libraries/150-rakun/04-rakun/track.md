@@ -42,8 +42,8 @@ true in code: 74, 15, 81, 12, 65, 73 (each front says which).
 | [`91`](../91-rakun-pulsar/context.md) | low | not started | `rakun-messaging/src/pulsar/**` (stays; data plane deferred — 274) | B | 15 · 346 (unbuilt) |
 | [`92`](../92-rakun-rsocket/context.md) | low | partial: step 1 on `feat` | `rakun-messaging/src/rsocket/**` | B | 74 · 15 · 03r-an · 346 (unbuilt) |
 | [`88`](../88-rakun-cli/context.md) | medium | not started | `rakun-cli` (not `release/**`) | C | 81 · 93 · 92 · 04 step 4 · 73's re-measure · onze 50 |
-| [`137`](../../145-erika/137-erika-sql/context.md) | high | not started | **`repository/erika`** `modules/erika/**`: holes, the SQL target (`QueryContext`, `QueryTable`, 397), `limit`/`join`/aggregates, `#[erika "…"]` (311–313) | B (before 08 step 7) | 01-checker step 29 (its step 5) · 397 |
-| [`143`](../../153-dbcontext/143-dbcontext/context.md) | high | step 0 done (`botopink/dbcontext`, a submodule) | **`repository/dbcontext`**: botopink's JPA over erika — `#[entity]`, `DbContext` over a `Driver`, `#[repository]`, `#[query "…"]`, `#[nativeQuery]` (398) | 137 s2 · 01-checker s29 · s3: 128 |
+| [`137`](../../145-query/137-erika-sql/context.md) | high | not started | **`repository/erika`** `modules/erika/**`: holes, the SQL target (`QueryContext`, `QueryTable`, 397), `limit`/`join`/aggregates, `#[erika "…"]` (311–313) | B (before 08 step 7) | 01-checker step 29 (its step 5) · 397 |
+| [`143`](../../150-rakun/143-dbcontext/context.md) | high | step 0 done (`botopink/dbcontext`, a submodule) | **`repository/dbcontext`**: botopink's JPA over erika — `#[entity]`, `DbContext` over a `Driver`, `#[repository]`, `#[query "…"]`, `#[nativeQuery]` (398) | 137 s2 · 01-checker s29 · s3: 128 |
 
 **critical** blocks another track (128 every rakun front; 22 onze 49/53 and jhonstart 27/32; 04
 onze 49 via R62-3, and 13 and 12 via its tag epoch). **high** closes a member's contract or a gate
