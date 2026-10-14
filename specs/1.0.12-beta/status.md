@@ -5,11 +5,11 @@
 
 **Fronts with open work:** 25, in three tiers (decision 433) — the old tracks' 72 fronts keep their numbers
 and `## Done`; their open steps live in the fronts below. **144 B-00 (434) is done but for its last box, the seventh step of the
-conformance order (L1, [`fronts.md`](fronts.md) § Execution order).** **New development is centred on 144's group wasm-gc on machine 2 — B-82 (wasmtime) → B-83 (WasmGC) → B-84 (std-wasm in botopink and `.wat`) → B-85 — ahead of every other open step of machine 2 (the maintainer, 2026-10-14).
+conformance order (L1, [`fronts.md`](fronts.md) § Execution order).** **New development is centred on front 164 wasm-gc — s1 (wasmtime) → s2 (WasmGC) → s3 (std-wasm in botopink and `.wat`) → s4 — the second front that edits botopink-lang (the maintainer, 2026-10-14; amends 433).**
 
 | Tier | Partial | Not started | No open step left |
 |---|---|---|---|
-| Maximum | 144 botopink-lang (B-00 done but its last box) | — | — |
+| Maximum | 144 botopink-lang (B-00 done but its last box) | 164 wasm-gc (machine 2: s1 wasmtime → s2 WasmGC → s3 std-wasm in botopink and `.wat` → s4) — where new development is centred | — |
 | High | 145 erika · 146 validation · 148 styled · 149 jhonstart · 150 rakun · 154 emilia · 155 http · 156 log · 158 markdown · 162 onze | 151 json · 152 yaml · 153 dbcontext · 157 routing · 161 vscode-extension | 147 css · 159 actions · 160 snap (consumer commits only) |
 | Medium | 163 meta-ci · 135 snap (coordination) | 136 cardume · 105 i18n · 107 release · 98 packaging tail | — |
 
@@ -41,10 +41,10 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 144 B-63 — `botopink cell check --jobs <N>` landed (cells in parallel, report in the cells' order); left: a library's `scripts/gate.sh --jobs` and botopink-lang's `test-conformance` handing their share to `cell check` (469; `runner-standalone.sh`, one text in 17 libraries), emilia's `conformance/` measured with `--jobs 1` and the default, the Conformance step · nothing
 - [ ] 144 B-60 — level B on disk: a dependency's analysis in `.botopinkbuild/analysis/` by closure key + the checker's sources; `test-analysis-equivalence` (cold vs from disk, byte for byte) in `test-cli`; doubt discards; one entry per dependency and target (`<package>.bpa`, std per module), no size bound; the design confirmed by the maintainer — the whole analysed output and a journal of the registries, encoded generically over the Zig types; S0–S2, S4 (code) and the review landed; `test-analysis-equivalence` over the libraries landed; 514/515 (every command keeps a dependency's `.d.bp`), `test` reading and writing CODE and the hook's hit / miss tests landed; CI's `code_cache.sh` red fixed (the test compared inodes ext4 reuses; the scripts pin them); the cold measurement and the Conformance step open (509 (1), 514, 515) · question B-60-a (a broken dependency `.d.bp` under `build`)
 - [ ] 144 B-77 — `botopink cache` (clean, status): level A to `.botopinkbuild/build/`; parallelism from the machine's pool inside botopink; `--cold` and `--jobs` go; scripts keep only `--staged` / `--no-conformance`; worktree rule 4b goes (468, 469, 473, 509, 225) · after B-60
-- [ ] 144 B-82 — group wasm-gc, 1: the comptime runtime's engine is wasmtime embedded in the native compiler (C API, prebuilt per release target, hash-pinned), the page's `WebAssembly` in compiler-web; wasm3 and `modules/wasm3/` removed; std-wasm unchanged; `attempt` at build; start-up measured (wasmtime-a) — next after the B-00 group on machine 2
-- [ ] 144 B-83 — group wasm-gc, 2: the wasm codegen emits WasmGC for every value (string, array, record, enum, closure, task, Dict), `needs: [.Gc]`; a long task's memory bounded; `std_wasm.wasm` still linked, marshalled at the boundary, until B-84 (wasmgc-a)
-- [ ] 144 B-84 — group wasm-gc, 3: std-wasm rewritten — its logic in botopink (`.bp` of std), its leaves in hand-written `.wat` under `modules/std-wasm/wat/` read by the compiler's own reader; `std_wasm.wasm`, `heap.zig`, the term library and `modules/beam-to-wasm/` deleted (wasmgc-a)
-- [ ] 144 B-85 — group wasm-gc, 4: the group's Conformance step
+- [ ] 164 s1 (was 144 B-82) — the comptime runtime's engine is wasmtime embedded in the native compiler (C API, prebuilt per release target, hash-pinned), the page's `WebAssembly` in compiler-web; wasm3 and `modules/wasm3/` removed; std-wasm unchanged; `attempt` at build; start-up measured (wasmtime-a)
+- [ ] 164 s2 (was 144 B-83) — the wasm codegen emits WasmGC for every value (string, array, record, enum, closure, task, Dict), `needs: [.Gc]`; a long task's memory bounded; `std_wasm.wasm` still linked, marshalled at the boundary, until B-84 (wasmgc-a)
+- [ ] 164 s3 (was 144 B-84) — std-wasm rewritten — its logic in botopink (`.bp` of std), its leaves in hand-written `.wat` under `modules/std-wasm/wat/` read by the compiler's own reader; `std_wasm.wasm`, `heap.zig`, the term library and `modules/beam-to-wasm/` deleted (wasmgc-a)
+- [ ] 164 s4 (was 144 B-85) — the group's Conformance step
 - [ ] 144 B-79 — `botopink run` of a program with no `fn main` refused before running, located at the entry module, one message on every target and host (517), cell `run_without_main` green; left: the Conformance step · nothing
 - [ ] 144 B-64 — a module's tests a unit of their own on every target (`__test__@…`), the production unit the same under `build`, `run`, `test`, privates through a reserved export, `botopink test` on wasm (513) landed; left: the Conformance step · nothing
 - [ ] 144 cache group Conformance — emilia's, rakun's, onze's and botopink-lang's gates measured with conformance, cold and warm; every cell green on every target · after B-64
