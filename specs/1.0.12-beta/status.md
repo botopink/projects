@@ -70,7 +70,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 163 s11 — a library task holds its repository alone (483), on B-37's `bpmp link` and tiers · nothing
 - [ ] 154 s5 — emilia's `conformance/docs.md` against its cells: four places where the text and the code disagree · nothing
 - [ ] 150 s26 — rakun's `conformance/docs.md` against its cells: ten places where the text and the code disagree, each decided · nothing
-- [ ] 144 B-30 (448, 449) — measured (`codegen/wat/AGENTS.md`) and `std-wasm/src/heap.zig` landed (a heap per process, copying collection, not wired yet); left: `alloc` out of `wat_prelude` with the codegen's roots, beam-to-wasm on the process heap, the exhaustion trap, a bounded long-running cell · question B-30-a
+- [ ] 144 B-30 (448, 449, 522) — measured, `heap.zig`, beam-to-wasm's terms on a process heap (box 4), a capped heap traps (box 5), a message copy's cycle detected; left: box 3 (the program's `alloc` on the heap — layouts for generic slots, task records across heaps, which code collects), the bounded cell, the located cycle cell · question B-30-b
 
 ### 144 botopink-lang
 

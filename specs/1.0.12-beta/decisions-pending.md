@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**119 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1056,6 +1056,17 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) Each point as proposed. (b) Each point as built.
 - **Recommendation.** (a) — one value rule for every body (409), a block a scope only (525).
 - **Blocks.** Nothing built; 525's edges.
+
+#### B-30-b · Wiring the wasm heap into the codegen: generic slots, task records, collection points (decisions 448, 449, 522; 144 B-30 box 3)
+- **Proposed (opus, 2026-10-14; awaiting the maintainer):** **(a) for Q1, (b) for Q2, (a) for Q3, (a) for Q4.**
+- **Measured.** B-30 landed `heap.zig`, beam-to-wasm's terms on a process heap (y registers on a per-process root stack, `test_heap` / `allocate` as collection points) and 522's cycle detection. Box 3 — the program's `alloc` on the heap — meets four choices 522 does not fix:
+  Q1. The wasm codegen does not monomorphise: a slot typed by a type parameter (a generic field or payload, an array or `@Result` built in a shared body, a closure capture, a task's value, a generic `-> @Task<T>` frame) holds a raw word, an integer and an address alike, so no layout can be written where it is allocated. (a) specialise every body whose layout depends on a type parameter, by pointer-ness; (b) box type-parameter values as `unknown` does; (c) let an ambiguous word pin what it reaches (mostly-copying; changes 522's points 2 and 4); (d) a type descriptor in each generic block.
+  Q2. A `@Task` record is referenced from the scheduler, waiter nodes and other tasks' handles: on a heap a collection moves it under them; copied as a message it loses its identity. (a) task records outside every heap, in a pool, with an explicit lifetime rule; (b) records on the creator's heap, a task handle never crossing heaps (sending one refused). And a settled value reaches its awaiters copied at `await` into the awaiter's heap.
+  Q3. A wasm local is invisible to a collection, and a callee's collection moves a caller's local. (a) collect only at a task's suspension and at scheduler turns, where the frame is saved — a synchronous loop never collects; (b) a shadow stack of the pointer locals live across each call — every call a collection point, a cost to every function.
+  Q4. What erlang and commonJS answer when a value holding a cycle is sent to a task: `message contains a cycle` on every target, or a wasm-only departure.
+- **Options.** As listed per point.
+- **Recommendation.** Q1 (a) — the codegen already specialises; Q2 (b) with the copy at `await` — erlang's own model; Q3 (a) — box 3's own words (the task's frames, the scheduler's queues, the cells); Q4 the same refusal on every target — one answer (434 (5)).
+- **Blocks.** 144 B-30 box 3, the bounded cell, the located cycle cell.
 
 #### 17-c · What else names a `keyed: true` var
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b) as decision 63 now reads it, with `bump` (340, 144 B-26)** — a `keyed: true` var is named only by `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — the same read, since an index is `at` on every `Dict` (63 as amended, cell `index_answer_is_optional`; never a `V` that fails) —, `counts = counts.insert(k, v)` (`ets:insert`) and `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passing the var on and `pub` stay refused at the identifier. One meaning per spelling on every `Dict` and the smallest surface a counter needs; (c)'s `ets:member` / `ets:delete` wait for a measured need. Viable: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (erlang and beam only; commonJS and wasm refuse `@BeamMemory`, 167); the index needs `inferIndexExpr` to mark the receiver before inferring it (small); `bump` needs B-26 (`Dict.bump` in `collections.bp`, a four-argument `update_counter` primitive in `beam.bp`, a branch in `checkKeyedWrite` and both lowerings). Changes: the entry's "1.0.5's 63: an index answers `V` and fails on an absent key" is stale — an index answers `?V`.

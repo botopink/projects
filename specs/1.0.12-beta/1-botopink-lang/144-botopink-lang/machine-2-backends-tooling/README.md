@@ -1876,15 +1876,19 @@ code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
       `heap.*`, no comptime face; not wired into the codegen yet. Its design points — question B-30-a
 - [ ] `alloc` leaves `wat_prelude` (449 (2)); the wasm codegen names its roots (the task's frames, the scheduler's
       queues, the cells) at each collection point; a program that allocates nothing renders byte for byte as before
-- [ ] beam-to-wasm (449 (3)): translated code allocates on the current process's heap; `test_heap` / `allocate` are
+- [x] beam-to-wasm (449 (3)): translated code allocates on the current process's heap; `test_heap` / `allocate` are
       collection points with their live registers as roots; beam-to-wasm still imports std-wasm alone (438)
-- [ ] a run that exhausts memory traps, never answers with damaged data; std-wasm's frames stay on the one stack (447)
+- [x] a run that exhausts memory traps, never answers with damaged data; std-wasm's frames stay on the one stack (447)
 - [ ] every `run/` cell's `.out` on wasm unchanged; a long-running cell whose memory stays bounded where the bump heap
       grew without limit; `modules/std-wasm/AGENTS.md` names std-wasm botopink's wasm runtime (std, stack, heap)
 
 **Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `modules/std-wasm` and
 `modules/beam-to-wasm` unit tests; `test-libs` wasm column. **Model:** opus (a design the decision leaves to
 measurement). **Consumer commits:** none.
+- [x] a message copy detects a cycle (522 (5′)): `heap.copy` marks each mutable cell under the walk, answers `error.Cycle`
+      with nothing written; the located `message contains a cycle` cell waits on box 3's sends · question B-30-b
+
+Box 3 (`alloc` out of `wat_prelude`, the layouts, the roots, the `var` stores) waits on question B-30-b.
 
 #### B-30 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

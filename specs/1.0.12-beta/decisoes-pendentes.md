@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**119 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1056,6 +1056,17 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Cada ponto como proposto. (b) Cada ponto como construído.
 - **Recomendação.** (a) — uma regra de valor para todo corpo (409), um bloco só um escopo (525).
 - **Bloqueia.** Nada construído; as bordas da 525.
+
+#### B-30-b · Ligar o heap do wasm ao codegen: slots genéricos, registros de task, pontos de coleta (decisões 448, 449, 522; 144 B-30 caixa 3)
+- **Proposto (opus, 2026-10-14; aguardando o mantenedor):** **(a) para Q1, (b) para Q2, (a) para Q3, (a) para Q4.**
+- **Medido.** O B-30 pousou o `heap.zig`, os termos do beam-to-wasm num heap de processo (registradores y numa pilha de raízes por processo, `test_heap` / `allocate` como pontos de coleta) e a detecção de ciclo da 522. A caixa 3 — o `alloc` do programa no heap — encontra quatro escolhas que a 522 não fixa:
+  Q1. O codegen do wasm não monomorfiza: um slot tipado por um parâmetro de tipo (um campo ou payload genérico, um array ou `@Result` construído num corpo compartilhado, uma captura de closure, o valor de uma task, um frame genérico `-> @Task<T>`) guarda uma palavra crua, um inteiro e um endereço igualmente, então nenhum layout pode ser escrito onde ele é alocado. (a) especializar todo corpo cujo layout depende de um parâmetro de tipo, por ser ponteiro ou não; (b) encaixotar valores de parâmetro de tipo como o `unknown` faz; (c) deixar uma palavra ambígua fixar o que alcança (cópia quase total; muda os pontos 2 e 4 da 522); (d) um descritor de tipo em cada bloco genérico.
+  Q2. Um registro de `@Task` é referenciado pelo escalonador, por nós de espera e pelos handles de outras tasks: num heap uma coleta o move debaixo deles; copiado como mensagem ele perde a identidade. (a) registros de task fora de todo heap, num pool, com uma regra de vida explícita; (b) registros no heap do criador, um handle de task nunca cruzando heaps (enviar um é recusado). E um valor resolvido chega a quem espera copiado no `await` para o heap de quem espera.
+  Q3. Um local do wasm é invisível a uma coleta, e a coleta de quem é chamado move um local de quem chama. (a) coletar só na suspensão de uma task e nas voltas do escalonador, onde o frame está salvo — um laço síncrono nunca coleta; (b) uma pilha-sombra dos locais ponteiros vivos através de cada chamada — toda chamada um ponto de coleta, um custo para toda função.
+  Q4. O que erlang e commonJS respondem quando um valor que contém um ciclo é enviado a uma task: `message contains a cycle` em todo alvo, ou um desvio só do wasm.
+- **Opções.** Como listadas por ponto.
+- **Recomendação.** Q1 (a) — o codegen já especializa; Q2 (b) com a cópia no `await` — o próprio modelo do erlang; Q3 (a) — as próprias palavras da caixa 3 (os frames da task, as filas do escalonador, as células); Q4 a mesma recusa em todo alvo — uma resposta (434 (5)).
+- **Bloqueia.** A caixa 3 do 144 B-30, a célula limitada, a célula do ciclo localizado.
 
 #### 17-c · O que mais nomeia um var `keyed: true`
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b) como a decisão 63 agora lê, com `bump` (340, 144 B-26)** — um var `keyed: true` é nomeado só por `counts.at(k)` (`ets:lookup`, `?V`), `counts[k]` — a mesma leitura, já que um índice é `at` em todo `Dict` (63 como emendada, célula `index_answer_is_optional`; nunca um `V` que falha) —, `counts = counts.insert(k, v)` (`ets:insert`) e `counts = counts.bump(k, n)` (`ets:update_counter`); `hasKey`, `delete`, `size()`, passar o var adiante e `pub` continuam recusados no identificador. Um significado por grafia em todo `Dict` e a menor superfície de que um contador precisa; o `ets:member` / `ets:delete` de (c) esperam uma necessidade medida. Viável: `infer.zig` `noteKeyedRowRead` / `checkKeyedWrite` / `refuseKeyedWholeRead`, `erlang.zig` `keyedRowRead` / `keyedRowWrite`, `beam_asm.zig` (só erlang e beam; commonJS e wasm recusam `@BeamMemory`, 167); o índice precisa que `inferIndexExpr` marque o receptor antes de inferi-lo (pequeno); `bump` precisa do B-26 (`Dict.bump` em `collections.bp`, uma primitiva `update_counter` de quatro argumentos em `beam.bp`, um ramo em `checkKeyedWrite` e os dois lowerings). Mudanças: o "63 da 1.0.5: um índice responde `V` e falha numa chave ausente" da entrada está defasado — um índice responde `?V`.
