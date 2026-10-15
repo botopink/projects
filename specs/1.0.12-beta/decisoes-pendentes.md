@@ -11,6 +11,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
 
 - **Bloqueando agora** — prioridade máxima: as perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam primeiro; um índice de entradas mantidas nas suas seções.
+- **Bloqueando agora — máquina 1 e frente 165** — o mesmo para os passos da máquina 1 e a frente 165.
 - **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
 - **Máquina 2** — prioridade máxima: as perguntas que a máquina 2 da frente 144 espera, as mais urgentes primeiro. O desenvolvimento novo está centrado na frente 164 wasm-gc (s1 → s4, wasmtime-a, wasmgc-a).
 - **Frente 165** — rakun-workspace: um repositório `rakun`, 17 pacotes plug-and-play (mono-a).
@@ -40,6 +41,27 @@ As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam pr
 | 541-c | A caixa 2 do B-88 (uma lambda geradora) | (a) |
 | 164-s3-b, 164-s3-d | A linha do gate do 164 s3; o `toUpper` / `toLower` do s3 P1 | (a), (a) |
 | 540-c | Os auxiliares `fsText` locais das bibliotecas | (a) |
+
+---
+
+## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
+
+As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mais bloqueiam primeiro. Cada entrada fica na sua seção; esta tabela as indexa e sai quando são respondidas. Com a § Bloqueando agora — máquina 2 acima, estas são as perguntas a responder primeiro.
+
+| # | Pergunta | Trava | Recomendação |
+|---|---|---|---|
+| 1 | **B-99-a** — como uma chamada de biblioteca lê o catálogo do programa chamador: `rakun.boot()` (§ Frente 165) | 144 B-99 → 165 s5 → 165 s7, o fechamento da frente 165 | (b) um parâmetro `comptime` com default `@TypeInfo.all(…)`, respondido para o programa que chama |
+| 2 | **434-b** — os caminhos residente no render e no build sob um runtime único de comptime em wasm (§ Máquina 1) | 144 B-17 (a caixa 378 (4) do passo 6 do 134) | como escrito na entrada |
+| 3 | **B-27-a** — uma declaração de cabeçalho de `.bpp` depois de uma instrução: movida ou recusada? (§ Máquina 1) | a linha de unfold do 144 B-27 | como escrito na entrada |
+| 4 | **B-27-b** — importar um arquivo `.bpp` cujo nome não é identificador (`not-found.bpp`) (§ Máquina 1) | a linha `not-found.bpp` do 144 B-27 | como escrito na entrada |
+| 5 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | o 97 s6 do 144 B-27 | como escrito na entrada |
+| 6 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | 144 B-19 passo 7 | como escrito na entrada |
+| 7 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | a linha 3 do 144 B-19 | como escrito na entrada |
+| 8 | **116-a** — o próprio `import {bpp} from "std"` do módulo prelude (§ Máquina 1) | a caixa do prelude do passo 2 do 116 | como escrito na entrada |
+| 9 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | 50 passo 2; 53 passo 6 | como escrito na entrada |
+
+Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
+**548-b** (os nomes de código que guardam o nome de uma biblioteca antiga).
 
 ---
 

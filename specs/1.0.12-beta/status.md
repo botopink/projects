@@ -320,8 +320,8 @@ Full text in [`decisions-pending.md`](decisions-pending.md); confirmations (1.0.
 last section. Open: 88 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
 `decisions-pending.md`).
 
-**First — what blocks now** (`decisoes-pendentes.md` Parte 1, "O que trava agora", set by the maintainer 2026-10-09), in order:
-- [ ] 05w-i → 333 (A): 97 s16 · 05w-j → 336: 97 s15
+**First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:
+- [ ] B-99-a — 144 B-99, 165 s5 · 434-b — 144 B-17 · B-27-a/b/c — 144 B-27 · B-19-b, B-19-a — 144 B-19 · 116-a — 116 s2 · 50-b — 50 s2, 53 s6
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):
 - [ ] 434-b — the at-build render path on one wasm runtime · 144 B-17

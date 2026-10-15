@@ -11,6 +11,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
 - **Blocking now** — maximum priority: the questions that hold machine 2's work back today, most blocking first; an index of entries kept in their sections.
+- **Blocking now — machine 1 and front 165** — the same for machine 1's steps and front 165.
 - **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
 - **Machine 2** — maximum priority: the questions front 144's machine 2 waits on, most urgent first. New development is centred on front 164 wasm-gc (s1 → s4, wasmtime-a, wasmgc-a).
 - **Front 165** — rakun-workspace: one `rakun` repository, 17 plug-and-play packages (mono-a).
@@ -40,6 +41,27 @@ this table indexes them and leaves when they are answered.
 | 541-c | B-88 box 2 (a lambda generator) | (a) |
 | 164-s3-b, 164-s3-d | 164 s3's gate line; s3 P1's `toUpper` / `toLower` | (a), (a) |
 | 540-c | the libraries' local `fsText` helpers | (a) |
+
+---
+
+## Blocking now — machine 1 and front 165 (2026-10-15)
+
+The questions that hold machine 1's steps and front 165 back today, most blocking first. Each entry stays in its section; this table indexes them and leaves when they are answered. With § Blocking now — machine 2 above, these are the questions to answer first.
+
+| # | Question | Blocks | Recommendation |
+|---|---|---|---|
+| 1 | **B-99-a** — how a library call reads the caller program's catalogue: `rakun.boot()` (§ Front 165) | 144 B-99 → 165 s5 → 165 s7, front 165's close | (b) a `comptime` parameter defaulting to `@TypeInfo.all(…)`, answered for the calling program |
+| 2 | **434-b** — the render-resident and at-build paths under one wasm comptime runtime (§ Machine 1) | 144 B-17 (134 step 6's 378 (4) box) | as written in the entry |
+| 3 | **B-27-a** — a `.bpp` header declaration after a statement: moved or refused? (§ Machine 1) | 144 B-27's unfold row | as written in the entry |
+| 4 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | 144 B-27's `not-found.bpp` row | as written in the entry |
+| 5 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | 144 B-27's 97 s6 | as written in the entry |
+| 6 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | 144 B-19 step 7 | as written in the entry |
+| 7 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | 144 B-19's row 3 | as written in the entry |
+| 8 | **116-a** — the prelude module's own `import {bpp} from "std"` (§ Machine 1) | 116 step 2's prelude box | as written in the entry |
+| 9 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | 50 step 2; 53 step 6 | as written in the entry |
+
+Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
+**548-b** (the code names that keep a former library's name).
 
 ---
 
