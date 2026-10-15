@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**131 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**125 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -33,84 +33,12 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | 546-b — rakun's sidecars unwinding through a `host` call | 21 red tests in rakun | (i) a library gap |
-| 2 | 544-a — wasmtime's collector and cycles | 164 s2 P6, s2's close | (a) |
-| 3 | 546-a — a `crash`'s message | every abort / `attempt` cell's message line | (a) the kind only |
-| 4 | 485-b — how a refusal is printed | B-88 box 4; 663 snapshot lines | (a) `error[code]:` |
-| 5 | 541-c — a lambda generator | B-88 box 2 | answered with mark-a: (c) with the `iter` marker |
-| 6 | 164-s3-b, 164-s3-d — s3's comptime snapshots; Unicode tables | s3's gate line; s3 P1 | (a), (a) |
-| 7 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
-| 8 | mark-a — a marker on every body that compiles specially | the markers' step | answered (awaiting its number) |
+| 1 | 164-s3-b, 164-s3-d — s3's comptime snapshots; Unicode tables | s3's gate line; s3 P1 | (a), (a) |
+| 2 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
+| 3 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
+| 4 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
 
-**1 · 546-b — rakun's sidecars unwind through a call 546 now wraps.** rakun's navigation signals and `rakun_problem`
-unwind on purpose: an Erlang sidecar throws, and a catcher up the stack reads the term —
-`rakun_navigation:signal(...)` throws `<<"nav:/login">>`, `try_body` catches `throw:Reason when is_binary(Reason)`.
-Since 546 every call of a library binding without `result: true` is wrapped, and any raise comes out as
-`error:{bp_host, "<text>"}`, so the catcher never sees its term: 18 tests red in rakun-app, 2 in rakun-security, 1 in
-rakun-service. **(i)** the tests stay red as library gaps; navigation becomes data the renderer reads, as 527 (5) and
-504 already decide; **(ii)** the sidecars raise a term the wrapper lets through (a `panic`-shaped one), which changes an
-uncaught failure's kind; **(iii)** the catchers also match `{bp_host, Text}` and parse the text (lossy); **(iv)** an
-attribute exempting a binding from the wrap. **Recommendation (i)**: 527 (5) already fixes the end state; an interim
-mechanism would be deleted by it. **Blocks:** the 21 rakun tests (144 B-103 already restored the one through `try`).
-
-Answer (tick one per question):
-- [x] (i) the tests stay red as library gaps; navigation becomes data (527 (5), 504) **(recommended)**
-- [ ] (ii) the sidecars raise a `panic`-shaped term the wrapper lets through
-- [ ] (iii) the catchers also match `{bp_host, Text}` and parse the text
-- [ ] (iv) an attribute exempting a binding from the wrap
-
-**2 · 544-a — wasmtime does not collect cycles yet.** s2 hands memory to the host's collector and assumes it follows
-cycles (a task waiting on another that waits on it). node and the browser do; wasmtime's default collector (DRC) leaks a
-cycle until the program ends, and its copying collector is documented "not yet functional". **(a)** the codegen breaks
-the cycles it makes itself (a settled task drops its waiters), the gate pins the wasmtime CLI, and 544 says a cycle a
-program builds may live until exit on wasmtime; **(b)** the codegen detects cycles (what 544 removed); **(c)** wait for
-a wasmtime that follows cycles. **Recommendation (a)**. **Blocks:** s2 P6, the bounded-memory cells — nothing before.
-
-Answer (tick one per question):
-- [x] (a) the codegen breaks its own cycles; the wasmtime CLI pinned; 544 amended **(recommended)**
-- [ ] (b) the codegen detects cycles
-- [ ] (c) wait for a wasmtime that follows cycles
-
-**3 · 546-a — what a `crash` message says.** A raise nothing marked is `crash`; its kind is fixed (535), its text is
-not. Example: a `case` no arm matches prints `crash: {case_clause,'Square'}` on erlang and
-`crash: Cannot read properties of null (reading 'tag')` was node's (removed by B-101). **(a)** the reason is the
-engine's and a cell claims the kind alone (`stderr crash:`); **(b)** one message per target, recorded as departures;
-**(c)** one text for the raises the compiler emits (`no arm matches: <value>`), costing erlang and beam a catch on every
-`case`. **Recommendation (a)**: the kind is the language's answer, the reason is a diagnostic. **Blocks:** the message
-line of the abort and `attempt` cells (they claim the kind until then).
-
-Answer (tick one per question):
-- [x] (a) the engine's reason; a cell claims the kind alone **(recommended)**
-- [ ] (b) one message per target, recorded as departures
-- [ ] (c) one text for the compiler's own raises (`no arm matches: <value>`)
-
-**4 · 485-b — one printed form for a refusal.** A parse error prints `error[reserved-word-as-name]: …`; a checker
-refusal prints `error: block-break-value: …`. 577 cell snapshots use the second, 86 the first; every decision and
-`conformance/AGENTS.md` write the first. **(a)** `error[<code>]: <message>` everywhere (the 577 lines rewritten
-mechanically in one commit); **(b)** keep both; **(c)** `error: <code>: <message>` everywhere. **Recommendation (a)**:
-it is the notation the decisions already use. **Blocks:** B-88 box 4; every new refusal cell picks one form meanwhile.
-
-Answer (tick one per question):
-- [x] (a) `error[<code>]: <message>` everywhere **(recommended)**
-- [ ] (b) both forms kept
-- [ ] (c) `error: <code>: <message>` everywhere
-
-**5 · 541-c — can a lambda be a generator?** 541 (2) lets a block's `yield` reach "the enclosing function"; B-88 asked
-for a `yield` inside a lambda's block, but today `{ -> yield 1 }` and `fn() -> @Iterator<i32> { yield 1; }` are both
-refused `yield-without-generator` — a generator is a declared fn or method, or an `iter loop { … }` (125).
-**(a)** no — the expression form of a generator is `iter loop`; **(b)** a typed `fn() -> @Iterator<T>` expression is a
-generator; **(c)** any lambda whose expected type is `@Iterator`. **Recommendation (a)**. **Blocks:** B-88 box 2 only.
-
-Answer (tick one per question):
-- [ ] (a) no — a generator's expression form is `iter loop` **(recommended)**
-- [ ] (b) a typed `fn() -> @Iterator<T>` expression is a generator
-- [ ] (c) any lambda whose expected type is `@Iterator`
-
-*Maintainer's note (2026-10-15):* `@Iterator<T>` need not be a builtin — an ordinary std type `Iterator<T>`; to be filed as a question of its own.
-*Maintainer's note (2026-10-15):* 541-c waits on mark-a (item 8): a lambda or `fn` expression is a generator when it carries the `iter` marker, its type agreeing with its expected type (147) — (c) with a marker.
-*Answered with mark-a (the maintainer, 2026-10-15):* (c) with the `iter` marker — `iter { -> yield 1 }`, `iter fn() -> Iter<i32> { … }`.
-
-**6 · 164-s3-b and 164-s3-d — s3's smaller points.** (b) s3's box says "every comptime snapshot unchanged", but a
+**1 · 164-s3-b and 164-s3-d — s3's smaller points.** (b) s3's box says "every comptime snapshot unchanged", but a
 comptime snapshot holds both the reply and the lowered module's listing (`COMPTIME WAT`), which s3 rewrites by design.
 **Recommendation (a)**: the reply and every cell unchanged, the listing re-recorded and read piece by piece. (d) The
 Unicode case tables were to be built with `@embed` (519), which wasm cannot lower yet. **Recommendation (a)**:
@@ -122,7 +50,7 @@ Answer (tick one per question):
 - [ ] 164-s3-d (a) generated `.bp` tables now, `@embed` once wasm has it **(recommended)**
 - [ ] 164-s3-d (b) wait for `@embed` on wasm
 
-**7 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
+**2 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
 so each library that carries it into a `string` error writes its own `case`
 (`NotFound(path) -> "not found: " + path`, … — snap and rakun-ssr both did). **(a)** std gives `FsError` a `message()`;
 **(b)** each library keeps its own; **(c)** a generic `mapErr` on `@Result`. **Recommendation (a)**, (c) independent of it.
@@ -132,32 +60,30 @@ Answer (tick one per question):
 - [ ] (b) each library keeps its own helper
 - [ ] (c) a generic `mapErr` on `@Result` (independent of (a))
 
-**8 · mark-a — a marker on every body that compiles specially (the maintainer, 2026-10-15).** Answered
-(full entry in § Machine 2): one pattern, `[marker] fn name(params) -> Type<…>`. The marker — `iter`, `async`,
-`async iter`, `component` — comes before `fn` and before a lambda's brace and says how the body compiles; the return
-type is written whole and named after its marker (`Iter<T, R>`, `Async<T>`, `AsyncIter<T, R>`, `Component<R>`, `R` of
-an iterator the value it ends with, as JS's `Generator<T, TReturn>`); a failure is always a `Result` in the value's
-layer (`Async<Result<T, E>>`, `Iter<T, Result<void, E>>`, `Component<Result<R, E>>`), and `Result` needs no marker.
-The `@` types become std types after the markers, in three pieces. **Blocks:** the markers' step; it answers 541-c.
+**3 · 164-s3-e and 164-s3-f — a `String` method's botopink body on wasm.** (e) A `String` method of s3 P1 moving to
+botopink needs a binding on wasm: **(a)** a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside its Erlang
+and Node cells — wasm alone takes the body, so no other target's answer can move. (f) When: **(a)** after s2 P5 deletes
+the linear lowering, as s3's order states — until then each leaf keeps a twin std-wasm export; **(b)** before.
+**Recommendation (a), (a).** **Blocks:** s3 P1's codegen piece; when P1's methods move.
 
-```bp
-fn parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
-fn porta(s: string) -> i32 { try toInt(s) catch 8080 }                      // handled: no Result
-async fn buscar(id: i32) -> Async<Result<User, HttpError>> { try await http.get("/users/" + id) }
-async fn salvar(u: User) -> Async<void> { await db.put(u) }
-iter fn contar() -> Iter<i32> { yield 1; yield 2 }                         // Iter<i32, void>
-iter fn ler() -> Iter<i32, string> { yield 1; return "fim" }               // ends with "fim"
-async iter fn linhas(f: File) -> AsyncIter<string, Result<void, FsError>> { loop { val c = try await f.read(4096); …; yield linha } }
-component fn Pagina(props: PaginaProps) -> Component<Result<View, HttpError>> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
-fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }   // hands on: no marker
-usar(iter { -> yield 1; yield 2 })
-xs.map(async { x -> await f(x) })
-for await linha in try linhas(f) { … }              // string items; an FsError ends the loop and propagates
-```
+Answer (tick one per question):
+- [ ] 164-s3-e (a) a `@External.Wasm(fn: …)` cell beside the method's Erlang and Node cells **(recommended)**
+- [ ] 164-s3-f (a) after s2 P5 **(recommended)**
+- [ ] 164-s3-f (b) before s2 P5
 
-Answer:
-- [x] (3)(a) the `@` types become std types in a step of their own, after the markers, in three pieces **(recommended)**
-- [ ] (3)(b) in the same step as the markers
+**4 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
+(`$arr_any`), so a tuple bound to a `T` falls back to linear memory: **(a)** a subtype of its own, so a slot's printer
+tells `#(1, 2)` from `[1, 2]` (most GC snapshots' `.wat` move, no answer does); **(b)** wait for P5. (b) `==` over a
+generic record whose type arguments are not written compares a record inside a slot by identity, so the module falls
+back: **(a)** `$__unk_eq` structural (records, variants, arrays and tuples by field), one equality for every value as
+on the other targets; **(b)** wait for P5. **Recommendation (a), (a).** **Blocks:** those modules' GC form; no answer
+changes today.
+
+Answer (tick one per question):
+- [ ] 164-s2-a (a) a tuple's own GC subtype, before P5 **(recommended)**
+- [ ] 164-s2-a (b) wait for P5
+- [ ] 164-s2-b (a) a structural `$__unk_eq` **(recommended)**
+- [ ] 164-s2-b (b) wait for P5
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1146,13 +1072,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a).
 - **Blocks.** `lambda_last_statement_semicolon` line 5; `docs.md` § Lambdas.
 
-#### 544-a · wasmtime's collector and cycles: what the wasm target is specified against (decision 544; 164 s2)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): the codegen breaks its own cycles (a settled task drops its waiters and frame), the gate pins the wasmtime CLI version beside the C API's, and 544's "the host's collector follows cycles" is amended to "the host's collector; a cycle a program builds may live until exit on wasmtime until its collector follows cycles"** — node and the browser collect cycles; wasmtime is the only host that does not yet.
-- **Measured.** wasmtime v45 (the machine's CLI, not pinned): the default collector is DRC, which "cannot currently collect cycles; they will leak until the store is dropped". wasmtime v49 (the pinned C API, s1): the default is the copying collector, documented "still under construction and not yet functional". 544 rests s2's "no cycle to detect" on the host following cycles.
-- **Options.** (a) As proposed. (b) The codegen detects cycles itself (a cycle collector over GC references — what 544 removed). (c) The wasm target waits for a wasmtime whose collector follows cycles before s2 lands its tasks (P4).
-- **Recommendation.** (a).
-- **Blocks.** 164 s2's bounded-memory cell (P6); nothing before it.
-
 #### 535-a · A float division by zero on erlang and beam: `crash: badarith` or `panic`? (decisions 535, 527 (3), 492, 444; 144)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): float `/` on erlang and beam checked like the integer one, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — one shape for every division by zero; the departure (444: commonJS and wasm answer `Infinity`) is then only in aborting.
 - **Measured.** 535 cites `panic: division by zero`; 492 lists "a division by zero" under `panic`; 527 (3) checks only the integer one. `float_nan_infinity_words`'s erlang and beam departures now claim `stderr crash: badarith` — the compiler's answer (an unmarked `badarith`), not one a decision fixes.
@@ -1195,67 +1114,12 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a).
 - **Blocks.** Nothing.
 
-#### 546-a · A `crash`'s `<reason>`: the engine's text per target, or one text where the compiler itself raises? (decisions 535, 527 (1), 546; 144 B-90, B-101)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): a `crash`'s reason is the engine's and a cell claims the kind** — `stderr crash:` as the containment claim, a `Failure` cell printing `f.kind`; no `snapshot/targets/` ever holds a crash message.
-- **Measured.** 535 fixes `<kind>: <message>` as one text on every target, the departure only in whether a target aborts; 527 (4) fixes a `host` message (`~tp`); nothing fixes a `crash`'s. `std_failure_attempt_crash`'s `output/` holds erlang's `{case_clause,'Square'}` and B-90 declared node's `Cannot read properties of null (reading 'tag')` as a commonJS departure — a text no decision names, and (B-101) the trace of a defect. `abort_text_crash` already claims `stderr crash:` alone.
-- **Options.** (a) As proposed. (b) The message a declared departure per target, as landed. (c) One text on every target for the raises the compiler emits itself (a `case` no arm matches: `no arm matches: <value>`; erlang and beam catching `case_clause` into it), the engine's reason only for a fault of the host or VM.
-- **Recommendation.** (a) — the kind is the language's answer, the reason is diagnostic; (c) costs every `case` on erlang and beam a catch, the per-call cost 546 refused for `host`.
-- **Blocks.** `std_failure_attempt_crash`'s commonJS row; B-101's claims.
-
 #### 540-c · A text for an `FsError` in std (decision 540; 144)
 - **Proposed (the library migration, 2026-10-14; awaiting the maintainer):** **(a): std gives `FsError` its text** — one `message()` (or `toString`) in `io/fs`, `<what>: <path>` per variant, so a library that carries an `io.fs` failure into a `string` error writes no `case` of its own.
 - **Measured.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text; std has no `toString` and no `mapErr` for it. Migrating to 540, snap and rakun-ssr each wrote a local `fsText` (a `case` over the seven variants) and an `fsErrorText` / `fsFailure` helper to carry the failure into their `@Result<_, string>` functions.
 - **Options.** (a) As proposed. (b) Each library writes its own, as built. (c) A generic `mapErr` on `@Result`, the text still each library's.
 - **Recommendation.** (a), with (c) independent of it.
 - **Blocks.** Nothing; the local helpers are deleted once answered.
-
-#### 546-b · A library sidecar that unwinds with a thrown term, after 546 wraps it as `host` (decisions 546, 527 (5), 504; fronts 149, 150, 165)
-- **Proposed (the coordinator, 2026-10-14; awaiting the maintainer):** **(i): the cells stay red and the gap is the library fronts' rows** — 527 (5) already gives the end state for navigation (signals become data the renderer reads, 504, front 149's work, the cell recording the gap until then); no interim mechanism is built that the end state deletes.
-- **Measured.** Since 546, a call of a binding outside std without `result: true` runs inside a `try` that re-raises any raise as `error:{bp_host, <~tp text>}`. rakun's sidecars unwind through such calls on purpose: `rakun_navigation:signal` / `rethrow` (`rakun-app/src/navigation.bp`) throw a binary that `try_body` catches with `throw:Reason when is_binary(Reason)`; `rakun_chain:raise_problem` (`rakun-service/src/error.bp`, used by rakun-security) throws `{rakun_problem, …}` that `run_guarded` catches. Neither catcher sees its term any more: rakun-app 18, rakun-security 2 and rakun-service 1 tests red, which holds rakun's 541 / 540 migration commit. `result: true` does not fit: the call would answer `Error(…)` instead of unwinding. No decision covers `rakun_problem`.
-- **Options.** (i) As proposed. (ii) The sidecars raise a term the 546 wrapper passes through (an `error:{panic, Msg}`-shaped one) — the uncaught failure's kind changes. (iii) The catchers also match `error:{bp_host, Text}` and parse the `~tp` text — lossy. (iv) A binding attribute that exempts a library binding from the `host` wrap.
-- **Recommendation.** (i) for navigation, which 527 (5) settles; for `rakun_problem`, (i) until 149/150 give problems a data path like navigation's.
-- **Blocks.** rakun's 541 / 540 migration commit (its hook), and onze's, which compiles against rakun.
-
-#### 541-c · Is a `fn` expression or lambda with an `@Iterator` / `@Stream` return a generator scope? (decisions 541 (2), 125, 147; 144 B-88)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): no — a generator scope is a declared fn or method, or an `iter` / `stream` loop (125); the expression form of a generator is `iter loop { … }`; B-88 box 2 is dropped.**
-- **Measured.** `{ -> yield 1 }` and `fn() -> @Iterator<i32> { yield 1; }` are both `yield-without-generator`; the hint names an `@Iterator` return "from the fn" or `iter loop`. docs.md § Iterators counts closures out. 541 (2)'s "reach the enclosing function" assumes the function is a generator. B-88 box 2 asks for a cell no decision describes.
-- **Options.** (a) As proposed. (b) A typed `fn() -> @Iterator<T> { … }` expression is a generator (its return is written); a bare lambda is not. (c) Both, by expected type (147 extended to `@Iterator`).
-- **Recommendation.** (a); (b) acceptable, one rule more.
-- **Answered with mark-a (the maintainer, 2026-10-15):** (c) with the `iter` marker — a lambda or `fn` expression is a generator when it carries `iter`, its type agreeing with its expected type (147).
-- **Blocks.** B-88 box 2 only.
-
-#### mark-a · A marker on every body that compiles specially: `iter`, `async`, `async iter`, `component` (decisions 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525, 539, 540; 541-c; 144 B-88)
-- **Answered (the maintainer, 2026-10-15; awaiting its number in `decisions-taken.md`):** one pattern for every body, `[marker] fn name(params) -> Type<…>` — the marker says how the body compiles, the return type is written whole and is what a caller receives, and a failure is always a `Result` in the value's layer.
-  1. **The markers, before `fn` and before a lambda's brace.** `iter` (`yield`), `async` (`await`), `async iter` (`yield` and `await`), `component` (`use`, `await`); `pub` first (`pub async fn`); a `fn` expression alike (`iter fn() -> Iter<i32> { … }`). A lambda: `iter { -> yield 1 }`, `async { x -> await f(x) }` — `->` tells a lambda from a block (525), so `async { … }` (523) and `iter loop { … }` (125) stay the block forms. No other combination. Before a `{` the three words are taken: a function named `iter`, `async` or `component` called with a trailing lambda writes its parentheses (`component({ -> … })`, not `component { -> … }`, 525); as a binding, parameter or field each stays a name.
-  2. **The type names its marker, written whole.** `Iter<T, R = void>`, `AsyncIter<T, R = void>` — `T` each `yield`'s value, `R` the value the iteration ends with (the body's `return v`; a bare end is `void`), as JS's `Generator<T, TReturn>`; `Async<T>`; `Component<R>`; a body with no marker answers `T`. `@Iterator`, `@Task`, `@Stream` and `@Component` are renamed (`@Stream` → `AsyncIter`, superseding point (4)'s `AsyncIterator`); a function that answers nothing under `async` writes `Async<void>`. An iterator's `next()` answers `Step.Item(T)` or `Step.Done(R)` (JS's `{ value, done }`). A marker whose return type is not its type is refused (`marker-type-mismatch`).
-  3. **A failure is a `Result` in the value's layer, the same on every one.** `Result<T, E>`; `Async<Result<T, E>>` (432 unchanged); `Iter<T, Result<V, E>>` / `AsyncIter<T, Result<V, E>>` — the failure is the iteration's end, so a `throw` or a propagating `try` ends it with `Error(e)`, the items staying bare `T`, consumed by `for x in try xs` / `for await x in try xs` (the failure propagates) or by `next()` (superseding point (5)'s `AsyncIterator<T, E>`); `Component<Result<R, E>>` — a component may `throw` only under it, the `Error` reaching the nearest `ErrorBoundary` (414, 504). A propagating `try` and a `throw` are written where that layer is a `Result`, and there `return v` is `Ok(v)`; a `try … catch` handled in the body (537) leaves nothing and needs none (`fn porta(s: string) -> i32 { try toInt(s) catch 8080 }`). `Iter<Result<T, E>>` / `AsyncIter<Result<T, E>>` stay iterators whose items are results: `yield Error(e)` emits one and the iteration goes on. No marker for a failure: `Result` is the one type with none, because a failure compiles as an early return and changes nothing of how the body runs — the four markers each do (a generator, a suspended body, a render scope); `result` (point (2)) is withdrawn.
-  4. **Refusals.** The keyword without its marker (`yield-without-generator`, `await-outside-async`, a `use` outside `component`, the hint naming the marker); a `throw` or a propagating `try` where the value's layer is not a `Result`; `marker-type-mismatch`; a marked lambda whose expected type differs (`xs.forEach(iter { x -> yield x })`: an `iter` lambda where `fn(x: T)` is expected); a marked lambda with no expected type and no annotation (147). A lambda takes its type from its expected type (`xs.map({ s -> try toInt(s) })` where `fn(string) -> Result<i32, E>` is expected).
-  5. **The type alone needs no marker.** A function that hands the value on is written with the same signature and no marker (`fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }`). A component's asynchrony stays the hooks list's mark (375).
-  6. **Order: three pieces, each with its oracle** (point (3) (a)). The `@` cannot go first — today it is what admits `await` and `yield`. (i) The markers: the checker reads the marker, a codemod adds it wherever a body writes the keyword, the types keep their `@` meanwhile (`async fn buscar() -> @Task<User>`); every cell answers the same. (ii) The types: the `@` removed and the names changed (`@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`), the types declared in std's `.bp`, `comptime/effect_chain.zig` shrinking; a codemod, every cell the same. (iii) What is new: an iterator's `R` (`return v`, `Step`), a failure in `R` ending the iteration, `Component<Result<R, E>>`, on the four backends, new cells red then green. Each piece one landing per repository.
-  ```bp
-  fn parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
-  fn porta(s: string) -> i32 { try toInt(s) catch 8080 }                      // handled: no Result
-  async fn buscar(id: i32) -> Async<Result<User, HttpError>> { try await http.get("/users/" + id) }
-  async fn salvar(u: User) -> Async<void> { await db.put(u) }
-  iter fn contar() -> Iter<i32> { yield 1; yield 2 }                         // Iter<i32, void>
-  iter fn ler() -> Iter<i32, string> { yield 1; return "fim" }               // ends with "fim"
-  async iter fn linhas(f: File) -> AsyncIter<string, Result<void, FsError>> { loop { val c = try await f.read(4096); …; yield linha } }
-  component fn Pagina(props: PaginaProps) -> Component<Result<View, HttpError>> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
-  fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }   // hands on: no marker
-  usar(iter { -> yield 1; yield 2 })
-  xs.map(async { x -> await f(x) })
-  for await linha in try linhas(f) { … }              // string items; an FsError ends the loop and propagates
-  ```
-- **Measured.** Today the return type decides: `@Iterator` makes a generator (541 (2)), `@Task` a state machine (392), `@Result` admits `try` / `throw` (431) wherever a layer of the return is one (`builtins.d.bp`), `@Component` a render lambda (388); a component's asynchrony is inferred (375). Nothing in a signature or on a lambda says its body is special. A trailing lambda needs no parentheses (`twice { -> 4 }`, cell `trailing_lambda_call`), and none of `iter`, `async`, `component` is a keyword of the lexer.
-- **Amends.** 541 (2); 375 (a component's marker is written, its asynchrony still inferred); 392; 414 (a component throws only under `Component<Result<R, E>>`); 431 (a propagating `try`, a `throw` and `return v` as `Ok(v)` where the value's layer is a `Result`; a `try … catch` anywhere); 539, 540 (`@Stream` → `AsyncIter`; `File.lines()` / `chunks()` answer `AsyncIter<string, Result<void, FsError>>` / `AsyncIter<Bytes, Result<void, FsError>>`). Answers 541-c: a lambda or `fn` expression is a generator when it carries `iter`, its type agreeing with its expected type (147). Migration: a codemod adds the marker wherever a body writes the keyword and renames the types, one landing per repository.
-- **Blocks.** The markers' step (144); 541-c's B-88 box 2.
-
-#### 485-b · A refusal's printed line: `error[<code>]: <message>` or `error: <code>: <message>`? (decisions 475 (2), 485; 144 B-88)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): one form, `error[<code>]: <message>`, the notation every decision and `conformance/AGENTS.md` already write — the checker's code leaves the message text and is printed by the one printer; the 577 snapshot lines are rewritten mechanically in that commit.**
-- **Measured.** The parser's printer prints a coded parse error as `error[code]: msg`; checker refusals carry the code as the message's prefix and the CLI prints `error: code: msg`. 577 snapshot refusals are the second form, 86 the first. B-88 box 4 asks for `block-break-value` alone, "as every other refusal", which is the minority.
-- **Options.** (a) As proposed. (b) Keep both as built; B-88 box 4 dropped. (c) `error: <code>: <message>` everywhere (86 lines change).
-- **Recommendation.** (a).
-- **Blocks.** B-88 box 4; nothing built.
 
 #### 164-s3-b · "Every comptime snapshot unchanged": the reply, or the `COMPTIME WAT` listing too? (434 (5); 164 s3)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): the `COMPTIME REPLY` and every cell's text unchanged; `COMPTIME WAT` re-recorded once per piece, read one by one** — the listing is the lowering's text, which s3 rewrites.

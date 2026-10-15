@@ -1911,11 +1911,11 @@ function and the loop. The bare forms landed on commonJS, erlang and beam; these
       `block_jump_label_reaches_loop`, green on commonJS and erlang; every target ignored the label, from a plain `if`
       too. Left: `continue :outer` is not parsed (B-104); beam (B-105) and wasm (164 s2c) red
 - [ ] `yield` in a block inside a lambda generator reaches the lambda, the nearest function — cell
-      `block_yield_in_lambda_generator` — held by question 541-c: no lambda is a generator scope today (125)
+      `block_yield_in_lambda_generator`, the lambda an `iter { -> … }` (decision 553) — after B-116 piece (i)
 - [x] `return` inside a yielding arm returns from the enclosing generator on commonJS (the `function*` delegation) —
       cell `case_arm_return_in_yielding_arm`, green on commonJS, erlang and beam; wasm red (164 s2c)
-- [ ] `block-break-value` printed as `error[block-break-value]`, as every other refusal — held by question 485-b: 577
-      cell refusals print `error: <code>: …`, 86 `error[<code>]: …`
+- [ ] every refusal printed `error[<code>]: <message>` (decision 557): the checker's code printed by the one printer,
+      the 577 cell refusals written `error: <code>: …` rewritten in that commit, `block-break-value` among them
 
 ### B-90 — commonJS: an unmarked raise is `crash`, and `abort_text_panic` (decisions 546, 535, 527 (1))
 
@@ -1943,11 +1943,11 @@ commonJS only because its Node form answers `null` and the first arm's tag read 
 a `snapshot/targets/commonJS/` departure, which 458 forbids for a defect.
 
 - [x] the commonJS `case` lowering ends in a throw read as `crash` by `attempt`, `attemptTask` and the abort guard; its
-      text per question 546-a — until answered, cells claim the kind alone
+      text the engine's, the cells claiming the kind alone (decision 556)
 - [x] `case_no_arm_matches_raises` widened to commonJS with a Node form answering a tagged value no variant is
       (`({ tag: "Square" })`, so no engine fault masks the gap); `output/` claims `stderr crash:` — red on the parent
 - [x] `std_failure_attempt_crash`: the same Node form, its `snapshot/targets/commonJS/` deleted, `show` printing
-      `f.kind` alone until 546-a — red on the parent
+      `f.kind` alone (556) — red on the parent
 
 ### B-102 — erlang: an external template's Erlang-escaped quote loses its backslash
 
@@ -2142,6 +2142,29 @@ calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for
 - [ ] a call into a generic fn of another module — a cell red on commonJS today
 - [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
       today
+
+### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
+
+**Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),
+sonnet for (ii)
+
+553 moves what admits `yield`, `await` and `use` from the return type to a marker before `fn` and a lambda's brace,
+writes the return type whole under its marker's name (`Iter<T, R>`, `Async<T>`, `AsyncIter<T, R>`, `Component<R>`),
+and puts every failure in a `Result` in the value's layer. Three pieces, in order, each one landing per repository:
+
+- [ ] (i) the markers: parsed before `fn` and before a lambda's brace (`async { … }` and `iter loop { … }` stay the
+      block forms); the checker admits `yield` / `await` / `use` by the marker and refuses the keyword without it, the
+      hint naming it; `marker-type-mismatch`; a marked lambda checked against its expected type (147); a codemod adds
+      the marker wherever a body writes the keyword, the `@` types kept; every cell answers the same; a refusal cell
+      per refusal
+- [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
+      `@Result` → `Result`, declared in std's `.bp`; `comptime/effect_chain.zig` reduced to what the markers need; a
+      codemod over botopink-lang and every library; every cell the same
+- [ ] (iii) what is new: an iterator's `R` (`return v`; `next()` answering `Step.Item(T)` / `Step.Done(R)`), a failure in
+      `R` ending the iteration (`for x in try xs`), `Component<Result<R, E>>` the one component that throws — on
+      commonJS, erlang and beam, wasm through 164; `io.fs`'s `lines()` / `chunks()` answering
+      `AsyncIter<…, Result<void, FsError>>`; new cells red on the parent, green after
+- [ ] Conformance (459)
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 

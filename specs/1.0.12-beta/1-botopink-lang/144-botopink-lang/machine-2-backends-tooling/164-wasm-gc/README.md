@@ -84,7 +84,8 @@ deleted at P5): P0 a value representation (`Repr`) in place of the type strings,
 strings, the printers, the std-wasm boundary (an arena reset after each call, deleted by s3) · P2 arrays, tuples,
 optionals, records and variants (one struct type per declaration), `case`, `unknown`, `Bytes`, `Dict` (scalars boxed
 inside `anyref`, never `i31ref`) · P3 closures, `var` cells, components · P4 tasks · P5 the linear lowering deleted ·
-P6 the bounded-memory cells and the docs. Question 544-a (wasmtime's collector and cycles) holds P6.
+P6 the bounded-memory cells and the docs. P6 follows decision 555: the codegen breaks its own cycles (a settled task drops its waiters and frame), the gate
+pins the wasmtime CLI beside the C API, and a cycle a program builds may live until exit on wasmtime.
 
 Landed: P0, P1, P2, P2b (`unknown`, `Dict`, generic records and enums, the arrays' and `@Result`'s methods, union
 arrays, generators) and P3 (function values, closures, fn refs, `var` captures, components; generic static methods, a

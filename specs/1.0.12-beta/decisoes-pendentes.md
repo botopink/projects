@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**131 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**125 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -33,88 +33,12 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | 546-b — os sidecars do rakun desenrolando por uma chamada `host` | 21 testes vermelhos no rakun | (i) uma lacuna da biblioteca |
-| 2 | 544-a — o coletor do wasmtime e ciclos | o 164 s2 P6, o fechamento do s2 | (a) |
-| 3 | 546-a — a mensagem de um `crash` | a linha de mensagem de toda célula de abort / `attempt` | (a) só o tipo |
-| 4 | 485-b — como uma recusa é impressa | a caixa 4 do B-88; 663 linhas de snapshot | (a) `error[code]:` |
-| 5 | 541-c — uma lambda geradora | a caixa 2 do B-88 | respondida com a mark-a: (c) com o marcador `iter` |
-| 6 | 164-s3-b, 164-s3-d — os snapshots de comptime do s3; as tabelas Unicode | a linha do gate do s3; o s3 P1 | (a), (a) |
-| 7 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
-| 8 | mark-a — um marcador em todo corpo que compila de forma especial | o passo dos marcadores | respondida (aguardando o seu número) |
+| 1 | 164-s3-b, 164-s3-d — os snapshots de comptime do s3; as tabelas Unicode | a linha do gate do s3; o s3 P1 | (a), (a) |
+| 2 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
+| 3 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
+| 4 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
 
-**1 · 546-b — os sidecars do rakun desenrolam por uma chamada que a 546 agora envolve.** Os sinais de navegação e o
-`rakun_problem` do rakun desenrolam de propósito: um sidecar Erlang lança, e um capturador acima na pilha lê o termo —
-`rakun_navigation:signal(...)` lança `<<"nav:/login">>`, `try_body` captura `throw:Reason when is_binary(Reason)`.
-Desde a 546 toda chamada de um binding de biblioteca sem `result: true` é envolvida, e qualquer lançamento sai como
-`error:{bp_host, "<texto>"}`, então o capturador nunca vê o seu termo: 18 testes vermelhos no rakun-app, 2 no
-rakun-security, 1 no rakun-service. **(i)** os testes ficam vermelhos como lacunas da biblioteca; a navegação vira dados
-que o renderizador lê, como a 527 (5) e a 504 já decidem; **(ii)** os sidecars lançam um termo que o envoltório deixa
-passar (um no formato de `panic`), o que muda o tipo de uma falha não capturada; **(iii)** os capturadores também casam
-`{bp_host, Text}` e analisam o texto (com perda); **(iv)** um atributo que isenta um binding do envoltório.
-**Recomendação (i)**: a 527 (5) já fixa o estado final; um mecanismo provisório seria apagado por ele. **Bloqueia:** os
-21 testes do rakun (o 144 B-103 já devolveu o que passa por `try`).
-
-Resposta (marque uma por pergunta):
-- [x] (i) os testes ficam vermelhos como lacunas da biblioteca; a navegação vira dados (527 (5), 504) **(recomendada)**
-- [ ] (ii) os sidecars lançam um termo no formato de `panic` que o envoltório deixa passar
-- [ ] (iii) os capturadores também casam `{bp_host, Text}` e analisam o texto
-- [ ] (iv) um atributo que isenta um binding do envoltório
-
-**2 · 544-a — o wasmtime ainda não coleta ciclos.** O s2 entrega a memória ao coletor do host e supõe que ele segue
-ciclos (uma task esperando outra que a espera). O node e o navegador seguem; o coletor padrão do wasmtime (DRC) vaza um
-ciclo até o programa terminar, e o coletor de cópia dele é documentado como "ainda não funcional". **(a)** o codegen
-quebra os ciclos que ele mesmo cria (uma task resolvida solta quem a espera), o gate fixa a versão do CLI do wasmtime, e
-a 544 diz que um ciclo que um programa constrói pode viver até o fim no wasmtime; **(b)** o codegen detecta ciclos (o que
-a 544 removeu); **(c)** esperar um wasmtime que siga ciclos. **Recomendação (a)**. **Bloqueia:** o s2 P6, as células de
-memória limitada — nada antes.
-
-Resposta (marque uma por pergunta):
-- [x] (a) o codegen quebra os próprios ciclos; o CLI do wasmtime fixado; a 544 emendada **(recomendada)**
-- [ ] (b) o codegen detecta ciclos
-- [ ] (c) esperar um wasmtime que siga ciclos
-
-**3 · 546-a — o que uma mensagem de `crash` diz.** Um lançamento que nada marcou é `crash`; o tipo é fixo (535), o texto
-não. Exemplo: um `case` sem braço que case imprime `crash: {case_clause,'Square'}` no erlang, e
-`crash: Cannot read properties of null (reading 'tag')` era o do node (removido pelo B-101). **(a)** o motivo é o do
-motor e uma célula afirma só o tipo (`stderr crash:`); **(b)** uma mensagem por alvo, gravada como divergência;
-**(c)** um texto só para os lançamentos que o compilador emite (`no arm matches: <value>`), custando a erlang e beam um
-catch em todo `case`. **Recomendação (a)**: o tipo é a resposta da linguagem, o motivo é um diagnóstico. **Bloqueia:** a
-linha de mensagem das células de abort e de `attempt` (elas afirmam só o tipo até lá).
-
-Resposta (marque uma por pergunta):
-- [x] (a) o motivo do motor; uma célula afirma só o tipo **(recomendada)**
-- [ ] (b) uma mensagem por alvo, gravada como divergência
-- [ ] (c) um texto só para os lançamentos do próprio compilador (`no arm matches: <value>`)
-
-**4 · 485-b — uma forma impressa só para uma recusa.** Um erro de parse imprime `error[reserved-word-as-name]: …`; uma
-recusa do checker imprime `error: block-break-value: …`. 577 snapshots de célula usam a segunda, 86 a primeira; toda
-decisão e o `conformance/AGENTS.md` escrevem a primeira. **(a)** `error[<code>]: <message>` em toda parte (as 577 linhas
-reescritas mecanicamente num commit); **(b)** manter as duas; **(c)** `error: <code>: <message>` em toda parte.
-**Recomendação (a)**: é a notação que as decisões já usam. **Bloqueia:** a caixa 4 do B-88; toda célula de recusa nova
-escolhe uma forma enquanto isso.
-
-Resposta (marque uma por pergunta):
-- [x] (a) `error[<code>]: <message>` em toda parte **(recomendada)**
-- [ ] (b) as duas formas mantidas
-- [ ] (c) `error: <code>: <message>` em toda parte
-
-**5 · 541-c — uma lambda pode ser geradora?** A 541 (2) deixa o `yield` de um bloco alcançar "a função envolvente"; o
-B-88 pediu um `yield` dentro do bloco de uma lambda, mas hoje `{ -> yield 1 }` e `fn() -> @Iterator<i32> { yield 1; }`
-são ambos recusados `yield-without-generator` — um gerador é uma fn ou método declarado, ou um `iter loop { … }` (125).
-**(a)** não — a forma de expressão de um gerador é `iter loop`; **(b)** uma expressão tipada `fn() -> @Iterator<T>` é
-um gerador; **(c)** qualquer lambda cujo tipo esperado seja `@Iterator`. **Recomendação (a)**. **Bloqueia:** só a caixa
-2 do B-88.
-
-Resposta (marque uma por pergunta):
-- [ ] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
-- [ ] (b) uma expressão tipada `fn() -> @Iterator<T>` é um gerador
-- [ ] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
-
-*Nota do mantenedor (2026-10-15):* `@Iterator<T>` não precisa ser um builtin — um tipo comum da std, `Iterator<T>`; a ser registrada como uma pergunta própria.
-*Nota do mantenedor (2026-10-15):* a 541-c espera a mark-a (item 8): uma lambda ou expressão `fn` é um gerador quando leva o marcador `iter`, o seu tipo concordando com o seu tipo esperado (147) — a (c) com um marcador.
-*Respondida com a mark-a (o mantenedor, 2026-10-15):* a (c) com o marcador `iter` — `iter { -> yield 1 }`, `iter fn() -> Iter<i32> { … }`.
-
-**6 · 164-s3-b e 164-s3-d — os pontos menores do s3.** (b) A caixa do s3 diz "todo snapshot de comptime inalterado",
+**1 · 164-s3-b e 164-s3-d — os pontos menores do s3.** (b) A caixa do s3 diz "todo snapshot de comptime inalterado",
 mas um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado (`COMPTIME WAT`), que o s3 reescreve por
 construção. **Recomendação (a)**: a resposta e toda célula inalteradas, a listagem regravada e lida peça a peça. (d) As
 tabelas de caixa Unicode seriam construídas com `@embed` (519), que o wasm ainda não rebaixa. **Recomendação (a)**:
@@ -126,7 +50,7 @@ Resposta (marque uma por pergunta):
 - [ ] 164-s3-d (a) tabelas em `.bp` gerado agora, `@embed` quando o wasm o tiver **(recomendada)**
 - [ ] 164-s3-d (b) esperar o `@embed` no wasm
 
-**7 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
+**2 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
 texto, então cada biblioteca que o leva a um erro `string` escreve o seu próprio `case`
 (`NotFound(path) -> "not found: " + path`, … — snap e rakun-ssr fizeram isso). **(a)** a std dá a `FsError` um
 `message()`; **(b)** cada biblioteca mantém o seu; **(c)** um `mapErr` genérico em `@Result`. **Recomendação (a)**, com
@@ -137,33 +61,31 @@ Resposta (marque uma por pergunta):
 - [ ] (b) cada biblioteca mantém o seu auxiliar
 - [ ] (c) um `mapErr` genérico em `@Result` (independente da (a))
 
-**8 · mark-a — um marcador em todo corpo que compila de forma especial (o mantenedor, 2026-10-15).** Respondida
-(a entrada completa na § Máquina 2): um padrão só, `[marcador] fn nome(params) -> Tipo<…>`. O marcador — `iter`,
-`async`, `async iter`, `component` — vem antes de `fn` e antes da chave de uma lambda e diz como o corpo compila; o tipo
-de retorno é escrito inteiro e tem o nome do seu marcador (`Iter<T, R>`, `Async<T>`, `AsyncIter<T, R>`, `Component<R>`,
-o `R` de um iterador o valor com que ele termina, como o `Generator<T, TReturn>` do JS); uma falha é sempre um `Result`
-na camada do valor (`Async<Result<T, E>>`, `Iter<T, Result<void, E>>`, `Component<Result<R, E>>`), e `Result` não
-precisa de marcador. Os tipos `@` viram tipos da std depois dos marcadores, em três peças. **Bloqueia:** o passo dos
-marcadores; responde a 541-c.
+**3 · 164-s3-e e 164-s3-f — o corpo botopink de um método de `String` no wasm.** (e) Um método de `String` do s3 P1
+que passa para botopink precisa de um binding no wasm: **(a)** uma célula `#[@External.Wasm(fn: <private fn of primitives.bp>)]`
+ao lado das suas células Erlang e Node — só o wasm toma o corpo, então a resposta de nenhum outro alvo pode mudar. (f)
+Quando: **(a)** depois que o s2 P5 apagar o rebaixamento linear, como diz a ordem do s3 — até lá cada folha mantém um
+export gêmeo da std-wasm; **(b)** antes. **Recomendação (a), (a).** **Bloqueia:** a peça de codegen do s3 P1; quando os
+métodos do P1 se movem.
 
-```bp
-fn parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
-fn porta(s: string) -> i32 { try toInt(s) catch 8080 }                      // tratado: sem Result
-async fn buscar(id: i32) -> Async<Result<User, HttpError>> { try await http.get("/users/" + id) }
-async fn salvar(u: User) -> Async<void> { await db.put(u) }
-iter fn contar() -> Iter<i32> { yield 1; yield 2 }                         // Iter<i32, void>
-iter fn ler() -> Iter<i32, string> { yield 1; return "fim" }               // termina com "fim"
-async iter fn linhas(f: File) -> AsyncIter<string, Result<void, FsError>> { loop { val c = try await f.read(4096); …; yield linha } }
-component fn Pagina(props: PaginaProps) -> Component<Result<View, HttpError>> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
-fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }   // repassa: sem marcador
-usar(iter { -> yield 1; yield 2 })
-xs.map(async { x -> await f(x) })
-for await linha in try linhas(f) { … }              // itens string; um FsError encerra o laço e se propaga
-```
+Resposta (marque uma por pergunta):
+- [ ] 164-s3-e (a) uma célula `@External.Wasm(fn: …)` ao lado das células Erlang e Node do método **(recomendada)**
+- [ ] 164-s3-f (a) depois do s2 P5 **(recomendada)**
+- [ ] 164-s3-f (b) antes do s2 P5
 
-Resposta:
-- [x] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores, em três peças **(recomendada)**
-- [ ] (3)(b) no mesmo passo dos marcadores
+**4 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
+(`$arr_any`), então uma tupla ligada a um `T` cai para a memória linear: **(a)** um subtipo próprio, para o printer de um
+slot distinguir `#(1, 2)` de `[1, 2]` (o `.wat` da maioria dos snapshots GC muda, nenhuma resposta muda); **(b)** esperar
+o P5. (b) `==` sobre um registro genérico cujos argumentos de tipo não são escritos compara por identidade um registro
+dentro de um slot, então o módulo cai para trás: **(a)** `$__unk_eq` estrutural (registros, variantes, arrays e tuplas
+campo a campo), uma igualdade só para todo valor como nos outros alvos; **(b)** esperar o P5. **Recomendação (a), (a).**
+**Bloqueia:** a forma GC desses módulos; nenhuma resposta muda hoje.
+
+Resposta (marque uma por pergunta):
+- [ ] 164-s2-a (a) o subtipo GC próprio de uma tupla, antes do P5 **(recomendada)**
+- [ ] 164-s2-a (b) esperar o P5
+- [ ] 164-s2-b (a) um `$__unk_eq` estrutural **(recomendada)**
+- [ ] 164-s2-b (b) esperar o P5
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1152,13 +1074,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (a).
 - **Bloqueia.** `lambda_last_statement_semicolon` linha 5; `docs.md` § Lambdas.
 
-#### 544-a · O coletor do wasmtime e os ciclos: contra o que o target wasm é especificado (decisão 544; 164 s2)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o codegen quebra os seus próprios ciclos (uma task resolvida descarta os seus waiters e o seu frame), o gate fixa a versão do CLI do wasmtime ao lado da da C API, e o "o coletor do host segue ciclos" da 544 é emendado para "o coletor do host; um ciclo que um programa constrói pode viver até a saída no wasmtime até o seu coletor seguir ciclos"** — o node e o browser coletam ciclos; o wasmtime é o único host que ainda não.
-- **Medido.** wasmtime v45 (o CLI da máquina, não fixado): o coletor padrão é o DRC, que "atualmente não consegue coletar ciclos; eles vazam até a store ser descartada". wasmtime v49 (a C API fixada, s1): o padrão é o coletor de cópia, documentado como "ainda em construção e ainda não funcional". A 544 apoia o "nenhum ciclo a detectar" do s2 no host seguir ciclos.
-- **Opções.** (a) Como proposto. (b) O codegen detecta ciclos ele mesmo (um coletor de ciclos sobre referências GC — o que a 544 removeu). (c) O target wasm espera um wasmtime cujo coletor siga ciclos antes de o s2 pousar as suas tasks (P4).
-- **Recomendação.** (a).
-- **Bloqueia.** A célula de memória limitada do 164 s2 (P6); nada antes dela.
-
 #### 535-a · Uma divisão de float por zero no erlang e no beam: `crash: badarith` ou `panic`? (decisões 535, 527 (3), 492, 444; 144)
 - **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o `/` de float no erlang e no beam checado como o de inteiro, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — uma forma para toda divisão por zero; a divergência (444: commonJS e wasm respondem `Infinity`) fica então só no abortar.
 - **Medido.** A 535 cita `panic: division by zero`; a 492 lista "uma divisão por zero" sob `panic`; a 527 (3) checa só a de inteiro. As divergências de erlang e beam da `float_nan_infinity_words` agora afirmam `stderr crash: badarith` — a resposta do compilador (um `badarith` sem marca), não uma que uma decisão fixa.
@@ -1201,67 +1116,12 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (a).
 - **Bloqueia.** Nada.
 
-#### 546-a · O `<reason>` de um `crash`: o texto do motor por alvo, ou um texto só onde o próprio compilador lança? (decisões 535, 527 (1), 546; 144 B-90, B-101)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o motivo de um `crash` é o do motor e uma célula afirma o tipo** — `stderr crash:` como a afirmação de contenção, uma célula de `Failure` imprimindo `f.kind`; nenhum `snapshot/targets/` guarda jamais uma mensagem de crash.
-- **Medido.** A 535 fixa `<kind>: <message>` como um texto só em todo alvo, a divergência apenas em se um alvo aborta; a 527 (4) fixa a mensagem de um `host` (`~tp`); nada fixa a de um `crash`. O `output/` de `std_failure_attempt_crash` guarda o `{case_clause,'Square'}` do erlang e o B-90 declarou o `Cannot read properties of null (reading 'tag')` do node como uma divergência de commonJS — um texto que nenhuma decisão nomeia, e (B-101) o rastro de um defeito. `abort_text_crash` já afirma `stderr crash:` sozinho.
-- **Opções.** (a) Como proposto. (b) A mensagem uma divergência declarada por alvo, como entrou. (c) Um texto só em todo alvo para os lançamentos que o próprio compilador emite (um `case` sem braço que case: `no arm matches: <value>`; erlang e beam capturando `case_clause` nele), o motivo do motor só para uma falha do host ou da VM.
-- **Recomendação.** (a) — o tipo é a resposta da linguagem, o motivo é diagnóstico; (c) custa a todo `case` em erlang e beam um catch, o custo por chamada que a 546 recusou para `host`.
-- **Bloqueia.** A linha commonJS de `std_failure_attempt_crash`; as afirmações do B-101.
-
 #### 540-c · Um texto para um `FsError` na std (decisão 540; 144)
 - **Proposto (a migração das bibliotecas, 2026-10-14; aguardando o mantenedor):** **(a): a std dá a `FsError` o seu texto** — um `message()` (ou `toString`) em `io/fs`, `<what>: <path>` por variante, para que uma biblioteca que leva uma falha de `io.fs` a um erro `string` não escreva um `case` próprio.
 - **Medido.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum texto; a std não tem `toString` nem `mapErr` para ele. Migrando para a 540, snap e rakun-ssr escreveram cada um um `fsText` local (um `case` sobre as sete variantes) e um auxiliar `fsErrorText` / `fsFailure` para levar a falha às suas funções `@Result<_, string>`.
 - **Opções.** (a) Como proposto. (b) Cada biblioteca escreve o seu, como construído. (c) Um `mapErr` genérico em `@Result`, o texto ainda de cada biblioteca.
 - **Recomendação.** (a), com (c) independente dela.
 - **Bloqueia.** Nada; os auxiliares locais são apagados uma vez respondida.
-
-#### 546-b · Um sidecar de biblioteca que desenrola com um termo lançado, depois que a 546 o envolve como `host` (decisões 546, 527 (5), 504; frentes 149, 150, 165)
-- **Proposto (o coordenador, 2026-10-14; aguardando o mantenedor):** **(i): as células ficam vermelhas e a lacuna é das linhas das frentes de biblioteca** — a 527 (5) já dá o estado final para a navegação (os sinais viram dados que o renderizador lê, 504, trabalho da frente 149, a célula registrando a lacuna até lá); nenhum mecanismo provisório é construído que o estado final apaga.
-- **Medido.** Desde a 546, uma chamada de um binding fora da std sem `result: true` roda dentro de um `try` que relança qualquer lançamento como `error:{bp_host, <texto ~tp>}`. Os sidecars do rakun desenrolam por essas chamadas de propósito: `rakun_navigation:signal` / `rethrow` (`rakun-app/src/navigation.bp`) lançam um binário que `try_body` captura com `throw:Reason when is_binary(Reason)`; `rakun_chain:raise_problem` (`rakun-service/src/error.bp`, usado pelo rakun-security) lança `{rakun_problem, …}` que `run_guarded` captura. Nenhum dos dois capturadores vê mais o seu termo: 18 testes vermelhos no rakun-app, 2 no rakun-security e 1 no rakun-service, o que segura o commit da migração 541 / 540 do rakun. `result: true` não serve: a chamada responderia `Error(…)` em vez de desenrolar. Nenhuma decisão cobre `rakun_problem`.
-- **Opções.** (i) Como proposto. (ii) Os sidecars lançam um termo que o envoltório da 546 deixa passar (um no formato `error:{panic, Msg}`) — o tipo da falha não capturada muda. (iii) Os capturadores também casam `error:{bp_host, Text}` e analisam o texto `~tp` — com perda. (iv) Um atributo de binding que isenta um binding de biblioteca do envoltório `host`.
-- **Recomendação.** (i) para a navegação, que a 527 (5) resolve; para `rakun_problem`, (i) até que 149/150 deem aos problems um caminho de dados como o da navegação.
-- **Bloqueia.** O commit da migração 541 / 540 do rakun (o seu hook), e o do onze, que compila contra o rakun.
-
-#### 541-c · Uma expressão `fn` ou lambda com retorno `@Iterator` / `@Stream` é um escopo gerador? (decisões 541 (2), 125, 147; 144 B-88)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): não — um escopo gerador é uma fn ou método declarado, ou um laço `iter` / `stream` (125); a forma de expressão de um gerador é `iter loop { … }`; a caixa 2 do B-88 é retirada.**
-- **Medido.** `{ -> yield 1 }` e `fn() -> @Iterator<i32> { yield 1; }` são ambos `yield-without-generator`; a dica nomeia um retorno `@Iterator` "da fn" ou `iter loop`. A docs.md § Iterators deixa os closures de fora. O "alcança a função envolvente" da 541 (2) supõe que a função é um gerador. A caixa 2 do B-88 pede uma célula que nenhuma decisão descreve.
-- **Opções.** (a) Como proposto. (b) Uma expressão tipada `fn() -> @Iterator<T> { … }` é um gerador (o seu retorno é escrito); uma lambda simples não. (c) Ambas, pelo tipo esperado (a 147 estendida a `@Iterator`).
-- **Recomendação.** (a); (b) aceitável, uma regra a mais.
-- **Respondida com a mark-a (o mantenedor, 2026-10-15):** a (c) com o marcador `iter` — uma lambda ou expressão `fn` é um gerador quando leva `iter`, o seu tipo concordando com o seu tipo esperado (147).
-- **Bloqueia.** Só a caixa 2 do B-88.
-
-#### mark-a · Um marcador em todo corpo que compila de forma especial: `iter`, `async`, `async iter`, `component` (decisões 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525, 539, 540; 541-c; 144 B-88)
-- **Respondida (o mantenedor, 2026-10-15; aguardando o seu número em `decisions-taken.md`):** um padrão para todo corpo, `[marcador] fn nome(params) -> Tipo<…>` — o marcador diz como o corpo compila, o tipo de retorno é escrito inteiro e é o que um chamador recebe, e uma falha é sempre um `Result` na camada do valor.
-  1. **Os marcadores, antes de `fn` e antes da chave de uma lambda.** `iter` (`yield`), `async` (`await`), `async iter` (`yield` e `await`), `component` (`use`, `await`); `pub` primeiro (`pub async fn`); uma expressão `fn` da mesma forma (`iter fn() -> Iter<i32> { … }`). Uma lambda: `iter { -> yield 1 }`, `async { x -> await f(x) }` — o `->` distingue uma lambda de um bloco (525), então `async { … }` (523) e `iter loop { … }` (125) continuam as formas de bloco. Nenhuma outra combinação. Antes de um `{` as três palavras ficam tomadas: uma função chamada `iter`, `async` ou `component` chamada com uma lambda final escreve os seus parênteses (`component({ -> … })`, não `component { -> … }`, 525); como binding, parâmetro ou campo cada uma continua um nome.
-  2. **O tipo tem o nome do seu marcador, escrito inteiro.** `Iter<T, R = void>`, `AsyncIter<T, R = void>` — `T` o valor de cada `yield`, `R` o valor com que a iteração termina (o `return v` do corpo; um fim sem valor é `void`), como o `Generator<T, TReturn>` do JS; `Async<T>`; `Component<R>`; um corpo sem marcador responde `T`. `@Iterator`, `@Task`, `@Stream` e `@Component` são renomeados (`@Stream` → `AsyncIter`, substituindo o `AsyncIterator` do ponto (4)); uma função que não responde nada sob `async` escreve `Async<void>`. O `next()` de um iterador responde `Step.Item(T)` ou `Step.Done(R)` (o `{ value, done }` do JS). Um marcador cujo tipo de retorno não é o seu tipo é recusado (`marker-type-mismatch`).
-  3. **Uma falha é um `Result` na camada do valor, igual em todos.** `Result<T, E>`; `Async<Result<T, E>>` (a 432 inalterada); `Iter<T, Result<V, E>>` / `AsyncIter<T, Result<V, E>>` — a falha é o fim da iteração, então um `throw` ou um `try` que propaga a encerra com `Error(e)`, os itens continuando `T` puros, consumidos por `for x in try xs` / `for await x in try xs` (a falha se propaga) ou por `next()` (substituindo o `AsyncIterator<T, E>` do ponto (5)); `Component<Result<R, E>>` — um componente só pode fazer `throw` sob ele, o `Error` chegando ao `ErrorBoundary` mais próximo (414, 504). Um `try` que propaga e um `throw` são escritos onde essa camada é um `Result`, e ali `return v` é `Ok(v)`; um `try … catch` tratado no corpo (537) não deixa sair nada e não precisa de nenhum (`fn porta(s: string) -> i32 { try toInt(s) catch 8080 }`). `Iter<Result<T, E>>` / `AsyncIter<Result<T, E>>` continuam iteradores cujos itens são resultados: `yield Error(e)` emite um e a iteração segue. Nenhum marcador para uma falha: `Result` é o único tipo sem um, porque uma falha compila como um retorno antecipado e não muda nada de como o corpo roda — cada um dos quatro marcadores muda (um gerador, um corpo suspenso, um escopo de render); `result` (o ponto (2)) é retirado.
-  4. **Recusas.** A palavra sem o seu marcador (`yield-without-generator`, `await-outside-async`, um `use` fora de `component`, a dica nomeando o marcador); um `throw` ou um `try` que propaga onde a camada do valor não é um `Result`; `marker-type-mismatch`; uma lambda marcada cujo tipo esperado difere (`xs.forEach(iter { x -> yield x })`: uma lambda `iter` onde se espera `fn(x: T)`); uma lambda marcada sem tipo esperado e sem anotação (147). Uma lambda toma o seu tipo do seu tipo esperado (`xs.map({ s -> try toInt(s) })` onde se espera `fn(string) -> Result<i32, E>`).
-  5. **O tipo sozinho não precisa de marcador.** Uma função que repassa o valor é escrita com a mesma assinatura e sem marcador (`fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }`). A assincronia de um componente continua a marca da lista de hooks (375).
-  6. **Ordem: três peças, cada uma com o seu oráculo** (o ponto (3) (a)). O `@` não pode sair primeiro — hoje é ele que admite `await` e `yield`. (i) Os marcadores: o checker lê o marcador, um codemod o acrescenta onde um corpo escreve a palavra, os tipos mantêm o seu `@` enquanto isso (`async fn buscar() -> @Task<User>`); toda célula responde igual. (ii) Os tipos: o `@` removido e os nomes mudados (`@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`), os tipos declarados no `.bp` da std, o `comptime/effect_chain.zig` encolhendo; um codemod, toda célula igual. (iii) O que é novo: o `R` de um iterador (`return v`, `Step`), uma falha no `R` encerrando a iteração, `Component<Result<R, E>>`, nos quatro backends, células novas vermelhas e depois verdes. Cada peça um pouso por repositório.
-  ```bp
-  fn parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
-  fn porta(s: string) -> i32 { try toInt(s) catch 8080 }                      // tratado: sem Result
-  async fn buscar(id: i32) -> Async<Result<User, HttpError>> { try await http.get("/users/" + id) }
-  async fn salvar(u: User) -> Async<void> { await db.put(u) }
-  iter fn contar() -> Iter<i32> { yield 1; yield 2 }                         // Iter<i32, void>
-  iter fn ler() -> Iter<i32, string> { yield 1; return "fim" }               // termina com "fim"
-  async iter fn linhas(f: File) -> AsyncIter<string, Result<void, FsError>> { loop { val c = try await f.read(4096); …; yield linha } }
-  component fn Pagina(props: PaginaProps) -> Component<Result<View, HttpError>> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
-  fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }   // repassa: sem marcador
-  usar(iter { -> yield 1; yield 2 })
-  xs.map(async { x -> await f(x) })
-  for await linha in try linhas(f) { … }              // itens string; um FsError encerra o laço e se propaga
-  ```
-- **Medido.** Hoje o tipo de retorno decide: `@Iterator` faz um gerador (541 (2)), `@Task` uma máquina de estados (392), `@Result` admite `try` / `throw` (431) onde uma camada do retorno é um (`builtins.d.bp`), `@Component` uma lambda de render (388); a assincronia de um componente é inferida (375). Nada numa assinatura ou numa lambda diz que o seu corpo é especial. Uma lambda final não precisa de parênteses (`twice { -> 4 }`, célula `trailing_lambda_call`), e nenhuma de `iter`, `async`, `component` é palavra reservada do lexer.
-- **Emenda.** A 541 (2); a 375 (o marcador de um componente é escrito, a sua assincronia ainda inferida); a 392; a 414 (um componente só lança sob `Component<Result<R, E>>`); a 431 (um `try` que propaga, um `throw` e `return v` como `Ok(v)` onde a camada do valor é um `Result`; um `try … catch` em qualquer lugar); a 539, a 540 (`@Stream` → `AsyncIter`; `File.lines()` / `chunks()` respondem `AsyncIter<string, Result<void, FsError>>` / `AsyncIter<Bytes, Result<void, FsError>>`). Responde a 541-c: uma lambda ou expressão `fn` é um gerador quando leva `iter`, o seu tipo concordando com o seu tipo esperado (147). Migração: um codemod acrescenta o marcador onde um corpo escreve a palavra e renomeia os tipos, um pouso por repositório.
-- **Bloqueia.** O passo dos marcadores (144); a caixa 2 do B-88 da 541-c.
-
-#### 485-b · A linha impressa de uma recusa: `error[<code>]: <message>` ou `error: <code>: <message>`? (decisões 475 (2), 485; 144 B-88)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): uma forma só, `error[<code>]: <message>`, a notação que toda decisão e o `conformance/AGENTS.md` já escrevem — o código do checker sai do texto da mensagem e é impresso pelo único impressor; as 577 linhas de snapshot são reescritas mecanicamente nesse commit.**
-- **Medido.** O impressor do parser imprime um erro de parse com código como `error[code]: msg`; as recusas do checker levam o código como prefixo da mensagem e a CLI imprime `error: code: msg`. 577 recusas de snapshot são da segunda forma, 86 da primeira. A caixa 4 do B-88 pede `block-break-value` sozinho, "como toda outra recusa", que é a minoria.
-- **Opções.** (a) Como proposto. (b) Manter as duas como construído; a caixa 4 do B-88 retirada. (c) `error: <code>: <message>` em toda parte (86 linhas mudam).
-- **Recomendação.** (a).
-- **Bloqueia.** A caixa 4 do B-88; nada construído.
 
 #### 164-s3-b · "Todo snapshot de comptime inalterado": a resposta, ou também a listagem `COMPTIME WAT`? (434 (5); 164 s3)
 - **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(a): o `COMPTIME REPLY` e o texto de toda célula inalterados; o `COMPTIME WAT` regravado uma vez por peça, lido um a um** — a listagem é o texto do rebaixamento, que o s3 reescreve.
