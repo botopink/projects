@@ -138,11 +138,15 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
 - [x] `await tasks[1]!` on an array of tasks answers the task's value; a `[]!` line in `await_postfix_binds_tighter`
 - [x] an abort's text (535): `@panic` / `@todo` / `assert` write `panic: <message>` — cell `abort_text_panic` on the four
       targets, its `message` binding removed (144 B-90)
-- [ ] an integer overflow and an integer division by zero write 527 (3)'s checked message (the operator, the type,
+- [x] an integer overflow and an integer division by zero write 527 (3)'s checked message (the operator, the type,
       `file:line:col`), not a bare trap — the site handed to every checked-arithmetic helper, in both lowerings (after
       s2 P2b, which reworks the same helpers); a cell on the four targets; under `attempt` the trap answers
       `Error(panic)` and the program goes on (492) — `int_division_by_zero_is_panic`'s wasm departure, which records
       the trap, deleted and the cell red on wasm until then, and an overflow line in `std_failure_attempt_abort_kinds`
+      — the site a message argument on each checked call, raised through `panic_raise` when the module has
+      exceptions; `abort_text_overflow` for the uncaught text
+- [ ] `INT_MIN / -1` writes 527 (3)'s overflow message (today a bare trap), and a GC module with exceptions keeps the
+      checked site in GC (today it falls back to linear memory for it) — a line in `abort_text_overflow`
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
       `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
       `targets` narrowing removed (144 B-95, B-97)
