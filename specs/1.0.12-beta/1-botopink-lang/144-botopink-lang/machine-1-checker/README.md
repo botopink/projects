@@ -2111,8 +2111,8 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
       repository/onze` is the orchestrator's commit; `docs/botopink-json.md` says in one line the
       orchestrator repository carries the mocking library as tagged history
 
-- [ ] a `.bpp` declaration written after a statement refused at the declaration, naming the statement before it
-      (decision 552); the unfold stops moving it — a refusal cell
+- [x] a `.bpp` declaration written after a statement refused at the declaration, naming the statement before it
+      (decision 552); the unfold stops moving it — `bpp_declaration_after_statement`
 - [ ] decision 561's backtick identifier: the lexer's token (an empty one refused), every name position the parser
       takes, each backend's collision-free mapping, diagnostics in the backtick form; `not-found.bpp` imported as
       `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
@@ -2140,7 +2140,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | B-27 change | Cells |
 |---|---|
 | a `.bpp` unfolds | `bpp_unfold_props`, `bpp_unfold_without_props`, `bpp_decorator_last_line` |
-| the grammar's refusals | `bpp_first_line_separator`, `bpp_style_after_markup`, `bpp_second_style_section`, `bpp_style_unclosed`, `bpp_beside_bp` |
+| the grammar's refusals | `bpp_first_line_separator`, `bpp_style_after_markup`, `bpp_second_style_section`, `bpp_style_unclosed`, `bpp_beside_bp`, `bpp_declaration_after_statement` |
 | diagnostics at the `.bpp` line | `bpp_diagnostics_located`, `template_fail_at_column_on_open_line` |
 | the hint, one extension list, the header formatter, packaging, the language server | no cell: `tests/cli_contract.sh`, `scripts/check-packaging.sh`, `lsp/bpp_*` snapshots |
 
