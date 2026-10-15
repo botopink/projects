@@ -1944,6 +1944,28 @@ pub fn main() { @println(quoted("a q=\"x\" b").length().toString()); }   // 1 on
       an Erlang string literal of an external template, red on erlang today (beam never rendered it twice)
 - [ ] rakun-mail's `compose_test` compiles on erlang (a 150 consumer row)
 
+### B-103 — erlang and beam: `try … catch` contains a `host` raise (decisions 431 (2), (3), 546)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+431: `try e catch f` handles a `@Result` on the spot; a raise that does not arrive as one — an unannounced host raise —
+is contained by `attempt` alone. On erlang and beam the `try … catch` lowering ends in `error:_TryR0 -> {error,
+_TryR0}`, so since 546 marks a library binding's raise as `error:{bp_host, _}` every such raise inside the operand is
+read as the `Error` arm. Found by 165 (rakun's navigation signal, `rakun-app/test/navigation_test.bp`: "a signal inside
+try … catch still reaches the capture"). Repro:
+
+```bp
+#[@External.Erlang("""erlang:throw($0)""")]
+declare fn sig(r: string) -> i32;
+fn load(s: string) -> @Result<string, string> { val _n = sig("nav:x"); return s; }
+pub fn main() { val v = try load("a") catch "fallback"; @print(v); }   // prints fallback; a host raise is the answer
+```
+
+- [ ] `try … catch` catches only its operand's `Error`; a `host`, `panic` or `crash` raise inside it propagates, on
+      every target — a cell red on erlang and beam today (commonJS measured)
+- [ ] rakun-app's `navigation_test` signal-through-`try` test back, its `// LANGUAGE GAP` marker gone (a 150 consumer
+      row)
+
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

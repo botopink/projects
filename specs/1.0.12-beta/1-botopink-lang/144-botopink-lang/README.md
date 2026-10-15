@@ -339,3 +339,4 @@ Where each step is (its machine's folder holds its whole text).
 | B-98 | [1](machine-1-checker/README.md) | a module named like its package (`rakun/rakun`) reports every `pub` name declared twice (front 165 s5) |
 | B-99 | [1](machine-1-checker/README.md) | a library's catalogue read at the caller: `rakun.boot()` with no argument answering the program's `@TypeInfo.all` (front 165 s5, mono-a) |
 | B-100 | [2](machine-2-backends-tooling/README.md) | the tooling reads the libraries at their new homes: rakun's workspace, `query` (front 165 s8) |
+| B-103 | [2](machine-2-backends-tooling/README.md) | erlang and beam: `try … catch` contains a `host` raise — only `attempt` may (431, 546; front 165) |
