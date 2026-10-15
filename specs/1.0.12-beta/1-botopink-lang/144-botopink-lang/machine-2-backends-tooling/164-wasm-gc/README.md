@@ -165,6 +165,9 @@ Order (each piece keeps every wasm cell's answer and every comptime reply): P0 t
 compiled straight by the GC backend, its Erlang layer and term library deleted (550) · P5 `io.fs` on `wasi:filesystem` (after s2 P4) · P6 the deletions and the docs. P1–P4
 flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's GC types (549). Questions 164-s3-b, d.
 
+Landed: P0 — the reader, the leaf table, `text.length` and `text.charCodeAt` as leaves; a `std:` name that is a leaf
+with no std-wasm export has its signature check written but unexercised until P1 adds such a leaf.
+
 - [ ] **the logic in botopink:** string, array, Dict, hash, Unicode (its tables build constants by `@embed`, 519),
       number text (441), the comptime's preludes and reply codecs (550: no Erlang layer) — `.bp` modules of std compiled by the
       compiler itself, module by module, each module's cells green before the Zig function it replaces is deleted
@@ -172,7 +175,7 @@ flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's
       a byte read or written, a GC array made, a float's text, what no `.bp` form reaches —, each function bound by a
       `std:` cell, proved by a conformance cell on the four targets, within 442's scope; no wat inside Zig, no wat
       generated for a fixed leaf (Zig builds `wat_ast` only where emission is parametrized: the codegen, `wat_prelude`)
-- [ ] **the `.wat` reader:** the compiler reads a `.wat` file into its `wat_ast` — a reader of its own (s-expressions),
+- [x] **the `.wat` reader:** the compiler reads a `.wat` file into its `wat_ast` — a reader of its own (s-expressions),
       no tool — and transpiles it as 440 transpiles std-wasm today; a `.wat` that does not read is a located error
 - [ ] `io.fs` importable on wasm: a module whose body calls a host function with no wasm binding builds, and only the
       call is refused (518 (4)); `io.fs` on `wasi:filesystem` (540, `needs: [.Filesystem]`) — today the whole module is
