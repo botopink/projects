@@ -143,6 +143,9 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
 - [ ] a loop's label read (`break :outer`, and `continue :outer` once 144 B-104 lands) — cell
       `block_jump_label_reaches_loop`; a bare `return` in a yielding arm ends the generator, not the arm — cell
       `case_arm_return_in_yielding_arm` (144 B-88)
+- [ ] emilia's module lowers on wasm: every emilia cell fails the narrowing audit, wasm refusing it with `type mismatch:
+      expected i32, got void` rather than a missing host binding (measured before s2 too) — emilia's cells (in rakun,
+      front 165) audited green, wasm then in their targets
 
 ### s3 — std-wasm rewritten: its logic in botopink, its leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig` and beam-to-wasm deleted (the maintainer, 2026-10-14; wasmgc-a)
 
