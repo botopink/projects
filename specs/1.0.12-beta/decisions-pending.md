@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**120 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1053,6 +1053,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) Each library writes its own, as built. (c) A generic `mapErr` on `@Result`, the text still each library's.
 - **Recommendation.** (a), with (c) independent of it.
 - **Blocks.** Nothing; the local helpers are deleted once answered.
+
+#### 546-b · A library sidecar that unwinds with a thrown term, after 546 wraps it as `host` (decisions 546, 527 (5), 504; fronts 149, 150, 165)
+- **Proposed (the coordinator, 2026-10-14; awaiting the maintainer):** **(i): the cells stay red and the gap is the library fronts' rows** — 527 (5) already gives the end state for navigation (signals become data the renderer reads, 504, front 149's work, the cell recording the gap until then); no interim mechanism is built that the end state deletes.
+- **Measured.** Since 546, a call of a binding outside std without `result: true` runs inside a `try` that re-raises any raise as `error:{bp_host, <~tp text>}`. rakun's sidecars unwind through such calls on purpose: `rakun_navigation:signal` / `rethrow` (`rakun-app/src/navigation.bp`) throw a binary that `try_body` catches with `throw:Reason when is_binary(Reason)`; `rakun_chain:raise_problem` (`rakun-service/src/error.bp`, used by rakun-security) throws `{rakun_problem, …}` that `run_guarded` catches. Neither catcher sees its term any more: rakun-app 18, rakun-security 2 and rakun-service 1 tests red, which holds rakun's 541 / 540 migration commit. `result: true` does not fit: the call would answer `Error(…)` instead of unwinding. No decision covers `rakun_problem`.
+- **Options.** (i) As proposed. (ii) The sidecars raise a term the 546 wrapper passes through (an `error:{panic, Msg}`-shaped one) — the uncaught failure's kind changes. (iii) The catchers also match `error:{bp_host, Text}` and parse the `~tp` text — lossy. (iv) A binding attribute that exempts a library binding from the `host` wrap.
+- **Recommendation.** (i) for navigation, which 527 (5) settles; for `rakun_problem`, (i) until 149/150 give problems a data path like navigation's.
+- **Blocks.** rakun's 541 / 540 migration commit (its hook), and onze's, which compiles against rakun.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

@@ -1928,6 +1928,25 @@ a `snapshot/targets/commonJS/` departure, which 458 forbids for a defect.
 - [ ] `std_failure_attempt_crash`: the same Node form, its `snapshot/targets/commonJS/` deleted, `show` printing
       `f.kind` alone until 546-a — red on the parent
 
+### B-102 — erlang and beam: an external template's Erlang-escaped quote loses its backslash
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+The erlang emitter unescapes an `@External.Erlang` template a second time, after the lexer has already processed the
+string's escapes: every `\` before `"` is dropped. A template holding an Erlang string literal with an escaped quote,
+`re:run(__B, "q=\"([^\"]+)\"", …)`, is emitted as `"q="([^"]+)""`, which erlc refuses (`adjacent string literals
+without intervening white space`). Hit by rakun-mail's `test/compose_test.bp`. Repro:
+
+```bp
+#[@External.Erlang("""(fun(__B) -> case re:run(__B, "q=\\"([^\\"]+)\\"", [{capture, all_but_first, binary}, global]) of {match, __Ms} -> [__X || [__X] <- __Ms]; _ -> [] end end)($0)""")]
+declare fn quoted(text: string) -> string[];
+pub fn main() { @println(quoted("a q=\"x\" b").length().toString()); }   // 1 on erlang and beam; today erlc refuses
+```
+
+- [ ] the template emitted as the lexer answered it, an Erlang-escaped quote kept; a cell with an escaped quote inside
+      an Erlang string literal of an external template, red on erlang and beam today
+- [ ] rakun-mail's `compose_test` compiles on erlang (a 150 consumer row)
+
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**120 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**121 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1053,6 +1053,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) Cada biblioteca escreve o seu, como construído. (c) Um `mapErr` genérico em `@Result`, o texto ainda de cada biblioteca.
 - **Recomendação.** (a), com (c) independente dela.
 - **Bloqueia.** Nada; os auxiliares locais são apagados uma vez respondida.
+
+#### 546-b · Um sidecar de biblioteca que desenrola com um termo lançado, depois que a 546 o envolve como `host` (decisões 546, 527 (5), 504; frentes 149, 150, 165)
+- **Proposto (o coordenador, 2026-10-14; aguardando o mantenedor):** **(i): as células ficam vermelhas e a lacuna é das linhas das frentes de biblioteca** — a 527 (5) já dá o estado final para a navegação (os sinais viram dados que o renderizador lê, 504, trabalho da frente 149, a célula registrando a lacuna até lá); nenhum mecanismo provisório é construído que o estado final apaga.
+- **Medido.** Desde a 546, uma chamada de um binding fora da std sem `result: true` roda dentro de um `try` que relança qualquer lançamento como `error:{bp_host, <texto ~tp>}`. Os sidecars do rakun desenrolam por essas chamadas de propósito: `rakun_navigation:signal` / `rethrow` (`rakun-app/src/navigation.bp`) lançam um binário que `try_body` captura com `throw:Reason when is_binary(Reason)`; `rakun_chain:raise_problem` (`rakun-service/src/error.bp`, usado pelo rakun-security) lança `{rakun_problem, …}` que `run_guarded` captura. Nenhum dos dois capturadores vê mais o seu termo: 18 testes vermelhos no rakun-app, 2 no rakun-security e 1 no rakun-service, o que segura o commit da migração 541 / 540 do rakun. `result: true` não serve: a chamada responderia `Error(…)` em vez de desenrolar. Nenhuma decisão cobre `rakun_problem`.
+- **Opções.** (i) Como proposto. (ii) Os sidecars lançam um termo que o envoltório da 546 deixa passar (um no formato `error:{panic, Msg}`) — o tipo da falha não capturada muda. (iii) Os capturadores também casam `error:{bp_host, Text}` e analisam o texto `~tp` — com perda. (iv) Um atributo de binding que isenta um binding de biblioteca do envoltório `host`.
+- **Recomendação.** (i) para a navegação, que a 527 (5) resolve; para `rakun_problem`, (i) até que 149/150 deem aos problems um caminho de dados como o da navegação.
+- **Bloqueia.** O commit da migração 541 / 540 do rakun (o seu hook), e o do onze, que compila contra o rakun.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
