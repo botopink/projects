@@ -150,6 +150,12 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** s2
 
+Order (each piece keeps every wasm cell's answer and every comptime reply): P0 the `.wat` reader, the leaf table and a
+`std:` cell naming a leaf (beside s2) · P1 `text.*` in botopink over leaves · P2 `array.*`, an integer's text,
+`encoding.*`, `hash.contentHash`, `random.*` · P3 a float's text (one leaf), `bigint.*` in botopink · P4 the comptime's
+term library (question 164-s3-a) · P5 `io.fs` on `wasi:filesystem` (after s2 P4) · P6 the deletions and the docs. P1–P4
+flip wasm once s2 P5 has deleted the linear lowering. Questions 164-s3-a … d.
+
 - [ ] **the logic in botopink:** string, array, Dict, hash, Unicode (its tables build constants by `@embed`, 519),
       number text (441), the Erlang-term functions the comptime still needs — `.bp` modules of std compiled by the
       compiler itself, module by module, each module's cells green before the Zig function it replaces is deleted

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**123 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1074,6 +1074,34 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) Keep both as built; B-88 box 4 dropped. (c) `error: <code>: <message>` everywhere (86 lines change).
 - **Recommendation.** (a).
 - **Blocks.** B-88 box 4; nothing built.
+
+#### 164-s3-a · What the comptime runs on once the term library is deleted (decision 544; 164 s3)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(B): `lower.zig` keeps the Erlang → wasm lowering but over a botopink `Term` library compiled by the GC backend** — the preludes, `COMPTIME REPLY`, ETF handles stay; `term.zig`, `otp/*`, `term_faces.zig` go.
+- **Measured.** Every comptime value is an `i32` term of `term.zig`; ~3 700 lines of Zig serve `lists:*`, `maps:*`, `io_lib:format`, `json:encode`, ETF; `std_wasm.wasm` is the only build of them. s3 names "the Erlang-term functions the comptime still needs" in `.bp` but no lowering change.
+- **Options.** (A) Comptime bodies compiled by the wasm GC backend directly, the Erlang layer deleted. (B) As proposed. (C) The term library kept in Zig as a comptime-only module (against 544's deletion).
+- **Recommendation.** (B); (A) as a later step.
+- **Blocks.** s3 P4; `comptime/runtime/wat/**` entirely.
+
+#### 164-s3-b · "Every comptime snapshot unchanged": the reply, or the `COMPTIME WAT` listing too? (434 (5); 164 s3)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): the `COMPTIME REPLY` and every cell's text unchanged; `COMPTIME WAT` re-recorded once per piece, read one by one** — the listing is the lowering's text, which s3 rewrites.
+- **Measured.** s3's box reads "every comptime snapshot … unchanged"; a comptime snapshot holds both the reply and the lowered module's listing.
+- **Options.** (a) As proposed. (b) The listing pinned too — impossible under any answer to 164-s3-a.
+- **Recommendation.** (a).
+- **Blocks.** s3's gate line.
+
+#### 164-s3-c · A `.wat` leaf's types: the codegen's `$str` / `$arr_any` by name, or declared in the `.wat`? (442, 544; 164 s3)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): by name, resolved by the reader against the codegen's type table; a `.wat` declaring a type is refused** — one representation (442 (3)).
+- **Measured.** s2 declares one GC type per value shape in the module's type section; a leaf handed a string must take the codegen's `$str`.
+- **Options.** (a) As proposed. (b) `(type …)` written in the file, checked equal to the codegen's.
+- **Recommendation.** (a).
+- **Blocks.** s3 P0.
+
+#### 164-s3-d · Unicode case tables: generated `.bp` code, or `@embed` data once wasm lowers `Asset`? (443, 519; 164 s3)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): generated `.bp` now, `@embed` once 519 lands on wasm** (binary size measured then).
+- **Measured.** s3 builds the tables "by `@embed`, 519"; the wasm codegen has no `Asset` path yet.
+- **Options.** (a) As proposed. (b) Wait for `@embed` on wasm.
+- **Recommendation.** (a).
+- **Blocks.** s3 P1's `toUpper` / `toLower`.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

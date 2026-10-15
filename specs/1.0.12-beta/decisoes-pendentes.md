@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**123 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**127 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1074,6 +1074,34 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) Manter as duas como construído; a caixa 4 do B-88 retirada. (c) `error: <code>: <message>` em toda parte (86 linhas mudam).
 - **Recomendação.** (a).
 - **Bloqueia.** A caixa 4 do B-88; nada construído.
+
+#### 164-s3-a · Sobre o que o comptime roda depois que a biblioteca de termos for apagada (decisão 544; 164 s3)
+- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(B): `lower.zig` mantém o rebaixamento Erlang → wasm, mas sobre uma biblioteca `Term` em botopink compilada pelo backend GC** — os preludes, o `COMPTIME REPLY` e os handles ETF ficam; `term.zig`, `otp/*` e `term_faces.zig` saem.
+- **Medido.** Todo valor do comptime é um termo `i32` de `term.zig`; ~3 700 linhas de Zig servem `lists:*`, `maps:*`, `io_lib:format`, `json:encode`, ETF; o `std_wasm.wasm` é o único build delas. O s3 nomeia "as funções de termos Erlang de que o comptime ainda precisa" em `.bp`, mas nenhuma mudança no rebaixamento.
+- **Opções.** (A) Os corpos do comptime compilados diretamente pelo backend GC do wasm, a camada Erlang apagada. (B) Como proposto. (C) A biblioteca de termos mantida em Zig como um módulo só do comptime (contra o apagamento da 544).
+- **Recomendação.** (B); (A) como passo posterior.
+- **Bloqueia.** O s3 P4; `comptime/runtime/wat/**` inteiro.
+
+#### 164-s3-b · "Todo snapshot de comptime inalterado": a resposta, ou também a listagem `COMPTIME WAT`? (434 (5); 164 s3)
+- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(a): o `COMPTIME REPLY` e o texto de toda célula inalterados; o `COMPTIME WAT` regravado uma vez por peça, lido um a um** — a listagem é o texto do rebaixamento, que o s3 reescreve.
+- **Medido.** A caixa do s3 diz "todo snapshot de comptime … inalterado"; um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado.
+- **Opções.** (a) Como proposto. (b) A listagem também fixada — impossível sob qualquer resposta à 164-s3-a.
+- **Recomendação.** (a).
+- **Bloqueia.** A linha do gate do s3.
+
+#### 164-s3-c · Os tipos de uma folha `.wat`: os `$str` / `$arr_any` do codegen pelo nome, ou declarados no `.wat`? (442, 544; 164 s3)
+- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(a): pelo nome, resolvidos pelo leitor contra a tabela de tipos do codegen; um `.wat` que declara um tipo é recusado** — uma representação só (442 (3)).
+- **Medido.** O s2 declara um tipo GC por forma de valor na seção de tipos do módulo; uma folha que recebe uma string tem de receber o `$str` do codegen.
+- **Opções.** (a) Como proposto. (b) `(type …)` escrito no arquivo, checado igual ao do codegen.
+- **Recomendação.** (a).
+- **Bloqueia.** O s3 P0.
+
+#### 164-s3-d · As tabelas de caixa Unicode: código `.bp` gerado, ou dados por `@embed` quando o wasm rebaixar `Asset`? (443, 519; 164 s3)
+- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(a): `.bp` gerado agora, `@embed` quando a 519 chegar ao wasm** (o tamanho do binário medido então).
+- **Medido.** O s3 constrói as tabelas "por `@embed`, 519"; o codegen wasm ainda não tem caminho para `Asset`.
+- **Opções.** (a) Como proposto. (b) Esperar o `@embed` no wasm.
+- **Recomendação.** (a).
+- **Bloqueia.** O `toUpper` / `toLower` do s3 P1.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
