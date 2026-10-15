@@ -66,7 +66,7 @@ program builds may live until exit on wasmtime; **(b)** the codegen detects cycl
 a wasmtime that follows cycles. **Recommendation (a)**. **Blocks:** s2 P6, the bounded-memory cells — nothing before.
 
 Answer (tick one per question):
-- [ ] (a) the codegen breaks its own cycles; the wasmtime CLI pinned; 544 amended **(recommended)**
+- [x] (a) the codegen breaks its own cycles; the wasmtime CLI pinned; 544 amended **(recommended)**
 - [ ] (b) the codegen detects cycles
 - [ ] (c) wait for a wasmtime that follows cycles
 

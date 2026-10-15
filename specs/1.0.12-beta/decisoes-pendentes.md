@@ -68,7 +68,7 @@ a 544 removeu); **(c)** esperar um wasmtime que siga ciclos. **Recomendação (a
 memória limitada — nada antes.
 
 Resposta (marque uma por pergunta):
-- [ ] (a) o codegen quebra os próprios ciclos; o CLI do wasmtime fixado; a 544 emendada **(recomendada)**
+- [x] (a) o codegen quebra os próprios ciclos; o CLI do wasmtime fixado; a 544 emendada **(recomendada)**
 - [ ] (b) o codegen detecta ciclos
 - [ ] (c) esperar um wasmtime que siga ciclos
 
