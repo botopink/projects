@@ -319,6 +319,9 @@ poolAcquire() {
         # builds' memory peaks never coincide.
         last="$(cat "$pool/last_admit" 2>/dev/null || echo 0)"
         if [ "$used" -gt 0 ] && [ $(( $(date +%s) - last )) -lt "$POOL_STAGGER" ]; then free=0; fi
+        # A gate that asks for the whole pool (botopink-lang's, which sizes itself to the machine, run by a commit
+        # hook under `exec --jobs <capacity>`) starts only on an empty pool and then holds all of it.
+        if [ "$want" -ge "$cap" ] && [ "$used" -gt 0 ]; then free=0; fi
         # First come, first served: a gate is admitted only when no live gate has waited longer, so a thread
         # running commands back to back never starves one that waits.
         if [ "$free" -ge 1 ] && poolOlderWaiter "$id"; then free=0; fi

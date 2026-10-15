@@ -91,7 +91,9 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   check`, or a library `git commit` and the hook it runs: it waits for a free job, holds `--jobs <N>`
   (default a quarter of the capacity) while the command runs, and gives them back when it ends; the command's
   exit status is its own. A thread runs every heavy command through it, so threads work in parallel and
-  only their executions queue.
+  only their executions queue. `--jobs` at or above the capacity waits for an empty pool and holds all of
+  it: a `git commit` in botopink-lang runs so (`exec --jobs 10 <name> -- git commit …`), its hook's gate
+  sizing itself to the machine.
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
   for a task; the report names each one. Specs never name them.
 - It runs and reports; landing stays the coordinator's.
