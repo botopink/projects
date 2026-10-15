@@ -40,6 +40,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 5 | 541-c — a lambda generator | B-88 box 2 | (a) no |
 | 6 | 164-s3-b, 164-s3-d — s3's comptime snapshots; Unicode tables | s3's gate line; s3 P1 | (a), (a) |
 | 7 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
+| 8 | mark-a — a marker on every body that compiles specially | 541-c (B-88 box 2) | (a) for each open point |
 
 **1 · 546-b — rakun's sidecars unwind through a call 546 now wraps.** rakun's navigation signals and `rakun_problem`
 unwind on purpose: an Erlang sidecar throws, and a catcher up the stack reads the term —
@@ -103,9 +104,10 @@ generator; **(c)** any lambda whose expected type is `@Iterator`. **Recommendati
 Answer (tick one per question):
 - [ ] (a) no — a generator's expression form is `iter loop` **(recommended)**
 - [ ] (b) a typed `fn() -> @Iterator<T>` expression is a generator
-- [x] (c) any lambda whose expected type is `@Iterator`
+- [ ] (c) any lambda whose expected type is `@Iterator`
 
 *Maintainer's note (2026-10-15):* `@Iterator<T>` need not be a builtin — an ordinary std type `Iterator<T>`; to be filed as a question of its own.
+*Maintainer's note (2026-10-15):* 541-c waits on mark-a (item 8): a lambda or `fn` expression is a generator when it carries the `iter` marker, its type agreeing with its expected type (147) — (c) with a marker.
 
 **6 · 164-s3-b and 164-s3-d — s3's smaller points.** (b) s3's box says "every comptime snapshot unchanged", but a
 comptime snapshot holds both the reply and the lowered module's listing (`COMPTIME WAT`), which s3 rewrites by design.
@@ -128,6 +130,29 @@ Answer (tick one per question):
 - [ ] (a) std gives `FsError` a `message()` **(recommended)**
 - [ ] (b) each library keeps its own helper
 - [ ] (c) a generic `mapErr` on `@Result` (independent of (a))
+
+**8 · mark-a — a marker on every body that compiles specially (the maintainer, 2026-10-15).** Today the return type
+decides how a body compiles: `@Iterator` makes a generator, `@Task` a state machine, `@Result` admits `try` / `throw`,
+`@Component` a render lambda. The maintainer's proposal: a function or lambda whose body writes `yield`, `await`, `use`,
+`try` or `throw` says so with a marker, and the types can then become ordinary std types. Fixed by the maintainer:
+`result` allows `try`, `throw`; `async` allows `await`, `try`, `throw`; `component` allows `use`, `await`, `try`,
+`throw`, a `throw` reaching the nearest `ErrorBoundary`; `iter` allows `yield` only (`async iter` is a `Stream`). Open:
+the three points below (full entry in § Machine 2). **Blocks:** 541-c (B-88 box 2).
+
+```bp
+fn iter contar() -> Iterator<i32> { yield 1; yield 2 }
+fn async buscar(id: i32) -> Task<Result<User, HttpError>> { try await http.get("/users/" + id) }
+fn component Pagina(id: i32) -> View { val tema = use(Tema); val u = try await buscar(id); Card(u, tema) }
+usar(iter { -> yield 1; yield 2 })
+```
+
+Answer (tick one per point):
+- [ ] (1)(a) a lambda's marker before the brace: `iter { -> yield 1 }`, `async { x -> await f(x) }` — no name reserved **(recommended)**
+- [ ] (1)(b) after the brace: `{ iter -> yield 1 }` — `iter`, `async`, `component`, `result` reserved
+- [ ] (2)(a) `result` spelled `result` **(recommended)**
+- [ ] (2)(b) spelled `try`, already a keyword: `fn try parse(…)`
+- [ ] (3)(a) the `@` types become std types in a step of their own, after the markers **(recommended)**
+- [ ] (3)(b) in the same step as the markers
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1211,6 +1236,28 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) A typed `fn() -> @Iterator<T> { … }` expression is a generator (its return is written); a bare lambda is not. (c) Both, by expected type (147 extended to `@Iterator`).
 - **Recommendation.** (a); (b) acceptable, one rule more.
 - **Blocks.** B-88 box 2 only.
+
+#### mark-a · A marker on every body that compiles specially: `iter`, `async`, `component`, `result` (decisions 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525; 541-c; 144 B-88)
+- **Proposed (the maintainer, 2026-10-15; its open points awaiting the maintainer):** a function or lambda whose body writes `yield`, `await`, `use`, `try` or `throw` says so with a marker; the marker says how the body compiles, the return type only what it answers — so `Iterator`, `Task`, `Result`, `Component` and `Stream` can become ordinary std types (the maintainer's note at 541-c).
+  1. **The markers.** `result`: `try`, `throw` (`return v` is `Ok(v)`), answers `Result<T, E>`. `async`: `await`, `try`, `throw`, answers `Task<T>`, or `Task<Result<T, E>>` when it writes `try` / `throw` (a `Task<T>` does not fail, 432). `component`: `use`, `await`, `try`, `throw`, answers `Component<R>`; whether it is asynchronous stays the hooks list's mark (375); a `throw` reaches the nearest `ErrorBoundary` (414, 504). `iter`: `yield` only, answers `Iterator<T>`; an iterator that fails yields `Error(e)` itself. `async iter`: `yield` and `await`, answers `Stream<T>`; no other combination.
+  2. **Placement.** After `fn` in a declaration (`fn iter contar()`) and in a `fn` expression (`fn iter () -> …`); on a lambda as open point (1) says.
+  3. **Refusals.** The keyword without its marker (`yield-without-generator`, `await-outside-async`, …, the hint naming the marker); a marker whose return type differs (`marker-type-mismatch`); a marked lambda whose expected type differs (`xs.forEach(iter { x -> yield x })`: an `iter` lambda where `fn(x: T)` is expected); a marked lambda with no expected type and no annotation (147).
+  4. **The type alone needs no marker.** A function that hands on an `Iterator`, a `Task` or a `Result` without writing the keyword is written as today (`fn buscar(id: i32) -> Task<User> { http.get(…) }`).
+  5. **Unchanged.** `iter loop { … }` (125) and `async { … }` (523) as block forms; 147 (a lambda's type is its expected type's, the marker agreeing with it).
+  ```bp
+  fn result parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
+  fn async buscar(id: i32) -> Task<Result<User, HttpError>> { try await http.get("/users/" + id) }
+  fn component Pagina(id: i32) -> View { val tema = use(Tema); val u = try await buscar(id); Card(u, tema) }
+  fn usar(gen: fn() -> Iterator<i32>) { for x in gen() { … } }   // consumes: no marker
+  usar(iter { -> yield 1; yield 2 })                              // a generator by its marker and expected type
+  ```
+- **Measured.** Today the return type decides: `@Iterator` makes a generator (541 (2)), `@Task` a state machine (392), `@Result` admits `try` / `throw` (431), `@Component` a render lambda (388); a component's asynchrony is inferred (375). Nothing in a signature or on a lambda says its body is special; `{ result -> result + 1 }` is today a lambda with a parameter named `result`.
+- **Options (the open points).**
+  (1) A lambda's marker: (a) ★ before the brace — `iter { -> yield 1 }`, `async { x -> await f(x) }`; `->` already tells a lambda from a block (525), so `async { … }` stays the block and no name is reserved; (b) after the brace — `{ iter -> yield 1 }`; the four words are reserved, no parameter or binding named `result`.
+  (2) `result`'s spelling: (a) ★ `result`, a marker only after `fn` or before a lambda's brace; (b) `try`, already a keyword (`fn try parse(…)`).
+  (3) The `@` types: (a) ★ `Iterator`, `Task`, `Result`, `Component`, `Stream` become std types in a step of their own once the markers land; (b) in the same step.
+- **Recommendation.** (a) for each: (1) reserves no name and gives a lambda and a block one rule; (2) names what the body answers; (3) keeps the markers' step mechanical. Migration: a codemod adds the marker wherever a body writes the keyword, one landing per repository. Amends 541 (2), 375 (a component's marker is written; its asynchrony stays inferred), 431 (`return v` as `Ok(v)` only under `result` or `async`); answers 541-c.
+- **Blocks.** 541-c (B-88 box 2).
 
 #### 485-b · A refusal's printed line: `error[<code>]: <message>` or `error: <code>: <message>`? (decisions 475 (2), 485; 144 B-88)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): one form, `error[<code>]: <message>`, the notation every decision and `conformance/AGENTS.md` already write — the checker's code leaves the message text and is printed by the one printer; the 577 snapshot lines are rewritten mechanically in that commit.**

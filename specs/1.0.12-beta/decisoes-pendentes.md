@@ -40,6 +40,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 5 | 541-c — uma lambda geradora | a caixa 2 do B-88 | (a) não |
 | 6 | 164-s3-b, 164-s3-d — os snapshots de comptime do s3; as tabelas Unicode | a linha do gate do s3; o s3 P1 | (a), (a) |
 | 7 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
+| 8 | mark-a — um marcador em todo corpo que compila de forma especial | 541-c (a caixa 2 do B-88) | (a) para cada ponto aberto |
 
 **1 · 546-b — os sidecars do rakun desenrolam por uma chamada que a 546 agora envolve.** Os sinais de navegação e o
 `rakun_problem` do rakun desenrolam de propósito: um sidecar Erlang lança, e um capturador acima na pilha lê o termo —
@@ -107,9 +108,10 @@ um gerador; **(c)** qualquer lambda cujo tipo esperado seja `@Iterator`. **Recom
 Resposta (marque uma por pergunta):
 - [ ] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
 - [ ] (b) uma expressão tipada `fn() -> @Iterator<T>` é um gerador
-- [x] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
+- [ ] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
 
 *Nota do mantenedor (2026-10-15):* `@Iterator<T>` não precisa ser um builtin — um tipo comum da std, `Iterator<T>`; a ser registrada como uma pergunta própria.
+*Nota do mantenedor (2026-10-15):* a 541-c espera a mark-a (item 8): uma lambda ou expressão `fn` é um gerador quando leva o marcador `iter`, o seu tipo concordando com o seu tipo esperado (147) — a (c) com um marcador.
 
 **6 · 164-s3-b e 164-s3-d — os pontos menores do s3.** (b) A caixa do s3 diz "todo snapshot de comptime inalterado",
 mas um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado (`COMPTIME WAT`), que o s3 reescreve por
@@ -133,6 +135,30 @@ Resposta (marque uma por pergunta):
 - [ ] (a) a std dá a `FsError` um `message()` **(recomendada)**
 - [ ] (b) cada biblioteca mantém o seu auxiliar
 - [ ] (c) um `mapErr` genérico em `@Result` (independente da (a))
+
+**8 · mark-a — um marcador em todo corpo que compila de forma especial (o mantenedor, 2026-10-15).** Hoje o tipo de
+retorno decide como um corpo compila: `@Iterator` faz um gerador, `@Task` uma máquina de estados, `@Result` admite
+`try` / `throw`, `@Component` uma lambda de render. A proposta do mantenedor: uma função ou lambda cujo corpo escreve
+`yield`, `await`, `use`, `try` ou `throw` o diz com um marcador, e os tipos podem então virar tipos comuns da std.
+Fixado pelo mantenedor: `result` permite `try`, `throw`; `async` permite `await`, `try`, `throw`; `component` permite
+`use`, `await`, `try`, `throw`, um `throw` chegando ao `ErrorBoundary` mais próximo; `iter` permite só `yield`
+(`async iter` é um `Stream`). Abertos: os três pontos abaixo (a entrada completa na § Máquina 2). **Bloqueia:** a 541-c
+(a caixa 2 do B-88).
+
+```bp
+fn iter contar() -> Iterator<i32> { yield 1; yield 2 }
+fn async buscar(id: i32) -> Task<Result<User, HttpError>> { try await http.get("/users/" + id) }
+fn component Pagina(id: i32) -> View { val tema = use(Tema); val u = try await buscar(id); Card(u, tema) }
+usar(iter { -> yield 1; yield 2 })
+```
+
+Resposta (marque uma por ponto):
+- [ ] (1)(a) o marcador de uma lambda antes da chave: `iter { -> yield 1 }`, `async { x -> await f(x) }` — nenhum nome reservado **(recomendada)**
+- [ ] (1)(b) depois da chave: `{ iter -> yield 1 }` — `iter`, `async`, `component`, `result` reservados
+- [ ] (2)(a) `result` escrito `result` **(recomendada)**
+- [ ] (2)(b) escrito `try`, já uma palavra reservada: `fn try parse(…)`
+- [ ] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores **(recomendada)**
+- [ ] (3)(b) no mesmo passo dos marcadores
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1216,6 +1242,28 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) Uma expressão tipada `fn() -> @Iterator<T> { … }` é um gerador (o seu retorno é escrito); uma lambda simples não. (c) Ambas, pelo tipo esperado (a 147 estendida a `@Iterator`).
 - **Recomendação.** (a); (b) aceitável, uma regra a mais.
 - **Bloqueia.** Só a caixa 2 do B-88.
+
+#### mark-a · Um marcador em todo corpo que compila de forma especial: `iter`, `async`, `component`, `result` (decisões 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525; 541-c; 144 B-88)
+- **Proposto (o mantenedor, 2026-10-15; os seus pontos abertos aguardando o mantenedor):** uma função ou lambda cujo corpo escreve `yield`, `await`, `use`, `try` ou `throw` o diz com um marcador; o marcador diz como o corpo compila, o tipo de retorno só o que ele responde — então `Iterator`, `Task`, `Result`, `Component` e `Stream` podem virar tipos comuns da std (a nota do mantenedor na 541-c).
+  1. **Os marcadores.** `result`: `try`, `throw` (`return v` é `Ok(v)`), responde `Result<T, E>`. `async`: `await`, `try`, `throw`, responde `Task<T>`, ou `Task<Result<T, E>>` quando escreve `try` / `throw` (um `Task<T>` não falha, 432). `component`: `use`, `await`, `try`, `throw`, responde `Component<R>`; se ele é assíncrono continua a marca da lista de hooks (375); um `throw` chega ao `ErrorBoundary` mais próximo (414, 504). `iter`: só `yield`, responde `Iterator<T>`; um iterador que falha faz ele mesmo `yield Error(e)`. `async iter`: `yield` e `await`, responde `Stream<T>`; nenhuma outra combinação.
+  2. **Posição.** Depois de `fn` numa declaração (`fn iter contar()`) e numa expressão `fn` (`fn iter () -> …`); numa lambda, como diz o ponto aberto (1).
+  3. **Recusas.** A palavra sem o seu marcador (`yield-without-generator`, `await-outside-async`, …, a dica nomeando o marcador); um marcador cujo tipo de retorno difere (`marker-type-mismatch`); uma lambda marcada cujo tipo esperado difere (`xs.forEach(iter { x -> yield x })`: uma lambda `iter` onde se espera `fn(x: T)`); uma lambda marcada sem tipo esperado e sem anotação (147).
+  4. **O tipo sozinho não precisa de marcador.** Uma função que repassa um `Iterator`, um `Task` ou um `Result` sem escrever a palavra é escrita como hoje (`fn buscar(id: i32) -> Task<User> { http.get(…) }`).
+  5. **Inalterados.** `iter loop { … }` (125) e `async { … }` (523) como formas de bloco; a 147 (o tipo de uma lambda é o do seu tipo esperado, o marcador concordando com ele).
+  ```bp
+  fn result parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
+  fn async buscar(id: i32) -> Task<Result<User, HttpError>> { try await http.get("/users/" + id) }
+  fn component Pagina(id: i32) -> View { val tema = use(Tema); val u = try await buscar(id); Card(u, tema) }
+  fn usar(gen: fn() -> Iterator<i32>) { for x in gen() { … } }   // consumes: no marker
+  usar(iter { -> yield 1; yield 2 })                              // a generator by its marker and expected type
+  ```
+- **Medido.** Hoje o tipo de retorno decide: `@Iterator` faz um gerador (541 (2)), `@Task` uma máquina de estados (392), `@Result` admite `try` / `throw` (431), `@Component` uma lambda de render (388); a assincronia de um componente é inferida (375). Nada numa assinatura ou numa lambda diz que o seu corpo é especial; `{ result -> result + 1 }` é hoje uma lambda com um parâmetro chamado `result`.
+- **Opções (os pontos abertos).**
+  (1) O marcador de uma lambda: (a) ★ antes da chave — `iter { -> yield 1 }`, `async { x -> await f(x) }`; o `->` já distingue uma lambda de um bloco (525), então `async { … }` continua o bloco e nenhum nome é reservado; (b) depois da chave — `{ iter -> yield 1 }`; as quatro palavras reservadas, nenhum parâmetro ou binding chamado `result`.
+  (2) A grafia de `result`: (a) ★ `result`, um marcador só depois de `fn` ou antes da chave de uma lambda; (b) `try`, já uma palavra reservada (`fn try parse(…)`).
+  (3) Os tipos `@`: (a) ★ `Iterator`, `Task`, `Result`, `Component`, `Stream` viram tipos da std num passo próprio, depois que os marcadores pousarem; (b) no mesmo passo.
+- **Recomendação.** (a) para cada: (1) não reserva nenhum nome e dá a uma lambda e a um bloco uma regra só; (2) nomeia o que o corpo responde; (3) mantém mecânico o passo dos marcadores. Migração: um codemod acrescenta o marcador onde um corpo escreve a palavra, um pouso por repositório. Emenda a 541 (2), a 375 (o marcador de um componente é escrito; a sua assincronia continua inferida), a 431 (`return v` como `Ok(v)` só sob `result` ou `async`); responde a 541-c.
+- **Bloqueia.** A 541-c (a caixa 2 do B-88).
 
 #### 485-b · A linha impressa de uma recusa: `error[<code>]: <message>` ou `error: <code>: <message>`? (decisões 475 (2), 485; 144 B-88)
 - **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): uma forma só, `error[<code>]: <message>`, a notação que toda decisão e o `conformance/AGENTS.md` já escrevem — o código do checker sai do texto da mensagem e é impresso pelo único impressor; as 577 linhas de snapshot são reescritas mecanicamente nesse commit.**
