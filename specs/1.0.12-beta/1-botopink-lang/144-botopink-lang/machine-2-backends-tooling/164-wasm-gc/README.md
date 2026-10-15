@@ -162,6 +162,8 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       `abort_text_overflow`, `int_division_min_by_minus_one`'s wasm departure deleted
 - [ ] a GC module with exceptions keeps the checked site in GC (today it falls back to linear memory for it: `panic_raise`
       has no GC form)
+- [ ] an untyped fn expression with a `string` parameter writes its text (`fn(s) { return s + "x"; }` prints `672` on
+      wasm today; found by 144 B-116 P1) — a cell on every target
 - [ ] `failure.attempt` over an `i64` answer (today refused on wasm: "would narrow an `i64` value to an `i32` slot") — an
       `i64::MIN / -1` line in `abort_text_overflow` under `attempt`
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell

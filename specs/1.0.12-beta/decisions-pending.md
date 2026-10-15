@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**130 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**132 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1169,6 +1169,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** Each point (a) or (b) above.
 - **Recommendation.** (a) for each — the most restrictive reading, every cell's answer unchanged.
 - **Blocks.** Nothing built waits (P1 builds (a)); B-116-a fixes what the codemod (P2, P3) writes.
+
+#### B-116-h · A generator's body: started by the call, or by the first `next()`? (decisions 541, 553; 144 B-116)
+- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): lazily — calling a generator runs nothing; the body starts at the first item asked for**, on every target.
+- **Measured.** B-116 P1 found that a generator lambda runs its body up to the first `yield` when called on erlang, beam and wasm, while commonJS (a JS generator) waits for the first item; unmarked generator functions not yet measured. No decision states the order; it is observable through a side effect before the first `yield`.
+- **Options.** (a) Lazy everywhere (JS's, and what an `Iter<T, R>` value promises). (b) Eager up to the first `yield` everywhere.
+- **Recommendation.** (a) — a value that is only a description of work does none until asked; erlang, beam and wasm change.
+- **Blocks.** One answer on every target for a side effect before a generator's first `yield`; a cell either way.
+
+#### B-116-i · The choices B-116 P1 made where no decision speaks (decision 553, 147; 144 B-116)
+- **Proposed (opus, 2026-10-15; awaiting the maintainer; built as listed):** (1) an expected return type that is still a free type variable accepts any marker; (2) an expected type that is not a function type is left to ordinary unification; (3) an `implement` method is checked against its marker only when it writes a return type; (4) a non-yielding marked behavior or type method stays a factory in P1 (the codegen reads the old rule until P4); (5) `component { -> … }` is checked, then refused at the marker with `component-lambda-not-lowered` until B-116 (iii).
+- **Measured.** Each is a case the decision's text and 147 leave open; the cells `marker_*` hold the built answers where they are observable.
+- **Options.** Each point as built, or (b) refused.
+- **Recommendation.** As built for (4) and (5) (temporary by their step); (1)–(3) refused once the codemod has run (P4), the stricter reading.
+- **Blocks.** B-116 P4's refusal list.
 
 #### 518-a · Two `needs:` refusals no decision states (decision 518 (1); 144 B-07)
 - **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): both stay refusals, each with a cell** — `needs:` on `@External.Node` / `@External.Erlang`, and `needs:` given as anything but a list of `WasmNeed` values; the most restrictive reading (67).

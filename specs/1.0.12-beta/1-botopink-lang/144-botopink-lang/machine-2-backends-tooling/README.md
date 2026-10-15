@@ -2156,6 +2156,24 @@ gates the machine runs out of memory. Each module answers one refusal; nothing i
       diagnostics) and fixed; that check under 1 GB; a unit test or a cell the hook runs that builds a project of many
       refused modules and bounds its peak (478)
 
+### B-118 — beam: an `iter loop` as a lambda's tail aborts
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-116 P1: a lambda whose tail expression is an `iter loop { … }` aborts on beam (`function_clause`); commonJS,
+erlang and wasm answer the generator. B-116's marked lambda writes `return <block>;` to step around it.
+
+- [ ] an `iter loop` as a lambda's tail answers its generator on beam — a cell on every target, red on beam today
+
+### B-119 — commonJS: an adopted behavior `default fn … -> @Task` is emitted without `async`
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-116 P1: a type adopting a behavior's `default fn` that answers `@Task<T>` and awaits gets a non-`async` JS
+function, which Node refuses ("await is only valid in async functions"); erlang, beam and wasm answer.
+
+- [ ] the adopted default body is emitted `async` on commonJS — a cell on every target, red on commonJS today
+
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
 **Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),

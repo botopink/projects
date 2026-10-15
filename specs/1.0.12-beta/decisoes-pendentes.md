@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**130 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**132 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1171,6 +1171,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** Cada ponto (a) ou (b) acima.
 - **Recomendação.** (a) para cada — a leitura mais restritiva, a resposta de toda célula inalterada.
 - **Bloqueia.** Nada construído espera (o P1 constrói (a)); B-116-a fixa o que o codemod (P2, P3) escreve.
+
+#### B-116-h · O corpo de um gerador: iniciado pela chamada, ou pelo primeiro `next()`? (decisões 541, 553; 144 B-116)
+- **Proposta (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): preguiçoso — chamar um gerador não executa nada; o corpo começa no primeiro item pedido**, em todo alvo.
+- **Medido.** O B-116 P1 achou que uma lambda geradora executa o seu corpo até o primeiro `yield` quando chamada no erlang, no beam e no wasm, enquanto o commonJS (um gerador JS) espera o primeiro item; funções geradoras sem marcador ainda não medidas. Nenhuma decisão fixa a ordem; ela é observável por um efeito colateral antes do primeiro `yield`.
+- **Opções.** (a) Preguiçoso em todo lugar (o do JS, e o que um valor `Iter<T, R>` promete). (b) Antecipado até o primeiro `yield` em todo lugar.
+- **Recomendação.** (a) — um valor que é só a descrição de um trabalho não faz nada até ser pedido; erlang, beam e wasm mudam.
+- **Bloqueia.** Uma resposta em todo alvo para um efeito colateral antes do primeiro `yield` de um gerador; uma célula em qualquer caso.
+
+#### B-116-i · As escolhas que o B-116 P1 fez onde nenhuma decisão fala (decisões 553, 147; 144 B-116)
+- **Proposta (opus, 2026-10-15; aguardando o mantenedor; construída como listado):** (1) um tipo de retorno esperado que ainda é uma variável de tipo livre aceita qualquer marcador; (2) um tipo esperado que não é tipo de função fica para a unificação comum; (3) um método de `implement` é verificado contra o seu marcador só quando escreve um tipo de retorno; (4) um método marcado de behavior ou de tipo que não faz yield continua uma fábrica no P1 (o codegen lê a regra antiga até o P4); (5) `component { -> … }` é verificado e então recusado no marcador com `component-lambda-not-lowered` até o B-116 (iii).
+- **Medido.** Cada um é um caso que o texto da decisão e a 147 deixam em aberto; as células `marker_*` guardam as respostas construídas onde elas são observáveis.
+- **Opções.** Cada ponto como construído, ou (b) recusado.
+- **Recomendação.** Como construído para (4) e (5) (temporários pelo seu passo); (1)–(3) recusados depois que o codemod rodar (P4), a leitura mais estrita.
+- **Bloqueia.** A lista de recusas do B-116 P4.
 
 #### 518-a · Duas recusas de `needs:` que nenhuma decisão afirma (decisão 518 (1); 144 B-07)
 - **Proposto (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): as duas continuam recusas, cada uma com uma célula** — `needs:` em `@External.Node` / `@External.Erlang`, e `needs:` dado como qualquer coisa que não uma lista de valores `WasmNeed`; a leitura mais restritiva (67).

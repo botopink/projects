@@ -86,6 +86,8 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-114 — commonJS: an `f64` bound to a top-level generic fn's `T` is written `4.0` (521) — the type's print shape handed in at each direct call (`generic_float_text`, `generic_float_record_text`)
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [ ] 144 B-117 — `botopink check` of validation's refused-marker project peaks at 8 GB (OOM with other gates) · nothing
+- [ ] 144 B-118 — beam: an `iter loop` as a lambda's tail aborts (`function_clause`) · nothing
+- [ ] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted without `async` · nothing
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-99 (rest) — decision 562: a function reading a `comptime` parameter's `.value` expanded at its call site, its run-time statements emitted there (165 s5 waits on it) · nothing
@@ -320,7 +322,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open: 130 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
+last section. Open: 132 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:
