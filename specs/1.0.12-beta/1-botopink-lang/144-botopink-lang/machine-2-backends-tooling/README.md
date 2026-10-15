@@ -2031,11 +2031,11 @@ declaring or importing it (`TS2304: Cannot find name 'Declared'`). Every `confor
 `mocks_handwritten_double`, `module_init`, …): the walk builds it as a program and the build answers `no source
 files found in src/` — a project suite holds `test/` alone.
 
-- [ ] a `.d.ts` that names a compiler type (`Declared`, and the other records the compiler splices) declares it or
+- [x] a `.d.ts` that names a compiler type (`Declared`, and the other records the compiler splices) declares it or
       imports it; the cell checked by `tsc`
-- [ ] the walk builds a project suite the way `botopink test` does (its `test/` modules), or reads it by what it holds;
+- [x] the walk builds a project suite the way `botopink test` does (its `test/` modules), or reads it by what it holds;
       no suite left out by name
-- [ ] `scripts/tsc-check.sh` green on `feat`, read from `test.yml` on GitHub
+- [x] `scripts/tsc-check.sh` green on `feat`, read from `test.yml` on GitHub
 
 ### B-109 — beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop
 

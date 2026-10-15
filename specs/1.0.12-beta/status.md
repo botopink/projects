@@ -80,7 +80,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 144 botopink-lang
 
 - [x] 144 B-103 — erlang and beam: `try … catch` handles only its operand's `Error`; a `host`, `panic` or `crash` raise propagates (431, 546); rakun-app's `navigation_test` test back
-- [ ] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) · nothing
+- [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-98 — a module named like its package reports every `pub` name declared twice · nothing
 - [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · question B-99-a (the form: a `comptime` default answered for the caller, recommended)
