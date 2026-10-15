@@ -2095,7 +2095,7 @@ of its own.
 cells. `modules/compiler-cli/tests/analysis_equivalence.sh` still reads `conformance/<package>/botopink.json` and
 `conformance/<package>/<cell>`, and `build.zig`'s comment names the same roots.
 
-- [ ] the script reads each cell at its feature directory, with the feature's manifest; `zig build
+- [x] the script reads each cell at its feature directory, with the feature's manifest; `zig build
       test-analysis-equivalence` green in the meta checkout
 
 ### B-113 — `botopink cell check` keeps a cell's path inside its workspace (decision 548, front 165 s9)
@@ -2107,8 +2107,8 @@ globs (`cell.zig`'s copy, the manifest's `workspaceOf` / `listsMember` matching 
 members are `<package>/*` or `*/*` lists the cell in place but not its flat copy: the cell answers `unresolved import
 source "rakun"`. So rakun's suite carries one manifest per feature instead of one root.
 
-- [ ] the copy keeps the cell's path relative to the workspace root, so a nested member glob finds it; a cell (a
-      workspace with `group/*` members, a cell two levels down) red today
+- [x] the copy keeps the cell's path relative to the workspace root, so a nested member glob finds it; a cell (a
+      workspace with `group/*` members, a cell two levels down) red today — `workspace_nested_members`
 - [ ] rakun's feature manifests folded into one `conformance/botopink.json` (a 150 consumer row; 165 s9's box)
 
 ### B-114 — commonJS: an `f64` passed as a type parameter is written the JS engine's way (decision 521)
