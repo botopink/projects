@@ -40,7 +40,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 5 | 541-c — uma lambda geradora | a caixa 2 do B-88 | respondida com a mark-a: (c) com o marcador `iter` |
 | 6 | 164-s3-b, 164-s3-d — os snapshots de comptime do s3; as tabelas Unicode | a linha do gate do s3; o s3 P1 | (a), (a) |
 | 7 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
-| 8 | mark-a — um marcador em todo corpo que compila de forma especial | o passo dos marcadores | respondida exceto (3): (a) |
+| 8 | mark-a — um marcador em todo corpo que compila de forma especial | o passo dos marcadores | respondida (aguardando o seu número) |
 
 **1 · 546-b — os sidecars do rakun desenrolam por uma chamada que a 546 agora envolve.** Os sinais de navegação e o
 `rakun_problem` do rakun desenrolam de propósito: um sidecar Erlang lança, e um capturador acima na pilha lê o termo —
@@ -137,8 +137,8 @@ Resposta (marque uma por pergunta):
 - [ ] (b) cada biblioteca mantém o seu auxiliar
 - [ ] (c) um `mapErr` genérico em `@Result` (independente da (a))
 
-**8 · mark-a — um marcador em todo corpo que compila de forma especial (o mantenedor, 2026-10-15).** Respondida,
-exceto o ponto (3) (a entrada completa na § Máquina 2): um padrão só, `[marcador] fn nome(params) -> Tipo<Valor[, Erro]>`.
+**8 · mark-a — um marcador em todo corpo que compila de forma especial (o mantenedor, 2026-10-15).** Respondida
+(a entrada completa na § Máquina 2): um padrão só, `[marcador] fn nome(params) -> Tipo<Valor[, Erro]>`.
 O marcador — `iter`, `async`, `async iter`, `component` — vem antes de `fn` e antes da chave de uma lambda e diz como
 o corpo compila; o tipo de retorno é escrito inteiro, com o nome do seu marcador (`Iter`, `Async`, `AsyncIter`,
 `Component`), e uma falha é o segundo parâmetro do tipo em todos (`X<T, E>`, `Result<T, E>` sem marcador). `result`
@@ -158,8 +158,8 @@ xs.map({ s -> try toInt(s) })                       // E vindo do esperado fn(st
 for await linha in try linhas(f) { … }              // um FsError encerra o laço e se propaga
 ```
 
-Resposta (marque uma):
-- [ ] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores **(recomendada)**
+Resposta:
+- [x] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores, em três peças **(recomendada)**
 - [ ] (3)(b) no mesmo passo dos marcadores
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
@@ -1227,7 +1227,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Bloqueia.** Só a caixa 2 do B-88.
 
 #### mark-a · Um marcador em todo corpo que compila de forma especial: `iter`, `async`, `async iter`, `component` (decisões 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525, 539, 540; 541-c; 144 B-88)
-- **Respondida (o mantenedor, 2026-10-15; aguardando o seu número em `decisions-taken.md`; o ponto (3) aberto):** um padrão para todo corpo, `[marcador] fn nome(params) -> Tipo<Valor[, Erro]>` — o marcador diz como o corpo compila, o tipo de retorno é escrito inteiro e é o que um chamador recebe.
+- **Respondida (o mantenedor, 2026-10-15; aguardando o seu número em `decisions-taken.md`):** um padrão para todo corpo, `[marcador] fn nome(params) -> Tipo<Valor[, Erro]>` — o marcador diz como o corpo compila, o tipo de retorno é escrito inteiro e é o que um chamador recebe.
   1. **Os marcadores, antes de `fn` e antes da chave de uma lambda.** `iter` (`yield`), `async` (`await`), `async iter` (`yield` e `await`), `component` (`use`, `await`); `pub` primeiro (`pub async fn`); uma expressão `fn` da mesma forma (`iter fn() -> Iter<i32> { … }`). Uma lambda: `iter { -> yield 1 }`, `async { x -> await f(x) }` — o `->` distingue uma lambda de um bloco (525), então `async { … }` (523) e `iter loop { … }` (125) continuam as formas de bloco. Nenhuma outra combinação. Antes de um `{` as três palavras ficam tomadas: uma função chamada `iter`, `async` ou `component` chamada com uma lambda final escreve os seus parênteses (`component({ -> … })`, não `component { -> … }`, 525); como binding, parâmetro ou campo cada uma continua um nome.
   2. **O tipo tem o nome do seu marcador, escrito inteiro.** `Iter<T>`, `Async<T>`, `AsyncIter<T>`, `Component<R>`; um corpo sem marcador responde `T` ou `Result<T, E>`. `@Iterator`, `@Task`, `@Stream` e `@Component` são renomeados (`@Stream` → `AsyncIter`, substituindo o `AsyncIterator` do ponto (4)); uma função que não responde nada sob `async` escreve `Async<void>`. Um marcador cujo tipo de retorno não é o seu tipo é recusado (`marker-type-mismatch`).
   3. **Uma falha mora no tipo, igual em todos.** Cada tipo é `X<T>` (não falha) ou `X<T, E>` (falha com `E`): `Result<T, E>`, `Iter<T, E>`, `Async<T, E>` (o `Task<Result<T, E>>` da 432), `AsyncIter<T, E>` (o ponto (5)(a)), `Component<R, E>`. Só uma falha que sai do corpo precisa do `E`: um `try` que propaga e um `throw` são escritos num corpo cujo tipo de retorno leva um, e ali `return v` é `Ok(v)`; um `try … catch` tratado no corpo (537) não deixa sair nada e não precisa de nenhum (`fn porta(s: string) -> i32 { try toInt(s) catch 8080 }`); uma falha encerra um `Iter` / `AsyncIter`, consumido por `for x in try xs` / `for await x in try xs` ou por um `case` sobre ele; o `throw` de um `component` chega ao `ErrorBoundary` mais próximo (414, 504). Nenhum marcador para uma falha: `Result` é o único tipo sem um, porque uma falha compila como um retorno antecipado e não muda nada de como o corpo roda — cada um dos quatro marcadores muda (um gerador, um corpo suspenso, um escopo de render); `result` (o ponto (2)) é retirado. `Iter<Result<T, E>>` / `AsyncIter<Result<T, E>>` continuam iteradores cujos itens são resultados, a iteração seguindo depois de um `Error`.
@@ -1246,7 +1246,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   xs.map({ s -> try toInt(s) })                       // E vindo do esperado fn(string) -> Result<i32, E>
   for await linha in try linhas(f) { … }              // um FsError encerra o laço e se propaga
   ```
-- **Aberto (3).** Os tipos `@` viram tipos comuns da std (a) ★ num passo próprio depois que os marcadores pousarem — o passo dos marcadores continua mecânico; (b) no mesmo passo.
+  6. **Ordem: três peças, cada uma com o seu oráculo** (o ponto (3) (a)). O `@` não pode sair primeiro — hoje é ele que admite `await` e `yield`. (i) Os marcadores: o checker lê o marcador, um codemod o acrescenta onde um corpo escreve a palavra, os tipos mantêm o seu `@` enquanto isso (`async fn buscar() -> @Task<User>`); toda célula responde igual. (ii) Os tipos: o `@` removido e os nomes mudados (`@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`), os tipos declarados no `.bp` da std, o `comptime/effect_chain.zig` encolhendo, `Task<Result<T, E>>` → `Async<T, E>`; um codemod, toda célula igual. (iii) O `E` novo: `Iter<T, E>`, `AsyncIter<T, E>`, `Component<R, E>` nos quatro backends, células novas vermelhas e depois verdes. Cada peça um pouso por repositório.
 - **Medido.** Hoje o tipo de retorno decide: `@Iterator` faz um gerador (541 (2)), `@Task` uma máquina de estados (392), `@Result` admite `try` / `throw` (431), `@Component` uma lambda de render (388); a assincronia de um componente é inferida (375). Nada numa assinatura ou numa lambda diz que o seu corpo é especial. Uma lambda final não precisa de parênteses (`twice { -> 4 }`, célula `trailing_lambda_call`), e nenhuma de `iter`, `async`, `component` é palavra reservada do lexer.
 - **Emenda.** A 541 (2); a 375 (o marcador de um componente é escrito, a sua assincronia ainda inferida); a 392; a 414 (um `component` que lança escreve `Component<R, E>`); a 431 (um `try` que propaga, um `throw` e `return v` como `Ok(v)` sob um `E` no tipo de retorno; um `try … catch` em qualquer lugar); a 432 (`Task<Result<T, E>>` → `Async<T, E>`); a 539, a 540 (`@Stream` → `AsyncIter`; `File.lines()` / `chunks()` respondem `AsyncIter<string, FsError>` / `AsyncIter<Bytes, FsError>`). Responde a 541-c: uma lambda ou expressão `fn` é um gerador quando leva `iter`, o seu tipo concordando com o seu tipo esperado (147). Migração: um codemod acrescenta o marcador onde um corpo escreve a palavra e renomeia os tipos, um pouso por repositório.
 - **Bloqueia.** O passo dos marcadores (144); a caixa 2 do B-88 da 541-c.
