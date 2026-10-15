@@ -2119,8 +2119,25 @@ source "rakun"`. So rakun's suite carries one manifest per feature instead of on
 type is gone: `fn show<T>(x: T) -> string { return "${x}"; }` called with `4.0` answers `4` on commonJS, `4.0` on
 erlang, beam and wasm; `@print(x)` and `"v=" + x` the same. Found by B-78's Conformance step.
 
-- [ ] an `f64` reaching a generic body as `T` is written `4.0` on commonJS (the type's shape handed in, or the body
-      specialised per call) — a cell red on commonJS today, green on the four targets
+- [x] an `f64` reaching a generic body as `T` is written `4.0` on commonJS (the type's shape handed in, or the body
+      specialised per call) — a cell red on commonJS today, green on the four targets: a top-level generic fn whose
+      body writes a `T` as text takes one hidden trailing `__bp_ty_<T>` per type parameter, the print shape of the
+      type each direct call binds (`"f"`, `["[", "f"]`); the `T` values and the `.d.ts` unchanged, a caller that
+      leaves it out (host, TypeScript, a fn value, another module) gets the engine's text —
+      `generic_float_text`, `generic_float_record_text`
+
+### B-115 — commonJS: the generic calls B-114's print shape does not reach (decision 521)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (a design: the shape crosses a value or a module)
+
+B-114 hands a top-level generic fn the print shape of each type parameter at a direct call in its own module. Three
+calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for `2.0`):
+
+- [ ] a generic fn passed as a value (`xs.map(show)`): the host callback's extra arguments (the index) land in the
+      hidden slot — a cell red on commonJS today
+- [ ] a call into a generic fn of another module — a cell red on commonJS today
+- [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
+      today
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 

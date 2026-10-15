@@ -82,6 +82,8 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-103 — erlang and beam: `try … catch` handles only its operand's `Error`; a `host`, `panic` or `crash` raise propagates (431, 546); rakun-app's `navigation_test` test back
 - [x] 144 B-112 — `test-analysis-equivalence` reads rakun's conformance by feature (548)
 - [ ] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace (548): the copy landed (`workspace_nested_members`); rakun's one root manifest is 165 s9's · nothing
+- [x] 144 B-114 — commonJS: an `f64` bound to a top-level generic fn's `T` is written `4.0` (521) — the type's print shape handed in at each direct call (`generic_float_text`, `generic_float_record_text`)
+- [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · question B-99-a (the form: a `comptime` default answered for the caller, recommended)
