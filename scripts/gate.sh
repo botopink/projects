@@ -306,10 +306,12 @@ poolOlderWaiter() {
 # jobs granted (min(want, free)) and leaves lease.<id>.
 poolAcquire() {
     local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0 last
-    cap="$(poolCapacity)"
     while :; do
         poolLock
         poolReap
+        # The capacity is read on every pass: it follows MemAvailable, and one read when the wait began would
+        # hold a gate that started under memory pressure to that low capacity for good.
+        cap="$(poolCapacity)"
         used="$(poolUsed)"
         free=$(( cap - used ))
         # Admissions are staggered (the maintainer, 2026-10-13: "libera o gate paralelo aos poucos"): a gate
