@@ -253,6 +253,25 @@ thread's slip is caught at the landing.
 | The review of a landing whose answers changed or that made a choice no decision fixes | `fable`, read-only |
 | A fix whose answers its step states (a 144 / 164 row with named cells) | `sonnet`, no review |
 
+### Keeping the threads honest and the machine busy (the maintainer, 2026-10-15)
+
+At each landing, each thread's end and before each status report, the coordinator reconciles what is listed with what
+runs:
+
+1. **A thread is active only if something of it runs.** That means a live `gate.sh exec` / `zig` / `botopink` process
+   in its worktree, or recent progress there (`git log`, `git status`). A thread's listing alone proves nothing.
+2. **A finished thread is stopped.** A sub-agent that handed back "with background work still running" stays listed with
+   its last activity (e.g. "amending commit"). Once its work has landed, the coordinator stops it (`TaskStop`) and
+   removes its worktree.
+3. **Orphan loops are killed.** The coordinator lists the `until … sleep` / `while … sleep` loops left by finished
+   threads and kills them by PID. A loop that waits on `pgrep -f <pattern>` matches its own command line and never ends
+   (`scripts/thread-rules.md`). Every thread prompt repeats that rule: kill your own background jobs before reporting.
+4. **No idle slot.** After the reconciliation the coordinator checks free capacity: the really active threads and
+   `MemAvailable`. Each free slot is filled with the next work that needs no maintainer decision and touches no
+   running thread's area, up to about five threads, the machine's pool and memory permitting (§ Gate orchestrator).
+   What stays blocked is named in the report, with what blocks it: a pending question, another front, a running
+   thread's files.
+
 ## Build and test
 
 All Zig commands run from `repository/botopink-lang/`:
