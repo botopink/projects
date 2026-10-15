@@ -1875,9 +1875,9 @@ process dictionary, written after each statement: a reassignment inside a nested
 statement, so an arm that panics or throws hands the defer the old value
 (`var f = "a"; defer @print(f); if (c) { f = "b"; @panic("x") }` prints `a`).
 
-- [ ] the cell above, red on erlang (beam checked the same), green after
-- [ ] the reassignment written where it happens, inside the arm
-- [ ] erlc's "unused variable" warning on a defer body that rebinds a `var` (cell `defer` 4) gone
+- [x] the cell above, red on erlang (beam checked the same), green after
+- [x] the reassignment written where it happens, inside the arm
+- [x] erlc's "unused variable" warning on a defer body that rebinds a `var` (cell `defer` 4) gone
 
 ### B-88 — a jump from a block or a `case` arm reaches its loop or generator on commonJS and erlang (decision 541 (2))
 
@@ -1886,13 +1886,15 @@ statement, so an arm that panics or throws hands the defer the old value
 541 (2) makes a block a scope of the enclosing function: `await`, `yield`, `break` and `continue` in it reach the
 function and the loop. The bare forms landed on commonJS, erlang and beam; these are unbuilt or unmeasured.
 
-- [ ] `break :outer` / `continue :outer` from a `case` arm's block to an outer loop — cell
-      `block_jump_label_reaches_loop`, red on commonJS and erlang (beam measured)
+- [x] `break :outer` / `continue :outer` from a `case` arm's block to an outer loop — cell
+      `block_jump_label_reaches_loop`, green on commonJS and erlang; every target ignored the label, from a plain `if`
+      too. Left: `continue :outer` is not parsed (B-104); beam (B-105) and wasm (164 s2c) red
 - [ ] `yield` in a block inside a lambda generator reaches the lambda, the nearest function — cell
-      `block_yield_in_lambda_generator`
-- [ ] `return` inside a yielding arm returns from the enclosing generator on commonJS (the `function*` delegation) —
-      cell `case_arm_return_in_yielding_arm`
-- [ ] `block-break-value` printed as `error[block-break-value]`, as every other refusal
+      `block_yield_in_lambda_generator` — held by question 541-c: no lambda is a generator scope today (125)
+- [x] `return` inside a yielding arm returns from the enclosing generator on commonJS (the `function*` delegation) —
+      cell `case_arm_return_in_yielding_arm`, green on commonJS, erlang and beam; wasm red (164 s2c)
+- [ ] `block-break-value` printed as `error[block-break-value]`, as every other refusal — held by question 485-b: 577
+      cell refusals print `error: <code>: …`, 86 `error[<code>]: …`
 
 ### B-90 — commonJS: an unmarked raise is `crash`, and `abort_text_panic` (decisions 546, 535, 527 (1))
 
@@ -1966,6 +1968,41 @@ pub fn main() { val v = try load("a") catch "fallback"; @print(v); }   // prints
       every target — a cell red on erlang and beam today (commonJS measured)
 - [ ] rakun-app's `navigation_test` signal-through-`try` test back, its `// LANGUAGE GAP` marker gone (a 150 consumer
       row)
+
+### B-104 — `continue :outer` is not read (decision 541 (2); docs § Loops)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`conformance/docs.md` § Loops puts a label on `continue` as on `break`, and 541 (2) sends a `continue` to an outer loop
+from a block; the parser reads `continue` alone (no `:label`, the AST's `continue` carries none), so `continue :outer`
+is a parse error on every target and B-88's cell could pin `break :outer` only.
+
+- [ ] `continue :label` parsed and carried in the AST, the label checked as `break :label`'s is (`break-label-unbound`,
+      `generator-loop-closed-scope`)
+- [ ] `continue :outer` from a nested loop's body and from a `case` arm's block reaches the named loop — cell
+      `block_jump_label_continue_reaches_loop`, red on every target, green on commonJS and erlang after (beam B-105,
+      wasm 164 s2c)
+- [ ] the formatter prints the label on `continue` as on `break`
+
+### B-105 — beam: a loop's label is ignored (decision 541 (2))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+B-88 landed `break :outer` from a block or a `case` arm's block on commonJS and erlang. beam's emitter (`beam_asm.zig`,
+not the erlang one) reads no label: a jump to the named loop's exit, and a throw out of a `foldl` fun where the loop is
+one.
+
+- [ ] cell `block_jump_label_reaches_loop` green on beam
+- [ ] `continue :outer` on beam once B-104 lands
+
+### B-106 — erlang: a value `if` whose branch reassigns a `var` is refused by erlc (decisions 539, 541)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
+
+B-87 threads a `var` a value `case`'s arm reassigns; a value `if` is not threaded:
+`var f = "a"; val r = if (c) { f = "b"; 1 } else { 0 }; @print(f)` fails erlc with `unsafe variable`.
+
+- [ ] the value `if` threads a reassigned `var` as the value `case` does; a cell, red on erlang, green on every target
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 

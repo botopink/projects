@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**121 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**123 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1060,6 +1060,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (i) Como proposto. (ii) Os sidecars lançam um termo que o envoltório da 546 deixa passar (um no formato `error:{panic, Msg}`) — o tipo da falha não capturada muda. (iii) Os capturadores também casam `error:{bp_host, Text}` e analisam o texto `~tp` — com perda. (iv) Um atributo de binding que isenta um binding de biblioteca do envoltório `host`.
 - **Recomendação.** (i) para a navegação, que a 527 (5) resolve; para `rakun_problem`, (i) até que 149/150 deem aos problems um caminho de dados como o da navegação.
 - **Bloqueia.** O commit da migração 541 / 540 do rakun (o seu hook), e o do onze, que compila contra o rakun.
+
+#### 541-c · Uma expressão `fn` ou lambda com retorno `@Iterator` / `@Stream` é um escopo gerador? (decisões 541 (2), 125, 147; 144 B-88)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): não — um escopo gerador é uma fn ou método declarado, ou um laço `iter` / `stream` (125); a forma de expressão de um gerador é `iter loop { … }`; a caixa 2 do B-88 é retirada.**
+- **Medido.** `{ -> yield 1 }` e `fn() -> @Iterator<i32> { yield 1; }` são ambos `yield-without-generator`; a dica nomeia um retorno `@Iterator` "da fn" ou `iter loop`. A docs.md § Iterators deixa os closures de fora. O "alcança a função envolvente" da 541 (2) supõe que a função é um gerador. A caixa 2 do B-88 pede uma célula que nenhuma decisão descreve.
+- **Opções.** (a) Como proposto. (b) Uma expressão tipada `fn() -> @Iterator<T> { … }` é um gerador (o seu retorno é escrito); uma lambda simples não. (c) Ambas, pelo tipo esperado (a 147 estendida a `@Iterator`).
+- **Recomendação.** (a); (b) aceitável, uma regra a mais.
+- **Bloqueia.** Só a caixa 2 do B-88.
+
+#### 485-b · A linha impressa de uma recusa: `error[<code>]: <message>` ou `error: <code>: <message>`? (decisões 475 (2), 485; 144 B-88)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): uma forma só, `error[<code>]: <message>`, a notação que toda decisão e o `conformance/AGENTS.md` já escrevem — o código do checker sai do texto da mensagem e é impresso pelo único impressor; as 577 linhas de snapshot são reescritas mecanicamente nesse commit.**
+- **Medido.** O impressor do parser imprime um erro de parse com código como `error[code]: msg`; as recusas do checker levam o código como prefixo da mensagem e a CLI imprime `error: code: msg`. 577 recusas de snapshot são da segunda forma, 86 da primeira. A caixa 4 do B-88 pede `block-break-value` sozinho, "como toda outra recusa", que é a minoria.
+- **Opções.** (a) Como proposto. (b) Manter as duas como construído; a caixa 4 do B-88 retirada. (c) `error: <code>: <message>` em toda parte (86 linhas mudam).
+- **Recomendação.** (a).
+- **Bloqueia.** A caixa 4 do B-88; nada construído.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

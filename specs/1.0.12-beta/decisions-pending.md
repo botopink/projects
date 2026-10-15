@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**123 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1060,6 +1060,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (i) As proposed. (ii) The sidecars raise a term the 546 wrapper passes through (an `error:{panic, Msg}`-shaped one) — the uncaught failure's kind changes. (iii) The catchers also match `error:{bp_host, Text}` and parse the `~tp` text — lossy. (iv) A binding attribute that exempts a library binding from the `host` wrap.
 - **Recommendation.** (i) for navigation, which 527 (5) settles; for `rakun_problem`, (i) until 149/150 give problems a data path like navigation's.
 - **Blocks.** rakun's 541 / 540 migration commit (its hook), and onze's, which compiles against rakun.
+
+#### 541-c · Is a `fn` expression or lambda with an `@Iterator` / `@Stream` return a generator scope? (decisions 541 (2), 125, 147; 144 B-88)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): no — a generator scope is a declared fn or method, or an `iter` / `stream` loop (125); the expression form of a generator is `iter loop { … }`; B-88 box 2 is dropped.**
+- **Measured.** `{ -> yield 1 }` and `fn() -> @Iterator<i32> { yield 1; }` are both `yield-without-generator`; the hint names an `@Iterator` return "from the fn" or `iter loop`. docs.md § Iterators counts closures out. 541 (2)'s "reach the enclosing function" assumes the function is a generator. B-88 box 2 asks for a cell no decision describes.
+- **Options.** (a) As proposed. (b) A typed `fn() -> @Iterator<T> { … }` expression is a generator (its return is written); a bare lambda is not. (c) Both, by expected type (147 extended to `@Iterator`).
+- **Recommendation.** (a); (b) acceptable, one rule more.
+- **Blocks.** B-88 box 2 only.
+
+#### 485-b · A refusal's printed line: `error[<code>]: <message>` or `error: <code>: <message>`? (decisions 475 (2), 485; 144 B-88)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): one form, `error[<code>]: <message>`, the notation every decision and `conformance/AGENTS.md` already write — the checker's code leaves the message text and is printed by the one printer; the 577 snapshot lines are rewritten mechanically in that commit.**
+- **Measured.** The parser's printer prints a coded parse error as `error[code]: msg`; checker refusals carry the code as the message's prefix and the CLI prints `error: code: msg`. 577 snapshot refusals are the second form, 86 the first. B-88 box 4 asks for `block-break-value` alone, "as every other refusal", which is the minority.
+- **Options.** (a) As proposed. (b) Keep both as built; B-88 box 4 dropped. (c) `error: <code>: <message>` everywhere (86 lines change).
+- **Recommendation.** (a).
+- **Blocks.** B-88 box 4; nothing built.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
