@@ -138,7 +138,8 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       zero writes 527 (3)'s checked message, not a bare trap — cell `abort_text_panic` on the four targets, its `message`
       binding removed (144 B-90)
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
-      `embed_field_read_other_module` on wasm, its `through` host binding and `targets` narrowing removed (144 B-95)
+      `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
+      `targets` narrowing removed (144 B-95, B-97)
 
 ### s3 — std-wasm rewritten: its logic in botopink, its leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig` and beam-to-wasm deleted (the maintainer, 2026-10-14; wasmgc-a)
 

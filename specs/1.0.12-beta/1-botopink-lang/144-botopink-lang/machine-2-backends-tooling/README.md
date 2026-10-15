@@ -1835,7 +1835,8 @@ B-95's cause (`Declared` is the compiler's record, which the dependency does not
 covers only `Asset` and `SourceLocation`: read through the value's tag, it regressed the comptime builtins that are maps
 at run time (`@Decl`). The general fix needs the emitter to know which imported records are tagged tuples.
 
-- [ ] a `Declared`'s field read anywhere answers the field on beam; a cell on every target
+- [x] a `Declared`'s field read anywhere answers the field on beam; a cell on every target — wasm out until 164 s2c's
+      box (a field of a record the module does not declare)
 - [ ] rakun's `conformance/rakun/boot_modules` green on beam (a 150 consumer row)
 
 ### B-93 — commonJS: a positional pattern lowered against another package's same-named variant
