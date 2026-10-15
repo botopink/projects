@@ -1810,8 +1810,9 @@ erika's `generic_loader_binding` beside it (`../erika`, `repository/erika`); `sc
 the six repositories. After 165, those cells are rakun's `conformance/<package>/` (rakun-bpp, rakun-stylesheet, rakun)
 and query's `conformance/modules/` (`repository/query`).
 
-- [ ] every path and list names rakun's workspace and `query`; no former repository's name left in the tooling
-- [ ] `zig build test-analysis-equivalence` and `scripts/tsc-check.sh` green in the meta checkout after 165 s8
+- [x] every path and list names rakun's workspace and `query`; no former repository's name left in the tooling
+- [x] `zig build test-analysis-equivalence` green in the meta checkout after 165 s8; `scripts/tsc-check.sh` green on
+      std, the libraries and query's cell — its reds on botopink-lang's own cells are B-108's
 
 ### B-97 — beam: a `Declared`'s field read in a dependency answers the whole record
 
@@ -2019,6 +2020,22 @@ is refused.
       `Renderable` each have their own) — `Display`, `Closeable`, `Index`, `Slice`; cells `ambient_index_parameter`,
       `ambient_index_implement_missing_method`, red today
 - [ ] the compiler's comment on the ambient set no longer cites `<T: Closeable>` (no such syntax)
+### B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+Found running B-100's check on `feat`: std, the libraries and query's cell pass; botopink-lang's own projects do not.
+`conformance/modules/declared_field_read_other_module` (B-97's cell): `lib/root.d.ts` names `Declared` without
+declaring or importing it (`TS2304: Cannot find name 'Declared'`). Every `conformance/test/*` project suite
+(`behavior_host_dispatch`, `bodyless_fn`, `external_host`, `external_markers`, `mocks_decorator_double`,
+`mocks_handwritten_double`, `module_init`, …): the walk builds it as a program and the build answers `no source
+files found in src/` — a project suite holds `test/` alone.
+
+- [ ] a `.d.ts` that names a compiler type (`Declared`, and the other records the compiler splices) declares it or
+      imports it; the cell checked by `tsc`
+- [ ] the walk builds a project suite the way `botopink test` does (its `test/` modules), or reads it by what it holds;
+      no suite left out by name
+- [ ] `scripts/tsc-check.sh` green on `feat`, read from `test.yml` on GitHub
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 

@@ -145,13 +145,14 @@ lacks is a build error naming it; removing the dependency removes the module; no
 - [x] the open steps of 148 styled, 149 jhonstart, 153 dbcontext, 154 emilia and 162 onze refiled under 150 rakun,
       one section per former front with its alias table, their context folders moved into `2-libraries/150-rakun/`;
       145 erika renamed 145 query
-- [ ] every library's pointer and rakun's moved to its `feat` in the same commit that removes the six submodules, with 144 B-100 (botopink-lang's tooling reading the libraries at their new homes)
-- [ ] `fronts.md` (ownership: one row for rakun with lanes by layer — data, style/bpp/stylesheet, service and its
+- [x] every library's pointer and rakun's moved to its `feat` in the same commit that removes the six submodules, with 144 B-100 (botopink-lang's tooling reading the libraries at their new homes)
+- [x] `fronts.md` (ownership: one row for rakun with lanes by layer — data, style/bpp/stylesheet, service and its
       optionals, app/ssr — a lane never editing another's `modules/`; conflicts), `status.md`, `language-gaps.md`
       (owners), `README.md` (the high tier from 18 to 13 fronts), `AGENTS.md` § Layout and CI check 4 (12 library
       repositories), `language-gap-markers.sh`, `decisions-split.py` (one `decisions-taken.md` for rakun, the six
-      former repositories' rows mapped to it through the alias tables); the six submodules removed, the six GitHub
-      repositories archived with a README naming `rakun/modules/<new name>`
+      former repositories' rows mapped to it through the alias tables); the six submodules removed
+- [ ] the five former GitHub repositories (emilia, styled, jhonstart, onze, dbcontext) archived with a README naming
+      `rakun/modules/<new name>` — the maintainer's (erika is `botopink/query`)
 
 **Impacted:** every library's `test-libs` row (six rows become one workspace of 17 members), the vscode-extension's
 library list if it names repositories, the meta CI.
