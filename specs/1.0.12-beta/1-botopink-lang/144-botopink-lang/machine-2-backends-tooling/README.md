@@ -2055,8 +2055,19 @@ when one inner loop continues two enclosing labels only the first is guarded.
 A bare unknown type name is refused `unknown type`; the same name with type arguments is accepted and never checked:
 `fn f(m: Bogus<i32, i32>)` compiles on every target. Found by B-107.
 
-- [ ] a parameter, field, return and `val` annotation naming an unknown generic type refused `unknown type` at the
+- [x] a parameter, field, return and `val` annotation naming an unknown generic type refused `unknown type` at the
       name — a refusal cell, accepted today
+
+### B-111 — a `val` annotation naming an unknown type: `type mismatch`, located at the statement
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`val m: Bogus = 1` reads `type mismatch: expected Bogus, got i32` instead of `unknown type 'Bogus'`, and B-110's
+`val m: Bogus<i32> = …` refusal points at the `val` statement, not at the name: a `val` annotation carries no location
+of its own.
+
+- [ ] a `val` annotation carries its location; a bare unknown name in it refused `unknown type` at the name, and the
+      generic form's refusal (cell `unknown_generic_type_val`) moved to the name — a refusal cell, red today
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
