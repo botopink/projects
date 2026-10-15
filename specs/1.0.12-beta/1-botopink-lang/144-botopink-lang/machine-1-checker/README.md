@@ -2414,7 +2414,7 @@ mono-a names): once a program using it is refused for any reason, every dependen
 
 ### B-99 — a library's catalogue read at the caller: `rakun.boot()` (mono-a)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-86
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-86, question B-99-a
 
 165's plug-and-play spells `rakun.boot()` in the program's `main`: a library function whose body reads
 `@TypeInfo.all(with: rakun.module)` and `@TypeInfo.all(with: rakun.config)` **of the program it is called from**,

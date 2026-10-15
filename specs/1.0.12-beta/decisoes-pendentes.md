@@ -1094,6 +1094,27 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Trava.** Nada — construído como (a); o 165 s5 lê (3).
 
 
+#### B-99-a · Como uma chamada de biblioteca lê o catálogo do programa chamador no build: `rakun.boot()` (mono-a; decisões 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
+- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** (b): um parâmetro `comptime` cujo default é uma consulta `@TypeInfo.all(…)` é respondido para o programa em que a chamada é compilada — a regra da 353, estendida do corpo de um template para um default `comptime`. Os nomes no default resolvem no módulo que declara; o catálogo é o do chamador. A chamada só é legal na raiz do pacote (s23-i (d) (1)). O `.value` do parâmetro responde os campos de dados das entradas; o `value` de uma entrada é repassado, nunca lido no build (356). O nível B guarda o pacote que declara e nunca o que chama. Emenda a última frase da s23-i (d) ("um framework recebe o catálogo da raiz da aplicação como argumento, nunca o lê ele mesmo"): um framework também pode lê-lo por um default assim.
+- **Medido.** Nenhuma decisão tomada fixa a forma: a 353 responde um catálogo por programa só dentro do corpo de uma função template (um argumento literal); a 343 lê um catálogo no ponto de entrada; a s23-i (d) faz o framework recebê-lo como argumento. O `@TypeInfo.all` de uma função de biblioteca responde no build da própria biblioteca (vazio); um template precisa de um literal; `rakun.plan "…"` é recusado `expected Expr, got string`; `typeinfo-all-mixed` mantém funções e vals em duas consultas.
+- **Opções.** (a) O programa entrega os catálogos: nada muda, dois argumentos em todo programa.
+  ```bp
+  fn main() { rakun.boot(@TypeInfo.all(with: rakun.module), @TypeInfo.all(with: rakun.config)); }
+  ```
+  (b) ★ Um default `comptime` respondido para o programa chamador:
+  ```bp
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module),
+              comptime configs: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: config)) { … }
+  fn main() { rakun.boot(); }
+  ```
+  (c) Toda leitura de catálogo no corpo de uma dependência respondida por programa, sem nada na assinatura que o diga:
+  ```bp
+  pub fn boot() { val ms = comptime @TypeInfo.all(with: module); … }
+  ```
+  (d) Um template sem literal significativo: `rakun.boot ""`.
+- **Recomendação.** (b): a assinatura diz que a função lê o catálogo do chamador, reusa os caminhos de coleta/resposta/staleness/nível B da 353, a 343 e a s23-i (d) (1)–(3) ficam de pé, e `rakun.boot()` não recebe argumento; (a) continua legal como override explícito.
+- **Bloqueia.** 144 B-99; 165 s5.
+
 #### 165-a · Onde ficam as linhas do conjunto de versões dos pacotes juntados (decisão 113; frente 165 s2)
 - **Medido.** O `version_set.bp` do rakun guarda uma linha por pacote da família rakun; seu teste compara cada manifesto com a tabela. Após o 165 s1 o workspace tem 21 pacotes juntados (erika, emilia, styled, jhonstart, onze e seus `*-test` / subpacotes) sem linha: uma linha que nomeia `onze` no `src` do núcleo do rakun quebra o grep da decisão 113 (o núcleo do rakun não nomeia nenhum consumidor), então o teste lê só os manifestos `rakun*`.
 - **Opções.** (a) ★ Nenhuma até o s2: após a renomeação todo pacote é `rakun-*`, as linhas são escritas então, e o filtro sai. (b) Um conjunto de versões fora do núcleo (um arquivo no nível do workspace que o gate lê), todo membro uma linha agora.

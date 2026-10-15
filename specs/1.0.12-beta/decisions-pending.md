@@ -1094,6 +1094,27 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing — built as (a); 165 s5 reads (3).
 
 
+#### B-99-a · How a library call reads the caller program's catalogue at build: `rakun.boot()` (mono-a; decisions 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** (b): a `comptime` parameter whose default is a `@TypeInfo.all(…)` query is answered for the program the call is compiled in — 353's rule, extended from a template body to a `comptime` default. The names in the default resolve in the declaring module; the catalogue is the caller's. The call is legal only in the package's root (s23-i (d) (1)). The parameter's `.value` answers the entries' data fields; an entry's `value` is passed on, never read at build (356). Level B stores the declaring package and never the calling one. It amends s23-i (d)'s last sentence ("a framework receives the catalogue from the application's root as an argument, never reads it itself"): a framework may also read it through such a default.
+- **Measured.** No taken decision fixes the form: 353 answers a catalogue per program only inside a template function's body (a literal argument); 343 reads a catalogue at the entry point; s23-i (d) has the framework receive it as an argument. A library function's `@TypeInfo.all` answers in the library's own build (empty); a template needs a literal; `rakun.plan "…"` is refused `expected Expr, got string`; `typeinfo-all-mixed` keeps functions and vals in two queries.
+- **Options.** (a) The program hands the catalogues: nothing changes, two arguments in every program.
+  ```bp
+  fn main() { rakun.boot(@TypeInfo.all(with: rakun.module), @TypeInfo.all(with: rakun.config)); }
+  ```
+  (b) ★ A `comptime` default answered for the calling program:
+  ```bp
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module),
+              comptime configs: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: config)) { … }
+  fn main() { rakun.boot(); }
+  ```
+  (c) Any catalogue read in a dependency's body answered per program, with nothing in the signature saying so:
+  ```bp
+  pub fn boot() { val ms = comptime @TypeInfo.all(with: module); … }
+  ```
+  (d) A template with no meaningful literal: `rakun.boot ""`.
+- **Recommendation.** (b): the signature says the function reads the caller's catalogue, it reuses 353's collect/answer/staleness/level-B paths, 343 and s23-i (d) (1)–(3) stand, and `rakun.boot()` takes no argument; (a) stays legal as the explicit override.
+- **Blocks.** 144 B-99; 165 s5.
+
 #### 165-a · Where the joined packages' rows of the version set live (decision 113; front 165 s2)
 - **Measured.** rakun's `version_set.bp` holds one row per package of the rakun family; its test compares every manifest with the table. After 165 s1 the workspace holds 21 joined packages (erika, emilia, styled, jhonstart, onze and their `*-test` / sub-packages) with no row: a row naming `onze` in rakun's core `src` breaks decision 113's grep (rakun's core names no consumer), so the test reads only the `rakun*` manifests.
 - **Options.** (a) ★ None until s2: after the rename every package is `rakun-*`, the rows are written then, and the filter goes. (b) A version set outside the core (a workspace-level file the gate reads), every member a row now.
