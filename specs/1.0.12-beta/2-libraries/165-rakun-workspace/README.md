@@ -137,8 +137,10 @@ lacks is a build error naming it; removing the dependency removes the module; no
 - [x] cells grouped by package and, inside a package, by the feature they show (`conformance/<package>/<feature>/<cell>/`),
       new package names only; each feature directory the workspace of its cells (a cell that needs its own `deps/`
       keeps them)
-- [ ] one root manifest (a workspace over every cell) in place of the feature manifests — after 144 B-113 (`cell check`
-      copies a cell flat, so a `<package>/*` member is not found in the copy)
+- [x] one root manifest (a workspace over every cell) in place of the feature manifests: `conformance/botopink.json`
+      lists one `"<package>/<feature>/*"` entry per feature with the targets and the version; each cell declares the
+      package it consumes (a workspace's dependencies reach every member, and a commonJS cell must not load `rakun`),
+      the `rakun` and `rakun-service` cells narrowing `"targets"` to erlang and beam
 - [x] the reference sits where its code is: each feature's `docs.md` in `conformance/<package>/<feature>/`, beside its
       cells (what the feature does, then its cells); `conformance/<package>/docs.md` the package's map, one line per
       feature linking its `docs.md`; the root `conformance/docs.md` indexing the packages; no former library's name or

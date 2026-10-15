@@ -81,7 +81,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [x] 144 B-103 — erlang and beam: `try … catch` handles only its operand's `Error`; a `host`, `panic` or `crash` raise propagates (431, 546); rakun-app's `navigation_test` test back
 - [x] 144 B-112 — `test-analysis-equivalence` reads rakun's conformance by feature (548)
-- [ ] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace (548): the copy landed (`workspace_nested_members`); rakun's one root manifest is 165 s9's · nothing
+- [x] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace and lists it alone in the copy's manifest (548); the nested-workspace fixture moved to `cli_contract.sh` (`tsc-check.sh` green again); rakun's one root manifest landed (165 s9)
 - [x] 144 B-114 — commonJS: an `f64` bound to a top-level generic fn's `T` is written `4.0` (521) — the type's print shape handed in at each direct call (`generic_float_text`, `generic_float_record_text`)
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
@@ -218,7 +218,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s9 — one root manifest in place of the feature manifests (the rest landed: cells by package and feature, each `docs.md` beside its code, code linked) · nothing (144 B-113's copy landed)
 - [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99 (question B-99-a)
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
@@ -358,6 +357,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 165 rakun-workspace
 
+- [x] 165 s9 — one conformance read by feature: cells by package and feature, each `docs.md` beside its code, code only linked, one root `conformance/botopink.json` (each cell declaring its package); `cell check` answers as before (126 of 132, the six `rakun-service` reds of `deps/rakun`)
 - [x] 165 s1 — erika, dbcontext, emilia, styled, jhonstart and onze joined into rakun by `git subtree add` (history kept), lifted to `modules/<name>` with names unchanged, cells in `conformance/<package>/`, examples and refusals per package; rakun's gate green but the reds already on `feat` (150 s27, 144 B-89); `AGENTS.md` per package
 - [x] 165 s2 — every package renamed per the table by codemod (rakun-style, rakun-bpp with html/link/forms/testing, rakun-stylesheet with testing/bridge, rakun-service with actuator, rakun-ssr with cli/bundler/assets/content/og/release/testing, rakun-restclient; rakun-test → `rakun/src/testing/`), the starters removed, `rakun-ssr create` on the `botopink/rakun` source, `version_set.bp` one row per package (165-a (a)); erika and dbcontext untouched · question 165-b
 - [x] 165 s3 — dbcontext's plan folded into `rakun-data` (its `AGENTS.md`, the entity / context / repository layer to come), `modules/dbcontext/` removed; `rakun-data` declares `query`

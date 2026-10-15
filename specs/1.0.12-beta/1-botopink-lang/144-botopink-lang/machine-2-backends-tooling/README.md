@@ -2108,8 +2108,12 @@ members are `<package>/*` or `*/*` lists the cell in place but not its flat copy
 source "rakun"`. So rakun's suite carries one manifest per feature instead of one root.
 
 - [x] the copy keeps the cell's path relative to the workspace root, so a nested member glob finds it; a cell (a
-      workspace with `group/*` members, a cell two levels down) red today — `workspace_nested_members`
-- [ ] rakun's feature manifests folded into one `conformance/botopink.json` (a 150 consumer row; 165 s9's box)
+      workspace with `group/*` members, a cell two levels down) red today — `cli_contract.sh`'s fixture
+      `tests/cell-workspace/` (a workspace itself, it cannot be a member of `conformance/modules/`: workspaces do not
+      nest, and as a cell there it refused every in-place build of the suite, `tsc-check.sh` red)
+- [x] rakun's feature manifests folded into one `conformance/botopink.json` (a 150 consumer row; 165 s9's box): the
+      copy's manifest lists the cell alone (`soleMember`), so a root of several entries builds; the fixture's second
+      entry (`second/group/*`) red before, green after; `analysis_equivalence.sh` reads the root manifest
 
 ### B-114 — commonJS: an `f64` passed as a type parameter is written the JS engine's way (decision 521)
 
