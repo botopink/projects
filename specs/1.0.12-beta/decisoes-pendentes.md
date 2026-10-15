@@ -54,7 +54,7 @@ passar (um no formato de `panic`), o que muda o tipo de uma falha não capturada
 21 testes do rakun (o 144 B-103 já devolveu o que passa por `try`).
 
 Resposta (marque uma por pergunta):
-- [ ] (i) os testes ficam vermelhos como lacunas da biblioteca; a navegação vira dados (527 (5), 504) **(recomendada)**
+- [x] (i) os testes ficam vermelhos como lacunas da biblioteca; a navegação vira dados (527 (5), 504) **(recomendada)**
 - [ ] (ii) os sidecars lançam um termo no formato de `panic` que o envoltório deixa passar
 - [ ] (iii) os capturadores também casam `{bp_host, Text}` e analisam o texto
 - [ ] (iv) um atributo que isenta um binding do envoltório

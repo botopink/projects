@@ -53,7 +53,7 @@ attribute exempting a binding from the wrap. **Recommendation (i)**: 527 (5) alr
 mechanism would be deleted by it. **Blocks:** the 21 rakun tests (144 B-103 already restored the one through `try`).
 
 Answer (tick one per question):
-- [ ] (i) the tests stay red as library gaps; navigation becomes data (527 (5), 504) **(recommended)**
+- [x] (i) the tests stay red as library gaps; navigation becomes data (527 (5), 504) **(recommended)**
 - [ ] (ii) the sidecars raise a `panic`-shaped term the wrapper lets through
 - [ ] (iii) the catchers also match `{bp_host, Text}` and parse the text
 - [ ] (iv) an attribute exempting a binding from the wrap
