@@ -90,7 +90,7 @@ mechanically in one commit); **(b)** keep both; **(c)** `error: <code>: <message
 it is the notation the decisions already use. **Blocks:** B-88 box 4; every new refusal cell picks one form meanwhile.
 
 Answer (tick one per question):
-- [ ] (a) `error[<code>]: <message>` everywhere **(recommended)**
+- [x] (a) `error[<code>]: <message>` everywhere **(recommended)**
 - [ ] (b) both forms kept
 - [ ] (c) `error: <code>: <message>` everywhere
 

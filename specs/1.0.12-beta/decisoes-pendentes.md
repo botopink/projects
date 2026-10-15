@@ -93,7 +93,7 @@ reescritas mecanicamente num commit); **(b)** manter as duas; **(c)** `error: <c
 escolhe uma forma enquanto isso.
 
 Resposta (marque uma por pergunta):
-- [ ] (a) `error[<code>]: <message>` em toda parte **(recomendada)**
+- [x] (a) `error[<code>]: <message>` em toda parte **(recomendada)**
 - [ ] (b) as duas formas mantidas
 - [ ] (c) `error: <code>: <message>` em toda parte
 
