@@ -64,7 +64,7 @@ every comptime answer are unchanged (440, 450): the same wasm, compiled instead 
 - [x] docs: 434 amended in the reference's "Decided" table; root `AGENTS.md` ("wasm3 inside the compiler",
       § The comptime runtime), `modules/AGENTS.md` (the wasm3 row), `compiler-core/src/comptime/runtime/AGENTS.md`,
       `compiler-web/AGENTS.md`
-- [ ] **wasm3 gone from the tree** (the maintainer, 2026-10-15): no mention left in botopink-lang — the comments in
+- [x] **wasm3 gone from the tree** (the maintainer, 2026-10-15): no mention left in botopink-lang — the comments in
       `comptime/runtime/persistent_wat.zig` (the stack bound's two), `comptime/runtime/wat/lower.zig` and
       `comptime/tests/templates.zig`; the headers of the cells `comptime_attempt_at_build`,
       `comptime_deep_structure_equality` and `decorator_lambda_many_locals` (each states its answer, not the engine that
