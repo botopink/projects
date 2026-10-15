@@ -1969,7 +1969,7 @@ pub fn main() { val v = try load("a") catch "fallback"; @print(v); }   // prints
 
 - [x] `try … catch` catches only its operand's `Error`; a `host`, `panic` or `crash` raise inside it propagates, on
       every target — a cell red on erlang and beam today (commonJS measured)
-- [ ] rakun-app's `navigation_test` signal-through-`try` test back, its `// LANGUAGE GAP` marker gone (a 150 consumer
+- [x] rakun-app's `navigation_test` signal-through-`try` test back, its `// LANGUAGE GAP` marker gone (a 150 consumer
       row)
 
 ### B-104 — `continue :outer` is not read (decision 541 (2); docs § Loops)
