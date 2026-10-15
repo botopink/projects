@@ -2004,7 +2004,7 @@ one.
 B-87 threads a `var` a value `case`'s arm reassigns; a value `if` is not threaded:
 `var f = "a"; val r = if (c) { f = "b"; 1 } else { 0 }; @print(f)` fails erlc with `unsafe variable`.
 
-- [ ] the value `if` threads a reassigned `var` as the value `case` does; a cell, red on erlang, green on every target
+- [x] the value `if` threads a reassigned `var` as the value `case` does; a cell, red on erlang, green on every target
 
 ### B-107 — `Index` and `Slice` are ambient (docs § indexing, decision 63) but not as `Display` and `Closeable` are
 
