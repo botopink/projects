@@ -1967,7 +1967,7 @@ fn load(s: string) -> @Result<string, string> { val _n = sig("nav:x"); return s;
 pub fn main() { val v = try load("a") catch "fallback"; @print(v); }   // prints fallback; a host raise is the answer
 ```
 
-- [ ] `try … catch` catches only its operand's `Error`; a `host`, `panic` or `crash` raise inside it propagates, on
+- [x] `try … catch` catches only its operand's `Error`; a `host`, `panic` or `crash` raise inside it propagates, on
       every target — a cell red on erlang and beam today (commonJS measured)
 - [ ] rakun-app's `navigation_test` signal-through-`try` test back, its `// LANGUAGE GAP` marker gone (a 150 consumer
       row)
