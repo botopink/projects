@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1294,6 +1294,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) P2. (b) P1, as one more leaf.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
+
+#### 164-s2-a · A tuple in a type-parameter slot: a GC subtype of its own? (544; 164 s2 P3)
+- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): a tuple gets its own subtype of `$arr_any`, so a slot's printer tells `#(1, 2)` from `[1, 2]`.**
+- **Measured.** In the GC lowering a tuple and an array are the same type (`$arr_any`); a tuple bound to a `T` is refused into the linear lowering. A subtype changes every tuple construction and moves most GC snapshots (their `.wat`; no answer).
+- **Options.** (a) As proposed, before P5. (b) Wait for P5, the tuple's case taken with the rest of the linear lowering's deletion.
+- **Recommendation.** (a) — a value's shape is its type everywhere else in the GC lowering.
+- **Blocks.** A tuple through a generic on wasm in GC form; nothing that answers today.
+
+#### 164-s2-b · `==` over a generic record whose type arguments are not written: a structural `unknown` equality? (164 s2 P3)
+- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): `$__unk_eq` becomes structural (records, variants, arrays and tuples compared by field), the slot's erased values compared through it.**
+- **Measured.** With its type arguments written (`Pair<i32, string>`) the comparison is lowered field by field; without them the slots are `unknown`, and today's `$__unk_eq` would compare a record inside a slot by identity — so the module falls back to linear memory.
+- **Options.** (a) As proposed. (b) Wait for P5.
+- **Recommendation.** (a) — one equality for every value (the other targets compare structurally).
+- **Blocks.** That module's GC form; no answer today.
 
 #### 518-a · Two `needs:` refusals no decision states (decision 518 (1); 144 B-07)
 - **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): both stay refusals, each with a cell** — `needs:` on `@External.Node` / `@External.Erlang`, and `needs:` given as anything but a list of `WasmNeed` values; the most restrictive reading (67).

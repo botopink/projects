@@ -86,12 +86,17 @@ optionals, records and variants (one struct type per declaration), `case`, `unkn
 inside `anyref`, never `i31ref`) · P3 closures, `var` cells, components · P4 tasks · P5 the linear lowering deleted ·
 P6 the bounded-memory cells and the docs. Question 544-a (wasmtime's collector and cycles) holds P6.
 
-Landed: P0, P1, P2 and P2b (`unknown`, `Dict`, generic records and enums, the arrays' and `@Result`'s methods, union
-arrays, generators). Left to the linear lowering, to go with P3: writing a type-parameter field, `==` over a generic
-record, an array, tuple, float or function value in a type-parameter slot, a `try` inside a generator, a `yield` inside a
-`case` arm, a generic static method of a non-generic type, a function value in `unknown`; and the linear lowering's
-refusal of a generic body reached with nothing bound, which the GC lowering answers as commonJS does (`Box(n)`) — lifted
-with P5.
+Landed: P0, P1, P2, P2b (`unknown`, `Dict`, generic records and enums, the arrays' and `@Result`'s methods, union
+arrays, generators) and P3 (function values, closures, fn refs, `var` captures, components; generic static methods, a
+float, array or function value in a type-parameter slot, `==` over a generic record whose type arguments are written, a
+`yield` ending a `case` arm, a `try` inside a generator over a `@Result`, a function value in `unknown`) — 538 GC
+modules of 1399. A function value is `$closure {idx, mark}`, each lifted lambda a subtype `$env<n>` with one mutable
+field per capture, called through one boxed table entry per arity; a component is `scope_carry`'s `fn(unknown) ->
+unknown` lambda. Left to the linear lowering: a tuple in a type-parameter slot (question 164-s2-a), `==` over a generic
+record whose type arguments are not written (164-s2-b), a `try` inside a generator whose item is no `@Result`, a block
+or `case` value typed apart from its function (`{ yield 5; 6 }`), a component that awaits (P4), and the refusal of a
+generic body reached with nothing bound, which the GC lowering answers as commonJS does (`Box(n)`) — lifted with P5.
+Writing a type-parameter field is lowered but no cell reaches it.
 
 - [ ] **the types:** one GC type per value shape — string (an `i8` array), array, tuple, record, enum and variant,
       closure, `@Task` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
