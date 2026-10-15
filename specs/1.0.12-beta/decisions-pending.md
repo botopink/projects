@@ -101,9 +101,11 @@ refused `yield-without-generator` — a generator is a declared fn or method, or
 generator; **(c)** any lambda whose expected type is `@Iterator`. **Recommendation (a)**. **Blocks:** B-88 box 2 only.
 
 Answer (tick one per question):
-- [ ] (a) no — a generator's expression form is `iter loop` **(recommended)**
+- [x] (a) no — a generator's expression form is `iter loop` **(recommended)**
 - [ ] (b) a typed `fn() -> @Iterator<T>` expression is a generator
 - [ ] (c) any lambda whose expected type is `@Iterator`
+
+*Maintainer's note (2026-10-15):* `@Iterator<T>` need not be a builtin — an ordinary std type `Iterator<T>`; to be filed as a question of its own.
 
 **6 · 164-s3-b and 164-s3-d — s3's smaller points.** (b) s3's box says "every comptime snapshot unchanged", but a
 comptime snapshot holds both the reply and the lowered module's listing (`COMPTIME WAT`), which s3 rewrites by design.

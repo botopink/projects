@@ -105,9 +105,11 @@ um gerador; **(c)** qualquer lambda cujo tipo esperado seja `@Iterator`. **Recom
 2 do B-88.
 
 Resposta (marque uma por pergunta):
-- [ ] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
+- [x] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
 - [ ] (b) uma expressão tipada `fn() -> @Iterator<T>` é um gerador
 - [ ] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
+
+*Nota do mantenedor (2026-10-15):* `@Iterator<T>` não precisa ser um builtin — um tipo comum da std, `Iterator<T>`; a ser registrada como uma pergunta própria.
 
 **6 · 164-s3-b e 164-s3-d — os pontos menores do s3.** (b) A caixa do s3 diz "todo snapshot de comptime inalterado",
 mas um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado (`COMPTIME WAT`), que o s3 reescreve por
