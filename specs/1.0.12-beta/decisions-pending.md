@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**125 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**123 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -33,24 +33,11 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | 164-s3-b, 164-s3-d — s3's comptime snapshots; Unicode tables | s3's gate line; s3 P1 | (a), (a) |
-| 2 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
-| 3 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
-| 4 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
+| 1 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
+| 2 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
+| 3 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
 
-**1 · 164-s3-b and 164-s3-d — s3's smaller points.** (b) s3's box says "every comptime snapshot unchanged", but a
-comptime snapshot holds both the reply and the lowered module's listing (`COMPTIME WAT`), which s3 rewrites by design.
-**Recommendation (a)**: the reply and every cell unchanged, the listing re-recorded and read piece by piece. (d) The
-Unicode case tables were to be built with `@embed` (519), which wasm cannot lower yet. **Recommendation (a)**:
-generated `.bp` code now, `@embed` once wasm has it.
-
-Answer (tick one per question):
-- [ ] 164-s3-b (a) the reply and every cell unchanged, `COMPTIME WAT` re-recorded piece by piece **(recommended)**
-- [ ] 164-s3-b (b) the listing pinned too
-- [ ] 164-s3-d (a) generated `.bp` tables now, `@embed` once wasm has it **(recommended)**
-- [ ] 164-s3-d (b) wait for `@embed` on wasm
-
-**2 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
+**1 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
 so each library that carries it into a `string` error writes its own `case`
 (`NotFound(path) -> "not found: " + path`, … — snap and rakun-ssr both did). **(a)** std gives `FsError` a `message()`;
 **(b)** each library keeps its own; **(c)** a generic `mapErr` on `@Result`. **Recommendation (a)**, (c) independent of it.
@@ -60,7 +47,7 @@ Answer (tick one per question):
 - [ ] (b) each library keeps its own helper
 - [ ] (c) a generic `mapErr` on `@Result` (independent of (a))
 
-**3 · 164-s3-e and 164-s3-f — a `String` method's botopink body on wasm.** (e) A `String` method of s3 P1 moving to
+**2 · 164-s3-e and 164-s3-f — a `String` method's botopink body on wasm.** (e) A `String` method of s3 P1 moving to
 botopink needs a binding on wasm: **(a)** a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside its Erlang
 and Node cells — wasm alone takes the body, so no other target's answer can move. (f) When: **(a)** after s2 P5 deletes
 the linear lowering, as s3's order states — until then each leaf keeps a twin std-wasm export; **(b)** before.
@@ -71,7 +58,7 @@ Answer (tick one per question):
 - [ ] 164-s3-f (a) after s2 P5 **(recommended)**
 - [ ] 164-s3-f (b) before s2 P5
 
-**4 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
+**3 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
 (`$arr_any`), so a tuple bound to a `T` falls back to linear memory: **(a)** a subtype of its own, so a slot's printer
 tells `#(1, 2)` from `[1, 2]` (most GC snapshots' `.wat` move, no answer does); **(b)** wait for P5. (b) `==` over a
 generic record whose type arguments are not written compares a record inside a slot by identity, so the module falls
@@ -1120,20 +1107,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) Each library writes its own, as built. (c) A generic `mapErr` on `@Result`, the text still each library's.
 - **Recommendation.** (a), with (c) independent of it.
 - **Blocks.** Nothing; the local helpers are deleted once answered.
-
-#### 164-s3-b · "Every comptime snapshot unchanged": the reply, or the `COMPTIME WAT` listing too? (434 (5); 164 s3)
-- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): the `COMPTIME REPLY` and every cell's text unchanged; `COMPTIME WAT` re-recorded once per piece, read one by one** — the listing is the lowering's text, which s3 rewrites.
-- **Measured.** s3's box reads "every comptime snapshot … unchanged"; a comptime snapshot holds both the reply and the lowered module's listing.
-- **Options.** (a) As proposed. (b) The listing pinned too — impossible under any answer to 164-s3-a.
-- **Recommendation.** (a).
-- **Blocks.** s3's gate line.
-
-#### 164-s3-d · Unicode case tables: generated `.bp` code, or `@embed` data once wasm lowers `Asset`? (443, 519; 164 s3)
-- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): generated `.bp` now, `@embed` once 519 lands on wasm** (binary size measured then).
-- **Measured.** s3 builds the tables "by `@embed`, 519"; the wasm codegen has no `Asset` path yet.
-- **Options.** (a) As proposed. (b) Wait for `@embed` on wasm.
-- **Recommendation.** (a).
-- **Blocks.** s3 P1's `toUpper` / `toLower`.
 
 #### 164-s3-e · How a `String` method binds its botopink body on wasm (164 s3 P1)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside the method's Erlang and Node cells** — wasm alone takes the body, so no commonJS, erlang or beam answer can move.

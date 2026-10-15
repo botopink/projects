@@ -14,7 +14,7 @@ over `String.fromCodepoint`, decision 262)
 **Does not touch:** `src/comptime/**`, `src/parser/**` (01, 14, 18) · `erlang.zig`, `crossModule.zig`,
 `beam/{erl_ast,erl_emitter}.zig` (02) · `beam_asm.zig`, `beam/**` (03) · `commonJS.zig`,
 `typescript.zig`, `js/**` (04) · `modules/compiler-cli/**` (26) · `libs/std/**` (std track) ·
-`modules/wasm3/**`, `comptime/runtime/wat/**` (18)
+`comptime/runtime/wat/**` (18)
 
 Paths relative to `repository/botopink-lang/modules/compiler-core/src/`; run with `botopink run
 --target wasm` (wasmtime).

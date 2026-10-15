@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**125 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**123 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -33,24 +33,11 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | 164-s3-b, 164-s3-d — os snapshots de comptime do s3; as tabelas Unicode | a linha do gate do s3; o s3 P1 | (a), (a) |
-| 2 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
-| 3 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
-| 4 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
+| 1 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
+| 2 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
+| 3 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
 
-**1 · 164-s3-b e 164-s3-d — os pontos menores do s3.** (b) A caixa do s3 diz "todo snapshot de comptime inalterado",
-mas um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado (`COMPTIME WAT`), que o s3 reescreve por
-construção. **Recomendação (a)**: a resposta e toda célula inalteradas, a listagem regravada e lida peça a peça. (d) As
-tabelas de caixa Unicode seriam construídas com `@embed` (519), que o wasm ainda não rebaixa. **Recomendação (a)**:
-código `.bp` gerado agora, `@embed` quando o wasm o tiver.
-
-Resposta (marque uma por pergunta):
-- [ ] 164-s3-b (a) a resposta e toda célula inalteradas, o `COMPTIME WAT` regravado peça a peça **(recomendada)**
-- [ ] 164-s3-b (b) a listagem também fixada
-- [ ] 164-s3-d (a) tabelas em `.bp` gerado agora, `@embed` quando o wasm o tiver **(recomendada)**
-- [ ] 164-s3-d (b) esperar o `@embed` no wasm
-
-**2 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
+**1 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
 texto, então cada biblioteca que o leva a um erro `string` escreve o seu próprio `case`
 (`NotFound(path) -> "not found: " + path`, … — snap e rakun-ssr fizeram isso). **(a)** a std dá a `FsError` um
 `message()`; **(b)** cada biblioteca mantém o seu; **(c)** um `mapErr` genérico em `@Result`. **Recomendação (a)**, com
@@ -61,7 +48,7 @@ Resposta (marque uma por pergunta):
 - [ ] (b) cada biblioteca mantém o seu auxiliar
 - [ ] (c) um `mapErr` genérico em `@Result` (independente da (a))
 
-**3 · 164-s3-e e 164-s3-f — o corpo botopink de um método de `String` no wasm.** (e) Um método de `String` do s3 P1
+**2 · 164-s3-e e 164-s3-f — o corpo botopink de um método de `String` no wasm.** (e) Um método de `String` do s3 P1
 que passa para botopink precisa de um binding no wasm: **(a)** uma célula `#[@External.Wasm(fn: <private fn of primitives.bp>)]`
 ao lado das suas células Erlang e Node — só o wasm toma o corpo, então a resposta de nenhum outro alvo pode mudar. (f)
 Quando: **(a)** depois que o s2 P5 apagar o rebaixamento linear, como diz a ordem do s3 — até lá cada folha mantém um
@@ -73,7 +60,7 @@ Resposta (marque uma por pergunta):
 - [ ] 164-s3-f (a) depois do s2 P5 **(recomendada)**
 - [ ] 164-s3-f (b) antes do s2 P5
 
-**4 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
+**3 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
 (`$arr_any`), então uma tupla ligada a um `T` cai para a memória linear: **(a)** um subtipo próprio, para o printer de um
 slot distinguir `#(1, 2)` de `[1, 2]` (o `.wat` da maioria dos snapshots GC muda, nenhuma resposta muda); **(b)** esperar
 o P5. (b) `==` sobre um registro genérico cujos argumentos de tipo não são escritos compara por identidade um registro
@@ -1122,20 +1109,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) Cada biblioteca escreve o seu, como construído. (c) Um `mapErr` genérico em `@Result`, o texto ainda de cada biblioteca.
 - **Recomendação.** (a), com (c) independente dela.
 - **Bloqueia.** Nada; os auxiliares locais são apagados uma vez respondida.
-
-#### 164-s3-b · "Todo snapshot de comptime inalterado": a resposta, ou também a listagem `COMPTIME WAT`? (434 (5); 164 s3)
-- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(a): o `COMPTIME REPLY` e o texto de toda célula inalterados; o `COMPTIME WAT` regravado uma vez por peça, lido um a um** — a listagem é o texto do rebaixamento, que o s3 reescreve.
-- **Medido.** A caixa do s3 diz "todo snapshot de comptime … inalterado"; um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado.
-- **Opções.** (a) Como proposto. (b) A listagem também fixada — impossível sob qualquer resposta à 164-s3-a.
-- **Recomendação.** (a).
-- **Bloqueia.** A linha do gate do s3.
-
-#### 164-s3-d · As tabelas de caixa Unicode: código `.bp` gerado, ou dados por `@embed` quando o wasm rebaixar `Asset`? (443, 519; 164 s3)
-- **Proposto (fable, 2026-10-15; aguardando o mantenedor):** **(a): `.bp` gerado agora, `@embed` quando a 519 chegar ao wasm** (o tamanho do binário medido então).
-- **Medido.** O s3 constrói as tabelas "por `@embed`, 519"; o codegen wasm ainda não tem caminho para `Asset`.
-- **Opções.** (a) Como proposto. (b) Esperar o `@embed` no wasm.
-- **Recomendação.** (a).
-- **Bloqueia.** O `toUpper` / `toLower` do s3 P1.
 
 #### 164-s3-e · Como um método de `String` liga o seu corpo em botopink no wasm (164 s3 P1)
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor):** **(a): uma célula `#[@External.Wasm(fn: <fn privada de primitives.bp>)]` ao lado das células Erlang e Node do método** — só o wasm toma o corpo, então nenhuma resposta de commonJS, erlang ou beam pode mudar.

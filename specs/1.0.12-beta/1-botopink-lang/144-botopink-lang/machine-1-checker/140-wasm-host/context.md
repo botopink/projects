@@ -15,7 +15,7 @@ emitter, for the component wrapping) · `02-std-and-packaging/98` (the manifest 
 cells) · the `"wasm": { "host": … }` key in `modules/manifest/**` (with 98) · the wasm runner of
 `compiler-cli` and `lib-test-runner` (`wasmtime` invocation) · its cells under `tests/language/`
 **Does not touch:** std's bindings (handed to `02/97` step 17) · `unicode.normalize` (333 (A): std's
-botopink body, no host) · the WAT comptime runtime (`wasm3`, front 18), which keeps the core-module
+botopink body, no host) · the WAT comptime runtime (wasmtime, front 164), which keeps the core-module
 subset — comptime asks no network and no timer
 
 Paths relative to `repository/botopink-lang/modules/compiler-core/src/` unless they start `modules/`.

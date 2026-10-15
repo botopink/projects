@@ -19,7 +19,7 @@ milestone (three when the console is closed).
 
 ## Rules for a front
 
-1. **Only fronts 144 and 164 touch `repository/botopink-lang`** (433, amended 2026-10-14: 164 wasm-gc owns the wasm target, the comptime runtime, std-wasm, wasm3, beam-to-wasm and compiler-web; 144 the rest — a 144 step that reaches 164's files waits on 164 s2). A library or medium front that meets a
+1. **Only fronts 144 and 164 touch `repository/botopink-lang`** (433, amended 2026-10-14: 164 wasm-gc owns the wasm target, the comptime runtime, std-wasm, beam-to-wasm and compiler-web; 144 the rest — a 144 step that reaches 164's files waits on 164 s2). A library or medium front that meets a
    compiler, std or toolchain gap files a row in [`language-gaps.md`](language-gaps.md) and pauses on the
    144 step that fixes it (rule 9); it never edits `modules/**`, `libs/std/**` or the toolchain's scripts.
 2. **A shared member's `botopink.json` and `src/root.bp` belong to the lowest-numbered step** that owns
@@ -77,7 +77,7 @@ milestone (three when the console is closed).
 
 | Front | Owns | Never touches |
 |---|---|---|
-| **164** wasm-gc | `modules/compiler-core/src/comptime/runtime/**`, `modules/compiler-core/src/codegen/wat/**`, `modules/{std-wasm,wasm3,beam-to-wasm}/**`, `modules/compiler-web/**`, `build.zig`'s wasm and engine steps, `release.yml`'s engine fetch, the wasm column of every cell | the checker, the other backends, `libs/std/**` beyond s3's std modules (144's) |
+| **164** wasm-gc | `modules/compiler-core/src/comptime/runtime/**`, `modules/compiler-core/src/codegen/wat/**`, `modules/{std-wasm,beam-to-wasm}/**`, `modules/compiler-web/**`, `build.zig`'s wasm and engine steps, `release.yml`'s engine fetch, the wasm column of every cell | the checker, the other backends, `libs/std/**` beyond s3's std modules (144's) |
 | **144** botopink-lang | `repository/botopink-lang` but 164's files — `modules/{compiler-core,compiler-cli,language-server,lib-test-runner,bpmp,manifest,test-shard}/**` (less `comptime/runtime/**` and `codegen/wat/**`), `libs/std/**`, `tests/language/**`, `scripts/**`, `docs.md`, `docs/**`, `build.zig`, `.github/workflows/**`; the consumer commits its steps name (rule 10) | a library repository beyond those commits; the meta repository |
 | **145** query (erika renamed) | `repository/query/**` | rakun-data (150's, `rakun/modules/rakun-data`) |
 | **146** validation | `repository/validation/**` | the consumers' code beyond their import lines |

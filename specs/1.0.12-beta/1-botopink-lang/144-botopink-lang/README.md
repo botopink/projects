@@ -27,7 +27,7 @@ then the error contract of 431 / 432 (B-01–B-09), then the structural fixes th
 
 **New development is centred on front 164 wasm-gc (the maintainer, 2026-10-14):** `machine-2-backends-tooling/164-wasm-gc/` — s1 (wasmtime, the
 engine), s2 (WasmGC codegen), s3 (std-wasm in botopink and `.wat`), s4 (Conformance) — the second front that edits
-botopink-lang (amends 433). It owns the wasm target, the comptime runtime, std-wasm, wasm3, beam-to-wasm and
+botopink-lang (amends 433). It owns the wasm target, the comptime runtime, std-wasm, beam-to-wasm and
 compiler-web; a step of this front that reaches them waits on 164 s2 and never edits them. The old model's steps are
 withdrawn here (B-30's open boxes, B-25's steps 9 and 11, the linear-memory rows). Machine 1's steps continue in
 their own order.
@@ -109,7 +109,7 @@ Three lanes share the front; two steps run together only when their files are di
 | Lane | Machine | Files | Steps |
 |---|---|---|---|
 | A — checker | 1 | `comptime/{infer,env,diagnostics,transform}.zig`, `parser/**`, `ast.zig`, `builtins.d.bp` | B-02, B-03, B-10, B-11, B-14, B-15, B-16, B-17, B-18, B-20, B-21, B-23 |
-| B — runtimes, backends, std | 2 (B-19, B-22, B-24, B-25 on 1) | `codegen/**` but `codegen/wat/**`, `libs/std/**` (`comptime/runtime/**`, `codegen/wat/**`, `modules/{std-wasm,beam-to-wasm,wasm3}/**` are front 164's) | B-00a–k, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 (B-30 closed, superseded by 164) |
+| B — runtimes, backends, std | 2 (B-19, B-22, B-24, B-25 on 1) | `codegen/**` but `codegen/wat/**`, `libs/std/**` (`comptime/runtime/**`, `codegen/wat/**`, `modules/{std-wasm,beam-to-wasm}/**` are front 164's) | B-00a–k, B-04–B-08, B-12, B-13, B-19, B-22, B-24, B-25, B-26 (B-30 closed, superseded by 164) |
 | C — tooling, docs, gate | 2 (B-27 on 1) | `compiler-cli/**`, `language-server/**`, `format.zig`, `docs.md`, `scripts/**`, workflows | B-01, B-09, B-27, B-28, B-29 |
 
 B-00 runs alone (it moves the comptime pipeline every other step's cells run through); after it the

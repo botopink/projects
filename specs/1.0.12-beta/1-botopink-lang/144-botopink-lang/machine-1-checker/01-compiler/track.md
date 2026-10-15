@@ -1,7 +1,7 @@
 # Track 01 — compiler
 
 **Repos:** in `repository/botopink-lang/`: `modules/**` (compiler-core, compiler-cli, bpmp,
-language-server, lib-test-runner, test-shard, wasm3), `tests/language/**`, `scripts/**` (runners,
+language-server, lib-test-runner, test-shard), `tests/language/**`, `scripts/**` (runners,
 audits), `docs.md`, the compiler's `AGENTS.md` files; erika (`07-residuals`).
 
 ## Goal

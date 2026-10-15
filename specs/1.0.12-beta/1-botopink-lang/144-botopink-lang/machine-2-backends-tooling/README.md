@@ -72,7 +72,7 @@ subset is a row here, never a library workaround).
 
 ### B-00c — The comptime driver on wasm for every target (decision 434; amends 84, 341)
 
-Every target's comptime evaluation runs on the wasm runtime (wasm3 in-process, `persistent_wat.zig`,
+Every target's comptime evaluation runs on the wasm runtime (wasmtime in-process, `persistent_wat.zig`,
 `runtime/wat/**`). A host function reached at build resolves, in order: the std-wasm implementation, else the
 beam-to-wasm translation of its `@External.Erlang` cell, else its `@External.Wasm` cell; none → refused at the
 call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `fn:` cell not tried (decision 439). The erlang and beam targets are unchanged — only the comptime runtime moves; `erl`
@@ -119,7 +119,7 @@ runtime-parity audit (deleted). **Model:** sonnet — every cell green before an
 
 `scripts/comptime_bench.sh` re-run (14 step 2), table recorded here at milestone open and close, on
 the runner's machine, load noted. Runtime evaluation = largest remaining per-evaluation stage (wat:
-fresh wasm3 environment, parse and load of the linked module, `persistent_wat.zig`; BEAM: frame round
+the engine's instance, parse and load of the linked module, `persistent_wat.zig`; BEAM: frame round
 trip — 45 % / 29 % of an N=200 build before decision 237).
 
 | Row | Date | Machine, load (1 min, before → after) | Target (runtime) | N=0 build | N=10 | N=200 | ms/eval 10→200 |
@@ -133,9 +133,9 @@ trip — 45 % / 29 % of an N=200 build before decision 237).
 | after (14 s2) | 2026-10-09 | same run | beam (BEAM) | 442 ms | 583 ms | 712 ms | 0.7 |
 | after (14 s2) | 2026-10-09 | same run | erlang (BEAM) | 533 ms | 675 ms | 782 ms | 0.6 |
 
-Stage split of the N=200 build (E-2, ms per evaluation), before → after: wat `instance` (fresh
-wasm3 environment, runtime, parse, load) 0.336 → 0.035 (the kept instance's reset), `run` (bp_init
-through the reply, wasm3's lazy compile included) 0.374 → 0.111, `module` 0.218 → 0.165 (no
+Stage split of the N=200 build (E-2, ms per evaluation), before → after: wat `instance` (a fresh
+engine instance, runtime, parse, load) 0.336 → 0.035 (the kept instance's reset), `run` (bp_init
+through the reply, the engine's compile included) 0.374 → 0.111, `module` 0.218 → 0.165 (no
 Erlang listing per call), `memo_key` 0.034 → 0.002, total 1.02 → 0.39; BEAM `frame` ≈ 0.1 per
 evaluation after the first (the first carries the node's spawn, 112 ms idle), total 0.92 with the
 spawn.
@@ -1353,7 +1353,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (both decisions fix the design)
 
-Found by B-00k: `comptime same(2000000)` traps (wasm3 stack overflow) on every target; a float division by zero at
+Found by B-00k: `comptime same(2000000)` traps (a stack overflow) on every target; a float division by zero at
 build prints the raw `{error,badarith}`.
 
 - [x] std-wasm's term equality and term order walk an explicit work list, no recursion (471): `comptime same(2000000)`

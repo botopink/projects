@@ -13,7 +13,7 @@ recorded here) · `05-wasm` step 5 (decision 261's opcodes)
 `gen_opcodes.sh` · `src/codegen/wat/wasm_binary_emitter.zig` · `src/codegen/snapshot.zig`,
 `src/comptime/snapshot.zig`, `src/utils/snap.zig`'s directory selection (07 renames files) · root
 `build.zig`'s `render-resident` + `erlc` step and `compiler-web` build · `modules/compiler-web/**` ·
-`modules/wasm3/**` · `release.yml`'s matrix · `scripts/comptime_bench.sh`'s table (14 measures)
+`release.yml`'s matrix · `scripts/comptime_bench.sh`'s table (14 measures)
 **Does not touch:** run-time halves of `beam_asm.zig`, `erlang.zig`, `wat.zig`, `commonJS.zig`
 (02–05) · the libraries · `src/comptime/eval.zig`, `infer.zig` (01) · `template_eval.zig`,
 `decorator_eval.zig`, `runtime/beam/**` (14) · `test.yml` (`00-gate/114`)
@@ -30,7 +30,7 @@ table; transport error tested; comptime evaluation within 14's budget; binary em
 ## Mechanism
 
 Decision 84: comptime runtime follows the target's VM, beam by default, no flag. BEAM runtime loads
-assembled bytes via cmd 4; wat runtime runs the same program on wasm3 in-process; `runtime.parity`
+assembled bytes via cmd 4; wat runtime runs the same program in-process (wasmtime, 164 s1); `runtime.parity`
 on every fixture; doubled snapshot tree (`snapshots/codegen/{beam,wat}/<target>/`) audited pair by
 pair; browser build within budget (`botopink.wasm` ReleaseSmall ≤ 8 MB, ≤ 2.5 MB gzip).
 
