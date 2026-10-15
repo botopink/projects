@@ -107,7 +107,7 @@ um gerador; **(c)** qualquer lambda cujo tipo esperado seja `@Iterator`. **Recom
 Resposta (marque uma por pergunta):
 - [ ] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
 - [ ] (b) uma expressão tipada `fn() -> @Iterator<T>` é um gerador
-- [ ] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
+- [x] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
 
 *Nota do mantenedor (2026-10-15):* `@Iterator<T>` não precisa ser um builtin — um tipo comum da std, `Iterator<T>`; a ser registrada como uma pergunta própria.
 

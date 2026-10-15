@@ -103,7 +103,7 @@ generator; **(c)** any lambda whose expected type is `@Iterator`. **Recommendati
 Answer (tick one per question):
 - [ ] (a) no — a generator's expression form is `iter loop` **(recommended)**
 - [ ] (b) a typed `fn() -> @Iterator<T>` expression is a generator
-- [ ] (c) any lambda whose expected type is `@Iterator`
+- [x] (c) any lambda whose expected type is `@Iterator`
 
 *Maintainer's note (2026-10-15):* `@Iterator<T>` need not be a builtin — an ordinary std type `Iterator<T>`; to be filed as a question of its own.
 
