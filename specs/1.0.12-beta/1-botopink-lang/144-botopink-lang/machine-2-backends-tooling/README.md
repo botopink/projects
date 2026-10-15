@@ -2066,7 +2066,7 @@ A bare unknown type name is refused `unknown type`; the same name with type argu
 `val m: Bogus<i32> = …` refusal points at the `val` statement, not at the name: a `val` annotation carries no location
 of its own.
 
-- [ ] a `val` annotation carries its location; a bare unknown name in it refused `unknown type` at the name, and the
+- [x] a `val` annotation carries its location; a bare unknown name in it refused `unknown type` at the name, and the
       generic form's refusal (cell `unknown_generic_type_val`) moved to the name — a refusal cell, red today
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
