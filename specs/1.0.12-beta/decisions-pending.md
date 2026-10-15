@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**130 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -616,6 +616,55 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-18's surface row.
+
+#### B-27-d · Does `botopink format` keep a backtick name that is already an identifier? (decision 561; 144 B-27)
+- **Proposed (opus, 2026-10-15; built as (a), awaiting the maintainer):** (a): the formatter writes `` `count` `` as `count`.
+- **Context.** Decision 561 makes `` `text` `` an identifier, and a name that is a valid identifier means the same written either way (`` `count` `` is `count`). The formatter prints the program back; the question is whether it keeps the backticks the author wrote around a plain name.
+- **Measured.** The lexer turns `` `count` `` into the plain identifier `count`, so the tree no longer knows the backticks were written, and `botopink format` prints `count`. A name that is no identifier (`` `not-found` ``, `` `fn` ``) keeps its backticks.
+- **Options.**
+  (a) ★ As built: the formatter writes the plain spelling; backticks stay only where the name needs them.
+  ```bp
+  val `count` = 1;   // botopink format →  val count = 1;
+  ```
+  (b) Kept as written: the tree remembers the spelling.
+  ```bp
+  val `count` = 1;   // botopink format →  val `count` = 1;
+  ```
+- **Recommendation.** (a): one spelling for one name, as the formatter's other rewrites do.
+- **Blocks.** Nothing.
+
+#### B-27-e · On erlang, `not-found.bpp` and `not_found.bp` become the same module name (decisions 561, 109; 144 B-27)
+- **Proposed (opus, 2026-10-15; awaiting the maintainer):** (a): the erlang module atom is quoted from the file's name as written, so the two never meet.
+- **Context.** Decision 561 lets a file whose name is no identifier (`not-found.bpp`) be imported, and asks each backend to map a name without collision. On erlang a module's name goes through decision 109's cleanup, which replaces the characters an unquoted atom cannot hold.
+- **Measured.** Decision 109's cleanup turns `not-found.bpp` into `…@not_found`, the same module as a sibling `not_found.bp`; the two would overwrite each other's `.beam`. No cell holds the pair today.
+- **Options.**
+  (a) ★ The module atom is quoted and keeps the file's name (`'pages@not-found'`).
+  ```erlang
+  'app@pages@not-found':render(...)   % not_found.bp stays app@pages@not_found
+  ```
+  (b) Decision 109's cleanup stays, and the pair is refused at the second file ("`not-found.bpp` and `not_found.bp` are one module on erlang").
+  ```text
+  error: src/pages/not_found.bp and src/pages/not-found.bpp are one module on erlang (app@pages@not_found) — rename one
+  ```
+  (c) Decision 109's cleanup stays and nothing is checked.
+- **Recommendation.** (a): 561 asks for no collision, and a quoted atom is erlang's own form for such a name; (b) if a quoted module atom breaks a tool.
+- **Blocks.** Nothing today; a package holding both files.
+
+#### B-27-f · `Name<T>.f()` with a backtick type name (decision 561; 144 B-27)
+- **Proposed (opus, 2026-10-15; awaiting the maintainer):** (a): the parser tells a type from what the name is, not from an uppercase first letter.
+- **Context.** Explicit type arguments before a `.` (`Name<T>.f()`) are read as a type only when the name starts with an uppercase letter. A backtick type name (`` `my point` ``) has no such letter, so it cannot be written there; a call `Name<T>(…)` already works.
+- **Measured.** `` `my box`<i32>.make() `` does not parse as a type with type arguments; `` `my box`<i32>(…) `` does.
+- **Options.**
+  (a) ★ Extended: a backtick name followed by `<…>.` is read as a type, like an uppercase one.
+  ```bp
+  val b = `my box`<i32>.make();
+  ```
+  (b) Left as is: a backtick type takes its type arguments only at a call or in a type position.
+  ```bp
+  val b: `my box`<i32> = `my box`.make();
+  ```
+- **Recommendation.** (a): 561 says every position that takes a name.
+- **Blocks.** Nothing.
 
 #### B-19-a · Where is a type error inside a decorator's member or associated-type source located? (decisions 216, 281; 144 B-19)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the annotation that added it** (`#[maker]`), as `decorator-member-duplicate` is, with the decorator's `addMember` / `addType` call named in the message — the program's reader sees where the code came from; the decorator's author sees which call wrote it.

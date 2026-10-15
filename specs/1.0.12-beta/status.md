@@ -369,6 +369,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-27 (decision 561) — a name between backticks is an identifier in every name position: the lexer's token (empty and line-break refused), each backend's collision-free name, diagnostics in the backtick form, `not-found.bpp` imported with and without an alias; B-27-d, B-27-e, B-27-f filed
 - [x] 144 B-27 (decision 552) — a `.bpp` header declaration written after a statement refused at the declaration, naming the statement before it; the unfold moves no declaration (`bpp_declaration_after_statement`)
 - [x] 144 B-99 (front 165 s5, decision 551) — a `comptime` parameter whose default is a `@TypeInfo.all(…)` query answered for the calling program, legal only in the root package's root module (`typeinfo-all-default-outside-root`), the explicit argument the override; cells `typeinfo_all_default_at_caller`, `typeinfo_all_default_outside_root`, `typeinfo_all_default_override`; B-99-b and B-99-c filed
 - [x] 144 B-98 (front 165 s5) — two `files` entries of one stem (`p.bp` and `p.d.bp`) refused at the second: one module written twice, every consumer read its `pub` names twice; a dependency manifest's refusal printed relative to the working directory · question B-98-a

@@ -2113,9 +2113,12 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
 
 - [x] a `.bpp` declaration written after a statement refused at the declaration, naming the statement before it
       (decision 552); the unfold stops moving it — `bpp_declaration_after_statement`
-- [ ] decision 561's backtick identifier: the lexer's token (an empty one refused), every name position the parser
+- [x] decision 561's backtick identifier: the lexer's token (an empty one refused), every name position the parser
       takes, each backend's collision-free mapping, diagnostics in the backtick form; `not-found.bpp` imported as
       `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
+      — `backtick_name_{binding,parameter,function,type,field,module_segment,import_item,in_diagnostic,empty,line_break}`,
+      `bpp_not_found_aliased`, `bpp_not_found_unaliased`; open: B-27-d (the formatter's plain spelling), B-27-e (erlang's
+      module name), B-27-f (`Name<T>.f()` with a backtick type)
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**127 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**130 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -618,6 +618,55 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha da superfície do 144 B-18.
+
+#### B-27-d · O `botopink format` mantém um nome entre crases que já é um identificador? (decisão 561; 144 B-27)
+- **Proposta (opus, 2026-10-15; construída como (a), aguardando o mantenedor):** (a): o formatter escreve `` `count` `` como `count`.
+- **Contexto.** A decisão 561 faz de `` `text` `` um identificador, e um nome que é um identificador válido significa o mesmo escrito de qualquer jeito (`` `count` `` é `count`). O formatter imprime o programa de volta; a pergunta é se ele mantém as crases que o autor escreveu em volta de um nome simples.
+- **Medido.** O lexer transforma `` `count` `` no identificador simples `count`, então a árvore não sabe mais que as crases foram escritas, e o `botopink format` imprime `count`. Um nome que não é identificador (`` `not-found` ``, `` `fn` ``) mantém as crases.
+- **Opções.**
+  (a) ★ Como construído: o formatter escreve a grafia simples; as crases ficam só onde o nome precisa delas.
+  ```bp
+  val `count` = 1;   // botopink format →  val count = 1;
+  ```
+  (b) Mantidas como escritas: a árvore lembra a grafia.
+  ```bp
+  val `count` = 1;   // botopink format →  val `count` = 1;
+  ```
+- **Recomendação.** (a): uma grafia para um nome, como as outras reescritas do formatter.
+- **Bloqueia.** Nada.
+
+#### B-27-e · No erlang, `not-found.bpp` e `not_found.bp` viram o mesmo nome de módulo (decisões 561, 109; 144 B-27)
+- **Proposta (opus, 2026-10-15; aguardando o mantenedor):** (a): o átomo do módulo erlang é escrito entre aspas a partir do nome do arquivo como escrito, então os dois nunca se encontram.
+- **Contexto.** A decisão 561 deixa importar um arquivo cujo nome não é identificador (`not-found.bpp`) e pede que cada backend mapeie um nome sem colisão. No erlang o nome de um módulo passa pela limpeza da decisão 109, que troca os caracteres que um átomo sem aspas não aceita.
+- **Medido.** A limpeza da decisão 109 transforma `not-found.bpp` em `…@not_found`, o mesmo módulo que um `not_found.bp` irmão; os dois sobrescreveriam o `.beam` um do outro. Nenhuma célula tem o par hoje.
+- **Opções.**
+  (a) ★ O átomo do módulo vai entre aspas e mantém o nome do arquivo (`'pages@not-found'`).
+  ```erlang
+  'app@pages@not-found':render(...)   % not_found.bp stays app@pages@not_found
+  ```
+  (b) A limpeza da decisão 109 fica, e o par é recusado no segundo arquivo ("`not-found.bpp` and `not_found.bp` are one module on erlang").
+  ```text
+  error: src/pages/not_found.bp and src/pages/not-found.bpp are one module on erlang (app@pages@not_found) — rename one
+  ```
+  (c) A limpeza da decisão 109 fica e nada é checado.
+- **Recomendação.** (a): a 561 pede nenhuma colisão, e um átomo entre aspas é a forma do próprio erlang para tal nome; (b) se um átomo de módulo entre aspas quebrar alguma ferramenta.
+- **Bloqueia.** Nada hoje; um pacote com os dois arquivos.
+
+#### B-27-f · `Name<T>.f()` com um nome de tipo entre crases (decisão 561; 144 B-27)
+- **Proposta (opus, 2026-10-15; aguardando o mantenedor):** (a): o parser distingue um tipo pelo que o nome é, não por uma primeira letra maiúscula.
+- **Contexto.** Argumentos de tipo explícitos antes de um `.` (`Name<T>.f()`) só são lidos como tipo quando o nome começa com letra maiúscula. Um nome de tipo entre crases (`` `my point` ``) não tem essa letra, então não pode ser escrito ali; uma chamada `Name<T>(…)` já funciona.
+- **Medido.** `` `my box`<i32>.make() `` não é lido como um tipo com argumentos de tipo; `` `my box`<i32>(…) `` é.
+- **Opções.**
+  (a) ★ Estendido: um nome entre crases seguido de `<…>.` é lido como tipo, como um maiúsculo.
+  ```bp
+  val b = `my box`<i32>.make();
+  ```
+  (b) Deixado como está: um tipo entre crases recebe seus argumentos de tipo só numa chamada ou numa posição de tipo.
+  ```bp
+  val b: `my box`<i32> = `my box`.make();
+  ```
+- **Recomendação.** (a): a 561 diz toda posição que recebe um nome.
+- **Bloqueia.** Nada.
 
 #### B-19-a · Onde fica um erro de tipo dentro do código de um membro ou tipo associado que um decorator escreveu? (decisões 216, 281; 144 B-19)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na anotação que o adicionou** (`#[maker]`), como `decorator-member-duplicate`, com a chamada `addMember` / `addType` do decorator nomeada na mensagem — quem lê o programa vê de onde o código veio; quem escreveu o decorator vê qual chamada o escreveu.
