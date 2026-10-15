@@ -29,7 +29,7 @@ número livre, que é **518**.
 
 As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam primeiro. Cada uma é explicada aqui em
 poucas linhas — o problema, um exemplo, as opções, a recomendação e por quê — e a sua entrada completa (Medido, todas as
-opções) fica na § Máquina 2. Uma pergunta sai desta lista quando for respondida.
+opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coordenador transforma a resposta marcada numa decisão, e a pergunta sai desta lista.
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
@@ -51,6 +51,10 @@ compilador resolve o nome: `(func $byteAt (param $s (ref $str)) (param $i i32) (
 representação vive num lugar só (442 (3)); uma cópia em cada `.wat` é uma segunda definição que pode divergir.
 **Bloqueia:** o s3 P0 (o leitor de `.wat`), a única peça do s3 que pode rodar agora ao lado do s2.
 
+Resposta (marque uma por pergunta):
+- [ ] (a) pelo nome — o `.wat` escreve `$str` / `$arr_any`, o leitor os resolve; um `.wat` que declara um tipo é recusado **(recomendada)**
+- [ ] (b) declarado em cada `.wat` — `(type $str …)` escrito lá, checado igual ao do codegen
+
 **2 · 164-s3-a — sobre o que o comptime roda quando a biblioteca de termos em Zig sair.** Todo valor de `comptime` hoje é
 um termo Erlang construído por ~3 700 linhas de Zig (`term.zig`, `otp/*`: `lists:*`, `maps:*`, `io_lib:format`, ETF)
 dentro do `std_wasm.wasm`; a 544 apaga esse arquivo. **(A)** compilar os corpos do comptime direto com o backend GC do
@@ -59,6 +63,11 @@ escrito em botopink (`erlang_terms.bp`), compilado pelo backend GC — os prelud
 **(C)** manter a biblioteca de termos em Zig como um módulo só do comptime (contra a 544). **Recomendação (B)**: mantém a
 forma de toda resposta do comptime e é um passo, não uma reescrita; a (A) pode vir depois. **Bloqueia:** o s3 P4, a maior
 peça da frente 164.
+
+Resposta (marque uma por pergunta):
+- [ ] (B) o rebaixamento Erlang → wasm mantido, sobre um enum `Term` em botopink compilado pelo backend GC **(recomendada)**
+- [ ] (A) os corpos do comptime compilados direto pelo backend GC, a camada Erlang apagada
+- [ ] (C) a biblioteca de termos mantida em Zig como um módulo só do comptime
 
 **3 · 546-b — os sidecars do rakun desenrolam por uma chamada que a 546 agora envolve.** Os sinais de navegação e o
 `rakun_problem` do rakun desenrolam de propósito: um sidecar Erlang lança, e um capturador acima na pilha lê o termo —
@@ -72,6 +81,12 @@ passar (um no formato de `panic`), o que muda o tipo de uma falha não capturada
 **Recomendação (i)**: a 527 (5) já fixa o estado final; um mecanismo provisório seria apagado por ele. **Bloqueia:** os
 21 testes do rakun (o 144 B-103 já devolveu o que passa por `try`).
 
+Resposta (marque uma por pergunta):
+- [ ] (i) os testes ficam vermelhos como lacunas da biblioteca; a navegação vira dados (527 (5), 504) **(recomendada)**
+- [ ] (ii) os sidecars lançam um termo no formato de `panic` que o envoltório deixa passar
+- [ ] (iii) os capturadores também casam `{bp_host, Text}` e analisam o texto
+- [ ] (iv) um atributo que isenta um binding do envoltório
+
 **4 · 544-a — o wasmtime ainda não coleta ciclos.** O s2 entrega a memória ao coletor do host e supõe que ele segue
 ciclos (uma task esperando outra que a espera). O node e o navegador seguem; o coletor padrão do wasmtime (DRC) vaza um
 ciclo até o programa terminar, e o coletor de cópia dele é documentado como "ainda não funcional". **(a)** o codegen
@@ -79,6 +94,11 @@ quebra os ciclos que ele mesmo cria (uma task resolvida solta quem a espera), o 
 a 544 diz que um ciclo que um programa constrói pode viver até o fim no wasmtime; **(b)** o codegen detecta ciclos (o que
 a 544 removeu); **(c)** esperar um wasmtime que siga ciclos. **Recomendação (a)**. **Bloqueia:** o s2 P6, as células de
 memória limitada — nada antes.
+
+Resposta (marque uma por pergunta):
+- [ ] (a) o codegen quebra os próprios ciclos; o CLI do wasmtime fixado; a 544 emendada **(recomendada)**
+- [ ] (b) o codegen detecta ciclos
+- [ ] (c) esperar um wasmtime que siga ciclos
 
 **5 · 546-a — o que uma mensagem de `crash` diz.** Um lançamento que nada marcou é `crash`; o tipo é fixo (535), o texto
 não. Exemplo: um `case` sem braço que case imprime `crash: {case_clause,'Square'}` no erlang, e
@@ -88,12 +108,22 @@ motor e uma célula afirma só o tipo (`stderr crash:`); **(b)** uma mensagem po
 catch em todo `case`. **Recomendação (a)**: o tipo é a resposta da linguagem, o motivo é um diagnóstico. **Bloqueia:** a
 linha de mensagem das células de abort e de `attempt` (elas afirmam só o tipo até lá).
 
+Resposta (marque uma por pergunta):
+- [ ] (a) o motivo do motor; uma célula afirma só o tipo **(recomendada)**
+- [ ] (b) uma mensagem por alvo, gravada como divergência
+- [ ] (c) um texto só para os lançamentos do próprio compilador (`no arm matches: <value>`)
+
 **6 · 485-b — uma forma impressa só para uma recusa.** Um erro de parse imprime `error[reserved-word-as-name]: …`; uma
 recusa do checker imprime `error: block-break-value: …`. 577 snapshots de célula usam a segunda, 86 a primeira; toda
 decisão e o `conformance/AGENTS.md` escrevem a primeira. **(a)** `error[<code>]: <message>` em toda parte (as 577 linhas
 reescritas mecanicamente num commit); **(b)** manter as duas; **(c)** `error: <code>: <message>` em toda parte.
 **Recomendação (a)**: é a notação que as decisões já usam. **Bloqueia:** a caixa 4 do B-88; toda célula de recusa nova
 escolhe uma forma enquanto isso.
+
+Resposta (marque uma por pergunta):
+- [ ] (a) `error[<code>]: <message>` em toda parte **(recomendada)**
+- [ ] (b) as duas formas mantidas
+- [ ] (c) `error: <code>: <message>` em toda parte
 
 **7 · 541-c — uma lambda pode ser geradora?** A 541 (2) deixa o `yield` de um bloco alcançar "a função envolvente"; o
 B-88 pediu um `yield` dentro do bloco de uma lambda, mas hoje `{ -> yield 1 }` e `fn() -> @Iterator<i32> { yield 1; }`
@@ -102,17 +132,33 @@ são ambos recusados `yield-without-generator` — um gerador é uma fn ou méto
 um gerador; **(c)** qualquer lambda cujo tipo esperado seja `@Iterator`. **Recomendação (a)**. **Bloqueia:** só a caixa
 2 do B-88.
 
+Resposta (marque uma por pergunta):
+- [ ] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
+- [ ] (b) uma expressão tipada `fn() -> @Iterator<T>` é um gerador
+- [ ] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
+
 **8 · 164-s3-b e 164-s3-d — os pontos menores do s3.** (b) A caixa do s3 diz "todo snapshot de comptime inalterado",
 mas um snapshot de comptime guarda a resposta e a listagem do módulo rebaixado (`COMPTIME WAT`), que o s3 reescreve por
 construção. **Recomendação (a)**: a resposta e toda célula inalteradas, a listagem regravada e lida peça a peça. (d) As
 tabelas de caixa Unicode seriam construídas com `@embed` (519), que o wasm ainda não rebaixa. **Recomendação (a)**:
 código `.bp` gerado agora, `@embed` quando o wasm o tiver.
 
+Resposta (marque uma por pergunta):
+- [ ] 164-s3-b (a) a resposta e toda célula inalteradas, o `COMPTIME WAT` regravado peça a peça **(recomendada)**
+- [ ] 164-s3-b (b) a listagem também fixada
+- [ ] 164-s3-d (a) tabelas em `.bp` gerado agora, `@embed` quando o wasm o tiver **(recomendada)**
+- [ ] 164-s3-d (b) esperar o `@embed` no wasm
+
 **9 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
 texto, então cada biblioteca que o leva a um erro `string` escreve o seu próprio `case`
 (`NotFound(path) -> "not found: " + path`, … — snap e rakun-ssr fizeram isso). **(a)** a std dá a `FsError` um
 `message()`; **(b)** cada biblioteca mantém o seu; **(c)** um `mapErr` genérico em `@Result`. **Recomendação (a)**, com
 a (c) independente dela.
+
+Resposta (marque uma por pergunta):
+- [ ] (a) a std dá a `FsError` um `message()` **(recomendada)**
+- [ ] (b) cada biblioteca mantém o seu auxiliar
+- [ ] (c) um `mapErr` genérico em `@Result` (independente da (a))
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
