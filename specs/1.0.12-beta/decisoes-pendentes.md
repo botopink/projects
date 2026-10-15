@@ -141,8 +141,8 @@ retorno decide como um corpo compila: `@Iterator` faz um gerador, `@Task` uma m�
 `try` / `throw`, `@Component` uma lambda de render. A proposta do mantenedor: uma função ou lambda cujo corpo escreve
 `yield`, `await`, `use`, `try` ou `throw` o diz com um marcador, e os tipos podem então virar tipos comuns da std.
 Fixado pelo mantenedor: `result` permite `try`, `throw`; `async` permite `await`, `try`, `throw`; `component` permite
-`use`, `await`, `try`, `throw`, um `throw` chegando ao `ErrorBoundary` mais próximo; `iter` permite só `yield`.
-Abertos: os quatro pontos abaixo (a entrada completa na § Máquina 2). **Bloqueia:** a 541-c
+`use`, `await`, `try`, `throw`, um `throw` chegando ao `ErrorBoundary` mais próximo; `iter` permite só `yield`;
+`async iter` permite `yield` e `await` e responde `AsyncIterator<T>` (`@Stream` renomeado). Abertos: os pontos abaixo (a entrada completa na § Máquina 2). **Bloqueia:** a 541-c
 (a caixa 2 do B-88).
 
 ```bp
@@ -159,9 +159,9 @@ Resposta (marque uma por ponto):
 - [ ] (2)(b) escrito `try`, já uma palavra reservada: `fn try parse(…)`
 - [ ] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores **(recomendada)**
 - [ ] (3)(b) no mesmo passo dos marcadores
-- [ ] (4)(a) `async iter` escreve um `Stream<T>` (`yield` e `await`)
+- [x] (4)(a) `async iter` escreve um `AsyncIterator<T>` (`yield` e `await`); `@Stream` renomeado `AsyncIterator`
 - [ ] (4)(b) nenhuma combinação: um `Stream` só é consumido (`for await`), feito pelos bindings de host da std
-- [x] (4)(c) só `iter` escreve os dois, o tipo de retorno decidindo: `Iterator<T>` (`yield`), `AsyncIterator<T>` (`yield` e `await`); `@Stream` renomeado `AsyncIterator` **(recomendada)**
+- [ ] (4)(c) só `iter` escreve os dois, o tipo de retorno decidindo: `Iterator<T>` (`yield`), `AsyncIterator<T>` (`yield` e `await`); `@Stream` renomeado `AsyncIterator` **(recomendada)**
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1265,7 +1265,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   (1) O marcador de uma lambda: (a) ★ antes da chave — `iter { -> yield 1 }`, `async { x -> await f(x) }`; o `->` já distingue uma lambda de um bloco (525), então `async { … }` continua o bloco e nenhum nome é reservado; (b) depois da chave — `{ iter -> yield 1 }`; as quatro palavras reservadas, nenhum parâmetro ou binding chamado `result`.
   (2) A grafia de `result`: (a) ★ `result`, um marcador só depois de `fn` ou antes da chave de uma lambda; (b) `try`, já uma palavra reservada (`fn try parse(…)`).
   (3) Os tipos `@`: (a) ★ `Iterator`, `Task`, `Result`, `Component`, `Stream` viram tipos da std num passo próprio, depois que os marcadores pousarem; (b) no mesmo passo.
-  (4) Escrever um `Stream` (o `@Stream` existe: o `File.lines()` / `chunks()` da 540, o `defer` num stream da 539, consumido por `for await`): (a) ★ `async iter`, `yield` e `await`, responde `Stream<T>` — o único jeito de escrever um, o da std incluído; (b) nenhum marcador escreve um: um `Stream` só é consumido, feito pelos bindings de host da std; (c) ★ só `iter` escreve os dois, o tipo de retorno decidindo — `Iterator<T>` com `yield`, `AsyncIterator<T>` com `yield` e `await` (um `await` num `iter` que responde `Iterator<T>` recusado, a dica nomeando `AsyncIterator<T>`); `@Stream` é renomeado `AsyncIterator` (a 539 e a 540 acompanham), consumido por `for await`. Os dois tipos ficam separados: um `Iterator` que pode suspender tornaria assíncrono todo `for` sobre ele, e toda função que guarda um.
+  (4) Escrever um `Stream` (o `@Stream` existe: o `File.lines()` / `chunks()` da 540, o `defer` num stream da 539, consumido por `for await`): (a) `async iter`, `yield` e `await`, responde `AsyncIterator<T>` (`@Stream` renomeado, a 539 e a 540 acompanham) — o único jeito de escrever um, o da std incluído; um `await` num `iter` sozinho é recusado, a dica nomeando `async iter`; (b) nenhum marcador escreve um: um `Stream` só é consumido, feito pelos bindings de host da std; (c) ★ só `iter` escreve os dois, o tipo de retorno decidindo — `Iterator<T>` com `yield`, `AsyncIterator<T>` com `yield` e `await` (um `await` num `iter` que responde `Iterator<T>` recusado, a dica nomeando `AsyncIterator<T>`); `@Stream` é renomeado `AsyncIterator` (a 539 e a 540 acompanham), consumido por `for await`. Os dois tipos ficam separados: um `Iterator` que pode suspender tornaria assíncrono todo `for` sobre ele, e toda função que guarda um.
   ```bp
   fn iter lines(f: File) -> AsyncIterator<Result<string, FsError>> { loop { val chunk = try await f.read(4096); …; yield line } }
   for await line in lines(f) { … }
