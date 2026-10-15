@@ -81,7 +81,7 @@ catch em todo `case`. **Recomendação (a)**: o tipo é a resposta da linguagem,
 linha de mensagem das células de abort e de `attempt` (elas afirmam só o tipo até lá).
 
 Resposta (marque uma por pergunta):
-- [ ] (a) o motivo do motor; uma célula afirma só o tipo **(recomendada)**
+- [x] (a) o motivo do motor; uma célula afirma só o tipo **(recomendada)**
 - [ ] (b) uma mensagem por alvo, gravada como divergência
 - [ ] (c) um texto só para os lançamentos do próprio compilador (`no arm matches: <value>`)
 

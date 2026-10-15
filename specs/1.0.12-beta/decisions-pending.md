@@ -79,7 +79,7 @@ engine's and a cell claims the kind alone (`stderr crash:`); **(b)** one message
 line of the abort and `attempt` cells (they claim the kind until then).
 
 Answer (tick one per question):
-- [ ] (a) the engine's reason; a cell claims the kind alone **(recommended)**
+- [x] (a) the engine's reason; a cell claims the kind alone **(recommended)**
 - [ ] (b) one message per target, recorded as departures
 - [ ] (c) one text for the compiler's own raises (`no arm matches: <value>`)
 
