@@ -1908,9 +1908,6 @@ wrapping every such call (492)", but commonJS wraps nothing: its `attempt` reads
 - [x] a cell `abort_text_panic` (`@panic`'s text, `panic: <message>`) on every target, out on wasm until 164 s2c's box
       lands
 
-Left: the `snapshot/targets/commonJS/` row `std_failure_attempt_crash` took records node's fault on a `null` tag read,
-the trace of B-101's defect — B-101 deletes it.
-
 ### B-101 — commonJS: a `case` no arm matches answers `undefined` instead of raising `crash` (decisions 535, 527 (1), 546)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
@@ -1921,11 +1918,11 @@ no fall-through: a `case` value answers `undefined`, a statement `case` runs on.
 commonJS only because its Node form answers `null` and the first arm's tag read faults — node's `TypeError`, recorded as
 a `snapshot/targets/commonJS/` departure, which 458 forbids for a defect.
 
-- [ ] the commonJS `case` lowering ends in a throw read as `crash` by `attempt`, `attemptTask` and the abort guard; its
+- [x] the commonJS `case` lowering ends in a throw read as `crash` by `attempt`, `attemptTask` and the abort guard; its
       text per question 546-a — until answered, cells claim the kind alone
-- [ ] `case_no_arm_matches_raises` widened to commonJS with a Node form answering a tagged value no variant is
+- [x] `case_no_arm_matches_raises` widened to commonJS with a Node form answering a tagged value no variant is
       (`({ tag: "Square" })`, so no engine fault masks the gap); `output/` claims `stderr crash:` — red on the parent
-- [ ] `std_failure_attempt_crash`: the same Node form, its `snapshot/targets/commonJS/` deleted, `show` printing
+- [x] `std_failure_attempt_crash`: the same Node form, its `snapshot/targets/commonJS/` deleted, `show` printing
       `f.kind` alone until 546-a — red on the parent
 
 ### B-102 — erlang and beam: an external template's Erlang-escaped quote loses its backslash
@@ -1943,9 +1940,9 @@ declare fn quoted(text: string) -> string[];
 pub fn main() { @println(quoted("a q=\"x\" b").length().toString()); }   // 1 on erlang and beam; today erlc refuses
 ```
 
-- [ ] the template emitted as the lexer answered it, an Erlang-escaped quote kept; a cell with an escaped quote inside
+- [x] the template emitted as the lexer answered it, an Erlang-escaped quote kept; a cell with an escaped quote inside
       an Erlang string literal of an external template, red on erlang and beam today
-- [ ] rakun-mail's `compose_test` compiles on erlang (a 150 consumer row)
+- [x] rakun-mail's `compose_test` compiles on erlang (a 150 consumer row)
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
