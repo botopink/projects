@@ -348,3 +348,4 @@ Where each step is (its machine's folder holds its whole text).
 | B-107 | [2](machine-2-backends-tooling/README.md) | `Index` and `Slice` are ambient (decision 63) but not as `Display` and `Closeable` are |
 | B-108 | [2](machine-2-backends-tooling/README.md) | `scripts/tsc-check.sh` red on botopink-lang's own cells: a `.d.ts` naming `Declared`, the `conformance/test/` project suites |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
+| B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |

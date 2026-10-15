@@ -2016,10 +2016,10 @@ B-96 keeps the ambient behaviors in a list of two in the compiler. The reference
 i32>)` is `unknown type`, and an `implement Index<…>` with no `at` is accepted while one of `Closeable` with no `close`
 is refused.
 
-- [ ] the ambient set is what `builtins.d.bp` declares and no compiler rule reads (`Annotation`, `Decorator`,
+- [x] the ambient set is what `builtins.d.bp` declares and no compiler rule reads (`Annotation`, `Decorator`,
       `Renderable` each have their own) — `Display`, `Closeable`, `Index`, `Slice`; cells `ambient_index_parameter`,
       `ambient_index_implement_missing_method`, red today
-- [ ] the compiler's comment on the ambient set no longer cites `<T: Closeable>` (no such syntax)
+- [x] the compiler's comment on the ambient set no longer cites `<T: Closeable>` (no such syntax)
 ### B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
@@ -2047,6 +2047,16 @@ when one inner loop continues two enclosing labels only the first is guarded.
 
 - [ ] both shapes in a cell (`block_jump_label_continue_nested_shapes`), red on beam today, green on every target but
       wasm (164 s2c)
+
+### B-110 — an unknown generic type name is accepted unchecked (`fn f(m: Bogus<i32, i32>)`)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+A bare unknown type name is refused `unknown type`; the same name with type arguments is accepted and never checked:
+`fn f(m: Bogus<i32, i32>)` compiles on every target. Found by B-107.
+
+- [ ] a parameter, field, return and `val` annotation naming an unknown generic type refused `unknown type` at the
+      name — a refusal cell, accepted today
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
