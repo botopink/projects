@@ -86,9 +86,12 @@ optionals, records and variants (one struct type per declaration), `case`, `unkn
 inside `anyref`, never `i31ref`) · P3 closures, `var` cells, components · P4 tasks · P5 the linear lowering deleted ·
 P6 the bounded-memory cells and the docs. Question 544-a (wasmtime's collector and cycles) holds P6.
 
-Landed: P0, P1, and P2 but for `unknown` (its boxes, `is`, narrowing, printing, `==`), `Dict`, generic records and
-enums, `@Result`'s `map` / `flatMap`, the arrays' `unique` / `flatten` / `chunked` / `sliding` / `zip`, union arrays and
-the generator and stream loops — P2b; a module holding one still lowers to linear memory.
+Landed: P0, P1, P2 and P2b (`unknown`, `Dict`, generic records and enums, the arrays' and `@Result`'s methods, union
+arrays, generators). Left to the linear lowering, to go with P3: writing a type-parameter field, `==` over a generic
+record, an array, tuple, float or function value in a type-parameter slot, a `try` inside a generator, a `yield` inside a
+`case` arm, a generic static method of a non-generic type, a function value in `unknown`; and the linear lowering's
+refusal of a generic body reached with nothing bound, which the GC lowering answers as commonJS does (`Box(n)`) — lifted
+with P5.
 
 - [ ] **the types:** one GC type per value shape — string (an `i8` array), array, tuple, record, enum and variant,
       closure, `@Task` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
