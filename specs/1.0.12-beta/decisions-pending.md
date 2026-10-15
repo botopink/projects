@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**128 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **562**.
+number, which is **563**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -79,11 +79,10 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-99-b** — does a function reading its catalogue parameter run at build or at run time? (§ Front 165) | whether `rakun.boot()`, reading the program's catalogue through 551's default, may start modules at run time, or is a build-only function as 376 (1) makes it today | 165 s5 → 165 s7, front 165's close | (b) reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource |
-| 2 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
-| 3 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 4 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 5 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 1 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
+| 2 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 3 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 4 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -1182,31 +1181,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a): the most restrictive reading, one file per module as the twin rules already say.
 - **Blocks.** Nothing — built as (a); 165 s5 drops rakun's empty `rakun.d.bp`.
-
-#### B-99-b · Does a function reading its catalogue parameter run at build or at run time? (decisions 376, 551, 364; 144 B-99, front 165 s5)
-- **Proposed (opus, 2026-10-15; built as (a), awaiting the maintainer):** (b): reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource; the value is a constant handed to the code that runs, and the function takes the stage of what it calls.
-- **Context.** Decision 551 lets `rakun.boot()` read the program's `#[rakun.module]` / `#[rakun.config]` declarations through a `comptime` parameter defaulting to `@TypeInfo.all(…)`, and says an entry's `value` is "passed on, never read at build". Decision 376 (1) makes reading a `comptime` parameter's `.value` a build-only resource, so such a function is `Stage.Build` and cannot reach anything that runs only at run time. `rakun.boot()` starts the modules at run time, so the two decisions meet here.
-- **Measured.** As built (144 B-99), reading `modules.value` makes `boot` `Stage.Build`: `main() { boot(); @print(label("x")); }`, `label` reaching a run-time-only host function, is refused `build-and-run` at `main` ("`boot(…)`, which runs only at build"); a `boot` whose own body reaches such a host call is refused `build-and-run` itself; the explicit form `boot(@TypeInfo.all(…))` is refused the same way. The conformance cells avoid it: their `boot` only prints.
-- **Options.**
-  (a) As built: such a function is Build; a framework passes the catalogue on only to pure functions.
-  ```bp
-  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
-      start(modules.value);   // refused build-and-run when `start` reaches a run-time host call
-  }
-  ```
-  (b) ★ Reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource: the value is a constant handed to run-time code, and the function takes the stage of what it calls.
-  ```bp
-  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
-      start(modules.value);   // Run: `modules.value` is a constant in the code that runs
-  }
-  ```
-  (c) Only a catalogue-typed parameter (`Declared<…>[]`) is exempt; any other `@Expr<T>` parameter's `.value` stays a build resource.
-  ```bp
-  fn f(comptime n: @Expr<i32>) { start(n.value); }                    // Build, as today
-  fn boot(comptime m: @Expr<Declared<unknown>[]> = …) { start(m.value); }   // Run
-  ```
-- **Recommendation.** (b): 364 erases `x.value` to `x` in the code that runs, so nothing of it runs at build.
-- **Blocks.** 165 s5's run-time `rakun.boot()`.
 
 #### B-99-c · May a dependency's own root call a catalogue default? (decision 551; 144 B-99)
 - **Proposed (opus, 2026-10-15; built as (a), awaiting the maintainer):** (a): only the root package's root module may leave a catalogue default out; a dependency's root is refused `typeinfo-all-default-outside-root` like any other module.

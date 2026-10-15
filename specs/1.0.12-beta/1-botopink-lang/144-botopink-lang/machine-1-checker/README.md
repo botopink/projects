@@ -2437,6 +2437,12 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
       (`typeinfo_all_default_at_caller`; the refusal `typeinfo_all_default_outside_root`, the explicit override
       `typeinfo_all_default_override`)
 
-Open: B-99-b — a function reading its catalogue parameter is `Stage.Build` (376 (1)), so a run-time `boot` is refused
-`build-and-run`; B-99-c — a dependency's own root is refused, as built.
+- [ ] decision 562: a function whose body reads a `comptime` parameter's `.value` is expanded at its call site — a
+      plain `for` over the catalogue, its conditions and the build-data reads run at build; each statement reaching a
+      run-time value (a `Declared`'s `value`, a host call, a `Stage.Run` function) emitted at the call site in order,
+      build-known parts as constants; a loop bound or condition needing a run-time value refused at it; 376 (1)'s
+      `Stage.Build` for a `.value` read goes — cells: a `boot()` starting three modules in `meta` order on every target
+      (its emitted `main` in the snapshot), the refused condition, a `banner(3)`-style non-catalogue parameter
+
+Open: B-99-c — a dependency's own root is refused, as built.
 

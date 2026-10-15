@@ -88,6 +88,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
+- [ ] 144 B-99 (rest) — decision 562: a function reading a `comptime` parameter's `.value` expanded at its call site, its run-time statements emitted there (165 s5 waits on it) · nothing
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
@@ -220,7 +221,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · B-99-b (a function reading its catalogue parameter is build-only today, so a run-time `boot` is refused)
+- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99's decision 562 box (the call expanded at its call site, run-time statements emitted)
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
 ## L3 — ready to open now
