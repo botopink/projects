@@ -130,6 +130,23 @@ lacks is a build error naming it; removing the dependency removes the module; no
       `query` as an external dependency, the imports `from "query"`; rakun's gate green · after s3
 - [x] front 145 renamed 145 query
 
+### s9 — one conformance, read by feature, its code linked (decision 548)
+
+**Repository:** rakun · **Model:** opus
+
+- [ ] `conformance/` is one suite: one root manifest (a workspace over every cell), cells grouped by package and, inside
+      a package, by the feature they show (`conformance/<package>/<feature>/<cell>/`), new package names only; the
+      per-root manifests go (a cell that needs its own `deps/` keeps them)
+- [ ] the reference is a map, not a running text: the root `conformance/docs.md` indexes packages → features, each
+      `conformance/<package>/docs.md` holds one section per feature (what it does, then its cells); no former library's
+      name or path left
+- [ ] code in a `docs.md` is only linked — `{src/main.bp}` in a cell's, `{<feature>/<cell>/src/main.bp}` in a
+      package's, a path relative to the `docs.md` — never a ` ```bp ` fence nor `<!-- example: … -->`; a check that
+      every link names a file; a fence that is no program stays `text`
+- [ ] `botopink cell check conformance/` answers as before the move; `AGENTS.md` describes the layout and the link
+      form; botopink-lang's tooling that reads rakun's former conformance roots (`test-analysis-equivalence`) a 144
+      row
+
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 
 **Repository:** rakun · **Model:** opus
@@ -151,8 +168,8 @@ lacks is a build error naming it; removing the dependency removes the module; no
       (owners), `README.md` (the high tier from 18 to 13 fronts), `AGENTS.md` § Layout and CI check 4 (12 library
       repositories), `language-gap-markers.sh`, `decisions-split.py` (one `decisions-taken.md` for rakun, the six
       former repositories' rows mapped to it through the alias tables); the six submodules removed
-- [ ] the five former GitHub repositories (emilia, styled, jhonstart, onze, dbcontext) archived with a README naming
-      `rakun/modules/<new name>` — the maintainer's (erika is `botopink/query`)
+- [x] the five former GitHub repositories (emilia, styled, jhonstart, onze, dbcontext) archived (erika is
+      `botopink/query`)
 
 **Impacted:** every library's `test-libs` row (six rows become one workspace of 17 members), the vscode-extension's
 library list if it names repositories, the meta CI.

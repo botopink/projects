@@ -213,6 +213,12 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 138 rest — the `cardume` submodule · `botopink/cardume` holds its scaffold
 
+### 165 rakun-workspace
+
+- [ ] 165 s9 — one conformance read by feature, its code linked `{src/main.bp}` (548) · nothing
+- [ ] 165 s5 — `rakun.boot()` and each package declaring its module · 144 B-98, B-99 (question B-99-a)
+- [ ] 165 s7 — Conformance, the front's last step · s5, s9
+
 ## L3 — ready to open now
 
 ### 144 botopink-lang
@@ -353,7 +359,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 165 s2 — every package renamed per the table by codemod (rakun-style, rakun-bpp with html/link/forms/testing, rakun-stylesheet with testing/bridge, rakun-service with actuator, rakun-ssr with cli/bundler/assets/content/og/release/testing, rakun-restclient; rakun-test → `rakun/src/testing/`), the starters removed, `rakun-ssr create` on the `botopink/rakun` source, `version_set.bp` one row per package (165-a (a)); erika and dbcontext untouched · question 165-b
 - [x] 165 s3 — dbcontext's plan folded into `rakun-data` (its `AGENTS.md`, the entity / context / repository layer to come), `modules/dbcontext/` removed; `rakun-data` declares `query`
 - [x] 165 s6 — erika renamed `query` (repository `botopink/query`, packages `query` and `query-test`); rakun holds no copy of it
-- [x] 165 s8 — 148/149/153/154/162's open steps refiled under 150 (s32 … s71); the six former submodules removed, `repository/query` in, every pointer at its `feat`; § Layout, CI check 4 (12 library repositories), `gate.sh`, `decisions-split.py` and the marker index name the workspace; the five former GitHub repositories still to archive (the maintainer's)
+- [x] 165 s8 — 148/149/153/154/162's open steps refiled under 150 (s32 … s71); the six former submodules removed, `repository/query` in, every pointer at its `feat`; § Layout, CI check 4 (12 library repositories), `gate.sh`, `decisions-split.py` and the marker index name the workspace; the five former GitHub repositories archived
 
 ### 144 botopink-lang
 
