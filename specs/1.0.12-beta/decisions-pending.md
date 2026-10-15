@@ -10,6 +10,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 - A front meeting a question it cannot answer from the code adds it here: id · title · Measured
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
+- **Blocking now** — maximum priority: the questions that hold machine 2's work back today, most blocking first; an index of entries kept in their sections.
 - **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
 - **Machine 2** — maximum priority: the questions front 144's machine 2 waits on, most urgent first. New development is centred on front 164 wasm-gc (s1 → s4, wasmtime-a, wasmgc-a).
 - **Front 165** — rakun-workspace: one `rakun` repository, 17 plug-and-play packages (mono-a).
@@ -22,6 +23,23 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
 number, which is **518**.
+
+## Blocking now — maximum priority (machine 2, 2026-10-15)
+
+The questions that hold machine 2's work back today, most blocking first. Each entry stays in its section (§ Machine 2);
+this table indexes them and leaves when they are answered.
+
+| Id | What it holds back | Recommendation |
+|---|---|---|
+| 164-s3-c | 164 s3 P0 (the `.wat` reader and the leaf table) — the piece that can run now beside s2 | (a) |
+| 164-s3-a | 164 s3 P4 (the comptime's term library), the largest piece of front 164 | (B) |
+| 546-b | rakun's 541 / 540 / 546 tests: 21 red in rakun-app, rakun-security and rakun-service (navigation, `rakun_problem`) | (i) |
+| 544-a | 164 s2 P6 (the bounded-memory cells), s2's close | (a) |
+| 546-a | the `crash` message every abort and `attempt` cell claims (kind alone until answered; B-101's cells) | (a) |
+| 485-b | B-88 box 4; the printed form of every refusal (577 snapshot lines in one form, 86 in the other) | (a) |
+| 541-c | B-88 box 2 (a lambda generator) | (a) |
+| 164-s3-b, 164-s3-d | 164 s3's gate line; s3 P1's `toUpper` / `toLower` | (a), (a) |
+| 540-c | the libraries' local `fsText` helpers | (a) |
 
 ---
 

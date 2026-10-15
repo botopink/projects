@@ -10,6 +10,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
 
+- **Bloqueando agora** — prioridade máxima: as perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam primeiro; um índice de entradas mantidas nas suas seções.
 - **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
 - **Máquina 2** — prioridade máxima: as perguntas que a máquina 2 da frente 144 espera, as mais urgentes primeiro. O desenvolvimento novo está centrado na frente 164 wasm-gc (s1 → s4, wasmtime-a, wasmgc-a).
 - **Frente 165** — rakun-workspace: um repositório `rakun`, 17 pacotes plug-and-play (mono-a).
@@ -22,6 +23,23 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
 número livre, que é **518**.
+
+## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
+
+As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam primeiro. Cada entrada fica na sua seção
+(§ Máquina 2); esta tabela as indexa e sai quando forem respondidas.
+
+| Id | O que ela segura | Recomendação |
+|---|---|---|
+| 164-s3-c | O 164 s3 P0 (o leitor de `.wat` e a tabela de folhas) — a peça que pode rodar agora ao lado do s2 | (a) |
+| 164-s3-a | O 164 s3 P4 (a biblioteca de termos do comptime), a maior peça da frente 164 | (B) |
+| 546-b | Os testes 541 / 540 / 546 do rakun: 21 vermelhos no rakun-app, rakun-security e rakun-service (navegação, `rakun_problem`) | (i) |
+| 544-a | O 164 s2 P6 (as células de memória limitada), o fechamento do s2 | (a) |
+| 546-a | A mensagem de `crash` que toda célula de abort e de `attempt` afirma (só o tipo até ser respondida; as células do B-101) | (a) |
+| 485-b | A caixa 4 do B-88; a forma impressa de toda recusa (577 linhas de snapshot numa forma, 86 na outra) | (a) |
+| 541-c | A caixa 2 do B-88 (uma lambda geradora) | (a) |
+| 164-s3-b, 164-s3-d | A linha do gate do 164 s3; o `toUpper` / `toLower` do s3 P1 | (a), (a) |
+| 540-c | Os auxiliares `fsText` locais das bibliotecas | (a) |
 
 ---
 
