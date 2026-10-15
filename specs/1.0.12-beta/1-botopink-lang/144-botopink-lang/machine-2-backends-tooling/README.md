@@ -2004,6 +2004,20 @@ B-87 threads a `var` a value `case`'s arm reassigns; a value `if` is not threade
 
 - [ ] the value `if` threads a reassigned `var` as the value `case` does; a cell, red on erlang, green on every target
 
+### B-107 — `Index` and `Slice` are ambient (docs § indexing, decision 63) but not as `Display` and `Closeable` are
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the checker)
+
+B-96 keeps the ambient behaviors in a list of two in the compiler. The reference names four: `Index<K, V>` and
+`Slice<V>` "ambient like `Display`", and 539 (6) reads "the compiler names no std type". Today `fn f(m: Index<i32,
+i32>)` is `unknown type`, and an `implement Index<…>` with no `at` is accepted while one of `Closeable` with no `close`
+is refused.
+
+- [ ] the ambient set is what `builtins.d.bp` declares and no compiler rule reads (`Annotation`, `Decorator`,
+      `Renderable` each have their own) — `Display`, `Closeable`, `Index`, `Slice`; cells `ambient_index_parameter`,
+      `ambient_index_implement_missing_method`, red today
+- [ ] the compiler's comment on the ambient set no longer cites `<T: Closeable>` (no such syntax)
+
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
@@ -2057,9 +2071,12 @@ The fix reads the field through the value's own tag for the records the compiler
 539 (6): `Closeable` is "a plain behavior for generic code". It is ambient in `builtins.d.bp` (as `Display`), but
 `fn f(c: Closeable)` is refused `unknown type`, and a type's inline `implement Closeable` is not checked against it.
 
-- [ ] an ambient behavior names a parameter type (`fn f(c: Closeable)`, `fn f<T: Closeable>(c: T)`) — cell, red today
-- [ ] an inline `implement` of an ambient behavior checked against its declaration — a refusal cell
-- [ ] `builtins.d.bp`'s comment on `Closeable` true
+- [x] an ambient behavior names a parameter type (`fn f(c: Closeable)`) — cell `ambient_behavior_parameter`; the
+      language has no bound on a type parameter, so `<T: Closeable>` is no form
+- [x] an inline `implement` of an ambient behavior checked against its declaration — a refusal cell
+- [x] `builtins.d.bp`'s comment on `Closeable` true
+
+Left: `Index` and `Slice`, ambient too (B-107).
 
 ### B-62 — nine cells red on `feat`: a manifest column and a dependency's path
 
