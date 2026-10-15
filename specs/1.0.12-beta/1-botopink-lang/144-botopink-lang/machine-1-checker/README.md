@@ -2165,7 +2165,17 @@ After the group's other steps have landed on `feat`; it holds back no front that
 Found by B-27 step 6: a line comment between two statements inside a `case` arm's block is refused "this token cannot
 appear here" on every target; a comment between statements of a function body is accepted.
 
-- [ ] a `//` comment between the statements of a `case` arm block parses, and the formatter keeps it — a cell, red today
+- [x] a `//` comment between the statements of a `case` arm block parses, and the formatter keeps it —
+      `case_arm_block_comment`; both arm block forms read through the shared block body
+
+### B-125 — a `//` comment after a block's tail expression is a parse error
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-123: a line comment after a bare tail expression with no `;` (`a` then `// last` then `}`) is refused "this
+token cannot appear here", in a function body and in every block form.
+
+- [ ] a comment between a block's tail expression and its `}` parses, and the formatter keeps it — a cell, red today
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
 
