@@ -133,26 +133,27 @@ Answer (tick one per question):
 - [ ] (c) a generic `mapErr` on `@Result` (independent of (a))
 
 **8 · mark-a — a marker on every body that compiles specially (the maintainer, 2026-10-15).** Answered
-(full entry in § Machine 2): one pattern, `[marker] fn name(params) -> Type<Value[, Error]>`. The marker —
-`iter`, `async`, `async iter`, `component` — comes before `fn` and before a lambda's brace and says how the body
-compiles; the return type is written whole, named after its marker (`Iter`, `Async`, `AsyncIter`, `Component`), and a
-failure is the type's second parameter on every one (`X<T, E>`, `Result<T, E>` without a marker). `result` (point 2)
-is withdrawn. **Blocks:** the markers' step; it answers 541-c.
+(full entry in § Machine 2): one pattern, `[marker] fn name(params) -> Type<…>`. The marker — `iter`, `async`,
+`async iter`, `component` — comes before `fn` and before a lambda's brace and says how the body compiles; the return
+type is written whole and named after its marker (`Iter<T, R>`, `Async<T>`, `AsyncIter<T, R>`, `Component<R>`, `R` of
+an iterator the value it ends with, as JS's `Generator<T, TReturn>`); a failure is always a `Result` in the value's
+layer (`Async<Result<T, E>>`, `Iter<T, Result<void, E>>`, `Component<Result<R, E>>`), and `Result` needs no marker.
+The `@` types become std types after the markers, in three pieces. **Blocks:** the markers' step; it answers 541-c.
 
 ```bp
 fn parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
-async fn buscar(id: i32) -> Async<User, HttpError> { try await http.get("/users/" + id) }
+fn porta(s: string) -> i32 { try toInt(s) catch 8080 }                      // handled: no Result
+async fn buscar(id: i32) -> Async<Result<User, HttpError>> { try await http.get("/users/" + id) }
 async fn salvar(u: User) -> Async<void> { await db.put(u) }
-iter fn contar() -> Iter<i32> { yield 1; yield 2 }
-async iter fn linhas(f: File) -> AsyncIter<string, FsError> { loop { val c = try await f.read(4096); …; yield linha } }
-component fn Pagina(props: PaginaProps) -> Component<View, HttpError> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
-fn buscarCache(id: i32) -> Async<User, HttpError> { cache.get(id) ?? buscar(id) }   // hands on: no marker
+iter fn contar() -> Iter<i32> { yield 1; yield 2 }                         // Iter<i32, void>
+iter fn ler() -> Iter<i32, string> { yield 1; return "fim" }               // ends with "fim"
+async iter fn linhas(f: File) -> AsyncIter<string, Result<void, FsError>> { loop { val c = try await f.read(4096); …; yield linha } }
+component fn Pagina(props: PaginaProps) -> Component<Result<View, HttpError>> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
+fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }   // hands on: no marker
 usar(iter { -> yield 1; yield 2 })
 xs.map(async { x -> await f(x) })
-xs.map({ s -> try toInt(s) })                       // E from the expected fn(string) -> Result<i32, E>
-for await linha in try linhas(f) { … }              // an FsError ends the loop and propagates
+for await linha in try linhas(f) { … }              // string items; an FsError ends the loop and propagates
 ```
-
 Answer:
 - [x] (3)(a) the `@` types become std types in a step of their own, after the markers, in three pieces **(recommended)**
 - [ ] (3)(b) in the same step as the markers
@@ -1222,28 +1223,29 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** B-88 box 2 only.
 
 #### mark-a · A marker on every body that compiles specially: `iter`, `async`, `async iter`, `component` (decisions 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525, 539, 540; 541-c; 144 B-88)
-- **Answered (the maintainer, 2026-10-15; awaiting its number in `decisions-taken.md`):** one pattern for every body, `[marker] fn name(params) -> Type<Value[, Error]>` — the marker says how the body compiles, the return type is written whole and is what a caller receives.
+- **Answered (the maintainer, 2026-10-15; awaiting its number in `decisions-taken.md`):** one pattern for every body, `[marker] fn name(params) -> Type<…>` — the marker says how the body compiles, the return type is written whole and is what a caller receives, and a failure is always a `Result` in the value's layer.
   1. **The markers, before `fn` and before a lambda's brace.** `iter` (`yield`), `async` (`await`), `async iter` (`yield` and `await`), `component` (`use`, `await`); `pub` first (`pub async fn`); a `fn` expression alike (`iter fn() -> Iter<i32> { … }`). A lambda: `iter { -> yield 1 }`, `async { x -> await f(x) }` — `->` tells a lambda from a block (525), so `async { … }` (523) and `iter loop { … }` (125) stay the block forms. No other combination. Before a `{` the three words are taken: a function named `iter`, `async` or `component` called with a trailing lambda writes its parentheses (`component({ -> … })`, not `component { -> … }`, 525); as a binding, parameter or field each stays a name.
-  2. **The type names its marker, written whole.** `Iter<T>`, `Async<T>`, `AsyncIter<T>`, `Component<R>`; a body with no marker answers `T` or `Result<T, E>`. `@Iterator`, `@Task`, `@Stream` and `@Component` are renamed (`@Stream` → `AsyncIter`, superseding point (4)'s `AsyncIterator`); a function that answers nothing under `async` writes `Async<void>`. A marker whose return type is not its type is refused (`marker-type-mismatch`).
-  3. **A failure lives in the type, the same on every one.** Each type is `X<T>` (does not fail) or `X<T, E>` (fails with `E`): `Result<T, E>`, `Iter<T, E>`, `Async<T, E>` (432's `Task<Result<T, E>>`), `AsyncIter<T, E>` (point (5)(a)), `Component<R, E>`. Only a failure that leaves the body needs the `E`: a `try` that propagates and a `throw` are written in a body whose return type carries one, and there `return v` is `Ok(v)`; a `try … catch` handled in the body (537) leaves nothing and needs none (`fn porta(s: string) -> i32 { try toInt(s) catch 8080 }`); a failure ends an `Iter` / `AsyncIter`, consumed by `for x in try xs` / `for await x in try xs` or a `case` on it; a `component`'s `throw` reaches the nearest `ErrorBoundary` (414, 504). No marker for a failure: `Result` is the one type with none, because a failure compiles as an early return and changes nothing of how the body runs — the four markers each do (a generator, a suspended body, a render scope); `result` (point (2)) is withdrawn. `Iter<Result<T, E>>` / `AsyncIter<Result<T, E>>` stay iterators whose items are results, the iteration going on past an `Error`.
-  4. **Refusals.** The keyword without its marker (`yield-without-generator`, `await-outside-async`, a `use` outside `component`, the hint naming the marker); a `throw` or a propagating `try` in a body whose return type carries no `E`; `marker-type-mismatch`; a marked lambda whose expected type differs (`xs.forEach(iter { x -> yield x })`: an `iter` lambda where `fn(x: T)` is expected); a marked lambda with no expected type and no annotation (147). A lambda takes its type, `E` included, from its expected type (`xs.map({ s -> try toInt(s) })` where `fn(string) -> Result<i32, E>` is expected).
-  5. **The type alone needs no marker.** A function that hands the value on is written with the same signature and no marker (`fn buscarCache(id: i32) -> Async<User, HttpError> { cache.get(id) ?? buscar(id) }`). A component's asynchrony stays the hooks list's mark (375).
+  2. **The type names its marker, written whole.** `Iter<T, R = void>`, `AsyncIter<T, R = void>` — `T` each `yield`'s value, `R` the value the iteration ends with (the body's `return v`; a bare end is `void`), as JS's `Generator<T, TReturn>`; `Async<T>`; `Component<R>`; a body with no marker answers `T`. `@Iterator`, `@Task`, `@Stream` and `@Component` are renamed (`@Stream` → `AsyncIter`, superseding point (4)'s `AsyncIterator`); a function that answers nothing under `async` writes `Async<void>`. An iterator's `next()` answers `Step.Item(T)` or `Step.Done(R)` (JS's `{ value, done }`). A marker whose return type is not its type is refused (`marker-type-mismatch`).
+  3. **A failure is a `Result` in the value's layer, the same on every one.** `Result<T, E>`; `Async<Result<T, E>>` (432 unchanged); `Iter<T, Result<V, E>>` / `AsyncIter<T, Result<V, E>>` — the failure is the iteration's end, so a `throw` or a propagating `try` ends it with `Error(e)`, the items staying bare `T`, consumed by `for x in try xs` / `for await x in try xs` (the failure propagates) or by `next()` (superseding point (5)'s `AsyncIterator<T, E>`); `Component<Result<R, E>>` — a component may `throw` only under it, the `Error` reaching the nearest `ErrorBoundary` (414, 504). A propagating `try` and a `throw` are written where that layer is a `Result`, and there `return v` is `Ok(v)`; a `try … catch` handled in the body (537) leaves nothing and needs none (`fn porta(s: string) -> i32 { try toInt(s) catch 8080 }`). `Iter<Result<T, E>>` / `AsyncIter<Result<T, E>>` stay iterators whose items are results: `yield Error(e)` emits one and the iteration goes on. No marker for a failure: `Result` is the one type with none, because a failure compiles as an early return and changes nothing of how the body runs — the four markers each do (a generator, a suspended body, a render scope); `result` (point (2)) is withdrawn.
+  4. **Refusals.** The keyword without its marker (`yield-without-generator`, `await-outside-async`, a `use` outside `component`, the hint naming the marker); a `throw` or a propagating `try` where the value's layer is not a `Result`; `marker-type-mismatch`; a marked lambda whose expected type differs (`xs.forEach(iter { x -> yield x })`: an `iter` lambda where `fn(x: T)` is expected); a marked lambda with no expected type and no annotation (147). A lambda takes its type from its expected type (`xs.map({ s -> try toInt(s) })` where `fn(string) -> Result<i32, E>` is expected).
+  5. **The type alone needs no marker.** A function that hands the value on is written with the same signature and no marker (`fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }`). A component's asynchrony stays the hooks list's mark (375).
+  6. **Order: three pieces, each with its oracle** (point (3) (a)). The `@` cannot go first — today it is what admits `await` and `yield`. (i) The markers: the checker reads the marker, a codemod adds it wherever a body writes the keyword, the types keep their `@` meanwhile (`async fn buscar() -> @Task<User>`); every cell answers the same. (ii) The types: the `@` removed and the names changed (`@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`), the types declared in std's `.bp`, `comptime/effect_chain.zig` shrinking; a codemod, every cell the same. (iii) What is new: an iterator's `R` (`return v`, `Step`), a failure in `R` ending the iteration, `Component<Result<R, E>>`, on the four backends, new cells red then green. Each piece one landing per repository.
   ```bp
   fn parse(s: string) -> Result<i32, ParseError> { val n = try toInt(s); if (n < 0) { throw ParseError.Negative } n }
-  async fn buscar(id: i32) -> Async<User, HttpError> { try await http.get("/users/" + id) }
+  fn porta(s: string) -> i32 { try toInt(s) catch 8080 }                      // handled: no Result
+  async fn buscar(id: i32) -> Async<Result<User, HttpError>> { try await http.get("/users/" + id) }
   async fn salvar(u: User) -> Async<void> { await db.put(u) }
-  iter fn contar() -> Iter<i32> { yield 1; yield 2 }
-  async iter fn linhas(f: File) -> AsyncIter<string, FsError> { loop { val c = try await f.read(4096); …; yield linha } }
-  component fn Pagina(props: PaginaProps) -> Component<View, HttpError> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
-  fn buscarCache(id: i32) -> Async<User, HttpError> { cache.get(id) ?? buscar(id) }   // hands on: no marker
+  iter fn contar() -> Iter<i32> { yield 1; yield 2 }                         // Iter<i32, void>
+  iter fn ler() -> Iter<i32, string> { yield 1; return "fim" }               // ends with "fim"
+  async iter fn linhas(f: File) -> AsyncIter<string, Result<void, FsError>> { loop { val c = try await f.read(4096); …; yield linha } }
+  component fn Pagina(props: PaginaProps) -> Component<Result<View, HttpError>> { val tema = use(Tema); val u = try await buscar(props.id); Card(u, tema) }
+  fn buscarCache(id: i32) -> Async<Result<User, HttpError>> { cache.get(id) ?? buscar(id) }   // hands on: no marker
   usar(iter { -> yield 1; yield 2 })
   xs.map(async { x -> await f(x) })
-  xs.map({ s -> try toInt(s) })                       // E from the expected fn(string) -> Result<i32, E>
-  for await linha in try linhas(f) { … }              // an FsError ends the loop and propagates
+  for await linha in try linhas(f) { … }              // string items; an FsError ends the loop and propagates
   ```
-  6. **Order: three pieces, each with its oracle** (point (3) (a)). The `@` cannot go first — today it is what admits `await` and `yield`. (i) The markers: the checker reads the marker, a codemod adds it wherever a body writes the keyword, the types keep their `@` meanwhile (`async fn buscar() -> @Task<User>`); every cell answers the same. (ii) The types: the `@` removed and the names changed (`@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`), the types declared in std's `.bp`, `comptime/effect_chain.zig` shrinking, `Task<Result<T, E>>` → `Async<T, E>`; a codemod, every cell the same. (iii) The new `E`: `Iter<T, E>`, `AsyncIter<T, E>`, `Component<R, E>` on the four backends, new cells red then green. Each piece one landing per repository.
-- **Measured.** Today the return type decides: `@Iterator` makes a generator (541 (2)), `@Task` a state machine (392), `@Result` admits `try` / `throw` (431), `@Component` a render lambda (388); a component's asynchrony is inferred (375). Nothing in a signature or on a lambda says its body is special. A trailing lambda needs no parentheses (`twice { -> 4 }`, cell `trailing_lambda_call`), and none of `iter`, `async`, `component` is a keyword of the lexer.
-- **Amends.** 541 (2); 375 (a component's marker is written, its asynchrony still inferred); 392; 414 (a `component` that throws writes `Component<R, E>`); 431 (a propagating `try`, a `throw` and `return v` as `Ok(v)` under an `E` in the return type; a `try … catch` anywhere); 432 (`Task<Result<T, E>>` → `Async<T, E>`); 539, 540 (`@Stream` → `AsyncIter`; `File.lines()` / `chunks()` answer `AsyncIter<string, FsError>` / `AsyncIter<Bytes, FsError>`). Answers 541-c: a lambda or `fn` expression is a generator when it carries `iter`, its type agreeing with its expected type (147). Migration: a codemod adds the marker wherever a body writes the keyword and renames the types, one landing per repository.
+- **Measured.** Today the return type decides: `@Iterator` makes a generator (541 (2)), `@Task` a state machine (392), `@Result` admits `try` / `throw` (431) wherever a layer of the return is one (`builtins.d.bp`), `@Component` a render lambda (388); a component's asynchrony is inferred (375). Nothing in a signature or on a lambda says its body is special. A trailing lambda needs no parentheses (`twice { -> 4 }`, cell `trailing_lambda_call`), and none of `iter`, `async`, `component` is a keyword of the lexer.
+- **Amends.** 541 (2); 375 (a component's marker is written, its asynchrony still inferred); 392; 414 (a component throws only under `Component<Result<R, E>>`); 431 (a propagating `try`, a `throw` and `return v` as `Ok(v)` where the value's layer is a `Result`; a `try … catch` anywhere); 539, 540 (`@Stream` → `AsyncIter`; `File.lines()` / `chunks()` answer `AsyncIter<string, Result<void, FsError>>` / `AsyncIter<Bytes, Result<void, FsError>>`). Answers 541-c: a lambda or `fn` expression is a generator when it carries `iter`, its type agreeing with its expected type (147). Migration: a codemod adds the marker wherever a body writes the keyword and renames the types, one landing per repository.
 - **Blocks.** The markers' step (144); 541-c's B-88 box 2.
 
 #### 485-b · A refusal's printed line: `error[<code>]: <message>` or `error: <code>: <message>`? (decisions 475 (2), 485; 144 B-88)
