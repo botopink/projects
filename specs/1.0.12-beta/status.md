@@ -321,7 +321,7 @@ last section. Open: 88 questions, 6 contradictions, 100 implementation choices (
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:
-- [ ] 434-b — 144 B-17 · B-27-a/b/c — 144 B-27 · B-19-b, B-19-a — 144 B-19 · 116-a — 116 s2 · 50-b — 50 s2, 53 s6
+- [ ] 434-b — 144 B-17 · B-27-b/c — 144 B-27 · B-19-b, B-19-a — 144 B-19 · 116-a — 116 s2 · 50-b — 50 s2, 53 s6
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):
 - [ ] 434-b — the at-build render path on one wasm runtime · 144 B-17

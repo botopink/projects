@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**128 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **552**.
+number, which is **553**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -164,12 +164,11 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-27-a** — a `.bpp` header declaration after a statement: moved or refused? (§ Machine 1) | whether a declaration written below a statement in a `.bpp` header is refused, or moved to module level without a word as today | 144 B-27's unfold row | (a) refused, naming the statement before it |
-| 2 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
-| 3 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
-| 4 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 5 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 6 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 1 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
+| 2 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
+| 3 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 4 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 5 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -914,24 +913,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 156's wasm markers.
-
-#### B-27-a · A `.bpp` header declaration written after a statement: moved or refused? (decisions 199, 212; 144 B-27)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused at the declaration, located, naming the statement before it** — the header reads top to bottom as written; a declaration after a statement would run in an order the file does not show. Changes: a refusal cell; the unfold stops moving it.
-- **Context.** A `.bpp` file is a component written as markup; it opens with a header of botopink code, ended by `---` (decision 212). Decision 199 keeps the header's declarations (`import`, `type`, `pub`) at module level and turns its statements (`val`, `use`) into the body of the function the file unfolds to. Today, a declaration written below a statement is moved out of place without a word, so the file runs in an order other than the one it shows. The choice is whether that stays or becomes a refusal, before 144 B-27's unfold row closes.
-- **Measured.** The unfold moves it after the function, its location mapped back.
-- **Options.**
-  (a) Refused.
-  ```bp
-  val n = props.count;
-  fn label() -> string { … }   // refused: a declaration after a statement
-  ```
-  (b) Moved, as built.
-  ```bp
-  val n = props.count;
-  fn label() -> string { … }   // moved to module level
-  ```
-- **Recommendation.** (a): the header reads top to bottom as written; the most restrictive reading (67) refuses what would otherwise be moved without a word.
-- **Blocks.** 144 B-27's unfold row.
 
 #### B-27-b · How does an importer spell a `.bpp` file whose name is not an identifier (`not-found.bpp`)? (decisions 199, 289; 144 B-27)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): it does not — such a file is a route's leaf, read by the router by path, never imported; importing it is refused naming the file** — a module name is an identifier everywhere else.

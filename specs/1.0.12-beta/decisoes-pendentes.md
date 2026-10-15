@@ -1,11 +1,11 @@
 # Decisões pendentes — 1.0.12-beta
 
-**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**127 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
 - Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
-  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **552**.
+  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **553**.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **552**.
+número livre, que é **553**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -171,12 +171,11 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
-| 1 | **B-27-a** — uma declaração de cabeçalho de `.bpp` depois de uma instrução: movida ou recusada? (§ Máquina 1) | se uma declaração escrita abaixo de uma instrução num header de `.bpp` é recusada, ou movida para o nível do módulo sem aviso como hoje | a linha de unfold do 144 B-27 | (a) recusada, nomeando a instrução antes dela |
-| 2 | **B-27-b** — importar um arquivo `.bpp` cujo nome não é identificador (`not-found.bpp`) (§ Máquina 1) | se um arquivo de página como `not-found.bpp` pode ser importado afinal, e como se escreve | a linha `not-found.bpp` do 144 B-27 | (b) um caminho entre aspas, com alias — o que a 289 já diz |
-| 3 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
-| 4 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
-| 5 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
-| 6 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 1 | **B-27-b** — importar um arquivo `.bpp` cujo nome não é identificador (`not-found.bpp`) (§ Máquina 1) | se um arquivo de página como `not-found.bpp` pode ser importado afinal, e como se escreve | a linha `not-found.bpp` do 144 B-27 | (b) um caminho entre aspas, com alias — o que a 289 já diz |
+| 2 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
+| 3 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
+| 4 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
+| 5 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -921,24 +920,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** Os marcadores de wasm do 156.
-
-#### B-27-a · Uma declaração no header de um `.bpp` escrita depois de uma instrução: movida ou recusada? (decisões 199, 212; 144 B-27)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusada na declaração, localizada, nomeando a instrução antes dela** — o header se lê de cima para baixo como escrito; uma declaração depois de uma instrução rodaria numa ordem que o arquivo não mostra. Muda: uma cell de recusa; o unfold deixa de movê-la.
-- **Contexto.** Um arquivo `.bpp` é um componente escrito como markup; ele abre com um header de código botopink, terminado por `---` (decisão 212). A decisão 199 mantém as declarações do header (`import`, `type`, `pub`) no nível do módulo e transforma as suas instruções (`val`, `use`) no corpo da função em que o arquivo se desdobra. Hoje, uma declaração escrita abaixo de uma instrução é movida de lugar sem aviso, então o arquivo roda numa ordem diferente da que mostra. A escolha é se isso fica ou vira uma recusa, antes que a linha do unfold do 144 B-27 feche.
-- **Medido.** O unfold a move para depois da função, com a localização mapeada de volta.
-- **Opções.**
-  (a) Recusada.
-  ```bp
-  val n = props.count;
-  fn label() -> string { … }   // refused: a declaration after a statement
-  ```
-  (b) Movida, como construído.
-  ```bp
-  val n = props.count;
-  fn label() -> string { … }   // moved to module level
-  ```
-- **Recomendação.** (a): o header se lê de cima para baixo como escrito; a leitura mais restritiva (67) recusa o que de outro modo seria movido sem aviso.
-- **Trava.** A linha do unfold do 144 B-27.
 
 #### B-27-b · Como quem importa escreve um `.bpp` cujo nome não é identificador (`not-found.bpp`)? (decisões 199, 289; 144 B-27)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não escreve — um arquivo assim é a folha de uma rota, lida pelo router pelo caminho, nunca importada; importá-lo é recusado nomeando o arquivo** — um nome de módulo é um identificador em todo outro lugar.

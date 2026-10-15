@@ -2108,8 +2108,8 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
       repository/onze` is the orchestrator's commit; `docs/botopink-json.md` says in one line the
       orchestrator repository carries the mocking library as tagged history
 
-- [ ] a `.bpp` declaration written after a statement: moved after the function, its location mapped back (as built), or
-      refused · question B-27-a
+- [ ] a `.bpp` declaration written after a statement refused at the declaration, naming the statement before it
+      (decision 552); the unfold stops moving it — a refusal cell
 - [ ] `not-found.bpp`: how an importer spells a file name that is not an identifier · question B-27-b
 - [ ] 97 s6 rewritten to decision 506's answer (c) — its boxes are written for (a) / (b) · question B-27-c
 
