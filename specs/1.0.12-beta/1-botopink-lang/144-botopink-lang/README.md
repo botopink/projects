@@ -352,6 +352,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-114 | [2](machine-2-backends-tooling/README.md) | commonJS: an `f64` passed as a type parameter is written the JS engine's way (521) |
 | B-115 | [2](machine-2-backends-tooling/README.md) | commonJS: the generic calls B-114's print shape does not reach — a fn value, another module, a generic method (521) |
 | B-116 | [2](machine-2-backends-tooling/README.md) | the body markers `iter`, `async`, `async iter`, `component`; the `@` types renamed into std; a failure a `Result` in the value's layer (553) |
+| B-117 | [2](machine-2-backends-tooling/README.md) | `botopink check` of a project of refused decorator markers peaks at 8 GB |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

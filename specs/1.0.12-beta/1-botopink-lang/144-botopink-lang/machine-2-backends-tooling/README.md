@@ -2143,6 +2143,19 @@ calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for
 - [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
       today
 
+### B-117 — `botopink check` of a project of refused decorator markers peaks at 8 GB
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+validation's `test/refusal_test.bp` ("every marker on a field type it cannot check is a located compile error") writes
+one module per validation marker, each with the marker on a field type it cannot check, and runs `botopink check .`
+over them: the process peaks at about 8.2 GB with `feat`'s compiler (measured 2026-10-15), and while it runs with other
+gates the machine runs out of memory. Each module answers one refusal; nothing in the project needs that memory.
+
+- [ ] the cause measured (which phase holds what: the per-module comptime runs, the decorator expansions, the
+      diagnostics) and fixed; that check under 1 GB; a unit test or a cell the hook runs that builds a project of many
+      refused modules and bounds its peak (478)
+
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
 **Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),

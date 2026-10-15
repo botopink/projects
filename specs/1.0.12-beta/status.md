@@ -86,6 +86,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace and lists it alone in the copy's manifest (548); the nested-workspace fixture moved to `cli_contract.sh` (`tsc-check.sh` green again); rakun's one root manifest landed (165 s9)
 - [x] 144 B-114 — commonJS: an `f64` bound to a top-level generic fn's `T` is written `4.0` (521) — the type's print shape handed in at each direct call (`generic_float_text`, `generic_float_record_text`)
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
+- [ ] 144 B-117 — `botopink check` of validation's refused-marker project peaks at 8 GB (OOM with other gates) · nothing
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-99 (rest) — decision 562: a function reading a `comptime` parameter's `.value` expanded at its call site, its run-time statements emitted there (165 s5 waits on it) · nothing
