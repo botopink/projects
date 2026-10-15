@@ -130,12 +130,14 @@ the generator and stream loops — P2b; a module holding one still lowers to lin
 
 Each box a cell on every target, out on wasm (never a `snapshot/targets/` departure) until it lands.
 
-- [ ] `continue` inside a block or a `case` arm in a loop builds (today `compilation failed UnknownName`); cell
+- [x] `continue` inside a block or a `case` arm in a loop builds (today `compilation failed UnknownName`); cell
       `block_continue_reaches_loop`
-- [ ] `await tasks[1]!` on an array of tasks answers the task's value; a `[]!` line in `await_postfix_binds_tighter`
-- [ ] an abort's text (535): `@panic` / `@todo` / `assert` / overflow write `panic: <message>`; an integer division by
-      zero writes 527 (3)'s checked message, not a bare trap — cell `abort_text_panic` on the four targets, its `message`
-      binding removed (144 B-90)
+- [x] `await tasks[1]!` on an array of tasks answers the task's value; a `[]!` line in `await_postfix_binds_tighter`
+- [x] an abort's text (535): `@panic` / `@todo` / `assert` write `panic: <message>` — cell `abort_text_panic` on the four
+      targets, its `message` binding removed (144 B-90)
+- [ ] an integer overflow and an integer division by zero write 527 (3)'s checked message (the operator, the type,
+      `file:line:col`), not a bare trap — the site handed to every checked-arithmetic helper, in both lowerings (after
+      s2 P2b, which reworks the same helpers); a cell on the four targets
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
       `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
       `targets` narrowing removed (144 B-95, B-97)
