@@ -158,15 +158,19 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       the trap, deleted and the cell red on wasm until then, and an overflow line in `std_failure_attempt_abort_kinds`
       — the site a message argument on each checked call, raised through `panic_raise` when the module has
       exceptions; `abort_text_overflow` for the uncaught text
-- [ ] `INT_MIN / -1` writes 527 (3)'s overflow message (today a bare trap), and a GC module with exceptions keeps the
-      checked site in GC (today it falls back to linear memory for it) — a line in `abort_text_overflow`
+- [x] `INT_MIN / -1` writes 527 (3)'s overflow message (today a bare trap), i32 and i64, caught by `attempt` — a line in
+      `abort_text_overflow`, `int_division_min_by_minus_one`'s wasm departure deleted
+- [ ] a GC module with exceptions keeps the checked site in GC (today it falls back to linear memory for it: `panic_raise`
+      has no GC form)
+- [ ] `failure.attempt` over an `i64` answer (today refused on wasm: "would narrow an `i64` value to an `i32` slot") — an
+      `i64::MIN / -1` line in `abort_text_overflow` under `attempt`
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
       `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
       `targets` narrowing removed (144 B-95, B-97)
 - [x] a loop's label read (`break :outer`, `continue :outer`) — cells `block_jump_label_reaches_loop`,
       `block_jump_label_continue_reaches_loop`, `block_jump_label_continue_nested_shapes`; a bare `return` in a yielding arm ends the generator, not the arm — cell
       `case_arm_return_in_yielding_arm` (144 B-88)
-- [ ] `val f: ?f64 = 5.0; f?.toString()` answers `5.0` (today `0.0`) — a line in `optional_chain_string_text`
+- [x] `val f: ?f64 = 5.0; f?.toString()` answers `5.0` (today `0.0`) — a line in `optional_chain_string_text`
       (144 B-78's Conformance)
 - [ ] emilia's module lowers on wasm: every emilia cell fails the narrowing audit, wasm refusing it with `type mismatch:
       expected i32, got void` rather than a missing host binding (measured before s2 too) — emilia's cells (in rakun,

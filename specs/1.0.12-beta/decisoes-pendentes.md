@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**123 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**130 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -36,6 +36,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 1 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
 | 2 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
 | 3 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
+| 4 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
 
 **1 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
 texto, então cada biblioteca que o leva a um erro `string` escreve o seu próprio `case`
@@ -1144,6 +1145,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) Esperar o P5.
 - **Recomendação.** (a) — uma igualdade para todo valor (os outros alvos comparam estruturalmente).
 - **Bloqueia.** A forma GC desse módulo; nenhuma resposta hoje.
+
+#### B-116-a … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
+- **Proposta (fable, 2026-10-15; aguardando o mantenedor; o P1 constrói cada recomendação, uma resposta diferente reverte aquela parte):**
+  - **B-116-a** · Um corpo `-> @Task<T>` / `-> @Component<R>` que não escreve nenhuma palavra-chave (a maioria dos componentes do jhonstart; um corpo `@Task` que devolve um valor): **(a) o codemod o marca onde quer que ele compile de modo especial hoje**, toda célula igual; (b) ele fica sem marcador, recusado em `return v` quando a recusa entrar.
+  - **B-116-b** · Uma `declare fn … -> @Task<T>` sem corpo (as ligações host da std) e um membro sem corpo de um behavior: **(a) nenhum marcador; um marcador numa declaração recusado (`marker-on-declaration`)** — nada compila; (b) o marcador escrito.
+  - **B-116-c** · O lugar do marcador: **(a) `#[…] [pub] [default] <marker> fn`, as anotações primeiro**; (b) outra ordem.
+  - **B-116-d** · Os códigos: **(a) novos `marker-without-arrow`, `marker-lambda-without-expected-type`; `effect-await-without-task`, `yield-without-generator` e o de `use` mantêm os seus códigos com uma dica que nomeia o marcador**, renomeados no (ii) se for o caso; (b) renomeados agora (`await-without-async`, …).
+  - **B-116-e** · `component { -> … }`, que não tem forma de bloco sobre a qual rebaixar: **(a) analisado e verificado no (i), rebaixado no (iii)** (uma recusa localizada até lá); (b) rebaixado pelo caminho de component-fn no (i).
+  - **B-116-f** · `async fn f()` sem tipo de retorno: **(a) recusado por `marker-type-mismatch` no (i), "escreva `-> @Task<…>`"**, os tipos `@` sendo mantidos; (b) inferido `@Task<void>`.
+  - **B-116-g** · Uma lambda final marcada `f(1) async { x -> … }`: **(a) não analisada no (i), escrita dentro dos parênteses**; (b) analisada.
+- **Medido.** Nenhuma lambda faz await ou yield hoje (`inferFunctionExprExpectedInner` limpa o contexto de gerador e de task), então uma lambda marcada é uma superfície nova; `botopink migrate` foi removido (B-56) e o formatador carrega as migrações (525, 541); a std declara 8 ligações host `-> @Task` sem corpo; 125 células escrevem `await`, 59 `yield`, 66 `use`.
+- **Opções.** Cada ponto (a) ou (b) acima.
+- **Recomendação.** (a) para cada — a leitura mais restritiva, a resposta de toda célula inalterada.
+- **Bloqueia.** Nada construído espera (o P1 constrói (a)); B-116-a fixa o que o codemod (P2, P3) escreve.
 
 #### 518-a · Duas recusas de `needs:` que nenhuma decisão afirma (decisão 518 (1); 144 B-07)
 - **Proposto (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): as duas continuam recusas, cada uma com uma célula** — `needs:` em `@External.Node` / `@External.Erlang`, e `needs:` dado como qualquer coisa que não uma lista de valores `WasmNeed`; a leitura mais restritiva (67).

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**123 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**130 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -36,6 +36,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 1 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
 | 2 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
 | 3 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
+| 4 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
 
 **1 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
 so each library that carries it into a `string` error writes its own `case`
@@ -1142,6 +1143,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) Wait for P5.
 - **Recommendation.** (a) — one equality for every value (the other targets compare structurally).
 - **Blocks.** That module's GC form; no answer today.
+
+#### B-116-a … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
+- **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**
+  - **B-116-a** · A `-> @Task<T>` / `-> @Component<R>` body that writes no keyword (most of jhonstart's components; a `@Task` body returning a value): **(a) the codemod marks it wherever it compiles specially today**, every cell the same; (b) it stays unmarked, refused at `return v` once the refusal is on.
+  - **B-116-b** · A bodyless `declare fn … -> @Task<T>` (std's host bindings) and a behavior's bodyless member: **(a) no marker; a marker on a declaration refused (`marker-on-declaration`)** — nothing compiles; (b) the marker written.
+  - **B-116-c** · The marker's place: **(a) `#[…] [pub] [default] <marker> fn`, annotations first**; (b) another order.
+  - **B-116-d** · The codes: **(a) new `marker-without-arrow`, `marker-lambda-without-expected-type`; `effect-await-without-task`, `yield-without-generator` and `use`'s keep their codes with a hint naming the marker**, renamed in (ii) if at all; (b) renamed now (`await-without-async`, …).
+  - **B-116-e** · `component { -> … }`, which has no block form to lower onto: **(a) parsed and checked in (i), lowered in (iii)** (a located refusal until then); (b) lowered through the component-fn path in (i).
+  - **B-116-f** · `async fn f()` with no return type: **(a) refused by `marker-type-mismatch` in (i), "write `-> @Task<…>`"**, the `@` types being kept; (b) inferred `@Task<void>`.
+  - **B-116-g** · A marked trailing lambda `f(1) async { x -> … }`: **(a) not parsed in (i), written inside the parentheses**; (b) parsed.
+- **Measured.** No lambda awaits or yields today (`inferFunctionExprExpectedInner` clears the generator and task context), so a marked lambda is a new surface; `botopink migrate` was removed (B-56) and the formatter carries migrations (525, 541); std declares 8 bodyless `-> @Task` host bindings; 125 cells write `await`, 59 `yield`, 66 `use`.
+- **Options.** Each point (a) or (b) above.
+- **Recommendation.** (a) for each — the most restrictive reading, every cell's answer unchanged.
+- **Blocks.** Nothing built waits (P1 builds (a)); B-116-a fixes what the codemod (P2, P3) writes.
 
 #### 518-a · Two `needs:` refusals no decision states (decision 518 (1); 144 B-07)
 - **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): both stay refusals, each with a cell** — `needs:` on `@External.Node` / `@External.Erlang`, and `needs:` given as anything but a list of `WasmNeed` values; the most restrictive reading (67).
