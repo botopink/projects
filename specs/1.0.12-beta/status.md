@@ -86,7 +86,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
-- [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · nothing (decision 551: a `comptime` default answered for the caller)
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
@@ -218,7 +217,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99
+- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · B-99-b (a function reading its catalogue parameter is build-only today, so a run-time `boot` is refused)
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
 ## L3 — ready to open now
@@ -366,6 +365,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-99 (front 165 s5, decision 551) — a `comptime` parameter whose default is a `@TypeInfo.all(…)` query answered for the calling program, legal only in the root package's root module (`typeinfo-all-default-outside-root`), the explicit argument the override; cells `typeinfo_all_default_at_caller`, `typeinfo_all_default_outside_root`, `typeinfo_all_default_override`; B-99-b and B-99-c filed
 - [x] 144 B-98 (front 165 s5) — two `files` entries of one stem (`p.bp` and `p.d.bp`) refused at the second: one module written twice, every consumer read its `pub` names twice; a dependency manifest's refusal printed relative to the working directory · question B-98-a
 - [x] 144 B-100 (front 165 s8) — botopink-lang's tooling reads rakun's workspace and `query` (`test-analysis-equivalence`, `tsc-check.sh`, `test-libs.sh`, `check-packaging.sh`, `comptime_bench.sh`, `test.yml`); `test-analysis-equivalence` green
 - [x] 144 B-86 (front 165 s4, mono-a) — `@TypeInfo.all` already lists a direct and a transitive dependency's declarations (level B stores `declared` and `meta`), now pinned by the cell `modules/typeinfo_all_dependency_declarations` on every target, cold and from level B; the lib-agnostic gate refuses `rakun` (any case) and `query` as a package; the catalogue's reach in `conformance/docs.md` § Decorators · question B-86-a

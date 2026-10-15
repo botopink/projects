@@ -2428,8 +2428,13 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
 (`typeinfo-all-mixed`). The nearest form today, `boot(plan "app", @TypeInfo.all(with: plug.module),
 @TypeInfo.all(with: plug.config))`, puts the catalogue in the program's hands.
 
-- [ ] decision 551's form: a `comptime` parameter whose default is a `@TypeInfo.all(…)` query answered for the program
+- [x] decision 551's form: a `comptime` parameter whose default is a `@TypeInfo.all(…)` query answered for the program
       the call is compiled in (353's collect / answer / staleness / level-B paths; the names resolved in the declaring
       module; legal only in the package's root; the explicit arguments still accepted)
-- [ ] a cell: a library's `boot()` with no argument listing the program's `#[m]` declarations of every package
+- [x] a cell: a library's `boot()` with no argument listing the program's `#[m]` declarations of every package
+      (`typeinfo_all_default_at_caller`; the refusal `typeinfo_all_default_outside_root`, the explicit override
+      `typeinfo_all_default_override`)
+
+Open: B-99-b — a function reading its catalogue parameter is `Stage.Build` (376 (1)), so a run-time `boot` is refused
+`build-and-run`; B-99-c — a dependency's own root is refused, as built.
 

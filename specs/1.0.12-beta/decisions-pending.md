@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**131 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -165,17 +165,18 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
-| 2 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
-| 3 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 4 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 5 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 1 | **B-99-b** — does a function reading its catalogue parameter run at build or at run time? (§ Front 165) | whether `rakun.boot()`, reading the program's catalogue through 551's default, may start modules at run time, or is a build-only function as 376 (1) makes it today | 165 s5 → 165 s7, front 165's close | (b) reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource |
+| 2 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
+| 3 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
+| 4 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 5 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 6 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
-refused).
+refused), **B-99-c** (a dependency's own root calling a catalogue default, built as refused).
 
 ---
 
@@ -1346,6 +1347,50 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a): the most restrictive reading, one file per module as the twin rules already say.
 - **Blocks.** Nothing — built as (a); 165 s5 drops rakun's empty `rakun.d.bp`.
+
+#### B-99-b · Does a function reading its catalogue parameter run at build or at run time? (decisions 376, 551, 364; 144 B-99, front 165 s5)
+- **Proposed (opus, 2026-10-15; built as (a), awaiting the maintainer):** (b): reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource; the value is a constant handed to the code that runs, and the function takes the stage of what it calls.
+- **Context.** Decision 551 lets `rakun.boot()` read the program's `#[rakun.module]` / `#[rakun.config]` declarations through a `comptime` parameter defaulting to `@TypeInfo.all(…)`, and says an entry's `value` is "passed on, never read at build". Decision 376 (1) makes reading a `comptime` parameter's `.value` a build-only resource, so such a function is `Stage.Build` and cannot reach anything that runs only at run time. `rakun.boot()` starts the modules at run time, so the two decisions meet here.
+- **Measured.** As built (144 B-99), reading `modules.value` makes `boot` `Stage.Build`: `main() { boot(); @print(label("x")); }`, `label` reaching a run-time-only host function, is refused `build-and-run` at `main` ("`boot(…)`, which runs only at build"); a `boot` whose own body reaches such a host call is refused `build-and-run` itself; the explicit form `boot(@TypeInfo.all(…))` is refused the same way. The conformance cells avoid it: their `boot` only prints.
+- **Options.**
+  (a) As built: such a function is Build; a framework passes the catalogue on only to pure functions.
+  ```bp
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
+      start(modules.value);   // refused build-and-run when `start` reaches a run-time host call
+  }
+  ```
+  (b) ★ Reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource: the value is a constant handed to run-time code, and the function takes the stage of what it calls.
+  ```bp
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
+      start(modules.value);   // Run: `modules.value` is a constant in the code that runs
+  }
+  ```
+  (c) Only a catalogue-typed parameter (`Declared<…>[]`) is exempt; any other `@Expr<T>` parameter's `.value` stays a build resource.
+  ```bp
+  fn f(comptime n: @Expr<i32>) { start(n.value); }                    // Build, as today
+  fn boot(comptime m: @Expr<Declared<unknown>[]> = …) { start(m.value); }   // Run
+  ```
+- **Recommendation.** (b): 364 erases `x.value` to `x` in the code that runs, so nothing of it runs at build.
+- **Blocks.** 165 s5's run-time `rakun.boot()`.
+
+#### B-99-c · May a dependency's own root call a catalogue default? (decision 551; 144 B-99)
+- **Proposed (opus, 2026-10-15; built as (a), awaiting the maintainer):** (a): only the root package's root module may leave a catalogue default out; a dependency's root is refused `typeinfo-all-default-outside-root` like any other module.
+- **Context.** Decision 551 makes a call that leaves a `@TypeInfo.all` default out legal "only in the package's root". A dependency is a package too, with a root of its own; the question is whether its root may write such a call.
+- **Measured.** As built, a dependency's root is refused: a call there answered for the program would make that package's analysis depend on the program, so it could not be stored in level B, and 551 has level B store the declaring package, never the calling one.
+- **Options.**
+  (a) ★ As built: the root package's root module only.
+  ```bp
+  // in dependency `plugin`, src/root.bp
+  import {boot} from "frame";
+  pub fn start() { boot(); }   // refused: typeinfo-all-default-outside-root
+  ```
+  (b) A dependency's root may call it, and that package is never stored in level B.
+  ```bp
+  // in dependency `plugin`, src/root.bp
+  pub fn start() { boot(); }   // answered for the program; `plugin` re-analysed on every build
+  ```
+- **Recommendation.** (a): the strictest reading, and it follows 551's "Level B stores the declaring package, never the calling one".
+- **Blocks.** Nothing.
 
 #### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
 - **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `{src/main.bp}`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.
