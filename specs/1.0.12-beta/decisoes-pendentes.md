@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**132 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**136 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -667,6 +667,78 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): a 561 diz toda posição que recebe um nome.
 - **Bloqueia.** Nada.
+
+#### B-27-g1 · `Signal.Int` no erlang e no beam (decisão 506 (c); 144 B-27 passo 6)
+- **Proposta (sonnet, 2026-10-15; construída como (a), aguardando o mantenedor):** (a): `onSignal(.Int, f)` responde `Error(Unsupported)` no erlang e no beam; `forwardSignals` pula `Int` ali.
+- **Contexto.** O `io.process` da std deixa um programa tratar `SIGINT`, `SIGTERM`, `SIGHUP` e `SIGWINCH` (506 (c)). A VM Erlang guarda o `SIGINT` para o seu próprio break handler.
+- **Medido.** No OTP 28 `os:set_signal(sigint, handle)` é `badarg`; `sigterm`, `sighup` e `sigwinch` funcionam. O Ctrl-C de um terminal ainda chega a um filho iniciado pelo grupo de processos.
+- **Opções.**
+  (a) ★ Como construído: `Int` fica no enum, responde `Unsupported` no erlang / beam.
+  ```bp
+  case process.onSignal(process.Signal.Int, h) { Ok(_) -> …; Error(e) -> … }   // erlang: Error(Unsupported)
+  ```
+  (b) `Int` sai do enum comum; o Node ganha o seu próprio `Interrupt`.
+  ```bp
+  process.onSignal(process.Signal.Term, h);   // Int not writable; node-only API for Ctrl-C
+  ```
+  (c) A VM é iniciada de modo a entregar o `SIGINT` (um port program ou uma flag da VM), todos os targets iguais.
+  ```text
+  erl +B…  # the runner's VM flags change for every program
+  ```
+- **Recomendação.** (a): a resposta é tipada e honesta, sem mudar o runner.
+- **Bloqueia.** O tratamento de Ctrl-C da biblioteca `cli` no erlang.
+
+#### B-27-g2 · `io.terminal.keys()` no erlang e no beam (decisões 506 (c), 553; 144 B-27 passo 6)
+- **Proposta (sonnet, 2026-10-15; aguardando o mantenedor):** (b): acrescentar `readKey() -> @Task<?Key>` em todo target.
+- **Contexto.** `keys()` responde um stream de teclas para prompts interativos. No erlang e no beam um `@Stream` é gerado de forma ansiosa.
+- **Medido.** No erlang / beam `keys()` junta toda a entrada antes de entregar a primeira tecla, então nunca responde num terminal vivo (trava sob um pty); o commonJS entrega preguiçosamente. `stdin.readChunk()` + `terminal.parseKey` funciona nos três targets.
+- **Opções.**
+  (a) `keys()` como está; um laço interativo no erlang lê `readChunk()` e `parseKey`.
+  ```bp
+  val chunk = await stdin.readChunk(); val key = terminal.parseKey(chunk);
+  ```
+  (b) ★ `readKey() -> @Task<?Key>` em todo target, `keys()` mantido.
+  ```bp
+  val key = await terminal.readKey();   // one key, null at end of input
+  ```
+  (c) Esperar uma geração preguiçosa de `async iter` no erlang (553), `keys()` a única API.
+  ```bp
+  for (await terminal.keys()) { k -> … }   // lazy once 553 lands on erlang
+  ```
+- **Recomendação.** (b), ou (c) quando a 553 gerar preguiçosamente no erlang.
+- **Bloqueia.** Prompts guiados por tecla (`cli.prompt`) no erlang.
+
+#### B-27-g3 · O stdio de um filho iniciado no erlang (decisão 506 (c); 144 B-27 passo 6)
+- **Proposta (sonnet, 2026-10-15; construída como (a), aguardando o mantenedor):** (a): mantido e documentado.
+- **Contexto.** `process.spawn` inicia um programa filho. No Node o filho herda o stdin, o stdout e o stderr do pai; no erlang ele roda atrás de um port.
+- **Medido.** No erlang / beam o port dá ao filho um pipe de stdin (não o do pai), e o stderr dele é mesclado ao stdout.
+- **Opções.**
+  (a) ★ Mantido, a diferença no `libs/std/AGENTS.md` e no doc da função.
+  ```bp
+  process.spawn("cat", []);   // erlang: reads the port's pipe, not the terminal
+  ```
+  (b) Um port program que entrega ao filho os descritores do pai, todos os targets iguais.
+  ```bp
+  process.spawn("cat", []);   // reads the terminal on every target
+  ```
+- **Recomendação.** (a) por ora; (b) quando uma biblioteca precisar.
+- **Bloqueia.** O `start` do onze que precisa do stdin do filho no erlang.
+
+#### B-27-g4 · Modo raw e tamanho do terminal no erlang fora do Linux (decisão 506 (c); 144 B-27 passo 6)
+- **Proposta (sonnet, 2026-10-15; aguardando o mantenedor):** (a): só Linux, a chamada respondendo `Unsupported` nos outros.
+- **Contexto.** `terminal.setRaw(on)` e `terminal.size()` precisam do dispositivo do terminal. O Node os tem embutidos; a VM Erlang não.
+- **Medido.** No erlang / beam a implementação lê o `/proc/<pid>/fd/{0,1}` do Linux e roda `stty` (para limpar `isig` e ler o tamanho). macOS e Windows não têm `/proc`.
+- **Opções.**
+  (a) ★ Só Linux: nos outros `setRaw` responde `Error(Unsupported)` e `size()` `null`.
+  ```bp
+  case terminal.setRaw(true) { Ok(_) -> …; Error(e) -> … }   // macOS on erlang: Error(Unsupported)
+  ```
+  (b) Um caminho por SO (`/dev/tty` e `stty -f` no macOS; Windows recusado).
+  ```bp
+  terminal.setRaw(true);   // Linux and macOS on erlang
+  ```
+- **Recomendação.** (a): nenhum caminho sem teste é entregue.
+- **Bloqueia.** Nada no Linux.
 
 #### B-19-a · Onde fica um erro de tipo dentro do código de um membro ou tipo associado que um decorator escreveu? (decisões 216, 281; 144 B-19)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na anotação que o adicionou** (`#[maker]`), como `decorator-member-duplicate`, com a chamada `addMember` / `addType` do decorator nomeada na mensagem — quem lê o programa vê de onde o código veio; quem escreveu o decorator vê qual chamada o escreveu.

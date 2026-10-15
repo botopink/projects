@@ -2174,6 +2174,47 @@ function, which Node refuses ("await is only valid in async functions"); erlang,
 
 - [ ] the adopted default body is emitted `async` on commonJS — a cell on every target, red on commonJS today
 
+### B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-27 step 6: `process.onSignal(.Term, h)` (`process` an imported std namespace) emits a bare `Term`, which
+Node refuses ("Term is not defined"); erlang and beam resolve the variant from the parameter's type. The std cells
+write `process.Signal.Term`.
+
+- [ ] `.Variant` as an argument of a namespace-qualified call resolved from the parameter's type on commonJS — a cell on
+      every target, red on commonJS today
+
+### B-121 — beam: a user function named `run` or `size` is taken for a std binding
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-27 step 6: on beam a program's own `fn run(…)` is refused "`run` has no #[@External.<Target>] for the beam
+backend", and a program's `fn size(…)` answers `null`; commonJS and erlang call the user's function.
+
+- [ ] a user function named like a std binding (`run`, `size`) is the user's on beam — a cell on every target, red on
+      beam today
+
+### B-122 — beam: `.toString()` on a tuple is `unresolved_method`
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-27 step 6: `#(1, 2).toString()` aborts on beam with `unresolved_method`; commonJS and erlang print the
+tuple.
+
+- [ ] a tuple's `toString()` on beam answers the text the other targets print — a cell on every target, red on beam
+      today
+
+### B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-27 step 6: an `#[@External.Erlang("""…""")]` template matching `<<_/binary>>` or `<<"lit", X/binary>>`
+compiles on erlang and is refused on beam; std's templates were rewritten without such patterns.
+
+- [ ] beam accepts the binary patterns an Erlang host template writes (`X/binary`, a literal prefix) — a cell on erlang
+      and beam, red on beam today
+
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
 **Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),

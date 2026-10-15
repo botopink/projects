@@ -2076,12 +2076,18 @@ row for 02 and 05, not edited here.
 std gains a CLI's host primitives (506 (1)); the `cli` library (`botopink/cli`) and onze's use of it (506 (2), (3)) are
 other repositories' steps.
 
-- [ ] `io.stdin`: `readLine() -> @Task<?string>` (the line without its newline, `null` at end of input), `isTTY()`
-- [ ] `io.terminal`: `stdoutIsTTY()`, `size() -> ?#(i32, i32)`, `setRaw(on)`, `keys() -> Stream<Key>`
-- [ ] `io.process`: `enum Signal { Int, Term, Hup, Winch }`, `onSignal(s, f)`, `spawn(cmd, args) -> @Result<Child,
+- [x] `io.stdin`: `readLine() -> @Task<?string>` (the line without its newline, `null` at end of input), `isTTY()`
+      — and `readChunk() -> @Task<?string>`, the byte-level read `keys()` is built on; `std_io_stdin_eof`
+- [x] `io.terminal`: `stdoutIsTTY()`, `size() -> ?#(i32, i32)`, `setRaw(on)`, `keys() -> Stream<Key>`
+      — `keys()` written `@Stream<Key>` (553's types not in std yet), with a pure `parseKey`; `std_io_terminal_not_a_tty`;
+      on erlang / beam `keys()` gathers all input before yielding (question B-27-g2), raw mode reads Linux's `/proc`
+      and `stty` (question B-27-g4)
+- [x] `io.process`: `enum Signal { Int, Term, Hup, Winch }`, `onSignal(s, f)`, `spawn(cmd, args) -> @Result<Child,
       ProcessError>` with `Child.wait()`, `kill(s)`, `forwardSignals()` — a spawned child receives the `SIGTERM` sent to
       its parent, asserted with a child that prints on the signal
-- [ ] errors typed by module (431-a); every cell the same on commonJS, erlang and beam; a located refusal on wasm
+- [x] errors typed by module (431-a); every cell the same on commonJS, erlang and beam; a located refusal on wasm
+      — `std_io_signal_handlers`, `std_io_process_spawn`, `std_io_process_forward_signals`; `.Int` on erlang / beam
+      answers `Unsupported` (question B-27-g1), a child's stdio on erlang is a pipe (question B-27-g3)
 
 #### Gate additions (was `97-std-dedupe` gate)
 
@@ -2151,6 +2157,15 @@ After the group's other steps have landed on `feat`; it holds back no front that
       — pin `conformance/test/bpp_header_test`
 - [x] `conformance/modules/bpp_unfold_props/out/` (built `.js`) is tracked: removed, and `out/` ignored — with `optional_enum_method_imported`'s
 
+
+### B-123 — a `//` comment between statements of a `case` arm block is a parse error
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-27 step 6: a line comment between two statements inside a `case` arm's block is refused "this token cannot
+appear here" on every target; a comment between statements of a function body is accepted.
+
+- [ ] a `//` comment between the statements of a `case` arm block parses, and the formatter keeps it — a cell, red today
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
 

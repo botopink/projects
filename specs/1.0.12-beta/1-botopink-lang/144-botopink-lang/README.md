@@ -355,6 +355,11 @@ Where each step is (its machine's folder holds its whole text).
 | B-117 | [2](machine-2-backends-tooling/README.md) | `botopink check` of a project of refused decorator markers peaks at 8 GB |
 | B-118 | [2](machine-2-backends-tooling/README.md) | beam: an `iter loop` as a lambda's tail aborts |
 | B-119 | [2](machine-2-backends-tooling/README.md) | commonJS: an adopted behavior `default fn … -> @Task` is emitted without `async` |
+| B-120 | [2](machine-2-backends-tooling/README.md) | commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare |
+| B-121 | [2](machine-2-backends-tooling/README.md) | beam: a user function named `run` or `size` is taken for a std binding |
+| B-122 | [2](machine-2-backends-tooling/README.md) | beam: `.toString()` on a tuple is `unresolved_method` |
+| B-123 | [1](machine-1-checker/README.md) | a `//` comment between statements of a `case` arm block is a parse error |
+| B-124 | [2](machine-2-backends-tooling/README.md) | beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |
