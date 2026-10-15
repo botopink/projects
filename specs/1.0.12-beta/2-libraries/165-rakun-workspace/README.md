@@ -137,12 +137,13 @@ lacks is a build error naming it; removing the dependency removes the module; no
 - [ ] `conformance/` is one suite: one root manifest (a workspace over every cell), cells grouped by package and, inside
       a package, by the feature they show (`conformance/<package>/<feature>/<cell>/`), new package names only; the
       per-root manifests go (a cell that needs its own `deps/` keeps them)
-- [ ] the reference is a map, not a running text: the root `conformance/docs.md` indexes packages → features, each
-      `conformance/<package>/docs.md` holds one section per feature (what it does, then its cells); no former library's
-      name or path left
-- [ ] code in a `docs.md` is only linked — `{src/main.bp}` in a cell's, `{<feature>/<cell>/src/main.bp}` in a
-      package's, a path relative to the `docs.md` — never a ` ```bp ` fence nor `<!-- example: … -->`; a check that
-      every link names a file; a fence that is no program stays `text`
+- [ ] the reference sits where its code is: each feature's `docs.md` in `conformance/<package>/<feature>/`, beside its
+      cells (what the feature does, then its cells); `conformance/<package>/docs.md` the package's map, one line per
+      feature linking its `docs.md`; the root `conformance/docs.md` indexing the packages; no former library's name or
+      path left
+- [ ] code in a `docs.md` is only linked — `{<cell>/src/main.bp}` in a feature's, `{src/main.bp}` in a cell's, the base
+      the `docs.md`'s own directory, most links within its folder — never a ` ```bp ` fence nor `<!-- example: … -->`;
+      a check that every link names a file; a fence that is no program stays `text`
 - [ ] `botopink cell check conformance/` answers as before the move; `AGENTS.md` describes the layout and the link
       form; botopink-lang's tooling that reads rakun's former conformance roots (`test-analysis-equivalence`) a 144
       row
