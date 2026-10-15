@@ -170,7 +170,11 @@ compiled straight by the GC backend, its Erlang layer and term library deleted (
 flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's GC types (549). Questions 164-s3-b, d, e, f, g.
 
 Landed: P0 — the reader, the leaf table, `text.length` and `text.charCodeAt` as leaves; a `std:` name that is a leaf
-with no std-wasm export has its signature check written but unexercised until P1 adds such a leaf.
+with no std-wasm export has its signature check written but unexercised until P1 adds such a leaf. P1-a — the leaves
+`text.byteLength`, `text.byteAt`, `text.byteSlice` and `text.fromCodepoint`, each with a twin std-wasm export of the
+same name and types (a module that falls back to linear memory still builds); proved by a GC-module unit test on wasm,
+since 445 refuses a `std:` cell outside `libs/std` — their cells on the four targets come with the `String` method
+that binds them (P1-b, P1-c; questions 164-s3-e, f, g).
 
 - [ ] **the logic in botopink:** string, array, Dict, hash, Unicode (its tables build constants by `@embed`, 519),
       number text (441), the comptime's preludes and reply codecs (550: no Erlang layer) — `.bp` modules of std compiled by the
