@@ -21,6 +21,9 @@ what is the task's own: the step, its boxes, its worktree, its model.
   `rtk proxy git push origin HEAD:feat` — fast-forward only, never force, confirmed with
   `git ls-remote origin feat`. The libraries and every other front keep the two rules above. This
   paragraph is removed when B-60 lands.
+- **Exception, the maintainer's (2026-10-15):** a commit whose only change is the `decisions-taken.md`
+  `scripts/decisions-split.py` writes (decision 482) is made with `--no-verify` in every repository — the hook's gate
+  tests nothing it changes. Any other file in the commit → the hook, through `scripts/gate.sh exec`.
 - End each commit message with the attribution line the coordinator's prompt gives.
 - Never commit `*.snap.new`, `*.snap.md.new` or `todo.md`.
 
