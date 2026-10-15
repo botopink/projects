@@ -1979,12 +1979,12 @@ pub fn main() { val v = try load("a") catch "fallback"; @print(v); }   // prints
 from a block; the parser reads `continue` alone (no `:label`, the AST's `continue` carries none), so `continue :outer`
 is a parse error on every target and B-88's cell could pin `break :outer` only.
 
-- [ ] `continue :label` parsed and carried in the AST, the label checked as `break :label`'s is (`break-label-unbound`,
+- [x] `continue :label` parsed and carried in the AST, the label checked as `break :label`'s is (`break-label-unbound`,
       `generator-loop-closed-scope`)
-- [ ] `continue :outer` from a nested loop's body and from a `case` arm's block reaches the named loop — cell
+- [x] `continue :outer` from a nested loop's body and from a `case` arm's block reaches the named loop — cell
       `block_jump_label_continue_reaches_loop`, red on every target, green on commonJS and erlang after (beam B-105,
       wasm 164 s2c)
-- [ ] the formatter prints the label on `continue` as on `break`
+- [x] the formatter prints the label on `continue` as on `break`
 
 ### B-105 — beam: a loop's label is ignored (decision 541 (2))
 
