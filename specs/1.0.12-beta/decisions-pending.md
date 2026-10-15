@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**120 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1039,6 +1039,20 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As built. (b) An implicit import of `io/fs` where `a.open()` is written. (c) `File` ambient in `builtins.d.bp`, `open` a real method of `Asset`.
 - **Recommendation.** (a).
 - **Blocks.** Nothing.
+
+#### 546-a · A `crash`'s `<reason>`: the engine's text per target, or one text where the compiler itself raises? (decisions 535, 527 (1), 546; 144 B-90, B-101)
+- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): a `crash`'s reason is the engine's and a cell claims the kind** — `stderr crash:` as the containment claim, a `Failure` cell printing `f.kind`; no `snapshot/targets/` ever holds a crash message.
+- **Measured.** 535 fixes `<kind>: <message>` as one text on every target, the departure only in whether a target aborts; 527 (4) fixes a `host` message (`~tp`); nothing fixes a `crash`'s. `std_failure_attempt_crash`'s `output/` holds erlang's `{case_clause,'Square'}` and B-90 declared node's `Cannot read properties of null (reading 'tag')` as a commonJS departure — a text no decision names, and (B-101) the trace of a defect. `abort_text_crash` already claims `stderr crash:` alone.
+- **Options.** (a) As proposed. (b) The message a declared departure per target, as landed. (c) One text on every target for the raises the compiler emits itself (a `case` no arm matches: `no arm matches: <value>`; erlang and beam catching `case_clause` into it), the engine's reason only for a fault of the host or VM.
+- **Recommendation.** (a) — the kind is the language's answer, the reason is diagnostic; (c) costs every `case` on erlang and beam a catch, the per-call cost 546 refused for `host`.
+- **Blocks.** `std_failure_attempt_crash`'s commonJS row; B-101's claims.
+
+#### 540-c · A text for an `FsError` in std (decision 540; 144)
+- **Proposed (the library migration, 2026-10-14; awaiting the maintainer):** **(a): std gives `FsError` its text** — one `message()` (or `toString`) in `io/fs`, `<what>: <path>` per variant, so a library that carries an `io.fs` failure into a `string` error writes no `case` of its own.
+- **Measured.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text; std has no `toString` and no `mapErr` for it. Migrating to 540, snap and rakun-ssr each wrote a local `fsText` (a `case` over the seven variants) and an `fsErrorText` / `fsFailure` helper to carry the failure into their `@Result<_, string>` functions.
+- **Options.** (a) As proposed. (b) Each library writes its own, as built. (c) A generic `mapErr` on `@Result`, the text still each library's.
+- **Recommendation.** (a), with (c) independent of it.
+- **Blocks.** Nothing; the local helpers are deleted once answered.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

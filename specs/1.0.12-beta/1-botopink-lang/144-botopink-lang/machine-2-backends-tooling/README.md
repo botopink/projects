@@ -1900,12 +1900,32 @@ function and the loop. The bare forms landed on commonJS, erlang and beam; these
 wrapping every such call (492)", but commonJS wraps nothing: its `attempt` reads every raise that is not a panic as
 `host`, and so does its abort guard.
 
-- [ ] a call of a binding declared outside std without `result: true` wrapped on commonJS (the `host` mark); the
+- [x] a call of a binding declared outside std without `result: true` wrapped on commonJS (the `host` mark); the
       `attempt` / `attemptTask` Node forms and the abort guard read an unmarked raise as `crash`
-- [ ] `std_failure_attempt_crash` widened to commonJS; a cell `abort_text_crash` on commonJS (a raise from emitted
+- [x] `std_failure_attempt_crash` widened to commonJS; a cell `abort_text_crash` on commonJS (a raise from emitted
       code: a mistyped binding's value whose method call raises)
-- [ ] a cell `abort_text_panic` (`@panic`'s text, `panic: <message>`) on every target, out on wasm until 164 s2c's box
+- [x] a cell `abort_text_panic` (`@panic`'s text, `panic: <message>`) on every target, out on wasm until 164 s2c's box
       lands
+
+Left: the `snapshot/targets/commonJS/` row `std_failure_attempt_crash` took records node's fault on a `null` tag read,
+the trace of B-101's defect — B-101 deletes it.
+
+### B-101 — commonJS: a `case` no arm matches answers `undefined` instead of raising `crash` (decisions 535, 527 (1), 546)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+A `case` whose subject matches no arm raises `{case_clause, V}` on erlang and beam — `crash` under `attempt` and at the
+abort guard (535: "`crash: <reason>` for a failing match"). On commonJS the `case` lowering emits the arms' `if`s with
+no fall-through: a `case` value answers `undefined`, a statement `case` runs on. `std_failure_attempt_crash` raises on
+commonJS only because its Node form answers `null` and the first arm's tag read faults — node's `TypeError`, recorded as
+a `snapshot/targets/commonJS/` departure, which 458 forbids for a defect.
+
+- [ ] the commonJS `case` lowering ends in a throw read as `crash` by `attempt`, `attemptTask` and the abort guard; its
+      text per question 546-a — until answered, cells claim the kind alone
+- [ ] `case_no_arm_matches_raises` widened to commonJS with a Node form answering a tagged value no variant is
+      (`({ tag: "Square" })`, so no engine fault masks the gap); `output/` claims `stderr crash:` — red on the parent
+- [ ] `std_failure_attempt_crash`: the same Node form, its `snapshot/targets/commonJS/` deleted, `show` printing
+      `f.kind` alone until 546-a — red on the parent
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 

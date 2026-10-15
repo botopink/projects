@@ -130,7 +130,8 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       `block_continue_reaches_loop`
 - [ ] `await tasks[1]!` on an array of tasks answers the task's value; a `[]!` line in `await_postfix_binds_tighter`
 - [ ] an abort's text (535): `@panic` / `@todo` / `assert` / overflow write `panic: <message>`; an integer division by
-      zero writes 527 (3)'s checked message, not a bare trap — cell `abort_text_panic` (144 B-90)
+      zero writes 527 (3)'s checked message, not a bare trap — cell `abort_text_panic` on the four targets, its `message`
+      binding removed (144 B-90)
 
 ### s3 — std-wasm rewritten: its logic in botopink, its leaves in hand-written `.wat`; `std_wasm.wasm`, `heap.zig` and beam-to-wasm deleted (the maintainer, 2026-10-14; wasmgc-a)
 

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**120 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1039,6 +1039,20 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como construído. (b) Um import implícito de `io/fs` onde `a.open()` é escrito. (c) `File` ambiente em `builtins.d.bp`, `open` um método real de `Asset`.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada.
+
+#### 546-a · O `<reason>` de um `crash`: o texto do motor por alvo, ou um texto só onde o próprio compilador lança? (decisões 535, 527 (1), 546; 144 B-90, B-101)
+- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o motivo de um `crash` é o do motor e uma célula afirma o tipo** — `stderr crash:` como a afirmação de contenção, uma célula de `Failure` imprimindo `f.kind`; nenhum `snapshot/targets/` guarda jamais uma mensagem de crash.
+- **Medido.** A 535 fixa `<kind>: <message>` como um texto só em todo alvo, a divergência apenas em se um alvo aborta; a 527 (4) fixa a mensagem de um `host` (`~tp`); nada fixa a de um `crash`. O `output/` de `std_failure_attempt_crash` guarda o `{case_clause,'Square'}` do erlang e o B-90 declarou o `Cannot read properties of null (reading 'tag')` do node como uma divergência de commonJS — um texto que nenhuma decisão nomeia, e (B-101) o rastro de um defeito. `abort_text_crash` já afirma `stderr crash:` sozinho.
+- **Opções.** (a) Como proposto. (b) A mensagem uma divergência declarada por alvo, como entrou. (c) Um texto só em todo alvo para os lançamentos que o próprio compilador emite (um `case` sem braço que case: `no arm matches: <value>`; erlang e beam capturando `case_clause` nele), o motivo do motor só para uma falha do host ou da VM.
+- **Recomendação.** (a) — o tipo é a resposta da linguagem, o motivo é diagnóstico; (c) custa a todo `case` em erlang e beam um catch, o custo por chamada que a 546 recusou para `host`.
+- **Bloqueia.** A linha commonJS de `std_failure_attempt_crash`; as afirmações do B-101.
+
+#### 540-c · Um texto para um `FsError` na std (decisão 540; 144)
+- **Proposto (a migração das bibliotecas, 2026-10-14; aguardando o mantenedor):** **(a): a std dá a `FsError` o seu texto** — um `message()` (ou `toString`) em `io/fs`, `<what>: <path>` por variante, para que uma biblioteca que leva uma falha de `io.fs` a um erro `string` não escreva um `case` próprio.
+- **Medido.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum texto; a std não tem `toString` nem `mapErr` para ele. Migrando para a 540, snap e rakun-ssr escreveram cada um um `fsText` local (um `case` sobre as sete variantes) e um auxiliar `fsErrorText` / `fsFailure` para levar a falha às suas funções `@Result<_, string>`.
+- **Opções.** (a) Como proposto. (b) Cada biblioteca escreve o seu, como construído. (c) Um `mapErr` genérico em `@Result`, o texto ainda de cada biblioteca.
+- **Recomendação.** (a), com (c) independente dela.
+- **Bloqueia.** Nada; os auxiliares locais são apagados uma vez respondida.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
