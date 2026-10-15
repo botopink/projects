@@ -160,6 +160,7 @@ usar(iter { -> yield 1; yield 2 })
 xs.map(async { x -> await f(x) })
 for await linha in try linhas(f) { … }              // itens string; um FsError encerra o laço e se propaga
 ```
+
 Resposta:
 - [x] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores, em três peças **(recomendada)**
 - [ ] (3)(b) no mesmo passo dos marcadores

@@ -154,6 +154,7 @@ usar(iter { -> yield 1; yield 2 })
 xs.map(async { x -> await f(x) })
 for await linha in try linhas(f) { … }              // string items; an FsError ends the loop and propagates
 ```
+
 Answer:
 - [x] (3)(a) the `@` types become std types in a step of their own, after the markers, in three pieces **(recommended)**
 - [ ] (3)(b) in the same step as the markers
