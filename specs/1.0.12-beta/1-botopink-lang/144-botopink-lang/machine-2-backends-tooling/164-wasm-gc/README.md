@@ -139,7 +139,7 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
       `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
       `targets` narrowing removed (144 B-95, B-97)
-- [ ] a loop's label read (`break :outer`, `continue :outer`) — cells `block_jump_label_reaches_loop`,
+- [x] a loop's label read (`break :outer`, `continue :outer`) — cells `block_jump_label_reaches_loop`,
       `block_jump_label_continue_reaches_loop`, `block_jump_label_continue_nested_shapes`; a bare `return` in a yielding arm ends the generator, not the arm — cell
       `case_arm_return_in_yielding_arm` (144 B-88)
 - [ ] emilia's module lowers on wasm: every emilia cell fails the narrowing audit, wasm refusing it with `type mismatch:
