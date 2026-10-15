@@ -14,7 +14,7 @@ with it, `08-bpp/123` or `104-http` step 5 (same member, decision 188)
 **Does not touch:** owners' consumer edits, each in its own step:
 `repository/rakun/modules/rakun/src/logging/**` (`04-rakun/17` — `rakun-logging`'s home after
 `04-rakun/128`, decision 187; imports `log`, installs one of its sinks — 349),
-`repository/jhonstart/modules/jhonstart/src/error_boundary.bp` (`05-jhonstart/26` step 4), onze's sink
+`repository/rakun/modules/rakun-bpp/src/error_boundary.bp` (`05-jhonstart/26` step 4), onze's sink
 line (`07-onze/49` step 3) · `rakun-logging`'s `cells.bp` (its sink and capture cells are ported here by step 3
 and deleted by `04-rakun/17`; the correlation-id cell stays rakun's), the `rkProp` levels and groups (a typed
 `#[config]` record with 299 — rakun's), actuator endpoints

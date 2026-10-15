@@ -17,7 +17,7 @@
 // Upstream: astro-docs/09-astro-components.md (Props do Componente)
 //           https://docs.astro.build/en/basics/astro-components/#component-props
 
-import {h2} from "jhonstart";
+import {h2} from "rakun-bpp";
 
 type Props(
     name: string,

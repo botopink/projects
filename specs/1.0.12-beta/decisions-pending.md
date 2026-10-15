@@ -521,7 +521,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Options.**
   (a) A name in scope.
   ```bp
-  import {query} from "erika";
+  import {query} from "query";
   self.db.query """select …"""
   ```
   (b) Through the receiver's type.
@@ -2252,8 +2252,8 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 
 #### 119-a · Step 1's grep box against CI check 4's byte-identical hook
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): the box greps the package's own text — `{src,test,botopink.json}` of `css` and `styled`** — the hook is one text owned by the gate (CI check 4), `AGENTS.md` and `decisions-taken.md` name the neighbours by design (338's layering), and `css`'s `{src,test,botopink.json}` is empty today; `styled`'s is not (`src/styled.bp` and `test/styled_example_test.bp` name emilia's `flush()` and jhonstart's render in comments) — 150 s32 rewords those two comments (338 (2): `styled` names no jhonstart and no emilia). Viable: a grep. Changes: 119 step 1's box; the entry's "line 31" is `runner-standalone.sh:45`, and `css/AGENTS.md` does hold `emilia` (by design).
-- **Rules.** 119 step 1 and its gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` empty (338). CI check 4 (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across every library repository — and its line 31 reads `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, so the grep finds it in `repository/css` (and will in `repository/styled`). `src/`, `test/`, `AGENTS.md` and the manifest hold none of the three names.
-- **Options.** (a) The box greps the package's own text: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/styled/{src,test,botopink.json}` — empty today for `css`. (b) The shared hook's comment drops the name, in every library repository at once (check 4), a change none of 119's repositories owns.
+- **Rules.** 119 step 1 and its gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/rakun/modules/rakun-style` empty (338). CI check 4 (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across every library repository — and its line 31 reads `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, so the grep finds it in `repository/css` (and will in `repository/rakun/modules/rakun-style`). `src/`, `test/`, `AGENTS.md` and the manifest hold none of the three names.
+- **Options.** (a) The box greps the package's own text: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/rakun/modules/rakun-style/{src,test,botopink.json}` — empty today for `css`. (b) The shared hook's comment drops the name, in every library repository at once (check 4), a change none of 119's repositories owns.
 - **Recommendation.** (a): the box measures what the package knows; the hook is one text owned by the gate.
 - **Blocks.** Only ticking 119 step 1's grep box.
 

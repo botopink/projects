@@ -8,10 +8,10 @@
 **Depends on:** step 2: nothing (`08-bpp/118`'s carve-out here is one comment,
 `emilia-card/src/main.bp:5`, rewritten by step 2 anyway) · `02-std-and-packaging/98` reads the
 README count — not a dependency
-**Owns:** `repository/emilia/examples/*/README.md` (fifteen) · `examples/emilia-card/**` · this
+**Owns:** `repository/rakun/examples/rakun-stylesheet/*/README.md` (fifteen) · `examples/emilia-card/**` · this
 directory (`modules/emilia-test/**` and `AGENTS.md`'s tests paragraph: `20-snap` step 4)
 **Does not touch:** `modules/emilia/src/**` (34) · the other fourteen examples' `src/main.bp` (34 owns
-four; the rest have no open item) · `.github/workflows/test.yml` (`00-gate`) · `repository/jhonstart/**`
+four; the rest have no open item) · `.github/workflows/test.yml` (`00-gate`) · `repository/rakun/modules/rakun-bpp/**`
 
 ## Goal
 
@@ -21,7 +21,7 @@ four; the rest have no open item) · `.github/workflows/test.yml` (`00-gate`) ·
 2. `examples/emilia-card/botopink.json` depends on `jhonstart` by `path` (4 tests, printing a
    jhonstart-rendered card with three class names and the flushed sheet); decision 114: every emilia
    example uses emilia only; styled HTML is onze's.
-3. `find repository/emilia/examples -maxdepth 2 -name README.md` finds 0 of 15.
+3. `find repository/rakun/examples/rakun-stylesheet -maxdepth 2 -name README.md` finds 0 of 15.
 
 [`examples/`](examples/): the worked helper shape (a submodule and its consumer with `@src()`).
 

@@ -460,7 +460,7 @@ field and still refused:
 
 **Render, then flush, then serialize — once per chunk.** A flush clears the sheet (`emilia.flush()` today) → exactly
 one consumer per render phase: the render plugin. jhonstart declares the point, is its only caller;
-member `repository/jhonstart/modules/jhonstart-styled` implements it — its sink writes the render's
+member `repository/rakun/modules/rakun-bpp/src/styled_sheet.bp` implements it — its sink writes the render's
 one sheet (`styled`'s: emilia's layers, then scoped styles in render order) in the head and each
 boundary fill; onze registers it at boot; emilia imports `styled` and std, no framework (decisions
 113, 338). Today the bridge member `jhonstart-emilia` implements it over emilia's `flush()` (its
@@ -477,7 +477,7 @@ pub behavior RenderPlugin {
 }
 
 // onze, at boot
-val site = app(plugins: [styledSink()]);             // {app} from "jhonstart"; the sink from "jhonstart-styled" (named by 119 step 5)
+val site = app(plugins: [styledSink()]);             // {app} from "rakun-bpp"; the sink from "rakun-bpp" (named by 119 step 5)
 ```
 
 | Call | When front 30's render makes it | Its result goes |

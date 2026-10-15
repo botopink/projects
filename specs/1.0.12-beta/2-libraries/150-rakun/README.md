@@ -1033,7 +1033,7 @@ Blast radius: manifest gains `rakun-client` (nothing depends on `rakun-cli`; upd
 #### Step 5 — The pairing and the example (R19-5, STD-2) (was `19-rakun-test-utilities` s5)
 
 - [ ] `mocks_pairing_test.bp` uses `testing.mocks`'s `#[mock]` with `#[bean]` if std's `#[mock]` fires outside `mocks.bp` this milestone; otherwise README states the hand-written pairing, box stays open naming the std row
-- [ ] `examples/controller-test-example.bp` imports nothing `from "onze"`; compiles against `rakun-test` + `testing.mocks`
+- [ ] `examples/controller-test-example.bp` imports nothing `from "rakun-ssr"`; compiles against `rakun-test` + `testing.mocks`
 
 #### Step 7 — rakun's own names (decision 318 (8)) (was `19-rakun-test-utilities` s7)
 

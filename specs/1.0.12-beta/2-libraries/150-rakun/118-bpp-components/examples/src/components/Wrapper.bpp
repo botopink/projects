@@ -20,8 +20,8 @@
 // Upstream: astro-docs/09-astro-components.md (Slots, Slots Nomeados, Conteúdo
 //           de Fallback para Slots) — https://docs.astro.build/en/basics/astro-components/#slots
 
-import {aside, div, footer, h1, header, small} from "jhonstart";
-import {hasContent} from "jhonstart";
+import {aside, div, footer, h1, header, small} from "rakun-bpp";
+import {hasContent} from "rakun-bpp";
 
 type Props(
     heading: string,

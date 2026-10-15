@@ -16,14 +16,14 @@
 //   https://nextjs.org/docs/app/api-reference/functions/use-action-state
 //   https://react.dev/reference/react/useActionState
 
-import { Element, text, fragment, p, renderToString } from "jhonstart";
+import { Element, text, fragment, p, renderToString } from "rakun-bpp";
 // provided by front 94 (`jhonstart-element-surface`, src/elements.bp) — front 67
 // defines no constructor of its own and `element.bp` stays frozen.
-import { form, input, label, button } from "jhonstart";
+import { form, input, label, button } from "rakun-bpp";
 // The protocol is the bundled library `actions` (decision 116) — rakun front 24
 // writes the envelope with it, this file reads it with it.
 import { state: {ActionState, newActionState, writeState}, envelope: {ActionEnvelope, writeEnvelope, parseActionState} } from "actions";
-import { FormBinding, formAction, formAttrs, hiddenActionField, actionState } from "jhonstart-forms";
+import { FormBinding, formAction, formAttrs, hiddenActionField, actionState } from "rakun-bpp";
 
 // Front 24 derives the action id and the server echoes it into the markup; this
 // file never constructs one. `contracts.md § 3` pins its shape.

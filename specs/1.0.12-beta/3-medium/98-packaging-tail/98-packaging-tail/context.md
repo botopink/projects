@@ -7,8 +7,8 @@
 **Depends on:** the library tracks' `-test` and example-README steps (`05-jhonstart/26` step 6,
 `06-emilia/33` steps 1–2, `07-onze/50` step 8 and `53` step 1, `04-rakun`'s `rakun-test` front
 `19-rakun-test-utilities`) · `95-f` (step 3)
-**Owns:** `repository/erika/modules/erika-test/**`, `repository/erika/examples/erika-linq/README.md`,
-`repository/erika/AGENTS.md` (erika has no track) · `repository/botopink-lang/scripts/check-packaging.sh`
+**Owns:** `repository/query/modules/query-test/**`, `repository/query/examples/query-linq/README.md`,
+`repository/query/AGENTS.md` (erika has no track) · `repository/botopink-lang/scripts/check-packaging.sh`
 (new) · `repository/botopink-lang/docs/botopink-json.md` · decision-75 carve-out, step 4 only:
 `repository/botopink-lang/modules/manifest/**`, `bpmp/src/manifest.zig`, the `manifest.scanRoots`
 call sites named in the 1.0.10 `02-packaging` README · this directory

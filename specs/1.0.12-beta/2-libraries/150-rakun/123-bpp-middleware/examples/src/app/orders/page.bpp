@@ -20,7 +20,7 @@
 // Upstream: astro-docs/17-middleware.md (Armazenando dados em `context.locals`)
 //           https://docs.astro.build/en/guides/middleware/#storing-data-in-contextlocals
 
-import {h1, p} from "jhonstart";
+import {h1, p} from "rakun-bpp";
 import {local} from "rakun";
 import {middleware.currentUser};
 

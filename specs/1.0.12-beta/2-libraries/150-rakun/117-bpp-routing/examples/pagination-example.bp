@@ -18,9 +18,9 @@
 //
 // Target: erlang (server).
 
-import html, {page, PageContext, Element, renderToString} from "jhonstart";
-import {a, h1, li, nav, ul} from "jhonstart";
-import {StaticPath, Page, PageUrls, paginate, pageOf} from "onze";
+import html, {page, PageContext, Element, renderToString} from "rakun-bpp";
+import {a, h1, li, nav, ul} from "rakun-bpp";
+import {StaticPath, Page, PageUrls, paginate, pageOf} from "rakun-ssr";
 import {decorators.schema} from "validation";
 import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
 import {collections.Dict, json.Json} from "std";

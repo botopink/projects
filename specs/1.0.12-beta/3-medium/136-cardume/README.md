@@ -12,7 +12,7 @@ values the server seeds) · decisions 128 (hooks), 297 (value-or-type parameters
 (`#[client]`), 281 (no string keys), 295 (request state as atoms), 296 (cardume) · 400 (`atm-a`: the cookie hooks in cardume's family) · open: `atm-c`, `atm-d`
 **Owns:** `repository/cardume/**` (the core: `modules/cardume/src/cardume.bp`, its tests) · new
 member `repository/rakun/modules/rakun-cardume/**` (the request store, its hooks reading rakun's root context `RequestContext`, 354) ·
-new member `repository/jhonstart/modules/jhonstart-cardume/**` (the page store, `sidecars/store_runtime.mjs`,
+new member `repository/rakun/modules/rakun-bpp/src/cardume/**` (the page store, `sidecars/store_runtime.mjs`,
 its hooks reading jhonstart's root context `ElementContext`, 354) · after 120: the store hand-off lines of `jhonstart/src/island_runtime.mjs`
 (one subscription per island; 26's file, 189) · one `jhonstart-dom-test` test file
 **Does not touch:** `hooks.bp`'s five nouns (`state`, `effect`, `memo`, `ref`, `reducer`) · rakun's and

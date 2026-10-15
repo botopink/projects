@@ -27,11 +27,11 @@
 //           astro-docs/08-routing.md (Redirecionamentos Dinâmicos, Rewrites)
 //           https://docs.astro.build/en/guides/on-demand-rendering/
 
-import {h1, p} from "jhonstart";
-import {request, cookies, pairValue} from "jhonstart";
-import {redirect, rewrite} from "jhonstart";
-import {response} from "jhonstart";
-import {absoluteUrl} from "jhonstart";
+import {h1, p} from "rakun-bpp";
+import {request, cookies, pairValue} from "rakun-bpp";
+import {redirect, rewrite} from "rakun-bpp";
+import {response} from "rakun-bpp";
+import {absoluteUrl} from "rakun-bpp";
 import {lib.products.Product, lib.products.findProduct};
 
 // Astro.params

@@ -6,8 +6,8 @@
 // `.bpp` file — placed by the page with `<NavProgress #[clientOnly] />`.
 // The return type keeps the base until front 134 step 6 drops it.
 
-import {Element, client, div} from "jhonstart";
-import {linkStatus} from "jhonstart-link";
+import {Element, client, div} from "rakun-bpp";
+import {linkStatus} from "rakun-bpp";
 
 #[client]
 pub fn NavProgress() -> @Component<Element> {

@@ -17,13 +17,13 @@
 // Target: erlang (server). `reset` on the error boundary is the one browser-side
 // affordance here, and front 68 is what ships it.
 
-import {Element, div, p, span, text, renderToString} from "jhonstart";
-import {section, h2, button} from "jhonstart";          // provided by front 94
-import {Link, linkProps} from "jhonstart";              // front 27
+import {Element, div, p, span, text, renderToString} from "rakun-bpp";
+import {section, h2, button} from "rakun-bpp";          // provided by front 94
+import {Link, linkProps} from "rakun-bpp";              // front 27
 // front 31 — the boundary surface
-import {ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal} from "jhonstart";
-import {styled, Token} from "emilia";                   // front 48
-import {notFound} from "jhonstart";                     // front 31 — a page's signals are jhonstart's (decisions 115, 117)
+import {ErrorInfo, ErrorBoundary, catchError, renderBoundaryChecked, isSignal} from "rakun-bpp";
+import {styled, Token} from "rakun-stylesheet";                   // front 48
+import {notFound} from "rakun-bpp";                     // front 31 — a page's signals are jhonstart's (decisions 115, 117)
 // app-local
 import {lib.db.Post, lib.db.findPost, lib.db.missingPost};
 

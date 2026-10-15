@@ -15,12 +15,12 @@
 //
 // Target: both. The effects half is ILLUSTRATIVE until atm-d is answered.
 
-import html, {View, page, cookie, renderToString} from "jhonstart";
+import html, {View, page, cookie, renderToString} from "rakun-bpp";
 import {Cookie} from "http";
-import {header, main} from "jhonstart";
+import {header, main} from "rakun-bpp";
 import {atom} from "cardume";
-import {AtomRoot, atomValue} from "jhonstart-cardume";
-import {persistLocal} from "jhonstart-cardume";           // atm-d (b), illustrative
+import {AtomRoot, atomValue} from "rakun-bpp";
+import {persistLocal} from "rakun-bpp";           // atm-d (b), illustrative
 
 #[atom(default: Theme.Light)]
 pub type Theme { Light, Dark }      // the type is its own atom (297): `use atomValue(Theme)`

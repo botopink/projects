@@ -23,8 +23,8 @@
 //   https://nextjs.org/docs/app/api-reference/components/link
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
 
-import {div, h1, nav, span, ul} from "jhonstart";
-import {Link, linkProps, withClass} from "jhonstart-link";
+import {div, h1, nav, span, ul} from "rakun-bpp";
+import {Link, linkProps, withClass} from "rakun-bpp";
 import {components.archive_row as ArchiveRow};   // a `.bpp`'s default, named by the importer (288)
 import {components.nav_progress.NavProgress};
 import {lib.blog.listPosts};

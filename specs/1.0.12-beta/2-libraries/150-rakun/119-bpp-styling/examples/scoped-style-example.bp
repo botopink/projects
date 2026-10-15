@@ -26,10 +26,10 @@
 //
 // Target: both.
 
-import html, {classIf, classList, View, Node, renderToString} from "jhonstart";
-import {article, div, h1, p} from "jhonstart";
-import styled from "jhonstart-styled";
-import {collectedStyles, resetStyles} from "jhonstart-styled";
+import html, {classIf, classList, View, Node, renderToString} from "rakun-bpp";
+import {article, div, h1, p} from "rakun-bpp";
+import styled from "rakun-bpp";
+import {collectedStyles, resetStyles} from "rakun-bpp";
 
 pub fn Box(isRed: bool, children: Node) -> View {
     val foregroundColor = "rgb(221 243 228)";

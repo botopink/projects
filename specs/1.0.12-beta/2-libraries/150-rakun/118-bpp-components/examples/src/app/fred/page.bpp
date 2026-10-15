@@ -19,7 +19,7 @@
 //
 // Upstream: astro-docs/09-astro-components.md (Slots Nomeados)
 
-import {div, h2, p} from "jhonstart";
+import {div, h2, p} from "rakun-bpp";
 import {components.Wrapper};
 import {components.GreetingHeadline};
 ---

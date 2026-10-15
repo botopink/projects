@@ -7,8 +7,8 @@
 //
 // Upstream: astro-docs/20-view-transitions.md (Nomeando uma transição)
 
-import {h1, img} from "jhonstart";
-import {transitionName} from "jhonstart-link";
+import {h1, img} from "rakun-bpp";
+import {transitionName} from "rakun-bpp";
 
 type Props(
     slug: string,

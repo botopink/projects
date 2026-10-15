@@ -15,9 +15,9 @@
 //   https://nextjs.org/docs/app/api-reference/functions/cookies
 //   https://nextjs.org/docs/app/api-reference/functions/headers
 
-import { Element, div, span, p, header, text, renderToString } from "jhonstart";
-import { RequestData, request } from "jhonstart";
-import { pairValue } from "jhonstart";          // front 26, the one pair-list decoder
+import { Element, div, span, p, header, text, renderToString } from "rakun-bpp";
+import { RequestData, request } from "rakun-bpp";
+import { pairValue } from "rakun-bpp";          // front 26, the one pair-list decoder
 
 fn greetingFor(locale: string) -> string {
     return case locale {

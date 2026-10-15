@@ -51,7 +51,7 @@ ladder of `spacing.bp` becomes the literal's `--spacing()`, and a variant wraps 
 `styled`:
 
 ```bp
-import styled, {styledProperty, Styled, StyledProperty} from "styled";
+import styled, {styledProperty, Styled, StyledProperty} from "rakun-style";
 
 // Tailwind: @utility p-*  { padding: --spacing(--value(integer)); }
 fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }
@@ -143,8 +143,8 @@ step 1 —, and emilia keeps the **values**: `defaultTheme()`, Tailwind's palett
 breakpoints, radii (`theme.bp`'s nineteen namespaces and three reset forms).
 
 ```bp
-import {defaultTheme} from "emilia";
-import {theme, extendTheme, entry, clear} from "styled";
+import {defaultTheme} from "rakun-stylesheet";
+import {theme, extendTheme, entry, clear} from "rakun-style";
 
 #[theme]
 pub val appTheme = comptime extendTheme(defaultTheme(), [

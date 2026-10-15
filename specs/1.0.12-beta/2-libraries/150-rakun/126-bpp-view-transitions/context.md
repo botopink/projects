@@ -7,7 +7,7 @@
 **Depends on:** `05-jhonstart/27-jhonstart-link` (JH-27-3b: driver `reconcile()` has no body — no
 swap to animate yet) · `118-bpp-components` (tag annotations, 278 — this front appends the transition arm) · 120 (previous arm in
 `html.bp`; `fake_dom.mjs` before this front).
-**Owns:** in `repository/jhonstart/modules/jhonstart-link/src`: new `transitions.bp`,
+**Owns:** in `repository/rakun/modules/rakun-bpp/src/link`: new `transitions.bp`,
 `sidecars/transitions_runtime.mjs`; step 2's two call sites in `link_runtime.mjs` ·
 `jhonstart-link/test/transitions_test.bp` · `jhonstart-dom-test` — the `startViewTransition`
 double · one arm appended to `html.bp` (`jhonstart/src/html.bp`, after 120's)
@@ -33,7 +33,7 @@ front covers animation.
 
 ## What exists
 
-At `repository/jhonstart/modules/jhonstart-link/src/`:
+At `repository/rakun/modules/rakun-bpp/src/link/`:
 
 | | |
 |---|---|

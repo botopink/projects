@@ -12,7 +12,7 @@ typed input. · **State:** not started
 step 3's `jhonstart-dom-test` file is this front's; `fake_dom.mjs` stays `05-jhonstart/26`'s (189).
 **Owns:** in `repository/rakun/modules/rakun-app/src`: new `typed_action.bp`; the one registration
 line of `actions.bp` it calls · in `repository/botopink-lang/libs/actions/src`: new `outcome.bp` ·
-in `repository/jhonstart/modules/jhonstart-forms/src`: new `typed_call.bp` · their tests
+in `repository/rakun/modules/rakun-bpp/src/forms`: new `typed_call.bp` · their tests
 **Does not touch:** `#[serverAction]`, the dispatcher, id derivation (`actions.bp:170-260`); the
 envelope's existing fields (`libs/actions/src/envelope.bp`); `form.bp`'s hooks.
 

@@ -24,9 +24,9 @@
 //   https://nextjs.org/docs/app/getting-started/updating-data
 //   https://react.dev/reference/react/useActionState
 
-import {button, form, input, label, p} from "jhonstart";
+import {button, form, input, label, p} from "rakun-bpp";
 import {state: {newActionState}} from "actions";
-import {formAttrs, hiddenActionField, actionState} from "jhonstart-forms";
+import {formAttrs, hiddenActionField, actionState} from "rakun-bpp";
 
 type Props(actionId: string)
 

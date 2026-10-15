@@ -14,8 +14,8 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/error
 
-import {button, h2, p, section} from "jhonstart";
-import {emilia, Token} from "emilia";
+import {button, h2, p, section} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
 
 fn panelTokens() -> Token[] {
     return [.Pad.All.8, .Bg.Gray.100, .Border.Rounded.Md];

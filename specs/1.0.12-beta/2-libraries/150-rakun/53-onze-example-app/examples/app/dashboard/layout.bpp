@@ -14,9 +14,9 @@
 //
 // Upstream: https://nextjs.org/docs/app/guides/authentication
 
-import {p, section} from "jhonstart";
-import {cookies, pairValue, redirect} from "jhonstart";
-import {emilia, Token} from "emilia";
+import {p, section} from "rakun-bpp";
+import {cookies, pairValue, redirect} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
 
 fn panelTokens() -> Token[] {
     return [.Pad.All.8, .Bg.White, .Border.Rounded.Md];

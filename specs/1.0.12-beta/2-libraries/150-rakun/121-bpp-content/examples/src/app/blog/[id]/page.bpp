@@ -27,10 +27,10 @@
 //           Conteúdo, Renderizando conteúdo do body)
 //           https://docs.astro.build/en/guides/content-collections/#generating-routes-from-content
 
-import {a, article, h1, p} from "jhonstart";
-import {notFound} from "jhonstart";
-import {collections: {Entry, getCollection, getEntry, render}} from "onze-content";
-import {StaticPath, staticPath} from "onze";
+import {a, article, h1, p} from "rakun-bpp";
+import {notFound} from "rakun-bpp";
+import {collections: {Entry, getCollection, getEntry, render}} from "rakun-ssr";
+import {StaticPath, staticPath} from "rakun-ssr";
 import {content.blog, content.authors, content.BlogPost};
 import {json.Json, io.clock} from "std";
 

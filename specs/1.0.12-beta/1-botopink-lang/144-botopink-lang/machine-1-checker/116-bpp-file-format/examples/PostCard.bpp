@@ -20,7 +20,7 @@
 //
 // What this file unfolds to is `PostCard-desugared-example.bp`, beside it.
 
-import {article, h2, p, timeTag, footer} from "jhonstart";
+import {article, h2, p, timeTag, footer} from "rakun-bpp";
 import {lib.db.Post};
 
 type Props(

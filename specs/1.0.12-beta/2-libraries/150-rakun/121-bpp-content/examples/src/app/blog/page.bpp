@@ -19,8 +19,8 @@
 // Upstream: astro-docs/15-content-collections.md (Consultando coleções build-time)
 //           https://docs.astro.build/en/guides/content-collections/#querying-collections
 
-import {a, h1, li, ul} from "jhonstart";
-import {collections: {getCollectionWhere}} from "onze-content";
+import {a, h1, li, ul} from "rakun-bpp";
+import {collections: {getCollectionWhere}} from "rakun-ssr";
 import {content.blog};
 
 val posts = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });

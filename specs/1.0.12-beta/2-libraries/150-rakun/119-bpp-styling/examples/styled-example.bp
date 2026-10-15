@@ -14,10 +14,10 @@
 // emilia is a series of components written this way (`06-emilia/34` step 5).
 //
 // Target: both — a component renders to the same bytes on every target. The
-// suite case is `repository/styled/test/styled_example_test.bp` (this file but
+// suite case is `repository/rakun/modules/rakun-style/test/styled_example_test.bp` (this file but
 // for the import lines).
 
-import styled, {styledProperty, StyledView, StyledPropertyView, StyledSheet, Styled, StyledProperty, Sheet, layer} from "styled";
+import styled, {styledProperty, StyledView, StyledPropertyView, StyledSheet, Styled, StyledProperty, Sheet, layer} from "rakun-style";
 import {context.provide, context.createContext} from "std";
 
 pub val tab4 = styledProperty "tab-size: 4;";
@@ -106,7 +106,7 @@ test "styled: a sheet renders its layers in declaration order, each component on
     assert out.split(c.rules).length == 2;
 }
 
-// What does not compile (each a case under `repository/styled/refusals/`):
+// What does not compile (each a case under `repository/rakun/refusals/rakun-style/`):
 //
 //   styledProperty "&:hover { color: red; }"
 //     error: styled: styledProperty holds declarations only — use styled for

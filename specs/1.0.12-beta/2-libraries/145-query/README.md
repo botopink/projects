@@ -83,21 +83,21 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 - [ ] `run/` cell: a test behavior whose type-level test decorator reads the meta and asserts it
 
 **Gate:** standard (fronts.md § Gate) + `botopink test` in `modules/query` and `modules/query-test` on
-commonJS and erlang, `botopink build` of `examples/erika-linq`, erika's pre-commit hook green.
+commonJS and erlang, `botopink build` of `examples/query-linq`, erika's pre-commit hook green.
 
-### 145 s2 — `query-test`'s first helper and `erika-linq`'s README (98)
+### 145 s2 — `query-test`'s first helper and `query-linq`'s README (98)
 
 **Repository:** `query` (`--repo query`) · **Model:** sonnet
 
-#### Step 1 — `query-test`'s first helper and `erika-linq`'s README (was `98-packaging-tail` s1)
+#### Step 1 — `query-test`'s first helper and `query-linq`'s README (was `98-packaging-tail` s1)
 
 `modules/query-test/src/asserts.bp`: `assertRows(loc: SourceLocation, q: Query<T>) ->
 @Result<void, string>`, `q.toArray()` one row per line through `snapshots.assertAs(loc, "rows",
 text)`; `test/asserts_test.bp`, one accepted snapshot per target-shared file.
-`examples/erika-linq/README.md`: the LINQ operators it mirrors; erika has no front this milestone.
+`examples/query-linq/README.md`: the LINQ operators it mirrors; erika has no front this milestone.
 
 - [ ] `zig build test-libs` reads `query-test · commonJS: pass` and `query-test · erlang: pass` with
-      2 tests; `examples/erika-linq/test/__snapshots__/` absent (example tests are inline)
+      2 tests; `examples/query-linq/test/__snapshots__/` absent (example tests are inline)
 - [ ] `repository/query/AGENTS.md` names the helper
 
 ### 145 s3 — erika's C-13 migration and C-12 reformat (after 144 B-28)

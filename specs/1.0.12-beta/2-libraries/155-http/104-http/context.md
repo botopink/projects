@@ -11,8 +11,8 @@ cookie tossing · **State:** partial: steps 1–4 (the package) on feat; step 5 
 `rakun-web/src/{negotiation,compression,static,error}.bp`, `rakun-security/src/csrf.bp`
 (`cookieValue`), `rakun-session/src/session_cookie.bp`, `rakun-app/src/i18n.bp` (`cookieFrom`,
 `qPerMille` only — 105 takes the rest of the generic half), `rakun-test/src/fake_request.bp`,
-`repository/onze/modules/onze-server/src/server.bp` (`cookiePairs`),
-`repository/onze/modules/onze-assets/src/image_handler.bp` (its MIME table) · reason-phrase tables in
+`repository/rakun/modules/onze-server/src/server.bp` (`cookiePairs`),
+`repository/rakun/modules/rakun-ssr/src/assets/image_handler.bp` (its MIME table) · reason-phrase tables in
 `rakun/src/sidecars/rakun_runtime.erl`, `rakun_ssr.erl`, `rakun_websocket.erl` **read, not edited**
 **Does not touch:** HTTP/1.1 wire parsers (`decode_packet` in `rakun_runtime.erl`,
 `rakun_client.erl`) and compression bodies (`zlib`) — wait on 346's `Bytes` (`01-checker` step 32) · `hash.etag` and

@@ -9,7 +9,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/updating-data
 
-import {div, h1} from "jhonstart";
+import {div, h1} from "rakun-bpp";
 import {components.new_post_form as NewPostForm};   // the default, named by the importer (288)
 ---
 <div>

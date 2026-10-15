@@ -23,7 +23,7 @@
 // Upstream: astro-docs/22-server-islands.md
 //           https://docs.astro.build/en/guides/server-islands/
 
-import {h1} from "jhonstart";
+import {h1} from "rakun-bpp";
 import {components.Avatar};
 import {components.GenericAvatar};
 

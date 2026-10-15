@@ -12,10 +12,10 @@
 //
 // Target: both.
 
-import html, {View, client, renderToString} from "jhonstart";
-import {button, div, li, ul} from "jhonstart";
+import html, {View, client, renderToString} from "rakun-bpp";
+import {button, div, li, ul} from "rakun-bpp";
 import {atomFamily} from "cardume";
-import {atomValue, transaction} from "jhonstart-cardume";
+import {atomValue, transaction} from "rakun-bpp";
 
 pub type Column { Todo, Doing, Done }
 pub type Move(card: i32, from: Column, to: Column)

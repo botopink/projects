@@ -13,11 +13,11 @@
 // once, on the server; the only interactive thing on the page is each card's
 // `Link`, which front 27 owns.
 
-import {Element, div, h1, ul, li, span, text, renderToString} from "jhonstart";
-import {section} from "jhonstart";                        // provided by front 94
-import {Boundary, Suspense, boundaryId, shellHtml} from "jhonstart";   // front 30
-import {styled, Token} from "emilia";                     // front 48
-import {page, layout, PageContext, LayoutProps} from "jhonstart";          // front 30
+import {Element, div, h1, ul, li, span, text, renderToString} from "rakun-bpp";
+import {section} from "rakun-bpp";                        // provided by front 94
+import {Boundary, Suspense, boundaryId, shellHtml} from "rakun-bpp";   // front 30
+import {styled, Token} from "rakun-stylesheet";                     // front 48
+import {page, layout, PageContext, LayoutProps} from "rakun-bpp";          // front 30
 import {collections.Dict} from "std";
 // app-local
 import {lib.db.Post, lib.db.listPosts};

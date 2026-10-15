@@ -12,8 +12,8 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/functions/use-action-state
 
-import {button, form, input, label, p} from "jhonstart";
-import {actionState, formAttrs, useActionState} from "jhonstart";
+import {button, form, input, label, p} from "rakun-bpp";
+import {actionState, formAttrs, useActionState} from "rakun-bpp";
 import {lib.actions.createPost};   // the action by reference (281), never by name in text
 
 val s = use useActionState(createPost, actionState(""));

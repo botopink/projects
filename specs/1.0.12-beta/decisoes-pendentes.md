@@ -521,7 +521,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Opções.**
   (a) Um nome no escopo.
   ```bp
-  import {query} from "erika";
+  import {query} from "query";
   self.db.query """select …"""
   ```
   (b) Pelo tipo do receptor.
@@ -2251,8 +2251,8 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 
 #### 119-a · A caixa de grep do passo 1 contra o hook byte-idêntico da checagem 4 do CI
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): a caixa faz grep no texto próprio do pacote — `{src,test,botopink.json}` de `css` e `styled`** — o hook é um só texto de que o gate é dono (checagem 4 do CI), `AGENTS.md` e `decisions-taken.md` nomeiam os vizinhos por design (as camadas da 338), e o `{src,test,botopink.json}` do `css` está vazio hoje; o do `styled` não (`src/styled.bp` e `test/styled_example_test.bp` nomeiam o `flush()` do emilia e o render do jhonstart em comentários) — a 150 s32 reescreve esses dois comentários (338 (2): `styled` não nomeia jhonstart nem emilia). Viável: um grep. Mudanças: a caixa do passo 1 da 119; a "linha 31" da entrada é `runner-standalone.sh:45`, e `css/AGENTS.md` contém `emilia` (por design).
-- **Regras.** 119 passo 1 e seu gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/styled` vazio (338). Checagem 4 do CI (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-idêntico em todo repositório de biblioteca — e sua linha 31 lê `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, então o grep o encontra em `repository/css` (e encontrará em `repository/styled`). `src/`, `test/`, `AGENTS.md` e o manifesto não guardam nenhum dos três nomes.
-- **Opções.** (a) A caixa faz grep no texto do próprio pacote: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/styled/{src,test,botopink.json}` — vazio hoje para `css`. (b) O comentário do hook compartilhado perde o nome, em todo repositório de biblioteca de uma vez (checagem 4), uma mudança que nenhum dos repositórios da 119 possui.
+- **Regras.** 119 passo 1 e seu gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/rakun/modules/rakun-style` vazio (338). Checagem 4 do CI (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-idêntico em todo repositório de biblioteca — e sua linha 31 lê `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, então o grep o encontra em `repository/css` (e encontrará em `repository/rakun/modules/rakun-style`). `src/`, `test/`, `AGENTS.md` e o manifesto não guardam nenhum dos três nomes.
+- **Opções.** (a) A caixa faz grep no texto do próprio pacote: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/rakun/modules/rakun-style/{src,test,botopink.json}` — vazio hoje para `css`. (b) O comentário do hook compartilhado perde o nome, em todo repositório de biblioteca de uma vez (checagem 4), uma mudança que nenhum dos repositórios da 119 possui.
 - **Recomendação.** (a): a caixa mede o que o pacote sabe; o hook é um texto dono do gate.
 - **Bloqueia.** Só marcar a caixa de grep do passo 1 da 119.
 

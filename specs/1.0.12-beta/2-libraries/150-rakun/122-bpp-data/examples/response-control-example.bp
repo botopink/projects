@@ -21,13 +21,13 @@
 //
 // Target: erlang (server).
 
-import html, {page, PageContext, Element, renderToString} from "jhonstart";
-import {h1, p} from "jhonstart";
-import {request, cookies, pairValue} from "jhonstart";                      // Astro.request, Astro.cookies
-import {redirect, notFound, rewrite} from "jhonstart";                      // Astro.redirect, a 404, Astro.rewrite
-import {response, recordedStatus, recordedHeaders} from "jhonstart";                       // Astro.response
-import {site, absoluteUrl} from "jhonstart";                               // Astro.site; no isPrerendered (291)
-import {captureSignals} from "jhonstart-test";
+import html, {page, PageContext, Element, renderToString} from "rakun-bpp";
+import {h1, p} from "rakun-bpp";
+import {request, cookies, pairValue} from "rakun-bpp";                      // Astro.request, Astro.cookies
+import {redirect, notFound, rewrite} from "rakun-bpp";                      // Astro.redirect, a 404, Astro.rewrite
+import {response, recordedStatus, recordedHeaders} from "rakun-bpp";                       // Astro.response
+import {site, absoluteUrl} from "rakun-bpp";                               // Astro.site; no isPrerendered (291)
+import {captureSignals} from "rakun-bpp";
 import {collections.Dict, json.Json} from "std";
 
 type Product(id: string, name: string, available: bool)

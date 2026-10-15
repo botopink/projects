@@ -12,7 +12,7 @@ dispatcher, `Origin` / `Host` 403), 25 (route handlers), 60 (static generation),
 discovery), the middleware (`rakun-web`, erlang); `12-rakun-cache` (`revalidateTag`);
 `65-rakun-url-rules` (decision 201) · maintainer `50-b` (step 6) · `20-snap` step 5 (E2E runner,
 390)
-**Owns:** `repository/onze/examples/blog/**` (`README.md`, `test/serve.sh` included) · this
+**Owns:** `repository/rakun/examples/rakun-ssr/blog/**` (`README.md`, `test/serve.sh` included) · this
 directory (`modules/onze-test/src/e2e.bp`, the group file 49 stubs, is `20-snap` step 5's)
 **Does not touch:** anything else — read-only elsewhere; a needed change is reported to its owner
 

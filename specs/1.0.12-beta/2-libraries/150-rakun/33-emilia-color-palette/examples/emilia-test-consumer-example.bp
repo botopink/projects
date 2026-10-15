@@ -19,8 +19,8 @@
 // and snapshots.md shows the header of the first one.
 
 import {testing.asserts} from "std";
-import {Token} from "emilia";
-import {assertSheet, assertUtility, assertUtilityNamed, assertHasDeclaration, hoverOnMd, sharedFixtureTokens} from "emilia-test";
+import {Token} from "rakun-stylesheet";
+import {assertSheet, assertUtility, assertUtilityNamed, assertHasDeclaration, hoverOnMd, sharedFixtureTokens} from "rakun-stylesheet";
 
 // ── snapshots ──────────────────────────────────────────────────────────────
 

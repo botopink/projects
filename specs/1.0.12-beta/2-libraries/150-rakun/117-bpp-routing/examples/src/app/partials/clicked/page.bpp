@@ -18,7 +18,7 @@
 // Upstream: astro-docs/07-astro-pages.md (Page Partials)
 //           https://docs.astro.build/en/basics/astro-pages/#page-partials
 
-import {li} from "jhonstart";
+import {li} from "rakun-bpp";
 
 pub val partial = true;
 ---

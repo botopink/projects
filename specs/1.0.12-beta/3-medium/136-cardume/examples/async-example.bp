@@ -21,10 +21,10 @@
 //
 // Target: both.
 
-import html, {View, client, Boundary, Suspense, holeId, renderToString} from "jhonstart";
-import {div, h2, li, p, text, ul} from "jhonstart";
+import html, {View, client, Boundary, Suspense, holeId, renderToString} from "rakun-bpp";
+import {div, h2, li, p, text, ul} from "rakun-bpp";
 import {atom, selector, constSelector, errorSelector, waitForAll, waitForAny, waitForNone, Loadable} from "cardume";
-import {atomValue, atomState, loadable} from "jhonstart-cardume";
+import {atomValue, atomState, loadable} from "rakun-bpp";
 
 pub type User(id: i32, name: string)
 pub type Post(id: i32, title: string)

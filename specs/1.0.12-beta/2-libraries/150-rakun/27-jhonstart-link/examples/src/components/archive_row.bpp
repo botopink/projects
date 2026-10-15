@@ -13,8 +13,8 @@
 // Upstream:
 //   https://nextjs.org/docs/app/api-reference/components/link
 
-import {li} from "jhonstart";
-import {Link, linkProps, withPrefetch} from "jhonstart-link";
+import {li} from "rakun-bpp";
+import {Link, linkProps, withPrefetch} from "rakun-bpp";
 import {lib.blog.Post};
 
 type Props(post: Post)

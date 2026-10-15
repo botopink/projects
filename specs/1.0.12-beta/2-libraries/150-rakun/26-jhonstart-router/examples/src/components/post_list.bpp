@@ -11,7 +11,7 @@
 // Upstream:
 //   https://nextjs.org/docs/app/guides/streaming
 
-import {li, span, ul} from "jhonstart";
+import {li, span, ul} from "rakun-bpp";
 import {lib.blog.recentPosts};
 
 val posts = recentPosts();

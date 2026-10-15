@@ -14,14 +14,14 @@ carve-out in `jhonstart-emilia`'s bridge test landed before this opens (189), `0
 step 2's `jhonstart-dom-test` file · step 5: `06-emilia/34` step 5 (emilia over `styled`). The
 `.bpp` style section's unfold is `116`'s (steps 1, 2), against step 2's package; the `.bpp`
 examples compile at 116 step 6.
-**Owns:** `repository/css/**` and `repository/styled/**` (new repositories, decision 326's rule for
+**Owns:** `repository/css/**` and `repository/rakun/modules/rakun-style/**` (new repositories, decision 326's rule for
 a new shared package; their submodule entries in the meta `.gitmodules` and the `AGENTS.md`
-§ Layout row, added when each has a `feat` commit) · in `repository/jhonstart`: the new member
+§ Layout row, added when each has a `feat` commit) · in `repository/rakun/modules/rakun-bpp`: the new member
 `modules/jhonstart-styled/**`; the deletion of `modules/jhonstart-emilia/**` (step 5); one lowering
 arm appended to `html.bp` (`jhonstart/src/html.bp` after `05-jhonstart/26` step 0; after 118; first
 of three appenders) · step 2's `jhonstart-dom-test` file for the selector matcher (`fake_dom.mjs`
 stays `05-jhonstart/26`'s, 189)
-**Does not touch:** `repository/emilia/**` (`06-emilia/34`: the theme values in step 3, emilia over
+**Does not touch:** `repository/rakun/modules/rakun-stylesheet/**` (`06-emilia/34`: the theme values in step 3, emilia over
 `styled` in step 5); `onze-assets/src/style_module.bp`; `repository/botopink-lang/**` (the
 toolchain is `116`'s); `modules/jhonstart/**` but the `html.bp` arm.
 
@@ -82,8 +82,8 @@ manifest, `data-s` or jhonstart:
 | Layer | Where | Is | Imported by |
 |---|---|---|---|
 | `css` — the base for building CSS | `repository/css` (`botopink/css`) | a reader of a stylesheet (rules, at-rules, comments, strings, `{ }` nesting) into a typed `Sheet`; its renderer; `scope(id, css) -> @Result<string, string>`. Pure botopink, both targets, no host cell | `styled` |
-| `styled` — the base for building CSS components | `repository/styled` (`botopink/styled`) | `styled "…"` and `styledProperty "…"`; the layered sheet; the theme mechanism; `behavior Styleable` | emilia · `jhonstart-styled` |
-| emilia — a series of components built with `styled` | `repository/emilia` | the tokens, Tailwind's theme values (`defaultTheme()`), each family a `styledProperty` (`06-emilia/34` steps 3, 5) | the application |
+| `styled` — the base for building CSS components | `repository/rakun/modules/rakun-style` (`botopink/styled`) | `styled "…"` and `styledProperty "…"`; the layered sheet; the theme mechanism; `behavior Styleable` | emilia · `jhonstart-styled` |
+| emilia — a series of components built with `styled` | `repository/rakun/modules/rakun-stylesheet` | the tokens, Tailwind's theme values (`defaultTheme()`), each family a `styledProperty` (`06-emilia/34` steps 3, 5) | the application |
 
 Two consumers of `styled` (emilia, `jhonstart-styled`): decisions 115–117's criterion, under 326
 (own repositories, ordinary dependencies).
@@ -105,7 +105,7 @@ pub behavior Styleable { fn toStyled(self: Self) -> StyledView; }   // StyledVie
 ```
 
 ```bp
-import styled, {styledProperty} from "styled";
+import styled, {styledProperty} from "rakun-style";
 
 pub val tab4 = styledProperty "tab-size: 4;";                         // declarations only
 fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }   // Any (376)
@@ -152,8 +152,8 @@ the function's hooks and writes `data-s="<id>"` on every element that function's
 child's own template is not scoped by its parent.
 
 ```bp
-import html, {View} from "jhonstart";
-import styled from "jhonstart-styled";
+import html, {View} from "rakun-bpp";
+import styled from "rakun-bpp";
 
 pub default fn (props: Props) -> View {
     use styled """.title { font-size: 2rem; }""";          // what a .bpp style section unfolds to

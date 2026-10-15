@@ -19,10 +19,10 @@
 // produces is also computed by the client bundle for the same token list, which
 // is the round trip front 48's shared fixture pins.
 
-import {Element, div, h1, p, span, text, renderToString} from "jhonstart";
-import {article, h2} from "jhonstart";                  // provided by front 94
-import {Link, linkProps} from "jhonstart";              // front 27
-import {styled, styledWith, withAttrs, Token} from "emilia";   // front 48
+import {Element, div, h1, p, span, text, renderToString} from "rakun-bpp";
+import {article, h2} from "rakun-bpp";                  // provided by front 94
+import {Link, linkProps} from "rakun-bpp";              // front 27
+import {styled, styledWith, withAttrs, Token} from "rakun-stylesheet";   // front 48
 // app-local
 import {lib.db.Post};
 

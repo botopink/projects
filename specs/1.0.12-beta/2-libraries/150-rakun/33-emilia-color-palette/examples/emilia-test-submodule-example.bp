@@ -1,7 +1,7 @@
 // Front 01 — std · examples/emilia-test-submodule-example.bp
 //
 // Example 2, part 1: a dedicated test submodule. This file is the shape of
-// `repository/emilia/modules/emilia-test/src/root.bp` — the `<lib>-test`
+// `repository/rakun/modules/rakun-stylesheet/src/testing/mod.bp` — the `<lib>-test`
 // submodule every library gets (06-emilia/modules.md).
 // It builds domain helpers on `std/testing/asserts` + `std/testing/snapshots` and exposes them
 // to the tests of emilia core and of emilia's consumers.
@@ -26,7 +26,7 @@
 //// snapshot would land beside this module instead of beside the test.
 
 import {testing: {asserts, snapshots}} from "std";
-import {styleRule, defaultTheme, Token} from "emilia";
+import {styleRule, defaultTheme, Token} from "rakun-stylesheet";
 
 // The encoded sheet a token list produces under the default theme.
 fn sheetOf(tokens: Token[]) -> string {

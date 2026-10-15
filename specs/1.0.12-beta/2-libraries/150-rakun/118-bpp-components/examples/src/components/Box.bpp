@@ -17,8 +17,8 @@
 //           astro-docs/13-astro-syntax.md (`set:html`)
 //           https://docs.astro.build/en/reference/directives-reference/
 
-import {article, code, div, p, pre} from "jhonstart";
-import {classIf, classList, raw} from "jhonstart";
+import {article, code, div, p, pre} from "rakun-bpp";
+import {classIf, classList, raw} from "rakun-bpp";
 
 type Props(
     isRed: bool,

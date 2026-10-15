@@ -20,7 +20,7 @@
 // Upstream: astro-docs/13-astro-syntax.md (`Astro.self`)
 //           https://docs.astro.build/en/reference/astro-syntax/#astroself
 
-import {li, ul} from "jhonstart";
+import {li, ul} from "rakun-bpp";
 
 pub type Tree(label: string, kids: Array<Tree>)
 

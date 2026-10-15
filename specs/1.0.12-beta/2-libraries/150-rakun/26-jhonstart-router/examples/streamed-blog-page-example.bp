@@ -22,10 +22,10 @@
 //   https://nextjs.org/docs/app/guides/streaming
 //   https://nextjs.org/docs/app/api-reference/file-conventions/loading
 
-import { Element, div, h1, ul, li, span, text, renderToString } from "jhonstart";
-import { Boundary, Suspense, holeId } from "jhonstart";
-import { Chunk, resolve, fillHtml, shellHtml } from "jhonstart";
-import { header, section } from "jhonstart";
+import { Element, div, h1, ul, li, span, text, renderToString } from "rakun-bpp";
+import { Boundary, Suspense, holeId } from "rakun-bpp";
+import { Chunk, resolve, fillHtml, shellHtml } from "rakun-bpp";
+import { header, section } from "rakun-bpp";
 import { escape } from "std";
 
 // `header` and `section` come from front 94 (jhonstart-element-surface). `escape` is front 01's.

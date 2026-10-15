@@ -16,8 +16,8 @@ lines in `specs/1.0.1-beta/06-snapshot-review/` · snapshot **renames** only (`g
 byte-identical) — documents: `repository/botopink-lang/docs.md` prose (with 23, 24; 114 owns marker
 and fence lines), `README.md`, `examples/**`, `libs/std/botopink.json`, `libs/std/AGENTS.md` (with
 23), relative links of `specs/` · [`beam-memory-docs-text.md`](beam-memory-docs-text.md) ·
-comments in other fronts' files, only after their owners — ecosystem: `repository/erika/**` (with
-`02-std-and-packaging/98`, owner of `erika/modules/erika-test/**`, `examples/erika-linq/README.md`,
+comments in other fronts' files, only after their owners — ecosystem: `repository/query/**` (with
+`02-std-and-packaging/98`, owner of `erika/modules/erika-test/**`, `examples/query-linq/README.md`,
 `erika/AGENTS.md`) · meta submodule pointers
 **Does not touch:** any lowering (02–05), checker and parser sources (01), `comptime/snapshot.zig`,
 `codegen/snapshot.zig` (18), `libs/std/src/**` (std track), `modules/language-server/src/**` outside

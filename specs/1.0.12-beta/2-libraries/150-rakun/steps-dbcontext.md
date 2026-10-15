@@ -65,7 +65,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 - [ ] rakun-data's drivers (PostgreSQL, ETS) implement `dbcontext`'s `Driver`; the container registers
       `DbContext` and each generated repository by type (234) — 08 step 7's boxes
 - [ ] rakun-data's `#[entity]` mapping, `#[repository]`, `#[nativeQuery]`, `#[query]`, the `<m>Sql()` members
-      and `rkRegisterQuery` deleted there, its sites importing `from "dbcontext"` (one commit, 188)
+      and `rkRegisterQuery` deleted there, its sites importing `from "rakun-data"` (one commit, 188)
 - [ ] `dbcontext`'s `AGENTS.md` states the one consumer as the maintainer's exception to 115 (398 (4))
 
 **Gate:** standard (fronts.md § Gate) + `botopink test` green on both targets in `repository/rakun/modules/rakun-data`;

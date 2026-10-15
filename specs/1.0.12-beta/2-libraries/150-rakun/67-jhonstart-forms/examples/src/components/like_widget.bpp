@@ -15,8 +15,8 @@
 //   https://react.dev/reference/react/useOptimistic
 //   https://react.dev/reference/react-dom/hooks/useFormStatus
 
-import {button, form, span} from "jhonstart";
-import {formAction, formAttrs, formStatus, optimistic} from "jhonstart-forms";
+import {button, form, span} from "rakun-bpp";
+import {formAction, formAttrs, formStatus, optimistic} from "rakun-bpp";
 
 type Props(serverCount: i32)
 

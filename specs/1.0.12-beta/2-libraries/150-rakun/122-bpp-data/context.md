@@ -6,7 +6,7 @@
 **Depends on:** `05-jhonstart/26` (core) · `07-onze/49` (ONZ-49-4.3: onze fills
 `RequestData.query`, `.headers` with `[]`) · `03-bundled-libs/102` (`navigation.bp`) · 120 (before
 it on the core's `botopink.json`, `root.bp`) · `118-bpp-components` for the examples.
-**Owns:** in `repository/jhonstart/modules/jhonstart/src`: step-named lines of `server.bp` and
+**Owns:** in `repository/rakun/modules/rakun-bpp/src`: step-named lines of `server.bp` and
 `error_boundary.bp`, new `response.bp` (after `05-jhonstart/26`, after 120 on the member's
 `botopink.json`, `root.bp`) · `repository/routing/src/navigation.bp` — one signal (after
 `03-bundled-libs/102`) · `onze/modules/onze/src/config.bp` — `site` key and reader (124 adds the

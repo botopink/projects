@@ -18,7 +18,7 @@
 // Upstream: astro-docs/13-astro-syntax.md (Expressões tipo JSX, HTML Dinâmico)
 //           https://docs.astro.build/en/reference/astro-syntax/
 
-import {em, li, p, span, ul} from "jhonstart";
+import {em, li, p, span, ul} from "rakun-bpp";
 
 pub type Status { Draft, Live }
 

@@ -10,7 +10,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/route-groups
 
-import {div, h1, p} from "jhonstart";
+import {div, h1, p} from "rakun-bpp";
 ---
 <div>
   <h1>About</h1>

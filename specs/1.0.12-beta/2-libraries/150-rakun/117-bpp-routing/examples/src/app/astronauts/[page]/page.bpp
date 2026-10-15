@@ -13,8 +13,8 @@
 // Upstream: astro-docs/08-routing.md (Paginação · O prop `page`)
 //           https://docs.astro.build/en/guides/routing/#pagination
 
-import {a, h1, li, nav, ul} from "jhonstart";
-import {StaticPath, Page, paginate, pageOf} from "onze";
+import {a, h1, li, nav, ul} from "rakun-bpp";
+import {StaticPath, Page, paginate, pageOf} from "rakun-ssr";
 import {decorators.schema} from "validation";
 import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
 import {json.Json} from "std";

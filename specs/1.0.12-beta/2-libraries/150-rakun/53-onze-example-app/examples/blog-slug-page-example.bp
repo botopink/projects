@@ -15,19 +15,19 @@
 //
 // Target: erlang (server).
 
-import {Element, div, h1, p, text, renderToString} from "jhonstart";
-import {article, h2, timeTag} from "jhonstart";             // provided by front 94
-import {styled, Token} from "emilia";                       // front 48
-import {page, PageContext} from "jhonstart";                    // front 30
-import {notFound} from "jhonstart";                         // front 31 — a page's signals are jhonstart's (decisions 115, 117)
+import {Element, div, h1, p, text, renderToString} from "rakun-bpp";
+import {article, h2, timeTag} from "rakun-bpp";             // provided by front 94
+import {styled, Token} from "rakun-stylesheet";                       // front 48
+import {page, PageContext} from "rakun-bpp";                    // front 30
+import {notFound} from "rakun-bpp";                         // front 31 — a page's signals are jhonstart's (decisions 115, 117)
 import {
     registerStaticParams,
     StaticParams,
     ParamBinding,
 } from "rakun";                                             // front 60
 import {io.clock.hours} from "std";             // a `Duration` (std)
-import {Metadata, OpenGraph, TwitterCard, Icons} from "jhonstart";   // front 32
-import {mergeMetadata, pairValue} from "jhonstart";                  // front 32
+import {Metadata, OpenGraph, TwitterCard, Icons} from "rakun-bpp";   // front 32
+import {mergeMetadata, pairValue} from "rakun-bpp";                  // front 32
 import {collections.Dict} from "std";
 // app-local
 import {lib.db.Post, lib.db.findPost, lib.db.listPosts, lib.db.missingPost};

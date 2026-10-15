@@ -11,9 +11,9 @@
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/page
 //           https://nextjs.org/docs/app/api-reference/components/image
 
-import {h1, p, section} from "jhonstart";
-import {emilia, Token} from "emilia";
-import {Image, defaultImageProps, defaultImageConfig, withPriority} from "onze";
+import {h1, p, section} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
+import {Image, defaultImageProps, defaultImageConfig, withPriority} from "rakun-ssr";
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];

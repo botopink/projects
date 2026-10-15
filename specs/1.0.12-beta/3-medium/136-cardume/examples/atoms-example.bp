@@ -17,10 +17,10 @@
 // Target: both — the server pass renders the defaults; the browser half (two
 // islands, one store) is `jhonstart-dom-test/test/cardume_dom_test.bp`.
 
-import html, {View, client, clientProps, renderToString} from "jhonstart";
-import {button, div, li, span, ul} from "jhonstart";
+import html, {View, client, clientProps, renderToString} from "rakun-bpp";
+import {button, div, li, span, ul} from "rakun-bpp";
 import {atom, selector, atomFamily} from "cardume";
-import {atomValue, atomState, atomSetter} from "jhonstart-cardume";
+import {atomValue, atomState, atomSetter} from "rakun-bpp";
 
 pub type Item(id: i32, name: string, price: i32)
 

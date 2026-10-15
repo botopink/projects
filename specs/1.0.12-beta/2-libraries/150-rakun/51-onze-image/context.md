@@ -7,7 +7,7 @@
 **Depends on:** `04-rakun/22-rakun-file-routing` carrying 25 (route handler registration, step 2)
 and 66 (route discovery, step 5) · maintainer `52-a` (step 4) · `07-onze/49` step 6 (the `assets`
 / `og` group files)
-**Owns:** `repository/onze/modules/onze-assets/**` (`root.bp`, `botopink.json` included),
+**Owns:** `repository/rakun/modules/rakun-ssr/src/assets/**` (`root.bp`, `botopink.json` included),
 `modules/onze-og/**`, `modules/onze-assets/scripts/` (new), `modules/onze-test/src/{assets,og}.bp`
 · this directory
 **Does not touch:** `modules/onze-server/**` (49 — route line handed to it) ·

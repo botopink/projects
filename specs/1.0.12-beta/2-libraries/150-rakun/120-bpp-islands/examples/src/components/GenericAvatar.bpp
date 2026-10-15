@@ -9,7 +9,7 @@
 //
 // Upstream: astro-docs/22-server-islands.md (Conteúdo de Fallback de Server Island)
 
-import {span} from "jhonstart";
+import {span} from "rakun-bpp";
 
 type Props(size: i32)
 

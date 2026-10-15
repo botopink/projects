@@ -13,7 +13,7 @@ logging is in the core) — no other rakun front: group A (decision 189) · 03r-
 § starters and examples · `repository/rakun/README.md` § Getting started ·
 `modules/rakun/test/starter_manifest_test.bp` (carve-out from 04) · the "Checkout onze" step of
 `repository/rakun/.github/workflows/test.yml` (carve-out: exists only for the starter's onze edge)
-**Does not touch:** `modules/**` otherwise · `repository/onze/**`
+**Does not touch:** `modules/**` otherwise · `repository/rakun/modules/rakun-ssr/**`
 
 ## Goal
 

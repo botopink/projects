@@ -19,14 +19,14 @@ mapping), `docs.md` § Modules, `tests/language/modules/bpp_*` · in `repository
 **Does not touch:** any `codegen/*.zig`, `parser/*.zig`, `lexer.zig` (no new syntax) ·
 `modules/compiler-core/src/comptime.zig`, `comptime/infer.zig` (no `template.emit` /
 `template.slice`, decision 198) · the prelude scope in `compiler-core` (`01-compiler/01-checker`'s;
-this front hands it the list) · `repository/jhonstart/**` (default function: `05-jhonstart/26`'s
+this front hands it the list) · `repository/rakun/modules/rakun-bpp/**` (default function: `05-jhonstart/26`'s
 and 118's; `prelude.bp`: 118's; `jhonstart-styled`: 119's).
 
 Reference: `astro-docs/09-astro-components.md` § Estrutura do Componente.
 
 ## Goal
 
-A `.bp` component (after 118: `import html, {View} from "jhonstart";` + `pub default fn
+A `.bp` component (after 118: `import html, {View} from "rakun-bpp";` + `pub default fn
 (props: Props) -> View { val kind = …; return html """<article …>…</article>"""; }` — 276, 289)
 written as `components/PostCard.bpp`, dropping the template import, function header and
 `return html """` (full pair: `examples/PostCard.bpp`, `examples/PostCard-desugared-example.bp`):
@@ -93,8 +93,8 @@ type Props(title: string)
 unfolds to (the prelude's imports, 270, aside)
 
 ```bp
-import html, {View} from "jhonstart";
-import styled from "jhonstart-styled";
+import html, {View} from "rakun-bpp";
+import styled from "rakun-bpp";
 
 type Props(title: string)
 
@@ -134,11 +134,11 @@ package's own modules only (no other package — decision 242; no activation `X*
 compiled and tested with the package; no manifest key names/overrides it. Handed to
 `compiler-core` as the module's last scope (generic import-item list, no library); an item becomes
 an import only when a file name resolves through it. A file that is only `<article></article>` is
-`import html from "jhonstart"; import {element.Element, elements.article} from "jhonstart";
+`import html from "rakun-bpp"; import {element.Element, elements.article} from "rakun-bpp";
 pub default fn () -> View { … }`, emitted code likewise. **Header wins** by scope order; a
 tag then resolving to a header declaration that is not a builder fails at the tag, naming the
 header line. The default function binds no name in its module (289), so a header may import a
-decorator named like the file (`import {page} from "jhonstart";` in `page.bpp`). No prelude: only the
+decorator named like the file (`import {page} from "rakun-bpp";` in `page.bpp`). No prelude: only the
 default function is imported.
 
 ```bp

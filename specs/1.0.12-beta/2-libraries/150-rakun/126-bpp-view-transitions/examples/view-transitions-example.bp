@@ -23,10 +23,10 @@
 // browser's, asserted against a `startViewTransition` double in
 // `jhonstart-dom-test`.
 
-import html, {Element, Node, renderToString} from "jhonstart";
-import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "jhonstart";
-import {ViewTransitions, fade, slide, TransitionAnimation} from "jhonstart-link";
-import {transitionName, transitionAnimate, transitionPersist, reload, history} from "jhonstart-link";
+import html, {Element, Node, renderToString} from "rakun-bpp";
+import {a, article, body, h1, head, header, htmlTag, img, main, title, video} from "rakun-bpp";
+import {ViewTransitions, fade, slide, TransitionAnimation} from "rakun-bpp";
+import {transitionName, transitionAnimate, transitionPersist, reload, history} from "rakun-bpp";
 
 // ── src/layouts/base.bp ─────────────────────────────────────────────────────
 

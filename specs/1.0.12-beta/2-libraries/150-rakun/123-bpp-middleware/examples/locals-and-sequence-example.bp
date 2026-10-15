@@ -21,8 +21,8 @@
 //
 // Target: erlang (server). Middleware never has a browser half.
 
-import html, {page, PageContext, Element, renderToString} from "jhonstart";
-import {h1, p} from "jhonstart";
+import html, {page, PageContext, Element, renderToString} from "rakun-bpp";
+import {h1, p} from "rakun-bpp";
 import {Request, Response} from "rakun";
 import {LocalKey, setLocal, local} from "rakun";
 import {Chain, Next, Middleware, sequence, Buffered} from "rakun-web";

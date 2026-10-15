@@ -21,8 +21,8 @@
 import {Request} from "rakun";
 import {getRoute, HandlerResponse} from "rakun";
 import {rkTestRequest} from "rakun-web";
-import {collections: {getCollection}, feeds: {RssFeed, RssItem, rssFeed}} from "onze-content";
-import {site} from "onze";                 // `site` in onze.json — front 124; `https://example.dev` in these tests
+import {collections: {getCollection}, feeds: {RssFeed, RssItem, rssFeed}} from "rakun-ssr";
+import {site} from "rakun-ssr";                 // `site` in onze.json — front 124; `https://example.dev` in these tests
 import {content.blog};
 
 // No `pub val prerender` (decision 202). Decision 222 rules that a route handler

@@ -12,7 +12,7 @@ DSL; no `[name]={` in `src/`), `src/prelude.bp` (decision 270), the `Node` decla
 `01-compiler/01-checker`'s capability (hooks a function activates through `use`, readable from its
 `@Decl` — `language-gaps.md`) for step 8 (decision 186) · `29-a` (reduced: `registerRouteStarters` +
 `globals.starters`) for step 5's starter-table row
-**Owns:** `repository/jhonstart/modules/jhonstart/**` (source, tests, `src/AGENTS.md`),
+**Owns:** `repository/rakun/modules/rakun-bpp/**` (source, tests, `src/AGENTS.md`),
 `modules/jhonstart-dom-test/**` (`fake_dom.mjs`, `dom_test.bp`), `docs.md`, `AGENTS.md`,
 `examples/{blog-ssr,nav-shell,islands,forms,document-shell,jhonstart-counter,jhonstart-markup,jhonstart-todo}/README.md`
 · step 0 only: deleting `modules/jhonstart-html/`, the workspace manifest's member list, the import

@@ -18,8 +18,8 @@
 // Target: both — the renderer is pure botopink: the server renders a post, and
 // a preview island renders the same text to the same bytes.
 
-import {markdown, markdown: {MdDoc, Heading, MarkdownOptions}, frontmatter} from "onze-content";
-import {Element, renderNode} from "jhonstart";
+import {markdown, markdown: {MdDoc, Heading, MarkdownOptions}, frontmatter} from "rakun-ssr";
+import {Element, renderNode} from "rakun-bpp";
 import {decorators.schema} from "validation";
 import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
 import {json.Json} from "std";

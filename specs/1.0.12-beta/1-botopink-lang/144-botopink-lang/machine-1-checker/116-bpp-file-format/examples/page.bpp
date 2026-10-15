@@ -16,9 +16,9 @@
 // Upstream: astro-docs/07-astro-pages.md · astro-docs/08-routing.md (Rotas
 //           dinâmicas) — https://docs.astro.build/en/guides/routing/
 
-import {h1, article, p} from "jhonstart";
-import {notFound} from "jhonstart";
-import {StaticPath, staticPath} from "onze";
+import {h1, article, p} from "rakun-bpp";
+import {notFound} from "rakun-bpp";
+import {StaticPath, staticPath} from "rakun-ssr";
 import {layouts.BaseLayout};
 import {components.PostCard};
 import {lib.db.findPost, lib.db.listPosts, lib.db.missingPost};

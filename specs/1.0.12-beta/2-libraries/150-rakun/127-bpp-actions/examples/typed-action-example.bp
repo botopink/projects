@@ -26,9 +26,9 @@
 // Target: the description is both; the implementation is erlang; the tests run
 // the server half.
 
-import html, {Element, renderToString} from "jhonstart";
-import {button, form, input, label, p} from "jhonstart";
-import {formAction, formAttrs, actionResult} from "jhonstart-forms";
+import html, {Element, renderToString} from "rakun-bpp";
+import {button, form, input, label, p} from "rakun-bpp";
+import {formAction, formAttrs, actionResult} from "rakun-bpp";
 import {action, ActionContext, runAction, formCall, rpcCall} from "rakun-app";
 import {outcome: {ActionRef, ActionError, actionRef}} from "actions";
 import {decorators: {schema, validated, email, trim, lowercased, stringbool}} from "validation";

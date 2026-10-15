@@ -11,7 +11,7 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/loading
 
-import {div, span} from "jhonstart";
+import {div, span} from "rakun-bpp";
 ---
 <div class="skeleton">
   <span class="skeleton-line"></span>

@@ -27,8 +27,8 @@
 // Upstream: astro-docs/25-actions.md (Chamando Actions de uma Ação de Formulário HTML)
 //           https://docs.astro.build/en/guides/actions/#call-actions-from-an-html-form-action
 
-import {button, form, input, label, p} from "jhonstart";
-import {formAction, formAttrs, actionResult} from "jhonstart-forms";
+import {button, form, input, label, p} from "rakun-bpp";
+import {formAction, formAttrs, actionResult} from "rakun-bpp";
 import {outcome: {ActionError}} from "actions";
 import {actions.newsletter_api.newsletterAction, actions.newsletter_api.Subscribed};
 

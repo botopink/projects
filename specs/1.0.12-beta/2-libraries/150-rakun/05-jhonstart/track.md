@@ -1,6 +1,6 @@
 # Track 05 — jhonstart
 
-**Repo:** `repository/jhonstart` · **Reference:** Next.js docs, the React half · tree on disk:
+**Repo:** `repository/rakun/modules/rakun-bpp` · **Reference:** Next.js docs, the React half · tree on disk:
 [`modules.md`](modules.md).
 
 jhonstart writes the HTML (decision 113): render, document, payload, islands, streaming, links,

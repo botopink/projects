@@ -27,7 +27,7 @@
 //           astro-docs/02-islands-architecture.md (Client Islands)
 //           https://docs.astro.build/en/reference/directives-reference/#client-directives
 
-import {h1, p} from "jhonstart";
+import {h1, p} from "rakun-bpp";
 import {components.LikeButton};
 import {components.Carousel};
 import {components.MobileNav};

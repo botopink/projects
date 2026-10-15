@@ -9,7 +9,7 @@ but for the boxes below (`collections`, `feeds`) · step 3 follows 396 (`yaml`, 
 4–5 (step 12 for step 10: the `#[validated]` type; `Schema<T>` is private, 306) — steps 0–2 merged into botopink-lang `feat` (`libs/validation/src/schemas.bp`); `status.md` still lists
 them pending · `118-bpp-components`, `117-bpp-routing` (`page.md`) for step 6 · `07-onze/53` for
 step 7. **Steps 1–2 depend on nothing**, open with wave A.
-**Owns:** new member `repository/onze/modules/onze-content/**` (`botopink.json`, `src/**`,
+**Owns:** new member `repository/rakun/modules/rakun-ssr/src/content/**` (`botopink.json`, `src/**`,
 `test/**`, `AGENTS.md`) · its line in `onze/botopink.json`'s `workspaces` and `onze/modules.md` ·
 `onze/examples/blog/content/**`, `src/lib/db.bp` (step 7, after `07-onze/53`)
 **Does not touch:** `onze-cli` (`sync` is 124's), `onze-assets`, `libs/std`, the `yaml` and

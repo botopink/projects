@@ -50,7 +50,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 #### Step 11 — the pointers' sweep (last) (was `07-residuals` s11)
 
 Five library pointers bumped in one sweep after each library's branch merges into its `feat`.
-jhonstart's "always name the module" rule (`repository/jhonstart/AGENTS.md`) deletable since
+jhonstart's "always name the module" rule (`repository/rakun/modules/rakun-bpp/AGENTS.md`) deletable since
 `04-js`'s 1.0.10 step 5 — jhonstart track's edit, noted for the sweep.
 
 - [ ] the five pointers bumped in one meta commit

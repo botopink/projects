@@ -39,7 +39,7 @@ helper, landing every snapshot in `__snapshots__/<helper's suite>/…`.
 ```bp
 //// emilia-test — modules/emilia-test/src/root.bp
 import {testing.snapshots} from "std";
-import {styleRule, defaultTheme, Token} from "emilia";
+import {styleRule, defaultTheme, Token} from "rakun-stylesheet";
 
 // The encoded sheet a token list produces under the default theme —
 // `styleRule`'s second half (emilia `output.bp` `encodeSheet`).

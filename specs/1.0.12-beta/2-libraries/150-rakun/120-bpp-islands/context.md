@@ -10,7 +10,7 @@ are for; the tree has neither. · **State:** not started
 · `07-onze/49` (island route in `onze-server`) · `04-rakun/22` (rakun-app), 117 before it on that
 member · `05-jhonstart/26` step 8 (`stage.bp`'s `clientOnly`, `pathsTo`) · Written against decisions 224,
 271, 272, 277, 278, 280, 281, 287, 302.
-**Owns:** in `repository/jhonstart/modules/jhonstart/src`: new `island_strategy.bp`,
+**Owns:** in `repository/rakun/modules/rakun-bpp/src`: new `island_strategy.bp`,
 `deferred.bp`; the step-named lines of `client.bp`, `clientOnly`'s return in `stage.bp` (26's file, step 1), `render.bp:218`, `island_runtime.mjs` · new
 `repository/rakun/modules/rakun-app/src/server_islands.bp` + `sidecars/` cell (after
 `04-rakun/22`, after 117 on the member's `botopink.json`, `root.bp`) · one arm appended to
@@ -42,7 +42,7 @@ island is a second, browser-fetched, per-visitor request; nothing does that.
 
 ## What exists
 
-At `repository/jhonstart/modules/jhonstart/src/`:
+At `repository/rakun/modules/rakun-bpp/src/`:
 
 | | |
 |---|---|

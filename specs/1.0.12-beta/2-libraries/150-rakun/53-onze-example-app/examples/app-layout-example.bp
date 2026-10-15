@@ -16,18 +16,18 @@
 // click behaviour is the JS half (front 27, shipped by front 68); the markup is
 // not.
 
-import {Element, div, text, renderToString} from "jhonstart";
+import {Element, div, text, renderToString} from "rakun-bpp";
 // `header`, `main` and `nav` are provided by front 94 (jhonstart-element-surface)
-// in `repository/jhonstart/src/elements.bp`; `element.bp` is frozen at eight
+// in `repository/rakun/modules/rakun-bpp/src/elements.bp`; `element.bp` is frozen at eight
 // builders and is not where these live.
-import {header, main, nav} from "jhonstart";
-import {Link, linkProps, withClass} from "jhonstart";          // front 27
+import {header, main, nav} from "rakun-bpp";
+import {Link, linkProps, withClass} from "rakun-bpp";          // front 27
 // front 48 — `styled(tokens)` is `#("class", emilia(tokens))`; `styledWith`
 // puts a static class first and the emilia class second, one ASCII space.
-import {styled, styledWith, Token} from "emilia";
-import {layout, LayoutProps} from "jhonstart";                     // front 30
+import {styled, styledWith, Token} from "rakun-stylesheet";
+import {layout, LayoutProps} from "rakun-bpp";                     // front 30
 // front 52 — self-hosted fonts with a metric-adjusted fallback
-import {Font, GoogleFontOptions, googleFont, fontHead} from "onze";
+import {Font, GoogleFontOptions, googleFont, fontHead} from "rakun-ssr";
 
 // Token lists live in named functions, not inline: the server and the client
 // must build the SAME list in the SAME order, because token order is class

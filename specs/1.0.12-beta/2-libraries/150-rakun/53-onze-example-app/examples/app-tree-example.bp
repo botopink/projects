@@ -36,8 +36,8 @@
 // fails the scan when the two disagree. They are gathered into one file here so
 // the example is one compilable unit.
 
-import {Element, bracketPair, div, h1, p, ul, li, text, renderToString} from "jhonstart";
-import {page, layout, PageContext, LayoutProps} from "jhonstart";   // front 30
+import {Element, bracketPair, div, h1, p, ul, li, text, renderToString} from "rakun-bpp";
+import {page, layout, PageContext, LayoutProps} from "rakun-bpp";   // front 30
 import {collections.Dict} from "std";
 
 // LANGUAGE GAP: `@Decl` carries no source location, so a decorator cannot read the file it

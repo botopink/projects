@@ -9,7 +9,7 @@ another; one grammar only · **State:** steps 1–2 done; the secret's source fo
 `repository/actions/AGENTS.md`, `repository/actions/botopink.json` (`files`), `repository/actions/src/root.bp` (the
 module's line) · consumers:
 `repository/rakun/modules/rakun-app/src/actions.bp` (`actionId` and its callers `actionIdOf`,
-`resolveAction` only), `repository/jhonstart/modules/jhonstart-forms/src/form.bp` (`formAction`'s
+`resolveAction` only), `repository/rakun/modules/rakun-bpp/src/forms/form.bp` (`formAction`'s
 `wellFormed` check only)
 **Does not touch:** the rest of rakun-app / jhonstart-forms (`04-rakun` 22, `05-jhonstart` 67) ·
 the compiler (`repository/botopink-lang/**` — `actions` is a repository of its own since 138 (decision 326))

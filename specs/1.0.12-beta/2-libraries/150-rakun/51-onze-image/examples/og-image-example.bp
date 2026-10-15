@@ -20,10 +20,10 @@
 //   https://nextjs.org/docs/app/api-reference/functions/image-response
 //   https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image
 
-import { Element, div, span, text } from "jhonstart";
-import { RouteContext } from "onze";
-import { ImageSize, ImageResponse, FontRef, imageResponse, defaultSize } from "onze-og";
-import { toSvg, layout, parseStyle } from "onze-og";
+import { Element, div, span, text } from "rakun-bpp";
+import { RouteContext } from "rakun-ssr";
+import { ImageSize, ImageResponse, FontRef, imageResponse, defaultSize } from "rakun-ssr";
+import { toSvg, layout, parseStyle } from "rakun-ssr";
 
 // The two exports §18 documents. Front 66 reads both when it registers the route.
 // A module-level `pub val` of a user-defined type crosses modules (decision 140).

@@ -1,6 +1,6 @@
 # Track 08 — bpp: Astro's feature set on the stack
 
-**Repos:** `repository/jhonstart` · `repository/onze` · `repository/rakun` · `repository/emilia` ·
+**Repos:** `repository/rakun/modules/rakun-bpp` · `repository/rakun/modules/rakun-ssr` · `repository/rakun` · `repository/rakun/modules/rakun-stylesheet` ·
 `repository/botopink-lang` (116 only) · **Reference:** Astro docs (`/home/ericfillipe/develop/astro/astro-docs/`, 25 pages).
 **Depends on:** `00-gate`; `03-bundled-libs/125-validation-zod` steps 0–2 and 12 (the `#[validated]`
 type collections and actions take — `Schema<T>` is private, 306); the 04/05/07 fronts in § Order. **Map:** [`surface.md`](surface.md) (161 rows).
@@ -24,7 +24,7 @@ Added, by cost:
 ```bpp
 import {layouts.BaseLayout};
 import {components.PostCard};
-import {getCollection} from "onze-content";
+import {getCollection} from "rakun-ssr";
 import {content.blog};
 
 val posts = await getCollection(blog());
@@ -144,7 +144,7 @@ Labels only; text in [`../decisions-taken.md`](../../../decisions-taken.md).
 | 198 · 212 · 338 | `.bpp` = `.bp` module unfolded onto the `pub default fn` of the package in `"bpp": {"default": "<package>"}`; header from the first line (no opening `---`) to the separator, copied as written; `---` → the markup, `--- style ---` → one style section closed by `---`, then the markup; the markup is the literal; a first line `---`, a misplaced, second or unclosed style section are errors at the line; no `template.emit` / `template.slice` | 116 |
 | 199 | `type Props(…)` → `props: Props` parameter (none without it), never `pub val`; declarations (`import`, `type`, `pub`) stay module-level, statements (`val`, `use`) become the body before `return` | 116 · 118 · 120 |
 | 213 · 288 · 289 | A `.bpp` unfolds to the module's **anonymous** `pub default fn (…) -> View`; the importer names it (`import {components.PostCard};`, or an alias); `decl.name` is the file name; a module may instead mark a named function `pub default Tree;` | 116 · 118 |
-| 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "jhonstart";`); `jhonstart-html` deleted; manifest `"bpp": {"default": "jhonstart"}` (338) | `05-jhonstart/26` step 0 · 116 · 118 |
+| 200 | `html` = `pub default fn` of core `jhonstart` (`import html, {Element} from "rakun-bpp";`); `jhonstart-html` deleted; manifest `"bpp": {"default": "jhonstart"}` (338) | `05-jhonstart/26` step 0 · 116 · 118 |
 | 221 · 285 | A `.bpp` decorator only when the header writes it (its last line, before the separator); a file's role (page, layout) is the framework's route table, never the toolchain's — it knows the `bpp.default` package, its `html` and its prelude, and the `bpp.style` package's default function only (338) | 116 step 2 · 117 step 1 |
 | 270 | `bpp.default` package's `src/prelude.bp` (own modules only) is the last scope; imported only when a name resolves through it; header wins; binding the default function's name is an error; 118 writes jhonstart's | 116 · 118 |
 | 186 · 202 | Stage is comptime: `#[page]` prerenders unless it reaches a `#[serverOnly]` hook; no `prerender` export, no `output` key | 117 step 2 · 123 · 124 |

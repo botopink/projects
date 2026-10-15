@@ -19,11 +19,11 @@
 //           https://nextjs.org/docs/app/api-reference/functions/generate-static-params
 //           https://nextjs.org/docs/app/api-reference/functions/not-found
 
-import {article, h1, p, timeTag} from "jhonstart";
-import {notFound} from "jhonstart";
-import {Metadata, OpenGraph, TwitterCard, Icons, pairValue} from "jhonstart";
-import {emilia, Token} from "emilia";
-import {page} from "jhonstart";                   // the decorator, beside the anonymous default (289)
+import {article, h1, p, timeTag} from "rakun-bpp";
+import {notFound} from "rakun-bpp";
+import {Metadata, OpenGraph, TwitterCard, Icons, pairValue} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
+import {page} from "rakun-bpp";                   // the decorator, beside the anonymous default (289)
 import {io.clock.hours} from "std";             // a `Duration` (std)
 import {registerStaticParams, StaticParams, ParamBinding} from "rakun";
 import {lib.db.Post, lib.db.findPost, lib.db.listPosts, lib.db.missingPost};

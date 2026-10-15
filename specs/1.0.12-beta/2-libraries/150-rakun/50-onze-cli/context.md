@@ -9,7 +9,7 @@ drives `--help`)
 (decision 188) · maintainer `50-b` (step 2), `std-d` (steps 4, 7), `50-a` as amended ·
 `07-onze/71` step 2 (`bin/onze`, step 5) · `05-jhonstart/27` step 1 (`applyTransition`, step 6 —
 27 does not wait on this, decision 189) · `07-onze/49` step 6 (the `onze-test` group files)
-**Owns:** `repository/onze/modules/onze-cli/**`, `modules/onze-bundler/**`,
+**Owns:** `repository/rakun/modules/rakun-ssr/src/cli/**`, `src/bundler/**`,
 `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` · this directory
 **Does not touch:** other fronts' members (71's `onze-release`: step 5 only calls its script) and
 the `03/102` (lands first) and `08-bpp` (117, 124, after) windows — [`../modules.md`](../07-onze/modules.md)

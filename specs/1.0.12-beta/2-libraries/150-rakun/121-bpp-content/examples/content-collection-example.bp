@@ -26,16 +26,16 @@
 // Target: erlang (server) — loading reads files. The rendered `Element` and the
 // decoded data are plain values on both targets.
 
-import html, {page, PageContext, Element, renderToString} from "jhonstart";
-import {a, article, h1, li, p, timeTag, ul} from "jhonstart";
-import {notFound} from "jhonstart";
+import html, {page, PageContext, Element, renderToString} from "rakun-bpp";
+import {a, article, h1, li, p, timeTag, ul} from "rakun-bpp";
+import {notFound} from "rakun-bpp";
 import {
     collections: {Collection, AnyCollection, Entry, Rendered, defineCollection, glob, file, getCollection, getCollectionWhere, getEntry, render, syncProblems},
-} from "onze-content";
+} from "rakun-ssr";
 // The member's test kit: a scratch content tree under the host's tmpdir — two
 // posts (`hello-world`, `second-post`, the second a draft) and `authors.json`.
-import {fixtures: {contentTree, contentTreeWith}} from "onze-content";
-import {StaticPath, staticPath} from "onze";
+import {fixtures: {contentTree, contentTreeWith}} from "rakun-ssr";
+import {StaticPath, staticPath} from "rakun-ssr";
 import {decorators: {schema, validated, minLength, coerce, isoDatetime, url, orElse}} from "validation";
 import {schemas, schemas.Schema, constraints, report.ValidationReport, report.Violation} from "validation";
 import {collections.Dict, json.Json, io.clock} from "std";

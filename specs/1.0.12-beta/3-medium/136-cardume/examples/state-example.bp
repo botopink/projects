@@ -22,10 +22,10 @@
 //
 // Target: both — the server pass reads the defaults.
 
-import html, {View, client, renderToString} from "jhonstart";
-import {button, div, input, p, span} from "jhonstart";
+import html, {View, client, renderToString} from "rakun-bpp";
+import {button, div, input, p, span} from "rakun-bpp";
 import {atom, selector, Atom} from "cardume";
-import {atomState, atomValue, atomSetter, atomReset, selectorRefresher} from "jhonstart-cardume";
+import {atomState, atomValue, atomSetter, atomReset, selectorRefresher} from "rakun-bpp";
 
 // ── atom ────────────────────────────────────────────────────────────────────
 

@@ -21,8 +21,8 @@
 //   https://nextjs.org/docs/app/api-reference/components/link
 //   https://nextjs.org/docs/app/getting-started/linking-and-navigating
 
-import {Element, Island, client, clientMount, div, h1, ul, li, span, nav, style, text, renderToString} from "jhonstart";
-import {Link, linkProps, withPrefetch, withClass, prefetchMode, linkStatus} from "jhonstart-link";
+import {Element, Island, client, clientMount, div, h1, ul, li, span, nav, style, text, renderToString} from "rakun-bpp";
+import {Link, linkProps, withPrefetch, withClass, prefetchMode, linkStatus} from "rakun-bpp";
 
 pub type Post(slug: string, title: string)
 

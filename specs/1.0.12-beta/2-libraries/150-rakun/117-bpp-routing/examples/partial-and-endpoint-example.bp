@@ -23,8 +23,8 @@
 //
 // Target: erlang (server).
 
-import html, {page, PageContext, Element, renderToString} from "jhonstart";
-import {li} from "jhonstart";
+import html, {page, PageContext, Element, renderToString} from "rakun-bpp";
+import {li} from "rakun-bpp";
 import {Request} from "rakun";
 import {getRoute, HandlerResponse} from "rakun";
 import {rkTestRequest} from "rakun-web";

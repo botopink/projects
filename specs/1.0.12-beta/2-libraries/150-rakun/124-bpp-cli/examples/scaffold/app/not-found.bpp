@@ -15,7 +15,7 @@
 // Upstream: astro-docs/07-astro-pages.md (Página de Erro 404 Personalizada)
 //           https://docs.astro.build/en/basics/astro-pages/#custom-404-error-page
 
-import {a, h1, p} from "jhonstart";
+import {a, h1, p} from "rakun-bpp";
 ---
 <h1>Nothing lives at this address.</h1>
 <p><a href="/">Back to the start</a></p>

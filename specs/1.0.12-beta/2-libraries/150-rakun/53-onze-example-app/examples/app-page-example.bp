@@ -12,10 +12,10 @@
 // Target: erlang (server). The image's lazy/eager behaviour is the browser's
 // half, but nothing on this page runs there.
 
-import {Element, div, h1, p, text, renderToString} from "jhonstart";
-import {section} from "jhonstart";                              // provided by front 94
-import {styled, Token} from "emilia";                           // front 48
-import {page, PageContext} from "jhonstart";                        // front 30
+import {Element, div, h1, p, text, renderToString} from "rakun-bpp";
+import {section} from "rakun-bpp";                              // provided by front 94
+import {styled, Token} from "rakun-stylesheet";                           // front 48
+import {page, PageContext} from "rakun-bpp";                        // front 30
 import {collections.Dict} from "std";
 // front 51 — the Image component and the optimizer behind it
 import {
@@ -24,7 +24,7 @@ import {
     defaultImageProps,
     defaultImageConfig,
     withPriority,
-} from "onze";
+} from "rakun-ssr";
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X3xl, .Text.Bold, .Color.Gray.900];

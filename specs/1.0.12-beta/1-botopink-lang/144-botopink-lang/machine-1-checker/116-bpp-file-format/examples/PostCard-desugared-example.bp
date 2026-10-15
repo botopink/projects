@@ -11,10 +11,10 @@
 // Target: both.
 
 // [the unfold: the default function of the package the manifest names] -------
-import html, {Element, Node, renderToString} from "jhonstart";
+import html, {Element, Node, renderToString} from "rakun-bpp";
 
 // [the header's declarations → the module, as written] -----------------------
-import {article, h2, p, timeTag, footer} from "jhonstart";
+import {article, h2, p, timeTag, footer} from "rakun-bpp";
 import {lib.db.Post};
 
 type Props(

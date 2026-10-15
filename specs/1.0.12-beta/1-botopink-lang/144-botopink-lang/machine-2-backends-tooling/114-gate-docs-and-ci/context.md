@@ -28,7 +28,7 @@ OTP 28, green on `feat`; a recorded green cold gate on the tip within 450 s (dec
   expectation. Nine synthetic fences judged first (`--self-test` = only them). Table/grammar =
   ```` ```text ````.
 - `test.yml`: `../README.md` § Rules 5, 13 (decisions 226, 231, 219); the `test` job checks out
-  erika at `repository/erika` for `test-docs`.
+  erika at `repository/query` for `test-docs`.
 - Meta `hook-integrity.yml`: one job, push/PR to `feat`/`main`; checks in `../README.md` § Rules 16.
 
 ## Handed out

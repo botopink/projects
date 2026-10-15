@@ -18,10 +18,10 @@
 //
 // Target: both.
 
-import html, {View, client, renderToString} from "jhonstart";
-import {button, div, p} from "jhonstart";
+import html, {View, client, renderToString} from "rakun-bpp";
+import {button, div, p} from "rakun-bpp";
 import {atom, Snapshot} from "cardume";
-import {atomValue, atomState, atomCallback, snapshot, snapshotRestorer, transactionObserver} from "jhonstart-cardume";
+import {atomValue, atomState, atomCallback, snapshot, snapshotRestorer, transactionObserver} from "rakun-bpp";
 
 pub val draft = atom("");
 pub val history = atom<Snapshot[]>([]);

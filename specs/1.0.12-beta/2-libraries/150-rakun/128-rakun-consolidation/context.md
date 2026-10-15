@@ -6,7 +6,7 @@
 it moves, an import it rewrites or a manifest it changes · **State:** steps 0–10 written as one patch
 each (rakun is hooked; the coordinator lands them) — every box ticked
 **Depends on:** rakun consumer commits of `03-bundled-libs/102` step 3
-(`rakun-app/src/{file_router,static_gen}.bp`, `rakun-hateoas/src/hal.bp`) and `103` step 2
+(`rakun-app/src/{file_router,static_gen}.bp`, `rakun-service/src/hateoas/hal.bp`) and `103` step 2
 (`rakun-app/src/actions.bp`) landed first (decision 188) — not landed · no `01-compiler/130` rakun
 commit in flight while open ([`../README.md`](../04-rakun/track.md) § Order, the 130 rule — decision 339)
 **Owns:** while open, every member of `repository/rakun/modules/**`, `starters/**`, `examples/**`,

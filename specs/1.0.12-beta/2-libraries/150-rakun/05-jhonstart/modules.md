@@ -1,6 +1,6 @@
-# Modules — `repository/jhonstart` as it is on disk
+# Modules — `repository/rakun/modules/rakun-bpp` as it is on disk
 
-The tree on `feat` (`find repository/jhonstart -name '*.bp' -o -name '*.mjs' -o -name '*.erl'`) and
+The tree on `feat` (`find repository/rakun/modules/rakun-bpp -name '*.bp' -o -name '*.mjs' -o -name '*.erl'`) and
 what each front owns in it.
 
 ## Members — seven

@@ -1,6 +1,6 @@
 # Track 07 — onze
 
-**Repo:** `repository/onze` · **Reference:** Next.js docs, framework half · tree on disk:
+**Repo:** `repository/rakun/modules/rakun-ssr` · **Reference:** Next.js docs, framework half · tree on disk:
 [`modules.md`](modules.md) · uncovered Next.js rows: [`reference-holes.md`](reference-holes.md).
 
 onze wires (decision 113): the one package importing jhonstart, rakun and the `jhonstart-emilia`

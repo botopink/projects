@@ -10,9 +10,9 @@
 // Upstream: astro-docs/03-install-and-setup.md · astro-docs/04-project-structure.md
 //           https://docs.astro.build/en/install-and-setup/
 
-import {a, h1, li, p, ul} from "jhonstart";
-import {collections: {getCollectionWhere}} from "onze-content";
-import {site} from "onze";
+import {a, h1, li, p, ul} from "rakun-bpp";
+import {collections: {getCollectionWhere}} from "rakun-ssr";
+import {site} from "rakun-ssr";
 import {content.blog};
 
 val posts = await getCollectionWhere(blog(), { entry -> entry.data.draft == false });

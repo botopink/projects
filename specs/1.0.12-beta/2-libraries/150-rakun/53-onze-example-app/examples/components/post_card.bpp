@@ -13,9 +13,9 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/css
 
-import {article, h2, p, span} from "jhonstart";
-import {Link, linkProps} from "jhonstart";
-import {emilia, Token} from "emilia";
+import {article, h2, p, span} from "rakun-bpp";
+import {Link, linkProps} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
 import {lib.db.Post};
 
 type Props(post: Post)

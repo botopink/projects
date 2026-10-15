@@ -11,9 +11,9 @@ reversed) (step 3)
 **Owns:** `repository/routing/src/conventions.bp` (new), `repository/routing/src/segment.bp`
 (new helpers), `repository/routing/test/**`, `repository/routing/AGENTS.md`, `repository/routing/botopink.json`
 (`files`), `repository/routing/src/root.bp` (the module's line) · consumers, one commit each: `repository/rakun/modules/rakun-app/src/{file_router,static_gen}.bp`,
-`repository/rakun/modules/rakun-hateoas/src/hal.bp`, `repository/onze/modules/onze/src/types.bp`,
-`repository/onze/modules/onze-cli/src/scan.bp`, `repository/onze/modules/onze-bundler/src/chunk.bp`,
-`repository/jhonstart/modules/jhonstart/src/routes.bp`
+`repository/rakun/modules/rakun-service/src/hateoas/hal.bp`, `repository/rakun/modules/rakun-ssr/src/types.bp`,
+`repository/rakun/modules/rakun-ssr/src/cli/scan.bp`, `repository/rakun/modules/rakun-ssr/src/bundler/chunk.bp`,
+`repository/rakun/modules/rakun-bpp/src/routes.bp`
 **Does not touch:** the compiler (`repository/botopink-lang/**` — `routing` is a repository of its own since 138 (decision 326)) ·
 other files of those members · `onze-bundler/src/scan.bp` (`stagedSegment`, onze-specific, stays) ·
 rakun-app's disk walk (`walkSegments` over `fs` — no host cell in `routing`)

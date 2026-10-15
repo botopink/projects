@@ -83,7 +83,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 After `08-bpp/118` landed in `jhonstart-html`. `src/html.bp` and the member's tests move into
 `modules/rakun-bpp`; `html` becomes the core's `pub default fn`
-(`import html, {Element, renderToString} from "jhonstart";`); member deleted (decision 187's
+(`import html, {Element, renderToString} from "rakun-bpp";`); member deleted (decision 187's
 criterion: a module every consumer needs is not its own member). Consumers `jhonstart-emilia`,
 `examples/jhonstart-markup`, `examples/document-shell` import from the core. Code moves, no
 behaviour change; `08-bpp/116` (`"bpp": {"default": "jhonstart"}`, decision 338) and later `html.bp` appends (119, 120, 126)

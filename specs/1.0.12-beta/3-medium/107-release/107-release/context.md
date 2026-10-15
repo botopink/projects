@@ -9,7 +9,7 @@
 **Owns:** `repository/release/**` (new — `botopink/release`, born as a repository: decision 326) · consumers:
 `repository/rakun/modules/rakun-cli/src/release/release.bp` (renderers `renderRel`, `renderVmArgs`,
 `renderSysConfig`, `bootScript`, `renderDockerfile`, systemd, appup — today in
-`rakun-release/src/release.bp`), `repository/onze/modules/onze-release/src/{otp,docker,spec}.bp`
+`rakun-release/src/release.bp`), `repository/rakun/modules/rakun-ssr/src/release/{otp,docker,spec}.bp`
 **Does not touch:** `systools`, tar (stay with callers via `io.process`) · `rakun_release.erl`'s
 consult/tar cells beyond the term writer it replaces · what `04-rakun` 81 / `07-onze` 71 own outside
 those lines (`includeErts`, `verifyBuildId`, the booting tarball)

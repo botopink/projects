@@ -19,8 +19,8 @@
 //   https://nextjs.org/docs/app/api-reference/config/next-config-js/output
 //   https://www.erlang.org/doc/apps/sasl/systools.html
 
-import { ReleaseSpec, releaseSpec, withErts, generateBuildId, validateBuildId, verifyBuildId } from "onze-release";
-import { relFileText, vmArgsText, sysConfigText, generateDockerfile, generateDockerignore } from "onze-release";
+import { ReleaseSpec, releaseSpec, withErts, generateBuildId, validateBuildId, verifyBuildId } from "rakun-ssr";
+import { relFileText, vmArgsText, sysConfigText, generateDockerfile, generateDockerignore } from "rakun-ssr";
 
 val moduleHashes = ["4f21ab", "7e0055", "9c1d40"];
 val manifestHash = "41ab08";

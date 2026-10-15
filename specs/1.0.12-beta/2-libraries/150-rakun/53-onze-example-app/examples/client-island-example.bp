@@ -25,11 +25,11 @@
 // still happens on the server, which is why the markup is asserted here rather
 // than in a browser.
 
-import {Element, div, li, span, text, renderToString} from "jhonstart";
-import {button, h2} from "jhonstart";                              // provided by front 94
-import {client, clientProps, clientMount, Island} from "jhonstart"; // front 29
-import {state} from "jhonstart";                                    // hooks.bp
-import {emilia, Token} from "emilia";
+import {Element, div, li, span, text, renderToString} from "rakun-bpp";
+import {button, h2} from "rakun-bpp";                              // provided by front 94
+import {client, clientProps, clientMount, Island} from "rakun-bpp"; // front 29
+import {state} from "rakun-bpp";                                    // hooks.bp
+import {emilia, Token} from "rakun-stylesheet";
 import {io.env} from "std";
 // app-local — TYPES only. `Post` is a record; importing `lib/db.bp`'s readers
 // here would put the filesystem in the client graph and fail front 68's build.

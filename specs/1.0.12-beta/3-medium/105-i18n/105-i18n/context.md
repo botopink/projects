@@ -11,7 +11,7 @@ confirmed. Grammar: decision 180 (`07-c`); surface checked against decision 163.
 the compiler registers it) · consumers: `repository/rakun/modules/rakun-app/src/i18n.bp` (generic
 half: `wellFormedTag`, `normalizeTag`, `isSupported`, `parseAcceptLanguage`, `negotiate`,
 `localeOfPath`, `stripLocale`, `withLocale`, `alternatesFor` and private helpers),
-`repository/jhonstart/modules/jhonstart/src/render.bp` (`isLangTag` only),
+`repository/rakun/modules/rakun-bpp/src/render.bp` (`isLangTag` only),
 `repository/validation/src/messages.bp` (`interpolate` only — commit lands between
 two steps of `125-validation-zod`, the file's owner)
 **Does not touch:** rakun-app's `persistent_term` registry, redirect filter, `setLocaleCookie`,

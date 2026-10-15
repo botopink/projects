@@ -7,7 +7,7 @@
 **Depends on:** open: `nat-f2` (which `onze.json` keys, step 1; `08-h` closed → 285, 224: `onze.json`, `onze <command>`) · `07-onze/50-onze-cli` (owns `onze-cli`, `onze-bundler`; `onze dev` its open box) ·
 `07-onze/71` (static export to disk, ONZ-71-7) · every track front · 116 and `07-onze/53` (step 5).
 Written against decisions 202, 224, 285.
-**Owns:** in `repository/onze/modules`: `onze-cli/src/{main.bp, build.bp}` (commands, build
+**Owns:** in `repository/rakun/modules/rakun-ssr/src`: `cli/{main.bp, build.bp}` (commands, build
 steps below); new `onze-cli/src/{sync.bp, key.bp}`; `onze/src/config.bp` — every § Mechanism key
 but `site` (122's, 189); `onze-bundler/src/` — new `component_script.bp`, `style_sheet.bp` ·
 `onze/examples/scaffold/**` · `onze/docs.md` § Configuration, § CLI

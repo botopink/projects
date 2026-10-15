@@ -13,7 +13,7 @@ default `rakun.web.resources.cache.period=0` — and its assertion in
 `modules/rakun-data/test/devtools/devtools_test.bp` (carve-out in 08's member) ·
 `repository/rakun/AGENTS.md` § Web, § Static assets
 **Does not touch:** 74's two files · `rakun-app` (22's) · devtools files beyond the one line ·
-`rakun-client` (13's) · `repository/onze/**` (69's registration is onze's half) · after this front,
+`rakun-client` (13's) · `repository/rakun/modules/rakun-ssr/**` (69's registration is onze's half) · after this front,
 while their front holds them (decisions 188, 189): `src/{negotiation,compression,static,error}.bp`'s
 codec lines (104's sweep), `src/{middleware,filter}.bp`'s lines (`08-bpp/123`) · 130's decision-216
 sites in `src/convention.bp` (track README § Order)

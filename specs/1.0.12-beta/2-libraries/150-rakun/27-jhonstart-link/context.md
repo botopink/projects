@@ -9,7 +9,7 @@ entry-supplied functions (`27-b` ★), so no wait on `07-onze/50` (50 step 6 dep
 189) · `04-rakun/22-rakun-file-routing` for step 1 box 2: the route-kind flag in the payload's `k`
 blob, build-written (decision 186), read through `routing.routeKindOf` · decision 363 (a browser-only cell is
 `#[clientOnly]`, no erlang twin) · `05-jhonstart/26` step 2 only if the driver needs the signal path (it should not)
-**Owns:** `repository/jhonstart/modules/jhonstart-link/**` (`link.bp`, `link_runtime.mjs`,
+**Owns:** `repository/rakun/modules/rakun-bpp/src/link/**` (`link.bp`, `link_runtime.mjs`,
 `sidecars/jhonstart_link.erl` (deleted, 363), `reconcile.bp`, `test/**`, `AGENTS.md`) ·
 `modules/jhonstart-test/src/assert_link.bp` · this directory
 **Does not touch:** `modules/jhonstart/**` (26) · `modules/jhonstart-forms/**` (67; imports

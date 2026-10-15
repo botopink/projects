@@ -14,7 +14,7 @@
 // Upstream: astro-docs/09-astro-components.md (Transferindo Slots)
 //           astro-docs/10-layouts.md (Layouts Aninhados)
 
-import {main} from "jhonstart";
+import {main} from "rakun-bpp";
 import {layouts.BaseLayout};
 
 type Props(

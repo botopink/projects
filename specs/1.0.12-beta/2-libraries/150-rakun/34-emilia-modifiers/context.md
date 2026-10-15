@@ -16,17 +16,17 @@ and `styled` — the components and the theme mechanism, decision 338) · nothin
 Nothing else:
 `hash.contentHash` exists; `08-bpp/118` step 1's bracket-attribute carve-out is comments only here,
 reworded by step 1 (no code uses `[name]={`).
-**Owns:** `repository/emilia/modules/emilia/src/**` (all eleven files; edited blocks named per step),
+**Owns:** `repository/rakun/modules/rakun-stylesheet/src/**` (all eleven files; edited blocks named per step),
 `modules/emilia/AGENTS.md`, `docs.md`,
 `examples/emilia-{transitions,effects,outline-ring,transforms}/src/main.bp` · this directory · step 5
 only, the carve-out of 369 and 367 (emilia's run-time calls moved to `comptime` / `#[emilia]`, and the re-recorded class):
-`repository/jhonstart/modules/jhonstart-emilia/{src/root.bp,test/bridge_test.bp}`, onze 68's
+`repository/rakun/modules/rakun-stylesheet/{src/bridge/mod.bp,test/bridge/}`, onze 68's
 `styleRule` reader and bundle test, `onze-cli`, `examples/emilia-card/**` and the other eleven
 examples' `src/main.bp`
 **Does not touch:** `modules/emilia-test/**`, `examples/*/README.md`, `examples/emilia-card/**`,
 `modules/emilia/test/**` (`20-snap`) · the other eleven examples' `src/main.bp` (none pins a moved
-family; if one does, report to 33) · `repository/jhonstart/**` (`html_attrs.bp` is 48's, closed) ·
-`.gitignore`, the hooks, `.github/` (`00-gate`) · `repository/css/**`, `repository/styled/**`
+family; if one does, report to 33) · `repository/rakun/modules/rakun-bpp/**` (`html_attrs.bp` is 48's, closed) ·
+`.gitignore`, the hooks, `.github/` (`00-gate`) · `repository/css/**`, `repository/rakun/modules/rakun-style/**`
 (`08-bpp/119` step 1)
 
 ## Goal

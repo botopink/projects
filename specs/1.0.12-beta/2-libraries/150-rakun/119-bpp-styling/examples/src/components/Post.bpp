@@ -22,7 +22,7 @@
 // Upstream: astro-docs/11-styling.md (Estilos Globais, Ordem de Cascata)
 //           https://docs.astro.build/en/guides/styling/#global-styles
 
-import {article, h1} from "jhonstart";
+import {article, h1} from "rakun-bpp";
 
 type Props(
     title: string,

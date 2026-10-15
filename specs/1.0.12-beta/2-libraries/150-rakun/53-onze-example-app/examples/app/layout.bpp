@@ -23,9 +23,9 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
 
-import {classList, div, header, main, nav} from "jhonstart";
-import {Link, linkProps, withClass} from "jhonstart";
-import {emilia, Token} from "emilia";
+import {classList, div, header, main, nav} from "rakun-bpp";
+import {Link, linkProps, withClass} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
 
 fn pageTokens() -> Token[] {
     return [.Bg.White, .Color.Gray.900, .Pad.All.4];

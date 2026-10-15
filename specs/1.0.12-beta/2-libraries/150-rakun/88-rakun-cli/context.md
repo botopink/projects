@@ -11,7 +11,7 @@ R88-3) · 73's re-measure of `botopink run` (R88-1) · onze 50 (R88-6, onze's fi
 `test/release/**`, `src/sidecars/rakun_release.erl`; `botopink.json` / `src/root.bp` are 81's until
 it lands, then this front appends · `repository/rakun/AGENTS.md` § CLI
 **Does not touch:** 81's files · `rakun-client/src/ws/**` (93's) · `rakun-messaging/src/rsocket/**`
-(92's) · the core · `repository/onze/**` · 130's decision-216 sites in the member (track README § Order)
+(92's) · the core · `repository/rakun/modules/rakun-ssr/**` · 130's decision-216 sites in the member (track README § Order)
 
 ## Goal
 

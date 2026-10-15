@@ -18,7 +18,7 @@
 //
 // Upstream: astro-docs/10-layouts.md — https://docs.astro.build/en/basics/layouts/
 
-import {body, head, htmlTag, title} from "jhonstart";
+import {body, head, htmlTag, title} from "rakun-bpp";
 
 type Props(
     children: Node = [],

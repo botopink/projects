@@ -12,7 +12,7 @@ export reads its prerender) · step 5: `07-onze/50` (`build` wired), `07-onze/53
 **Feeds:** `07-onze/50` step 5 (`start` calls `bin/onze`, after step 2) ·
 `03-bundled-libs/107-release` runs **after** this (extracts `otp.bp` / `docker.bp` / `spec.bp`'s
 renderers; the texts here are what it must reproduce)
-**Owns:** `repository/onze/modules/onze-release/**`, `examples/static-site/**` (new),
+**Owns:** `repository/rakun/modules/rakun-ssr/src/release/**`, `examples/static-site/**` (new),
 `modules/onze-test/src/release.bp` · this directory
 **Does not touch:** `modules/onze-cli/**` (50 — `build.bp` / `start.bp`'s two lines are 50 step
 5's) · `modules/onze/**`, `modules/onze-server/**` (49) · `examples/blog/**` (53 — step 5 reads it)

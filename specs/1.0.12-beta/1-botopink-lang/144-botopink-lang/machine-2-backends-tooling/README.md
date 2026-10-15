@@ -979,7 +979,7 @@ botopink-lang, landing in the compiler's commit (red on the parent, green after)
       `modules` and `yamlconf` in `conformance/` (decision 466: no mirror, 467); the scripts pointed at the cells or a
       fixture of their own, no check lost — `tsc-check.sh` and `format-check` still check `generic-loader-binding`
       while it is here
-- [x] `generic-loader-binding` (three `from "erika"` forms — a library, not the language) moves to erika as a
+- [x] `generic-loader-binding` (three `from "query"` forms — a library, not the language) moves to erika as a
       consumer commit (rule 10), then `examples/` deleted; its tests pass on the four targets
 - [x] the per-target cells the B-00 group's audit left waiting on `snapshot/targets/` (B-00k): float text
       (`"${5.0}"`, `1.0e21`, `1.0e-7` — commonJS departs), `trim` keeping a NBSP, the final sigma (commonJS `ς`),
@@ -1806,7 +1806,7 @@ stays here; B-30 is closed as superseded by it.
 
 botopink-lang's tooling names the former repositories' paths: `test-analysis-equivalence` and the cold cells of
 `build.zig` read cells of jhonstart, rakun and emilia under `conformance/modules/`; `scripts/tsc-check.sh` reads
-erika's `generic_loader_binding` beside it (`../erika`, `repository/erika`); `scripts/test-libs.sh` and comments list
+erika's `generic_loader_binding` beside it (`../erika`, `repository/query`); `scripts/test-libs.sh` and comments list
 the six repositories. After 165, those cells are rakun's `conformance/<package>/` (rakun-bpp, rakun-stylesheet, rakun)
 and query's `conformance/modules/` (`repository/query`).
 

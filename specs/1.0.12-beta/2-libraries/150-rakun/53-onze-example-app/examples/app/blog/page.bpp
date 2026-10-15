@@ -12,8 +12,8 @@
 //
 // Upstream: https://nextjs.org/docs/app/getting-started/fetching-data
 
-import {li, ul} from "jhonstart";
-import {emilia, Token} from "emilia";
+import {li, ul} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
 import {lib.db.listPosts};
 import {components.post_card as PostCard};   // the default, named by the importer (288)
 

@@ -25,8 +25,8 @@
 //   https://nextjs.org/docs/app/getting-started/fetching-data
 //   https://nextjs.org/docs/app/api-reference/file-conventions/page
 
-import {article, h1, h2, li, p, section, span, ul} from "jhonstart";
-import {params} from "jhonstart";
+import {article, h1, h2, li, p, section, span, ul} from "rakun-bpp";
+import {params} from "rakun-bpp";
 import {lib.blog.loadPost, lib.blog.loadComments};
 
 type BlogParams(slug: string)

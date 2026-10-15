@@ -1,4 +1,4 @@
-# Modules — `repository/onze` as it is on disk
+# Modules — `repository/rakun/modules/rakun-ssr` as it is on disk
 
 Members' `src/`, `test/`, `botopink.json`, as on `feat`. Cite function names, not line numbers;
 file names differing from the 1.0.10 plan are noted.
@@ -37,7 +37,7 @@ Four fronts run in parallel on disjoint files; the fifth is read-only against th
 | Front | Owns | Hand-offs |
 |---|---|---|
 | **49** (carries 69) | `modules/onze/**`, `modules/onze-server/**`, `modules/onze-test/{botopink.json,src/root.bp,src/core.bp,src/fixtures.bp}` and the group stubs it creates (`src/{cli,bundler,assets,og,release,e2e}.bp` — empty modules + `pub mod` lines; no later front touches `root.bp`), `docs.md`, `AGENTS.md` | 50 · 51 · 71 · 53 fill the group file each owns |
-| **50** (carries 68) | `modules/onze-cli/**`, `modules/onze-bundler/**`, `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` | step 5 consumes 71's `bin/onze` |
+| **50** (carries 68) | `modules/onze-cli/**`, `src/bundler/**`, `examples/scaffold/**`, `modules/onze-test/src/{cli,bundler}.bp` | step 5 consumes 71's `bin/onze` |
 | **51** (carries 52 · 70) | `modules/onze-assets/**` (its `root.bp`, `botopink.json` included — lowest-numbered owning front; 69's items moved to 49, which touches only `onze-server`), `modules/onze-og/**`, `modules/onze-test/src/{assets,og}.bp` | the `/_onze/image` registration line in `onze-server/src/server.bp` handed to 49 (one line, one commit, 49's) |
 | **71** | `modules/onze-release/**`, `examples/static-site/**` (new), `modules/onze-test/src/release.bp` | `onze-cli/src/{build,start}.bp`'s two lines (`includeErts` passed; `start` execs `bin/onze`) are 50 step 5's |
 | **53** | `examples/blog/**`, `examples/blog/test/serve.sh` (`modules/onze-test/src/e2e.bp` is `20-snap` step 5's) | read-only elsewhere; a needed change is reported to its owner |

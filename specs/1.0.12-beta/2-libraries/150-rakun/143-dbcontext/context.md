@@ -7,7 +7,7 @@
 **Depends on:** decision 398 · `137` step 2 (erika's `QueryContext`, `QueryTable`, `query`, 397) ·
 `01-compiler/01-checker` step 29 (the template annotation `#[query "…"]` and the template method) ·
 step 3's rakun commit: `04-rakun/128` landed (decision 339)
-**Owns:** `repository/dbcontext/**` (decision 326's rule) · in rakun-data, the code that moves here
+**Owns:** `repository/rakun/modules/rakun-data/**` (decision 326's rule) · in rakun-data, the code that moves here
 (`#[entity]`'s mapping, `#[repository]`, `#[nativeQuery]`, `#[query]`'s checks, the row decoding) and
 its deletion there (step 3, one commit, 188)
 **Does not touch:** erika (`QueryContext`, `QueryTable`, the grammar are 137's) · rakun-data's drivers,
@@ -19,7 +19,7 @@ Decision 398: the persistence layer is a library of its own over erika — erika
 `dbcontext` the entities, the context and the repositories, rakun-data the drivers and the container.
 
 ```bp
-import {entity, column, repository, query, nativeQuery, DbContext} from "dbcontext";
+import {entity, column, repository, query, nativeQuery, DbContext} from "rakun-data";
 
 #[entity("usuarios")]
 pub type User(id: i32, nome: string, #[column("ativo")] active: bool)

@@ -20,8 +20,8 @@
 // Upstream: astro-docs/08-routing.md (Rotas dinâmicas · Modo Estático)
 //           https://docs.astro.build/en/guides/routing/#dynamic-routes
 
-import {div, p} from "jhonstart";
-import {StaticPath, staticPath, pageData} from "onze";
+import {div, p} from "rakun-bpp";
+import {StaticPath, staticPath, pageData} from "rakun-ssr";
 import {decorators.schema} from "validation";
 import {schemas, schemas.Schema, report.ValidationReport, report.Violation} from "validation";
 import {json.Json} from "std";

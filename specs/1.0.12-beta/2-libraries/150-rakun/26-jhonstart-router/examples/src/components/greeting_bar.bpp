@@ -16,8 +16,8 @@
 //   https://nextjs.org/docs/app/api-reference/functions/cookies
 //   https://nextjs.org/docs/app/api-reference/functions/headers
 
-import {header, span} from "jhonstart";
-import {cookie, request} from "jhonstart";
+import {header, span} from "rakun-bpp";
+import {cookie, request} from "rakun-bpp";
 // `pub val localeCookie = Cookie<string>("locale");` — declared once, in a
 // module of its own (294): the browser's name is written there only.
 import {lib.cookies.localeCookie};

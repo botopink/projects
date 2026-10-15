@@ -53,7 +53,7 @@ The four classes in today's text:
 |---|---|---|
 | `08-bpp/123-bpp-middleware/README.md:53` — `// middleware — a hook context: -> @Component<RequestBase, Response>` | S | `-> @Component<Response>`; the request is the root context `RequestContext` (354, amending 295) |
 | `08-bpp/116-bpp-file-format/README.md:109` — `View` (= `@Component<ElementBase, Element>`, decision 276) | S | `View` (= `@Component<Element>`, 276 as amended by 354) |
-| `08-bpp/117-bpp-routing/examples/pagination-example.bp:21` — `import html, {page, PageContext, Element, ElementBase, renderToString} from "jhonstart";` | S | `ElementBase` dropped: nothing in the example uses it since 354 |
+| `08-bpp/117-bpp-routing/examples/pagination-example.bp:21` — `import html, {page, PageContext, Element, ElementBase, renderToString} from "rakun-bpp";` | S | `ElementBase` dropped: nothing in the example uses it since 354 |
 | `08-bpp/119-bpp-styling/README.md:95` — `pub val StyledContext = Context<StyledSheet>();` | S | `pub val StyledContext = comptime createContext(StyledSheet.missing());`, read `use context(StyledSheet)` (378, 379) |
 | `08-bpp/123-bpp-middleware/README.md:130` — "`LocalKey`, `setLocal(key, value)`, `local(key)` gone" | R | kept: the step's own work |
 | `01-compiler/134-builtins-declared/README.md:125` — `[x]` `@Component<C, R>` a type-arity error | H | kept |

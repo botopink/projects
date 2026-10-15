@@ -21,7 +21,7 @@
 //
 // Upstream: astro-docs/10-layouts.md — https://docs.astro.build/en/basics/layouts/
 
-import {a, main, nav} from "jhonstart";
+import {a, main, nav} from "rakun-bpp";
 
 val here = props.route.pathname;
 ---

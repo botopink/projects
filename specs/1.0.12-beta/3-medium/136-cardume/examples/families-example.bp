@@ -17,10 +17,10 @@
 //
 // Target: both.
 
-import html, {View, client, renderToString} from "jhonstart";
-import {input, label, li, ul, span} from "jhonstart";
+import html, {View, client, renderToString} from "rakun-bpp";
+import {input, label, li, ul, span} from "rakun-bpp";
 import {atom, atomFamily, selector, selectorFamily} from "cardume";
-import {atomValue, atomState} from "jhonstart-cardume";
+import {atomValue, atomState} from "rakun-bpp";
 
 pub type Todo(id: i32, text: string, done: bool)
 

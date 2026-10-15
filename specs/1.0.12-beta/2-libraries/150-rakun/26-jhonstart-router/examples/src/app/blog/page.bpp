@@ -21,8 +21,8 @@
 //   https://nextjs.org/docs/app/guides/streaming
 //   https://nextjs.org/docs/app/api-reference/file-conventions/loading
 
-import {div, h1, header, section} from "jhonstart";
-import {Boundary, Suspense, boundaryId} from "jhonstart";
+import {div, h1, header, section} from "rakun-bpp";
+import {Boundary, Suspense, boundaryId} from "rakun-bpp";
 import {components.post_list as PostList};   // a `.bpp`'s default, named by the importer (288)
 
 // The fallback: what the reader sees while the list is in flight.

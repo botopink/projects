@@ -8,8 +8,8 @@
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/layout
 
-import {h1, section} from "jhonstart";
-import {emilia, Token} from "emilia";
+import {h1, section} from "rakun-bpp";
+import {emilia, Token} from "rakun-stylesheet";
 
 fn titleTokens() -> Token[] {
     return [.Text.Size.X2xl, .Text.Bold];

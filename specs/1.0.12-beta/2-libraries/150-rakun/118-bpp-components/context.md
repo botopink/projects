@@ -7,10 +7,10 @@
 `01-checker` step 34 and its `View` rows, `01-compiler/26`, `05-jhonstart/26` step 13 (§ Open)
 **Depends on:** nothing open (`00-gate/101-gate-jhonstart` done). Written against decisions 190,
 191, 192, 193 and 223, 204, 207, 200, 270, 189, 278.
-**Owns:** `repository/jhonstart/modules/jhonstart-html/**` (`src/html.bp`, `src/root.bp`,
+**Owns:** `repository/rakun/modules/rakun-bpp/src/html/**` (`src/html.bp`, `src/root.bp`,
 `test/**`, `botopink.json`, `src/AGENTS.md`) — lands there; `05-jhonstart/26` step 0 then merges
 it into the core, `html` the core's `pub default fn` (200); 119, 120, 126 append to
-`jhonstart/src/html.bp` · `repository/jhonstart/examples/jhonstart-markup/**` except its
+`jhonstart/src/html.bp` · `repository/rakun/examples/rakun-bpp/jhonstart-markup/**` except its
 `README.md` (`05-jhonstart/26` step 6) · new `jhonstart/modules/jhonstart/src/prelude.bp` and the
 core's node type `Node` (223; carve-outs of `05-jhonstart/26`'s member, 270) · the `Children` →
 `Node` rewrite of this track's `examples/**` · step 1's one-line carve-outs: each `[name]={expr}`
@@ -50,7 +50,7 @@ So every page is builders (`onze/examples/blog/src/app/blog/[slug]/page.bp`).
 
 ## Mechanism
 
-**Where it stands** (`repository/jhonstart/modules/jhonstart-html/`): `src/html.bp` 270 lines, one
+**Where it stands** (`repository/rakun/modules/rakun-bpp/src/html/`): `src/html.bp` 270 lines, one
 function `pub fn html(comptime template: @Expr<string>) -> @ExprCustom<Element>`; `test/` two
 files; 12 files use `html """` (jhonstart-html 4, jhonstart 2, document-shell 2, jhonstart-markup
 1, jhonstart-emilia 1, emilia 1, erika-linq 1); `[name]={expr}` 10 uses in 7 files outside the
