@@ -83,7 +83,7 @@ submodulePaths() {
 # ═════════════════════════════════════════════════════════════════════════════
 
 # The library repositories that share the pre-commit guards (CI check 4).
-libraryRepos="emilia erika jhonstart onze rakun actions http log routing validation css styled snap json yaml markdown dbcontext"
+libraryRepos="rakun query actions http log routing validation css snap json yaml markdown"
 
 # 1. every submodule pointer is an ancestor of (or equal to) its remote feat.
 check1() {
@@ -147,7 +147,7 @@ check3() {
 
 # 4. the library repositories' guards, runner and gate are one text.
 check4() {
-    local ref=jhonstart bad=0 f lib pat
+    local ref=rakun bad=0 f lib pat
     for f in scripts/git-hooks/pre-commit scripts/git-hooks/lib/runner-standalone.sh scripts/gate.sh; do
         for lib in $libraryRepos; do
             [ "$lib" = "$ref" ] && continue

@@ -24,19 +24,19 @@ exempts a file.
 
 | File | Markers | Gap rows named |
 |---|---|---|
-| `repository/jhonstart/modules/jhonstart/src/client.bp` | 1 | **A decorator cannot read whether a `@Component<R>` return's `R` implements `@Renderable`** |
 | `repository/log/src/logfile.bp` | 1 | **A wasm binding cannot reach the file system** |
 | `repository/log/src/sink.bp` | 1 | **A wasm binding cannot keep a value across calls** |
-| `repository/onze/modules/onze-content/src/collections.bp` | 1 | **A field marker cannot be read by the library that takes the type** |
+| `repository/rakun/examples/rakun-style/styled-example/src/main.bp` | 1 | **A library's template function cannot read the program's catalogue** — half closed by 353 (`01-compiler/130` step 10, part): a template body's `@TypeInfo.all(with: theme)` answers for the program that expands it (`modules/template_reads_program_catalogue`). A decorator on a `val` runs and the `val` is catalogued since 356's first half (`reject/val_decorator_runs`, `run/val_decorator_catalogue`). Left: an entry's `value` is refused in a template body (`typeinfo-all-template-value`) — so `styled` cannot read a value the application's theme set; `#[theme]` is a marker no literal reads | 119 (`@variant md`, `--theme(…)`, the cleared-breakpoint refusal of 300) · `06-emilia/34` step 3 | every literal reads `styled`'s `baseTheme()`; the refusal (`readVariant`) is checked at run time against a theme value | `01-compiler/130` step 10 (box 2) after `119-e` | 353 · 119-e |
+| `repository/rakun/modules/rakun-bpp/src/client.bp` | 1 | **A decorator cannot read whether a `@Component<R>` return's `R` implements `@Renderable`** |
 | `repository/rakun/modules/rakun-cache/src/cache.bp` | 1 | **No module-level annotation** |
 | `repository/rakun/modules/rakun-cache/test/granularity_test.bp` | 1 | **No module-level annotation** |
-| `repository/styled/examples/styled-example/src/main.bp` | 1 | **A library's template function cannot read the program's catalogue** — half closed by 353 (`01-compiler/130` step 10, part): a template body's `@TypeInfo.all(with: theme)` answers for the program that expands it (`modules/template_reads_program_catalogue`). A decorator on a `val` runs and the `val` is catalogued since 356's first half (`reject/val_decorator_runs`, `run/val_decorator_catalogue`). Left: an entry's `value` is refused in a template body (`typeinfo-all-template-value`) — so `styled` cannot read a value the application's theme set; `#[theme]` is a marker no literal reads | 119 (`@variant md`, `--theme(…)`, the cleared-breakpoint refusal of 300) · `06-emilia/34` step 3 | every literal reads `styled`'s `baseTheme()`; the refusal (`readVariant`) is checked at run time against a theme value | `01-compiler/130` step 10 (box 2) after `119-e` | 353 · 119-e |
-| `repository/styled/src/hash.bp` | 1 | **A decorator body cannot call a host function** |
-| `repository/styled/src/layers.bp` | 1 | **A method's behavior-typed parameter refuses an implementer** |
-| `repository/styled/src/reader.bp` | 1 | **A template function cannot read another expansion's value** |
-| `repository/styled/src/styled.bp` | 2 | **A wrapper's type alias cannot implement a behavior** · **A library's template function cannot read the program's catalogue** |
-| `repository/styled/src/variants.bp` | 1 | **A function a template body reaches cannot name an enum variant nor build a private record** |
-| `repository/styled/test/styled_example_test.bp` | 1 | **No assignment to a `self` field — by design.** · **A method's behavior-typed parameter refuses an implementer** |
+| `repository/rakun/modules/rakun-ssr/src/content/collections.bp` | 1 | **A field marker cannot be read by the library that takes the type** |
+| `repository/rakun/modules/rakun-style/src/hash.bp` | 1 | **A decorator body cannot call a host function** |
+| `repository/rakun/modules/rakun-style/src/layers.bp` | 1 | **A method's behavior-typed parameter refuses an implementer** |
+| `repository/rakun/modules/rakun-style/src/reader.bp` | 1 | **A template function cannot read another expansion's value** |
+| `repository/rakun/modules/rakun-style/src/styled.bp` | 2 | **A wrapper's type alias cannot implement a behavior** · **A library's template function cannot read the program's catalogue** |
+| `repository/rakun/modules/rakun-style/src/variants.bp` | 1 | **A function a template body reaches cannot name an enum variant nor build a private record** |
+| `repository/rakun/modules/rakun-style/test/styled_example_test.bp` | 1 | **No assignment to a `self` field — by design.** · **A method's behavior-typed parameter refuses an implementer** |
 | `repository/validation/src/codecs.bp` | 1 | **std's `clock.formatIso8601` answers differently on erlang and commonJS** |
 | `repository/validation/src/decorators.bp` | 3 | **`Decl.variants` carries a variant's name and not its payload fields or its annotations** · **A comptime decorator parameter takes no default** · **`Decorator` is an unknown type in a package's module** |
 | `repository/validation/test/enums_and_unions_example_test.bp` | 2 | **A decorator argument is a raw lexeme** · **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
@@ -72,11 +72,11 @@ script does not read it). Each note's row, by content:
 
 | Note | Says | Gap row | Owner |
 |---|---|---|---|
-| `repository/emilia/modules/emilia/src/tokens.bp:2190-2196` | `Neg` is a sub-section, not a sign: `Rotate { -12 }` does not parse — the comment now states 314's decided form | **No spelling for a negative numeric enum leaf — by design.** | 314 (comment rewritten in 34 step 4) |
+| `repository/rakun/modules/rakun-stylesheet/src/tokens.bp:7687-7693` | `Neg` is a sub-section, not a sign: `Rotate { -12 }` does not parse — the comment now states 314's decided form | **No spelling for a negative numeric enum leaf — by design.** | 314 (comment rewritten in 34 step 4) |
 | `repository/rakun/modules/rakun/src/conditions.bp:280-284` | a type named by a string — a decorator argument is an ordinary value | **A decorator argument cannot name a type** | 280 (was lg2-f) |
 | `repository/rakun/modules/rakun-session/src/session.bp:4-8` | session immutable; a forgotten `save` after `withAttribute` is uncatchable | **No assignment to a `self` field — by design.** | — |
 | `repository/rakun/modules/rakun-data/src/sql/query.bp:33` | a method-level `@Decl` exposes no parameter list | **A method-level `@Decl` carries no owner and no parameter list** · **A method's own `@Decl` has no parameter list** | 347 |
-| `repository/rakun/modules/rakun-client/src/exchange.bp:47-49,78` | no `Json` → record derivation, so an exchange method's parameters and return are `string` | **No `record ↔ Json` derivation** | `125` step 8 |
+| `repository/rakun/modules/rakun-restclient/src/exchange.bp:47-49,102` | no `Json` → record derivation, so an exchange method's parameters and return are `string` | **No `record ↔ Json` derivation** | `125` step 8 |
 
 ## Confirmed gaps
 

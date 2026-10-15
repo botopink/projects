@@ -13,15 +13,13 @@
 #   3. no `*.snap.new`, `*.snap.md.new` or `todo.md` is tracked, in the meta
 #      repository or in any submodule;
 #   4. the library repositories' pre-commit guards are one text: `pre-commit`,
-#      `lib/runner-standalone.sh` and `scripts/gate.sh` (front 163 s7) byte-identical across emilia, erika,
-#      jhonstart, onze, rakun, actions, http, log, routing, validation, css,
-#      styled, snap, json, yaml, markdown and dbcontext
+#      `lib/runner-standalone.sh` and `scripts/gate.sh` (front 163 s7) byte-identical across rakun, query,
+#      actions, http, log, routing, validation, css, snap, json, yaml and markdown
 #      (113 step 5's check, made continuous; actions to validation since
-#      decision 326, 03-bundled-libs/138's carve-out of 114's file; css and
-#      styled since decision 338, 08-bpp/119 step 1; snap since decision 391,
+#      decision 326, 03-bundled-libs/138's carve-out of 114's file; css since
+#      decision 338, 08-bpp/119 step 1; snap since decision 391,
 #      20-snap step 0; json, yaml and markdown since decision 396,
-#      03-bundled-libs/142 step 0; dbcontext since decision 398,
-#      04-rakun/143 step 0), each
+#      03-bundled-libs/142 step 0; rakun and query since front 165), each
 #      `.gitignore` naming `*.snap.new` and `*.snap.md.new`, no
 #      `scripts/known-broken-examples.txt`, and each AGENTS.md naming
 #      `git config core.hooksPath scripts/git-hooks`, `scripts/gate.sh` and

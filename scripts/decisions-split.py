@@ -2,7 +2,7 @@
 """Split the milestone's decisions-taken.md into one generated file per repository (decision 482).
 
 Reads specs/<newest milestone>/decisions-taken.md and, for every table row, maps its Binds column
-to repositories: a front number (144 botopink-lang ... 162 onze), or an old id resolved through the
+to repositories: a front number (144 botopink-lang ... 162, rakun), or an old id resolved through the
 alias tables at the top of each front README (old id -> the front that holds it now). Writes
 repository/<repo>/decisions-taken.md: the generated-from line, then every section that has rows,
 each with the table header and the rows binding that repository, verbatim, in the source's order.
@@ -20,11 +20,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 FRONT_REPO = {
-    144: "botopink-lang", 145: "erika", 146: "validation", 147: "css", 148: "styled",
-    149: "jhonstart", 150: "rakun", 151: "json", 152: "yaml", 153: "dbcontext", 154: "emilia",
+    144: "botopink-lang", 145: "query", 146: "validation", 147: "css", 148: "rakun",
+    149: "rakun", 150: "rakun", 151: "json", 152: "yaml", 153: "rakun", 154: "rakun",
     155: "http", 156: "log", 157: "routing", 158: "markdown", 159: "actions", 160: "snap",
-    161: "vscode-extension", 162: "onze",
+    161: "vscode-extension", 162: "rakun",
 }
+# Front 165 joined rakun, styled, jhonstart, emilia, onze and dbcontext into the one `rakun` workspace
+# (fronts 148, 149, 153, 154, 162 map to it) and renamed erika to `query` (front 145).
 # Fronts of the medium tier: process, or a repository the front's README names that is not (yet)
 # under repository/ (cardume, i18n, release) -- no file is written for them.
 MEDIUM_FRONTS = {136, 163, 105, 107, 98, 135}
@@ -39,6 +41,7 @@ TRACKS = {
 # Repository words in a Binds cell.
 WORDS = {
     "rakun": 150, "jhonstart": 149, "onze": 162, "emilia": 154, "onze-cli": 162,
+    "styled": 148, "dbcontext": 153, "erika": 145, "query": 145,
     "lib-test-runner": 144, "libs/std": 144, "libs/actions": 159, "std": 144,
 }
 
@@ -135,7 +138,7 @@ TOKEN = re.compile(
     r"(?P<oldtr>\b\d\d-[a-z][a-z0-9-]*/(?P<oldn>\d+(?:-[a-z0-9-]+)?|\d\d-[a-z0-9-]+))" + STEP.format(n="os") + r"|"
     r"(?P<short>\b\d\d/(?P<shortn>\d+))" + STEP.format(n="ss") + r"|"
     r"(?P<oldname>\b\d\d-[a-z][a-z0-9-]*)" + STEP.format(n="ons") + r"|"
-    r"(?P<word>\blibs/std\b|\blibs/actions\b|\bonze-cli\b|\blib-test-runner\b|\brakun\b|\bjhonstart\b|\bonze\b|\bemilia\b|(?<![\w/-])std\b)|"
+    r"(?P<word>\blibs/std\b|\blibs/actions\b|\bonze-cli\b|\blib-test-runner\b|\brakun\b|\bjhonstart\b|\bonze\b|\bemilia\b|\bstyled\b|\bdbcontext\b|\berika\b|(?<![\w/-])std\b)|"
     r"(?P<range>\b145\s*…\s*162\b)|"
     r"(?P<bare>\b\d{2,3}\b)" + STEP.format(n="bs")
 )
