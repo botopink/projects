@@ -1849,7 +1849,7 @@ Found by 165 s2: in one commonJS program that loads both `markdown` (`MdNode`'s 
 the label (`Text(value: value)`) answers, `MdNode.Text(value)` does not. Repro: rakun's `rakun-ssr` with `config`,
 `integration` and `content` in one root.
 
-- [ ] a pattern's field layout is the matched type's own variant, whatever other variant shares its name; a cell: two
+- [x] a pattern's field layout is the matched type's own variant, whatever other variant shares its name; a cell: two
       packages with a same-named variant of different shapes, a positional pattern on each, on every target
 - [ ] rakun-ssr's `src/content/element.bp` patterns back to the positional form (a 150 consumer row)
 
