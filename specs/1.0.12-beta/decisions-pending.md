@@ -27,22 +27,86 @@ number, which is **518**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
-The questions that hold machine 2's work back today, most blocking first. Each entry stays in its section (§ Machine 2);
-this table indexes them and leaves when they are answered.
+The questions that hold machine 2's work back today, most blocking first. Each is explained here in a few lines — the
+problem, an example, the options, the recommendation and why — and its full entry (Measured, every option) stays in
+§ Machine 2. A question leaves this list when it is answered.
 
-| Id | What it holds back | Recommendation |
-|---|---|---|
-| 164-s3-c | 164 s3 P0 (the `.wat` reader and the leaf table) — the piece that can run now beside s2 | (a) |
-| 164-s3-a | 164 s3 P4 (the comptime's term library), the largest piece of front 164 | (B) |
-| 546-b | rakun's 541 / 540 / 546 tests: 21 red in rakun-app, rakun-security and rakun-service (navigation, `rakun_problem`) | (i) |
-| 544-a | 164 s2 P6 (the bounded-memory cells), s2's close | (a) |
-| 546-a | the `crash` message every abort and `attempt` cell claims (kind alone until answered; B-101's cells) | (a) |
-| 485-b | B-88 box 4; the printed form of every refusal (577 snapshot lines in one form, 86 in the other) | (a) |
-| 541-c | B-88 box 2 (a lambda generator) | (a) |
-| 164-s3-b, 164-s3-d | 164 s3's gate line; s3 P1's `toUpper` / `toLower` | (a), (a) |
-| 540-c | the libraries' local `fsText` helpers | (a) |
+| # | Question | Blocks | Recommendation |
+|---|---|---|---|
+| 1 | 164-s3-c — a `.wat` leaf's types | 164 s3 P0, which can start now | (a) by name |
+| 2 | 164-s3-a — what the comptime runs on after `term.zig` | 164 s3 P4, the largest piece of 164 | (B) a botopink `Term` |
+| 3 | 546-b — rakun's sidecars unwinding through a `host` call | 21 red tests in rakun | (i) a library gap |
+| 4 | 544-a — wasmtime's collector and cycles | 164 s2 P6, s2's close | (a) |
+| 5 | 546-a — a `crash`'s message | every abort / `attempt` cell's message line | (a) the kind only |
+| 6 | 485-b — how a refusal is printed | B-88 box 4; 663 snapshot lines | (a) `error[code]:` |
+| 7 | 541-c — a lambda generator | B-88 box 2 | (a) no |
+| 8 | 164-s3-b, 164-s3-d — s3's comptime snapshots; Unicode tables | s3's gate line; s3 P1 | (a), (a) |
+| 9 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
 
----
+**1 · 164-s3-c — the types a hand-written `.wat` leaf uses.** s3 moves std-wasm's code into botopink, leaving only
+small leaves in hand-written `.wat` (a byte read, a float's digits). A leaf that takes a string must take exactly the
+codegen's string type, `$str = (array (mut i8))`. Either the file names it and the compiler resolves the name:
+`(func $byteAt (param $s (ref $str)) (param $i i32) (result i32) …)` — or the file writes `(type $str …)` itself
+and the compiler checks the two are equal. **Recommendation (a), by name**: one representation lives in one place
+(442 (3)); a copy in each `.wat` is a second definition that can drift. **Blocks:** s3 P0 (the `.wat` reader), the one
+s3 piece that can run now beside s2.
+
+**2 · 164-s3-a — what the comptime runs on once the Zig term library goes.** Every `comptime` value today is an Erlang
+term built by ~3 700 lines of Zig (`term.zig`, `otp/*`: `lists:*`, `maps:*`, `io_lib:format`, ETF) inside
+`std_wasm.wasm`; 544 deletes that file. **(A)** compile comptime bodies straight with the wasm GC backend and drop the
+Erlang layer (the largest rewrite); **(B)** keep the Erlang → wasm lowering but over a `Term` enum written in botopink
+(`erlang_terms.bp`), compiled by the GC backend — the preludes, `COMPTIME REPLY` and ETF stay; **(C)** keep the term
+library in Zig as a comptime-only module (against 544). **Recommendation (B)**: it keeps every comptime reply's shape
+and is a step, not a rewrite; (A) can follow. **Blocks:** s3 P4, the largest piece of front 164.
+
+**3 · 546-b — rakun's sidecars unwind through a call 546 now wraps.** rakun's navigation signals and `rakun_problem`
+unwind on purpose: an Erlang sidecar throws, and a catcher up the stack reads the term —
+`rakun_navigation:signal(...)` throws `<<"nav:/login">>`, `try_body` catches `throw:Reason when is_binary(Reason)`.
+Since 546 every call of a library binding without `result: true` is wrapped, and any raise comes out as
+`error:{bp_host, "<text>"}`, so the catcher never sees its term: 18 tests red in rakun-app, 2 in rakun-security, 1 in
+rakun-service. **(i)** the tests stay red as library gaps; navigation becomes data the renderer reads, as 527 (5) and
+504 already decide; **(ii)** the sidecars raise a term the wrapper lets through (a `panic`-shaped one), which changes an
+uncaught failure's kind; **(iii)** the catchers also match `{bp_host, Text}` and parse the text (lossy); **(iv)** an
+attribute exempting a binding from the wrap. **Recommendation (i)**: 527 (5) already fixes the end state; an interim
+mechanism would be deleted by it. **Blocks:** the 21 rakun tests (144 B-103 already restored the one through `try`).
+
+**4 · 544-a — wasmtime does not collect cycles yet.** s2 hands memory to the host's collector and assumes it follows
+cycles (a task waiting on another that waits on it). node and the browser do; wasmtime's default collector (DRC) leaks a
+cycle until the program ends, and its copying collector is documented "not yet functional". **(a)** the codegen breaks
+the cycles it makes itself (a settled task drops its waiters), the gate pins the wasmtime CLI, and 544 says a cycle a
+program builds may live until exit on wasmtime; **(b)** the codegen detects cycles (what 544 removed); **(c)** wait for
+a wasmtime that follows cycles. **Recommendation (a)**. **Blocks:** s2 P6, the bounded-memory cells — nothing before.
+
+**5 · 546-a — what a `crash` message says.** A raise nothing marked is `crash`; its kind is fixed (535), its text is
+not. Example: a `case` no arm matches prints `crash: {case_clause,'Square'}` on erlang and
+`crash: Cannot read properties of null (reading 'tag')` was node's (removed by B-101). **(a)** the reason is the
+engine's and a cell claims the kind alone (`stderr crash:`); **(b)** one message per target, recorded as departures;
+**(c)** one text for the raises the compiler emits (`no arm matches: <value>`), costing erlang and beam a catch on every
+`case`. **Recommendation (a)**: the kind is the language's answer, the reason is a diagnostic. **Blocks:** the message
+line of the abort and `attempt` cells (they claim the kind until then).
+
+**6 · 485-b — one printed form for a refusal.** A parse error prints `error[reserved-word-as-name]: …`; a checker
+refusal prints `error: block-break-value: …`. 577 cell snapshots use the second, 86 the first; every decision and
+`conformance/AGENTS.md` write the first. **(a)** `error[<code>]: <message>` everywhere (the 577 lines rewritten
+mechanically in one commit); **(b)** keep both; **(c)** `error: <code>: <message>` everywhere. **Recommendation (a)**:
+it is the notation the decisions already use. **Blocks:** B-88 box 4; every new refusal cell picks one form meanwhile.
+
+**7 · 541-c — can a lambda be a generator?** 541 (2) lets a block's `yield` reach "the enclosing function"; B-88 asked
+for a `yield` inside a lambda's block, but today `{ -> yield 1 }` and `fn() -> @Iterator<i32> { yield 1; }` are both
+refused `yield-without-generator` — a generator is a declared fn or method, or an `iter loop { … }` (125).
+**(a)** no — the expression form of a generator is `iter loop`; **(b)** a typed `fn() -> @Iterator<T>` expression is a
+generator; **(c)** any lambda whose expected type is `@Iterator`. **Recommendation (a)**. **Blocks:** B-88 box 2 only.
+
+**8 · 164-s3-b and 164-s3-d — s3's smaller points.** (b) s3's box says "every comptime snapshot unchanged", but a
+comptime snapshot holds both the reply and the lowered module's listing (`COMPTIME WAT`), which s3 rewrites by design.
+**Recommendation (a)**: the reply and every cell unchanged, the listing re-recorded and read piece by piece. (d) The
+Unicode case tables were to be built with `@embed` (519), which wasm cannot lower yet. **Recommendation (a)**:
+generated `.bp` code now, `@embed` once wasm has it.
+
+**9 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
+so each library that carries it into a `string` error writes its own `case`
+(`NotFound(path) -> "not found: " + path`, … — snap and rakun-ssr both did). **(a)** std gives `FsError` a `message()`;
+**(b)** each library keeps its own; **(c)** a generic `mapErr` on `@Result`. **Recommendation (a)**, (c) independent of it.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
