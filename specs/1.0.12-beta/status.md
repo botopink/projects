@@ -84,7 +84,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace (548) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
-- [ ] 144 B-98 — a module named like its package reports every `pub` name declared twice · nothing
 - [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · question B-99-a (the form: a `comptime` default answered for the caller, recommended)
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
@@ -218,7 +217,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 165 rakun-workspace
 
 - [ ] 165 s9 — one root manifest in place of the feature manifests (the rest landed: cells by package and feature, each `docs.md` beside its code, code linked) · 144 B-113
-- [ ] 165 s5 — `rakun.boot()` and each package declaring its module · 144 B-98, B-99 (question B-99-a)
+- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99 (question B-99-a)
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
 ## L3 — ready to open now
@@ -365,6 +364,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 144 botopink-lang
 
+- [x] 144 B-98 (front 165 s5) — two `files` entries of one stem (`p.bp` and `p.d.bp`) refused at the second: one module written twice, every consumer read its `pub` names twice; a dependency manifest's refusal printed relative to the working directory · question B-98-a
 - [x] 144 B-100 (front 165 s8) — botopink-lang's tooling reads rakun's workspace and `query` (`test-analysis-equivalence`, `tsc-check.sh`, `test-libs.sh`, `check-packaging.sh`, `comptime_bench.sh`, `test.yml`); `test-analysis-equivalence` green
 - [x] 144 B-86 (front 165 s4, mono-a) — `@TypeInfo.all` already lists a direct and a transitive dependency's declarations (level B stores `declared` and `meta`), now pinned by the cell `modules/typeinfo_all_dependency_declarations` on every target, cold and from level B; the lib-agnostic gate refuses `rakun` (any case) and `query` as a package; the catalogue's reach in `conformance/docs.md` § Decorators · question B-86-a
 - [x] 144 B-02 (305) — annotations speak botopink: `label = value` refused naming `label:` (`annotation_label_equals`); `fn: name` resolved to a private function on every target, a misspelt one the unbound-name error (`external_fn_unbound`), renamed with it; `op:` / `wasi:` checked by one rule with `fn:`; the old prefixed strings refused naming the labelled form (`external_prefixed_fn_refused`); no prefixed string left in `libs/**` (a scan `zig build test` runs); the formatter prints `label: value`; `keyed: true` everywhere; no library used the old forms; its Conformance step: the suite green on `feat`, three cells added (`annotation_label_equals_decorator`, `external_erlang_prefixed_fn_refused`, `external_node_prefixed_op_refused`), the table in the README — left: the next green `test` run (B-17's two cells' format), question B-02-c

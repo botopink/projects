@@ -2401,16 +2401,19 @@ One mechanical pass, as B-33's codemod: no design choice.
 - [ ] botopink-lang's and every library's gate with conformance, cold and warm; every cell green on every target
 - [ ] the root `conformance/docs.md` rewritten for the module model (480)
 
-### B-98 — a module named like its package reports every `pub` name declared twice
+### B-98 — a `.bp` and a `.d.bp` of one stem in a package's `files` are one module written twice
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus
 
-Found by 165 s5: package `rakun` with a module `rakun` (`src/rakun.bp`, the `rakun.module` / `rakun.config` namespace
-mono-a names): once a program using it is refused for any reason, every dependency module reports "`Module` is declared
-`pub` by `rakun/rakun` and by `rakun/rakun`" — one module counted twice, so a refusal's real message drowns.
+Found by 165 s5: once a program using package `rakun` was refused for any reason, every dependency module reported
+"`Module` is declared `pub` by `rakun/rakun` and by `rakun/rakun`". Measured: a module named like its package is one
+module; the cause is `files` listing `rakun.bp` beside rakun's empty `rakun.d.bp` — both strip to the stem `rakun`, load
+as two modules of one path, and `crossModule.buildIn` counts both.
 
-- [ ] a module named like its package is one module: no duplicate-`pub` report; a cell (package `p`, module `p`, a
-      program refused for an unrelated reason answers that reason alone)
+- [x] two `files` entries of one stem refused at the second ("`"files" lists p.bp and p.d.bp, one module (`p`) written
+      twice — keep one of the two files`"), as `x.bp` beside `x.bpp` and `x/mod.bp` already are; a dependency
+      manifest's refusal printed relative to the working directory — cells `files_one_module_twice` (red on the
+      parent) and `module_named_like_its_package`; a manifest unit test · question B-98-a (refuse or merge)
 
 ### B-99 — a library's catalogue read at the caller: `rakun.boot()` (mono-a)
 

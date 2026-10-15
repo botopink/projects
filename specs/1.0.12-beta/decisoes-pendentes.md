@@ -1278,6 +1278,16 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Trava.** Nada — construído como (a); o 165 s5 lê (3).
 
 
+#### B-98-a · Um `.bp` e um `.d.bp` de mesmo stem num pacote: recusados, ou um módulo? (144 B-98)
+- **Proposta (opus, 2026-10-15; construída, aguardando o mantenedor):** (a) recusados na segunda entrada de `files` — "`"files" lists p.bp and p.d.bp, one module (`p`) written twice — keep one of the two files`" — como `x.bp` ao lado de `x.bpp` e ao lado de `x/mod.bp` já são.
+- **Medido.** Os dois arquivos se reduzem ao stem `p` e eram carregados como dois módulos de um caminho: o checker guardava um, `crossModule.buildIn` contava os dois, então todo consumidor era recusado "declared `pub` by `p/p` and by `p/p`". O `src/rakun.d.bp` vazio do rakun ao lado de um `rakun.bp` novo disparou isso; nenhum manifesto sob `repository/` lista um par assim hoje.
+- **Opções.** (a) ★ Recusado (construído). (b) Mesclado: as declarações do `.d.bp` e as do `.bp` são um módulo, um nome nos dois recusado.
+  ```json
+  { "files": ["rakun.bp", "rakun.d.bp"] }   // (a): refused at "rakun.d.bp"
+  ```
+- **Recomendação.** (a): a leitura mais restritiva, um arquivo por módulo como as regras de gêmeos já dizem.
+- **Bloqueia.** Nada — construído como (a); o 165 s5 remove o `rakun.d.bp` vazio do rakun.
+
 #### B-99-a · Como uma chamada de biblioteca lê o catálogo do programa chamador no build: `rakun.boot()` (mono-a; decisões 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor):** (b): um parâmetro `comptime` cujo default é uma consulta `@TypeInfo.all(…)` é respondido para o programa em que a chamada é compilada — a regra da 353, estendida do corpo de um template para um default `comptime`. Os nomes no default resolvem no módulo que declara; o catálogo é o do chamador. A chamada só é legal na raiz do pacote (s23-i (d) (1)). O `.value` do parâmetro responde os campos de dados das entradas; o `value` de uma entrada é repassado, nunca lido no build (356). O nível B guarda o pacote que declara e nunca o que chama. Emenda a última frase da s23-i (d) ("um framework recebe o catálogo da raiz da aplicação como argumento, nunca o lê ele mesmo"): um framework também pode lê-lo por um default assim.
 - **Medido.** Nenhuma decisão tomada fixa a forma: a 353 responde um catálogo por programa só dentro do corpo de uma função template (um argumento literal); a 343 lê um catálogo no ponto de entrada; a s23-i (d) faz o framework recebê-lo como argumento. O `@TypeInfo.all` de uma função de biblioteca responde no build da própria biblioteca (vazio); um template precisa de um literal; `rakun.plan "…"` é recusado `expected Expr, got string`; `typeinfo-all-mixed` mantém funções e vals em duas consultas.

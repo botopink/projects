@@ -1272,6 +1272,16 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Blocks.** Nothing — built as (a); 165 s5 reads (3).
 
 
+#### B-98-a · A `.bp` and a `.d.bp` of one stem in a package: refused, or one module? (144 B-98)
+- **Proposed (opus, 2026-10-15; built, awaiting the maintainer):** (a) refused at the second `files` entry — "`"files" lists p.bp and p.d.bp, one module (`p`) written twice — keep one of the two files`" — as `x.bp` beside `x.bpp` and beside `x/mod.bp` already are.
+- **Measured.** Both files strip to the stem `p` and loaded as two modules of one path: the checker kept one, `crossModule.buildIn` counted both, so every consumer was refused "declared `pub` by `p/p` and by `p/p`". rakun's empty `src/rakun.d.bp` beside a new `rakun.bp` set it off; no manifest under `repository/` lists such a pair today.
+- **Options.** (a) ★ Refused (built). (b) Merged: the `.d.bp`'s declarations and the `.bp`'s are one module, a name in both refused.
+  ```json
+  { "files": ["rakun.bp", "rakun.d.bp"] }   // (a): refused at "rakun.d.bp"
+  ```
+- **Recommendation.** (a): the most restrictive reading, one file per module as the twin rules already say.
+- **Blocks.** Nothing — built as (a); 165 s5 drops rakun's empty `rakun.d.bp`.
+
 #### B-99-a · How a library call reads the caller program's catalogue at build: `rakun.boot()` (mono-a; decisions 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** (b): a `comptime` parameter whose default is a `@TypeInfo.all(…)` query is answered for the program the call is compiled in — 353's rule, extended from a template body to a `comptime` default. The names in the default resolve in the declaring module; the catalogue is the caller's. The call is legal only in the package's root (s23-i (d) (1)). The parameter's `.value` answers the entries' data fields; an entry's `value` is passed on, never read at build (356). Level B stores the declaring package and never the calling one. It amends s23-i (d)'s last sentence ("a framework receives the catalogue from the application's root as an argument, never reads it itself"): a framework may also read it through such a default.
 - **Measured.** No taken decision fixes the form: 353 answers a catalogue per program only inside a template function's body (a literal argument); 343 reads a catalogue at the entry point; s23-i (d) has the framework receive it as an argument. A library function's `@TypeInfo.all` answers in the library's own build (empty); a template needs a literal; `rakun.plan "…"` is refused `expected Expr, got string`; `typeinfo-all-mixed` keeps functions and vals in two queries.
