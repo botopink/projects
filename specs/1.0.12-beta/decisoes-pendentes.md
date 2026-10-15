@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**125 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**126 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1235,6 +1235,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como proposto. (b) Esperar o `@embed` no wasm.
 - **Recomendação.** (a).
 - **Bloqueia.** O `toUpper` / `toLower` do s3 P1.
+
+#### 518-a · Duas recusas de `needs:` que nenhuma decisão afirma (decisão 518 (1); 144 B-07)
+- **Proposto (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): as duas continuam recusas, cada uma com uma célula** — `needs:` em `@External.Node` / `@External.Erlang`, e `needs:` dado como qualquer coisa que não uma lista de valores `WasmNeed`; a leitura mais restritiva (67).
+- **Medido.** A 518 (1) afirma uma recusa: um valor de `needs:` fora de `WasmNeed`. O build da 518 (7990b7de) também recusa `needs:` numa forma Node ou Erlang e um `needs:` que não é lista; nenhuma decisão afirma nenhuma das duas, e nenhuma célula as fixa (a análise da Conformance do B-07).
+- **Opções.** (a) Como proposto. (b) `needs:` noutra forma aceito e ignorado. (c) Um valor só aceito como lista de um elemento.
+- **Recomendação.** (a).
+- **Bloqueia.** Nada construído; duas células de recusa uma vez respondida.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

@@ -137,7 +137,9 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       targets, its `message` binding removed (144 B-90)
 - [ ] an integer overflow and an integer division by zero write 527 (3)'s checked message (the operator, the type,
       `file:line:col`), not a bare trap — the site handed to every checked-arithmetic helper, in both lowerings (after
-      s2 P2b, which reworks the same helpers); a cell on the four targets
+      s2 P2b, which reworks the same helpers); a cell on the four targets; under `attempt` the trap answers
+      `Error(panic)` and the program goes on (492) — `int_division_by_zero_is_panic`'s wasm departure, which records
+      the trap, deleted and the cell red on wasm until then, and an overflow line in `std_failure_attempt_abort_kinds`
 - [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
       `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
       `targets` narrowing removed (144 B-95, B-97)

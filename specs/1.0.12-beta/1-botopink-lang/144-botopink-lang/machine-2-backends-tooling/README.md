@@ -515,17 +515,34 @@ replacement).
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
+- [x] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
       `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
       fixed at once (430), pushed again; no cell edited to match the compiler
-- [ ] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
+- [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
-- [ ] the group's changes analysed together against the cells (a table here); the cells they call for written in
+- [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
       decision 457's shape, red on the group's base and green on its tip; the missing ones proposed as rows
-- [ ] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
+- [x] the reference updated (480): the `docs.md` of each cell written or whose answer changed, and the root reference
       (`docs.md` until B-29 step I moves it to `conformance/docs.md`)
-- [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
+- [x] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
+
+  | Behaviour (decision) | Cells |
+  |---|---|
+  | `attempt`: a value is `Ok`, a `@panic` is `panic` (431, 492) | `std_failure_attempt` |
+  | a host raise is `host`, its erlang message `~tp` (492, 527) | `std_failure_attempt_host` |
+  | an unmarked raise is `crash` (527 (1), 546) | `std_failure_attempt_crash` |
+  | `@todo` and `x!` over null are `panic` (492) | `std_failure_attempt_abort_kinds` |
+  | an integer overflow, a division by zero are `panic` (492, 527 (3)) | `int_division_by_zero_is_panic` — wasm traps (164 s2c) |
+  | a failing `assert` is `panic` (527 (2)) | `assert_failure_is_panic` |
+  | `attemptTask` (494) | `std_failure_attempt_task` |
+  | `asserts.throws` / `throwsWith` over `attempt` (493) | `std_asserts_throws_over_attempt` |
+  | `needs:` outside `WasmNeed` refused (518 (1)) | `external_wasm_needs_unknown`; the two other `needs:` refusals wait on 518-a |
+  | STD-001 at the call (518 (4)) | `std_unsupported_refused_at_the_call`, `std_unsupported_names_the_call`, `std_asserts_host_cell_on_wasm` |
+  | `attempt` at build (518, 543) | `comptime_attempt_at_build` |
+  | `try … catch` catches only the operand's `Error` (431, B-103) | `try_catch_host_raise_propagates` |
+  | the uncaught abort's text (535) | `abort_text_host`, `abort_text_panic`, `abort_text_crash` |
+  | 126's flagless task conversion retired (490) | `host_node_task_result` |
 
 ### B-08 — 431: std's hand-written catches become `throws: true`
 

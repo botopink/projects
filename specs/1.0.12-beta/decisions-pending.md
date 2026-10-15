@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**125 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**126 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1230,6 +1230,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) Wait for `@embed` on wasm.
 - **Recommendation.** (a).
 - **Blocks.** s3 P1's `toUpper` / `toLower`.
+
+#### 518-a · Two `needs:` refusals no decision states (decision 518 (1); 144 B-07)
+- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): both stay refusals, each with a cell** — `needs:` on `@External.Node` / `@External.Erlang`, and `needs:` given as anything but a list of `WasmNeed` values; the most restrictive reading (67).
+- **Measured.** 518 (1) states one refusal: a `needs:` value outside `WasmNeed`. The build of 518 (7990b7de) also refuses `needs:` on a Node or Erlang form and a `needs:` that is not a list; no decision states either, and no cell pins them (B-07's Conformance analysis).
+- **Options.** (a) As proposed. (b) `needs:` on another form is accepted and ignored. (c) A single value is accepted as a one-element list.
+- **Recommendation.** (a).
+- **Blocks.** Nothing built; two refusal cells once answered.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
