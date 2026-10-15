@@ -155,6 +155,8 @@ Answer (tick one per point):
 - [x] (4)(a) `async iter` writes an `AsyncIterator<T>` (`yield` and `await`); `@Stream` renamed `AsyncIterator`
 - [ ] (4)(b) no combination: a `Stream` is only consumed (`for await`), made by std's host bindings
 - [ ] (4)(c) `iter` alone writes both, the return type deciding: `Iterator<T>` (`yield`), `AsyncIterator<T>` (`yield` and `await`); `@Stream` renamed `AsyncIterator` **(recommended)**
+- [x] (5)(a) an `AsyncIterator` that fails is `AsyncIterator<T, E>`: a `throw` or a propagating `try` in its body ends it with `E`; `AsyncIterator<Result<T, E>>` stays a per-item result **(recommended)**
+- [ ] (5)(b) `AsyncIterator<Result<T, E>>` is the iterator that fails, as 432's `Task<Result<T, E>>`
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1263,7 +1265,12 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   fn iter lines(f: File) -> AsyncIterator<Result<string, FsError>> { loop { val chunk = try await f.read(4096); …; yield line } }
   for await line in lines(f) { … }
   ```
-- **Recommendation.** (a) for (1)–(3), (c) for (4): (1) reserves no name and gives a lambda and a block one rule; (2) names what the body answers; (3) keeps the markers' step mechanical; (4) (c): one marker writes both, as `component` allows `await` with no `async` (375), and the name says what the type is. Migration: a codemod adds the marker wherever a body writes the keyword, one landing per repository. Amends 541 (2), 375 (a component's marker is written; its asynchrony stays inferred), 431 (`return v` as `Ok(v)` only under `result` or `async`); answers 541-c.
+  (5) An `AsyncIterator` that fails: (a) ★ `AsyncIterator<T, E>` — a `throw` or a propagating `try` in an `async iter` body ends the iteration with `E`, consumed by `for await x in try xs` (the failure propagates) or a `case` on it; the items are bare `T`; `AsyncIterator<Result<T, E>>` stays an iterator whose items are results, the iteration going on past an `Error`; `Task<Result<T, E>>` (432) and `Iterator<T>` unchanged; 540's `File.lines()` / `chunks()` answer `AsyncIterator<string, FsError>` / `AsyncIterator<Bytes, FsError>`; (b) `AsyncIterator<Result<T, E>>` is the iterator that fails, as 432's `Task<Result<T, E>>`.
+  ```bp
+  fn async iter lines(f: File) -> AsyncIterator<string, FsError> { loop { val chunk = try await f.read(4096); …; yield line } }
+  for await line in try lines(f) { … }   // an FsError ends the loop and propagates
+  ```
+- **Recommendation.** (a) for (1)–(3) and (5), (c) for (4): (5) a read error has no next item, so the failure is the iterator's, and with many items a `Result` inside cannot say whose error it is (a `Task` has one); (1) reserves no name and gives a lambda and a block one rule; (2) names what the body answers; (3) keeps the markers' step mechanical; (4) (c): one marker writes both, as `component` allows `await` with no `async` (375), and the name says what the type is. Migration: a codemod adds the marker wherever a body writes the keyword, one landing per repository. Amends 541 (2), 375 (a component's marker is written; its asynchrony stays inferred), 431 (`return v` as `Ok(v)` only under `result` or `async`); answers 541-c.
 - **Blocks.** 541-c (B-88 box 2).
 
 #### 485-b · A refusal's printed line: `error[<code>]: <message>` or `error: <code>: <message>`? (decisions 475 (2), 485; 144 B-88)
