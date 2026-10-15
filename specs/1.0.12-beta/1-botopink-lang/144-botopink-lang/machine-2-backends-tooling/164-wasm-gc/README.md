@@ -86,10 +86,9 @@ optionals, records and variants (one struct type per declaration), `case`, `unkn
 inside `anyref`, never `i31ref`) · P3 closures, `var` cells, components · P4 tasks · P5 the linear lowering deleted ·
 P6 the bounded-memory cells and the docs. Question 544-a (wasmtime's collector and cycles) holds P6.
 
-Landed: P0, and P1 but for five strings that still send a module to the linear lowering — an `@panic` / `@todo` /
-`assert` message, a string through a record method, a no-return call where a string is expected, a `std:` host-binding
-wrapper, a folded comptime string `val` — and `$__alloc` kept in a GC module whose only use of it is `str_concat`'s
-static dependency. They go with P2.
+Landed: P0, P1, and P2 but for `unknown` (its boxes, `is`, narrowing, printing, `==`), `Dict`, generic records and
+enums, `@Result`'s `map` / `flatMap`, the arrays' `unique` / `flatten` / `chunked` / `sliding` / `zip`, union arrays and
+the generator and stream loops — P2b; a module holding one still lowers to linear memory.
 
 - [ ] **the types:** one GC type per value shape — string (an `i8` array), array, tuple, record, enum and variant,
       closure, `@Task` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
