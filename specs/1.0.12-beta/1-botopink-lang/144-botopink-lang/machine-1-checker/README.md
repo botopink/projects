@@ -2444,7 +2444,8 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
       build-known parts as constants; a loop bound or condition needing a run-time value refused at it; 376 (1)'s
       `Stage.Build` for a `.value` read goes — cells: a `boot()` starting three modules in `meta` order on every target
       (its emitted `main` in the snapshot), the refused condition, a `banner(3)`-style non-catalogue parameter, a function with a run-time parameter beside a
-      `comptime` one refused `build-and-run` as before
+      `comptime` one refused `build-and-run` as before, a constant read at build, a run-time variable passed refused
+      `comptime-arg-not-known`
 
 Open: B-99-c — a dependency's own root is refused, as built.
 
