@@ -114,13 +114,13 @@ the generator and stream loops — P2b; a module holding one still lowers to lin
 
 539 landed on wasm with four gaps; each is a cell red on wasm (never a `snapshot/targets/` departure) until its box lands.
 
-- [ ] a panic in a block or `case` arm runs the arm's defers with exceptions on — today a panic region covers
+- [x] a panic in a block or `case` arm runs the arm's defers with exceptions on — today a panic region covers
       statement lists and the function's own body only
-- [ ] a `defer` inside an inlined higher-order lambda, or an `if` branch answering a value, built — today refused on
+- [x] a `defer` inside an inlined higher-order lambda, or an `if` branch answering a value, built — today refused on
       wasm with a located error no decision states
-- [ ] a `val` shadowing, after the `defer` in the same block, a name the deferred code reads: the deferred code reads
+- [x] a `val` shadowing, after the `defer` in the same block, a name the deferred code reads: the deferred code reads
       the binding in scope at the `defer` (names bind there, only the value is read late — 539's amendment)
-- [ ] a deferred statement that panics on an inline exit path inside an enclosing region runs once (`attempt` around
+- [x] a deferred statement that panics on an inline exit path inside an enclosing region runs once (`attempt` around
       a `return` with a panicking inner defer)
 - [ ] question 539-b's answer: a `defer` and the program's `needs`
 
