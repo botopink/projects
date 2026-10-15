@@ -2071,14 +2071,17 @@ row for 02 and 05, not edited here.
 
 - [ ] `zig build test-libs` reads every member's row at its previous count (the last recorded whole run, 138's gate: 125 passed) — read on the next cold gate. Measured for std and the seven `-test` members: `std`, `emilia-test`, `erika-test`, `jhonstart-test`, `onze-test` pass on commonJS and erlang, `jhonstart-dom-test` on commonJS, `rakun-test` on erlang, `rakun-starter-test` compiles (no tests); 12 passed, 0 failed, 1 without tests, 3 restrictions audited
 
-#### Step 6 — conditional on `decision 506`: `io.process` signals and a line reader (was `97-std-dedupe` s6)
+#### Step 6 — decision 506 (c)'s std half: `io.stdin`, `io.terminal`, `io.process` signals and `spawn` (was `97-std-dedupe` s6)
 
-(a): `process.onSignal`, `process.forwardSignals(child)`, `io.stdin.readLine()`. (b), recommended:
-onze 50's boxes take their (b) shape.
+std gains a CLI's host primitives (506 (1)); the `cli` library (`botopink/cli`) and onze's use of it (506 (2), (3)) are
+other repositories' steps.
 
-- [ ] under (a): a spawned child receives the `SIGTERM` sent to its parent, asserted on both
-      targets with a child that prints on the signal; `readLine` answers a line without its newline
-- [ ] under (b): `libs/std/AGENTS.md` states std has no signal or TTY surface and why
+- [ ] `io.stdin`: `readLine() -> @Task<?string>` (the line without its newline, `null` at end of input), `isTTY()`
+- [ ] `io.terminal`: `stdoutIsTTY()`, `size() -> ?#(i32, i32)`, `setRaw(on)`, `keys() -> Stream<Key>`
+- [ ] `io.process`: `enum Signal { Int, Term, Hup, Winch }`, `onSignal(s, f)`, `spawn(cmd, args) -> @Result<Child,
+      ProcessError>` with `Child.wait()`, `kill(s)`, `forwardSignals()` — a spawned child receives the `SIGTERM` sent to
+      its parent, asserted with a child that prints on the signal
+- [ ] errors typed by module (431-a); every cell the same on commonJS, erlang and beam; a located refusal on wasm
 
 #### Gate additions (was `97-std-dedupe` gate)
 
@@ -2113,7 +2116,6 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
 - [ ] decision 561's backtick identifier: the lexer's token (an empty one refused), every name position the parser
       takes, each backend's collision-free mapping, diagnostics in the backtick form; `not-found.bpp` imported as
       `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
-- [ ] 97 s6 rewritten to decision 506's answer (c) — its boxes are written for (a) / (b) · question B-27-c
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

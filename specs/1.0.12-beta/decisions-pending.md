@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**128 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -79,10 +79,9 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
-| 2 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 3 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 4 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 1 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 2 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 3 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -827,24 +826,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 156's wasm markers.
-
-#### B-27-c · 97 s6 under decision 506's answer (c): what are its boxes? (decision 506; 144 B-27)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): the step is rewritten to (c)'s std half, its (a) / (b) boxes removed** — the coordinator writes it from 506 (c)'s text at the next spec pass; this question records that the step as written cannot be built.
-- **Context.** 97 s6 — now a step of 144 B-27 — was written before decision 506 was answered, with boxes for 506's options (a) (std gains `io.process` signals and a line reader) and (b) (std states it has no signal or TTY surface). 506 was answered (c): std gains a CLI's host primitives (`io.stdin`, `io.terminal`, `io.process` signals and `spawn`) and a new `cli` library builds on them. Neither set of boxes describes (c), so the step cannot be built as written; the question asks for it to be rewritten.
-- **Measured.** 506 answered (c); 97 s6's boxes are written for (a) and (b).
-- **Options.**
-  (a) Rewritten to (c).
-  ```text
-  Step 6 — 506 (c)'s std half: `io.stdin`, `io.terminal`, `io.process` signals and `spawn`
-  - [ ] 506 (1)'s host cells on commonJS, erlang and beam; a located refusal on wasm
-  ```
-  (b) Kept as written.
-  ```text
-  - [ ] under (a): a spawned child receives the `SIGTERM` sent to its parent …
-  - [ ] under (b): `libs/std/AGENTS.md` states std has no signal or TTY surface and why
-  ```
-- **Recommendation.** (a): the step's boxes follow the answer 506 gave; boxes for options 506 did not choose can never be checked.
-- **Blocks.** 144 B-27's 97 s6.
 
 #### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
 - **Answered (the maintainer, 2026-10-12; awaiting its number in `decisions-taken.md`):** **(f), a sixth option: the prelude is the items marked `#[bpp.htmlPrelude]` where they are declared, one by one.** A marked `pub val` / `pub fn` / `pub type` of a module the package's root (s23-i) reaches through `pub mod` only — the root itself included — is in the prelude: a `.bpp` sees it by its plain name without importing (`#[bpp.htmlPrelude] pub fn Card(…)` in `src/components.bp`, `pub mod components;` in the root, `<Card/>` in a `.bpp`). The root re-exports nothing for it. A `pub` item without the marker is the library's API, not the prelude. Imports are private — the `import {bpp} from "std";` each marked module needs included — so none reaches a `.bpp`. No name is shadowed: two marked items of one name, or a `.bpp` that declares or imports a name the prelude already gives, is refused, located, naming both places (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Refused, located: the marker on an item without `pub`, on a `mod`, in a module reached through a private `mod` (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), or on an item re-exporting another package's item (242). `src/prelude.bp` and its `pub val prelude = bpp.Prelude()` go. Front 116 lists a package's prelude — every item, its name and where it is declared — by `botopink prelude` and in the language server (a `.bpp` name's origin on hover). Amends 361 and 270. **Under B-55-a (e)** (2026-10-12): the prelude is any marked `pub` item outside `src/internal/`; there is no root to reach it from.

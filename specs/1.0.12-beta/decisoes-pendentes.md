@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**127 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -81,10 +81,9 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
-| 1 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
-| 2 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
-| 3 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
-| 4 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 1 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
+| 2 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
+| 3 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -829,24 +828,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** Os marcadores de wasm do 156.
-
-#### B-27-c · O 97 s6 sob a resposta (c) da decisão 506: quais são as suas caixas? (decisão 506; 144 B-27)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o passo é reescrito para a metade std de (c), as caixas (a) / (b) removidas** — o coordenador o escreve a partir do texto da 506 (c) na próxima passada de specs; esta pergunta registra que o passo como escrito não pode ser construído.
-- **Contexto.** O 97 s6 — agora um passo do 144 B-27 — foi escrito antes de a decisão 506 ser respondida, com caixas para as opções (a) da 506 (o std ganha sinais de `io.process` e um leitor de linhas) e (b) (o std declara que não tem superfície de sinal nem de TTY). A 506 foi respondida (c): o std ganha as primitivas de host de um CLI (`io.stdin`, `io.terminal`, sinais e `spawn` de `io.process`) e uma nova biblioteca `cli` se constrói sobre elas. Nenhum dos dois conjuntos de caixas descreve (c), então o passo não pode ser construído como escrito; a pergunta pede que ele seja reescrito.
-- **Medido.** A 506 foi respondida (c); as caixas do 97 s6 estão escritas para (a) e (b).
-- **Opções.**
-  (a) Reescrito para (c).
-  ```text
-  Step 6 — 506 (c)'s std half: `io.stdin`, `io.terminal`, `io.process` signals and `spawn`
-  - [ ] 506 (1)'s host cells on commonJS, erlang and beam; a located refusal on wasm
-  ```
-  (b) Mantido como escrito.
-  ```text
-  - [ ] under (a): a spawned child receives the `SIGTERM` sent to its parent …
-  - [ ] under (b): `libs/std/AGENTS.md` states std has no signal or TTY surface and why
-  ```
-- **Recomendação.** (a): as caixas do passo seguem a resposta que a 506 deu; caixas para opções que a 506 não escolheu nunca podem ser marcadas.
-- **Trava.** O 97 s6 do 144 B-27.
 
 #### 116-a · O `import {bpp} from "std"` do próprio módulo de prelúdio (decisão 361 × 270) (*proposta*)
 - **Respondida (o mantenedor, 2026-10-12; aguardando seu número em `decisions-taken.md`):** **(f), uma sexta opção: o prelude são os itens marcados `#[bpp.htmlPrelude]` onde são declarados, um a um.** Um `pub val` / `pub fn` / `pub type` marcado de um módulo que a raiz do pacote (s23-i) alcança só por `pub mod` — inclusive a própria raiz — está no prelude: um `.bpp` o vê pelo nome simples sem importar (`#[bpp.htmlPrelude] pub fn Card(…)` em `src/components.bp`, `pub mod components;` na raiz, `<Card/>` num `.bpp`). A raiz não reexporta nada para isso. Um item `pub` sem o marcador é API da biblioteca, não prelude. Imports são privados — inclusive o `import {bpp} from "std";` de que cada módulo marcado precisa — então nenhum chega a um `.bpp`. Nenhum nome é sombreado: dois itens marcados de um nome, ou um `.bpp` que declara ou importa um nome que o prelude já dá, é recusado, localizado, nomeando os dois lugares (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Recusados, localizados: o marcador num item sem `pub`, num `mod`, num módulo alcançado por um `mod` privado (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), ou num item que reexporta um item de outro pacote (242). `src/prelude.bp` e seu `pub val prelude = bpp.Prelude()` saem. A frente 116 lista o prelude de um pacote — cada item, seu nome e onde é declarado — por `botopink prelude` e no language server (a origem de um nome de `.bpp` no hover). Amenda a 361 e a 270. **Sob a B-55-a (e)** (2026-10-12): o prelude é qualquer item `pub` marcado fora de `src/internal/`; não há raiz a partir da qual alcançá-lo.
