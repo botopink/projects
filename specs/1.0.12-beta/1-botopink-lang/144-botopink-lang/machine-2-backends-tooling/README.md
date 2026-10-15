@@ -1831,8 +1831,9 @@ import {mark, show} from "lib";
 pub fn main() { show(@TypeInfo.all(with: mark)); }      // erlang: one · beam: the record
 ```
 
-Likely B-95's cause (`Declared` is the compiler's record, which the dependency does not declare: `'__bp_field'/2`); built
-with B-95.
+B-95's cause (`Declared` is the compiler's record, which the dependency does not declare: `'__bp_field'/2`). B-95's fix
+covers only `Asset` and `SourceLocation`: read through the value's tag, it regressed the comptime builtins that are maps
+at run time (`@Decl`). The general fix needs the emitter to know which imported records are tagged tuples.
 
 - [ ] a `Declared`'s field read anywhere answers the field on beam; a cell on every target
 - [ ] rakun's `conformance/rakun/boot_modules` green on beam (a 150 consumer row)
@@ -1954,8 +1955,8 @@ failed module's own diagnostics print.
 `b.length` on a `Bytes` lowers to `string:length/1` on erlang and beam: a `badarg` on bytes that are not UTF-8, and a
 character count on bytes that are. std's `io/fs.bp` calls `b.length()` to avoid it.
 
-- [ ] a cell: `b.length` of a `Bytes` holding a byte ≥ 0x80 answers its byte count, red on erlang and beam today
-- [ ] std's `io/fs.bp` back to the property where it chose the call to avoid the defect
+- [x] a cell: `b.length` of a `Bytes` holding a byte ≥ 0x80 answers its byte count, red on erlang and beam today
+- [x] std's `io/fs.bp` back to the property where it chose the call to avoid the defect
 
 ### B-95 — beam: a field read on a type the module does not declare answers the whole record
 
@@ -1965,8 +1966,13 @@ On beam a field read on a value whose type the module does not declare (std read
 compiler's record) lowers to `'__bp_field'/2`, which answers the whole record. std reads `Asset`'s fields through two
 host cells (`assetPath`, `assetHandle`) to avoid it.
 
-- [ ] a cell: a field read on an imported record the module does not declare, red on beam today
-- [ ] std's two host cells removed, `Asset`'s fields read directly
+- [x] a cell: a field read on an imported record the module does not declare, red on beam today — on commonJS, erlang
+      and beam; wasm out until 164 s2c's box
+- [x] std's two host cells removed, `Asset`'s fields read directly — `assetPath` removed; the memory handle
+      `{mem, bytes, counters}` stays a host cell (`memoryHandle`), a value only the host builds
+
+The fix reads the field through the value's own tag for the records the compiler splices (`Asset`,
+`SourceLocation`); a general one regressed the comptime builtins that are maps at run time (`@Decl`) — B-97's.
 
 ### B-96 — an ambient behavior as a parameter type (decision 539 (6))
 
