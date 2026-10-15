@@ -2110,7 +2110,9 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
 
 - [ ] a `.bpp` declaration written after a statement refused at the declaration, naming the statement before it
       (decision 552); the unfold stops moving it — a refusal cell
-- [ ] `not-found.bpp`: how an importer spells a file name that is not an identifier · question B-27-b
+- [ ] decision 561's backtick identifier: the lexer's token (an empty one refused), every name position the parser
+      takes, each backend's collision-free mapping, diagnostics in the backtick form; `not-found.bpp` imported as
+      `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
 - [ ] 97 s6 rewritten to decision 506's answer (c) — its boxes are written for (a) / (b) · question B-27-c
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)

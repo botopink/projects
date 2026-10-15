@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**130 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **553**.
+number, which is **562**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -80,11 +80,10 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **B-99-b** — does a function reading its catalogue parameter run at build or at run time? (§ Front 165) | whether `rakun.boot()`, reading the program's catalogue through 551's default, may start modules at run time, or is a build-only function as 376 (1) makes it today | 165 s5 → 165 s7, front 165's close | (b) reading `x.value` of a non-template function's `@Expr<T>` parameter is no build resource |
-| 2 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
-| 3 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
-| 4 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 5 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 6 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 2 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
+| 3 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 4 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 5 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -829,22 +828,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 156's wasm markers.
-
-#### B-27-b · How does an importer spell a `.bpp` file whose name is not an identifier (`not-found.bpp`)? (decisions 199, 289; 144 B-27)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): it does not — such a file is a route's leaf, read by the router by path, never imported; importing it is refused naming the file** — a module name is an identifier everywhere else.
-- **Context.** In jhonstart's routing (now the package `rakun-bpp`, mono-a), a file named `not-found.bpp` is the page shown for an unknown route. Its name is not an identifier, so no `import {…}` can name it. Decision 289 unfolds a `.bpp` to an anonymous default function and, for this case, says "the importer aliases it" (`ctr-t`), but no spelling for that import exists. 144 B-27 needs to know whether such a file can be imported at all before its `not-found.bpp` row is built (decisions 199, 289).
-- **Measured.** No importer spelling exists; `not-found.bpp` is jhonstart's convention.
-- **Options.**
-  (a) Not importable.
-  ```bp
-  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
-  ```
-  (b) A quoted path.
-  ```bp
-  import "not-found" as NotFound;   // NotFound is the file's default function: <NotFound /> renders the page
-  ```
-- **Recommendation.** (b): decision 289 already says the importer aliases such a file (`ctr-t`), so (a) would contradict a taken decision; the quoted path is the spelling 289 leaves open.
-- **Blocks.** 144 B-27's `not-found.bpp` row.
 
 #### B-27-c · 97 s6 under decision 506's answer (c): what are its boxes? (decision 506; 144 B-27)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): the step is rewritten to (c)'s std half, its (a) / (b) boxes removed** — the coordinator writes it from 506 (c)'s text at the next spec pass; this question records that the step as written cannot be built.

@@ -1,11 +1,11 @@
 # Decisões pendentes — 1.0.12-beta
 
-**130 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**129 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
 - Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
-  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **553**.
+  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **562**.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **553**.
+número livre, que é **562**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -82,11 +82,10 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **B-99-b** — uma função que lê seu parâmetro de catálogo roda no build ou em tempo de execução? (§ Frente 165) | se `rakun.boot()`, lendo o catálogo do programa pelo default da 551, pode iniciar módulos em tempo de execução, ou é uma função só de build como a 376 (1) a faz hoje | 165 s5 → 165 s7, o fechamento da frente 165 | (b) ler `x.value` do parâmetro `@Expr<T>` de uma função que não é template não é recurso de build |
-| 2 | **B-27-b** — importar um arquivo `.bpp` cujo nome não é identificador (`not-found.bpp`) (§ Máquina 1) | se um arquivo de página como `not-found.bpp` pode ser importado afinal, e como se escreve | a linha `not-found.bpp` do 144 B-27 | (b) um caminho entre aspas, com alias — o que a 289 já diz |
-| 3 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
-| 4 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
-| 5 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
-| 6 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 2 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
+| 3 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
+| 4 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
+| 5 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -831,22 +830,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** Os marcadores de wasm do 156.
-
-#### B-27-b · Como quem importa escreve um `.bpp` cujo nome não é identificador (`not-found.bpp`)? (decisões 199, 289; 144 B-27)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): não escreve — um arquivo assim é a folha de uma rota, lida pelo router pelo caminho, nunca importada; importá-lo é recusado nomeando o arquivo** — um nome de módulo é um identificador em todo outro lugar.
-- **Contexto.** No roteamento do jhonstart (agora o pacote `rakun-bpp`, mono-a), um arquivo chamado `not-found.bpp` é a página mostrada para uma rota desconhecida. Seu nome não é um identificador, então nenhum `import {…}` consegue nomeá-lo. A decisão 289 desdobra um `.bpp` numa função default anônima e, para este caso, diz "the importer aliases it" (`ctr-t`), mas não existe grafia para esse import. O 144 B-27 precisa saber se um arquivo assim pode ser importado afinal antes que a sua linha do `not-found.bpp` seja construída (decisões 199, 289).
-- **Medido.** Não existe grafia de import; `not-found.bpp` é convenção do jhonstart.
-- **Opções.**
-  (a) Não importável.
-  ```bp
-  import {not-found};   // refused: `not-found.bpp` is read by the router, not imported
-  ```
-  (b) Um caminho entre aspas.
-  ```bp
-  import "not-found" as NotFound;   // NotFound is the file's default function: <NotFound /> renders the page
-  ```
-- **Recomendação.** (b): a decisão 289 já diz que o importador dá alias a um arquivo assim (`ctr-t`), então (a) contradiria uma decisão tomada; o caminho entre aspas é a grafia que a 289 deixa em aberto.
-- **Trava.** A linha do `not-found.bpp` do 144 B-27.
 
 #### B-27-c · O 97 s6 sob a resposta (c) da decisão 506: quais são as suas caixas? (decisão 506; 144 B-27)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): o passo é reescrito para a metade std de (c), as caixas (a) / (b) removidas** — o coordenador o escreve a partir do texto da 506 (c) na próxima passada de specs; esta pergunta registra que o passo como escrito não pode ser construído.
