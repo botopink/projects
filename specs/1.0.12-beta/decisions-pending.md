@@ -52,7 +52,7 @@ and the compiler checks the two are equal. **Recommendation (a), by name**: one 
 s3 piece that can run now beside s2.
 
 Answer (tick one per question):
-- [ ] (a) by name — the `.wat` writes `$str` / `$arr_any`, the reader resolves them; a `.wat` declaring a type is refused **(recommended)**
+- [x] (a) by name — the `.wat` writes `$str` / `$arr_any`, the reader resolves them; a `.wat` declaring a type is refused **(recommended)**
 - [ ] (b) declared in each `.wat` — `(type $str …)` written there, checked equal to the codegen's
 
 **2 · 164-s3-a — what the comptime runs on once the Zig term library goes.** Every `comptime` value today is an Erlang

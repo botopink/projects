@@ -52,7 +52,7 @@ representação vive num lugar só (442 (3)); uma cópia em cada `.wat` é uma s
 **Bloqueia:** o s3 P0 (o leitor de `.wat`), a única peça do s3 que pode rodar agora ao lado do s2.
 
 Resposta (marque uma por pergunta):
-- [ ] (a) pelo nome — o `.wat` escreve `$str` / `$arr_any`, o leitor os resolve; um `.wat` que declara um tipo é recusado **(recomendada)**
+- [x] (a) pelo nome — o `.wat` escreve `$str` / `$arr_any`, o leitor os resolve; um `.wat` que declara um tipo é recusado **(recomendada)**
 - [ ] (b) declarado em cada `.wat` — `(type $str …)` escrito lá, checado igual ao do codegen
 
 **2 · 164-s3-a — sobre o que o comptime roda quando a biblioteca de termos em Zig sair.** Todo valor de `comptime` hoje é
