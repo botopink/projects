@@ -2037,7 +2037,7 @@ files found in src/` — a project suite holds `test/` alone.
       no suite left out by name
 - [ ] `scripts/tsc-check.sh` green on `feat`, read from `test.yml` on GitHub
 
-### B-108 — beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop
+### B-109 — beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 

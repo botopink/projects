@@ -339,5 +339,12 @@ Where each step is (its machine's folder holds its whole text).
 | B-98 | [1](machine-1-checker/README.md) | a module named like its package (`rakun/rakun`) reports every `pub` name declared twice (front 165 s5) |
 | B-99 | [1](machine-1-checker/README.md) | a library's catalogue read at the caller: `rakun.boot()` with no argument answering the program's `@TypeInfo.all` (front 165 s5, mono-a) |
 | B-100 | [2](machine-2-backends-tooling/README.md) | the tooling reads the libraries at their new homes: rakun's workspace, `query` (front 165 s8) |
+| B-101 | [2](machine-2-backends-tooling/README.md) | commonJS: a `case` no arm matches answers `undefined` instead of raising `crash` (535, 546) |
+| B-102 | [2](machine-2-backends-tooling/README.md) | erlang: an external template's Erlang-escaped quote loses its backslash |
 | B-103 | [2](machine-2-backends-tooling/README.md) | erlang and beam: `try … catch` contains a `host` raise — only `attempt` may (431, 546; front 165) |
+| B-104 | [2](machine-2-backends-tooling/README.md) | `continue :outer` is not read (541 (2)) |
+| B-105 | [2](machine-2-backends-tooling/README.md) | beam: a loop's label is ignored (541 (2)) |
+| B-106 | [2](machine-2-backends-tooling/README.md) | erlang: a value `if` whose branch reassigns a `var` is refused by erlc (539, 541) |
+| B-107 | [2](machine-2-backends-tooling/README.md) | `Index` and `Slice` are ambient (decision 63) but not as `Display` and `Closeable` are |
 | B-108 | [2](machine-2-backends-tooling/README.md) | `scripts/tsc-check.sh` red on botopink-lang's own cells: a `.d.ts` naming `Declared`, the `conformance/test/` project suites |
+| B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
