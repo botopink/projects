@@ -152,8 +152,9 @@ Answer (tick one per point):
 - [ ] (2)(b) spelled `try`, already a keyword: `fn try parse(…)`
 - [ ] (3)(a) the `@` types become std types in a step of their own, after the markers **(recommended)**
 - [ ] (3)(b) in the same step as the markers
-- [ ] (4)(a) `async iter` writes a `Stream<T>` (`yield` and `await`) — 540's `lines()` / `chunks()` are written so **(recommended)**
+- [ ] (4)(a) `async iter` writes a `Stream<T>` (`yield` and `await`)
 - [ ] (4)(b) no combination: a `Stream` is only consumed (`for await`), made by std's host bindings
+- [x] (4)(c) `iter` alone writes both, the return type deciding: `Iterator<T>` (`yield`), `AsyncIterator<T>` (`yield` and `await`); `@Stream` renamed `AsyncIterator` **(recommended)**
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1240,7 +1241,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 
 #### mark-a · A marker on every body that compiles specially: `iter`, `async`, `component`, `result` (decisions 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525; 541-c; 144 B-88)
 - **Proposed (the maintainer, 2026-10-15; its open points awaiting the maintainer):** a function or lambda whose body writes `yield`, `await`, `use`, `try` or `throw` says so with a marker; the marker says how the body compiles, the return type only what it answers — so `Iterator`, `Task`, `Result`, `Component` and `Stream` can become ordinary std types (the maintainer's note at 541-c).
-  1. **The markers.** `result`: `try`, `throw` (`return v` is `Ok(v)`), answers `Result<T, E>`. `async`: `await`, `try`, `throw`, answers `Task<T>`, or `Task<Result<T, E>>` when it writes `try` / `throw` (a `Task<T>` does not fail, 432). `component`: `use`, `await`, `try`, `throw`, answers `Component<R>`; whether it is asynchronous stays the hooks list's mark (375); a `throw` reaches the nearest `ErrorBoundary` (414, 504). `iter`: `yield` only, answers `Iterator<T>`; an iterator that fails yields `Error(e)` itself. No other combination of markers; whether `async iter` writes a `Stream<T>` is open point (4).
+  1. **The markers.** `result`: `try`, `throw` (`return v` is `Ok(v)`), answers `Result<T, E>`. `async`: `await`, `try`, `throw`, answers `Task<T>`, or `Task<Result<T, E>>` when it writes `try` / `throw` (a `Task<T>` does not fail, 432). `component`: `use`, `await`, `try`, `throw`, answers `Component<R>`; whether it is asynchronous stays the hooks list's mark (375); a `throw` reaches the nearest `ErrorBoundary` (414, 504). `iter`: `yield` only, answers `Iterator<T>`; an iterator that fails yields `Error(e)` itself. No other combination of markers; how a `Stream` is written is open point (4).
   2. **Placement.** After `fn` in a declaration (`fn iter contar()`) and in a `fn` expression (`fn iter () -> …`); on a lambda as open point (1) says.
   3. **Refusals.** The keyword without its marker (`yield-without-generator`, `await-outside-async`, …, the hint naming the marker); a marker whose return type differs (`marker-type-mismatch`); a marked lambda whose expected type differs (`xs.forEach(iter { x -> yield x })`: an `iter` lambda where `fn(x: T)` is expected); a marked lambda with no expected type and no annotation (147).
   4. **The type alone needs no marker.** A function that hands on an `Iterator`, a `Task` or a `Result` without writing the keyword is written as today (`fn buscar(id: i32) -> Task<User> { http.get(…) }`).
@@ -1257,8 +1258,12 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   (1) A lambda's marker: (a) ★ before the brace — `iter { -> yield 1 }`, `async { x -> await f(x) }`; `->` already tells a lambda from a block (525), so `async { … }` stays the block and no name is reserved; (b) after the brace — `{ iter -> yield 1 }`; the four words are reserved, no parameter or binding named `result`.
   (2) `result`'s spelling: (a) ★ `result`, a marker only after `fn` or before a lambda's brace; (b) `try`, already a keyword (`fn try parse(…)`).
   (3) The `@` types: (a) ★ `Iterator`, `Task`, `Result`, `Component`, `Stream` become std types in a step of their own once the markers land; (b) in the same step.
-  (4) Writing a `Stream` (`@Stream` exists: 540's `File.lines()` / `chunks()`, 539's `defer` in a stream, consumed by `for await`): (a) ★ `async iter`, `yield` and `await`, answers `Stream<T>` — the one way to write one, std's included; (b) no marker writes one: a `Stream` is only consumed, made by std's host bindings.
-- **Recommendation.** (a) for each: (1) reserves no name and gives a lambda and a block one rule; (2) names what the body answers; (3) keeps the markers' step mechanical; (4) 540 already answers `Stream`s, and std writes them in botopink as any program would. Migration: a codemod adds the marker wherever a body writes the keyword, one landing per repository. Amends 541 (2), 375 (a component's marker is written; its asynchrony stays inferred), 431 (`return v` as `Ok(v)` only under `result` or `async`); answers 541-c.
+  (4) Writing a `Stream` (`@Stream` exists: 540's `File.lines()` / `chunks()`, 539's `defer` in a stream, consumed by `for await`): (a) ★ `async iter`, `yield` and `await`, answers `Stream<T>` — the one way to write one, std's included; (b) no marker writes one: a `Stream` is only consumed, made by std's host bindings; (c) ★ `iter` alone writes both, the return type deciding — `Iterator<T>` with `yield`, `AsyncIterator<T>` with `yield` and `await` (an `await` in an `iter` answering `Iterator<T>` refused, the hint naming `AsyncIterator<T>`); `@Stream` is renamed `AsyncIterator` (539, 540 follow), consumed by `for await`. The two types stay apart: an `Iterator` that may suspend would make every `for` over it, and every function holding one, asynchronous.
+  ```bp
+  fn iter lines(f: File) -> AsyncIterator<Result<string, FsError>> { loop { val chunk = try await f.read(4096); …; yield line } }
+  for await line in lines(f) { … }
+  ```
+- **Recommendation.** (a) for (1)–(3), (c) for (4): (1) reserves no name and gives a lambda and a block one rule; (2) names what the body answers; (3) keeps the markers' step mechanical; (4) (c): one marker writes both, as `component` allows `await` with no `async` (375), and the name says what the type is. Migration: a codemod adds the marker wherever a body writes the keyword, one landing per repository. Amends 541 (2), 375 (a component's marker is written; its asynchrony stays inferred), 431 (`return v` as `Ok(v)` only under `result` or `async`); answers 541-c.
 - **Blocks.** 541-c (B-88 box 2).
 
 #### 485-b · A refusal's printed line: `error[<code>]: <message>` or `error: <code>: <message>`? (decisions 475 (2), 485; 144 B-88)
