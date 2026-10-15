@@ -80,6 +80,8 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 144 botopink-lang
 
 - [x] 144 B-103 — erlang and beam: `try … catch` handles only its operand's `Error`; a `host`, `panic` or `crash` raise propagates (431, 546); rakun-app's `navigation_test` test back
+- [ ] 144 B-112 — `test-analysis-equivalence` reads rakun's conformance by feature (548) · nothing
+- [ ] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace (548) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-98 — a module named like its package reports every `pub` name declared twice · nothing
@@ -215,7 +217,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s9 — one conformance read by feature, its code linked `{src/main.bp}` (548) · nothing
+- [ ] 165 s9 — one root manifest in place of the feature manifests (the rest landed: cells by package and feature, each `docs.md` beside its code, code linked) · 144 B-113
 - [ ] 165 s5 — `rakun.boot()` and each package declaring its module · 144 B-98, B-99 (question B-99-a)
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 

@@ -347,6 +347,8 @@ Where each step is (its machine's folder holds its whole text).
 | B-106 | [2](machine-2-backends-tooling/README.md) | erlang: a value `if` whose branch reassigns a `var` is refused by erlc (539, 541) |
 | B-107 | [2](machine-2-backends-tooling/README.md) | `Index` and `Slice` are ambient (decision 63) but not as `Display` and `Closeable` are |
 | B-108 | [2](machine-2-backends-tooling/README.md) | `scripts/tsc-check.sh` red on botopink-lang's own cells: a `.d.ts` naming `Declared`, the `conformance/test/` project suites |
+| B-112 | [2](machine-2-backends-tooling/README.md) | `test-analysis-equivalence` reads rakun's conformance by feature (548, front 165 s9) |
+| B-113 | [2](machine-2-backends-tooling/README.md) | `botopink cell check` keeps a cell's path inside its workspace, so one root manifest serves (548) |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

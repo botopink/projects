@@ -2069,6 +2069,30 @@ of its own.
 - [x] a `val` annotation carries its location; a bare unknown name in it refused `unknown type` at the name, and the
       generic form's refusal (cell `unknown_generic_type_val`) moved to the name — a refusal cell, red today
 
+### B-112 — `test-analysis-equivalence` reads rakun's conformance by feature (decision 548, front 165 s9)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+165 s9 regrouped rakun's cells as `conformance/<package>/<feature>/<cell>/`, each feature directory the workspace of its
+cells. `modules/compiler-cli/tests/analysis_equivalence.sh` still reads `conformance/<package>/botopink.json` and
+`conformance/<package>/<cell>`, and `build.zig`'s comment names the same roots.
+
+- [ ] the script reads each cell at its feature directory, with the feature's manifest; `zig build
+      test-analysis-equivalence` green in the meta checkout
+
+### B-113 — `botopink cell check` keeps a cell's path inside its workspace (decision 548, front 165 s9)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`cell check` copies a cell to `<scratch>/<basename>` and writes the workspace manifest beside it with the same member
+globs (`cell.zig`'s copy, the manifest's `workspaceOf` / `listsMember` matching only `<dir>/*` children). A root whose
+members are `<package>/*` or `*/*` lists the cell in place but not its flat copy: the cell answers `unresolved import
+source "rakun"`. So rakun's suite carries one manifest per feature instead of one root.
+
+- [ ] the copy keeps the cell's path relative to the workspace root, so a nested member glob finds it; a cell (a
+      workspace with `group/*` members, a cell two levels down) red today
+- [ ] rakun's feature manifests folded into one `conformance/botopink.json` (a 150 consumer row; 165 s9's box)
+
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet

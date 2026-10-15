@@ -1143,6 +1143,18 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (b): a assinatura diz que a função lê o catálogo do chamador, reusa os caminhos de coleta/resposta/staleness/nível B da 353, a 343 e a s23-i (d) (1)–(3) ficam de pé, e `rakun.boot()` não recebe argumento; (a) continua legal como override explícito.
 - **Bloqueia.** 144 B-99; 165 s5.
 
+#### 548-a · A referência de toda biblioteca linka seu código e checa os links? (decisão 548; 461, 463)
+- **Medido.** A decisão 548 faz a referência do rakun linkar seu código (`{src/main.bp}`, a base o diretório do `docs.md`) e o rakun checa todo link com seu próprio `scripts/check-doc-links.sh`, rodado pelo seu `repository-stages.sh`. As outras bibliotecas e o botopink-lang mantêm o `<!-- example: <cell> -->` da 461 / 463. O runner compartilhado (`runner-standalone.sh`, um texto entre as bibliotecas, check 4 da CI) não conhece nenhuma das formas.
+- **Opções.** (a) ★ Toda biblioteca e o botopink-lang passam à forma da 548, a checagem de links no runner compartilhado (e `zig build test-docs` lendo `{path}`), uma frente por repositório. (b) Só o rakun; os outros mantêm `<!-- example -->`.
+- **Recomendação.** (a): um só jeito de ler uma referência entre os repositórios.
+- **Bloqueia.** Nada — o rakun é construído como a 548 diz.
+
+#### 548-b · Os nomes de código que guardam o nome de uma biblioteca antiga (frente 165)
+- **Medido.** Depois do 165 os nomes de pacote são novos, mas o código guarda os antigos: `emilia()`, `emiliaWith`, `emiliaPlugin`, `emilia.bp`, a recusa `emilia-hash-split`, os sidecars `jhonstart_*.erl`, `OnzeConfig`, `Onze.run`, `ONZE_PUBLIC_`, `/_onze/`, `.onze`, `onze_main.bp`, os diretórios de exemplo `examples/rakun-stylesheet/emilia-*` e `examples/rakun-bpp/jhonstart-*`.
+- **Opções.** (a) ★ Um passo do 150 os renomeia para o vocabulário do pacote (um codemod, todo consumidor e toda cell no mesmo commit). (b) Ficam: os nomes são a API, só o nome do pacote mudou.
+- **Recomendação.** (a): quem lê encontra um nome para uma coisa.
+- **Bloqueia.** Nada.
+
 #### 165-a · Onde ficam as linhas do conjunto de versões dos pacotes juntados (decisão 113; frente 165 s2)
 - **Medido.** O `version_set.bp` do rakun guarda uma linha por pacote da família rakun; seu teste compara cada manifesto com a tabela. Após o 165 s1 o workspace tem 21 pacotes juntados (erika, emilia, styled, jhonstart, onze e seus `*-test` / subpacotes) sem linha: uma linha que nomeia `onze` no `src` do núcleo do rakun quebra o grep da decisão 113 (o núcleo do rakun não nomeia nenhum consumidor), então o teste lê só os manifestos `rakun*`.
 - **Opções.** (a) ★ Nenhuma até o s2: após a renomeação todo pacote é `rakun-*`, as linhas são escritas então, e o filtro sai. (b) Um conjunto de versões fora do núcleo (um arquivo no nível do workspace que o gate lê), todo membro uma linha agora.

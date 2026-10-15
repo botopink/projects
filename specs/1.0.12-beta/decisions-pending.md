@@ -1143,6 +1143,18 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (b): the signature says the function reads the caller's catalogue, it reuses 353's collect/answer/staleness/level-B paths, 343 and s23-i (d) (1)–(3) stand, and `rakun.boot()` takes no argument; (a) stays legal as the explicit override.
 - **Blocks.** 144 B-99; 165 s5.
 
+#### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
+- **Measured.** Decision 548 makes rakun's reference link its code (`{src/main.bp}`, the base the `docs.md`'s directory) and rakun checks every link with its own `scripts/check-doc-links.sh`, run by its `repository-stages.sh`. The other libraries and botopink-lang keep 461 / 463's `<!-- example: <cell> -->`. The shared runner (`runner-standalone.sh`, one text across the libraries, CI check 4) knows neither form.
+- **Options.** (a) ★ Every library and botopink-lang move to 548's form, the link check in the shared runner (and `zig build test-docs` reading `{path}`), one front per repository. (b) rakun alone; the others keep `<!-- example -->`.
+- **Recommendation.** (a): one way to read a reference across the repositories.
+- **Blocks.** Nothing — rakun is built as 548 says.
+
+#### 548-b · The code names that keep a former library's name (front 165)
+- **Measured.** After 165 the package names are new, but the code keeps the old ones: `emilia()`, `emiliaWith`, `emiliaPlugin`, `emilia.bp`, the `emilia-hash-split` refusal, `jhonstart_*.erl` sidecars, `OnzeConfig`, `Onze.run`, `ONZE_PUBLIC_`, `/_onze/`, `.onze`, `onze_main.bp`, the example directories `examples/rakun-stylesheet/emilia-*` and `examples/rakun-bpp/jhonstart-*`.
+- **Options.** (a) ★ A 150 step renames them to the package's vocabulary (a codemod, every consumer and cell in the same commit). (b) They stay: the names are the API, the package name only moved.
+- **Recommendation.** (a): a reader meets one name for one thing.
+- **Blocks.** Nothing.
+
 #### 165-a · Where the joined packages' rows of the version set live (decision 113; front 165 s2)
 - **Measured.** rakun's `version_set.bp` holds one row per package of the rakun family; its test compares every manifest with the table. After 165 s1 the workspace holds 21 joined packages (erika, emilia, styled, jhonstart, onze and their `*-test` / sub-packages) with no row: a row naming `onze` in rakun's core `src` breaks decision 113's grep (rakun's core names no consumer), so the test reads only the `rakun*` manifests.
 - **Options.** (a) ★ None until s2: after the rename every package is `rakun-*`, the rows are written then, and the filter goes. (b) A version set outside the core (a workspace-level file the gate reads), every member a row now.
