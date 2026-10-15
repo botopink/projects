@@ -2417,7 +2417,7 @@ as two modules of one path, and `crossModule.buildIn` counts both.
 
 ### B-99 — a library's catalogue read at the caller: `rakun.boot()` (mono-a)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-86, question B-99-a
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-86 · decision 551
 
 165's plug-and-play spells `rakun.boot()` in the program's `main`: a library function whose body reads
 `@TypeInfo.all(with: rakun.module)` and `@TypeInfo.all(with: rakun.config)` **of the program it is called from**,
@@ -2428,7 +2428,8 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
 (`typeinfo-all-mixed`). The nearest form today, `boot(plan "app", @TypeInfo.all(with: plug.module),
 @TypeInfo.all(with: plug.config))`, puts the catalogue in the program's hands.
 
-- [ ] the language form by which a library call reads the caller program's catalogue at build (a question first if no
-      decision fixes it: a comptime parameter defaulting to the call site's catalogue, a template with no argument, …)
+- [ ] decision 551's form: a `comptime` parameter whose default is a `@TypeInfo.all(…)` query answered for the program
+      the call is compiled in (353's collect / answer / staleness / level-B paths; the names resolved in the declaring
+      module; legal only in the package's root; the explicit arguments still accepted)
 - [ ] a cell: a library's `boot()` with no argument listing the program's `#[m]` declarations of every package
 

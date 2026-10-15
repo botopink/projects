@@ -86,7 +86,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
-- [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · question B-99-a (the form: a `comptime` default answered for the caller, recommended)
+- [ ] 144 B-99 — a library call reading the caller program's catalogue (`rakun.boot()`, mono-a); 165 s5 pauses on it · nothing (decision 551: a `comptime` default answered for the caller)
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
@@ -218,7 +218,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99 (question B-99-a)
+- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
 ## L3 — ready to open now
@@ -321,7 +321,7 @@ last section. Open: 88 questions, 6 contradictions, 100 implementation choices (
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:
-- [ ] B-99-a — 144 B-99, 165 s5 · 434-b — 144 B-17 · B-27-a/b/c — 144 B-27 · B-19-b, B-19-a — 144 B-19 · 116-a — 116 s2 · 50-b — 50 s2, 53 s6
+- [ ] 434-b — 144 B-17 · B-27-a/b/c — 144 B-27 · B-19-b, B-19-a — 144 B-19 · 116-a — 116 s2 · 50-b — 50 s2, 53 s6
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):
 - [ ] 434-b — the at-build render path on one wasm runtime · 144 B-17

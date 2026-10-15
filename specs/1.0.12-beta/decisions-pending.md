@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**128 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **518**.
+number, which is **552**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -164,13 +164,12 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-99-a** — how a library call reads the caller program's catalogue: `rakun.boot()` (§ Front 165) | how `rakun.boot()`, written with no argument in a program's `main`, finds the program's `#[rakun.module]` / `#[rakun.config]` declarations at build | 144 B-99 → 165 s5 → 165 s7, front 165's close | (b) a `comptime` parameter defaulting to `@TypeInfo.all(…)`, answered for the calling program |
-| 2 | **B-27-a** — a `.bpp` header declaration after a statement: moved or refused? (§ Machine 1) | whether a declaration written below a statement in a `.bpp` header is refused, or moved to module level without a word as today | 144 B-27's unfold row | (a) refused, naming the statement before it |
-| 3 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
-| 4 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
-| 5 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 6 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 7 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 1 | **B-27-a** — a `.bpp` header declaration after a statement: moved or refused? (§ Machine 1) | whether a declaration written below a statement in a `.bpp` header is refused, or moved to module level without a word as today | 144 B-27's unfold row | (a) refused, naming the statement before it |
+| 2 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
+| 3 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
+| 4 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 5 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 6 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -1356,32 +1355,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a): the most restrictive reading, one file per module as the twin rules already say.
 - **Blocks.** Nothing — built as (a); 165 s5 drops rakun's empty `rakun.d.bp`.
-
-#### B-99-a · How a library call reads the caller program's catalogue at build: `rakun.boot()` (mono-a; decisions 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
-- **Proposed (fable, 2026-10-15; awaiting the maintainer):** (b): a `comptime` parameter whose default is a `@TypeInfo.all(…)` query is answered for the program the call is compiled in — 353's rule, extended from a template body to a `comptime` default. The names in the default resolve in the declaring module; the catalogue is the caller's. The call is legal only in the package's root (s23-i (d) (1)). The parameter's `.value` answers the entries' data fields; an entry's `value` is passed on, never read at build (356). Level B stores the declaring package and never the calling one. It amends s23-i (d)'s last sentence ("a framework receives the catalogue from the application's root as an argument, never reads it itself"): a framework may also read it through such a default.
-- **Context.** Front 165 makes rakun plug-and-play: a program adds a package to `botopink.json`, writes `rakun.boot()` in its `main`, and `boot` finds every `#[rakun.module]` and `#[rakun.config]` declaration of the program and its dependencies at build (mono-a). Finding them is a catalogue query, `@TypeInfo.all(with: …)` (253, 256): decision 343 reads a catalogue at the entry point, 353 lets a template function's body answer it for the calling program, and s23-i (d) has a framework receive it as an argument. Today a library function that calls `@TypeInfo.all` gets its own library's catalogue, which is empty, so `rakun.boot()` with no argument cannot work. A form must be chosen before 144 B-99 builds it and 165 s5 uses it.
-- **Measured.** No taken decision fixes the form: 353 answers a catalogue per program only inside a template function's body (a literal argument); 343 reads a catalogue at the entry point; s23-i (d) has the framework receive it as an argument. A library function's `@TypeInfo.all` answers in the library's own build (empty); a template needs a literal; `rakun.plan "…"` is refused `expected Expr, got string`; `typeinfo-all-mixed` keeps functions and vals in two queries.
-- **Options.**
-  (a) The program hands the catalogues: nothing changes, two arguments in every program.
-  ```bp
-  fn main() { rakun.boot(@TypeInfo.all(with: rakun.module), @TypeInfo.all(with: rakun.config)); }   // starts what the two catalogues list
-  ```
-  (b) ★ A `comptime` default answered for the calling program:
-  ```bp
-  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module),
-              comptime configs: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: config)) { … }
-  fn main() { rakun.boot(); }   // the program's #[rakun.module] / #[rakun.config] declarations, every package's
-  ```
-  (c) Any catalogue read in a dependency's body answered per program, with nothing in the signature saying so:
-  ```bp
-  pub fn boot() { val ms = comptime @TypeInfo.all(with: module); … }   // the caller's catalogue, though nothing in `boot`'s signature says so
-  ```
-  (d) A template with no meaningful literal.
-  ```bp
-  rakun.boot "";   // today a namespace-qualified template call is refused: expected Expr, got string
-  ```
-- **Recommendation.** (b): the signature says the function reads the caller's catalogue, it reuses 353's collect/answer/staleness/level-B paths, 343 and s23-i (d) (1)–(3) stand, and `rakun.boot()` takes no argument; (a) stays legal as the explicit override.
-- **Blocks.** 144 B-99; 165 s5.
 
 #### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
 - **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `{src/main.bp}`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.

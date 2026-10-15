@@ -1,11 +1,11 @@
 # Decisões pendentes — 1.0.12-beta
 
-**129 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
 - Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
-  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **518**.
+  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **552**.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **518**.
+número livre, que é **552**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -171,13 +171,12 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
-| 1 | **B-99-a** — como uma chamada de biblioteca lê o catálogo do programa chamador: `rakun.boot()` (§ Frente 165) | como `rakun.boot()`, escrito sem argumento no `main` de um programa, encontra as declarações `#[rakun.module]` / `#[rakun.config]` do programa no build | 144 B-99 → 165 s5 → 165 s7, o fechamento da frente 165 | (b) um parâmetro `comptime` com default `@TypeInfo.all(…)`, respondido para o programa que chama |
-| 2 | **B-27-a** — uma declaração de cabeçalho de `.bpp` depois de uma instrução: movida ou recusada? (§ Máquina 1) | se uma declaração escrita abaixo de uma instrução num header de `.bpp` é recusada, ou movida para o nível do módulo sem aviso como hoje | a linha de unfold do 144 B-27 | (a) recusada, nomeando a instrução antes dela |
-| 3 | **B-27-b** — importar um arquivo `.bpp` cujo nome não é identificador (`not-found.bpp`) (§ Máquina 1) | se um arquivo de página como `not-found.bpp` pode ser importado afinal, e como se escreve | a linha `not-found.bpp` do 144 B-27 | (b) um caminho entre aspas, com alias — o que a 289 já diz |
-| 4 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
-| 5 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
-| 6 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
-| 7 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 1 | **B-27-a** — uma declaração de cabeçalho de `.bpp` depois de uma instrução: movida ou recusada? (§ Máquina 1) | se uma declaração escrita abaixo de uma instrução num header de `.bpp` é recusada, ou movida para o nível do módulo sem aviso como hoje | a linha de unfold do 144 B-27 | (a) recusada, nomeando a instrução antes dela |
+| 2 | **B-27-b** — importar um arquivo `.bpp` cujo nome não é identificador (`not-found.bpp`) (§ Máquina 1) | se um arquivo de página como `not-found.bpp` pode ser importado afinal, e como se escreve | a linha `not-found.bpp` do 144 B-27 | (b) um caminho entre aspas, com alias — o que a 289 já diz |
+| 3 | **B-27-c** — as caixas do 97 s6 sob a decisão 506 (c) (§ Máquina 1) | que as caixas do 97 s6, escritas para as opções (a) / (b) da 506, sejam reescritas para a resposta (c) | o 97 s6 do 144 B-27 | (a) reescrito para a metade std de (c) |
+| 4 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
+| 5 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
+| 6 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -1363,32 +1362,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   ```
 - **Recomendação.** (a): a leitura mais restritiva, um arquivo por módulo como as regras de gêmeos já dizem.
 - **Bloqueia.** Nada — construído como (a); o 165 s5 remove o `rakun.d.bp` vazio do rakun.
-
-#### B-99-a · Como uma chamada de biblioteca lê o catálogo do programa chamador no build: `rakun.boot()` (mono-a; decisões 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
-- **Proposta (fable, 2026-10-15; aguardando o mantenedor):** (b): um parâmetro `comptime` cujo default é uma consulta `@TypeInfo.all(…)` é respondido para o programa em que a chamada é compilada — a regra da 353, estendida do corpo de um template para um default `comptime`. Os nomes no default resolvem no módulo que declara; o catálogo é o do chamador. A chamada só é legal na raiz do pacote (s23-i (d) (1)). O `.value` do parâmetro responde os campos de dados das entradas; o `value` de uma entrada é repassado, nunca lido no build (356). O nível B guarda o pacote que declara e nunca o que chama. Emenda a última frase da s23-i (d) ("um framework recebe o catálogo da raiz da aplicação como argumento, nunca o lê ele mesmo"): um framework também pode lê-lo por um default assim.
-- **Contexto.** A frente 165 torna o rakun plug-and-play: um programa adiciona um pacote ao `botopink.json`, escreve `rakun.boot()` no seu `main`, e `boot` encontra toda declaração `#[rakun.module]` e `#[rakun.config]` do programa e das suas dependências no build (mono-a). Encontrá-las é uma consulta de catálogo, `@TypeInfo.all(with: …)` (253, 256): a decisão 343 lê um catálogo no ponto de entrada, a 353 deixa o corpo de uma função template respondê-lo para o programa que chama, e a s23-i (d) faz um framework recebê-lo como argumento. Hoje uma função de biblioteca que chama `@TypeInfo.all` recebe o catálogo da sua própria biblioteca, que é vazio, então `rakun.boot()` sem argumento não funciona. Uma forma precisa ser escolhida antes que o 144 B-99 a construa e o 165 s5 a use.
-- **Medido.** Nenhuma decisão tomada fixa a forma: a 353 responde um catálogo por programa só dentro do corpo de uma função template (um argumento literal); a 343 lê um catálogo no ponto de entrada; a s23-i (d) faz o framework recebê-lo como argumento. O `@TypeInfo.all` de uma função de biblioteca responde no build da própria biblioteca (vazio); um template precisa de um literal; `rakun.plan "…"` é recusado `expected Expr, got string`; `typeinfo-all-mixed` mantém funções e vals em duas consultas.
-- **Opções.**
-  (a) O programa entrega os catálogos: nada muda, dois argumentos em todo programa.
-  ```bp
-  fn main() { rakun.boot(@TypeInfo.all(with: rakun.module), @TypeInfo.all(with: rakun.config)); }   // starts what the two catalogues list
-  ```
-  (b) ★ Um default `comptime` respondido para o programa chamador:
-  ```bp
-  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module),
-              comptime configs: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: config)) { … }
-  fn main() { rakun.boot(); }   // the program's #[rakun.module] / #[rakun.config] declarations, every package's
-  ```
-  (c) Toda leitura de catálogo no corpo de uma dependência respondida por programa, sem nada na assinatura que o diga:
-  ```bp
-  pub fn boot() { val ms = comptime @TypeInfo.all(with: module); … }   // the caller's catalogue, though nothing in `boot`'s signature says so
-  ```
-  (d) Um template sem literal significativo.
-  ```bp
-  rakun.boot "";   // today a namespace-qualified template call is refused: expected Expr, got string
-  ```
-- **Recomendação.** (b): a assinatura diz que a função lê o catálogo do chamador, reusa os caminhos de coleta/resposta/staleness/nível B da 353, a 343 e a s23-i (d) (1)–(3) ficam de pé, e `rakun.boot()` não recebe argumento; (a) continua legal como override explícito.
-- **Bloqueia.** 144 B-99; 165 s5.
 
 #### 548-a · A referência de toda biblioteca linka seu código e checa os links? (decisão 548; 461, 463)
 - **Contexto.** A referência de uma biblioteca — o `docs.md` ao lado das suas cells de conformance — mostra código. As decisões 461 e 463 apontam para o código de uma cell com `<!-- example: <cell> -->`; a decisão 548 (2026-10-15) faz a referência do rakun linkar o seu código em vez disso, como `{src/main.bp}`, e checa que todo link nomeia um arquivo que existe. Hoje só o rakun faz isso; as outras bibliotecas e o botopink-lang mantêm a forma antiga, e o runner que elas compartilham não conhece nenhuma das duas. A pergunta é se todo repositório segue o rakun.
