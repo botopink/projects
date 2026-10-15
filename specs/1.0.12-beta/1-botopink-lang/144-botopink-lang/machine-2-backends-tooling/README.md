@@ -1995,8 +1995,8 @@ B-88 landed `break :outer` from a block or a `case` arm's block on commonJS and 
 not the erlang one) reads no label: a jump to the named loop's exit, and a throw out of a `foldl` fun where the loop is
 one.
 
-- [ ] cell `block_jump_label_reaches_loop` green on beam
-- [ ] `continue :outer` on beam once B-104 lands
+- [x] cell `block_jump_label_reaches_loop` green on beam
+- [x] `continue :outer` on beam once B-104 lands
 
 ### B-106 — erlang: a value `if` whose branch reassigns a `var` is refused by erlc (decisions 539, 541)
 
@@ -2036,6 +2036,17 @@ files found in src/` — a project suite holds `test/` alone.
 - [ ] the walk builds a project suite the way `botopink test` does (its `test/` modules), or reads it by what it holds;
       no suite left out by name
 - [ ] `scripts/tsc-check.sh` green on `feat`, read from `test.yml` on GitHub
+
+### B-108 — beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+B-105 lowers a loop's label on beam by a jump inside a frame and a throw out of a fun. Two shapes are left: a
+`continue :outer` aimed at a loop walked by a fun but written under an in-frame `while` inside it is not lowered, and
+when one inner loop continues two enclosing labels only the first is guarded.
+
+- [ ] both shapes in a cell (`block_jump_label_continue_nested_shapes`), red on beam today, green on every target but
+      wasm (164 s2c)
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
