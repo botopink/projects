@@ -101,7 +101,7 @@ refused `yield-without-generator` — a generator is a declared fn or method, or
 generator; **(c)** any lambda whose expected type is `@Iterator`. **Recommendation (a)**. **Blocks:** B-88 box 2 only.
 
 Answer (tick one per question):
-- [x] (a) no — a generator's expression form is `iter loop` **(recommended)**
+- [ ] (a) no — a generator's expression form is `iter loop` **(recommended)**
 - [ ] (b) a typed `fn() -> @Iterator<T>` expression is a generator
 - [ ] (c) any lambda whose expected type is `@Iterator`
 

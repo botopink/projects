@@ -105,7 +105,7 @@ um gerador; **(c)** qualquer lambda cujo tipo esperado seja `@Iterator`. **Recom
 2 do B-88.
 
 Resposta (marque uma por pergunta):
-- [x] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
+- [ ] (a) não — a forma de expressão de um gerador é `iter loop` **(recomendada)**
 - [ ] (b) uma expressão tipada `fn() -> @Iterator<T>` é um gerador
 - [ ] (c) qualquer lambda cujo tipo esperado seja `@Iterator`
 
