@@ -141,8 +141,8 @@ retorno decide como um corpo compila: `@Iterator` faz um gerador, `@Task` uma m�
 `try` / `throw`, `@Component` uma lambda de render. A proposta do mantenedor: uma função ou lambda cujo corpo escreve
 `yield`, `await`, `use`, `try` ou `throw` o diz com um marcador, e os tipos podem então virar tipos comuns da std.
 Fixado pelo mantenedor: `result` permite `try`, `throw`; `async` permite `await`, `try`, `throw`; `component` permite
-`use`, `await`, `try`, `throw`, um `throw` chegando ao `ErrorBoundary` mais próximo; `iter` permite só `yield`
-(`async iter` é um `Stream`). Abertos: os três pontos abaixo (a entrada completa na § Máquina 2). **Bloqueia:** a 541-c
+`use`, `await`, `try`, `throw`, um `throw` chegando ao `ErrorBoundary` mais próximo; `iter` permite só `yield`.
+Abertos: os quatro pontos abaixo (a entrada completa na § Máquina 2). **Bloqueia:** a 541-c
 (a caixa 2 do B-88).
 
 ```bp
@@ -159,6 +159,8 @@ Resposta (marque uma por ponto):
 - [ ] (2)(b) escrito `try`, já uma palavra reservada: `fn try parse(…)`
 - [ ] (3)(a) os tipos `@` viram tipos da std num passo próprio, depois dos marcadores **(recomendada)**
 - [ ] (3)(b) no mesmo passo dos marcadores
+- [ ] (4)(a) `async iter` escreve um `Stream<T>` (`yield` e `await`) — o `lines()` / `chunks()` da 540 são escritos assim **(recomendada)**
+- [ ] (4)(b) nenhuma combinação: um `Stream` só é consumido (`for await`), feito pelos bindings de host da std
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1245,7 +1247,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 
 #### mark-a · Um marcador em todo corpo que compila de forma especial: `iter`, `async`, `component`, `result` (decisões 541 (2), 125, 147, 375, 388, 392, 414, 431, 432, 504, 523, 525; 541-c; 144 B-88)
 - **Proposto (o mantenedor, 2026-10-15; os seus pontos abertos aguardando o mantenedor):** uma função ou lambda cujo corpo escreve `yield`, `await`, `use`, `try` ou `throw` o diz com um marcador; o marcador diz como o corpo compila, o tipo de retorno só o que ele responde — então `Iterator`, `Task`, `Result`, `Component` e `Stream` podem virar tipos comuns da std (a nota do mantenedor na 541-c).
-  1. **Os marcadores.** `result`: `try`, `throw` (`return v` é `Ok(v)`), responde `Result<T, E>`. `async`: `await`, `try`, `throw`, responde `Task<T>`, ou `Task<Result<T, E>>` quando escreve `try` / `throw` (um `Task<T>` não falha, 432). `component`: `use`, `await`, `try`, `throw`, responde `Component<R>`; se ele é assíncrono continua a marca da lista de hooks (375); um `throw` chega ao `ErrorBoundary` mais próximo (414, 504). `iter`: só `yield`, responde `Iterator<T>`; um iterador que falha faz ele mesmo `yield Error(e)`. `async iter`: `yield` e `await`, responde `Stream<T>`; nenhuma outra combinação.
+  1. **Os marcadores.** `result`: `try`, `throw` (`return v` é `Ok(v)`), responde `Result<T, E>`. `async`: `await`, `try`, `throw`, responde `Task<T>`, ou `Task<Result<T, E>>` quando escreve `try` / `throw` (um `Task<T>` não falha, 432). `component`: `use`, `await`, `try`, `throw`, responde `Component<R>`; se ele é assíncrono continua a marca da lista de hooks (375); um `throw` chega ao `ErrorBoundary` mais próximo (414, 504). `iter`: só `yield`, responde `Iterator<T>`; um iterador que falha faz ele mesmo `yield Error(e)`. Nenhuma outra combinação de marcadores; se `async iter` escreve um `Stream<T>` é o ponto aberto (4).
   2. **Posição.** Depois de `fn` numa declaração (`fn iter contar()`) e numa expressão `fn` (`fn iter () -> …`); numa lambda, como diz o ponto aberto (1).
   3. **Recusas.** A palavra sem o seu marcador (`yield-without-generator`, `await-outside-async`, …, a dica nomeando o marcador); um marcador cujo tipo de retorno difere (`marker-type-mismatch`); uma lambda marcada cujo tipo esperado difere (`xs.forEach(iter { x -> yield x })`: uma lambda `iter` onde se espera `fn(x: T)`); uma lambda marcada sem tipo esperado e sem anotação (147).
   4. **O tipo sozinho não precisa de marcador.** Uma função que repassa um `Iterator`, um `Task` ou um `Result` sem escrever a palavra é escrita como hoje (`fn buscar(id: i32) -> Task<User> { http.get(…) }`).
@@ -1262,7 +1264,8 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   (1) O marcador de uma lambda: (a) ★ antes da chave — `iter { -> yield 1 }`, `async { x -> await f(x) }`; o `->` já distingue uma lambda de um bloco (525), então `async { … }` continua o bloco e nenhum nome é reservado; (b) depois da chave — `{ iter -> yield 1 }`; as quatro palavras reservadas, nenhum parâmetro ou binding chamado `result`.
   (2) A grafia de `result`: (a) ★ `result`, um marcador só depois de `fn` ou antes da chave de uma lambda; (b) `try`, já uma palavra reservada (`fn try parse(…)`).
   (3) Os tipos `@`: (a) ★ `Iterator`, `Task`, `Result`, `Component`, `Stream` viram tipos da std num passo próprio, depois que os marcadores pousarem; (b) no mesmo passo.
-- **Recomendação.** (a) para cada: (1) não reserva nenhum nome e dá a uma lambda e a um bloco uma regra só; (2) nomeia o que o corpo responde; (3) mantém mecânico o passo dos marcadores. Migração: um codemod acrescenta o marcador onde um corpo escreve a palavra, um pouso por repositório. Emenda a 541 (2), a 375 (o marcador de um componente é escrito; a sua assincronia continua inferida), a 431 (`return v` como `Ok(v)` só sob `result` ou `async`); responde a 541-c.
+  (4) Escrever um `Stream` (o `@Stream` existe: o `File.lines()` / `chunks()` da 540, o `defer` num stream da 539, consumido por `for await`): (a) ★ `async iter`, `yield` e `await`, responde `Stream<T>` — o único jeito de escrever um, o da std incluído; (b) nenhum marcador escreve um: um `Stream` só é consumido, feito pelos bindings de host da std.
+- **Recomendação.** (a) para cada: (1) não reserva nenhum nome e dá a uma lambda e a um bloco uma regra só; (2) nomeia o que o corpo responde; (3) mantém mecânico o passo dos marcadores; (4) a 540 já responde `Stream`s, e a std os escreve em botopink como qualquer programa escreveria. Migração: um codemod acrescenta o marcador onde um corpo escreve a palavra, um pouso por repositório. Emenda a 541 (2), a 375 (o marcador de um componente é escrito; a sua assincronia continua inferida), a 431 (`return v` como `Ok(v)` só sob `result` ou `async`); responde a 541-c.
 - **Bloqueia.** A 541-c (a caixa 2 do B-88).
 
 #### 485-b · A linha impressa de uma recusa: `error[<code>]: <message>` ou `error: <code>: <message>`? (decisões 475 (2), 485; 144 B-88)
