@@ -158,20 +158,21 @@ Answer (tick one per question):
 
 The questions that hold machine 1's steps and front 165 back today, most blocking first. Each entry stays in its section; this table indexes them and leaves when they are answered. With § Blocking now — machine 2 above, these are the questions to answer first.
 
-| # | Question | Blocks | Recommendation |
-|---|---|---|---|
-| 1 | **B-99-a** — how a library call reads the caller program's catalogue: `rakun.boot()` (§ Front 165) | 144 B-99 → 165 s5 → 165 s7, front 165's close | (b) a `comptime` parameter defaulting to `@TypeInfo.all(…)`, answered for the calling program |
-| 2 | **434-b** — the render-resident and at-build paths under one wasm comptime runtime (§ Machine 1) | 144 B-17 (134 step 6's 378 (4) box) | as written in the entry |
-| 3 | **B-27-a** — a `.bpp` header declaration after a statement: moved or refused? (§ Machine 1) | 144 B-27's unfold row | as written in the entry |
-| 4 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | 144 B-27's `not-found.bpp` row | as written in the entry |
-| 5 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | 144 B-27's 97 s6 | as written in the entry |
-| 6 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | 144 B-19 step 7 | as written in the entry |
-| 7 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | 144 B-19's row 3 | as written in the entry |
-| 8 | **116-a** — the prelude module's own `import {bpp} from "std"` (§ Machine 1) | 116 step 2's prelude box | as written in the entry |
-| 9 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | 50 step 2; 53 step 6 | as written in the entry |
+| # | Question | What it decides | Blocks | Recommendation |
+|---|---|---|---|---|
+| 1 | **B-99-a** — how a library call reads the caller program's catalogue: `rakun.boot()` (§ Front 165) | how `rakun.boot()`, written with no argument in a program's `main`, finds the program's `#[rakun.module]` / `#[rakun.config]` declarations at build | 144 B-99 → 165 s5 → 165 s7, front 165's close | (b) a `comptime` parameter defaulting to `@TypeInfo.all(…)`, answered for the calling program |
+| 2 | **B-27-a** — a `.bpp` header declaration after a statement: moved or refused? (§ Machine 1) | whether a declaration written below a statement in a `.bpp` header is refused, or moved to module level without a word as today | 144 B-27's unfold row | (a) refused, naming the statement before it |
+| 3 | **B-27-b** — importing a `.bpp` file whose name is not an identifier (`not-found.bpp`) (§ Machine 1) | whether a page file such as `not-found.bpp` can be imported at all, and how it is spelled | 144 B-27's `not-found.bpp` row | (b) a quoted path, aliased — what 289 already says |
+| 4 | **B-27-c** — 97 s6's boxes under decision 506 (c) (§ Machine 1) | that 97 s6's boxes, written for 506's options (a) / (b), are rewritten for the answer (c) | 144 B-27's 97 s6 | (a) rewritten to (c)'s std half |
+| 5 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
+| 6 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 7 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+
+Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
-**548-b** (the code names that keep a former library's name).
+**548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
+refused).
 
 ---
 
@@ -651,6 +652,7 @@ group), answered before every other part of this page; in the order of the steps
 
 #### 434-b · The render-resident and at-build paths under one wasm comptime runtime (434, 378 (4))
 - **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **Every library runs at build on the wasm comptime runtime (434), jhonstart first; a function only Erlang or Node can run is a located error there.** (1) A host cell (`@External.Erlang` / `@External.Node`) reached at build runs through its wasm form — a botopink body (`#[@External.Wasm(fn: …)]`) or a std-wasm export (`std:`, 481) — so `comptime renderToString(<Rodape ano={2026} />)` answers one string for every target. (2) Each library gives its pure cells (escape, formatting, parsing — logic written in Erlang or JS for convenience) a wasm form: jhonstart's renderer (`jhonstart_render.erl`) first, for 144 B-17, then every library front (145–162) in a step of its own. (3) A function with no wasm form — 100% Erlang or Node, or a real host effect (network, database, fs, process) — reached by a `comptime` is refused at build, located, naming the cell: `error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm form — it cannot run at build (give it a botopink body, or remove `comptime`)`. No translation stands in for a missing wasm form at build (no beam-to-wasm fallback), and never the target's VM (c). The build's target does not narrow this: a `comptime` runs on wasm whatever `--target` is, so an erlang build reaching an `@External.Erlang`-only cell at build is refused as a commonJS build is. The comptime's reading is otherwise unchanged (388 (4): `RenderScope.root()`).
+- **Context.** `comptime` evaluates an expression while the program is built and puts its value in the output; decision 378 (4) lets a component be rendered that way, so `comptime renderToString(<Rodape ano={2026} />)` becomes a constant string in the program. Before decision 434 an erlang build did that render on the BEAM; 434 runs every comptime evaluation on wasm only, and jhonstart's renderer is an Erlang sidecar (`jhonstart_render.erl`) with no wasm form. The question is what such a build-time render does when it reaches a function only Erlang or Node can run. The maintainer answered it (above); the answer waits for its number in `decisions-taken.md` before 144 B-17's box is built.
 - **Measured.** 84 sent a comptime evaluation to the target's VM, so an erlang build rendered a `Build` / `Any` component at build on the BEAM (`render_resident`'s erl step) and a commonJS build on wat. 378 (4) asks the comptime runtime to run a component's lambda with `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; 134 step 6's last box (144 B-17). Under 434 the only runtime is wasm, and jhonstart's renderer on the BEAM is a sidecar (`jhonstart_render.erl`).
 - **Options.**
   (a) The renderer runs at build on wasm only: jhonstart's render path reached at build is botopink (or std-wasm), its Erlang cell translated by beam-to-wasm where it has no botopink body; the answer is one string for every target.
@@ -662,6 +664,9 @@ group), answered before every other part of this page; in the order of the steps
   error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
   ```
   (c) Keep the target's VM for at-build rendering alone (a BEAM step inside the compile for erlang/beam builds).
+  ```bp
+  val footer = comptime renderToString(<Rodape ano={2026} />);   // erlang: rendered by a BEAM step inside the compile; commonJS: on wasm
+  ```
 - **Recommendation.** (b) now — no at-build answer that depends on a translation not proved; (a) once beam-to-wasm covers the renderer's cells; never (c), which 434 removes.
 - **Blocks.** 144 B-17 (134 step 6's 378 (4) box); nothing in B-00.
 
@@ -699,6 +704,7 @@ group), answered before every other part of this page; in the order of the steps
 
 #### B-19-a · Where is a type error inside a decorator's member or associated-type source located? (decisions 216, 281; 144 B-19)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the annotation that added it** (`#[maker]`), as `decorator-member-duplicate` is, with the decorator's `addMember` / `addType` call named in the message — the program's reader sees where the code came from; the decorator's author sees which call wrote it.
+- **Context.** A decorator can add members and associated types to the type it annotates — `decl.addMember(…)`, `decl.addType(…)` (decision 216) — and the code it adds is checked with the program. When that added code has a type error, the user sees a diagnostic that points past the last line of their file, because the added source has no place in it. Decision 281 refers to code by reference, so the call that added the code is known; what is open is which of the two places the error points at. 144 B-19's row 3 cannot close until it is chosen.
 - **Measured.** The diagnostic points past the file's last line (the member's source has no span in the program).
 - **Options.**
   (a) At the annotation, the call named.
@@ -709,11 +715,12 @@ group), answered before every other part of this page; in the order of the steps
   ```bp
   decl.addMember("make", fn() -> Self { … })   // error here, in the library
   ```
-- **Recommendation.** (a).
+- **Recommendation.** (a): the program's reader is pointed at a line of their own file, and the message still names the library call that wrote the code.
 - **Blocks.** 144 B-19's row 3.
 
 #### B-19-b · `@TypeInfo.all(member: …)` by reference: what is written, and what does a type that does not conform do? (decisions 256, 281; 144 B-19 step 7)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): `member: Factory.make`, a behavior's associated fn; a catalogued type must `implement Factory`, and one that does not is refused at the query, naming it** — a reference is checked, a string was not (281); conformance by declaration, not by a matching name.
+- **Context.** `@TypeInfo.all(with: entity, member: "make")` lists every declaration the decorator `entity` annotated and gives each entry the type's associated function `make` as its `value`, so an entry point can build one of each (decisions 253, 254, 256: rakun's bean registry is built this way). Decision 281 says no code identifier passes as a string, so `member:` must name the function by reference. Two things are open: how the reference is written, and what happens to a catalogued type that has no such function. 144 B-19 step 7 needs both.
 - **Measured.** `member: "make"` is a string today.
 - **Options.**
   (a) Implementers only, refused otherwise.
@@ -725,7 +732,7 @@ group), answered before every other part of this page; in the order of the steps
   ```bp
   @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
   ```
-- **Recommendation.** (a).
+- **Recommendation.** (a): a reference is checked where a string was not (281), and a type is in the catalogue by what it declares, never silently left out of it.
 - **Blocks.** 144 B-19 step 7.
 
 #### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
@@ -907,23 +914,25 @@ group), answered before every other part of this page; in the order of the steps
 
 #### B-27-a · A `.bpp` header declaration written after a statement: moved or refused? (decisions 199, 212; 144 B-27)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused at the declaration, located, naming the statement before it** — the header reads top to bottom as written; a declaration after a statement would run in an order the file does not show. Changes: a refusal cell; the unfold stops moving it.
+- **Context.** A `.bpp` file is a component written as markup; it opens with a header of botopink code, ended by `---` (decision 212). Decision 199 keeps the header's declarations (`import`, `type`, `pub`) at module level and turns its statements (`val`, `use`) into the body of the function the file unfolds to. Today, a declaration written below a statement is moved out of place without a word, so the file runs in an order other than the one it shows. The choice is whether that stays or becomes a refusal, before 144 B-27's unfold row closes.
 - **Measured.** The unfold moves it after the function, its location mapped back.
 - **Options.**
   (a) Refused.
   ```bp
   val n = props.count;
-fn label() -> string { … }   // refused: a declaration after a statement
+  fn label() -> string { … }   // refused: a declaration after a statement
   ```
   (b) Moved, as built.
   ```bp
   val n = props.count;
-fn label() -> string { … }   // moved to module level
+  fn label() -> string { … }   // moved to module level
   ```
-- **Recommendation.** (a).
+- **Recommendation.** (a): the header reads top to bottom as written; the most restrictive reading (67) refuses what would otherwise be moved without a word.
 - **Blocks.** 144 B-27's unfold row.
 
 #### B-27-b · How does an importer spell a `.bpp` file whose name is not an identifier (`not-found.bpp`)? (decisions 199, 289; 144 B-27)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): it does not — such a file is a route's leaf, read by the router by path, never imported; importing it is refused naming the file** — a module name is an identifier everywhere else.
+- **Context.** In jhonstart's routing (now the package `rakun-bpp`, mono-a), a file named `not-found.bpp` is the page shown for an unknown route. Its name is not an identifier, so no `import {…}` can name it. Decision 289 unfolds a `.bpp` to an anonymous default function and, for this case, says "the importer aliases it" (`ctr-t`), but no spelling for that import exists. 144 B-27 needs to know whether such a file can be imported at all before its `not-found.bpp` row is built (decisions 199, 289).
 - **Measured.** No importer spelling exists; `not-found.bpp` is jhonstart's convention.
 - **Options.**
   (a) Not importable.
@@ -932,28 +941,32 @@ fn label() -> string { … }   // moved to module level
   ```
   (b) A quoted path.
   ```bp
-  import "not-found" as NotFound;
+  import "not-found" as NotFound;   // NotFound is the file's default function: <NotFound /> renders the page
   ```
-- **Recommendation.** (a).
+- **Recommendation.** (b): decision 289 already says the importer aliases such a file (`ctr-t`), so (a) would contradict a taken decision; the quoted path is the spelling 289 leaves open.
 - **Blocks.** 144 B-27's `not-found.bpp` row.
 
 #### B-27-c · 97 s6 under decision 506's answer (c): what are its boxes? (decision 506; 144 B-27)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): the step is rewritten to (c)'s std half, its (a) / (b) boxes removed** — the coordinator writes it from 506 (c)'s text at the next spec pass; this question records that the step as written cannot be built.
+- **Context.** 97 s6 — now a step of 144 B-27 — was written before decision 506 was answered, with boxes for 506's options (a) (std gains `io.process` signals and a line reader) and (b) (std states it has no signal or TTY surface). 506 was answered (c): std gains a CLI's host primitives (`io.stdin`, `io.terminal`, `io.process` signals and `spawn`) and a new `cli` library builds on them. Neither set of boxes describes (c), so the step cannot be built as written; the question asks for it to be rewritten.
 - **Measured.** 506 answered (c); 97 s6's boxes are written for (a) and (b).
 - **Options.**
   (a) Rewritten to (c).
-  ```bp
-  // 97 s6: (c)'s std half
+  ```text
+  Step 6 — 506 (c)'s std half: `io.stdin`, `io.terminal`, `io.process` signals and `spawn`
+  - [ ] 506 (1)'s host cells on commonJS, erlang and beam; a located refusal on wasm
   ```
   (b) Kept as written.
-  ```bp
-  // 97 s6: under (a) … under (b) …
+  ```text
+  - [ ] under (a): a spawned child receives the `SIGTERM` sent to its parent …
+  - [ ] under (b): `libs/std/AGENTS.md` states std has no signal or TTY surface and why
   ```
-- **Recommendation.** (a).
+- **Recommendation.** (a): the step's boxes follow the answer 506 gave; boxes for options 506 did not choose can never be checked.
 - **Blocks.** 144 B-27's 97 s6.
 
 #### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
 - **Answered (the maintainer, 2026-10-12; awaiting its number in `decisions-taken.md`):** **(f), a sixth option: the prelude is the items marked `#[bpp.htmlPrelude]` where they are declared, one by one.** A marked `pub val` / `pub fn` / `pub type` of a module the package's root (s23-i) reaches through `pub mod` only — the root itself included — is in the prelude: a `.bpp` sees it by its plain name without importing (`#[bpp.htmlPrelude] pub fn Card(…)` in `src/components.bp`, `pub mod components;` in the root, `<Card/>` in a `.bpp`). The root re-exports nothing for it. A `pub` item without the marker is the library's API, not the prelude. Imports are private — the `import {bpp} from "std";` each marked module needs included — so none reaches a `.bpp`. No name is shadowed: two marked items of one name, or a `.bpp` that declares or imports a name the prelude already gives, is refused, located, naming both places (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Refused, located: the marker on an item without `pub`, on a `mod`, in a module reached through a private `mod` (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), or on an item re-exporting another package's item (242). `src/prelude.bp` and its `pub val prelude = bpp.Prelude()` go. Front 116 lists a package's prelude — every item, its name and where it is declared — by `botopink prelude` and in the language server (a `.bpp` name's origin on hover). Amends 361 and 270. **Under B-55-a (e)** (2026-10-12): the prelude is any marked `pub` item outside `src/internal/`; there is no root to reach it from.
+- **Context.** A `.bpp` file sees some names without importing them — its package's prelude (decision 270) — so its markup can write `<Card/>` directly. Decision 361 marks the prelude module with `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();`, which needs `import {bpp} from "std"` in that module; decision 270 makes every import of the prelude module part of the prelude and refuses an item of another package (242). Read together, that one import is both a prelude item and a refused line. The maintainer answered (f) on 2026-10-12, which replaces the prelude module by marked items; the answer waits for its number before 116 step 2's prelude box is built.
 - **Measured** (front 116 step 1). 361 puts the prelude's marker in the prelude
   module — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — so the module must import std's
   `bpp` (jhonstart's `src/prelude.bp` now ends `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
@@ -984,6 +997,12 @@ fn label() -> string { … }   // moved to module level
   ```bp
   #[std.bpp.htmlPrelude]
   pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
+  ```
+  (f) The maintainer's answer (above): no prelude module; each item is marked where it is declared, and every import stays private.
+  ```bp
+  // src/components.bp
+  import {bpp} from "std";                          // private: reaches no `.bpp`
+  #[bpp.htmlPrelude] pub fn Card(…) -> View { … }   // `<Card/>` in any `.bpp` of the package, no import
   ```
 - **Recommendation.** (a): the prelude stays the package's own modules (242), and the one import the
   marker needs reaches no `.bpp` file.
@@ -1274,44 +1293,74 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 
 #### B-98-a · A `.bp` and a `.d.bp` of one stem in a package: refused, or one module? (144 B-98)
 - **Proposed (opus, 2026-10-15; built, awaiting the maintainer):** (a) refused at the second `files` entry — "`"files" lists p.bp and p.d.bp, one module (`p`) written twice — keep one of the two files`" — as `x.bp` beside `x.bpp` and beside `x/mod.bp` already are.
+- **Context.** A package's `botopink.json` lists its source files under `"files"`; a `.bp` file holds code, a `.d.bp` file declarations only (host functions, markers). Both strip to the same module name, so listing `p.bp` and `p.d.bp` made one module path load twice, and every consumer of the package was refused with a duplicate that named the same module twice. 144 B-98 built a refusal at the manifest; the maintainer is asked to confirm it over merging the two files into one module.
 - **Measured.** Both files strip to the stem `p` and loaded as two modules of one path: the checker kept one, `crossModule.buildIn` counted both, so every consumer was refused "declared `pub` by `p/p` and by `p/p`". rakun's empty `src/rakun.d.bp` beside a new `rakun.bp` set it off; no manifest under `repository/` lists such a pair today.
-- **Options.** (a) ★ Refused (built). (b) Merged: the `.d.bp`'s declarations and the `.bp`'s are one module, a name in both refused.
+- **Options.**
+  (a) ★ Refused (built).
   ```json
-  { "files": ["rakun.bp", "rakun.d.bp"] }   // (a): refused at "rakun.d.bp"
+  { "files": ["rakun.bp", "rakun.d.bp"] }   // refused at "rakun.d.bp": "files" lists rakun.bp and rakun.d.bp, one module (`rakun`) written twice — keep one of the two files
+  ```
+  (b) Merged: the `.d.bp`'s declarations and the `.bp`'s are one module, a name in both refused.
+  ```json
+  { "files": ["rakun.bp", "rakun.d.bp"] }   // one module `rakun`; a name declared in both files refused
   ```
 - **Recommendation.** (a): the most restrictive reading, one file per module as the twin rules already say.
 - **Blocks.** Nothing — built as (a); 165 s5 drops rakun's empty `rakun.d.bp`.
 
 #### B-99-a · How a library call reads the caller program's catalogue at build: `rakun.boot()` (mono-a; decisions 343, 353, 364, 376, 417; s23-i (d); 144 B-99)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** (b): a `comptime` parameter whose default is a `@TypeInfo.all(…)` query is answered for the program the call is compiled in — 353's rule, extended from a template body to a `comptime` default. The names in the default resolve in the declaring module; the catalogue is the caller's. The call is legal only in the package's root (s23-i (d) (1)). The parameter's `.value` answers the entries' data fields; an entry's `value` is passed on, never read at build (356). Level B stores the declaring package and never the calling one. It amends s23-i (d)'s last sentence ("a framework receives the catalogue from the application's root as an argument, never reads it itself"): a framework may also read it through such a default.
+- **Context.** Front 165 makes rakun plug-and-play: a program adds a package to `botopink.json`, writes `rakun.boot()` in its `main`, and `boot` finds every `#[rakun.module]` and `#[rakun.config]` declaration of the program and its dependencies at build (mono-a). Finding them is a catalogue query, `@TypeInfo.all(with: …)` (253, 256): decision 343 reads a catalogue at the entry point, 353 lets a template function's body answer it for the calling program, and s23-i (d) has a framework receive it as an argument. Today a library function that calls `@TypeInfo.all` gets its own library's catalogue, which is empty, so `rakun.boot()` with no argument cannot work. A form must be chosen before 144 B-99 builds it and 165 s5 uses it.
 - **Measured.** No taken decision fixes the form: 353 answers a catalogue per program only inside a template function's body (a literal argument); 343 reads a catalogue at the entry point; s23-i (d) has the framework receive it as an argument. A library function's `@TypeInfo.all` answers in the library's own build (empty); a template needs a literal; `rakun.plan "…"` is refused `expected Expr, got string`; `typeinfo-all-mixed` keeps functions and vals in two queries.
-- **Options.** (a) The program hands the catalogues: nothing changes, two arguments in every program.
+- **Options.**
+  (a) The program hands the catalogues: nothing changes, two arguments in every program.
   ```bp
-  fn main() { rakun.boot(@TypeInfo.all(with: rakun.module), @TypeInfo.all(with: rakun.config)); }
+  fn main() { rakun.boot(@TypeInfo.all(with: rakun.module), @TypeInfo.all(with: rakun.config)); }   // starts what the two catalogues list
   ```
   (b) ★ A `comptime` default answered for the calling program:
   ```bp
   pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module),
               comptime configs: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: config)) { … }
-  fn main() { rakun.boot(); }
+  fn main() { rakun.boot(); }   // the program's #[rakun.module] / #[rakun.config] declarations, every package's
   ```
   (c) Any catalogue read in a dependency's body answered per program, with nothing in the signature saying so:
   ```bp
-  pub fn boot() { val ms = comptime @TypeInfo.all(with: module); … }
+  pub fn boot() { val ms = comptime @TypeInfo.all(with: module); … }   // the caller's catalogue, though nothing in `boot`'s signature says so
   ```
-  (d) A template with no meaningful literal: `rakun.boot ""`.
+  (d) A template with no meaningful literal.
+  ```bp
+  rakun.boot "";   // today a namespace-qualified template call is refused: expected Expr, got string
+  ```
 - **Recommendation.** (b): the signature says the function reads the caller's catalogue, it reuses 353's collect/answer/staleness/level-B paths, 343 and s23-i (d) (1)–(3) stand, and `rakun.boot()` takes no argument; (a) stays legal as the explicit override.
 - **Blocks.** 144 B-99; 165 s5.
 
 #### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
+- **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `{src/main.bp}`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.
 - **Measured.** Decision 548 makes rakun's reference link its code (`{src/main.bp}`, the base the `docs.md`'s directory) and rakun checks every link with its own `scripts/check-doc-links.sh`, run by its `repository-stages.sh`. The other libraries and botopink-lang keep 461 / 463's `<!-- example: <cell> -->`. The shared runner (`runner-standalone.sh`, one text across the libraries, CI check 4) knows neither form.
-- **Options.** (a) ★ Every library and botopink-lang move to 548's form, the link check in the shared runner (and `zig build test-docs` reading `{path}`), one front per repository. (b) rakun alone; the others keep `<!-- example -->`.
+- **Options.**
+  (a) ★ Every library and botopink-lang move to 548's form, the link check in the shared runner (and `zig build test-docs` reading `{path}`), one front per repository.
+  ```text
+  conformance/<feature>/docs.md, in every repository:  {src/main.bp}   ← a link to a file that does not exist fails the gate
+  ```
+  (b) rakun alone; the others keep `<!-- example -->`.
+  ```text
+  rakun:                          {src/main.bp}
+  other libraries, botopink-lang: <!-- example: <cell> -->
+  ```
 - **Recommendation.** (a): one way to read a reference across the repositories.
 - **Blocks.** Nothing — rakun is built as 548 says.
 
 #### 548-b · The code names that keep a former library's name (front 165)
+- **Context.** After front 165 the packages have new names — `rakun-stylesheet` for emilia, `rakun-bpp` for jhonstart, `rakun-ssr` for onze (mono-a) — but the functions, types, files, URLs and environment prefixes inside them keep the old library names, so a user of `rakun-stylesheet` still calls `emilia()`. The question is whether a front 150 step renames them to the package's vocabulary or they stay as the API.
 - **Measured.** After 165 the package names are new, but the code keeps the old ones: `emilia()`, `emiliaWith`, `emiliaPlugin`, `emilia.bp`, the `emilia-hash-split` refusal, `jhonstart_*.erl` sidecars, `OnzeConfig`, `Onze.run`, `ONZE_PUBLIC_`, `/_onze/`, `.onze`, `onze_main.bp`, the example directories `examples/rakun-stylesheet/emilia-*` and `examples/rakun-bpp/jhonstart-*`.
-- **Options.** (a) ★ A 150 step renames them to the package's vocabulary (a codemod, every consumer and cell in the same commit). (b) They stay: the names are the API, the package name only moved.
+- **Options.**
+  (a) ★ A 150 step renames them to the package's vocabulary (a codemod, every consumer and cell in the same commit).
+  ```bp
+  // a 150 step: `emilia()`, `OnzeConfig`, `/_onze/` … get rakun-stylesheet's and rakun-ssr's names; every consumer and cell in one commit
+  ```
+  (b) They stay: the names are the API, the package name only moved.
+  ```bp
+  // a program depending on `rakun-stylesheet` still calls `emilia()`; one on `rakun-ssr` still writes `OnzeConfig`
+  ```
 - **Recommendation.** (a): a reader meets one name for one thing.
 - **Blocks.** Nothing.
 
@@ -1323,8 +1372,19 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 
 
 #### 165-b · Three packages outside 165's table: `onze-server`, `jhonstart-dom-test`, `rakun-cli` (front 165 s2)
+- **Context.** Front 165 joins seven repositories into one `rakun` workspace and gives every package a `rakun-*` name and a row in its table (mono-a). Three packages did not fit: `onze-server` and `jhonstart-dom-test` would join a package built for a different set of targets, and `rakun-cli` has no row. The language sets targets per package, not per module or per dependency, so 165 s2 left them as packages of their own; the question is what they are called and whether the table gains their rows.
 - **Measured.** 165 s2 folded every package of the table but three. `onze-server` needs `rakun` (erlang-only) while `rakun-ssr` builds for commonJS too (its CLI runs on node): folded, 21 commonJS reds (`rkReqLive` has no External for the node backend) — the language has no per-module target or per-target dependency. `jhonstart-dom-test`'s externals are node-only while `rakun-bpp` builds for erlang. `rakun-cli` is in no row of the table. Built: the three stay packages of their own (`onze-server` depending on `rakun-ssr`, `rakun-app`, `rakun-service`; `jhonstart-dom-test` on `rakun-bpp`).
-- **Options.** (a) ★ Three packages named in the table: `rakun-ssr-server` (was `onze-server`), `rakun-bpp-dom-test` (was `jhonstart-dom-test`), `rakun-cli` as it is, each its row with its targets. (b) A language feature first — a module's or a dependency's target set — and the three folded into `rakun-ssr`, `rakun-bpp` (a 144 step).
+- **Options.**
+  (a) ★ Three packages named in the table: `rakun-ssr-server` (was `onze-server`), `rakun-bpp-dom-test` (was `jhonstart-dom-test`), `rakun-cli` as it is, each its row with its targets.
+  ```text
+  modules/rakun-ssr-server/     was onze-server, needs rakun (erlang)
+  modules/rakun-bpp-dom-test/   was jhonstart-dom-test, node-only externals
+  modules/rakun-cli/            as it is
+  ```
+  (b) A language feature first — a module's or a dependency's target set — and the three folded into `rakun-ssr`, `rakun-bpp` (a 144 step).
+  ```text
+  onze-server folded into rakun-ssr today: 21 commonJS reds — `rkReqLive` has no External for the node backend
+  ```
 - **Recommendation.** (a): a package is the unit of a target set today; three named rows keep 165's rule (every package a `rakun-*` name, one row each) without a new language feature.
 - **Blocks.** Nothing; the names move in s5's second box or s7.
 
@@ -2290,8 +2350,24 @@ No general rule (283): each case below is its own question, (a) the language's o
 #### 50-b · What `onze dev` does on a change
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): `onze dev` is `build` then `start`, looped over a file watcher — one code path, the bytes `start` serves** — a change rebuilds and restarts the node (1–3 s per edit); island state is lost either way (Fast Refresh a non-goal). (b)'s hot load and (c)'s fallback add a second path whose equivalence with `start` nothing proves (67); (b) returns when (a) measures too slow on the blog. Viable: `onze-cli/src/start.bp` (`erl -noshell -pa … -eval …`), `onze-bundler/src/rebuild.bp` (the invalidation, kept for the client half); `onze dev` returns 2 today (`main.bp`) and no watcher exists — the watcher is std's `fs` on commonJS / erlang with 506's `io.process.spawn` / `forwardSignals` for the child; 50 step 2 builds it. Changes: 50 step 6's "reloads the changed modules" becomes a restart; 53 step 6.
 - **Not viable (fable, 2026-10-12):** (b) and (c) — the hot-load path is not written, and nothing proves its equivalence with the bytes `start` serves.
+- **Context.** `onze dev` is the development command of onze's server rendering (onze is now the package `rakun-ssr`, mono-a): while the app runs, it should pick up what the user just edited. Today it returns 2 and does nothing; `onze build` compiles the server to BEAM and `onze start` runs it. The choice is whether a change restarts the server from a fresh build or loads the changed modules into the running one, and it has to be made before 50 step 2 builds the watcher (decisions 67, 140, 506).
 - **Measured.** `onze build` compiles the server to BEAM (`server/beam/`), `onze start` runs `erl -noshell -pa <outDir>/server/beam -eval …` (50-a); `onze-bundler/src/rebuild.bp` computes invalidated modules; the BEAM can `code:load_file/1`; UI registry and route table fill at module load (decision 140): a reloaded page re-registers, a new route file needs `onze_routes.bp` regenerated and the table rebuilt.
-- **Options.** (a) Restart the node on every change (`build` + `start` looped over a file watcher — same bytes as `start`, 1–3 s per edit). (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes. (c) (b), falling back to (a) when a convention file changed. Browser island state lost either way (Fast Refresh a non-goal, `07-onze/reference-holes.md` § 29).
+- **Options.**
+  (a) Restart the node on every change (`build` + `start` looped over a file watcher — same bytes as `start`, 1–3 s per edit).
+  ```text
+  $ onze dev
+  # src/app/page.bp saved → build, then start again: the node restarts (1–3 s) and serves what `onze start` would
+  ```
+  (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes.
+  ```text
+  # src/app/page.bp saved → each invalidated module reloaded with code:load_file/1 in the running node
+  # a new route file → onze_routes.bp regenerated, the route table rebuilt
+  ```
+  (c) (b), falling back to (a) when a convention file changed.
+  ```text
+  # page.bp saved → hot-loaded as (b); a convention file saved → restarted as (a)
+  ```
+  Browser island state lost either way (Fast Refresh a non-goal, `07-onze/reference-holes.md` § 29).
 - **Recommendation.** (a): one code path, the same bytes `start` serves; (b) later, if (a) measures too slow on the blog.
 - **Blocks.** 50 step 2; 53 step 6.
 
