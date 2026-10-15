@@ -66,7 +66,7 @@ peça da frente 164.
 
 Resposta (marque uma por pergunta):
 - [ ] (B) o rebaixamento Erlang → wasm mantido, sobre um enum `Term` em botopink compilado pelo backend GC **(recomendada)**
-- [ ] (A) os corpos do comptime compilados direto pelo backend GC, a camada Erlang apagada
+- [x] (A) os corpos do comptime compilados direto pelo backend GC, a camada Erlang apagada
 - [ ] (C) a biblioteca de termos mantida em Zig como um módulo só do comptime
 
 **3 · 546-b — os sidecars do rakun desenrolam por uma chamada que a 546 agora envolve.** Os sinais de navegação e o

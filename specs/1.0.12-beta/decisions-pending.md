@@ -65,7 +65,7 @@ and is a step, not a rewrite; (A) can follow. **Blocks:** s3 P4, the largest pie
 
 Answer (tick one per question):
 - [ ] (B) the Erlang → wasm lowering kept, over a `Term` enum in botopink compiled by the GC backend **(recommended)**
-- [ ] (A) comptime bodies compiled straight by the GC backend, the Erlang layer deleted
+- [x] (A) comptime bodies compiled straight by the GC backend, the Erlang layer deleted
 - [ ] (C) the term library kept in Zig as a comptime-only module
 
 **3 · 546-b — rakun's sidecars unwind through a call 546 now wraps.** rakun's navigation signals and `rakun_problem`
