@@ -2045,7 +2045,7 @@ B-105 lowers a loop's label on beam by a jump inside a frame and a throw out of 
 `continue :outer` aimed at a loop walked by a fun but written under an in-frame `while` inside it is not lowered, and
 when one inner loop continues two enclosing labels only the first is guarded.
 
-- [ ] both shapes in a cell (`block_jump_label_continue_nested_shapes`), red on beam today, green on every target but
+- [x] both shapes in a cell (`block_jump_label_continue_nested_shapes`), red on beam today, green on every target but
       wasm (164 s2c)
 
 ### B-110 — an unknown generic type name is accepted unchecked (`fn f(m: Bogus<i32, i32>)`)
