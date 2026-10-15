@@ -149,6 +149,8 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
 - [x] a loop's label read (`break :outer`, `continue :outer`) — cells `block_jump_label_reaches_loop`,
       `block_jump_label_continue_reaches_loop`, `block_jump_label_continue_nested_shapes`; a bare `return` in a yielding arm ends the generator, not the arm — cell
       `case_arm_return_in_yielding_arm` (144 B-88)
+- [ ] `val f: ?f64 = 5.0; f?.toString()` answers `5.0` (today `0.0`) — a line in `optional_chain_string_text`
+      (144 B-78's Conformance)
 - [ ] emilia's module lowers on wasm: every emilia cell fails the narrowing audit, wasm refusing it with `type mismatch:
       expected i32, got void` rather than a missing host binding (measured before s2 too) — emilia's cells (in rakun,
       front 165) audited green, wasm then in their targets

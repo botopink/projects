@@ -1747,7 +1747,8 @@ B-78-a** (`decisions-pending.md`): if the answer is to keep the engine's text, t
 - [x] a template hole, `.toString()` and `string + f64` write the `f64` with its decimal part (`5.0`, `1.0e21`) through
       `@print`'s helper; the cell `float_text_everywhere`
 - [x] a float commonJS cannot type (an imported record's `f64` field, a generic method's answer) keeps its `.0` (521)
-- [ ] Conformance step (459, 474, 477, 478, 480)
+- [x] Conformance step (459, 474, 477, 478, 480) — a string method through `?.` answers std-wasm's text (cell
+      `optional_chain_string_text`); an `f64` inside a generic body is B-114
 
 ### B-79 — `botopink run` of a program with no `fn main`: one located error on every target and host (decision 517)
 
@@ -2109,6 +2110,17 @@ source "rakun"`. So rakun's suite carries one manifest per feature instead of on
 - [ ] the copy keeps the cell's path relative to the workspace root, so a nested member glob finds it; a cell (a
       workspace with `group/*` members, a cell two levels down) red today
 - [ ] rakun's feature manifests folded into one `conformance/botopink.json` (a 150 consumer row; 165 s9's box)
+
+### B-114 — commonJS: an `f64` passed as a type parameter is written the JS engine's way (decision 521)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (a design: JS cannot tell an `f64` from an integer at run time)
+
+521 writes an `f64` as std-wasm's text on commonJS wherever it differs from the engine's. Inside a generic body the
+type is gone: `fn show<T>(x: T) -> string { return "${x}"; }` called with `4.0` answers `4` on commonJS, `4.0` on
+erlang, beam and wasm; `@print(x)` and `"v=" + x` the same. Found by B-78's Conformance step.
+
+- [ ] an `f64` reaching a generic body as `T` is written `4.0` on commonJS (the type's shape handed in, or the body
+      specialised per call) — a cell red on commonJS today, green on the four targets
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
