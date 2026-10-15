@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**126 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1230,6 +1230,27 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As proposed. (b) Wait for `@embed` on wasm.
 - **Recommendation.** (a).
 - **Blocks.** s3 P1's `toUpper` / `toLower`.
+
+#### 164-s3-e · How a `String` method binds its botopink body on wasm (164 s3 P1)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside the method's Erlang and Node cells** — wasm alone takes the body, so no commonJS, erlang or beam answer can move.
+- **Measured.** No `fn:` cell sits on a behavior method today; the wasm codegen lowers every `String` method through its own table (`std_method_exports`) into std-wasm. A `default fn` body beside the cells (the `Array.lastIndexOf` shape) is taken by beam too: 18 beam answers would be re-measured.
+- **Options.** (a) A `fn:` cell, wasm only. (b) A `default fn` body, shared by beam and wasm.
+- **Recommendation.** (a) — the smallest change, one target at a time.
+- **Blocks.** s3 P1's codegen piece (a `String` method lowered to its prelude body).
+
+#### 164-s3-f · May a P1 method move to botopink before s2 P5 deletes the linear lowering? (164 s3 P1)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): no, after s2 P5, as s3's order states** — each leaf keeps a twin std-wasm export of the same name only so that a module that falls back to linear memory still builds.
+- **Measured.** P0's rule makes a `std:` name that is both a leaf and a std-wasm export the leaf's in a GC module and the export's in linear memory; so a botopink body would also lower in a fallback module through the linear copy path.
+- **Options.** (a) After s2 P5. (b) Before, with the full wasm suite as the oracle.
+- **Recommendation.** (a).
+- **Blocks.** When s3 P1's methods move.
+
+#### 164-s3-g · `String.slice` (`text.slice`, `sliceFrom`, `sliceBetween`): with P1 or P2? (164 s3)
+- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): P2, as a botopink body the codegen's `s[a..b]` / `s[i]` calls through the prelude.**
+- **Measured.** The three are the codegen's own (it lowers `s[a..b]` and `s[i]` to them), not `String` methods bound by a cell.
+- **Options.** (a) P2. (b) P1, as one more leaf.
+- **Recommendation.** (a).
+- **Blocks.** Nothing in P1.
 
 #### 518-a · Two `needs:` refusals no decision states (decision 518 (1); 144 B-07)
 - **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): both stay refusals, each with a cell** — `needs:` on `@External.Node` / `@External.Erlang`, and `needs:` given as anything but a list of `WasmNeed` values; the most restrictive reading (67).

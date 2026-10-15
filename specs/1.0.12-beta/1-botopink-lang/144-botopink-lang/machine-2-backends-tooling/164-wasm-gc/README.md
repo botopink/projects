@@ -167,7 +167,7 @@ Order (each piece keeps every wasm cell's answer and every comptime reply): P0 t
 `std:` cell naming a leaf (beside s2) · P1 `text.*` in botopink over leaves · P2 `array.*`, an integer's text,
 `encoding.*`, `hash.contentHash`, `random.*` · P3 a float's text (one leaf), `bigint.*` in botopink · P4 the comptime
 compiled straight by the GC backend, its Erlang layer and term library deleted (550) · P5 `io.fs` on `wasi:filesystem` (after s2 P4) · P6 the deletions and the docs. P1–P4
-flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's GC types (549). Questions 164-s3-b, d.
+flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's GC types (549). Questions 164-s3-b, d, e, f, g.
 
 Landed: P0 — the reader, the leaf table, `text.length` and `text.charCodeAt` as leaves; a `std:` name that is a leaf
 with no std-wasm export has its signature check written but unexercised until P1 adds such a leaf.
