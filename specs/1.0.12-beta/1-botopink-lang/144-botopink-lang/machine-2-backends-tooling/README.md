@@ -1862,9 +1862,11 @@ refused on beam: `the OTP compiler refused the emitted program — nothing to ru
 module-level tables (`everySpacingToken/0`, `front38TextLeaves/0`, `layoutLeaves/0`, `outlineLeaves/0`,
 `ringLeaves/0`, …): `An implementation limit was reached … Instruction: {test_heap,3,1}`. commonJS and erlang answer.
 
-- [ ] the beam emitter splits or builds a large literal table within the assembler's limits; emilia's module assembles;
-      every emilia cell green on beam (`botopink cell check conformance/` in emilia, then in rakun)
-- [ ] a unit test the hook runs: a module with a literal table past the limit assembles (478)
+- [x] the beam emitter splits or builds a large literal table within the assembler's limits; emilia's module assembles
+      — a table counts its widest element's y-slots, not their sum (a 1100-row table assembled)
+- [ ] every emilia cell green on beam (`botopink cell check conformance/` in rakun) — emilia's `botopink.json` lists
+      commonJS and erlang only, so its cells read beam once rakun's emilia adds the target (a 165 consumer row)
+- [x] a unit test the hook runs: a module with a literal table past the limit assembles (478)
 
 ### B-87 — erlang: a `var` reassigned inside a nested arm reaches a `defer` late (decision 539, amended)
 
