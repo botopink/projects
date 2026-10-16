@@ -2223,9 +2223,10 @@ every text)
 
 563 (540-c (a)) gives `FsError` its text in std, so no library writes a `case` over its seven variants.
 
-- [ ] `pub fn message(self: FsError) -> string` in `libs/std/src/io/fs.bp`, one text per variant as 563 lists them
+- [x] `pub fn message(self: FsError) -> string` in `libs/std/src/io/fs.bp`, one text per variant as 563 lists them
       (`not found: <path>`, … `not UTF-8: <path> at byte <offset>`, `<path>: <message>`); a cell on every target, one
-      `FsError` of each variant, the seven texts the same everywhere
+      `FsError` of each variant, the seven texts the same everywhere — `fs_error_message` on commonJS, erlang and beam
+      (wasm with `io.fs`, 164 s3), `message` a method of `FsError`
 - [ ] snap (`src/root.bp`) and rakun-ssr (`src/content/collections.bp`) delete their local `fsText` and write
       `e.message()`; every answer of both the same
 
