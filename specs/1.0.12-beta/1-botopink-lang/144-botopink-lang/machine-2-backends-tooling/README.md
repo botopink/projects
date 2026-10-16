@@ -2307,8 +2307,9 @@ Found by B-127 on `feat`'s compiler: `std_decorator_leaf_import`, `std_decorator
 `std_decorator_unknown_through_handle` fail on wasm with a location in `std/testing/mocks.bp` shifted by a line; the other
 targets answer.
 
-- [ ] the three cells green on wasm, the location the source's — the cause named (a std source edit the wasm path reads
-      stale, or the location's own arithmetic)
+- [x] the three cells green on wasm, the location the source's — the cause named (a std source edit the wasm path reads
+      stale, or the location's own arithmetic) — the departures' recorded lines, stale after B-08 and B-126 moved
+      `std/testing/mocks.bp`; re-recorded; no compiler change
 
 ### B-132 — `botopink cell check`: a target's exclusion probe copies the cell without its workspace's literal entries
 
