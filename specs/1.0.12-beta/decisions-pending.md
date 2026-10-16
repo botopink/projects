@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**136 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**137 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -994,6 +994,30 @@ group), answered before every other part of this page; in the order of the steps
   `botopink check` and `botopink build` both succeed; the error appears only where `area` is called.
 - **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
 - **Blocks.** Nothing today; the cell and `build`'s branch.
+
+#### B-05-a · May a bare enum variant stand as a value? (decision 208; 144 machine-1 rows found by B-05)
+- **Proposed (opus, 2026-10-16; awaiting the maintainer):** (a): refused in expression position everywhere; only `Enum.V`, `.V` or a case pattern names a variant.
+- **Context.** An enum's variants are named qualified (`Color.Red`) or by the leading dot (`.Red`). A namespace import of std's `failure` no longer brings bare names, but a leaf import of an enum still binds its variants as bare names, and so does a local enum.
+- **Measured.** After `import {failure.HostErrorName} from "std"` (or `{colors.Color}` from the program's own module), `Error(x)` is `callee-not-a-function`, and a bare `Red` in an expression type-checks but fails at run time (commonJS `Red is not defined`); a local enum's bare variant does the same. `conformance/docs.md` § Enums advises "always write the qualified form".
+- **Options.**
+  (a) ★ A bare variant in expression position is refused on every target, naming the qualified form.
+  ```bp
+  import {colors.Color} from "./colors";
+  val c = Red;          // refused: write `Color.Red` or `.Red`
+  val d: Color = .Red;  // accepted
+  ```
+  (b) A bare variant stays bound, and every backend lowers it.
+  ```bp
+  val c = Red;          // Color.Red on every target
+  ```
+  (c) A bare variant is bound only for an enum the module declares itself.
+  ```bp
+  enum Local { A, B }
+  val a = A;            // accepted
+  val c = Red;          // refused (imported enum)
+  ```
+- **Recommendation.** (a): the most restrictive reading, the one `docs.md` already advises; today's behaviour type-checks a program that fails at run time.
+- **Blocks.** Nothing; the run-time failure stays a defect row until answered.
 
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 

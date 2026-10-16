@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**136 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**137 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -994,6 +994,30 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   `botopink check` e `botopink build`, ambos passam; o erro aparece só onde `area` é chamada.
 - **Recomendação.** (a) — a leitura mais restritiva: uma declaração quebrada é um erro onde quer que seja lida, e os dois comandos respondem igual a um conjunto de módulos.
 - **Bloqueia.** Nada hoje; a célula e o ramo do `build`.
+
+#### B-05-a · Uma variante de enum nua pode figurar como valor? (decisão 208; linhas da máquina 1 do 144 achadas pelo B-05)
+- **Proposta (opus, 2026-10-16; aguardando o mantenedor):** (a): recusada em posição de expressão em todo lugar; só `Enum.V`, `.V` ou um padrão de case nomeia uma variante.
+- **Contexto.** As variantes de um enum são nomeadas qualificadas (`Color.Red`) ou pelo ponto inicial (`.Red`). Um import de namespace do `failure` da std não traz mais nomes nus, mas um import folha de um enum ainda liga suas variantes como nomes nus, e um enum local também.
+- **Medido.** Depois de `import {failure.HostErrorName} from "std"` (ou `{colors.Color}` do próprio módulo do programa), `Error(x)` é `callee-not-a-function`, e um `Red` nu numa expressão passa na checagem de tipos mas falha em tempo de execução (commonJS `Red is not defined`); a variante nua de um enum local faz o mesmo. O `conformance/docs.md` § Enums aconselha "always write the qualified form".
+- **Opções.**
+  (a) ★ Uma variante nua em posição de expressão é recusada em todos os alvos, nomeando a forma qualificada.
+  ```bp
+  import {colors.Color} from "./colors";
+  val c = Red;          // refused: write `Color.Red` or `.Red`
+  val d: Color = .Red;  // accepted
+  ```
+  (b) Uma variante nua continua ligada, e todo backend a abaixa.
+  ```bp
+  val c = Red;          // Color.Red on every target
+  ```
+  (c) Uma variante nua é ligada só para um enum que o próprio módulo declara.
+  ```bp
+  enum Local { A, B }
+  val a = A;            // accepted
+  val c = Red;          // refused (imported enum)
+  ```
+- **Recomendação.** (a): a leitura mais restritiva, a que o `docs.md` já aconselha; o comportamento de hoje aceita na checagem de tipos um programa que falha em tempo de execução.
+- **Bloqueia.** Nada; a falha em tempo de execução segue como linha de defeito até a resposta.
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
 
