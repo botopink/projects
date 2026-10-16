@@ -2170,7 +2170,8 @@ gates the machine runs out of memory. Each module answers one refusal; nothing i
 Found by B-116 P1: a lambda whose tail expression is an `iter loop { … }` aborts on beam (`function_clause`); commonJS,
 erlang and wasm answer the generator. B-116's marked lambda writes `return <block>;` to step around it.
 
-- [ ] an `iter loop` as a lambda's tail answers its generator on beam — a cell on every target, red on beam today
+- [x] an `iter loop` as a lambda's tail answers its generator on beam — a cell on every target, red on beam today —
+      `lambda_tail_iter_loop`
 
 ### B-119 — commonJS: an adopted behavior `default fn … -> @Task` is emitted without `async`
 
