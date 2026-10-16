@@ -560,7 +560,7 @@ Sequence with 142 s1 (`json` leaves std, B-27).
       promising no raise (`decision 495`); the list in `libs/std/AGENTS.md` — built with `result: true` (490); `json`,
       `regex` and `process` answer `HostError` until their enums (B-130); `encoding`'s decoders `EncodingError`,
       `clock.parseIso8601` `ClockError`, `io.fs` through `FsError`; cell `std_host_error_variants`
-- [ ] the consumer commits: rakun — `rakun-service/src/rules.bp` (`regex.compile` answers `@Result<Regex, HostError>`;
+- [x] the consumer commits: rakun — `rakun-service/src/rules.bp` (`regex.compile` answers `@Result<Regex, HostError>`;
       it takes down every package that imports rakun-service), `rakun-ssr/src/assets/preprocess.bp` and
       `rakun-cli/src/cli.bp` (`io.process.run`'s `Error` is `HostError`); log — `test/formats_test.bp`
       (`io.clock.parseIso8601`'s `Error` is `ClockError`); each library's gate green on `feat`'s compiler
@@ -2307,6 +2307,19 @@ targets answer.
 
 - [ ] the three cells green on wasm, the location the source's — the cause named (a std source edit the wasm path reads
       stale, or the location's own arithmetic)
+
+### B-132 — `botopink cell check`: a target's exclusion probe copies the cell without its workspace's literal entries
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+rakun's `conformance/rakun-service/filter-chain/{cors,filter_chain,middleware,problem_details,response_headers}` and
+`tls/web_tls` fail on `feat`: for commonJS and wasm, which their `targets` exclude, `cell check` builds the cell in a
+scratch copy to read the refusal, and that copy's manifest names the literal workspace entry `rakun`
+(`deps/rakun/botopink.json`) without copying it — `workspaces entry "rakun": … does not exist`. The cells' own targets
+answer.
+
+- [ ] the probe's copy carries every literal workspace entry the cell's manifest names (or reads the refusal in place); the
+      six cells green; a fixture in `cli_contract.sh`'s cell-workspace tests with a literal entry and an excluded target
 
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
