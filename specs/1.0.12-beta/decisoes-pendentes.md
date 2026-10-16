@@ -33,7 +33,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
+| 1 | B-116-b … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o P1 constrói (a); uma resposta diferente reverte essa parte | (a) para cada |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1121,9 +1121,8 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (a).
 - **Bloqueia.** Nada no P1.
 
-#### B-116-a … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
+#### B-116-b … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor; o P1 constrói cada recomendação, uma resposta diferente reverte aquela parte):**
-  - **B-116-a** · Um corpo `-> @Task<T>` / `-> @Component<R>` que não escreve nenhuma palavra-chave (a maioria dos componentes do jhonstart; um corpo `@Task` que devolve um valor): **(a) o codemod o marca onde quer que ele compile de modo especial hoje**, toda célula igual; (b) ele fica sem marcador, recusado em `return v` quando a recusa entrar.
   - **B-116-b** · Uma `declare fn … -> @Task<T>` sem corpo (as ligações host da std) e um membro sem corpo de um behavior: **(a) nenhum marcador; um marcador numa declaração recusado (`marker-on-declaration`)** — nada compila; (b) o marcador escrito.
   - **B-116-c** · O lugar do marcador: **(a) `#[…] [pub] [default] <marker> fn`, as anotações primeiro**; (b) outra ordem.
   - **B-116-d** · Os códigos: **(a) novos `marker-without-arrow`, `marker-lambda-without-expected-type`; `effect-await-without-task`, `yield-without-generator` e o de `use` mantêm os seus códigos com uma dica que nomeia o marcador**, renomeados no (ii) se for o caso; (b) renomeados agora (`await-without-async`, …).
@@ -1133,7 +1132,7 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Medido.** Nenhuma lambda faz await ou yield hoje (`inferFunctionExprExpectedInner` limpa o contexto de gerador e de task), então uma lambda marcada é uma superfície nova; `botopink migrate` foi removido (B-56) e o formatador carrega as migrações (525, 541); a std declara 8 ligações host `-> @Task` sem corpo; 125 células escrevem `await`, 59 `yield`, 66 `use`.
 - **Opções.** Cada ponto (a) ou (b) acima.
 - **Recomendação.** (a) para cada — a leitura mais restritiva, a resposta de toda célula inalterada.
-- **Bloqueia.** Nada construído espera (o P1 constrói (a)); B-116-a fixa o que o codemod (P2, P3) escreve.
+- **Bloqueia.** Nada construído espera (o P1 constrói (a)).
 
 #### B-116-j · O corpo de uma lambda marcada: um corpo de função ou um corpo de laço? (decisão 553; 144 B-116)
 - **Proposta (fable, 2026-10-16; aguardando o mantenedor):** **(a): um corpo de função, como o de uma `iter fn` — `return v` é o `R` do iterador (553 (2)), um `continue` de topo recusado, `break v` recusado; a equivalência de `conformance/docs.md` `iter { x -> b }` ≡ `{ x -> iter loop { b; break; } }` retirada.**

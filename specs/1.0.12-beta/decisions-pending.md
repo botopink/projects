@@ -33,7 +33,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
+| 1 | B-116-b … g — the body markers' first build (§ Machine 2) | P1 builds (a); a different answer reverts that part | (a) for each |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1121,9 +1121,8 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
 
-#### B-116-a … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
+#### B-116-b … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
 - **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**
-  - **B-116-a** · A `-> @Task<T>` / `-> @Component<R>` body that writes no keyword (most of jhonstart's components; a `@Task` body returning a value): **(a) the codemod marks it wherever it compiles specially today**, every cell the same; (b) it stays unmarked, refused at `return v` once the refusal is on.
   - **B-116-b** · A bodyless `declare fn … -> @Task<T>` (std's host bindings) and a behavior's bodyless member: **(a) no marker; a marker on a declaration refused (`marker-on-declaration`)** — nothing compiles; (b) the marker written.
   - **B-116-c** · The marker's place: **(a) `#[…] [pub] [default] <marker> fn`, annotations first**; (b) another order.
   - **B-116-d** · The codes: **(a) new `marker-without-arrow`, `marker-lambda-without-expected-type`; `effect-await-without-task`, `yield-without-generator` and `use`'s keep their codes with a hint naming the marker**, renamed in (ii) if at all; (b) renamed now (`await-without-async`, …).
@@ -1133,7 +1132,7 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Measured.** No lambda awaits or yields today (`inferFunctionExprExpectedInner` clears the generator and task context), so a marked lambda is a new surface; `botopink migrate` was removed (B-56) and the formatter carries migrations (525, 541); std declares 8 bodyless `-> @Task` host bindings; 125 cells write `await`, 59 `yield`, 66 `use`.
 - **Options.** Each point (a) or (b) above.
 - **Recommendation.** (a) for each — the most restrictive reading, every cell's answer unchanged.
-- **Blocks.** Nothing built waits (P1 builds (a)); B-116-a fixes what the codemod (P2, P3) writes.
+- **Blocks.** Nothing built waits (P1 builds (a)).
 
 #### B-116-j · A marked lambda's body: a function body or a loop body? (decision 553; 144 B-116)
 - **Proposed (fable, 2026-10-16; awaiting the maintainer):** **(a): a function body, as an `iter fn`'s — `return v` is the iterator's `R` (553 (2)), a top-level `continue` refused, `break v` refused; `conformance/docs.md`'s equivalence `iter { x -> b }` ≡ `{ x -> iter loop { b; break; } }` dropped.**

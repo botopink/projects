@@ -2285,11 +2285,13 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       per refusal — P1 landed: the markers parsed, printed and checked, a marked lambda checked against its expected
       type and lowered through the block forms, `marker-type-mismatch`, `marker-without-arrow`,
       `marker-lambda-without-expected-type`, `marker-on-declaration`, `component-lambda-not-lowered` (B-116-a … g and
-      B-116-i built as recommended; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
-      of today's forms refused yet. Left: P2 the codemod over botopink-lang, P3 one landing per library, P4 the
-      keyword without its marker refused
+      B-116-i built as recommended, B-116-a decided by 570; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
+      of today's forms refused yet. Left: P2 the codemod over botopink-lang, P3 one landing per library — each also marking
+      every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
+      keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare
+      value refused as a type mismatch, the hint naming the marker and `Async.resolve` (570)
 - [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
-      `@Result` → `Result`, declared in std's `.bp`; `comptime/effect_chain.zig` reduced to what the markers need; a
+      `@Result` → `Result`, declared in std's `.bp`; `Async.resolve(v: T) -> Async<T>` (570); `comptime/effect_chain.zig` reduced to what the markers need; a
       codemod over botopink-lang and every library; every cell the same
 - [ ] (iii) what is new: an iterator's `R` (`return v`; `next()` answering `Step.Item(T)` / `Step.Done(R)`), a failure in
       `R` ending the iteration (`for x in try xs`), `Component<Result<R, E>>` the one component that throws — on
