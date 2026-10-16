@@ -33,22 +33,11 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | 540-c — a text for `FsError` | the libraries' local helpers | (a) std gives it |
-| 2 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
-| 3 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
-| 4 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
+| 1 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
+| 2 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
+| 3 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
 
-**1 · 540-c — a text for an `FsError`.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text,
-so each library that carries it into a `string` error writes its own `case`
-(`NotFound(path) -> "not found: " + path`, … — snap and rakun-ssr both did). **(a)** std gives `FsError` a `message()`;
-**(b)** each library keeps its own; **(c)** a generic `mapErr` on `@Result`. **Recommendation (a)**, (c) independent of it.
-
-Answer (tick one per question):
-- [ ] (a) std gives `FsError` a `message()` **(recommended)**
-- [ ] (b) each library keeps its own helper
-- [ ] (c) a generic `mapErr` on `@Result` (independent of (a))
-
-**2 · 164-s3-e and 164-s3-f — a `String` method's botopink body on wasm.** (e) A `String` method of s3 P1 moving to
+**1 · 164-s3-e and 164-s3-f — a `String` method's botopink body on wasm.** (e) A `String` method of s3 P1 moving to
 botopink needs a binding on wasm: **(a)** a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside its Erlang
 and Node cells — wasm alone takes the body, so no other target's answer can move. (f) When: **(a)** after s2 P5 deletes
 the linear lowering, as s3's order states — until then each leaf keeps a twin std-wasm export; **(b)** before.
@@ -59,7 +48,7 @@ Answer (tick one per question):
 - [ ] 164-s3-f (a) after s2 P5 **(recommended)**
 - [ ] 164-s3-f (b) before s2 P5
 
-**3 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
+**2 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
 (`$arr_any`), so a tuple bound to a `T` falls back to linear memory: **(a)** a subtype of its own, so a slot's printer
 tells `#(1, 2)` from `[1, 2]` (most GC snapshots' `.wat` move, no answer does); **(b)** wait for P5. (b) `==` over a
 generic record whose type arguments are not written compares a record inside a slot by identity, so the module falls
@@ -1185,13 +1174,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As built. (b) An implicit import of `io/fs` where `a.open()` is written. (c) `File` ambient in `builtins.d.bp`, `open` a real method of `Asset`.
 - **Recommendation.** (a).
 - **Blocks.** Nothing.
-
-#### 540-c · A text for an `FsError` in std (decision 540; 144)
-- **Proposed (the library migration, 2026-10-14; awaiting the maintainer):** **(a): std gives `FsError` its text** — one `message()` (or `toString`) in `io/fs`, `<what>: <path>` per variant, so a library that carries an `io.fs` failure into a `string` error writes no `case` of its own.
-- **Measured.** 540 makes every `io.fs` failure an `FsError` with seven variants and no text; std has no `toString` and no `mapErr` for it. Migrating to 540, snap and rakun-ssr each wrote a local `fsText` (a `case` over the seven variants) and an `fsErrorText` / `fsFailure` helper to carry the failure into their `@Result<_, string>` functions.
-- **Options.** (a) As proposed. (b) Each library writes its own, as built. (c) A generic `mapErr` on `@Result`, the text still each library's.
-- **Recommendation.** (a), with (c) independent of it.
-- **Blocks.** Nothing; the local helpers are deleted once answered.
 
 #### 164-s3-e · How a `String` method binds its botopink body on wasm (164 s3 P1)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside the method's Erlang and Node cells** — wasm alone takes the body, so no commonJS, erlang or beam answer can move.

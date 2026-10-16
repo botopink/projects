@@ -2215,6 +2215,19 @@ compiles on erlang and is refused on beam; std's templates were rewritten withou
 - [ ] beam accepts the binary patterns an Erlang host template writes (`X/binary`, a literal prefix) — a cell on erlang
       and beam, red on beam today
 
+### B-126 — std: an `FsError` carries its own text (decision 563)
+
+**Repository:** botopink-lang (`--lang`), then a consumer commit in snap and in rakun · **Model:** sonnet (563 fixes
+every text)
+
+563 (540-c (a)) gives `FsError` its text in std, so no library writes a `case` over its seven variants.
+
+- [ ] `pub fn message(self: FsError) -> string` in `libs/std/src/io/fs.bp`, one text per variant as 563 lists them
+      (`not found: <path>`, … `not UTF-8: <path> at byte <offset>`, `<path>: <message>`); a cell on every target, one
+      `FsError` of each variant, the seven texts the same everywhere
+- [ ] snap (`src/root.bp`) and rakun-ssr (`src/content/collections.bp`) delete their local `fsText` and write
+      `e.message()`; every answer of both the same
+
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
 **Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),

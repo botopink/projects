@@ -361,6 +361,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-123 | [1](machine-1-checker/README.md) | a `//` comment between statements of a `case` arm block is a parse error |
 | B-124 | [2](machine-2-backends-tooling/README.md) | beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused |
 | B-125 | [1](machine-1-checker/README.md) | a `//` comment after a block's tail expression is a parse error |
+| B-126 | [2](machine-2-backends-tooling/README.md) | std: an `FsError` carries its own text, `message()` (decision 563) |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

@@ -33,23 +33,11 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | 540-c — um texto para `FsError` | os auxiliares locais das bibliotecas | (a) a std o dá |
-| 2 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
-| 3 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
-| 4 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
+| 1 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
+| 2 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
+| 3 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
 
-**1 · 540-c — um texto para um `FsError`.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum
-texto, então cada biblioteca que o leva a um erro `string` escreve o seu próprio `case`
-(`NotFound(path) -> "not found: " + path`, … — snap e rakun-ssr fizeram isso). **(a)** a std dá a `FsError` um
-`message()`; **(b)** cada biblioteca mantém o seu; **(c)** um `mapErr` genérico em `@Result`. **Recomendação (a)**, com
-a (c) independente dela.
-
-Resposta (marque uma por pergunta):
-- [ ] (a) a std dá a `FsError` um `message()` **(recomendada)**
-- [ ] (b) cada biblioteca mantém o seu auxiliar
-- [ ] (c) um `mapErr` genérico em `@Result` (independente da (a))
-
-**2 · 164-s3-e e 164-s3-f — o corpo botopink de um método de `String` no wasm.** (e) Um método de `String` do s3 P1
+**1 · 164-s3-e e 164-s3-f — o corpo botopink de um método de `String` no wasm.** (e) Um método de `String` do s3 P1
 que passa para botopink precisa de um binding no wasm: **(a)** uma célula `#[@External.Wasm(fn: <private fn of primitives.bp>)]`
 ao lado das suas células Erlang e Node — só o wasm toma o corpo, então a resposta de nenhum outro alvo pode mudar. (f)
 Quando: **(a)** depois que o s2 P5 apagar o rebaixamento linear, como diz a ordem do s3 — até lá cada folha mantém um
@@ -61,7 +49,7 @@ Resposta (marque uma por pergunta):
 - [ ] 164-s3-f (a) depois do s2 P5 **(recomendada)**
 - [ ] 164-s3-f (b) antes do s2 P5
 
-**3 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
+**2 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
 (`$arr_any`), então uma tupla ligada a um `T` cai para a memória linear: **(a)** um subtipo próprio, para o printer de um
 slot distinguir `#(1, 2)` de `[1, 2]` (o `.wat` da maioria dos snapshots GC muda, nenhuma resposta muda); **(b)** esperar
 o P5. (b) `==` sobre um registro genérico cujos argumentos de tipo não são escritos compara por identidade um registro
@@ -1187,13 +1175,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como construído. (b) Um import implícito de `io/fs` onde `a.open()` é escrito. (c) `File` ambiente em `builtins.d.bp`, `open` um método real de `Asset`.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada.
-
-#### 540-c · Um texto para um `FsError` na std (decisão 540; 144)
-- **Proposto (a migração das bibliotecas, 2026-10-14; aguardando o mantenedor):** **(a): a std dá a `FsError` o seu texto** — um `message()` (ou `toString`) em `io/fs`, `<what>: <path>` por variante, para que uma biblioteca que leva uma falha de `io.fs` a um erro `string` não escreva um `case` próprio.
-- **Medido.** A 540 faz de toda falha de `io.fs` um `FsError` com sete variantes e nenhum texto; a std não tem `toString` nem `mapErr` para ele. Migrando para a 540, snap e rakun-ssr escreveram cada um um `fsText` local (um `case` sobre as sete variantes) e um auxiliar `fsErrorText` / `fsFailure` para levar a falha às suas funções `@Result<_, string>`.
-- **Opções.** (a) Como proposto. (b) Cada biblioteca escreve o seu, como construído. (c) Um `mapErr` genérico em `@Result`, o texto ainda de cada biblioteca.
-- **Recomendação.** (a), com (c) independente dela.
-- **Bloqueia.** Nada; os auxiliares locais são apagados uma vez respondida.
 
 #### 164-s3-e · Como um método de `String` liga o seu corpo em botopink no wasm (164 s3 P1)
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor):** **(a): uma célula `#[@External.Wasm(fn: <fn privada de primitives.bp>)]` ao lado das células Erlang e Node do método** — só o wasm toma o corpo, então nenhuma resposta de commonJS, erlang ou beam pode mudar.
