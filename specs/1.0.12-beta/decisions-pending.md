@@ -33,22 +33,10 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | 164-s3-e, 164-s3-f — how and when a `String` method takes its botopink body on wasm | s3 P1's codegen piece; when P1's methods move | (a), (a) |
-| 2 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
-| 3 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
+| 1 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
+| 2 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
 
-**1 · 164-s3-e and 164-s3-f — a `String` method's botopink body on wasm.** (e) A `String` method of s3 P1 moving to
-botopink needs a binding on wasm: **(a)** a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside its Erlang
-and Node cells — wasm alone takes the body, so no other target's answer can move. (f) When: **(a)** after s2 P5 deletes
-the linear lowering, as s3's order states — until then each leaf keeps a twin std-wasm export; **(b)** before.
-**Recommendation (a), (a).** **Blocks:** s3 P1's codegen piece; when P1's methods move.
-
-Answer (tick one per question):
-- [ ] 164-s3-e (a) a `@External.Wasm(fn: …)` cell beside the method's Erlang and Node cells **(recommended)**
-- [ ] 164-s3-f (a) after s2 P5 **(recommended)**
-- [ ] 164-s3-f (b) before s2 P5
-
-**2 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
+**1 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
 (`$arr_any`), so a tuple bound to a `T` falls back to linear memory: **(a)** a subtype of its own, so a slot's printer
 tells `#(1, 2)` from `[1, 2]` (most GC snapshots' `.wat` move, no answer does); **(b)** wait for P5. (b) `==` over a
 generic record whose type arguments are not written compares a record inside a slot by identity, so the module falls
@@ -1156,20 +1144,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) As built. (b) An implicit import of `io/fs` where `a.open()` is written. (c) `File` ambient in `builtins.d.bp`, `open` a real method of `Asset`.
 - **Recommendation.** (a).
 - **Blocks.** Nothing.
-
-#### 164-s3-e · How a `String` method binds its botopink body on wasm (164 s3 P1)
-- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): a `#[@External.Wasm(fn: <private fn of primitives.bp>)]` cell beside the method's Erlang and Node cells** — wasm alone takes the body, so no commonJS, erlang or beam answer can move.
-- **Measured.** No `fn:` cell sits on a behavior method today; the wasm codegen lowers every `String` method through its own table (`std_method_exports`) into std-wasm. A `default fn` body beside the cells (the `Array.lastIndexOf` shape) is taken by beam too: 18 beam answers would be re-measured.
-- **Options.** (a) A `fn:` cell, wasm only. (b) A `default fn` body, shared by beam and wasm.
-- **Recommendation.** (a) — the smallest change, one target at a time.
-- **Blocks.** s3 P1's codegen piece (a `String` method lowered to its prelude body).
-
-#### 164-s3-f · May a P1 method move to botopink before s2 P5 deletes the linear lowering? (164 s3 P1)
-- **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): no, after s2 P5, as s3's order states** — each leaf keeps a twin std-wasm export of the same name only so that a module that falls back to linear memory still builds.
-- **Measured.** P0's rule makes a `std:` name that is both a leaf and a std-wasm export the leaf's in a GC module and the export's in linear memory; so a botopink body would also lower in a fallback module through the linear copy path.
-- **Options.** (a) After s2 P5. (b) Before, with the full wasm suite as the oracle.
-- **Recommendation.** (a).
-- **Blocks.** When s3 P1's methods move.
 
 #### 164-s3-g · `String.slice` (`text.slice`, `sliceFrom`, `sliceBetween`): with P1 or P2? (164 s3)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): P2, as a botopink body the codegen's `s[a..b]` / `s[i]` calls through the prelude.**

@@ -33,23 +33,10 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | 164-s3-e, 164-s3-f — como e quando um método de `String` toma o seu corpo botopink no wasm | a peça de codegen do s3 P1; quando os métodos do P1 se movem | (a), (a) |
-| 2 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
-| 3 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
+| 1 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
+| 2 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
 
-**1 · 164-s3-e e 164-s3-f — o corpo botopink de um método de `String` no wasm.** (e) Um método de `String` do s3 P1
-que passa para botopink precisa de um binding no wasm: **(a)** uma célula `#[@External.Wasm(fn: <private fn of primitives.bp>)]`
-ao lado das suas células Erlang e Node — só o wasm toma o corpo, então a resposta de nenhum outro alvo pode mudar. (f)
-Quando: **(a)** depois que o s2 P5 apagar o rebaixamento linear, como diz a ordem do s3 — até lá cada folha mantém um
-export gêmeo da std-wasm; **(b)** antes. **Recomendação (a), (a).** **Bloqueia:** a peça de codegen do s3 P1; quando os
-métodos do P1 se movem.
-
-Resposta (marque uma por pergunta):
-- [ ] 164-s3-e (a) uma célula `@External.Wasm(fn: …)` ao lado das células Erlang e Node do método **(recomendada)**
-- [ ] 164-s3-f (a) depois do s2 P5 **(recomendada)**
-- [ ] 164-s3-f (b) antes do s2 P5
-
-**2 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
+**1 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
 (`$arr_any`), então uma tupla ligada a um `T` cai para a memória linear: **(a)** um subtipo próprio, para o printer de um
 slot distinguir `#(1, 2)` de `[1, 2]` (o `.wat` da maioria dos snapshots GC muda, nenhuma resposta muda); **(b)** esperar
 o P5. (b) `==` sobre um registro genérico cujos argumentos de tipo não são escritos compara por identidade um registro
@@ -1157,20 +1144,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Como construído. (b) Um import implícito de `io/fs` onde `a.open()` é escrito. (c) `File` ambiente em `builtins.d.bp`, `open` um método real de `Asset`.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada.
-
-#### 164-s3-e · Como um método de `String` liga o seu corpo em botopink no wasm (164 s3 P1)
-- **Proposta (fable, 2026-10-15; aguardando o mantenedor):** **(a): uma célula `#[@External.Wasm(fn: <fn privada de primitives.bp>)]` ao lado das células Erlang e Node do método** — só o wasm toma o corpo, então nenhuma resposta de commonJS, erlang ou beam pode mudar.
-- **Medido.** Nenhuma célula `fn:` está num método de behavior hoje; o codegen do wasm rebaixa todo método de `String` pela sua própria tabela (`std_method_exports`) para a std-wasm. Um corpo `default fn` ao lado das células (a forma de `Array.lastIndexOf`) é tomado também pelo beam: 18 respostas do beam seriam medidas de novo.
-- **Opções.** (a) Uma célula `fn:`, só wasm. (b) Um corpo `default fn`, compartilhado por beam e wasm.
-- **Recomendação.** (a) — a menor mudança, um alvo por vez.
-- **Bloqueia.** A peça de codegen do s3 P1 (um método de `String` rebaixado ao seu corpo do prelúdio).
-
-#### 164-s3-f · Um método do P1 pode passar para botopink antes de o s2 P5 apagar o rebaixamento linear? (164 s3 P1)
-- **Proposta (fable, 2026-10-15; aguardando o mantenedor):** **(a): não, depois do s2 P5, como a ordem do s3 diz** — cada folha guarda um export gêmeo da std-wasm com o mesmo nome só para que um módulo que cai na memória linear ainda compile.
-- **Medido.** A regra do P0 faz de um nome `std:` que é ao mesmo tempo folha e export da std-wasm a folha num módulo GC e o export na memória linear; então um corpo em botopink também seria rebaixado num módulo de fallback pelo caminho de cópia linear.
-- **Opções.** (a) Depois do s2 P5. (b) Antes, com a suíte wasm inteira como oráculo.
-- **Recomendação.** (a).
-- **Bloqueia.** Quando os métodos do s3 P1 passam.
 
 #### 164-s3-g · `String.slice` (`text.slice`, `sliceFrom`, `sliceBetween`): com o P1 ou o P2? (164 s3)
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor):** **(a): P2, como um corpo em botopink que o `s[a..b]` / `s[i]` do codegen chama pelo prelúdio.**
