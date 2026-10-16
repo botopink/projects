@@ -1011,10 +1011,13 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 
 #### Step 7 — references, not strings (decision 281) (was `130-decorator-outputs` s7)
 
-- [ ] `@TypeInfo.all(with: …, member: "make")` (256) names the member by reference — an interface's
-      method — not by string; `Declared.value` stays `unknown` (254; `nat-a` answered by 281)
-- [ ] `member:`'s reference: its spelling, whether a catalogued type must `implement` the behavior, refused or
-      skipped at the query · question B-19-b
+- [ ] decision 564: a decorator's `@Decl<B>` names the behavior its declarations implement — `#[d]` on a type not
+      implementing `B` refused at the annotation; `@TypeInfo.all(with: d)` answers `Declared<B>[]` (the behaviors a
+      multi-decorator query shares, else `unknown`); a behavior's function on an entry's `value` called only inside a
+      562 expansion, refused elsewhere — cells: the refused annotation, the typed answer, the call emitted direct, the
+      call refused outside an expansion; `member:` still accepted beside it, botopink-lang's own sites migrated
+- [ ] `member:` removed with its string (256, 281), refused naming decision 564 — after front 165 s5 has migrated
+      rakun's sites (a library is never edited from here, 433)
 
 #### Step 8 — typed meta, keyed by its type (decision 298) (was `130-decorator-outputs` s8)
 

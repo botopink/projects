@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**136 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**135 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -69,9 +69,8 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
-| 1 | **B-19-b** — `@TypeInfo.all(member: …)` por referência (§ Máquina 1) | como uma consulta de catálogo nomeia por referência a função fábrica de cada entrada, e o que faz um tipo catalogado sem ela | 144 B-19 passo 7 | (a) `member: Factory.make`; um tipo que não implementa `Factory` recusado na consulta |
-| 2 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
-| 3 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 1 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
+| 2 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -743,23 +742,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): quem lê o programa é levado a uma linha do seu próprio arquivo, e a mensagem ainda nomeia a chamada da biblioteca que escreveu o código.
 - **Trava.** A linha 3 do 144 B-19.
-
-#### B-19-b · `@TypeInfo.all(member: …)` por referência: o que se escreve, e o que faz um tipo que não se conforma? (decisões 256, 281; 144 B-19 passo 7)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): `member: Factory.make`, uma fn associada de um behavior; um tipo catalogado precisa `implement Factory`, e um que não implementa é recusado na consulta, nomeado** — uma referência é checada, uma string não era (281); conformidade por declaração, não por um nome que bate.
-- **Contexto.** `@TypeInfo.all(with: entity, member: "make")` lista toda declaração que o decorator `entity` anotou e dá a cada entrada a função associada `make` do tipo como seu `value`, então um ponto de entrada pode construir um de cada (decisões 253, 254, 256: o registro de beans do rakun é construído assim). A decisão 281 diz que nenhum identificador de código passa como string, então `member:` precisa nomear a função por referência. Duas coisas estão abertas: como a referência é escrita, e o que acontece com um tipo catalogado que não tem essa função. O passo 7 do 144 B-19 precisa das duas.
-- **Medido.** `member: "make"` é uma string hoje.
-- **Opções.**
-  (a) Só quem implementa, recusado senão.
-  ```bp
-  pub behavior Factory { fn make() -> Self; }
-  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
-  ```
-  (b) Qualquer tipo que declare uma fn associada que bate; os outros pulados.
-  ```bp
-  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
-  ```
-- **Recomendação.** (a): uma referência é checada onde uma string não era (281), e um tipo está no catálogo pelo que declara, nunca deixado de fora dele em silêncio.
-- **Trava.** O passo 7 do 144 B-19.
 
 #### B-21-a · A última expressão de um lambda escrita com `;`: continua sendo o seu valor? (decisão 409; 144 B-21)
 - **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** 525-a (1): um lambda responde sua última expressão escrita sem `;` (409, 525); `{ x -> x + 1; }` não responde nada — depois de o `botopink format` remover, uma vez, o `;` da última instrução-expressão de todo lambda existente. O contrário da proposta.

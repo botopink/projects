@@ -112,11 +112,13 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 ### s5 — plug-and-play: `rakun.module`, `rakun.boot()`, `rakun.config`
 
-**Repository:** rakun · **Model:** sonnet (the design is this README's) · **After:** s4, 144 B-98, B-99 (decision 562's box: `boot`'s body expanded at the call site, each module's `make().start()` emitted in `main`); `boot_modules` on beam after B-97
+**Repository:** rakun · **Model:** sonnet (the design is this README's) · **After:** s4, 144 B-98, B-19 step 7 (decision 564's form), B-99 (decision 562's box: `boot`'s body expanded at the call site, each module's `make().start()` emitted in `main`); `boot_modules` on beam after B-97
 
-- [ ] `rakun`: the `Module` record, the `#[rakun.module]` decorator, `rakun.boot()` (discovery by the catalogue, the
+- [ ] `rakun`: the `Module` behavior (`make`, `start`), the `#[rakun.module]` decorator over `@Decl<Module>` (decision 564), `rakun.boot()` (discovery by the catalogue, the
       layer order, the start), `#[rakun.config]` and the typed overrides; the two build errors (one thing contributed
       twice; a required package absent), each a cell
+- [ ] every `@TypeInfo.all(…, member: "…")` site (the container's, its tests and cells, the examples) moved to decision
+      564's form — the behavior in the decorator's `@Decl<B>`, no `member:` — after 144 B-19 step 7's first box
 - [ ] every package declares its module at its root with its defaults; `examples/` of a program that adds one package
       at a time; the gate green
 

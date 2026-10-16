@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**136 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**135 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -68,9 +68,8 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-19-b** — `@TypeInfo.all(member: …)` by reference (§ Machine 1) | how a catalogue query names each entry's factory function by reference, and what a catalogued type without it does | 144 B-19 step 7 | (a) `member: Factory.make`; a type not implementing `Factory` refused at the query |
-| 2 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 3 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 1 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
+| 2 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -742,23 +741,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): the program's reader is pointed at a line of their own file, and the message still names the library call that wrote the code.
 - **Blocks.** 144 B-19's row 3.
-
-#### B-19-b · `@TypeInfo.all(member: …)` by reference: what is written, and what does a type that does not conform do? (decisions 256, 281; 144 B-19 step 7)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): `member: Factory.make`, a behavior's associated fn; a catalogued type must `implement Factory`, and one that does not is refused at the query, naming it** — a reference is checked, a string was not (281); conformance by declaration, not by a matching name.
-- **Context.** `@TypeInfo.all(with: entity, member: "make")` lists every declaration the decorator `entity` annotated and gives each entry the type's associated function `make` as its `value`, so an entry point can build one of each (decisions 253, 254, 256: rakun's bean registry is built this way). Decision 281 says no code identifier passes as a string, so `member:` must name the function by reference. Two things are open: how the reference is written, and what happens to a catalogued type that has no such function. 144 B-19 step 7 needs both.
-- **Measured.** `member: "make"` is a string today.
-- **Options.**
-  (a) Implementers only, refused otherwise.
-  ```bp
-  pub behavior Factory { fn make() -> Self; }
-  @TypeInfo.all(with: entity, member: Factory.make)   // refused: `City` does not implement Factory
-  ```
-  (b) Any type declaring a matching associated fn; others skipped.
-  ```bp
-  @TypeInfo.all(with: entity, member: Factory.make)   // City skipped
-  ```
-- **Recommendation.** (a): a reference is checked where a string was not (281), and a type is in the catalogue by what it declares, never silently left out of it.
-- **Blocks.** 144 B-19 step 7.
 
 #### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 525-a (1): a lambda answers its last expression written without `;` (409, 525); `{ x -> x + 1; }` answers nothing — after `botopink format` removes, once, the `;` of every existing lambda's last expression statement. The reverse of the proposal.
