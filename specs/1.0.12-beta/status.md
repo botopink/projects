@@ -88,6 +88,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [ ] 144 B-127 — `botopink check` cold: the analysis arena and a decorator's trace listing kept for the session (1.3 GB left) · nothing
 - [ ] 144 B-128 — erlang, beam, wasm: a generator runs its whole body at the call, against 105's laziness · nothing
+- [ ] 144 B-129 — the gate's job budget (768 MiB a job, test-web uncounted): the commit hook alone runs the machine out of memory · nothing
 - [ ] 144 B-118 — beam: an `iter loop` as a lambda's tail aborts (`function_clause`) · nothing
 - [ ] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted without `async` · nothing
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing

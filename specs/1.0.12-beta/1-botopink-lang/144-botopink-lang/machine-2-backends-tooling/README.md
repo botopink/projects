@@ -2254,6 +2254,20 @@ endless `iter loop` cannot be consumed. Found by B-116 P1.
       first `yield` on each form (an `iter fn`, an `iter loop`, a marked lambda) and an endless generator taken by
       `take(3)`, red on erlang, beam and wasm today, green on commonJS
 
+### B-129 — the gate's job budget counts 768 MiB a job; the commit hook alone runs a 31 GB machine out of memory
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured; the budget's numbers only)
+
+`scripts/gate.sh` § job budget sizes the side-by-side stages by `pool_default_jobs` (`scripts/lib/pool.sh`): one job a
+CPU, bounded by `MemAvailable / 768 MiB`, then 50 % / 30 % / 10 % to test-libs, test-conformance and tsc-check. On a
+31 GB machine that is ~10 test-libs jobs, while one library build measures 1–2.5 GB, and test-web's wasm compile of
+`compiler-web` (~7 GB) runs beside them uncounted: the commit hook alone, with nothing else running, drops
+`MemAvailable` to 0–1 GB (measured 2026-10-16 on a commit of 144 B-126).
+
+- [ ] the budget bounded by each stage's measured peak (a test-libs job ~2.5 GiB, a conformance job's, test-web's compile
+      counted before the pools are sized, or run apart from them); the hook on a 31 GB machine never below 3 GB available;
+      the numbers in § job budget's comment measured, and a unit-level check of `pool_default_jobs`' arithmetic
+
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
 **Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),
