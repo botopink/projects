@@ -94,7 +94,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-131 — wasm: three `std_decorator_*` cells read `std/testing/mocks.bp` a line off · nothing
 - [ ] 144 B-132 — `cell check`'s exclusion probe copies a cell without its workspace's literal entries (six rakun-service cells red) · nothing
 - [ ] 144 B-118 — beam: an `iter loop` as a lambda's tail aborts (`function_clause`) · nothing
-- [ ] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted without `async` · nothing
+- [x] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted `async` (`behavior_default_awaits`)
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
 - [ ] 144 B-121 — beam: a user function named `run` or `size` is taken for a std binding · nothing
 - [ ] 144 B-122 — beam: `.toString()` on a tuple is `unresolved_method` · nothing

@@ -2179,7 +2179,8 @@ erlang and wasm answer the generator. B-116's marked lambda writes `return <bloc
 Found by B-116 P1: a type adopting a behavior's `default fn` that answers `@Task<T>` and awaits gets a non-`async` JS
 function, which Node refuses ("await is only valid in async functions"); erlang, beam and wasm answer.
 
-- [ ] the adopted default body is emitted `async` on commonJS — a cell on every target, red on commonJS today
+- [x] the adopted default body is emitted `async` on commonJS — a cell on every target, red on commonJS today —
+      `behavior_default_awaits`
 
 ### B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare
 
