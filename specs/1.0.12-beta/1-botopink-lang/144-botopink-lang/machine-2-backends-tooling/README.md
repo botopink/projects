@@ -2241,7 +2241,12 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       block forms); the checker admits `yield` / `await` / `use` by the marker and refuses the keyword without it, the
       hint naming it; `marker-type-mismatch`; a marked lambda checked against its expected type (147); a codemod adds
       the marker wherever a body writes the keyword, the `@` types kept; every cell answers the same; a refusal cell
-      per refusal
+      per refusal — P1 landed: the markers parsed, printed and checked, a marked lambda checked against its expected
+      type and lowered through the block forms, `marker-type-mismatch`, `marker-without-arrow`,
+      `marker-lambda-without-expected-type`, `marker-on-declaration`, `component-lambda-not-lowered` (B-116-a … g and
+      B-116-i built as recommended; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
+      of today's forms refused yet. Left: P2 the codemod over botopink-lang, P3 one landing per library, P4 the
+      keyword without its marker refused
 - [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
       `@Result` → `Result`, declared in std's `.bp`; `comptime/effect_chain.zig` reduced to what the markers need; a
       codemod over botopink-lang and every library; every cell the same
