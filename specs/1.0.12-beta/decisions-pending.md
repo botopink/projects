@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**136 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**135 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -56,9 +56,8 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
-| 2 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 3 | **B-99-d** — how `d.value` is typed in the body of a function expanded at its call site (§ Front 165, under B-99-c) | whether decision 562's own `d.value.make().start()` type-checks, or `rakun.boot()` calls a run-time helper on each entry | 165 s5, s7 (`rakun.boot()` as 562's example writes it) | (b) the expanded body checked per expansion, `d.value` the declaration itself |
+| 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 2 | **B-99-d** — how `d.value` is typed in the body of a function expanded at its call site (§ Front 165, under B-99-c) | whether decision 562's own `d.value.make().start()` type-checks, or `rakun.boot()` calls a run-time helper on each entry | 165 s5, s7 (`rakun.boot()` as 562's example writes it) | (b) the expanded body checked per expansion, `d.value` the declaration itself |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -714,22 +713,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): no untested path ships.
 - **Blocks.** Nothing on Linux.
-
-#### B-19-a · Where is a type error inside a decorator's member or associated-type source located? (decisions 216, 281; 144 B-19)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the annotation that added it** (`#[maker]`), as `decorator-member-duplicate` is, with the decorator's `addMember` / `addType` call named in the message — the program's reader sees where the code came from; the decorator's author sees which call wrote it.
-- **Context.** A decorator can add members and associated types to the type it annotates — `decl.addMember(…)`, `decl.addType(…)` (decision 216) — and the code it adds is checked with the program. When that added code has a type error, the user sees a diagnostic that points past the last line of their file, because the added source has no place in it. Decision 281 refers to code by reference, so the call that added the code is known; what is open is which of the two places the error points at. 144 B-19's row 3 cannot close until it is chosen.
-- **Measured.** The diagnostic points past the file's last line (the member's source has no span in the program).
-- **Options.**
-  (a) At the annotation, the call named.
-  ```bp
-  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
-  ```
-  (b) At the `addMember` argument in the decorator's module.
-  ```bp
-  decl.addMember("make", fn() -> Self { … })   // error here, in the library
-  ```
-- **Recommendation.** (a): the program's reader is pointed at a line of their own file, and the message still names the library call that wrote the code.
-- **Blocks.** 144 B-19's row 3.
 
 #### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 525-a (1): a lambda answers its last expression written without `;` (409, 525); `{ x -> x + 1; }` answers nothing — after `botopink format` removes, once, the `;` of every existing lambda's last expression statement. The reverse of the proposal.

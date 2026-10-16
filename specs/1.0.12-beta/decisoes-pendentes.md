@@ -1,11 +1,11 @@
 # Decisões pendentes — 1.0.12-beta
 
-**136 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**135 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
 - Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
-  só lá); um id com letra nunca é renumerado nem reutilizado. O próximo número livre é **563**.
+  só lá); um id com letra nunca é renumerado nem reutilizado.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
@@ -56,9 +56,8 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
-| 1 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
-| 2 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
-| 3 | **B-99-d** — como `d.value` é tipado no corpo de uma função expandida no ponto de chamada (§ Frente 165, abaixo da B-99-c) | se o próprio `d.value.make().start()` da decisão 562 passa na checagem de tipos, ou se `rakun.boot()` chama um helper de tempo de execução em cada entrada | 165 s5, s7 (`rakun.boot()` como o exemplo da 562 o escreve) | (b) o corpo expandido checado por expansão, `d.value` a própria declaração |
+| 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 2 | **B-99-d** — como `d.value` é tipado no corpo de uma função expandida no ponto de chamada (§ Frente 165, abaixo da B-99-c) | se o próprio `d.value.make().start()` da decisão 562 passa na checagem de tipos, ou se `rakun.boot()` chama um helper de tempo de execução em cada entrada | 165 s5, s7 (`rakun.boot()` como o exemplo da 562 o escreve) | (b) o corpo expandido checado por expansão, `d.value` a própria declaração |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -714,22 +713,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): nenhum caminho sem teste é entregue.
 - **Bloqueia.** Nada no Linux.
-
-#### B-19-a · Onde fica um erro de tipo dentro do código de um membro ou tipo associado que um decorator escreveu? (decisões 216, 281; 144 B-19)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): na anotação que o adicionou** (`#[maker]`), como `decorator-member-duplicate`, com a chamada `addMember` / `addType` do decorator nomeada na mensagem — quem lê o programa vê de onde o código veio; quem escreveu o decorator vê qual chamada o escreveu.
-- **Contexto.** Um decorator pode adicionar membros e tipos associados ao tipo que anota — `decl.addMember(…)`, `decl.addType(…)` (decisão 216) — e o código que ele adiciona é checado com o programa. Quando esse código adicionado tem um erro de tipo, o usuário vê um diagnóstico que aponta para depois da última linha do seu arquivo, porque o código adicionado não tem lugar nele. A decisão 281 refere-se ao código por referência, então a chamada que adicionou o código é conhecida; o que está aberto é para qual dos dois lugares o erro aponta. A linha 3 do 144 B-19 não fecha até que isso seja escolhido.
-- **Medido.** O diagnóstico aponta para depois da última linha do arquivo (o código do membro não tem span no programa).
-- **Opções.**
-  (a) Na anotação, a chamada nomeada.
-  ```bp
-  #[maker] pub type City(name: string)   // error here: in the member `make` that `maker`'s addMember wrote
-  ```
-  (b) No argumento do `addMember` no módulo do decorator.
-  ```bp
-  decl.addMember("make", fn() -> Self { … })   // error here, in the library
-  ```
-- **Recomendação.** (a): quem lê o programa é levado a uma linha do seu próprio arquivo, e a mensagem ainda nomeia a chamada da biblioteca que escreveu o código.
-- **Trava.** A linha 3 do 144 B-19.
 
 #### B-21-a · A última expressão de um lambda escrita com `;`: continua sendo o seu valor? (decisão 409; 144 B-21)
 - **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** 525-a (1): um lambda responde sua última expressão escrita sem `;` (409, 525); `{ x -> x + 1; }` não responde nada — depois de o `botopink format` remover, uma vez, o `;` da última instrução-expressão de todo lambda existente. O contrário da proposta.

@@ -1003,7 +1003,11 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 - [x] an associated fn read as a value (`apply(City.make, …)`) is an unbound variable on erlang
 - [ ] a member's / associated type's diagnostic is located past the file's last line (member source
       placed after the module's lines) and names `City__Columns`, not `City.Columns`
-      — the type named by its owner's path landed (`assoc_type_named_by_owner_in_diagnostic`); the location · question B-19-a
+      — the type named by its owner's path landed (`assoc_type_named_by_owner_in_diagnostic`); the location
+      remains · decision 567: located at the annotation that added the code (`#[maker]`), as
+      `decorator-member-duplicate` is, the message naming the member by its owner's path and the
+      decorator's `addMember` / `addType` call with its file and line; one error per failing annotation;
+      cells: a member's type error, an associated type's, one decorator on two declarations where one fails
 - [x] a decorator imported from another module whose body builds a record private to its module fails
       at the evaluator (`call to undefined function Entity/1`): `block_eval.typesReached` finds an imported
       decorator's types through the export registry only — string meta and typed meta alike (found by
