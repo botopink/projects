@@ -2152,9 +2152,10 @@ one module per validation marker, each with the marker on a field type it cannot
 over them: the process peaks at about 8.2 GB with `feat`'s compiler (measured 2026-10-15), and while it runs with other
 gates the machine runs out of memory. Each module answers one refusal; nothing in the project needs that memory.
 
-- [ ] the cause measured (which phase holds what: the per-module comptime runs, the decorator expansions, the
-      diagnostics) and fixed; that check under 1 GB; a unit test or a cell the hook runs that builds a project of many
-      refused modules and bounds its peak (478)
+- [x] the cause measured and fixed: every decorator call kept its generated module, its encoded argument, its reply and
+      an erased copy of the decorator's reach in the session arena, and a wasm build kept its arena per module — now
+      scratch freed per call; the check 8.5 GB → 1.3 GB cold (0.9 GB warm), its output the same; the unit test
+      "decorator invocation: a call holds its trace and outcome only, not the scratch it ran from" (478)
 
 ### B-118 — beam: an `iter loop` as a lambda's tail aborts
 
@@ -2227,6 +2228,17 @@ every text)
       `FsError` of each variant, the seven texts the same everywhere
 - [ ] snap (`src/root.bp`) and rakun-ssr (`src/content/collections.bp`) delete their local `fsText` and write
       `e.message()`; every answer of both the same
+
+### B-127 — `botopink check` cold: the analysis arena and a decorator's trace listing kept for the session
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the traces feed the code cache's entries)
+
+Left by B-117: validation's refused-marker project still peaks at 1.3 GB cold. About 800 MB is the analysis arena of std
+and validation (lexer tokens and parse trees kept for the whole session), and each decorator call keeps a listing of
+about 1.7 MB in its trace, which also feeds the code cache (`analysis_entry`, level B).
+
+- [ ] a module's tokens freed after its parse, a trace's listing built when the cache needs it; that check under 1 GB
+      cold, its output and every cache entry the same; B-117's unit test's bound tightened to match
 
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
