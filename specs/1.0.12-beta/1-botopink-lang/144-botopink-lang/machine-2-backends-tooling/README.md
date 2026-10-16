@@ -2285,7 +2285,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       per refusal — P1 landed: the markers parsed, printed and checked, a marked lambda checked against its expected
       type and lowered through the block forms, `marker-type-mismatch`, `marker-without-arrow`,
       `marker-lambda-without-expected-type`, `marker-on-declaration`, `component-lambda-not-lowered` (B-116-a … g and
-      B-116-i built as recommended, B-116-a decided by 570; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
+      B-116-i built as recommended, B-116-a decided by 570, B-116-b by 571; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
       of today's forms refused yet. Left: P2 the codemod over botopink-lang, P3 one landing per library — each also marking
       every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
       keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare

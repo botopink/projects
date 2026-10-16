@@ -33,7 +33,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | B-116-b … g — the body markers' first build (§ Machine 2) | P1 builds (a); a different answer reverts that part | (a) for each |
+| 1 | B-116-c … g — the body markers' first build (§ Machine 2) | P1 builds (a); a different answer reverts that part | (a) for each |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1121,9 +1121,8 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
 
-#### B-116-b … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
+#### B-116-c … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
 - **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**
-  - **B-116-b** · A bodyless `declare fn … -> @Task<T>` (std's host bindings) and a behavior's bodyless member: **(a) no marker; a marker on a declaration refused (`marker-on-declaration`)** — nothing compiles; (b) the marker written.
   - **B-116-c** · The marker's place: **(a) `#[…] [pub] [default] <marker> fn`, annotations first**; (b) another order.
   - **B-116-d** · The codes: **(a) new `marker-without-arrow`, `marker-lambda-without-expected-type`; `effect-await-without-task`, `yield-without-generator` and `use`'s keep their codes with a hint naming the marker**, renamed in (ii) if at all; (b) renamed now (`await-without-async`, …).
   - **B-116-e** · `component { -> … }`, which has no block form to lower onto: **(a) parsed and checked in (i), lowered in (iii)** (a located refusal until then); (b) lowered through the component-fn path in (i).
