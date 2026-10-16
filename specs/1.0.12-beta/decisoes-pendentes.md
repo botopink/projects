@@ -33,22 +33,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | 164-s2-a, 164-s2-b — o subtipo GC de uma tupla; um `$__unk_eq` estrutural | a forma GC desses módulos (caem para a memória linear) | (a), (a) |
-| 2 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
-
-**1 · 164-s2-a e 164-s2-b — duas perguntas do s2 P3.** (a) Na forma GC uma tupla e um array são um tipo só
-(`$arr_any`), então uma tupla ligada a um `T` cai para a memória linear: **(a)** um subtipo próprio, para o printer de um
-slot distinguir `#(1, 2)` de `[1, 2]` (o `.wat` da maioria dos snapshots GC muda, nenhuma resposta muda); **(b)** esperar
-o P5. (b) `==` sobre um registro genérico cujos argumentos de tipo não são escritos compara por identidade um registro
-dentro de um slot, então o módulo cai para trás: **(a)** `$__unk_eq` estrutural (registros, variantes, arrays e tuplas
-campo a campo), uma igualdade só para todo valor como nos outros alvos; **(b)** esperar o P5. **Recomendação (a), (a).**
-**Bloqueia:** a forma GC desses módulos; nenhuma resposta muda hoje.
-
-Resposta (marque uma por pergunta):
-- [ ] 164-s2-a (a) o subtipo GC próprio de uma tupla, antes do P5 **(recomendada)**
-- [ ] 164-s2-a (b) esperar o P5
-- [ ] 164-s2-b (a) um `$__unk_eq` estrutural **(recomendada)**
-- [ ] 164-s2-b (b) esperar o P5
+| 1 | B-116-a … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o que o codemod escreve (B-116 P2, P3); o P1 constrói (a) | (a) para cada |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1135,20 +1120,6 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) P2. (b) P1, como mais uma folha.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada no P1.
-
-#### 164-s2-a · Uma tupla num slot de parâmetro de tipo: um subtipo GC próprio? (544; 164 s2 P3)
-- **Proposta (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): uma tupla ganha um subtipo próprio de `$arr_any`, para que o printer de um slot distinga `#(1, 2)` de `[1, 2]`.**
-- **Medido.** No rebaixamento GC uma tupla e um array são o mesmo tipo (`$arr_any`); uma tupla ligada a um `T` é recusada para o rebaixamento linear. Um subtipo muda toda construção de tupla e move a maioria dos snapshots GC (o seu `.wat`; nenhuma resposta).
-- **Opções.** (a) Como proposto, antes do P5. (b) Esperar o P5, o caso da tupla tomado junto com a remoção do rebaixamento linear.
-- **Recomendação.** (a) — a forma de um valor é o seu tipo em todo o resto do rebaixamento GC.
-- **Bloqueia.** Uma tupla por um genérico no wasm em forma GC; nada que responde hoje.
-
-#### 164-s2-b · `==` sobre um registro genérico cujos argumentos de tipo não estão escritos: uma igualdade estrutural de `unknown`? (164 s2 P3)
-- **Proposta (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): `$__unk_eq` passa a ser estrutural (registros, variantes, arrays e tuplas comparados por campo), os valores apagados do slot comparados por ela.**
-- **Medido.** Com os argumentos de tipo escritos (`Pair<i32, string>`) a comparação é rebaixada campo a campo; sem eles os slots são `unknown`, e o `$__unk_eq` de hoje compararia um registro dentro de um slot por identidade — então o módulo cai na memória linear.
-- **Opções.** (a) Como proposto. (b) Esperar o P5.
-- **Recomendação.** (a) — uma igualdade para todo valor (os outros alvos comparam estruturalmente).
-- **Bloqueia.** A forma GC desse módulo; nenhuma resposta hoje.
 
 #### B-116-a … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor; o P1 constrói cada recomendação, uma resposta diferente reverte aquela parte):**

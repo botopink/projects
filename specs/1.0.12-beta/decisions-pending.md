@@ -33,22 +33,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | 164-s2-a, 164-s2-b — a tuple's GC subtype; a structural `$__unk_eq` | those modules' GC form (they fall back to linear memory) | (a), (a) |
-| 2 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
-
-**1 · 164-s2-a and 164-s2-b — two questions from s2 P3.** (a) In GC form a tuple and an array are one type
-(`$arr_any`), so a tuple bound to a `T` falls back to linear memory: **(a)** a subtype of its own, so a slot's printer
-tells `#(1, 2)` from `[1, 2]` (most GC snapshots' `.wat` move, no answer does); **(b)** wait for P5. (b) `==` over a
-generic record whose type arguments are not written compares a record inside a slot by identity, so the module falls
-back: **(a)** `$__unk_eq` structural (records, variants, arrays and tuples by field), one equality for every value as
-on the other targets; **(b)** wait for P5. **Recommendation (a), (a).** **Blocks:** those modules' GC form; no answer
-changes today.
-
-Answer (tick one per question):
-- [ ] 164-s2-a (a) a tuple's own GC subtype, before P5 **(recommended)**
-- [ ] 164-s2-a (b) wait for P5
-- [ ] 164-s2-b (a) a structural `$__unk_eq` **(recommended)**
-- [ ] 164-s2-b (b) wait for P5
+| 1 | B-116-a … g — the body markers' first build (§ Machine 2) | what the codemod writes (B-116 P2, P3); P1 builds (a) | (a) for each |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1135,20 +1120,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) P2. (b) P1, as one more leaf.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
-
-#### 164-s2-a · A tuple in a type-parameter slot: a GC subtype of its own? (544; 164 s2 P3)
-- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): a tuple gets its own subtype of `$arr_any`, so a slot's printer tells `#(1, 2)` from `[1, 2]`.**
-- **Measured.** In the GC lowering a tuple and an array are the same type (`$arr_any`); a tuple bound to a `T` is refused into the linear lowering. A subtype changes every tuple construction and moves most GC snapshots (their `.wat`; no answer).
-- **Options.** (a) As proposed, before P5. (b) Wait for P5, the tuple's case taken with the rest of the linear lowering's deletion.
-- **Recommendation.** (a) — a value's shape is its type everywhere else in the GC lowering.
-- **Blocks.** A tuple through a generic on wasm in GC form; nothing that answers today.
-
-#### 164-s2-b · `==` over a generic record whose type arguments are not written: a structural `unknown` equality? (164 s2 P3)
-- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): `$__unk_eq` becomes structural (records, variants, arrays and tuples compared by field), the slot's erased values compared through it.**
-- **Measured.** With its type arguments written (`Pair<i32, string>`) the comparison is lowered field by field; without them the slots are `unknown`, and today's `$__unk_eq` would compare a record inside a slot by identity — so the module falls back to linear memory.
-- **Options.** (a) As proposed. (b) Wait for P5.
-- **Recommendation.** (a) — one equality for every value (the other targets compare structurally).
-- **Blocks.** That module's GC form; no answer today.
 
 #### B-116-a … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
 - **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**

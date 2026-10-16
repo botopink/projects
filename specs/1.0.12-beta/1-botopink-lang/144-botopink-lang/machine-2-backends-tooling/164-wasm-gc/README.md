@@ -100,8 +100,8 @@ float, array or function value in a type-parameter slot, `==` over a generic rec
 `yield` ending a `case` arm, a `try` inside a generator over a `@Result`, a function value in `unknown`) — 538 GC
 modules of 1399. A function value is `$closure {idx, mark}`, each lifted lambda a subtype `$env<n>` with one mutable
 field per capture, called through one boxed table entry per arity; a component is `scope_carry`'s `fn(unknown) ->
-unknown` lambda. Left to the linear lowering: a tuple in a type-parameter slot (question 164-s2-a), `==` over a generic
-record whose type arguments are not written (164-s2-b), a `try` inside a generator whose item is no `@Result`, a block
+unknown` lambda. Left to the linear lowering: a tuple in a type-parameter slot (568), `==` over a generic
+record whose type arguments are not written (569) — both lifted before P5 by the box below — a `try` inside a generator whose item is no `@Result`, a block
 or `case` value typed apart from its function (`{ yield 5; 6 }`), a component that awaits (P4), and the refusal of a
 generic body reached with nothing bound, which the GC lowering answers as commonJS does (`Box(n)`) — lifted with P5.
 Writing a type-parameter field is lowered but no cell reaches it.
@@ -112,6 +112,10 @@ Writing a type-parameter field is lowered but no cell reaches it.
 - [ ] **the operations:** construction, field read, array get and length, comparison and `@print`'s text over GC
       values; the `wat_prelude` keeps representation, operators, output and runtime (442) in GC form; `alloc` and
       every linear-memory helper gone from the program
+- [ ] **a tuple's own subtype, a structural `$__unk_eq` (568, 569, before P5):** a tuple a subtype of `$arr_any` of its
+      own, a slot's printer telling `#(1, 2)` from `[1, 2]` (the GC snapshots' `.wat` re-recorded, the diff read); `$__unk_eq`
+      comparing records, variants, arrays and tuples by field; the modules they sent to the linear lowering in GC form,
+      every answer the same; a cell for each, a tuple through a generic and `==` over an unwritten generic record
 - [ ] **tasks and the scheduler** (392) over GC records: a settled value is shared, never copied (immutable); a
       mutable cell a GC struct with one mutable field; no heap per task, no copy at a send, no cycle to detect (the
       host's collector follows cycles)
