@@ -1180,13 +1180,12 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a) for each — the most restrictive reading, every cell's answer unchanged.
 - **Blocks.** Nothing built waits (P1 builds (a)); B-116-a fixes what the codemod (P2, P3) writes.
 
-#### B-116-h · A generator's body: started by the call, or by the first `next()`? (decisions 541, 553; 144 B-116)
-- **Proposed (the coordinator, 2026-10-15; awaiting the maintainer):** **(a): lazily — calling a generator runs nothing; the body starts at the first item asked for**, on every target.
-- **Measured.** B-116 P1 found that a generator lambda runs its body up to the first `yield` when called on erlang, beam and wasm, while commonJS (a JS generator) waits for the first item; unmarked generator functions not yet measured. No decision states the order; it is observable through a side effect before the first `yield`.
-- **Options.** (a) Lazy everywhere (JS's, and what an `Iter<T, R>` value promises). (b) Eager up to the first `yield` everywhere.
-- **Recommendation.** (a) — a value that is only a description of work does none until asked; erlang, beam and wasm change.
-- **Blocks.** One answer on every target for a side effect before a generator's first `yield`; a cell either way.
-
+#### B-116-j · A marked lambda's body: a function body or a loop body? (decision 553; 144 B-116)
+- **Proposed (fable, 2026-10-16; awaiting the maintainer):** **(a): a function body, as an `iter fn`'s — `return v` is the iterator's `R` (553 (2)), a top-level `continue` refused, `break v` refused; `conformance/docs.md`'s equivalence `iter { x -> b }` ≡ `{ x -> iter loop { b; break; } }` dropped.**
+- **Measured.** B-116 P1 lowers `iter { x -> b }` onto `iter loop { b; break; }` (`desugarMarked`), so the body takes 125's loop rules: `return v` is refused `iterator-return-forbidden` (an `iter fn` says `iter-mixed-yield-return`), a top-level `continue` re-runs the body (an `iter fn` refuses `continue-outside-loop`), `break v` emits and ends. No `marker_*` cell exercises them; the reference states the lowering as the language.
+- **Options.** (a) A function body, one rule for a marked `fn` and a marked lambda. (b) The loop body, as built.
+- **Recommendation.** (a) — 553 makes a lambda a generator "when it carries `iter`", as an `iter fn`; the lowering is P1's own, and (iii) builds `R` anyway.
+- **Blocks.** A lambda's `return v` in (iii); a cell either way.
 #### B-116-i · The choices B-116 P1 made where no decision speaks (decision 553, 147; 144 B-116)
 - **Proposed (opus, 2026-10-15; awaiting the maintainer; built as listed):** (1) an expected return type that is still a free type variable accepts any marker; (2) an expected type that is not a function type is left to ordinary unification; (3) an `implement` method is checked against its marker only when it writes a return type; (4) a non-yielding marked behavior or type method stays a factory in P1 (the codegen reads the old rule until P4); (5) `component { -> … }` is checked, then refused at the marker with `component-lambda-not-lowered` until B-116 (iii).
 - **Measured.** Each is a case the decision's text and 147 leave open; the cells `marker_*` hold the built answers where they are observable.

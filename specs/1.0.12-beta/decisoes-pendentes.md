@@ -1180,13 +1180,12 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (a) para cada — a leitura mais restritiva, a resposta de toda célula inalterada.
 - **Bloqueia.** Nada construído espera (o P1 constrói (a)); B-116-a fixa o que o codemod (P2, P3) escreve.
 
-#### B-116-h · O corpo de um gerador: iniciado pela chamada, ou pelo primeiro `next()`? (decisões 541, 553; 144 B-116)
-- **Proposta (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): preguiçoso — chamar um gerador não executa nada; o corpo começa no primeiro item pedido**, em todo alvo.
-- **Medido.** O B-116 P1 achou que uma lambda geradora executa o seu corpo até o primeiro `yield` quando chamada no erlang, no beam e no wasm, enquanto o commonJS (um gerador JS) espera o primeiro item; funções geradoras sem marcador ainda não medidas. Nenhuma decisão fixa a ordem; ela é observável por um efeito colateral antes do primeiro `yield`.
-- **Opções.** (a) Preguiçoso em todo lugar (o do JS, e o que um valor `Iter<T, R>` promete). (b) Antecipado até o primeiro `yield` em todo lugar.
-- **Recomendação.** (a) — um valor que é só a descrição de um trabalho não faz nada até ser pedido; erlang, beam e wasm mudam.
-- **Bloqueia.** Uma resposta em todo alvo para um efeito colateral antes do primeiro `yield` de um gerador; uma célula em qualquer caso.
-
+#### B-116-j · O corpo de uma lambda marcada: um corpo de função ou um corpo de laço? (decisão 553; 144 B-116)
+- **Proposta (fable, 2026-10-16; aguardando o mantenedor):** **(a): um corpo de função, como o de uma `iter fn` — `return v` é o `R` do iterador (553 (2)), um `continue` de topo recusado, `break v` recusado; a equivalência de `conformance/docs.md` `iter { x -> b }` ≡ `{ x -> iter loop { b; break; } }` retirada.**
+- **Medido.** O B-116 P1 rebaixa `iter { x -> b }` para `iter loop { b; break; }` (`desugarMarked`), então o corpo segue as regras de laço da 125: `return v` é recusado `iterator-return-forbidden` (uma `iter fn` diz `iter-mixed-yield-return`), um `continue` de topo executa o corpo de novo (uma `iter fn` recusa `continue-outside-loop`), `break v` emite e termina. Nenhuma célula `marker_*` os exercita; a referência enuncia o rebaixamento como a linguagem.
+- **Opções.** (a) Um corpo de função, uma regra para uma `fn` marcada e uma lambda marcada. (b) O corpo de laço, como construído.
+- **Recomendação.** (a) — a 553 faz de uma lambda um gerador "quando ela carrega `iter`", como uma `iter fn`; o rebaixamento é do próprio P1, e o (iii) constrói `R` de qualquer forma.
+- **Bloqueia.** O `return v` de uma lambda no (iii); uma célula em qualquer caso.
 #### B-116-i · As escolhas que o B-116 P1 fez onde nenhuma decisão fala (decisões 553, 147; 144 B-116)
 - **Proposta (opus, 2026-10-15; aguardando o mantenedor; construída como listado):** (1) um tipo de retorno esperado que ainda é uma variável de tipo livre aceita qualquer marcador; (2) um tipo esperado que não é tipo de função fica para a unificação comum; (3) um método de `implement` é verificado contra o seu marcador só quando escreve um tipo de retorno; (4) um método marcado de behavior ou de tipo que não faz yield continua uma fábrica no P1 (o codegen lê a regra antiga até o P4); (5) `component { -> … }` é verificado e então recusado no marcador com `component-lambda-not-lowered` até o B-116 (iii).
 - **Medido.** Cada um é um caso que o texto da decisão e a 147 deixam em aberto; as células `marker_*` guardam as respostas construídas onde elas são observáveis.

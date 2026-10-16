@@ -363,6 +363,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-125 | [1](machine-1-checker/README.md) | a `//` comment after a block's tail expression is a parse error |
 | B-126 | [2](machine-2-backends-tooling/README.md) | std: an `FsError` carries its own text, `message()` (decision 563) |
 | B-127 | [2](machine-2-backends-tooling/README.md) | `botopink check` cold: the analysis arena and a decorator's trace listing kept for the session |
+| B-128 | [2](machine-2-backends-tooling/README.md) | erlang, beam, wasm: a generator runs its whole body at the call (105, 125) |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

@@ -2240,6 +2240,20 @@ about 1.7 MB in its trace, which also feeds the code cache (`analysis_entry`, le
 - [ ] a module's tokens freed after its parse, a trace's listing built when the cache needs it; that check under 1 GB
       cold, its output and every cache entry the same; B-117's unit test's bound tightened to match
 
+### B-128 — erlang, beam, wasm: a generator runs its whole body at the call (decisions 105, 125)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the eager scopes are the erlang and wasm lowerings' design)
+
+105 makes a generator's body lazily evaluated, one step per `next`, and 125 keeps it (the prefixed loop *is* the
+iterator); `conformance/docs.md` § Iterators and streams says each `next` runs the body up to the next `yield`.
+commonJS does so. erlang (`codegen/erlang.zig`'s `GenScope`: "a generator is the list of its items, collected while the
+body runs"), beam and wasm run the whole body at the call — a print before and after a `yield` comes out at once, and an
+endless `iter loop` cannot be consumed. Found by B-116 P1.
+
+- [ ] a generator's body runs one step per item asked for on every target — a cell with a print before and after the
+      first `yield` on each form (an `iter fn`, an `iter loop`, a marked lambda) and an endless generator taken by
+      `take(3)`, red on erlang, beam and wasm today, green on commonJS
+
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
 **Repository:** botopink-lang (`--lang`), then a consumer commit per library · **Model:** opus for (i) and (iii),
@@ -2266,7 +2280,8 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       `R` ending the iteration (`for x in try xs`), `Component<Result<R, E>>` the one component that throws — on
       commonJS, erlang and beam, wasm through 164; `io.fs`'s `lines()` / `chunks()` answering
       `AsyncIter<…, Result<void, FsError>>`; new cells red on the parent, green after
-- [ ] Conformance (459)
+- [ ] Conformance (459) — with a cell for the unmarked forms whose tail `await e` / `try e` P1 made the body's value
+      (`fn f() -> @Task<i32> { await g() }`, a bare `async { await g() }`, which answered null on commonJS)
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
