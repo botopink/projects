@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**137 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**138 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1165,6 +1165,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Measured.** `botopink build` renders each module's trace once, a snapshot once per target; the code cache writes a listing as the string it renders (its entries byte-identical before and after).
 - **Options.** (a) As built: memory first, a re-lowering per read. (b) The listing kept again: ~128 MB back on that project, no re-lowering.
 - **Recommendation.** (a) — the gate's memory is what brought the machine down; a re-lowering is one module's compile.
+- **Blocks.** Nothing built waits.
+
+#### B-116-k · What a `component` lambda's body allows (decision 574; 144 B-116 (i))
+- **Proposed (opus, 2026-10-16; awaiting the maintainer; built as listed, the most restrictive):** (1) a `throw` or a propagating `try` in a component lambda is refused — `Component<Result<R, E>>` is B-116 (iii)'s; (2) its `use`s and `await`s join no hook node: the enclosing function's builder is cleared for its body, so its calls take 375's conservative asynchronous reading; (3) a body whose last expression ends with `;` is refused as a mismatch when `R` is not `void`, where a `component fn` would answer `rendered(null)`.
+- **Measured.** 574 lowers `component { -> … }` as a `component fn` (the component-fn path, captures carried); `component_lambda_typed_val` and `component_lambda_typed_param` answer on the four targets. The three points are cases 574 does not name.
+- **Options.** Each point as built, or (b): (1) a `throw` allowed as in a `component fn` (an `ErrorBoundary` catches it, 414, 504); (2) the lambda's hooks joined to the enclosing builder; (3) a `;`-ended body answering `rendered(null)` as a `component fn` does.
+- **Recommendation.** (b) for (1) and (3), one rule for a `component fn` and a `component` lambda as 574 says; (2) as built until a component lambda has a builder of its own.
 - **Blocks.** Nothing built waits.
 
 #### B-116-i · The choices B-116 P1 made where no decision speaks (decision 553, 147; 144 B-116)

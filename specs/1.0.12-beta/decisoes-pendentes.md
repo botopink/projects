@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**137 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**138 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1165,6 +1165,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Medido.** `botopink build` renderiza o trace de cada módulo uma vez, um snapshot uma vez por alvo; o cache de código grava uma listagem como a string que ela renderiza (as suas entradas idênticas byte a byte antes e depois).
 - **Opções.** (a) Como construído: memória primeiro, um re-rebaixamento por leitura. (b) A listagem guardada de novo: ~128 MB de volta nesse projeto, sem re-rebaixamento.
 - **Recomendação.** (a) — a memória do gate foi o que derrubou a máquina; um re-rebaixamento é a compilação de um módulo.
+- **Bloqueia.** Nada construído espera.
+
+#### B-116-k · O que o corpo de uma lambda `component` permite (decisão 574; 144 B-116 (i))
+- **Proposta (opus, 2026-10-16; aguardando o mantenedor; construída como listado, a mais restritiva):** (1) um `throw` ou um `try` que propaga numa lambda `component` é recusado — `Component<Result<R, E>>` é do B-116 (iii); (2) os seus `use`s e `await`s não entram em nenhum nó de hook: o builder da função que a envolve é limpo para o corpo dela, então as suas chamadas recebem a leitura assíncrona conservadora da 375; (3) um corpo cuja última expressão termina com `;` é recusado como incompatível quando `R` não é `void`, onde uma `component fn` responderia `rendered(null)`.
+- **Medido.** A 574 rebaixa `component { -> … }` como uma `component fn` (o caminho de component-fn, as capturas carregadas); `component_lambda_typed_val` e `component_lambda_typed_param` respondem nos quatro alvos. Os três pontos são casos que a 574 não nomeia.
+- **Opções.** Cada ponto como construído, ou (b): (1) um `throw` permitido como numa `component fn` (um `ErrorBoundary` o pega, 414, 504); (2) os hooks da lambda juntados ao builder que a envolve; (3) um corpo terminado em `;` respondendo `rendered(null)` como uma `component fn` faz.
+- **Recomendação.** (b) para (1) e (3), uma regra para uma `component fn` e uma lambda `component` como a 574 diz; (2) como construído até uma lambda `component` ter um builder próprio.
 - **Bloqueia.** Nada construído espera.
 
 #### B-116-i · As escolhas que o B-116 P1 fez onde nenhuma decisão fala (decisões 553, 147; 144 B-116)

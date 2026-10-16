@@ -2348,9 +2348,10 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
 - [ ] (i) the codes renamed (573): `effect-await-without-task` → `await-without-async`, `yield-without-generator` →
       `yield-without-iter`, `use-without-context-effect` → `use-without-component`, each hint naming the marker; no alias;
       every cell, snapshot and `docs.md` citing them updated in the same landing; `iter-await` and the `marker-*` codes kept
-- [ ] (i) a `component` lambda lowered (574): `component { -> … }` against its expected type compiles as a `component fn`
+- [x] (i) a `component` lambda lowered (574): `component { -> … }` against its expected type compiles as a `component fn`
       (the component-fn path, captures carried) on commonJS, erlang, beam and wasm; `component-lambda-not-lowered`
-      deleted; cells: one bound to a typed `val`, one passed to a typed parameter, rendered, one answer everywhere
+      deleted; cells: one bound to a typed `val`, one passed to a typed parameter, rendered, one answer everywhere — `component_lambda_typed_val`,
+      `component_lambda_typed_param`; lowered through `lowerComponentBody` (question B-116-k)
 - [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
       `@Result` → `Result`, declared in std's `.bp`; `Async.resolve(v: T) -> Async<T>` (570); `comptime/effect_chain.zig` reduced to what the markers need; a
       codemod over botopink-lang and every library; every cell the same
