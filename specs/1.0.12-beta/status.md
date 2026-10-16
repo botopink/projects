@@ -97,7 +97,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-122 — beam: `.toString()` on a tuple is `unresolved_method` · nothing
 - [ ] 144 B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused · nothing
 - [ ] 144 B-126 — std: an `FsError` carries its own text, `message()` (563): std's half landed (`fs_error_message`); left: snap and rakun-ssr delete their `fsText` · nothing
-- [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` — (i) P1 landed (parse, check, lower; nothing refused yet); left (i) P2–P4 · nothing
+- [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` — (i) P1 landed (parse, check, lower; nothing refused yet); left (i) P2–P4 (570: the codemod also marks keyword-less `@Task` / `@Component` bodies; P4 refuses an unmarked body returning the bare value) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-99 (rest) — `d.value` typed in an expanded body (165 s5 waits on it); an expanded function from another module aliased and located in its own module · question B-99-d
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
