@@ -33,7 +33,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | B-116-e … g — the body markers' first build (§ Machine 2) | P1 builds (a); a different answer reverts that part | (a) for each |
+| 1 | B-116-f, g — the body markers' first build (§ Machine 2) | P1 builds (a); a different answer reverts that part | (a) for each |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -1121,9 +1121,8 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
 
-#### B-116-e … B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
+#### B-116-f, B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
 - **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**
-  - **B-116-e** · `component { -> … }`, which has no block form to lower onto: **(a) parsed and checked in (i), lowered in (iii)** (a located refusal until then); (b) lowered through the component-fn path in (i).
   - **B-116-f** · `async fn f()` with no return type: **(a) refused by `marker-type-mismatch` in (i), "write `-> @Task<…>`"**, the `@` types being kept; (b) inferred `@Task<void>`.
   - **B-116-g** · A marked trailing lambda `f(1) async { x -> … }`: **(a) not parsed in (i), written inside the parentheses**; (b) parsed.
 - **Measured.** No lambda awaits or yields today (`inferFunctionExprExpectedInner` clears the generator and task context), so a marked lambda is a new surface; `botopink migrate` was removed (B-56) and the formatter carries migrations (525, 541); std declares 8 bodyless `-> @Task` host bindings; 125 cells write `await`, 59 `yield`, 66 `use`.

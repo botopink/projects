@@ -33,7 +33,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | B-116-e … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o P1 constrói (a); uma resposta diferente reverte essa parte | (a) para cada |
+| 1 | B-116-f, g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o P1 constrói (a); uma resposta diferente reverte essa parte | (a) para cada |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1121,9 +1121,8 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (a).
 - **Bloqueia.** Nada no P1.
 
-#### B-116-e … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
+#### B-116-f, B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor; o P1 constrói cada recomendação, uma resposta diferente reverte aquela parte):**
-  - **B-116-e** · `component { -> … }`, que não tem forma de bloco sobre a qual rebaixar: **(a) analisado e verificado no (i), rebaixado no (iii)** (uma recusa localizada até lá); (b) rebaixado pelo caminho de component-fn no (i).
   - **B-116-f** · `async fn f()` sem tipo de retorno: **(a) recusado por `marker-type-mismatch` no (i), "escreva `-> @Task<…>`"**, os tipos `@` sendo mantidos; (b) inferido `@Task<void>`.
   - **B-116-g** · Uma lambda final marcada `f(1) async { x -> … }`: **(a) não analisada no (i), escrita dentro dos parênteses**; (b) analisada.
 - **Medido.** Nenhuma lambda faz await ou yield hoje (`inferFunctionExprExpectedInner` limpa o contexto de gerador e de task), então uma lambda marcada é uma superfície nova; `botopink migrate` foi removido (B-56) e o formatador carrega as migrações (525, 541); a std declara 8 ligações host `-> @Task` sem corpo; 125 células escrevem `await`, 59 `yield`, 66 `use`.

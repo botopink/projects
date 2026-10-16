@@ -2285,7 +2285,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       per refusal — P1 landed: the markers parsed, printed and checked, a marked lambda checked against its expected
       type and lowered through the block forms, `marker-type-mismatch`, `marker-without-arrow`,
       `marker-lambda-without-expected-type`, `marker-on-declaration`, `component-lambda-not-lowered` (B-116-a … g and
-      B-116-i built as recommended, B-116-a decided by 570, B-116-b by 571, B-116-c by 572, B-116-d by 573; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
+      B-116-i built as recommended, B-116-a decided by 570, B-116-b by 571, B-116-c by 572, B-116-d by 573, B-116-e by 574; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
       of today's forms refused yet. Left: P2 the codemod over botopink-lang, P3 one landing per library — each also marking
       every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
       keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare
@@ -2293,6 +2293,9 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
 - [ ] (i) the codes renamed (573): `effect-await-without-task` → `await-without-async`, `yield-without-generator` →
       `yield-without-iter`, `use-without-context-effect` → `use-without-component`, each hint naming the marker; no alias;
       every cell, snapshot and `docs.md` citing them updated in the same landing; `iter-await` and the `marker-*` codes kept
+- [ ] (i) a `component` lambda lowered (574): `component { -> … }` against its expected type compiles as a `component fn`
+      (the component-fn path, captures carried) on commonJS, erlang, beam and wasm; `component-lambda-not-lowered`
+      deleted; cells: one bound to a typed `val`, one passed to a typed parameter, rendered, one answer everywhere
 - [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
       `@Result` → `Result`, declared in std's `.bp`; `Async.resolve(v: T) -> Async<T>` (570); `comptime/effect_chain.zig` reduced to what the markers need; a
       codemod over botopink-lang and every library; every cell the same
