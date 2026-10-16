@@ -33,7 +33,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | B-116-d … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o P1 constrói (a); uma resposta diferente reverte essa parte | (a) para cada |
+| 1 | B-116-e … g — a primeira construção dos marcadores de corpo (§ Máquina 2) | o P1 constrói (a); uma resposta diferente reverte essa parte | (a) para cada |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -1121,9 +1121,8 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Recomendação.** (a).
 - **Bloqueia.** Nada no P1.
 
-#### B-116-d … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
+#### B-116-e … B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor; o P1 constrói cada recomendação, uma resposta diferente reverte aquela parte):**
-  - **B-116-d** · Os códigos: **(a) novos `marker-without-arrow`, `marker-lambda-without-expected-type`; `effect-await-without-task`, `yield-without-generator` e o de `use` mantêm os seus códigos com uma dica que nomeia o marcador**, renomeados no (ii) se for o caso; (b) renomeados agora (`await-without-async`, …).
   - **B-116-e** · `component { -> … }`, que não tem forma de bloco sobre a qual rebaixar: **(a) analisado e verificado no (i), rebaixado no (iii)** (uma recusa localizada até lá); (b) rebaixado pelo caminho de component-fn no (i).
   - **B-116-f** · `async fn f()` sem tipo de retorno: **(a) recusado por `marker-type-mismatch` no (i), "escreva `-> @Task<…>`"**, os tipos `@` sendo mantidos; (b) inferido `@Task<void>`.
   - **B-116-g** · Uma lambda final marcada `f(1) async { x -> … }`: **(a) não analisada no (i), escrita dentro dos parênteses**; (b) analisada.
