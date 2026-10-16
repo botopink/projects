@@ -94,7 +94,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
 - [ ] 144 B-121 — beam: a user function named `run` or `size` is taken for a std binding · nothing
 - [ ] 144 B-122 — beam: `.toString()` on a tuple is `unresolved_method` · nothing
-- [ ] 144 B-125 — a `//` comment after a block's tail expression is a parse error · nothing
 - [ ] 144 B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused · nothing
 - [ ] 144 B-126 — std: an `FsError` carries its own text, `message()` (563); then snap and rakun-ssr delete their `fsText` · nothing
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` — (i) P1 landed (parse, check, lower; nothing refused yet); left (i) P2–P4 · nothing
@@ -381,6 +380,8 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 ### 144 botopink-lang
 
 - [x] 144 B-123 — a `//` comment between the statements of a `case` arm block parses (both arm block forms read through the shared block body), the formatter keeps it (`case_arm_block_comment`); B-125 found
+- [x] 144 B-125 — a `//` comment after a block's bare tail expression parses and the tail stays the block's value on every backend; the formatter keeps it (`block_tail_comment`)
+- [x] 144 B-27 step 6 follow-up — `std/io/process`'s wasm refusal recorded beside `io/fs`'s in `std_fs_walk_root_spellings`
 - [x] 144 B-27 step 6 (decision 506 (c)) — std's `io.stdin` (`readLine`, `isTTY`, `readChunk`), `io.terminal` (`stdoutIsTTY`, `size`, `setRaw`, `keys`, `parseKey`), `io.process` (`Signal`, `onSignal`, `spawn`, `Child.wait` / `kill` / `forwardSignals`) on commonJS, erlang and beam, refused on wasm; B-27-g1 … g4 filed, B-120 … B-124 found
 - [x] 144 B-27 (decision 561) — a name between backticks is an identifier in every name position: the lexer's token (empty and line-break refused), each backend's collision-free name, diagnostics in the backtick form, `not-found.bpp` imported with and without an alias; B-27-d, B-27-e, B-27-f filed
 - [x] 144 B-27 (decision 552) — a `.bpp` header declaration written after a statement refused at the declaration, naming the statement before it; the unfold moves no declaration (`bpp_declaration_after_statement`)

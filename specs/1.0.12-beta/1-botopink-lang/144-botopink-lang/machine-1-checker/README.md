@@ -2178,7 +2178,7 @@ appear here" on every target; a comment between statements of a function body is
 Found by B-123: a line comment after a bare tail expression with no `;` (`a` then `// last` then `}`) is refused "this
 token cannot appear here", in a function body and in every block form.
 
-- [ ] a comment between a block's tail expression and its `}` parses, and the formatter keeps it — a cell, red today
+- [x] a comment between a block's tail expression and its `}` parses, the tail stays the block's value on every backend, and the formatter keeps it (`block_tail_comment`)
 
 ### B-55 — whole-package analysis: can two modules of a package import each other? (study, s23-i)
 
