@@ -2148,6 +2148,8 @@ calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for
 - [ ] a call into a generic fn of another module — a cell red on commonJS today
 - [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
       today
+- [ ] a tuple held in a type-parameter slot is printed as a tuple (`Box(value: #(1, 2))`, `id(#(3, "x"))` answers
+      `#(3, "x")`; today `[1, 2]`, `[3, "x"]`) — found by 164 s2's tuple subtype; a cell on every target
 
 ### B-117 — `botopink check` of a project of refused decorator markers peaks at 8 GB
 
