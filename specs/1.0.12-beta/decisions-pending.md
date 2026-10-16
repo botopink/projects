@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**135 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**136 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1136,6 +1136,13 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) A function body, one rule for a marked `fn` and a marked lambda. (b) The loop body, as built.
 - **Recommendation.** (a) — 553 makes a lambda a generator "when it carries `iter`", as an `iter fn`; the lowering is P1's own, and (iii) builds `R` anyway.
 - **Blocks.** A lambda's `return v` in (iii); a cell either way.
+#### B-127-a · A trace's listing: lowered again on each read, or kept? (144 B-127)
+- **Proposed (opus, 2026-10-16; awaiting the maintainer; built as (a)):** **(a): lowered again from the module's Erlang text each time a snapshot or the code cache reads it** — the wat build cache keeps the Erlang text (35 MB on validation's refused-marker project) instead of the listing (128 MB).
+- **Measured.** `botopink build` renders each module's trace once, a snapshot once per target; the code cache writes a listing as the string it renders (its entries byte-identical before and after).
+- **Options.** (a) As built: memory first, a re-lowering per read. (b) The listing kept again: ~128 MB back on that project, no re-lowering.
+- **Recommendation.** (a) — the gate's memory is what brought the machine down; a re-lowering is one module's compile.
+- **Blocks.** Nothing built waits.
+
 #### B-116-i · The choices B-116 P1 made where no decision speaks (decision 553, 147; 144 B-116)
 - **Proposed (opus, 2026-10-15; awaiting the maintainer; built as listed):** (1) an expected return type that is still a free type variable accepts any marker; (2) an expected type that is not a function type is left to ordinary unification; (3) an `implement` method is checked against its marker only when it writes a return type; (4) a non-yielding marked behavior or type method stays a factory in P1 (the codegen reads the old rule until P4); (5) `component { -> … }` is checked, then refused at the marker with `component-lambda-not-lowered` until B-116 (iii).
 - **Measured.** Each is a case the decision's text and 147 leave open; the cells `marker_*` hold the built answers where they are observable.

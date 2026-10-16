@@ -87,10 +87,11 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-114 — commonJS: an `f64` bound to a top-level generic fn's `T` is written `4.0` (521) — the type's print shape handed in at each direct call (`generic_float_text`, `generic_float_record_text`)
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
-- [ ] 144 B-127 — `botopink check` cold: the analysis arena and a decorator's trace listing kept for the session (1.3 GB left) · nothing
+- [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
 - [ ] 144 B-128 — erlang, beam, wasm: a generator runs its whole body at the call, against 105's laziness · nothing
 - [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
+- [ ] 144 B-131 — wasm: three `std_decorator_*` cells read `std/testing/mocks.bp` a line off · nothing
 - [ ] 144 B-118 — beam: an `iter loop` as a lambda's tail aborts (`function_clause`) · nothing
 - [ ] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted without `async` · nothing
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
@@ -329,7 +330,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open: 132 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
+last section. Open: 133 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**135 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**136 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1136,6 +1136,13 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) Um corpo de função, uma regra para uma `fn` marcada e uma lambda marcada. (b) O corpo de laço, como construído.
 - **Recomendação.** (a) — a 553 faz de uma lambda um gerador "quando ela carrega `iter`", como uma `iter fn`; o rebaixamento é do próprio P1, e o (iii) constrói `R` de qualquer forma.
 - **Bloqueia.** O `return v` de uma lambda no (iii); uma célula em qualquer caso.
+#### B-127-a · A listagem de um trace: rebaixada de novo a cada leitura, ou guardada? (144 B-127)
+- **Proposta (opus, 2026-10-16; aguardando o mantenedor; construída como (a)):** **(a): rebaixada de novo a partir do texto Erlang do módulo a cada vez que um snapshot ou o cache de código a lê** — o cache de build do wat guarda o texto Erlang (35 MB no projeto de marcadores recusados da validation) em vez da listagem (128 MB).
+- **Medido.** `botopink build` renderiza o trace de cada módulo uma vez, um snapshot uma vez por alvo; o cache de código grava uma listagem como a string que ela renderiza (as suas entradas idênticas byte a byte antes e depois).
+- **Opções.** (a) Como construído: memória primeiro, um re-rebaixamento por leitura. (b) A listagem guardada de novo: ~128 MB de volta nesse projeto, sem re-rebaixamento.
+- **Recomendação.** (a) — a memória do gate foi o que derrubou a máquina; um re-rebaixamento é a compilação de um módulo.
+- **Bloqueia.** Nada construído espera.
+
 #### B-116-i · As escolhas que o B-116 P1 fez onde nenhuma decisão fala (decisões 553, 147; 144 B-116)
 - **Proposta (opus, 2026-10-15; aguardando o mantenedor; construída como listado):** (1) um tipo de retorno esperado que ainda é uma variável de tipo livre aceita qualquer marcador; (2) um tipo esperado que não é tipo de função fica para a unificação comum; (3) um método de `implement` é verificado contra o seu marcador só quando escreve um tipo de retorno; (4) um método marcado de behavior ou de tipo que não faz yield continua uma fábrica no P1 (o codegen lê a regra antiga até o P4); (5) `component { -> … }` é verificado e então recusado no marcador com `component-lambda-not-lowered` até o B-116 (iii).
 - **Medido.** Cada um é um caso que o texto da decisão e a 147 deixam em aberto; as células `marker_*` guardam as respostas construídas onde elas são observáveis.

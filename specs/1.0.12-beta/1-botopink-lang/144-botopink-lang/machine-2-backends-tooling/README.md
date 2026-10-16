@@ -2244,8 +2244,10 @@ Left by B-117: validation's refused-marker project still peaks at 1.3 GB cold. A
 and validation (lexer tokens and parse trees kept for the whole session), and each decorator call keeps a listing of
 about 1.7 MB in its trace, which also feeds the code cache (`analysis_entry`, level B).
 
-- [ ] a module's tokens freed after its parse, a trace's listing built when the cache needs it; that check under 1 GB
-      cold, its output and every cache entry the same; B-117's unit test's bound tightened to match
+- [x] a module's tokens freed after its parse, a trace's listing built when the cache needs it; that check under 1 GB
+      cold, its output and every cache entry the same; B-117's unit test's bound tightened to match — 1.38 GB → 0.92 GB
+      cold; a trace keeps the module's name, argument and reply, the wat build cache the module's Erlang text, a listing
+      lowered again when a snapshot or the code cache reads it (question B-127-a)
 
 ### B-128 — erlang, beam, wasm: a generator runs its whole body at the call (decisions 105, 125)
 
@@ -2294,6 +2296,17 @@ over a binding with no wasm cell makes wasm refuse the whole module today, so `J
 - [ ] `io.process`'s `rawOnSignal` / `rawSpawn` / `rawKill` and `io.terminal`'s raw cells (B-27 step 6) still classify the
       host's failure by hand into the `kind|message` text `ProcessError` / `TerminalError` read: written `result: true`,
       `HostError` mapped into those enums in std (486 (2))
+
+### B-131 — wasm: three `std_decorator_*` cells read `std/testing/mocks.bp` a line off
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by B-127 on `feat`'s compiler: `std_decorator_leaf_import`, `std_decorator_through_namespace` and
+`std_decorator_unknown_through_handle` fail on wasm with a location in `std/testing/mocks.bp` shifted by a line; the other
+targets answer.
+
+- [ ] the three cells green on wasm, the location the source's — the cause named (a std source edit the wasm path reads
+      stale, or the location's own arithmetic)
 
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
