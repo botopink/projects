@@ -48,7 +48,7 @@ Answered and waiting only for their number in `decisions-taken.md`, so blocking 
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
-refused), **B-99-c** (a dependency's own root calling a catalogue default, built as refused).
+refused), **B-99-c** (a dependency's own root calling a catalogue default, built as refused). **B-99-e** (where a caller's argument that breaks an expanded generic body is located, built at the argument).
 
 ---
 
@@ -1234,6 +1234,23 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (b): it is what 562's example implies, and it settles the call of an expanded function with a loop variable too.
 - **Blocks.** 165 s5 and s7: `rakun.boot()` written as 562's example writes it.
+
+#### B-99-e · Where is a caller's argument that breaks an expanded generic body located? (decision 562; 144 B-99)
+- **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (a): at the caller's argument.
+- **Context.** A function expanded at its call site (562) is copied into the caller; a refusal inside the copied code is located in the declaring module, the call as its called-from frame. When the declaring body is generic and the type error comes from what the caller passed, the error could point at either place.
+- **Measured.** `fn greet<T>(comptime who: @Expr<T>) { var count = who.value; val n: i32 = count + 1; }` in a library, called `greet("ana")`: refused at the caller's argument (`src/main.bp:4:11`), since the argument's copy stays the caller's node.
+- **Options.**
+  (a) ★ At the caller's argument (built).
+  ```bp
+  greet("ana");   // refused here: type mismatch, string where i32 is expected
+  ```
+  (b) In the declaring module, the call as the called-from frame.
+  ```text
+  at greeter/root.bp:3:30   (count + 1)
+  from src/main.bp:4:5
+  ```
+- **Recommendation.** (a): the value at fault is the caller's, written in the caller's file.
+- **Blocks.** Nothing.
 
 #### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
 - **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `{src/main.bp}`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.

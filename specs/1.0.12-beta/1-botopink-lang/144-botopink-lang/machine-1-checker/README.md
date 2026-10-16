@@ -2483,10 +2483,12 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
       modules started in `meta` order on every target, the order read from the program's output;
       `comptime_expand_banner`, `comptime_expand_constant_at_build`, `comptime_expand_condition_run_time`,
       `comptime_expand_runtime_argument`; the `stage_*` cells give their `Build` function a run-time parameter)
-- [ ] an expanded function from another module: its types and namespace imports aliased in the emitted code, and a
-      type error in that code located in the declaring module, not the caller's file
+- [x] an expanded function from another module: its types (private ones included), private functions and namespace
+      imports resolved as in its module in the emitted code, a caller's own type of the same name refused
+      `import-name-collision` at the call; a refusal in that code located in the declaring module, the call as its
+      called-from frame (`comptime_expand_library_names`, `comptime_expand_library_type_error`)
 - [ ] `d.value` in an expanded body typed as B-99-d answers (decision 562's `d.value.make().start()` refused today
       at the declaration: "cannot call a method on an `unknown` value") — a cell, red today
 
-Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body.
+Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
 

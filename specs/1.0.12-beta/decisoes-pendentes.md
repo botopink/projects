@@ -48,7 +48,7 @@ Respondidas e esperando só o seu número em `decisions-taken.md`, então sem tr
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
-stem, construído como recusado), **B-99-c** (a própria raiz de uma dependência chamando um default de catálogo, construído como recusado).
+stem, construído como recusado), **B-99-c** (a própria raiz de uma dependência chamando um default de catálogo, construído como recusado). **B-99-e** (onde fica um argumento do chamador que quebra um corpo genérico expandido, construído no argumento).
 
 ---
 
@@ -1234,6 +1234,23 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   ```
 - **Recomendação.** (b): é o que o exemplo da 562 implica, e resolve também a chamada de uma função expandida com uma variável de laço.
 - **Bloqueia.** 165 s5 e s7: `rakun.boot()` escrito como o exemplo da 562 o escreve.
+
+#### B-99-e · Onde fica um argumento do chamador que quebra um corpo genérico expandido? (decisão 562; 144 B-99)
+- **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (a): no argumento do chamador.
+- **Contexto.** Uma função expandida no ponto de chamada (562) é copiada para o chamador; uma recusa dentro do código copiado fica no módulo que a declara, com a chamada como seu quadro called-from. Quando o corpo declarado é genérico e o erro de tipo vem do que o chamador passou, o erro poderia apontar para qualquer um dos dois lugares.
+- **Medido.** `fn greet<T>(comptime who: @Expr<T>) { var count = who.value; val n: i32 = count + 1; }` numa biblioteca, chamada `greet("ana")`: recusada no argumento do chamador (`src/main.bp:4:11`), já que a cópia do argumento continua sendo nó do chamador.
+- **Opções.**
+  (a) ★ No argumento do chamador (construído).
+  ```bp
+  greet("ana");   // refused here: type mismatch, string where i32 is expected
+  ```
+  (b) No módulo que a declara, com a chamada como quadro called-from.
+  ```text
+  at greeter/root.bp:3:30   (count + 1)
+  from src/main.bp:4:5
+  ```
+- **Recomendação.** (a): o valor em falta é do chamador, escrito no arquivo do chamador.
+- **Bloqueia.** Nada.
 
 #### 548-a · A referência de toda biblioteca linka seu código e checa os links? (decisão 548; 461, 463)
 - **Contexto.** A referência de uma biblioteca — o `docs.md` ao lado das suas cells de conformance — mostra código. As decisões 461 e 463 apontam para o código de uma cell com `<!-- example: <cell> -->`; a decisão 548 (2026-10-15) faz a referência do rakun linkar o seu código em vez disso, como `{src/main.bp}`, e checa que todo link nomeia um arquivo que existe. Hoje só o rakun faz isso; as outras bibliotecas e o botopink-lang mantêm a forma antiga, e o runner que elas compartilham não conhece nenhuma das duas. A pergunta é se todo repositório segue o rakun.
