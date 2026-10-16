@@ -553,11 +553,17 @@ hash 1+1, regex 1, async 3, primitives 1, http 1, process 1, clock 1, asserts 1+
 `feat`); a binding that raises without catching is a crash under 431 (2). Questions `decision 486`, `decision 495`.
 Sequence with 142 s1 (`json` leaves std, B-27).
 
-- [ ] every std binding that catches by hand declares `throws: true` and answers `@Result<T, failure.HostError>`,
+- [x] every std binding that catches by hand declares `throws: true` and answers `@Result<T, failure.HostError>`,
       or maps `HostError` into the typed error a decision names (`HttpError` 393 / 335, `StoreError` 304,
       `ActionError` 303), per `decision 486`; no hand-written `try` / `catch` template left in `libs/std/src`
-- [ ] every binding that raises without catching audited: `throws: true`, or documented in its module as
-      promising no raise (`decision 495`); the list in `libs/std/AGENTS.md`
+- [x] every binding that raises without catching audited: `throws: true`, or documented in its module as
+      promising no raise (`decision 495`); the list in `libs/std/AGENTS.md` — built with `result: true` (490); `json`,
+      `regex` and `process` answer `HostError` until their enums (B-130); `encoding`'s decoders `EncodingError`,
+      `clock.parseIso8601` `ClockError`, `io.fs` through `FsError`; cell `std_host_error_variants`
+- [ ] the consumer commits: rakun — `rakun-service/src/rules.bp` (`regex.compile` answers `@Result<Regex, HostError>`;
+      it takes down every package that imports rakun-service), `rakun-ssr/src/assets/preprocess.bp` and
+      `rakun-cli/src/cli.bp` (`io.process.run`'s `Error` is `HostError`); log — `test/formats_test.bp`
+      (`io.clock.parseIso8601`'s `Error` is `ClockError`); each library's gate green on `feat`'s compiler
 
 **Impacted tests:** `test-libs --lib std`; every library's suite (≈330 call sites change error type).
 **Model:** opus for the policy, haiku for the codemod. **Consumer commits:** onze (158 sites), rakun (121),
@@ -2227,7 +2233,7 @@ every text)
       (`not found: <path>`, … `not UTF-8: <path> at byte <offset>`, `<path>: <message>`); a cell on every target, one
       `FsError` of each variant, the seven texts the same everywhere — `fs_error_message` on commonJS, erlang and beam
       (wasm with `io.fs`, 164 s3), `message` a method of `FsError`
-- [ ] snap (`src/root.bp`) and rakun-ssr (`src/content/collections.bp`) delete their local `fsText` and write
+- [x] snap (`src/root.bp`) and rakun-ssr (`src/content/collections.bp`) delete their local `fsText` and write
       `e.message()`; every answer of both the same
 
 ### B-127 — `botopink check` cold: the analysis arena and a decorator's trace listing kept for the session
@@ -2265,9 +2271,29 @@ CPU, bounded by `MemAvailable / 768 MiB`, then 50 % / 30 % / 10 % to test-libs, 
 `compiler-web` (~7 GB) runs beside them uncounted: the commit hook alone, with nothing else running, drops
 `MemAvailable` to 0–1 GB (measured 2026-10-16 on a commit of 144 B-126).
 
-- [ ] the budget bounded by each stage's measured peak (a test-libs job ~2.5 GiB, a conformance job's, test-web's compile
+- [x] the budget bounded by each stage's measured peak (a test-libs job ~2.5 GiB, a conformance job's, test-web's compile
       counted before the pools are sized, or run apart from them); the hook on a 31 GB machine never below 3 GB available;
       the numbers in § job budget's comment measured, and a unit-level check of `pool_default_jobs`' arithmetic
+
+      — `pool_budget_jobs` (`scripts/lib/pool.sh`): the largest total whose estimated peak (test-web and test-cli
+      counted first, 11.2 GiB; a test-libs job 3.7, a conformance job 1.0, a tsc job 0.75 GiB) fits MemAvailable less
+      3 GiB; checked in `cli_contract.sh`
+- [ ] the hook on a 31 GB machine measured alone on the pool, MemAvailable sampled over its run: its minimum at or above
+      3 GB
+### B-130 — std: `json`, `regex` and `process` answer their own error enums (decision 486)
+
+**Repository:** botopink-lang (`--lang`), then the consumer commits · **Model:** sonnet · **After:** 164 s3's per-call
+refusal on wasm (518 (4))
+
+B-08 left `json.parse` / `stringify` / `unquote`, `regex.compile` and `process.run` answering `HostError`: a public body
+over a binding with no wasm cell makes wasm refuse the whole module today, so `JsonError`, `RegexError` and
+`ProcessError` wait for wasm to refuse only the call reached.
+
+- [ ] the three enums declared, each failure the current bindings handle a named variant (486 (4)), `Host(HostError)` the
+      rest; a cell on every target per module; the consumers' calls updated
+- [ ] `io.process`'s `rawOnSignal` / `rawSpawn` / `rawKill` and `io.terminal`'s raw cells (B-27 step 6) still classify the
+      host's failure by hand into the `kind|message` text `ProcessError` / `TerminalError` read: written `result: true`,
+      `HostError` mapped into those enums in std (486 (2))
 
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 

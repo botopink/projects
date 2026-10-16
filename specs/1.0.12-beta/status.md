@@ -89,14 +89,15 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [ ] 144 B-127 — `botopink check` cold: the analysis arena and a decorator's trace listing kept for the session (1.3 GB left) · nothing
 - [ ] 144 B-128 — erlang, beam, wasm: a generator runs its whole body at the call, against 105's laziness · nothing
-- [ ] 144 B-129 — the gate's job budget (768 MiB a job, test-web uncounted): the commit hook alone runs the machine out of memory · nothing
+- [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
+- [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
 - [ ] 144 B-118 — beam: an `iter loop` as a lambda's tail aborts (`function_clause`) · nothing
 - [ ] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted without `async` · nothing
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
 - [ ] 144 B-121 — beam: a user function named `run` or `size` is taken for a std binding · nothing
 - [ ] 144 B-122 — beam: `.toString()` on a tuple is `unresolved_method` · nothing
 - [ ] 144 B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused · nothing
-- [ ] 144 B-126 — std: an `FsError` carries its own text, `message()` (563): std's half landed (`fs_error_message`); left: snap and rakun-ssr delete their `fsText` · nothing
+- [x] 144 B-126 — std: an `FsError` carries its own text, `message()` (563); snap and rakun-ssr write `e.message()`
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` — (i) P1 landed (parse, check, lower; nothing refused yet); left (i) P2–P4 (570: the codemod also marks keyword-less `@Task` / `@Component` bodies; P4 refuses an unmarked body returning the bare value) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
 - [ ] 144 B-99 (rest) — `d.value` typed in an expanded body (165 s5 waits on it); an expanded function from another module aliased and located in its own module · question B-99-d
@@ -445,6 +446,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 144 row — an import of a name from a module that failed to check is one error at the import item naming that module (`import-of-failed-module`), never `unbound variable` at each use (`import_of_failed_module`) · its wording question imp-a
 - [x] 144 row — `zig build test-web` green: its smoke's `PLAIN` program in today's `fn … -> T` syntax
 - [x] 144 B-07 (431, 518) — `failure.attempt` / `attemptTask` on the four targets (wasm by exception handling, `needs: [.Exceptions]`, the `botopink.needs` section and the host flags from it), asserts over `attempt`, 126's conversion retired, jhonstart's `__jhTry*` replaced, STD-001 at the call; `Failure`'s kinds question B-07-b
+- [x] 144 B-08 (431, 490, 495) — std's hand-written catches are `result: true` bindings answering `HostError`, or `EncodingError` / `ClockError` / `FsError`; the raising bindings audited, the list in `libs/std/AGENTS.md` (`std_host_error_variants`) — left: the consumer commits in rakun and log, the enums (B-130)
 - [x] 144 B-07-b (527) — wasm imitates no host raise (`std_failure_attempt_host`, wasm narrowed on its host bindings); a failed `assert` is a `panic` naming the condition and its location on four targets (`assert_failure_is_panic`); an integer `/` or `%` by zero is a marked `panic` on erlang and beam (`int_division_by_zero_is_panic`); a host raise's message `~tp` without the stack; left: (1) — wrapping every host call costs 15–21 % · question 527-a
 - [x] 144 B-78 (521) — commonJS writes std-wasm's text: an `f64` (a port of `shortFloat`, an imported record's field, a generic method's answer, a record's float field), `trim` (a NBSP stays) and case mapping (std-wasm's table); the commonJS departures of `string_trim_keeps_nbsp` and `string_lower_final_sigma` gone; `shortFloat` writes a float from 2^53 in scientific form, as OTP
 - [x] 05-wasm row — the `botopink.needs` section lists only the needs of bindings the program reaches (a call graph over the lowered module, `wat/reach.zig`): a program linking `std/failure` without calling `attempt` runs with no flag (518 (2); codegen tests)
