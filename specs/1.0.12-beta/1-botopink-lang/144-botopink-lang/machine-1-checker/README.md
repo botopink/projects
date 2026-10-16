@@ -2470,15 +2470,19 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
       (`typeinfo_all_default_at_caller`; the refusal `typeinfo_all_default_outside_root`, the explicit override
       `typeinfo_all_default_override`)
 
-- [ ] decision 562: a function whose every parameter is `comptime` and whose body reads one's `.value` is expanded at
-      its call site (one run-time parameter → never expanded, 376 (1) as today: `Stage.Build`, `build-and-run`) — a
-      plain `for` over the catalogue, its conditions and the build-data reads run at build; each statement reaching a
-      run-time value (a `Declared`'s `value`, a host call, a `Stage.Run` function) emitted at the call site in order,
-      build-known parts as constants; a loop bound or condition needing a run-time value refused at it; 376 (1)'s
-      `Stage.Build` for a `.value` read goes — cells: a `boot()` starting three modules in `meta` order on every target
-      (its emitted `main` in the snapshot), the refused condition, a `banner(3)`-style non-catalogue parameter, a function with a run-time parameter beside a
-      `comptime` one refused `build-and-run` as before, a constant read at build, a run-time variable passed refused
-      `comptime-arg-not-known`
+- [x] decision 562: a function whose every parameter is `comptime` and whose body reads one's `.value` is expanded at
+      its call site (one run-time parameter → never expanded, 376 (1) as before: `Stage.Build`, `build-and-run`) — its
+      loops, conditions, `val`s and build-data reads run at build; each statement reaching a run-time value emitted at
+      the call site in order, build-known parts as constants; a loop bound or condition needing a run-time value refused
+      `run-in-build` at it; a `.value` read no longer makes an all-`comptime` function `Stage.Build`; a field, a string
+      hole or an element of a run-time variable passed refused `comptime-arg-not-known` (`comptime_expand_boot`, three
+      modules started in `meta` order on every target, the order read from the program's output;
+      `comptime_expand_banner`, `comptime_expand_constant_at_build`, `comptime_expand_condition_run_time`,
+      `comptime_expand_runtime_argument`; the `stage_*` cells give their `Build` function a run-time parameter)
+- [ ] an expanded function from another module: its types and namespace imports aliased in the emitted code, and a
+      type error in that code located in the declaring module, not the caller's file
+- [ ] `d.value` in an expanded body typed as B-99-d answers (decision 562's `d.value.make().start()` refused today
+      at the declaration: "cannot call a method on an `unknown` value") — a cell, red today
 
-Open: B-99-c — a dependency's own root is refused, as built.
+Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body.
 

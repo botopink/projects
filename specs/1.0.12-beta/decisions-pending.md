@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**135 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**136 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -58,6 +58,7 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 |---|---|---|---|---|
 | 1 | **B-19-a** — where a type error inside a decorator's member source is located (§ Machine 1) | where the error points when code a decorator added to a type does not type-check | 144 B-19's row 3 | (a) at the annotation, the decorator's `addMember` / `addType` call named |
 | 2 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 3 | **B-99-d** — how `d.value` is typed in the body of a function expanded at its call site (§ Front 165, under B-99-c) | whether decision 562's own `d.value.make().start()` type-checks, or `rakun.boot()` calls a run-time helper on each entry | 165 s5, s7 (`rakun.boot()` as 562's example writes it) | (b) the expanded body checked per expansion, `d.value` the declaration itself |
 
 Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
 
@@ -1253,6 +1254,30 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a): the strictest reading, and it follows 551's "Level B stores the declaring package, never the calling one".
 - **Blocks.** Nothing.
+
+#### B-99-d · How is `d.value` typed in the body of a function expanded at its call site? (decision 562; 144 B-99)
+- **Context.** Decision 562 expands a function whose every parameter is `comptime` at its call site, and its example starts each module with `d.value.make().start()`. The body is still type-checked once, at its declaration, where an entry's `value` is `unknown`.
+- **Measured.** At the declaration `d.value.make()` is refused "cannot call a method on an `unknown` value". Narrowing with `if (d.value is …)` is a condition on a run-time value, which 562 refuses (`run-in-build`). The cells call a run-time helper instead (`start(d.value)`). Calling another expanded function with a loop variable inside the body (`banner(d.name)` inside `boot`) is refused `comptime-arg-not-known` at the declaration.
+- **Options.**
+  (a) The body stays checked at its declaration; an entry's `value` is reached through a run-time helper.
+  ```bp
+  fn start(m: unknown) { if (m is fn() -> string) say(m()); }
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
+      for (modules.value) { d -> start(d.value); }
+  }
+  ```
+  (b) ★ An expanded function's body is type-checked per expansion, where `d.value` is the declaration itself and a loop variable is build data.
+  ```bp
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
+      for (modules.value) { d -> d.value.make().start(); banner(d.name); }   // typed against each declaration
+  }
+  ```
+  (c) The body stays checked at its declaration, and `is` on an entry's `value` is folded at build, its type being build data.
+  ```bp
+  for (modules.value) { d -> if (d.value is Module) { d.value.make().start(); } }
+  ```
+- **Recommendation.** (b): it is what 562's example implies, and it settles the call of an expanded function with a loop variable too.
+- **Blocks.** 165 s5 and s7: `rakun.boot()` written as 562's example writes it.
 
 #### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
 - **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `{src/main.bp}`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.

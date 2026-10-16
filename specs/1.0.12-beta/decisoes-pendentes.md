@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**135 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**136 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -58,6 +58,7 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 |---|---|---|---|---|
 | 1 | **B-19-a** — onde fica um erro de tipo dentro do código de membro de um decorator (§ Máquina 1) | para onde o erro aponta quando o código que um decorator adicionou a um tipo não passa na checagem de tipos | a linha 3 do 144 B-19 | (a) na anotação, a chamada `addMember` / `addType` do decorator nomeada |
 | 2 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 3 | **B-99-d** — como `d.value` é tipado no corpo de uma função expandida no ponto de chamada (§ Frente 165, abaixo da B-99-c) | se o próprio `d.value.make().start()` da decisão 562 passa na checagem de tipos, ou se `rakun.boot()` chama um helper de tempo de execução em cada entrada | 165 s5, s7 (`rakun.boot()` como o exemplo da 562 o escreve) | (b) o corpo expandido checado por expansão, `d.value` a própria declaração |
 
 Respondidas e esperando só o seu número em `decisions-taken.md`, então sem travar nada no mantenedor: **434-b** (2026-10-11), **116-a** (2026-10-12, a resposta desde então substituída pela B-55-a (e)).
 
@@ -1253,6 +1254,30 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
   ```
 - **Recomendação.** (a): a leitura mais restritiva, e segue o "o nível B guarda o pacote que declara, nunca o que chama" da 551.
 - **Bloqueia.** Nada.
+
+#### B-99-d · Como `d.value` é tipado no corpo de uma função expandida no ponto de chamada? (decisão 562; 144 B-99)
+- **Contexto.** A decisão 562 expande no ponto de chamada uma função cujos parâmetros são todos `comptime`, e o exemplo dela inicia cada módulo com `d.value.make().start()`. O corpo ainda é checado uma vez, na sua declaração, onde o `value` de uma entrada é `unknown`.
+- **Medido.** Na declaração `d.value.make()` é recusado "cannot call a method on an `unknown` value". Estreitar com `if (d.value is …)` é uma condição sobre um valor de tempo de execução, que a 562 recusa (`run-in-build`). As células chamam um helper de tempo de execução no lugar (`start(d.value)`). Chamar outra função expandida com uma variável de laço dentro do corpo (`banner(d.name)` dentro de `boot`) é recusado `comptime-arg-not-known` na declaração.
+- **Opções.**
+  (a) O corpo continua checado na declaração; o `value` de uma entrada é alcançado por um helper de tempo de execução.
+  ```bp
+  fn start(m: unknown) { if (m is fn() -> string) say(m()); }
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
+      for (modules.value) { d -> start(d.value); }
+  }
+  ```
+  (b) ★ O corpo de uma função expandida é checado por expansão, onde `d.value` é a própria declaração e uma variável de laço é dado de build.
+  ```bp
+  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
+      for (modules.value) { d -> d.value.make().start(); banner(d.name); }   // typed against each declaration
+  }
+  ```
+  (c) O corpo continua checado na declaração, e `is` sobre o `value` de uma entrada é dobrado no build, já que o tipo dela é dado de build.
+  ```bp
+  for (modules.value) { d -> if (d.value is Module) { d.value.make().start(); } }
+  ```
+- **Recomendação.** (b): é o que o exemplo da 562 implica, e resolve também a chamada de uma função expandida com uma variável de laço.
+- **Bloqueia.** 165 s5 e s7: `rakun.boot()` escrito como o exemplo da 562 o escreve.
 
 #### 548-a · A referência de toda biblioteca linka seu código e checa os links? (decisão 548; 461, 463)
 - **Contexto.** A referência de uma biblioteca — o `docs.md` ao lado das suas cells de conformance — mostra código. As decisões 461 e 463 apontam para o código de uma cell com `<!-- example: <cell> -->`; a decisão 548 (2026-10-15) faz a referência do rakun linkar o seu código em vez disso, como `{src/main.bp}`, e checa que todo link nomeia um arquivo que existe. Hoje só o rakun faz isso; as outras bibliotecas e o botopink-lang mantêm a forma antiga, e o runner que elas compartilham não conhece nenhuma das duas. A pergunta é se todo repositório segue o rakun.

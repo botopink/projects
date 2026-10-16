@@ -98,7 +98,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-126 — std: an `FsError` carries its own text, `message()` (563); then snap and rakun-ssr delete their `fsText` · nothing
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` — (i) P1 landed (parse, check, lower; nothing refused yet); left (i) P2–P4 · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
-- [ ] 144 B-99 (rest) — decision 562: a function reading a `comptime` parameter's `.value` expanded at its call site, its run-time statements emitted there (165 s5 waits on it) · nothing
+- [ ] 144 B-99 (rest) — `d.value` typed in an expanded body (165 s5 waits on it); an expanded function from another module aliased and located in its own module · question B-99-d
 - [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
@@ -231,7 +231,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · 144 B-99's decision 562 box (the call expanded at its call site, run-time statements emitted)
+- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · question B-99-d (`d.value.make().start()` in `boot`'s expanded body)
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
 ## L3 — ready to open now
@@ -381,6 +381,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 - [x] 144 B-123 — a `//` comment between the statements of a `case` arm block parses (both arm block forms read through the shared block body), the formatter keeps it (`case_arm_block_comment`); B-125 found
 - [x] 144 B-125 — a `//` comment after a block's bare tail expression parses and the tail stays the block's value on every backend; the formatter keeps it (`block_tail_comment`)
+- [x] 144 B-99 decision 562 — a function whose every parameter is `comptime` is expanded at its call site: loops, conditions and build-data reads run at build, run-time statements emitted at the call in order, `run-in-build` for a bound or condition needing a run-time value; a `.value` read no longer makes it `Stage.Build` (`comptime_expand_*`); B-99-d filed
 - [x] 144 B-27 step 6 follow-up — `std/io/process`'s wasm refusal recorded beside `io/fs`'s in `std_fs_walk_root_spellings`
 - [x] 144 B-27 step 6 (decision 506 (c)) — std's `io.stdin` (`readLine`, `isTTY`, `readChunk`), `io.terminal` (`stdoutIsTTY`, `size`, `setRaw`, `keys`, `parseKey`), `io.process` (`Signal`, `onSignal`, `spawn`, `Child.wait` / `kill` / `forwardSignals`) on commonJS, erlang and beam, refused on wasm; B-27-g1 … g4 filed, B-120 … B-124 found
 - [x] 144 B-27 (decision 561) — a name between backticks is an identifier in every name position: the lexer's token (empty and line-break refused), each backend's collision-free name, diagnostics in the backtick form, `not-found.bpp` imported with and without an alias; B-27-d, B-27-e, B-27-f filed
