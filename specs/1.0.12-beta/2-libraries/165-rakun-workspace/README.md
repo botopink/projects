@@ -154,7 +154,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
       form; botopink-lang's tooling that reads rakun's former conformance roots (`test-analysis-equivalence`) is 144
       B-112
 
-### s10 — the builtins' new spelling (144 B-136 … B-139; decision 575)
+### s10 — the builtins' new spelling (144 B-136 … B-139; decisions 575, 576)
 
 **Repository:** rakun, and jhonstart's one `@emit` · **Model:** sonnet (the codemods are 144's; the registrations' move
 to `compiler.compile` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138 on the main checkout's compiler;
@@ -163,6 +163,8 @@ before 144 B-137's last box and B-139's rakun commit
 - [ ] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
       `expr x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `expr decl: unknown`, `decl.*` →
       `compiler.*`; the seven identifiers `compiler` of `rakun-cli`'s tests renamed
+- [ ] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
+- [ ] rakun-bpp's routes without `Declared<T>` (576 (7)): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.compile` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
 - [ ] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)
 - [ ] every `@emit` (23 files — `rakun/src/{decorators,context,autoconfig,config,conditions,lifecycle}.bp`,
       `rakun/src/actuator_api/registration.bp`, `rakun-service/src/convention.bp`, `rakun-app/src/{route_handler,

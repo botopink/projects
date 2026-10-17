@@ -2508,8 +2508,7 @@ modifier says how its argument arrives. Every later step of the group writes its
       site elsewhere; a `Build` resource (376 (1)); `compiler-at-run-time` in a run-time-only body; never a parameter
 - [ ] `libs/std/src/compiler.bp`: the behavior `Compiler` with the members 575 (3) lists but `compile`, `implement`,
       `setBuiltin`, `embed`, `record`, `fields`, `optional`, `required` (B-137 … B-140's); a unit test holds the
-      compiler's table of members to the file; `comptime.zig`'s `decl_reflection_src` mirror and `Decl<T>` go,
-      `Declared<T>` stays; `addMember` keeps only 370 (2)'s typed form (`decorator-member-not-one-fn` goes)
+      compiler's table of members to the file; `comptime.zig`'s `decl_reflection_src` mirror, `Decl<T>` and `Declared<T>` go (576 (7)); `addMember` keeps only 370 (2)'s typed form (`decorator-member-not-one-fn` goes)
 - [ ] `comptime x: T` holds the value (364 (4) reverted); `expr x: T` the tree, opaque; a decorator's first `expr` the
       annotated declaration, checked against the parameter's type (280 (2)); `-> expr T` a template's return, spliced
       at the call; an `expr` argument to an `expr` parameter hands its tree on; `@Expr<T>`, `.value`, `@expr` go
@@ -2519,6 +2518,7 @@ modifier says how its argument arrives. Every later step of the group writes its
       `@typeInfo(city)` with a value refused; `type(` / `type {` unchanged
 - [ ] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
 - [ ] decision 576: `Expr<E>`, `@Expr`, `Decl`, `@Decl` removed whole; the `Expr` members and the template model (`parts`, `source`, `context`, `lookup`, `bindings`, `build`, `note`, `fail` with a span, `tagDecl`, `annotate`, a declaration handle's reads) as `compiler.*`; `@ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`; `Span`, `Part`, `Source`, `ExprContext`, `CustomNode` in `compiler.bp`; the codemod's rewrites (576 (6)); the cells of 275, 302, 415, 426 unchanged but for the spelling
+- [ ] decision 576 (7): `Declared<T>`, `DeclaredMeta`, `DeclaredTypedMeta` and a run-time `@TypeInfo.all` removed; `compiler.catalogue` answers declaration handles, read at build; the hooks model's `fn` / `callee` / `context` handles; the catalogue cells read at build or register through a marker's `compiler.compile`; rakun-bpp's registry is 165 s10's
 - [ ] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
       (the read dropped), `expr x: T` where it hands `x` on or reads its syntax (`.text()` → `compiler.text(x)`,
       `.fail(m)` → `compiler.fail(m, at: x)`); `@expr(v)` → `v` with `-> expr T`; `comptime decl: @Decl` →
