@@ -333,7 +333,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open: 134 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
+last section. Open: 139 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**141 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**146 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1190,6 +1190,18 @@ vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquin
 - **Opções.** (a) P2. (b) P1, como mais uma folha.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada no P1.
+
+#### 164-s3-h … 164-s3-l · O que o s3 P2 deixa em aberto (decisões 549, 559, 560, 565; 164 s3 P2)
+- **Proposta (fable, 2026-10-16; aguardando o mantenedor):**
+  - **164-s3-h** · O corpo wasm dos métodos de `Array` (a 565 nomeia `String`): **(a) no GC, rebaixar os corpos `default fn` que `primitives.bp` já tem (`slice`, `append`, `unique`, …), sem célula**; (b) estender a célula `fn:` da 565 aos membros de `Array`. Bloqueia o P2-b.
+  - **164-s3-i** · O estado de `random` (uma semente, um fluxo): **(a) uma global mutável que o codegen declara no `wat_prelude` e a folha nomeia pelo nome — a regra da 549 aplicada a globais**; (b) o leitor de `.wat` admite `(global …)` numa folha agora (a 560 a dá ao runtime depois do P5); (c) um `var` de módulo em `io/random.bp` (puxa `std/beam` no erlang e no beam). Bloqueia o P2-e.
+  - **164-s3-j** · uma folha que nomeia uma função do `wat_prelude` (`$__wasi_random_f64`, a entropia do host, 442 (1)): **(a) permitido, nomeada e nunca declarada, como um tipo**; (b) o codegen passa o sorteio. Bloqueia o P2-e.
+  - **164-s3-k** · os codecs de bytes de `encoding`: **(a) corpos em botopink sobre três folhas (`bytes.length`, `bytes.at`, `bytes.ofWords`)** — o texto do README; (b) quatro folhas diretas. Bloqueia o P2-d.
+  - **164-s3-l** · `hash.contentHash` como corpo `fn:` antes do P4: o seu corpo roda no comptime pela camada Erlang até a 550 entrar. **(a) trocá-lo no P2, todo `COMPTIME REPLY` idêntico byte a byte como oráculo**; (b) com o P4. Bloqueia o P2-c.
+- **Medido.** Hoje um módulo GC alcança o texto de inteiros, os membros de array sem corpo, `contentHash`, os codecs de `Bytes` e `random` pelos exports lineares da std-wasm; o leitor de `.wat` recusa toda forma de topo que não seja `func`; o sorteio de `random` escreve 8 bytes num rascunho linear.
+- **Opções.** Como acima.
+- **Recomendação.** (a) para cada.
+- **Bloqueia.** P2-b … P2-e; o P2-a (texto de inteiros) não espera nenhuma.
 
 #### B-116-f, B-116-g · O que a primeira construção dos marcadores de corpo deixa em aberto (decisão 553; 144 B-116 (i))
 - **Proposta (fable, 2026-10-15; aguardando o mantenedor; o P1 constrói cada recomendação, uma resposta diferente reverte aquela parte):**

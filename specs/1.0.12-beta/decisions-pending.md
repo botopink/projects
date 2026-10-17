@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**141 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**146 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1190,6 +1190,18 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) P2. (b) P1, as one more leaf.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
+
+#### 164-s3-h … 164-s3-l · What s3 P2 leaves open (decisions 549, 559, 560, 565; 164 s3 P2)
+- **Proposed (fable, 2026-10-16; awaiting the maintainer):**
+  - **164-s3-h** · `Array` methods' wasm body (565 names `String`): **(a) in GC, lower the `default fn` bodies `primitives.bp` already holds (`slice`, `append`, `unique`, …), no cell**; (b) extend 565's `fn:` cell to `Array` members. Blocks P2-b.
+  - **164-s3-i** · `random`'s state (a seed, a stream): **(a) a mutable global the codegen declares in `wat_prelude` and the leaf names by name — 549's rule applied to globals**; (b) the `.wat` reader admits `(global …)` in a leaf now (560 gives it to the runtime after P5); (c) a module `var` in `io/random.bp` (pulls `std/beam` on erlang and beam). Blocks P2-e.
+  - **164-s3-j** · a leaf naming a `wat_prelude` function (`$__wasi_random_f64`, the host's entropy, 442 (1)): **(a) allowed, named and never declared, as a type is**; (b) the codegen passes the draw in. Blocks P2-e.
+  - **164-s3-k** · `encoding`'s byte codecs: **(a) botopink bodies over three leaves (`bytes.length`, `bytes.at`, `bytes.ofWords`)** — the README's wording; (b) four direct leaves. Blocks P2-d.
+  - **164-s3-l** · `hash.contentHash` as a `fn:` body before P4: its body runs at comptime through the Erlang layer until 550 lands. **(a) flip it in P2, every `COMPTIME REPLY` byte-equal as the oracle**; (b) with P4. Blocks P2-c.
+- **Measured.** Today a GC module reaches integer text, the bodyless array members, `contentHash`, the `Bytes` codecs and `random` through std-wasm's linear exports; the `.wat` reader refuses every top-level form but `func`; `random`'s draw writes 8 bytes into linear scratch.
+- **Options.** As above.
+- **Recommendation.** (a) for each.
+- **Blocks.** P2-b … P2-e; P2-a (integer text) waits on none.
 
 #### B-116-f, B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
 - **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**
