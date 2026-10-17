@@ -2650,13 +2650,12 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       579 an ordinary method's parameter) — cell `external_library_source_dot_shorthand` (`#[bif("lists")]` whose body
       writes `.Erlang(module + ":reverse($0)")`, four targets, `out [3, 2, 1]`); `external_library_source_annotation`
       keeps `Implementation.Erlang(…)`, which stays legal
-- [ ] a library's `compiler.implement` survives the module's re-analysis: `Env.implementContributions` are kept on the
-      declaration when a decorator of the same module emits, adds a member (`addMember`) or wraps (`wrapWith`) — cells
-      `external_library_source_beside_member`, `external_library_source_beside_wrap`,
-      `external_library_source_beside_emit` (a `#[bif]` beside each, four targets, the erlang answer the template's); those three are green on the parent, so they
-      prove nothing: a cell red on the parent is still owed, and the fallback text-splice path in `comptime.zig` (a
-      contribution that fails to parse standalone) still loses `compiler.implement`; `_beside_emit` is rewritten with
-      B-137's last box (`@emit` goes)
+- [ ] a library's `compiler.implement` survives the module's re-analysis: the loss is the fallback text-splice path of
+      `comptime.zig` (two `@emit` calls making one declaration: `parseAndMergeContributions` answers null and
+      `analyzeSource` re-analysed with a fresh env), the contributions now carried into it — cell
+      `external_library_source_beside_emit_split`, red on the parent; on the merged path no shape loses one, and
+      `external_library_source_beside_{member,wrap,emit}` stay as regression oracles (green before the fix); the
+      `@emit` cells rewritten with B-137's last box — committed, landing after B-136
 - [ ] a variant constructor called with labels and defaults left out — `Implementation.Wasm(op: "f64.floor")` (an
       `op:` cell takes no `result:`, 491) and a user enum — answers one value on erlang, beam, commonJS and wasm (`planLabelledCall` always plans;
       `defaultInjections` read by every backend, wasm verified) — cells `enum_variant_labelled_defaults` (four targets)
