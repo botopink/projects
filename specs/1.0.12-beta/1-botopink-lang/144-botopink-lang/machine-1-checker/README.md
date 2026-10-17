@@ -2537,19 +2537,19 @@ modifier says how its argument arrives. Every later step of the group writes its
 
 Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout once 165 s10 lands.
 
-### B-140 — `types.bp` in botopink: `compiler.record`, `fields`, `optional`, `required` (decision 575 (5), (7))
+### B-140 — `types.bp` in botopink: `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
 
 - [ ] `Type.Field<T>(name: string, type: type, annotations: DeclAnnotation[])` — `typeName` goes; a `type` value is
       lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `Type.Field<unknown>` (308)
-- [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.record` (307's naming by
+- [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by
       the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
       `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`
-- [ ] decision 578: `compiler.record(fields) -> anytype`; `Type.Field<T>`'s `type: anytype`
+- [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `Type.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
-- [ ] decision 576 (14): the typed `compiler.addType(name, expr source: type)` over a type written as a value or `compiler.record`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
+- [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
 - [ ] a unit test holds `conformance/docs.md` § Builtins to the builtins std declares (`#[builtin]`, `compiler.bp`): a row per builtin, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed
 - [ ] cells: the twelve derived-type cells unchanged; `record_field_duplicate`; `merge`'s duplicate located at the
       second argument; a `type` value printed; `RecipeKey.all()` at run time, computed at build

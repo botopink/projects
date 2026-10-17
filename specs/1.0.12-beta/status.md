@@ -45,7 +45,7 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [ ] 144 B-138 — `external` as one function over `Implementation`, `compiler.implement`, `declare-without-implementation`, the backends read `Implementation` alone, `print` by its cells · B-136; its wasm half after 164 s3 — machine 2
 - [ ] 165 s10 — rakun and jhonstart on the new spelling: the two codemods, every `@emit` → `compiler.compile` / typed `addMember` / `addType`, `rakun.d.bp` deleted · B-136, B-138
 - [ ] 144 B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module with its body; the removed builtins · B-138; its rakun commit after 165 s10 — machine 2
-- [ ] 144 B-140 — `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.record` / `fields` / `optional` / `required` · B-139 — machine 1
+- [ ] 144 B-140 — `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.buildType` / `fields` / `optional` / `required` · B-139 — machine 1
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
