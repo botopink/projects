@@ -2,7 +2,7 @@
 
 The steps of [front 144](../README.md) this machine runs: its goal, priority, ownership, order, lanes, the rules the two
 machines share and the alias table are the front's README; each step below is as it was there, unchanged. The
-other machine's steps are in [`../machine-2-backends-tooling/`](../machine-2-backends-tooling/README.md). A step keeps its id (`B-NN`) wherever it sits.
+other machine's steps are in [`../machine-2/144-backends-tooling/`](../../machine-2/144-backends-tooling/README.md). A step keeps its id (`B-NN`) wherever it sits.
 
 ## Steps
 ### B-02 — 305: labelled annotation arguments (`fn:`, `op:`, `wasi:`, `keyed:`)

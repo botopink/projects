@@ -23,6 +23,6 @@ renderers. `07-g` (b) → a `botopink` CLI feature under `02-std-and-packaging`;
 
 ## Decisions
 
-`07-g` — [`../README.md`](../../163-meta-ci/03-bundled-libs/track.md) § Decisions.
+`07-g` — [`../README.md`](../../../machine-2/163-meta-ci/03-bundled-libs/track.md) § Decisions.
 
 **Gate:** standard (fronts.md § Gate) + `repository/release/AGENTS.md` written

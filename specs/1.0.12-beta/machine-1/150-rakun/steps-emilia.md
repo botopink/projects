@@ -1,7 +1,7 @@
 # 150 rakun — the open steps of the former front 154 (emilia: emilia over `styled`, the five families, the theme)
 
 Front 154 was refiled under 150 rakun by 165 s8: its open steps are 150 s52 … s58, in the workspace
-package `rakun-stylesheet` (`rakun/modules/rakun-stylesheet/`, 165's table); its context folders moved into `2-libraries/150-rakun/`. A step
+package `rakun-stylesheet` (`rakun/modules/rakun-stylesheet/`, 165's table); its context folders moved into `machine-1/150-rakun/`. A step
 here edits `rakun/modules/rakun-stylesheet/` (and what its text names), in lane "style / bpp / stylesheet" of `fronts.md` § Ownership; a done step stays in `status.md` Done.
 
 **Depends on:** 150 s32 (119 s1) · 150 s33 (119 s4) · 144 B-00c / B-12 (`contentHash` as a host function at build), B-17 (379), B-19 (353)

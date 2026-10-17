@@ -1,7 +1,7 @@
 # 150 rakun — the open steps of the former front 149 (jhonstart: the core, link, forms, and Astro's template, styling, islands, data and transitions)
 
 Front 149 was refiled under 150 rakun by 165 s8: its open steps are 150 s36 … s47, in the workspace
-package `rakun-bpp` (`rakun/modules/rakun-bpp/`, 165's table); its context folders moved into `2-libraries/150-rakun/`. A step
+package `rakun-bpp` (`rakun/modules/rakun-bpp/`, 165's table); its context folders moved into `machine-1/150-rakun/`. A step
 here edits `rakun/modules/rakun-bpp/` (and what its text names), in lane "style / bpp / stylesheet" of `fronts.md` § Ownership; a done step stays in `status.md` Done.
 
 **Depends on:** 144 B-07 (26 s14), B-14 (118 s1), B-15 (118 s4–5, 119), B-16 (26 s13), B-17 (26 s8, s11), B-27 (116), B-10 G3

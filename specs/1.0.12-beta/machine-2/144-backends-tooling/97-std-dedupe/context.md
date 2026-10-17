@@ -1,6 +1,6 @@
 # Front 97 — std dedupe: one place for every shared primitive
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s11 → B-00e · s18 box 1 → B-04 · s18 boxes 2, 3 → B-07 · compiler residuals → B-22 · s13 → B-24 · s14 → B-24 · s15 → B-24 · s17 → B-25 · s4 residue → B-27 · s6 → B-27 · gate → B-27; [146-validation](../../../../2-libraries/146-validation/README.md): s2 residue box 1 → 146 s2; [150-rakun](../../../../2-libraries/150-rakun/README.md): s2 residue box 2 → 150 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s11 → B-00e · s18 box 1 → B-04 · s18 boxes 2, 3 → B-07 · compiler residuals → B-22 · s13 → B-24 · s14 → B-24 · s15 → B-24 · s17 → B-25 · s4 residue → B-27 · s6 → B-27 · gate → B-27; [146-validation](../../../machine-1/146-validation/README.md): s2 residue box 1 → 146 s2; [150-rakun](../../../machine-1/150-rakun/README.md): s2 residue box 2 → 150 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** high — every library's "consume std X" step is written against this surface ·
 **State:** partial: steps 0–5, 8–10, 12 and step 1's residue on feat; residue of steps 2 (the library

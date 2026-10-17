@@ -2,7 +2,7 @@
 
 The steps of [front 144](../README.md) this machine runs: its goal, priority, ownership, order, lanes, the rules the two
 machines share and the alias table are the front's README; each step below is as it was there, unchanged. The
-other machine's steps are in [`../machine-1-checker/`](../machine-1-checker/README.md). A step keeps its id (`B-NN`) wherever it sits.
+other machine's steps are in [`../machine-1/144-checker/`](../../machine-1/144-checker/README.md). A step keeps its id (`B-NN`) wherever it sits.
 
 **Order on this machine (the maintainer, 2026-10-14):** the B-00 group (done but its last box); new development is centred on
 **front 164 wasm-gc** (`164-wasm-gc/`), which this machine runs and which owns the wasm target, the comptime runtime and std-wasm from here

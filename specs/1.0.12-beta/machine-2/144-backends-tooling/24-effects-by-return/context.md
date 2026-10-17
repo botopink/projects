@@ -5,7 +5,7 @@
 **Priority:** medium · **State:** not started (surface landed in 1.0.10, C-32, decisions 118–135)
 **Depends on:** rakun track's `serverAction` (guide § 7 types against stubs until then) · maintainer
 confirmations 24-a, 24-b, 24-c, 24-g
-**Owns:** [`guide.md`](../../../../../1.0.10-beta/00-compiler-carry-over/24-effects-by-return/guide.md)
+**Owns:** [`guide.md`](../../../../1.0.10-beta/00-compiler-carry-over/24-effects-by-return/guide.md)
 (stays in 1.0.10; fences run from there) · `scripts/check-docs.sh`'s guide entry (one-line carve-out
 of `00-gate/114`'s script) · `docs.md` § Loops, § use, § Effects, § Results, § Iterators, § Host
 bindings, § *Migrating from the effect annotations* (with 07) · `tests/language` effect, generator
@@ -25,7 +25,7 @@ number; cost of a `@Result` per iterator item measured.
 ## Decisions
 
 - 24-a, 24-b, 24-c, 24-g — to confirm (statements in
-  [1.0.10's `decisions-pending.md`](../../../../../1.0.10-beta/decisions-pending.md))
+  [1.0.10's `decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md))
 
 **Gate:** standard (fronts.md § Gate) + `effect_chain.zig` drift test green · `test-cli`, `test-docs` green
 

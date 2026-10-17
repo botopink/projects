@@ -1,6 +1,6 @@
 # Front 116 — bpp file format: a `.bpp` file is another spelling of a `.bp` module
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s0 → B-27 · s2 → B-27 · s3 → B-27 · s4 boxes 1, 2 → B-27 · s5 → B-27 · gate → B-27; [150-rakun](../../../../2-libraries/150-rakun/steps-jhonstart.md): s6 → 150 s44; [161-vscode-extension](../../../../2-libraries/161-vscode-extension/README.md): s4 box 3 → 161 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s0 → B-27 · s2 → B-27 · s3 → B-27 · s4 boxes 1, 2 → B-27 · s5 → B-27 · gate → B-27; [150-rakun](../../150-rakun/steps-jhonstart.md): s6 → 150 s44; [161-vscode-extension](../../161-vscode-extension/README.md): s4 box 3 → 161 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** medium — changes how a page looks, not what it can do; every feature is reachable
 from a `.bp` module (118). · **State:** step 1 done (std's `bpp`, the key, the roles; with `01-compiler/130` step 10 box 1, decision 356); steps 0, 2–6 not started

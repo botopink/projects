@@ -1,6 +1,6 @@
 # Front 138 — the shared libraries leave the compiler: one repository each
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [136-cardume](../../136-cardume/README.md): s1 → 136 s9 · s2 box 2 → 136 s9 · s5 boxes 1, 2, 3 → 136 s9. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [136-cardume](../../../3-medium/136-cardume/README.md): s1 → 136 s9 · s2 box 2 → 136 s9 · s5 boxes 1, 2, 3 → 136 s9. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** high — every other front of this track and every consumer commit (102 step 3, 103 step
 2, 104 step 5, 105, 106 step 2, 107, 125 steps 4–12) is written against where the packages live;

@@ -49,7 +49,7 @@ refused), **B-99-c** (a dependency's own root calling a catalogue default, built
 
 ---
 
-## Machine 1 — maximum priority (front 144, `machine-1-checker/`)
+## Machine 1 — maximum priority (front 144, `machine-1/144-checker/`)
 
 The questions machine 1's steps wait on (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, the module-model
 group), answered before every other part of this page; in the order of the steps they block.
@@ -710,7 +710,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for a field wherever it is read.
 - **Blocks.** Nothing (built as (a) unless answered).
 
-## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
+## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
@@ -1869,7 +1869,7 @@ No general rule (283): each case below is its own question, (a) the language's o
 ### 04-rakun
 
 #### erk-b · `#[documentQuery]` under 313 (*proposed*)
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a), with its own generator: rakun-data-nosql's `#[documentRepository]` over a `behavior` whose methods carry `#[documentQuery("…")]`** — the same shape as 313 (a `behavior`, one annotation per method recording typed meta, a generator producing the implementation and the by-type registration), the filter an ordinary string handed to the store verbatim as `#[nativeQuery]` hands SQL (`:name` placeholders matched by name against the parameters, an error at the annotation when one is unmatched); not dbcontext's `#[repository]`, whose generator emits SQL runners and refuses a method it does not know (313: "a method with neither annotation is an error"). One repository shape for every store, no second model (283); (b) an erika document target waits on a measured need; (c) is the shape 313 deleted. Viable as a library decorator (216, 311 (1): a generator on a behavior, as `#[mocks.mock]`): a new `rakun-data/src/nosql/` module (`root.bp`'s `pub mod nosql;` until B-75) — nothing of 09 exists on feat (no `DocumentStore`, no `nosql.url`; `documentQuery` is one comment in `sql/query.bp`), and dbcontext is an empty scaffold, so 09 step 4 opens after 143 lands the shape to copy. Changes: 09's README names `#[documentRepository]`; the entry's "09 step 4" is `2-libraries/150-rakun/09-rakun-data-nosql`.
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a), with its own generator: rakun-data-nosql's `#[documentRepository]` over a `behavior` whose methods carry `#[documentQuery("…")]`** — the same shape as 313 (a `behavior`, one annotation per method recording typed meta, a generator producing the implementation and the by-type registration), the filter an ordinary string handed to the store verbatim as `#[nativeQuery]` hands SQL (`:name` placeholders matched by name against the parameters, an error at the annotation when one is unmatched); not dbcontext's `#[repository]`, whose generator emits SQL runners and refuses a method it does not know (313: "a method with neither annotation is an error"). One repository shape for every store, no second model (283); (b) an erika document target waits on a measured need; (c) is the shape 313 deleted. Viable as a library decorator (216, 311 (1): a generator on a behavior, as `#[mocks.mock]`): a new `rakun-data/src/nosql/` module (`root.bp`'s `pub mod nosql;` until B-75) — nothing of 09 exists on feat (no `DocumentStore`, no `nosql.url`; `documentQuery` is one comment in `sql/query.bp`), and dbcontext is an empty scaffold, so 09 step 4 opens after 143 lands the shape to copy. Changes: 09's README names `#[documentRepository]`; the entry's "09 step 4" is `machine-1/150-rakun/09-rakun-data-nosql`.
 - **Not viable (fable, 2026-10-12):** (a) through dbcontext's `#[repository]` — its generator emits SQL runners and refuses a method it does not know (313); dbcontext is an empty scaffold on feat; (b) — no erika document target exists.
 - **Measured.** 09 step 4: `#[documentQuery("…")]` follows `#[query]`'s shape — a member of the repository type answering the template verbatim. 313 deletes that shape for SQL: a repository is a `#[repository] behavior`, its methods carrying `#[erika "…"]` or `#[nativeQuery("…")]`. erika's grammar is SQL's; a document store's filter is JSON (`$in`, `$gt`, …).
 - **Options.** (a) The same shape: a document repository is a `#[repository] behavior` whose methods carry `#[documentQuery("…")]`, an ordinary string handed to the store as `#[nativeQuery]` hands SQL to the driver (`:name` placeholders matched against the parameters, escaped by `bind`). (b) erika gains a document target — the same `select … where …` lowered to the store's filter. (c) As is: a member of the type.
@@ -2169,7 +2169,7 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 ### Contradictions that block no 00–03 step
 
 #### ctr-l · Decision 186's third refusal against decision 202
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Drop 186's third refusal** — under 202 no page declares itself prerendered, so "a `#[serverOnly]` hook in a page that declares itself prerendered" has no case: `#[page]` refuses a `#[serverOnly]` hook inside a `#[client]` component and a `#[clientOnly]` hook outside one, and renders per request a page whose hooks reach `#[serverOnly]` (186, 202, 277). Viable: 26's context already lists the two refusals only (`2-libraries/150-rakun/26-jhonstart-router/context.md`). Changes: 186's row loses its third refusal; the entry's `README.md:58-59,182-183` is that context file.
+- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Drop 186's third refusal** — under 202 no page declares itself prerendered, so "a `#[serverOnly]` hook in a page that declares itself prerendered" has no case: `#[page]` refuses a `#[serverOnly]` hook inside a `#[client]` component and a `#[clientOnly]` hook outside one, and renders per request a page whose hooks reach `#[serverOnly]` (186, 202, 277). Viable: 26's context already lists the two refusals only (`machine-1/150-rakun/26-jhonstart-router/context.md`). Changes: 186's row loses its third refusal; the entry's `README.md:58-59,182-183` is that context file.
 - **Rules.** 186 refuses "a `#[serverOnly]` hook in a page that declares itself prerendered (`08-g`)". 202: "No declaration … no `pub val prerender` … no way to force". A page is `pub fn blog() -> View` reading `use cookie(sessionCookie)` (293, 294): rendered per request, no error.
 - **Recommendation.** Drop 186's third refusal: under 202 no page declares itself prerendered. `05-jhonstart/26` step 8 already lists the two refusals only (`README.md:58-59,182-183`); only 186's row is pending.
 - **Blocks.** Nothing in the fronts; the record.

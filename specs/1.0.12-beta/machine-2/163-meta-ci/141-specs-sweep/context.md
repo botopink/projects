@@ -89,7 +89,7 @@ Re-runnable from the meta checkout. It prints `file:line` for every hit of one f
 
 ```sh
 files=$( (git ls-files 'specs/1.0.12-beta/*.md' 'specs/1.0.12-beta/*.bp'; echo AGENTS.md; echo architecture.md) \
-  | grep -v '^specs/1.0.12-beta/decisions-taken.md$' | grep -v '^specs/1.0.12-beta/3-medium/163-meta-ci/10-specs/')
+  | grep -v '^specs/1.0.12-beta/decisions-taken.md$' | grep -v '^specs/1.0.12-beta/machine-2/163-meta-ci/10-specs/')
 grep -nE -- '<pattern of the family>' $files
 ```
 

@@ -1,6 +1,6 @@
 # Front 98 — packaging tail: the rule checked across the seven repositories
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../../1-botopink-lang/144-botopink-lang/README.md): s2 → B-27 · s3 → B-27; [145-query](../../../2-libraries/145-query/README.md): s1 → 145 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../../1-botopink-lang/144-botopink-lang/README.md): s2 → B-27 · s3 → B-27; [145-query](../../../machine-1/145-query/README.md): s1 → 145 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** medium — compiles nothing differently; the packaging rule holds only once it lands ·
 **State:** partial: step 4 done; steps 1–3 open
@@ -44,6 +44,6 @@ Four checks (step 2's script):
 
 ## Decisions
 
-`95-f` — [`../README.md`](../../../1-botopink-lang/144-botopink-lang/machine-2-backends-tooling/02-std-and-packaging/track.md) § Decisions; `subdir` is decision 344.
+`95-f` — [`../README.md`](../../../machine-2/144-backends-tooling/02-std-and-packaging/track.md) § Decisions; `subdir` is decision 344.
 
 **Gate:** standard (fronts.md § Gate) + `scripts/check-packaging.sh` exit 0 in the main checkout

@@ -1,7 +1,7 @@
 # 150 rakun — the open steps of the former front 153 (dbcontext: botopink's JPA over erika (398))
 
 Front 153 was refiled under 150 rakun by 165 s8: its open steps are 150 s48 … s51, in the workspace
-package `rakun-data` (`rakun/modules/rakun-data/`, 165's table); its context folders moved into `2-libraries/150-rakun/`. A step
+package `rakun-data` (`rakun/modules/rakun-data/`, 165's table); its context folders moved into `machine-1/150-rakun/`. A step
 here edits `rakun/modules/rakun-data/` (and what its text names), in lane "data" of `fronts.md` § Ownership; a done step stays in `status.md` Done.
 
 **Depends on:** 145 s1 (137 s2) · 144 B-18 (01-checker s29)

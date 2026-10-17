@@ -1,7 +1,7 @@
 # 150 rakun — the open steps of the former front 148 (styled: the base for CSS components — `styled`'s half of 119)
 
 Front 148 was refiled under 150 rakun by 165 s8: its open steps are 150 s32 … s35, in the workspace
-package `rakun-style` (`rakun/modules/rakun-style/`, 165's table); its context folders moved into `2-libraries/150-rakun/`. A step
+package `rakun-style` (`rakun/modules/rakun-style/`, 165's table); its context folders moved into `machine-1/150-rakun/`. A step
 here edits `rakun/modules/rakun-style/` (and what its text names), in lane "style / bpp / stylesheet" of `fronts.md` § Ownership; a done step stays in `status.md` Done.
 
 **Depends on:** 144 B-10 G2 (8 markers), B-17 (355 holes at build, 14 s8), B-19 (353 / 356 catalogue)

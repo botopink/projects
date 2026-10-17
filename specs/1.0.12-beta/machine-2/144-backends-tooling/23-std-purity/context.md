@@ -25,7 +25,7 @@ confirmed by number.
 ## Decisions
 
 - 23-c confirmed (317) · 23-b, std-c — to confirm (23-a moot: both forms landed); statements in
-  [1.0.10's `decisions-pending.md`](../../../../../1.0.10-beta/decisions-pending.md)
+  [1.0.10's `decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md)
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-libs` at baseline
 

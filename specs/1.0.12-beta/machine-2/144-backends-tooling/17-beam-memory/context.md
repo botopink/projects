@@ -1,6 +1,6 @@
 # Front 17 — beam-memory: `keyed: true` row per key, and `@BeamMemory` refused off the BEAM
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s2 box 1 → B-02 · s1 → B-26; [150-rakun](../../../../2-libraries/150-rakun/README.md): s2 box 3 → 150 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s2 box 1 → B-02 · s1 → B-26; [150-rakun](../../../machine-1/150-rakun/README.md): s2 box 3 → 150 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** medium · **State:** partial: step 1 on feat but its fourth box (`Dict.bump`, decision 340); step 2 open
 **Depends on:** `07-residuals` step 6 (text into `docs.md`) · rakun track
@@ -37,7 +37,7 @@ BEAM (decision 167); documented in `docs.md`.
 
 ## Decisions
 
-Measured / options / blocks in [`../../decisions-pending.md`](../../../../decisions-pending.md).
+Measured / options / blocks in [`../../decisions-pending.md`](../../../decisions-pending.md).
 
 Answered: 17-b → decision 340 (`Dict.bump`, `ets:update_counter` under `keyed: true`).
 

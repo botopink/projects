@@ -202,7 +202,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
 **Repository:** the meta · **Model:** sonnet
 
 - [x] the open steps of 148 styled, 149 jhonstart, 153 dbcontext, 154 emilia and 162 onze refiled under 150 rakun,
-      one section per former front with its alias table, their context folders moved into `2-libraries/150-rakun/`;
+      one section per former front with its alias table, their context folders moved into `machine-1/150-rakun/`;
       145 erika renamed 145 query
 - [x] every library's pointer and rakun's moved to its `feat` in the same commit that removes the six submodules, with 144 B-100 (botopink-lang's tooling reading the libraries at their new homes)
 - [x] `fronts.md` (ownership: one row for rakun with lanes by layer — data, style/bpp/stylesheet, service and its

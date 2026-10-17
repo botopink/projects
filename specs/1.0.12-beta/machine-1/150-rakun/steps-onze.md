@@ -1,7 +1,7 @@
 # 150 rakun — the open steps of the former front 162 (onze: stand-up, CLI, image, release, Astro's routing, content, data, CLI — and the example app, last)
 
 Front 162 was refiled under 150 rakun by 165 s8: its open steps are 150 s59 … s71, in the workspace
-package `rakun-ssr` (`rakun/modules/rakun-ssr/`, 165's table); its context folders moved into `2-libraries/150-rakun/`. A step
+package `rakun-ssr` (`rakun/modules/rakun-ssr/`, 165's table); its context folders moved into `machine-1/150-rakun/`. A step
 here edits `rakun/modules/rakun-ssr/` (and what its text names), in lane "app / ssr" of `fronts.md` § Ownership; a done step stays in `status.md` Done.
 
 **Depends on:** every other library front (53 needs them); 144 B-17 (293), B-19 (281), B-27 (116); 146 (306); 150 s13 / s1 / s16; 150 s36 / s37 / s38; pending std-d, 50-b, 52-a, 49-e, 49-g, nat-f2

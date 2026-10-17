@@ -1,6 +1,6 @@
 # Front 114 — gate-docs-and-ci: no `skip` fence, no soft CI row, every workflow green and pinned
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s3 → B-29 · s7 → B-29 · s8 box 1 → B-29; [163-meta-ci](../../../../3-medium/163-meta-ci/README.md): s9 → 163 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s3 → B-29 · s7 → B-29 · s8 box 1 → B-29; [163-meta-ci](../../163-meta-ci/README.md): s9 → 163 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** high · **State:** partial: steps 1, 2, 4, 5, step 3 box 1, step 6 and step 8
 boxes 1–3 done; steps 3 (box 2), 7, 8 (boxes 4–5), 9 open

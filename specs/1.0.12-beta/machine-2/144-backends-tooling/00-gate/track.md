@@ -86,7 +86,7 @@ cells; 100 fences). Plus every library's CI and pre-commit, vscode-extension `np
 `compiler-check`, meta `hook-integrity` green on remote `feat`.
 
 Closed in 1.0.11: 99, 100, 101, 108, 109, 110, 111, 112, 113, 115, 131, 132, 133 —
-[`../1.0.11-beta/00-gate/`](../../../../../1.0.11-beta/00-gate/README.md).
+[`../1.0.11-beta/00-gate/`](../../../../1.0.11-beta/00-gate/README.md).
 
 ## Fronts
 

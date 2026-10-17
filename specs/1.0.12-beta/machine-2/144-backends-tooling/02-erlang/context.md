@@ -1,6 +1,6 @@
 # Front 02 — erlang: the erlang target answers what decision 8 says, on every shape
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s14 → B-13 · rows box 1 → B-22; [150-rakun](../../../../2-libraries/150-rakun/README.md): rows box 2 → 150 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../README.md): s14 → B-13 · rows box 1 → B-22; [150-rakun](../../../machine-1/150-rakun/README.md): rows box 2 → 150 s2. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** high · **State:** partial: steps 1–13 and 15 done; step 14 open
 **Depends on:** `01-checker`'s `@block` tail-form refusal (step 10)
