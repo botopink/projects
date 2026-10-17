@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**123 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**122 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **604**.
+número livre, que é **605**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -808,18 +808,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (c) A 575 (6) ao pé da letra: uma `default fn` não carrega células; um membro com código de host por alvo é uma assinatura sem corpo cujo algoritmo botopink é uma fn privada `.Wasm(body: …)` / `.Erlang(body: …)` — inviável sobre o `Self` de um behavior primitivo (`Integer` cobre toda largura de inteiro; uma fn privada é monomórfica) e contra a 585 (h).
 - **Recomendação.** (b): a isenção é de um construto só (a `default fn` de um `behavior`), a 585 (h) se mantém, e nenhum corpo é ao mesmo tempo escrito e inalcançável. Uma célula `implement_with_body_default_covered` (uma `default fn` com `.Erlang`, `.Node` e `.Wasm`) recusada; `implement_with_body_default_fallback` verde em quatro alvos, as respostas de wasm e erlang sendo as do corpo.
 - **Bloqueia.** O texto de referência do 144 B-138; 164 s3 P2 (585 (h)).
-
-#### b138-c · Um decorator sem corpo — um marcador — isento de `declare-without-implementation`? (decisões 575 (6), 576 (10), 581, 589; 144 B-138)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Medido.** O `refuseUnimplementedDeclares` de `infer.zig` pula uma `declare fn` cujo primeiro parâmetro é o handle da declaração (`isDecoratorParams`: "um marcador que uma biblioteca entrega, lido e nunca chamado"); nenhuma célula o mostra e nenhuma decisão o enuncia. A 575 (6) recusa toda `declare fn` sem corpo que nenhuma anotação implementa; a 576 (10) faz de um decorator "uma função cujo primeiro parâmetro é `expr`"; a 581 (3) encontra declarações "marcadas com `module`"; a 589 lê `#[bpp.htmlPrelude]`. Cada um desses marcadores poderia ser sem corpo hoje; a mesma isenção admite uma `declare fn` com `expr decl: unknown` primeiro e qualquer contrato sem corpo que o compilador nunca checa. As isenções de `.d.bp` e `types.bp` ao lado dela (`Env.declarationFile`) são andaimes que o B-139 / B-140 apagam.
-- **Opções.**
-  (a) Como pousado: um decorator sem corpo é legal, um marcador.
-  (b) Sem isenção: um marcador é um decorator com corpo vazio, `pub fn page(expr decl: unknown) {}`; `declare fn page(expr decl: unknown);` é recusado `declare-without-implementation` como qualquer outra `declare fn` sem corpo; o codemod escreve `{}` nos marcadores do std e das bibliotecas.
-  ```bp
-  pub fn registered(expr decl: unknown) {}        // read by compiler.find(with: registered)
-  ```
-- **Recomendação.** (b): uma regra, nenhuma forma que o compilador precise reconhecer para isentar; o corpo vazio de um marcador não custa nada no build (508–513). Células: `declare_without_implementation_decorator` recusada; `decorator_marker_empty_body` encontrado por `compiler.find`.
-- **Bloqueia.** 144 B-138 (`refuseUnimplementedDeclares`), B-139 (`declarationFile` sai), 165 s10 (os marcadores do rakun-bpp).
 
 #### b138-d · Uma flag de `Implementation` escrita posicionalmente: o preenchimento do construtor, ou o rótulo exigido? (decisões 67, 575 (6); frente 20 F9; 144 B-138)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**

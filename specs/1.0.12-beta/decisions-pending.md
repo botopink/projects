@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**123 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**122 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **604**.
+number, which is **605**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -808,18 +808,6 @@ before every other part of this page; each holds one row, or nothing built.
   (c) 575 (6) to the letter: a `default fn` carries no cells; a member with host code per target is a bodiless signature whose botopink algorithm is a `.Wasm(body: …)` / `.Erlang(body: …)` private fn — infeasible over a primitive behavior's `Self` (`Integer` spans every integer width; a private fn is monomorphic) and against 585 (h).
 - **Recommendation.** (b): the exemption is one construct's (a `behavior`'s `default fn`), 585 (h) stands, and no body is ever both written and unreachable. A cell `implement_with_body_default_covered` (a `default fn` with `.Erlang`, `.Node` and `.Wasm`) refused; `implement_with_body_default_fallback` green on four targets, the wasm and erlang answers the body's.
 - **Blocks.** 144 B-138's reference text; 164 s3 P2 (585 (h)).
-
-#### b138-c · A bodyless decorator — a marker — exempt from `declare-without-implementation`? (decisions 575 (6), 576 (10), 581, 589; 144 B-138)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
-- **Measured.** `infer.zig` `refuseUnimplementedDeclares` skips a `declare fn` whose first parameter is the declaration handle (`isDecoratorParams`: "a marker a library ships, read and never called"); no cell shows it and no decision states it. 575 (6) refuses every bodyless `declare fn` no annotation implements; 576 (10) makes a decorator "a function whose first parameter is `expr`"; 581 (3) finds declarations "marked with `module`"; 589 reads `#[bpp.htmlPrelude]`. Each such marker could be bodyless today; the same exemption admits a `declare fn` with `expr decl: unknown` first and any body-less contract the compiler never checks. The `.d.bp` and `types.bp` exemptions beside it (`Env.declarationFile`) are scaffolding B-139 / B-140 delete.
-- **Options.**
-  (a) As landed: a bodyless decorator is legal, a marker.
-  (b) No exemption: a marker is a decorator with an empty body, `pub fn page(expr decl: unknown) {}`; `declare fn page(expr decl: unknown);` is refused `declare-without-implementation` like any other bodyless `declare fn`; the codemod writes `{}` over the markers of std and the libraries.
-  ```bp
-  pub fn registered(expr decl: unknown) {}        // read by compiler.find(with: registered)
-  ```
-- **Recommendation.** (b): one rule, no shape the compiler must recognise to exempt; a marker's empty body costs nothing at build (508–513). Cells: `declare_without_implementation_decorator` refused; `decorator_marker_empty_body` found by `compiler.find`.
-- **Blocks.** 144 B-138 (`refuseUnimplementedDeclares`), B-139 (`declarationFile` goes), 165 s10 (rakun-bpp's markers).
 
 #### b138-d · A flag of `Implementation` written positionally: the constructor's fill, or the label required? (decisions 67, 575 (6); front 20 F9; 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

@@ -2676,7 +2676,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `#[@External.X(…)]` — rewritten, with the fixtures `cell/narrowed`, `closure_invariant/hosted`,
       `cell-workspace/group/excluded_target_literal_entry`; `cli_contract.sh`, `test_tooling.sh`, `closure_invariant.sh` green
 - [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp` from `declare-without-implementation` deleted
-      when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption is question b138-c
+      when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption goes by decision 604 (a marker is `fn x(expr decl: unknown) {}`; cells `declare_without_implementation_decorator`, `decorator_marker_empty_body`)
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
 
