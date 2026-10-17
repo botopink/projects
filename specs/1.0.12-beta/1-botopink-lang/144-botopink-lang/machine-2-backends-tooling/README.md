@@ -2279,18 +2279,19 @@ B-128 makes a generator a process; one abandoned (a `next()` by hand, an unfinis
 until the node halts, with an open io device if it reads a file. No library creates one today; a rakun handler reading
 `f.lines()` per request would leak one per request.
 
-- [ ] the generator monitors its creator and exits when it dies; a unit test over the helper text or an
+- [x] the generator monitors its creator and exits when it dies; a unit test over the helper text or an
       `erlang:processes()` count
 
-### B-134 — erlang, beam: a generator of only literal `yield`s is a list and replays
+### B-134 — erlang: a generator of only literal `yield`s is a list and replays
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
 `isPlainYieldGenerator`'s typed path in `erlang.zig` keeps a body of literal `yield`s a list: a second `for` over the
 same handle prints its items again (commonJS: once), and `next()` on a non-local receiver never advances (105, 553).
 
-- [ ] a generator handle is stateful whatever its body; cell `generator_handle_stateful` (a second `for` over an
-      exhausted handle, both forms), red on erlang, beam and wasm today
+- [x] a generator handle is stateful whatever its body; cell `generator_handle_stateful` (a second `for` over an
+      exhausted handle, both forms), red on erlang and wasm today — green on commonJS, erlang and beam; wasm with
+      B-128's wasm half
 
 ### B-135 — erlang, beam: an `iter` loop's captured `var` is a copy after an outer write
 

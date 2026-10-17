@@ -93,8 +93,8 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
 - [x] 144 B-131 — wasm: the three `std_decorator_*` cells' recorded `mocks.bp` lines re-recorded after B-08 and B-126 (no compiler change)
 - [x] 144 B-132 — `cell check`'s scratch copy keeps an outside directory symlink a symlink; rakun-service's six cells green
-- [ ] 144 B-133 — erlang, beam: a generator nobody closes outlives its creator · nothing
-- [ ] 144 B-134 — erlang, beam: a generator of only literal `yield`s is a list and replays · nothing
+- [x] 144 B-133 — erlang, beam: a generator dies with its creator
+- [x] 144 B-134 — erlang: a body of literal `yield`s is a stateful generator (`generator_handle_stateful`; wasm with B-128)
 - [ ] 144 B-135 — erlang, beam: an `iter` loop's captured `var` is a copy after an outer write · nothing
 - [x] 144 B-118 — beam: a lambda's tail `iter loop` is the closure's value (`lambda_tail_iter_loop`)
 - [x] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted `async` (`behavior_default_awaits`)

@@ -369,7 +369,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-131 | [2](machine-2-backends-tooling/README.md) | wasm: three `std_decorator_*` cells read `std/testing/mocks.bp` a line off |
 | B-132 | [2](machine-2-backends-tooling/README.md) | `botopink cell check`: a target's exclusion probe copies the cell without its workspace's literal entries |
 | B-133 | [2](machine-2-backends-tooling/README.md) | erlang, beam: a generator nobody closes outlives its creator |
-| B-134 | [2](machine-2-backends-tooling/README.md) | erlang, beam: a generator of only literal `yield`s is a list and replays |
+| B-134 | [2](machine-2-backends-tooling/README.md) | erlang: a generator of only literal `yield`s is a list and replays |
 | B-135 | [2](machine-2-backends-tooling/README.md) | erlang, beam: an `iter` loop's captured `var` is a copy after an outer write |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
