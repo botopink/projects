@@ -37,7 +37,7 @@ rows:
 | … and no `any` | `unknown` holds any value, tested before use — `docs.md:622-626` |
 | there is no tuple type | `#(A, B)`, labelled `#(x: A, y: B)` — `docs.md:400-414`, `:567` |
 | there are no maps or sets to validate | `Dict<K, V>`, `Set<T>` — `libs/std/src/collections.bp:27`, `:246` |
-| records are nominal, so `.extend` / `.pick` / `.omit` / `.partial` have no counterpart | `mergeRecords(A, B)`, `partial(T)`, `omit(T, "f")`, `pick(T, ["f"])` are comptime type functions — `comptime/infer.zig:6439`, `libs/std/AGENTS.md` |
+| records are nominal, so `.extend` / `.pick` / `.omit` / `.partial` have no counterpart | `Type.merge(A, B)`, `Type.partial(T)`, `Type.omit(T, .f)`, `Type.pick(T, .f)` are comptime type functions — `comptime/infer.zig:6439`, `libs/std/AGENTS.md` |
 | `.default(v)` needs new machinery | a record field declares its default (`type Port(number: i32 = 80, host: string)`) — `docs.md:1320-1356` |
 | `.parse()` is `validate()`, which exists | `validate()` takes an **already typed** value; Zod's `parse` takes `unknown`. The function from untrusted data to a typed value is `T.parse` (327) |
 | `z.coerce.date()` is `bindEpochMillis` | `bindEpochMillis` reads integer text (`binding.bp:178-187`); `new Date(value)` also reads ISO text. `clock.parseIso8601` (`io/clock.bp:141`) is the missing half |
@@ -172,7 +172,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
 | `z.enum(["Salmon","Tuna"])` | `#[validated] pub type Fish { Salmon, Tuna, Trout }` | have | over `decl.variants`: `Fish.parse` matches the variant **name**; another text is `invalidValue` with the options |
-| `z.enum(Fish)` over a TS enum / object | `#[wireName("salmon")]` on a variant for a wire name that differs | gap | variants reflected as names only, no annotations (`Decl.variants` row) — step 11's box waits on it |
+| `z.enum(Fish)` over a TS enum / object | `#[wireName("salmon")]` on a variant for a wire name that differs | gap | variants reflected as names only, no annotations (`compiler.variants(d)` row) — step 11's box waits on it |
 | `FishEnum.enum` | the type itself (`Fish.Salmon`) | native | |
 | `.exclude([...])` · `.extract([...])` | a section of the enum (`type Token { Color { Red, Gray }, Bold }` — `Token.Color` is a type) | native | `docs.md:441-467`; declared, not computed |
 | `z.stringbool()` | `#[stringbool]` on a `bool` field | have | `true 1 yes on y enabled` / `false 0 no off n disabled`, case-insensitive; a JSON boolean is `invalidType` |
@@ -198,14 +198,14 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `z.looseObject({…})` | a field `#[rest] extra: Dict<string, Json>` | have | unknown members kept, document order |
 | `.catchall(schema)` | `#[rest] extra: Dict<string, T>` | have | each unknown member decoded as `T` |
 | `.shape` | `@typeInfo(Dog).fields` | add · 12 | reflection reads the type (306); `fields` is `typeinfo-unknown-member` today (`01-checker`, `language-gaps.md`) |
-| `.keyof()` | `Type.keys(Dog)` (307) | add · 5 | std's `Type`; waits on `01-checker` step 28 |
+| `.keyof()` | no counterpart: the run-time field key is removed (decision 599); `.field` written where a `Type.Field<T>` is expected stays a build-time key | gap | decision 599 |
 | `.extend({…})` | `#[validated] pub val DogWithBreed = Type.merge(Dog, Breed);` (307) | add · 5 | waits on `01-checker` step 28; `#[extending]` goes |
 | `.safeExtend({…})` | `Type.merge` refuses an incompatibly retyped field (307) | add · 5 | waits on `01-checker` step 28 |
 | `.pick({…})` · `.omit({…})` | `#[validated] pub val RecipeTitle = Type.pick(Recipe, .title);` · `Type.omit` (307) | add · 5 | waits on `01-checker` step 28 and 134 step 4 (the variadic parameter, 267) |
 | `.partial()` · `.partial({ k: true })` | `#[validated] pub val RecipePatch = Type.partial(Recipe);` (307) | add · 5 | waits on `01-checker` step 28 |
 | `.exactPartial()` | `Type.partial` with `#[present]` carried over | add · 5 | waits on `01-checker` step 28 |
 | `.required()` | `#[validated] pub val RecipeFull = Type.required(Recipe);` (307) | add · 5 | waits on `01-checker` step 28 |
-| `z.deepPartial()` | — | gap | a decorator sees one declaration (`lg2-k` answered by 216: project reflection via `@TypeInfo.all`, 253); each nested type's partial marked |
+| `z.deepPartial()` | — | gap | a decorator sees one declaration (`lg2-k` answered by 216: project reflection via `compiler.find`, 253); each nested type's partial marked |
 | symbol keys | — | n/a | |
 | recursive objects (`get subcategories()`) | a field typed with the record itself | have | `Category.parseAt` calls itself; no getter trick |
 | mutually recursive objects | two `#[validated]` records naming each other | have | the members' name contract (`T.parseAt`, `T.__json`) |
@@ -230,7 +230,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `z.union([A, B])` | field `A \| B` | have | arms in declaration order; all fail → one `invalidUnion` naming each arm's first violation |
 | `.options` | `Fish.options()` for an enum | have | a union's arms are its type (306) |
 | `z.xor([A, B])` | — | n/a (306) | a declared union takes its first accepting arm; "exactly one" has no declaration (nat-d4) |
-| `z.discriminatedUnion("status", […])` | `#[validated] #[tag("status")] pub type Reply { Success(value: ReplySuccess), Failed(value: ReplyFailed) }` | gap | `Decl.variants` carries names, not payload fields: each payload is a `#[validated]` record named `<Enum><Variant>`, read by name (the same-named record collides with the variant's constructor) |
+| `z.discriminatedUnion("status", […])` | `#[validated] #[tag("status")] pub type Reply { Success(value: ReplySuccess), Failed(value: ReplyFailed) }` | gap | `compiler.variants(d)` carries names, not payload fields: each payload is a `#[validated]` record named `<Enum><Variant>`, read by name (the same-named record collides with the variant's constructor) |
 | `z.getDiscriminatedOption` | — | n/a (306) | an option of a schema value; the variant's payload is its own type |
 | nested discriminated unions | an enum whose variant payload is another tagged enum | have | name contract (`T.parseAt`) |
 | `z.intersection(A, B)` | a record with both field sets — `Type.merge(A, B)` (307) | n/a (306) | `both` was a combinator; the merge is step 5's |
@@ -374,7 +374,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| Standard Schema — "accept any schema" | a parameter taking the type (`comptime source: type T`, refused unless `@typeInfo(T).meta(Validated)` — 298) | add · 12 | until then a parse function (`onze-content`'s `defineCollection(name, loader, { d -> T.parse(d) })`) |
+| Standard Schema — "accept any schema" | a parameter taking the type (`comptime source: type<T>`, refused unless `@typeInfo(T).meta(Validated)` — 298) | add · 12 | until then a parse function (`onze-content`'s `defineCollection(name, loader, { d -> T.parse(d) })`) |
 | tRPC-style typed endpoints, form libraries | `08-bpp/127-bpp-actions` | — | the consumer, not this front |
 | Zod → OpenAPI | `table.toOpenApi30` | have | |
 | mock-data generators | — | — | not in the reference's core; no row |
@@ -394,15 +394,15 @@ steps 0–12:
 |---|---|
 | native | 10 |
 | have | 136 |
-| add (not landed — the row names its blocker) | 20 |
-| gap (nearest form shipped, row filed) | 4 |
+| add (not landed — the row names its blocker) | 19 |
+| gap (nearest form shipped, row filed) | 5 |
 | n/a (306) | 17 |
 | n/a | 20 |
 | consumer or out of the reference's core (`—`) | 2 |
 
 The `add` rows wait on `01-checker` step 24 (typed decorator arguments: `#[map]`, `#[tryMap]`,
 `#[codec]`, the type-level `#[check]`), `01-checker` step 28 and 134 step 4 (std's `Type`: pick,
-omit, partial, required, merge, keys), `@typeInfo(T).fields` and 298's `meta(Validated)` (reflection,
+omit, partial, required, merge), `@typeInfo(T).fields` and 298's `meta(Validated)` (reflection,
 a library taking the type), or are not boxes of the front (`io: "input"`). The gaps: wire names and
-payload fields of variants (`Decl.variants`), field defaults in reflection (`Field`), `z.file` and the
+payload fields of variants (`compiler.variants(d)`), field defaults in reflection (`Field`), `z.file` and the
 byte codecs (no byte type) — each a [`../../language-gaps.md`](../../../language-gaps.md) row.

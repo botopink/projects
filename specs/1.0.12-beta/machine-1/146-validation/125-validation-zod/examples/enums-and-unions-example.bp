@@ -44,7 +44,7 @@ pub type Catch(
 // `#[validated]` record named after the enum and the variant, and the enum's
 // decoder reads `status` first.
 //
-// LANGUAGE GAP: `Decl.variants` carries a variant's name and not its payload
+// LANGUAGE GAP: `compiler.variants(d)` carries a variant's name and not its payload
 // fields, so the payload cannot be reflected from the enum itself; it is a
 // record the decoder reaches by name.
 #[validated]
