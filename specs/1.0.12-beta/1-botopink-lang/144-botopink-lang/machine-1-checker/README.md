@@ -1453,7 +1453,7 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [x] a `case` arm with a catch-all binder over a record value is lowered wrongly on commonJS and wasm — found by
       B-14; re-measured with its cell
 - [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
-      `Token.Color(_inner: __Token__Color.White)`, wasm an address · question B-22-b
+      `Token.Color(_inner: __Token__Color.White)`, wasm an address · decision 601: the leaf's whole path, `Token.Color.White`, on four targets
 - [x] an imported enum's variant with a payload prints as a number on wasm (`@print(AMode.Slow(2))` printed
       `8764`, `AMode` from another module) — found by B-23
 - [x] `test/expr_sugar.bp`'s pipes red on erlang and beam on `feat` (three cases; red on the base too) — found by
@@ -1505,7 +1505,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
       — the suite green on `feat` locally (2003); B-22's two reds were format-check's (`scripts/format-check.sh` catches
       them); every landed row has its cell, thirteen cells named in `conformance/docs.md`; the completed `test` runs since
       the base red on others' stages (format, B-60's `code_cache.sh`). Box 1 closes on the next completed green `test` run.
-- [ ] proposed once answered: `enum_section_value_print` (B-22-b); one cell over `Float.toString`'s values (B-78)
+- [ ] `enum_section_value_print` (decision 601); one cell over `Float.toString`'s values (B-78)
 
 ### B-23 — 247, 255, 310 and the checker's rows
 
