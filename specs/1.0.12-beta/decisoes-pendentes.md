@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**127 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**126 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **600**.
+número livre, que é **601**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -40,7 +40,6 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
-| 2 | **B-14-c** — um tipo derivado de um tipo `Type.partial`, e `Type.required`, como fonte de um spread (§ Máquina 1) | que linhagem `optional` / `required` mantêm num tipo derivado | 144 B-140, B-14 | (a) um partial derivado é um partial; `required` restaura a fonte |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
@@ -189,26 +188,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Bloqueia.** A linha de ordem do 144 B-14.
-
-#### B-14-c · Um tipo derivado de um tipo `Type.partial`, e `Type.required`: podem ser fonte de um spread? (decisões 307, 359 (2), 422; 144 B-14)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): um tipo derivado de um partial é um partial** — `Type.pick` / `omit` / `merge` de um tipo `Type.partial` são recusados como fonte como o próprio partial; `Type.required(Type.partial(R))` é derivado de `R` e aceito. Os campos de um partial podem estar ausentes, o que a 359 (2) recusa; derivar de novo mantém isso. Viável: `derived_types` registra `derivedPartial` por tipo, então ele passa por `pick` / `omit` / `merge`, e `required` o limpa com a linhagem da sua fonte. Mudanças: duas células.
-- **Medido.** `pick` / `omit` / `merge` de um partial derivam só do tipo partial, não da sua fonte, então são recusados como outros records; `Type.required` não tem linhagem, então seu valor é recusado também.
-- **Opções.**
-  (a) Um partial derivado é um partial; `required` restaura a fonte.
-  ```bp
-  pub val Patch = Type.partial(Pessoa);
-  pub val Nome = Type.pick(Patch, .nome);
-  pub val Full = Type.required(Patch);
-  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
-  Pessoa(...full);             // accepted
-  ```
-  (b) Como construído: os dois recusados como records de outro tipo.
-  ```bp
-  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
-  Pessoa(...full);             // refused: `Full` is not `Pessoa`
-  ```
-- **Recomendação.** (a).
-- **Bloqueia.** A linha de linhagem do 144 B-14.
 
 #### B-15-a · Como um corpo de template constrói o `@Decl` de uma tag e roda a sua anotação? (decisão 302; 144 B-15)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `q.tagDecl(kind, name, attrs)` e `q.annotate(decl, at: Span)`, como construído** — a captura (`q`) constrói o handle e roda a anotação escrita num span do seu próprio texto, resolvida no escopo de quem chama, com os argumentos checados ali; o texto da anotação é lido do span, nunca passado como string (281). Os dois ficam na captura porque só ela conhece o escopo e o texto de quem chama. Viável: como construído (a execução para com `need`, o compilador roda a anotação, o corpo roda de novo com a resposta). Muda: nada.

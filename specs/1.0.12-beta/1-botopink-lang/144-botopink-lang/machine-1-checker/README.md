@@ -285,7 +285,7 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
       the alias; one cell
 - [ ] `..base` (decision 37) beside 359's `...src` · question B-14-a
 - [ ] a source that is not a name is evaluated before the labelled values, even one written after it · question B-14-b
-- [ ] `Type.pick` / `omit` / `merge` of a `Type.partial` type, and `Type.required`: their lineage · question B-14-c
+- [x] `Type.pick` / `omit` / `merge` of a `Type.partial` type, and `Type.required`: their lineage · decision 600, (b) as built; the two cells' comments renamed in B-140
 
 #### B-14 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

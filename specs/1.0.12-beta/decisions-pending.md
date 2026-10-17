@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**126 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **600**.
+number, which is **601**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -40,7 +40,6 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 2 | **B-14-c** — a type derived from a `Type.partial` type, and `Type.required`, as a spread's source (§ Machine 1) | what lineage `optional` / `required` keep on a derived type | 144 B-140, B-14 | (a) a derived partial is a partial; `required` restores the source |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -189,26 +188,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-14's order row.
-
-#### B-14-c · A type derived from a `Type.partial` type, and `Type.required`: may they be a spread's source? (decisions 307, 359 (2), 422; 144 B-14)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a type derived from a partial is a partial** — `Type.pick` / `omit` / `merge` of a `Type.partial` type are refused as a source like the partial itself; `Type.required(Type.partial(R))` is derived from `R` and accepted. A partial's fields may be absent, which 359 (2) refuses; deriving again keeps that. Viable: `derived_types` records `derivedPartial` per type, so it carries through `pick` / `omit` / `merge`, and `required` clears it with its source's lineage. Changes: two cells.
-- **Measured.** `pick` / `omit` / `merge` of a partial derive from the partial type only, not from its source, so they are refused as other records; `Type.required` has no lineage, so its value is refused too.
-- **Options.**
-  (a) A derived partial is a partial; `required` restores the source.
-  ```bp
-  pub val Patch = Type.partial(Pessoa);
-  pub val Nome = Type.pick(Patch, .nome);
-  pub val Full = Type.required(Patch);
-  Pessoa(...nome, idade: 3);   // refused: a partial's fields may be absent
-  Pessoa(...full);             // accepted
-  ```
-  (b) As built: both refused as records of another type.
-  ```bp
-  Pessoa(...nome, idade: 3);   // refused: `Nome` is not `Pessoa`
-  Pessoa(...full);             // refused: `Full` is not `Pessoa`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-14's lineage row.
 
 #### B-15-a · How does a template body build a tag's `@Decl` and run its annotation? (decision 302; 144 B-15)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `q.tagDecl(kind, name, attrs)` and `q.annotate(decl, at: Span)`, as built** — the capture (`q`) builds the handle and runs the annotation written at a span of its own text, resolved in the caller's scope with its arguments checked there; the annotation's text is read from the span, never passed as a string (281). Both live on the capture because only it knows the caller's scope and text. Viable: as built (the run stops with `need`, the compiler runs the annotation, the body runs again with the answer). Changes: none.
