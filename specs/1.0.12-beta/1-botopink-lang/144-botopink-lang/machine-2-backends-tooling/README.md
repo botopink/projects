@@ -2268,7 +2268,8 @@ endless `iter loop` cannot be consumed. Found by B-116 P1.
       — erlang and beam: each generator a process (`codegen/beam/gen_runtime.zig`, one text for both) that waits for a
       request before it starts and at every `yield`; `generator_body_lazy` green on commonJS, erlang and beam
 - [ ] wasm: a generator's body a resumable state machine as a `@Task`'s (392), each `yield` a suspension point; `for`,
-      `.next()` and the iterator methods step it; `generator_body_lazy` green on wasm
+      `.next()` and the iterator methods step it; `generator_body_lazy`, `generator_handle_stateful` (B-134) and
+      `generator_captured_var_shared` (B-135) green on wasm
 
 ### B-133 — erlang, beam: a generator nobody closes outlives its creator
 
@@ -2300,8 +2301,10 @@ same handle prints its items again (commonJS: once), and `next()` on a non-local
 only before a later statement of the same sequence; an outer write ends the tracking, and a read inside a nested block or
 lambda after the loop reads the pre-loop value.
 
-- [ ] every read and write of a captured name after the loop goes through the cell; cell
-      `generator_captured_var_shared`, red on erlang, beam and wasm today
+- [x] every read and write of a captured name after the loop goes through the cell; cell
+      `generator_captured_var_shared` — green on commonJS, erlang and beam (`GenCell`: a `make_ref()` bound before
+      the loop, every read `erlang:get`, every write `erlang:put`, nested blocks and lambdas included, the name bound to
+      the cell's last value when its sequence ends); wasm with B-128's wasm half
 
 ### B-129 — the gate's job budget counts 768 MiB a job; the commit hook alone runs a 31 GB machine out of memory
 

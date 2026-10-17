@@ -99,14 +99,14 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
-- [ ] 144 B-128 — a generator runs one step per item (105): erlang and beam landed (a process per generator); left: wasm · nothing
+- [ ] 144 B-128 — a generator runs one step per item (105): erlang and beam landed (a process per generator); left: wasm (`generator_body_lazy`, `generator_handle_stateful`, `generator_captured_var_shared` red on wasm) · nothing
 - [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
 - [x] 144 B-131 — wasm: the three `std_decorator_*` cells' recorded `mocks.bp` lines re-recorded after B-08 and B-126 (no compiler change)
 - [x] 144 B-132 — `cell check`'s scratch copy keeps an outside directory symlink a symlink; rakun-service's six cells green
 - [x] 144 B-133 — erlang, beam: a generator dies with its creator
 - [x] 144 B-134 — erlang: a body of literal `yield`s is a stateful generator (`generator_handle_stateful`; wasm with B-128)
-- [ ] 144 B-135 — erlang, beam: an `iter` loop's captured `var` is a copy after an outer write · nothing
+- [x] 144 B-135 — erlang, beam: an `iter` loop's captured `var` is one variable on both sides, every read and write through the cell (`generator_captured_var_shared`; wasm with B-128)
 - [x] 144 B-118 — beam: a lambda's tail `iter loop` is the closure's value (`lambda_tail_iter_loop`)
 - [x] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted `async` (`behavior_default_awaits`)
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
@@ -151,7 +151,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 163 · 144 B-29 row — botopink-lang's gate with conformance, run alone under the pool (10 jobs, MemAvailable / 768 MiB), took the 32 GB machine to 2 GB available within two minutes: the std-wasm `zig build-exe` (6.5 GB), `test-libs` and the conformance cells ran at once; the pool's 768 MiB a job undercounts a gate's stages by several times — the gate holds its stages to the machine's memory, or the pool's estimate is measured · none
 - [x] 163 row — a library's commit hook alone exhausts the 32 GB machine: it calls `scripts/gate.sh --staged --no-conformance` with no `--jobs`, and `runner-standalone.sh` sizes its pool as CPUs bounded by MemAvailable / 768 MiB while a beam test job takes ~1.6 GB (emilia's hook reached 0 GB available, 2026-10-14) — the hook passes a bounded `--jobs`, or the per-job estimate is measured; one text in 17 libraries (CI check 4), so it lands with rakun's hook green — fixed: the hook passes `--jobs 2`, the estimate 1664 MiB
 - [x] 01-checker row — a method called on a lambda parameter that a later call types (`val later = { n -> async { … n.toString() … } }; later(2)`) records its lowering once the module's bodies are inferred; wasm answers as commonJS, erlang and beam do; a lambda in an unannotated `val` whose parameter nothing types is refused at the call, "cannot infer the type of `n`" (328) (`lambda_param_typed_by_later_call`, `lambda_param_untyped_method_refused`, `lambda_arg_generic_param_method`)
-- [ ] 03-beam row — the unit test "a generator ends with its creator, started or not" (B-133, `codegen/beam/gen_runtime.zig`) fails intermittently: an Erlang `=ERROR REPORT====` reaches the run's stdout before `dead dead` (1 of 4 runs of its shard) · none
+- [ ] 03-beam row — the unit test "a generator ends with its creator, started or not" (B-133, `codegen/beam/gen_runtime.zig`) fails intermittently: an Erlang `=ERROR REPORT====` reaches the run's stdout before `dead dead` (1 of 4 runs of its shard; red in 3 of 3 runs on the commit before B-135, green in 2 of 2 on B-135's `gen_runtime.zig` — watched, not closed) · none
 - [ ] 02-erlang · 03-beam row — an integer division by zero raises a bare `badarith`, which `attempt` reads as `host` where commonJS reads `panic` (found by B-07) · question B-07-a (3)
 - [ ] 163 row — cells land on botopink-lang `feat` unformatted while the 144 exception commits `--no-verify`: `format-check.sh` reds `feat`'s pipeline after each; `scripts/thread-rules.md`'s exception now asks `botopink format --check` on each `.bp` a thread adds or changes; the row closes when the other machine's threads follow it · B-60 (the exception goes)
 - [ ] 12 s1 box 2 — `--cold` with the pre-existing tool set · 114 s7
@@ -265,7 +265,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 150 s31 — `rakun-cache`'s racing-readers test timed out in a cold gate: an order asserted, not a deadline (144 B-23) · nothing
 - [ ] 150 s29 — `decl.wrapWith` in rakun (144 B-11, 316): the publish-retry example as `#[retryable(policy)]`, its marker and the gap row gone; the 318 wrappers build on it · nothing
-- [ ] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340); `tryQuery`'s stale comment removed (B-13, 304) · nothing
+- [x] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340) — no site, the registry's counters are the sidecar's own Erlang; `tryQuery`'s stale comment removed (B-13, 304)
 - [ ] 150 s34 — `Sheet.add` over what `toStyled()` answers, a component (144 B-10 G2) · nothing
 - [ ] 27 s2 box 2 — `use linkStatus()` outside `#[client]` refused · 26 s8 (`#[clientOnly]`, `src/stage.bp`) on 01-checker s23 (`Decl.hooks`)
 - [ ] 143 (398) — `dbcontext`, botopink's JPA over erika: s0 done (`botopink/dbcontext` scaffolded, a submodule); s1 entities and `DbContext` over a `Driver`, s2 `#[repository]` / `#[query "…"]` / `#[nativeQuery]`, s3 rakun-data over it · 137 s2 · 01-checker s29 · s3 after 128
