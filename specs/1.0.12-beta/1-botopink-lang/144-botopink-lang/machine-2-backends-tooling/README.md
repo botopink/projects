@@ -2386,7 +2386,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
       keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare
       value refused as a type mismatch, the hint naming the marker and `Async.resolve` (570)
-- [ ] (i) the codes renamed (573): `effect-await-without-task` → `await-without-async`, `yield-without-generator` →
+- [x] (i) the codes renamed (573): `effect-await-without-task` → `await-without-async`, `yield-without-generator` →
       `yield-without-iter`, `use-without-context-effect` → `use-without-component`, each hint naming the marker; no alias;
       every cell, snapshot and `docs.md` citing them updated in the same landing; `iter-await` and the `marker-*` codes kept
 - [x] (i) a `component` lambda lowered (574): `component { -> … }` against its expected type compiles as a `component fn`
