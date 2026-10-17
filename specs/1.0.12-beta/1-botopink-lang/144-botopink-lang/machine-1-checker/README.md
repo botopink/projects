@@ -2494,7 +2494,7 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
 
 Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
 
-### B-136 — the keyword `compiler`, `comptime` / `expr` on a parameter, `type<T>` (decision 575 (3), (4), (5))
+### B-136 — the keyword `compiler`, `comptime` / `expr` on a parameter, `type<T>` (decision 575 (3), (4), (5); 576)
 
 **Repository:** botopink-lang (`--lang`), then the consumer commits (165 s10 for the libraries) · **Model:** opus (the
 decision's first build; its cells' answers decide language versus defect) · **After:** nothing — opens now (§ Machines
@@ -2518,6 +2518,7 @@ modifier says how its argument arrives. Every later step of the group writes its
 - [ ] `type<T>` parsed in a type position and bound by a type argument; `type T` goes at its seven sites;
       `@typeInfo(city)` with a value refused; `type(` / `type {` unchanged
 - [ ] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
+- [ ] decision 576: `Expr<E>`, `@Expr`, `Decl`, `@Decl` removed whole; the `Expr` members and the template model (`parts`, `source`, `context`, `lookup`, `bindings`, `build`, `note`, `fail` with a span, `tagDecl`, `annotate`, a declaration handle's reads) as `compiler.*`; `@ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`; `Span`, `Part`, `Source`, `ExprContext`, `CustomNode` in `compiler.bp`; the codemod's rewrites (576 (6)); the cells of 275, 302, 415, 426 unchanged but for the spelling
 - [ ] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
       (the read dropped), `expr x: T` where it hands `x` on or reads its syntax (`.text()` → `compiler.text(x)`,
       `.fail(m)` → `compiler.fail(m, at: x)`); `@expr(v)` → `v` with `-> expr T`; `comptime decl: @Decl` →

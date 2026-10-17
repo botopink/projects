@@ -40,7 +40,7 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 
 In order across the two machines (144 README § Machines rule 9); nothing else new opens until B-140 lands.
 
-- [ ] 144 B-136 — the keyword `compiler` and the behavior `Compiler`; `comptime` / `expr` on a parameter, no `Expr<T>`, `-> expr T`, the tree rule; `type<T>`; the codemod over std and conformance · nothing — machine 1, opens now
+- [ ] 144 B-136 (575, 576) — the keyword `compiler` and the behavior `Compiler`; `comptime` / `expr` on a parameter, no `Expr<T>`, `-> expr T`, the tree rule; `type<T>`; the codemod over std and conformance · nothing — machine 1, opens now
 - [ ] 144 B-137 — `compiler.compile`: a decorator's run-time code in the program's init list on every target; `@emit` / `@code` removed after 165 s10 · B-136 — machine 2
 - [ ] 144 B-138 — `external` as one function over `Implementation`, `compiler.implement`, `declare-without-implementation`, the backends read `Implementation` alone, `print` by its cells · B-136; its wasm half after 164 s3 — machine 2
 - [ ] 165 s10 — rakun and jhonstart on the new spelling: the two codemods, every `@emit` → `compiler.compile` / typed `addMember` / `addType`, `rakun.d.bp` deleted · B-136, B-138
