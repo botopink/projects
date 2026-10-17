@@ -46,7 +46,6 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [ ] 165 s10 — rakun and jhonstart on the new spelling: the two codemods, every `@emit` → `compiler.compile` / typed `addMember` / `addType`, `rakun.d.bp` deleted · B-136, B-138
 - [ ] 144 B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module with its body; the removed builtins · B-138; its rakun commit after 165 s10 — machine 2
 - [ ] 144 B-140 — `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.buildType` / `fields` / `optional` / `required` · B-139 — machine 1
-- [ ] 144 B-141 — wasm: `join` on an optional meta's list, a coalesced list's `join` (`296,304` for `a,b`), `map(Card)` in an imported module (`decl_hooks_dynamic_call`'s typed meta); found by B-136's `setMeta` migration, the group's closure · nothing — machine 2
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
@@ -107,6 +106,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-132 — `cell check`'s scratch copy keeps an outside directory symlink a symlink; rakun-service's six cells green
 - [x] 144 B-133 — erlang, beam: a generator dies with its creator
 - [x] 144 B-134 — erlang: a body of literal `yield`s is a stateful generator (`generator_handle_stateful`; wasm with B-128)
+- [x] 144 B-141 — wasm: `join` on an optional meta's list, a coalesced list's `join`, `map(Card)` in an imported module (any primitive method of an imported component); `decl_hooks_dynamic_call` on a typed meta record
 - [x] 144 B-135 — erlang, beam: an `iter` loop's captured `var` is one variable on both sides, every read and write through the cell (`generator_captured_var_shared`; wasm with B-128)
 - [x] 144 B-118 — beam: a lambda's tail `iter loop` is the closure's value (`lambda_tail_iter_loop`)
 - [x] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted `async` (`behavior_default_awaits`)

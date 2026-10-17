@@ -2682,8 +2682,11 @@ is the other targets') · **After:** nothing — the builtins group's closure (�
 B-136's migration of the string `setMeta` to typed meta records found three wasm defects; commonJS, erlang and beam answer
 each. Backend code only: no std, no `decorator_*` / `template_*` / `comptime_*` cell, no library.
 
-- [ ] `@typeInfo(X).meta(T)?.list.join(",")` resolves `join/1` on wasm; a cell red on wasm, green on every target
-- [ ] `(@typeInfo(X).meta(T)?.list ?? []).join(",")` answers `a,b` on wasm (it answers `296,304`); a cell red on wasm,
-      green on every target
-- [ ] `[1, 2].map(Card)` in a module another module imports resolves `map/1` on wasm; then `decl_hooks_dynamic_call`'s
-      string `setMeta` moves to a typed meta record, its answer kept
+- [x] `@typeInfo(X).meta(T)?.list.join(",")` resolves `join/1` on wasm; cell `meta_list_method_on_optional`
+- [x] `(@typeInfo(X).meta(T)?.list ?? []).join(",")` answers `a,b` on wasm (it answered `296,304`: the element type
+      was lost across `??`); cell `meta_list_coalesced_method`
+- [x] `[1, 2].map(Card)` in a module another module imports resolves `map/1` on wasm (a lifted lambda of a linked
+      module was lowered with the importer's lowerings: any primitive method in an imported component); cell
+      `array_map_component_imported`; `decl_hooks_dynamic_call` on a typed `Graph` meta record, its `Page` and `Graph`
+      in `src/pages.bp` (the same-module read is 419's `typeinfo-meta-hooks-pending`), its call locations now
+      `@pages:…`, the graph kept
