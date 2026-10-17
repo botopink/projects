@@ -2554,7 +2554,7 @@ Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
 
-- [ ] `Type.Field<T>(name: string, type: type, annotations: DeclAnnotation[])` — `typeName` goes; a `type` value is
+- [ ] `Type.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
       lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `Type.Field<unknown>` (308)
 - [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by
       the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and

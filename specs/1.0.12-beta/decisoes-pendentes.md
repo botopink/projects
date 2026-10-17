@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**129 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **598**.
+número livre, que é **599**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -40,9 +40,8 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
-| 2 | **B-10-a** — o nome do membro de `Field` que guarda o default, sendo `default` uma palavra reservada (§ Máquina 1) | o que `Type.Field<T>` carrega para o default de um campo | 144 B-140 (`types.bp` declara `Type.Field<T>`) | (a) `defaultValue`, o default como escrito |
-| 3 | **B-16-a** — uma chave de campo em tempo de execução: seu `typeName`, suas `annotations` e sua forma impressa (§ Máquina 1) | o que um `Type.Field<T>` carrega em tempo de execução | 144 B-140 | (a) só o seu nome; o resto membros de tempo de build |
-| 4 | **B-14-c** — um tipo derivado de um tipo `Type.partial`, e `Type.required`, como fonte de um spread (§ Máquina 1) | que linhagem `optional` / `required` mantêm num tipo derivado | 144 B-140, B-14 | (a) um partial derivado é um partial; `required` restaura a fonte |
+| 2 | **B-16-a** — uma chave de campo em tempo de execução: seu `typeName`, suas `annotations` e sua forma impressa (§ Máquina 1) | o que um `Type.Field<T>` carrega em tempo de execução | 144 B-140 | (a) só o seu nome; o resto membros de tempo de build |
+| 3 | **B-14-c** — um tipo derivado de um tipo `Type.partial`, e `Type.required`, como fonte de um spread (§ Máquina 1) | que linhagem `optional` / `required` mantêm num tipo derivado | 144 B-140, B-14 | (a) um partial derivado é um partial; `required` restaura a fonte |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
@@ -69,21 +68,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `std:` do 144 B-02.
-
-#### B-10-a · `Field` reflete o default de um campo: como se chama o membro, sendo `default` uma palavra reservada? (decisões 280, 308; 144 B-10 G1)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `defaultValue: ?@Expr<unknown>`** — o default como a expressão escrita, `null` quando não há; `default` é palavra reservada e nenhum campo recebe o nome de uma. Um `@Expr` guarda o código do default, nunca um valor calculado no build (281).
-- **Medido.** `Field` não tem membro de default; o marcador do validation lê defaults à mão. Um campo chamado `default` é erro de parse.
-- **Opções.**
-  (a) `defaultValue: ?@Expr<unknown>`.
-  ```bp
-  for (f in decl.fields) { if (f.defaultValue != null) … }
-  ```
-  (b) Só `hasDefault: bool`.
-  ```bp
-  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
 
 #### B-10-b · `Decl.variants`: o que uma entrada carrega, incluindo uma seção? (decisões 268, 298; 144 B-10 G1)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — uma variante com payload lista seus campos como `decl.fields`; uma seção não é entrada, suas variantes carregam o nome da seção. Uma entrada por variante construível.

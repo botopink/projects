@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**128 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **598**.
+number, which is **599**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -40,9 +40,8 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 2 | **B-10-a** — the name of `Field`'s default member, `default` being a keyword (§ Machine 1) | what `Type.Field<T>` carries for a field's default | 144 B-140 (`types.bp` declares `Type.Field<T>`) | (a) `defaultValue`, the default as written |
-| 3 | **B-16-a** — a field key at run time: its `typeName`, `annotations` and printed form (§ Machine 1) | what a run-time `Type.Field<T>` carries | 144 B-140 | (a) its name only; the rest build-time members |
-| 4 | **B-14-c** — a type derived from a `Type.partial` type, and `Type.required`, as a spread's source (§ Machine 1) | what lineage `optional` / `required` keep on a derived type | 144 B-140, B-14 | (a) a derived partial is a partial; `required` restores the source |
+| 2 | **B-16-a** — a field key at run time: its `typeName`, `annotations` and printed form (§ Machine 1) | what a run-time `Type.Field<T>` carries | 144 B-140 | (a) its name only; the rest build-time members |
+| 3 | **B-14-c** — a type derived from a `Type.partial` type, and `Type.required`, as a spread's source (§ Machine 1) | what lineage `optional` / `required` keep on a derived type | 144 B-140, B-14 | (a) a derived partial is a partial; `required` restores the source |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -69,21 +68,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-02's `std:` row.
-
-#### B-10-a · `Field` reflects a field's default: what is the member called, `default` being a keyword? (decisions 280, 308; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `defaultValue: ?@Expr<unknown>`** — the default as the expression written, `null` when none; `default` is a keyword and no field takes a keyword's name. An `@Expr` keeps the default code, never a value computed at build (281).
-- **Measured.** `Field` has no default member; validation's marker reads defaults by hand. A field named `default` is a parse error.
-- **Options.**
-  (a) `defaultValue: ?@Expr<unknown>`.
-  ```bp
-  for (f in decl.fields) { if (f.defaultValue != null) … }
-  ```
-  (b) `hasDefault: bool` only.
-  ```bp
-  for (f in decl.fields) { if (f.hasDefault) … }   // a bool only
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
 
 #### B-10-b · `Decl.variants`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — a payload variant lists its fields as `decl.fields` does; a section is not an entry, its variants carry the section's name. One entry per constructible variant.
