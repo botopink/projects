@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**148 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**149 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1088,6 +1088,27 @@ The questions that hold a step of machine 2 (backends, runtimes, std, tooling, t
 before every other part of this page; most urgent first: B-07-a holds a commit already built, B-29-a every
 Conformance step, the rest one step each but 17-c, which holds nothing built (B-26's surface stands until widened).
 Machine 1's B-60-a holds machine 2's B-77 too.
+
+#### b137-a · An executor and the module's own body: one list in source order, or the executors after the module's `val`s? (decisions 140, 575 (3); 144 B-137)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a): one list, source order.**
+- **Measured.** `executorSource` (`modules/compiler-core/src/comptime/infer.zig`) renders each executor as `fn __bp_executor_<k>()` plus `val _bp_init_<k> = __bp_executor_<k>();` and appends both to the **end** of the annotated declaration's module. So in `compile_init_order_modules`, adding to `src/main.bp` a module-level `val seen = names();` written *below* `#[registered] pub fn own()` and printing `seen` in `main` answers `["second", "first", "later"]`: `beta`'s and `alpha`'s registrations ran first (decision 140), but `own`'s did not, although `own` is declared above `seen`. Under 575 (3)'s "declarations in source order" read with 140's "in declaration order", `own`'s executor would have run before `seen`. Re-runnable: the cell as described, on any of the four targets.
+- **Options.**
+  (a) **One list, source order.** An executor is a statement of the module body at its annotated declaration's position: `val`s, `var`s, `_` statements and executors run in the one order 140 and 575 (3) both name — modules in dependency order, within a module in source order, a declaration's calls in order. The hidden `val _bp_init_<k>` is placed at the declaration's index, not appended.
+  ```bp
+  #[registered] pub fn own() -> string { return "own"; }
+  val seen = names();        // ["second", "first", "later", "own"]
+  ```
+  (b) **As built.** A module's executors run after its own body, before the importer's body; a module-level `val` never observes its own module's executors, only its dependencies'.
+  ```bp
+  #[registered] pub fn own() -> string { return "own"; }
+  val seen = names();        // ["second", "first", "later"]
+  ```
+  (c) **Two phases.** Every module body of the program first (140's order), then every executor (575 (3)'s order); no module-level `val` observes any executor.
+  ```bp
+  val seen = names();        // [] in every module
+  ```
+- **Recommendation.** (a). It is the only reading under which both rows hold literally with one order and nothing added: 140's "declaration order" and 575 (3)'s "declarations in source order" are the same order, and an executor is a declaration's statement like the `val` beside it. (b) and (c) each invent a phase no row names, and (b) makes the answer depend on which module wrote the `val` — the kind of latitude decision 67 refuses. No flag chooses the order.
+- **Blocks.** 144 B-137's init-list row (`compile_init_order_modules` keeps its answer under (a); a new cell `compile_executor_module_val_order` with the `val seen` above waits on the answer); 165 s10 — rakun's registries written by `#[page]` / `#[layout]` / `#[template]` (576 (7)) and read by a module-level `val` of the same module.
 
 #### 521-a · An `f64` that reaches commonJS's text only through a generic `T` loses its `.0` (decision 521; 144 B-78)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a): a generic body that writes a `T` as text receives the text function of its type argument** — the call site, which knows `T`, hands the body a hidden `show` for it (as the checker already specialises per call); one JS body per function kept.

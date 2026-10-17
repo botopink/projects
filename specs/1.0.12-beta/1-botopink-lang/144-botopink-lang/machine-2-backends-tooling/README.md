@@ -2601,6 +2601,13 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       executor from a library's decorator; `expr-captures-build` inside one; `compiler-output-outside-decorator`
       (`compile_executor_before_main`, `compile_init_order_modules`, `compile_executor_from_library`,
       `compile_executor_captures_build`, `compile_output_outside_decorator`)
+- [ ] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is
+      refused at the tail with 409's refusal, a named executor (or an `expr` handed on) of type `fn() -> X` at the
+      argument; the executor's statements render as written (no tail erasure); `inferCompileCall` expects
+      `fn() -> void`, `executorOf` builds `{ -> f() }` with the call as the tail; reject cell `compile_executor_answers`
+      (`compiler.compile({ -> count() })` refused at `count()`, `compiler.compile(count)` at `count`)
+- [ ] the init order of executors and a module's own body — question b137-a; a cell `compile_executor_module_val_order`
+      once answered
 - [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
       `erlang.zig` deleted, the 32 `emit` cells and the 3 `conformance/test/` suites rewritten over `compile` or
       removed, each stated

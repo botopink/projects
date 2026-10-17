@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**148 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**149 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1088,6 +1088,27 @@ As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, toolin
 máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: B-07-a segura um commit já construído,
 B-29-a todo passo Conformance, as demais um passo cada, menos 17-c, que não segura nada construído (a superfície do B-26
 vale até ser alargada). O B-60-a da máquina 1 segura também o B-77 da máquina 2.
+
+#### b137-a · Um executor e o próprio corpo do módulo: uma lista em ordem de fonte, ou os executores depois dos `val`s do módulo? (decisões 140, 575 (3); 144 B-137)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a): uma lista, ordem de fonte.**
+- **Medido.** `executorSource` (`modules/compiler-core/src/comptime/infer.zig`) renderiza cada executor como `fn __bp_executor_<k>()` mais `val _bp_init_<k> = __bp_executor_<k>();` e acrescenta os dois ao **fim** do módulo da declaração anotada. Assim, em `compile_init_order_modules`, acrescentar a `src/main.bp` um `val seen = names();` de nível de módulo escrito *abaixo* de `#[registered] pub fn own()` e imprimir `seen` em `main` responde `["second", "first", "later"]`: os registros de `beta` e `alpha` rodaram antes (decisão 140), mas o de `own` não, embora `own` esteja declarado acima de `seen`. Sob o "declarations in source order" da 575 (3) lido com o "in declaration order" da 140, o executor de `own` teria rodado antes de `seen`. Re-executável: a célula como descrita, em qualquer dos quatro alvos.
+- **Opções.**
+  (a) **Uma lista, ordem de fonte.** Um executor é um comando do corpo do módulo na posição da sua declaração anotada: `val`s, `var`s, comandos `_` e executores rodam na única ordem que a 140 e a 575 (3) nomeiam — módulos em ordem de dependência, dentro de um módulo em ordem de fonte, as chamadas de uma declaração em ordem. O `val _bp_init_<k>` oculto é posto no índice da declaração, não acrescentado.
+  ```bp
+  #[registered] pub fn own() -> string { return "own"; }
+  val seen = names();        // ["second", "first", "later", "own"]
+  ```
+  (b) **Como construído.** Os executores de um módulo rodam depois do seu próprio corpo, antes do corpo de quem o importa; um `val` de nível de módulo nunca observa os executores do seu próprio módulo, só os das suas dependências.
+  ```bp
+  #[registered] pub fn own() -> string { return "own"; }
+  val seen = names();        // ["second", "first", "later"]
+  ```
+  (c) **Duas fases.** Todo corpo de módulo do programa primeiro (a ordem da 140), depois todo executor (a ordem da 575 (3)); nenhum `val` de nível de módulo observa executor algum.
+  ```bp
+  val seen = names();        // [] in every module
+  ```
+- **Recomendação.** (a). É a única leitura sob a qual as duas linhas valem literalmente com uma ordem e nada acrescentado: a "declaration order" da 140 e a "declarations in source order" da 575 (3) são a mesma ordem, e um executor é um comando de uma declaração como o `val` ao lado dele. (b) e (c) inventam cada uma uma fase que nenhuma linha nomeia, e (b) faz a resposta depender de qual módulo escreveu o `val` — o tipo de latitude que a decisão 67 recusa. Nenhuma flag escolhe a ordem.
+- **Bloqueia.** A linha da lista de init do 144 B-137 (`compile_init_order_modules` mantém sua resposta sob (a); uma célula nova `compile_executor_module_val_order` com o `val seen` acima espera a resposta); 165 s10 — os registros do rakun escritos por `#[page]` / `#[layout]` / `#[template]` (576 (7)) e lidos por um `val` de nível de módulo do mesmo módulo.
 
 #### 521-a · Um `f64` que chega ao texto do commonJS só por um `T` genérico perde o `.0` (decisão 521; 144 B-78)
 - **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(a): um corpo genérico que escreve um `T` como texto recebe a função de texto do seu argumento de tipo** — o ponto de chamada, que conhece `T`, entrega ao corpo um `show` oculto para ele (como o checker já especializa por chamada); um corpo JS por função mantido.
