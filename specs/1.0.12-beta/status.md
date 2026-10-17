@@ -99,7 +99,8 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
-- [ ] 144 B-128 — a generator runs one step per item (105): erlang and beam landed (a process per generator); left: wasm (`generator_body_lazy`, `generator_handle_stateful`, `generator_captured_var_shared` red on wasm) · nothing
+- [x] 144 B-128 — a generator runs one step per item (105): erlang, beam (a process per generator) and wasm in a GC module (a resumable state machine over 392's `@Task` frames); `generator_body_lazy`, `generator_handle_stateful`, `generator_captured_var_shared` green on four targets; a linear-memory module is B-142
+- [ ] 144 B-142 — wasm: a generator in a linear-memory module (and `@Stream`) runs its whole body at the call, against 105 · the builtins group — machine 2
 - [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
 - [x] 144 B-131 — wasm: the three `std_decorator_*` cells' recorded `mocks.bp` lines re-recorded after B-08 and B-126 (no compiler change)

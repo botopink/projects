@@ -2267,9 +2267,10 @@ endless `iter loop` cannot be consumed. Found by B-116 P1.
       `take(3)`, red on erlang, beam and wasm today, green on commonJS
       — erlang and beam: each generator a process (`codegen/beam/gen_runtime.zig`, one text for both) that waits for a
       request before it starts and at every `yield`; `generator_body_lazy` green on commonJS, erlang and beam
-- [ ] wasm: a generator's body a resumable state machine as a `@Task`'s (392), each `yield` a suspension point; `for`,
+- [x] wasm: a generator's body a resumable state machine as a `@Task`'s (392), each `yield` a suspension point; `for`,
       `.next()` and the iterator methods step it; `generator_body_lazy`, `generator_handle_stateful` (B-134) and
-      `generator_captured_var_shared` (B-135) green on wasm
+      `generator_captured_var_shared` (B-135) green on wasm — in a GC module (`wat/AGENTS.md` § Generators as state
+      machines); a module that falls back to linear memory is B-142
 
 ### B-133 — erlang, beam: a generator nobody closes outlives its creator
 
@@ -2690,3 +2691,19 @@ each. Backend code only: no std, no `decorator_*` / `template_*` / `comptime_*` 
       `array_map_component_imported`; `decl_hooks_dynamic_call` on a typed `Graph` meta record, its `Page` and `Graph`
       in `src/pages.bp` (the same-module read is 419's `typeinfo-meta-hooks-pending`), its call locations now
       `@pages:…`, the graph kept
+
+### B-142 — wasm: a generator in a linear-memory module runs its whole body at the call (decision 105)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the linear-memory lowering's design) · **After:** the
+builtins group (§ Machines rule 9)
+
+B-128 made a generator lazy in a WasmGC module; a module that falls back to linear memory still collects every item at
+the call, against 105. It falls back for `@Result` items (decision 122's sugar), a `defer` in a generator body, a
+`yield :l` naming an enclosing generator scope, an item type the backend cannot tell, a method over a handle other than
+`for` / `.next()` / `toArray` / `take` / `drop` / `map` / `filter`, and `g.toArray()` printed directly. `@Stream` is eager
+on wasm too.
+
+- [ ] a generator's body one step per item in a linear-memory module, or the module never falls back for it (164 s2's
+      WasmGC whole); a cell per fallback cause with a print before and after the first `yield`, red on wasm today,
+      green on commonJS, erlang and beam
+- [ ] `@Stream` on wasm one step per item, the same cell shape
