@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**124 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**128 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -793,6 +793,58 @@ group), answered before every other part of this page; in the order of the steps
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; most urgent first: 537-a holds a row of the checker and the four backends, B-128-a
 B-116 (ii)'s `Iter` declaration, 539-b a cell red on wasm; the rest hold one row each, or nothing built.
+
+#### b138-a · `Implementation`'s botopink-body cell: named `body:` (`fn` is reserved) and typed `?unknown`, on which variants? (decisions 575 (6), 590, 594 (1); 144 B-138)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
+- **Measured.** 575 (6)'s enum — `Erlang(template, inline = false, result = false) | Node(template, result = false) | Typescript(template, result = false) | Wasm(template | op | std | wasi, host, needs, result)` — lists no body cell, while the same sentence keeps the `fn:` table check "over the value" and 594 (1) / 585 (l) name `fn:` a botopink body. `fn` is a reserved word and no field name (590). The landed `libs/std/src/external.bp` writes `body: ?unknown = null` on `Erlang`, `Node` and `Wasm` (none on `Typescript`) and makes `template` `?string = null`: 22 `.Erlang(body: …)`, 8 `.Node(body: …)`, 87 `.Wasm(body: …)` in std and the cells. Consequence: the constructor admits `.Erlang()` (no code), `body: "x"`, `body: 1`, `body: true`; `comptime/infer.zig` `checkSourceCells` refuses each after the constructor — "a source's shape is the constructor's" no longer holds for this cell.
+- **Options.**
+  (a) As landed: `body: ?unknown` on `Erlang`, `Node`, `Wasm`; `template` optional; the identifier check the compiler's, at the argument.
+  ```bp
+  #[@external(.Erlang(body: reverseBody), .Wasm(body: reverseBody))]
+  declare fn backwards(xs: i32[]) -> i32[];
+  ```
+  (b) `body:` the one name, on `Erlang`, `Node` and `Wasm` alone; 575 (6)'s enum text amended to list it; `template` stays optional only because `body` exists; `.Typescript` takes none; a `body:` that is not a bare identifier naming a private bodied `fn` of the module with the declaration's types, and a source naming neither `template` nor a cell, are refused at the argument — the two checks the constructor cannot state, written in the reference as the cell's own rule beside `op:` / `std:` / `wasi:`.
+  (c) No body cell: a botopink algorithm is a bodied `fn`, never a `declare fn`; the 117 sites are rewritten as bodied functions (the behavior members among them bodiless signatures with host cells only).
+- **Recommendation.** (b). The cell exists by the maintainer's own words (575 (6)'s `fn:` check, 594 (1), 585 (l)); `fn` cannot be the name (590); one name on the three variants that run code, none on the one that emits typings; (c) loses the per-target split (`body:` on wasm beside an `.Erlang` template) 594 depends on.
+- **Blocks.** 144 B-138's reference text (`conformance/docs.md` § `declare fn`), 165 s10's ~1740 migrated sites.
+
+#### b138-b · A behavior's `default fn` with a body and cells: `implement-with-body`, or the body the fallback? (decisions 575 (6), 585 (h); 144 B-138)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
+- **Measured.** 575 (6): `compiler.implement` "on a declaration with a body `implement-with-body`". B-138 exempts a behavior's `default fn` (`infer.zig` `ImplDecl.isDefault`): 20 members of `libs/std/src/primitives.bp` carry a body plus `.Erlang` / `.Node` cells (`Integer.isEven`, `Array.slice`, `Array.contains`, …), the body the fallback where a target has no cell (wasm, beam through erlang's); `conformance/docs.md` states it as language; `conformance/modules/implement_with_body` proves the top-level refusal only. 585 (h) (2026-10-17) says GC lowers "the `default fn` bodies `primitives.bp` already holds — no `.wat` cell", presupposing the pattern. A `default fn` with a cell for every running target keeps a body no target reaches.
+- **Options.**
+  (a) As landed: a `behavior`'s `default fn` may carry cells, its body the fallback; every other bodied declaration refused.
+  (b) (a), narrowed: a `default fn` whose cells cover every running target (`.Erlang`, `.Node`, `.Wasm`) is refused `implement-with-body` too — its body is dead code; a `default fn` keeps a body only for a target it has no cell for.
+  ```bp
+  #[external(.Node("""((__a) => __a % 2 === 0)($0)"""))]
+  default fn isEven(self: Self) -> bool { return self % 2 == 0; }   // wasm, erlang: the body
+  ```
+  (c) 575 (6) to the letter: a `default fn` carries no cells; a member with host code per target is a bodiless signature whose botopink algorithm is a `.Wasm(body: …)` / `.Erlang(body: …)` private fn — infeasible over a primitive behavior's `Self` (`Integer` spans every integer width; a private fn is monomorphic) and against 585 (h).
+- **Recommendation.** (b): the exemption is one construct's (a `behavior`'s `default fn`), 585 (h) stands, and no body is ever both written and unreachable. A cell `implement_with_body_default_covered` (a `default fn` with `.Erlang`, `.Node` and `.Wasm`) refused; `implement_with_body_default_fallback` green on four targets, the wasm and erlang answers the body's.
+- **Blocks.** 144 B-138's reference text; 164 s3 P2 (585 (h)).
+
+#### b138-c · A bodyless decorator — a marker — exempt from `declare-without-implementation`? (decisions 575 (6), 576 (10), 581, 589; 144 B-138)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
+- **Measured.** `infer.zig` `refuseUnimplementedDeclares` skips a `declare fn` whose first parameter is the declaration handle (`isDecoratorParams`: "a marker a library ships, read and never called"); no cell shows it and no decision states it. 575 (6) refuses every bodyless `declare fn` no annotation implements; 576 (10) makes a decorator "a function whose first parameter is `expr`"; 581 (3) finds declarations "marked with `module`"; 589 reads `#[bpp.htmlPrelude]`. Each such marker could be bodyless today; the same exemption admits a `declare fn` with `expr decl: unknown` first and any body-less contract the compiler never checks. The `.d.bp` and `types.bp` exemptions beside it (`Env.declarationFile`) are scaffolding B-139 / B-140 delete.
+- **Options.**
+  (a) As landed: a bodyless decorator is legal, a marker.
+  (b) No exemption: a marker is a decorator with an empty body, `pub fn page(expr decl: unknown) {}`; `declare fn page(expr decl: unknown);` is refused `declare-without-implementation` like any other bodyless `declare fn`; the codemod writes `{}` over the markers of std and the libraries.
+  ```bp
+  pub fn registered(expr decl: unknown) {}        // read by compiler.find(with: registered)
+  ```
+- **Recommendation.** (b): one rule, no shape the compiler must recognise to exempt; a marker's empty body costs nothing at build (508–513). Cells: `declare_without_implementation_decorator` refused; `decorator_marker_empty_body` found by `compiler.find`.
+- **Blocks.** 144 B-138 (`refuseUnimplementedDeclares`), B-139 (`declarationFile` goes), 165 s10 (rakun-bpp's markers).
+
+#### b138-d · A flag of `Implementation` written positionally: the constructor's fill, or the label required? (decisions 67, 575 (6); front 20 F9; 144 B-138)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
+- **Measured.** A positional argument fills the variant's next field (`parser/implementations.zig` `variant_fields`): `.Node("…", true)` and `.Erlang("…", true)` fill `body:` and are refused ("writes a second cell, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` reads `f` as a body, and `.Typescript("…", true)` fills `result: true` and is accepted silently — the unlabelled switch front 20 F9's cell was written to refuse. No `.Typescript(` cell exists. `inline:`, `result:`, `host:`, `needs:` are written by label at every one of the 426 std and cell sites.
+- **Options.**
+  (a) As landed: the constructor's positional order is the language; `.Typescript("…", true)` is `result: true`.
+  (b) Only `template` is positional: a second positional argument on any variant is refused at the argument, naming the label (`write result: true`), a check beside the cell checks the constructor cannot state; `external_flag_bare_bool_refused` answers that text on `.Node`, and a twin `external_flag_bare_bool_typescript` on `.Typescript`.
+  ```bp
+  #[@external(.Typescript("Math.max($0, $1)", true))]   // refused: write `result: true`
+  ```
+- **Recommendation.** (b): one spelling for a flag (67), no variant where the bare bool means something.
+- **Blocks.** 144 B-138's two cells.
 
 #### 521-a · An `f64` that reaches commonJS's text only through a generic `T` loses its `.0` (decision 521; 144 B-78)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a): a generic body that writes a `T` as text receives the text function of its type argument** — the call site, which knows `T`, hands the body a hidden `show` for it (as the checker already specialises per call); one JS body per function kept.

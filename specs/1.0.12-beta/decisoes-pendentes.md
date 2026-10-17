@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**124 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -793,6 +793,58 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a 537-a segura uma linha do checker e dos quatro
 backends, a B-128-a a declaração de `Iter` da 553 (ii), a 539-b uma célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
+
+#### b138-a · A célula de corpo botopink de `Implementation`: chamada `body:` (`fn` é reservada) e tipada `?unknown`, em quais variantes? (decisões 575 (6), 590, 594 (1); 144 B-138)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
+- **Medido.** O enum da 575 (6) — `Erlang(template, inline = false, result = false) | Node(template, result = false) | Typescript(template, result = false) | Wasm(template | op | std | wasi, host, needs, result)` — não lista célula de corpo, enquanto a mesma frase mantém a checagem de tabela `fn:` "sobre o valor" e a 594 (1) / 585 (l) chamam `fn:` de corpo botopink. `fn` é palavra reservada e não é nome de campo (590). O `libs/std/src/external.bp` pousado escreve `body: ?unknown = null` em `Erlang`, `Node` e `Wasm` (nenhum em `Typescript`) e torna `template` `?string = null`: 22 `.Erlang(body: …)`, 8 `.Node(body: …)`, 87 `.Wasm(body: …)` no std e nas células. Consequência: o construtor admite `.Erlang()` (sem código), `body: "x"`, `body: 1`, `body: true`; o `checkSourceCells` de `comptime/infer.zig` recusa cada um depois do construtor — "a forma de uma fonte é a do construtor" deixa de valer para esta célula.
+- **Opções.**
+  (a) Como pousado: `body: ?unknown` em `Erlang`, `Node`, `Wasm`; `template` opcional; a checagem de identificador é do compilador, no argumento.
+  ```bp
+  #[@external(.Erlang(body: reverseBody), .Wasm(body: reverseBody))]
+  declare fn backwards(xs: i32[]) -> i32[];
+  ```
+  (b) `body:` o único nome, só em `Erlang`, `Node` e `Wasm`; o texto do enum da 575 (6) emendado para listá-lo; `template` fica opcional só porque `body` existe; `.Typescript` não recebe nenhum; um `body:` que não é um identificador simples nomeando uma `fn` privada com corpo do módulo com os tipos da declaração, e uma fonte que não nomeia nem `template` nem uma célula, são recusados no argumento — as duas checagens que o construtor não consegue enunciar, escritas na referência como a regra própria da célula ao lado de `op:` / `std:` / `wasi:`.
+  (c) Sem célula de corpo: um algoritmo botopink é uma `fn` com corpo, nunca uma `declare fn`; os 117 locais são reescritos como funções com corpo (os membros de behavior entre eles assinaturas sem corpo só com células de host).
+- **Recomendação.** (b). A célula existe pelas próprias palavras do mantenedor (a checagem `fn:` da 575 (6), 594 (1), 585 (l)); `fn` não pode ser o nome (590); um nome nas três variantes que rodam código, nenhum na que emite tipagens; (c) perde a divisão por alvo (`body:` no wasm ao lado de um template `.Erlang`) de que a 594 depende.
+- **Bloqueia.** O texto de referência do 144 B-138 (`conformance/docs.md` § `declare fn`), os ~1740 locais migrados do 165 s10.
+
+#### b138-b · Uma `default fn` de behavior com corpo e células: `implement-with-body`, ou o corpo é o fallback? (decisões 575 (6), 585 (h); 144 B-138)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
+- **Medido.** 575 (6): `compiler.implement` "numa declaração com corpo `implement-with-body`". O B-138 isenta a `default fn` de um behavior (`infer.zig` `ImplDecl.isDefault`): 20 membros de `libs/std/src/primitives.bp` carregam um corpo mais células `.Erlang` / `.Node` (`Integer.isEven`, `Array.slice`, `Array.contains`, …), o corpo sendo o fallback onde um alvo não tem célula (wasm, beam pelo do erlang); o `conformance/docs.md` o enuncia como linguagem; `conformance/modules/implement_with_body` prova só a recusa de nível superior. A 585 (h) (2026-10-17) diz que o GC baixa "os corpos de `default fn` que o `primitives.bp` já tem — nenhuma célula `.wat`", pressupondo o padrão. Uma `default fn` com uma célula para cada alvo que roda mantém um corpo que nenhum alvo alcança.
+- **Opções.**
+  (a) Como pousado: a `default fn` de um `behavior` pode carregar células, seu corpo é o fallback; toda outra declaração com corpo é recusada.
+  (b) (a), estreitada: uma `default fn` cujas células cobrem todo alvo que roda (`.Erlang`, `.Node`, `.Wasm`) também é recusada `implement-with-body` — seu corpo é código morto; uma `default fn` só mantém corpo para um alvo para o qual não tem célula.
+  ```bp
+  #[external(.Node("""((__a) => __a % 2 === 0)($0)"""))]
+  default fn isEven(self: Self) -> bool { return self % 2 == 0; }   // wasm, erlang: the body
+  ```
+  (c) A 575 (6) ao pé da letra: uma `default fn` não carrega células; um membro com código de host por alvo é uma assinatura sem corpo cujo algoritmo botopink é uma fn privada `.Wasm(body: …)` / `.Erlang(body: …)` — inviável sobre o `Self` de um behavior primitivo (`Integer` cobre toda largura de inteiro; uma fn privada é monomórfica) e contra a 585 (h).
+- **Recomendação.** (b): a isenção é de um construto só (a `default fn` de um `behavior`), a 585 (h) se mantém, e nenhum corpo é ao mesmo tempo escrito e inalcançável. Uma célula `implement_with_body_default_covered` (uma `default fn` com `.Erlang`, `.Node` e `.Wasm`) recusada; `implement_with_body_default_fallback` verde em quatro alvos, as respostas de wasm e erlang sendo as do corpo.
+- **Bloqueia.** O texto de referência do 144 B-138; 164 s3 P2 (585 (h)).
+
+#### b138-c · Um decorator sem corpo — um marcador — isento de `declare-without-implementation`? (decisões 575 (6), 576 (10), 581, 589; 144 B-138)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
+- **Medido.** O `refuseUnimplementedDeclares` de `infer.zig` pula uma `declare fn` cujo primeiro parâmetro é o handle da declaração (`isDecoratorParams`: "um marcador que uma biblioteca entrega, lido e nunca chamado"); nenhuma célula o mostra e nenhuma decisão o enuncia. A 575 (6) recusa toda `declare fn` sem corpo que nenhuma anotação implementa; a 576 (10) faz de um decorator "uma função cujo primeiro parâmetro é `expr`"; a 581 (3) encontra declarações "marcadas com `module`"; a 589 lê `#[bpp.htmlPrelude]`. Cada um desses marcadores poderia ser sem corpo hoje; a mesma isenção admite uma `declare fn` com `expr decl: unknown` primeiro e qualquer contrato sem corpo que o compilador nunca checa. As isenções de `.d.bp` e `types.bp` ao lado dela (`Env.declarationFile`) são andaimes que o B-139 / B-140 apagam.
+- **Opções.**
+  (a) Como pousado: um decorator sem corpo é legal, um marcador.
+  (b) Sem isenção: um marcador é um decorator com corpo vazio, `pub fn page(expr decl: unknown) {}`; `declare fn page(expr decl: unknown);` é recusado `declare-without-implementation` como qualquer outra `declare fn` sem corpo; o codemod escreve `{}` nos marcadores do std e das bibliotecas.
+  ```bp
+  pub fn registered(expr decl: unknown) {}        // read by compiler.find(with: registered)
+  ```
+- **Recomendação.** (b): uma regra, nenhuma forma que o compilador precise reconhecer para isentar; o corpo vazio de um marcador não custa nada no build (508–513). Células: `declare_without_implementation_decorator` recusada; `decorator_marker_empty_body` encontrado por `compiler.find`.
+- **Bloqueia.** 144 B-138 (`refuseUnimplementedDeclares`), B-139 (`declarationFile` sai), 165 s10 (os marcadores do rakun-bpp).
+
+#### b138-d · Uma flag de `Implementation` escrita posicionalmente: o preenchimento do construtor, ou o rótulo exigido? (decisões 67, 575 (6); frente 20 F9; 144 B-138)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
+- **Medido.** Um argumento posicional preenche o próximo campo da variante (`parser/implementations.zig` `variant_fields`): `.Node("…", true)` e `.Erlang("…", true)` preenchem `body:` e são recusados ("escreve uma segunda célula, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` lê `f` como corpo, e `.Typescript("…", true)` preenche `result: true` e é aceito em silêncio — a chave sem rótulo que a célula da frente 20 F9 foi escrita para recusar. Não existe célula `.Typescript(`. `inline:`, `result:`, `host:`, `needs:` são escritos por rótulo em cada um dos 426 locais do std e das células.
+- **Opções.**
+  (a) Como pousado: a ordem posicional do construtor é a linguagem; `.Typescript("…", true)` é `result: true`.
+  (b) Só `template` é posicional: um segundo argumento posicional em qualquer variante é recusado no argumento, nomeando o rótulo (`write result: true`), uma checagem ao lado das checagens de célula que o construtor não consegue enunciar; `external_flag_bare_bool_refused` responde esse texto em `.Node`, e uma gêmea `external_flag_bare_bool_typescript` em `.Typescript`.
+  ```bp
+  #[@external(.Typescript("Math.max($0, $1)", true))]   // refused: write `result: true`
+  ```
+- **Recomendação.** (b): uma grafia para uma flag (67), nenhuma variante onde o bool solto signifique algo.
+- **Bloqueia.** As duas células do 144 B-138.
 
 #### 521-a · Um `f64` que chega ao texto do commonJS só por um `T` genérico perde o `.0` (decisão 521; 144 B-78)
 - **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(a): um corpo genérico que escreve um `T` como texto recebe a função de texto do seu argumento de tipo** — o ponto de chamada, que conhece `T`, entrega ao corpo um `show` oculto para ele (como o checker já especializa por chamada); um corpo JS por função mantido.

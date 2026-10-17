@@ -2638,15 +2638,36 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
 - [x] `declare-without-implementation` at the declaration (top-level, a type's, static); `declare-in-behavior`;
       `DelegateDecl` and both delegate parse paths deleted (an unannotated `declare fn` is a `FnDecl`); `#[@Host]`
       deleted; `bodyless_method_without_binding`'s answer moves from the call to the declaration (its snapshots stated)
-- [ ] `print`, `println`, `debug`: no backend intercepts by name (erlang, beam, wasm and commonJS still do; commonJS's
-      inline print templates are gone); `.Wasm(std: "print" | "println" | "debug")` answered
-      by std-wasm; erlang and beam still emit `'__bp_print'/1`, referenced by the template
 - [x] the codemod `#[@External.X(…)]` → `#[@external(.X(…))]`, several annotations of one declaration merged into one,
       every cell's labels kept: std (268 sites) and `conformance/` (158) here, the libraries by 165 s10 (~1740)
 - [x] cells: `declare_without_implementation` (three shapes), `declare_in_behavior`, `implementation_twice`,
       `implement_with_body`, a library-defined source annotation (`external_library_source_annotation`); the ~12
       `external_*` shape cells answer the enum constructor's texts, each stated
-- [ ] `print` on wasm by `.Wasm(std: "print")`, with box 4
+- [ ] `compiler.implement(.Erlang(…))`: the dot shorthand takes `implement`'s parameter type `Implementation` (587; under
+      579 an ordinary method's parameter) — cell `external_library_source_dot_shorthand` (`#[bif("lists")]` whose body
+      writes `.Erlang(module + ":reverse($0)")`, four targets, `out [3, 2, 1]`); `external_library_source_annotation`
+      keeps `Implementation.Erlang(…)`, which stays legal
+- [ ] a library's `compiler.implement` survives the module's re-analysis: `Env.implementContributions` are kept on the
+      declaration when a decorator of the same module emits, adds a member (`addMember`) or wraps (`wrapWith`) — cells
+      `external_library_source_beside_member`, `external_library_source_beside_wrap`,
+      `external_library_source_beside_emit` (a `#[bif]` beside each, four targets, the erlang answer the template's)
+- [ ] a variant constructor called with labels and defaults left out — `Implementation.Wasm(op: "f64.floor", result:
+      true)` and a user enum — answers one value on erlang, beam, commonJS and wasm (`planLabelledCall` always plans;
+      `defaultInjections` read by every backend, wasm verified) — cells `enum_variant_labelled_defaults` (four targets)
+      and `enum_variant_labelled_reorder`
+- [ ] `?unknown` admits a function value (`body: reverseBody`) — cell `optional_unknown_takes_function`;
+      `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
+      formatter prints an annotation whose arguments end in a trailing comma one per line — cell
+      `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
+- [ ] (box 4) `print`, `println`, `debug` bound by their cells on erlang, beam and commonJS: `builtins.d.bp`'s three
+      `declare fn` carry `.Erlang(…)` / `.Node(…)`; `erlang.zig`, `beam_asm.zig`, `commonJS.zig` dispatch no builtin by
+      the names `print` / `println` / `debug` — a grep gate in `zig build test` over `modules/compiler-core/src/codegen`
+      (decision 67, like the lib-agnostic gate) and cell `print_bound_by_cells` (four targets; wasm's row red until 164
+      s3 lands `.Wasm(std: "print")`)
+- [ ] `print` on wasm by `.Wasm(std: "print" | "println" | "debug")`: a row of 164 s3 (this step's header: the wasm half
+      after 164 s3, never beside), `print_bound_by_cells`'s wasm answer its oracle
+- [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp` from `declare-without-implementation` deleted
+      when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption is question b138-c
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
 
