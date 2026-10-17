@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**131 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**130 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **596**.
+número livre, que é **597**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -33,8 +33,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | **B-128-a** — quais métodos de iterador a linguagem declara em `Iter<T, R>` (§ Máquina 2) | `flatMap` em erlang e beam; a declaração de `Iter` da 553 (ii) (B-116) | (a) os helpers do Node inteiros, tipados, em todo alvo |
-| 2 | **539-b** — um `defer` acrescenta `.exceptions` ao `needs` do programa? (§ Máquina 2) | uma célula vermelha em wasm até o 164 s2b | (a) uma função que tem um `defer` acrescenta `.exceptions` |
+| 1 | **539-b** — um `defer` acrescenta `.exceptions` ao `needs` do programa? (§ Máquina 2) | uma célula vermelha em wasm até o 164 s2b | (a) uma função que tem um `defer` acrescenta `.exceptions` |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -790,8 +789,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
-máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a B-128-a segura a declaração de `Iter` da 553 (ii), a 539-b uma
-célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
+máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a 539-b segura uma célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
 
 #### b139-a · Qual módulo da std declara `builtin`, e os ciclos entre `compiler.bp`, `external.bp` e `reflection.bp` (decisões 575 (2), (6), 576 (13); 144 B-139)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
@@ -1012,13 +1010,6 @@ célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
 - **Opções.** (a) Como construído: memória primeiro, um re-rebaixamento por leitura. (b) A listagem guardada de novo: ~128 MB de volta nesse projeto, sem re-rebaixamento.
 - **Recomendação.** (a) — a memória do gate foi o que derrubou a máquina; um re-rebaixamento é a compilação de um módulo.
 - **Bloqueia.** Nada construído espera.
-
-#### B-128-a · Quais métodos de iterador são da linguagem em `Iter<T, R>`? (decisões 553, 105; 144 B-128)
-- **Proposta (fable, 2026-10-16; aguardando o mantenedor):** **(a): os helpers de `Iterator.prototype` do Node inteiros — `take`, `drop`, `map`, `filter`, `flatMap`, `forEach`, `toArray`, `reduce`, `some`, `every`, `find` — declarados em `Iter<T, R>` no `builtins.d.bp`**, cada alvo os fornecendo.
-- **Medido.** O `behavior Iterator<T>` do `builtins.d.bp` declara só `next`; os outros são os helpers do Node alcançados por um receptor sem tipo no commonJS; o runtime de erlang e beam do B-128 espelha esse conjunto sem `flatMap`.
-- **Opções.** (a) Como proposto. (b) Só `next` declarado; os helpers funções de um módulo da std.
-- **Recomendação.** (a) — um conjunto em todo alvo, tipado.
-- **Bloqueia.** `flatMap` num gerador no erlang e no beam; a declaração de `Iter` do (ii) da 553.
 
 #### B-116-k · O que o corpo de uma lambda `component` permite (decisão 574; 144 B-116 (i))
 - **Proposta (opus, 2026-10-16; aguardando o mantenedor; construída como listado, a mais restritiva):** (1) um `throw` ou um `try` que propaga numa lambda `component` é recusado — `Component<Result<R, E>>` é do B-116 (iii); (2) os seus `use`s e `await`s não entram em nenhum nó de hook: o builder da função que a envolve é limpo para o corpo dela, então as suas chamadas recebem a leitura assíncrona conservadora da 375; (3) um corpo cuja última expressão termina com `;` é recusado como incompatível quando `R` não é `void`, onde uma `component fn` responderia `rendered(null)`.

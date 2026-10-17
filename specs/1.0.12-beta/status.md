@@ -282,6 +282,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 - [ ] 164 cli — a new library repository `botopink/cli` (decision 506): typed commands, style and prompts over std's new CLI primitives (144 B-27); the repository and its front open after the 144 front · after 144 B-27
 
 ### 144 botopink-lang
+- [ ] 144 row — decision 596: the eleven iterator helpers declared on `Iter<T, R>` and given by every target (`flatMap` missing on erlang and beam today; wasm the set in GC); cells `iter_helpers_*`, `iter_flat_map_generator` · with B-116 (ii); machine 2
 - [ ] 144 row — decision 595: the `try { … } catch …` region, the handler's four forms, one `E` per region, `try-region-errors-differ`, `try-region-cannot-fail`; parser, checker, four backends, formatter, `docs.md` § @Result · machine 2; nothing
 - [ ] 144 row — decision 582: the callable namespace (`import {a.b}` always the namespace, the module's default as its value), `namespace-not-a-value`, `module-item-collision`, `expandImports` removed · after B-140 (§ Machines rule 9); beside B-69
 - [ ] 144 row — decision 583: every function typed where written, `lambda-untyped`, 328's inference from calls removed; the 69 cells and the 34 library sites migrated · after B-140 (§ Machines rule 9)

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**131 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**130 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **596**.
+number, which is **597**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -33,8 +33,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | **B-128-a** — which iterator methods the language declares on `Iter<T, R>` (§ Machine 2) | `flatMap` on erlang and beam; 553 (ii)'s `Iter` declaration (B-116) | (a) Node's helpers whole, typed, on every target |
-| 2 | **539-b** — does a `defer` add `.exceptions` to the program's `needs`? (§ Machine 2) | a cell red on wasm until 164 s2b | (a) a function holding a `defer` adds `.exceptions` |
+| 1 | **539-b** — does a `defer` add `.exceptions` to the program's `needs`? (§ Machine 2) | a cell red on wasm until 164 s2b | (a) a function holding a `defer` adds `.exceptions` |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -790,8 +789,7 @@ group), answered before every other part of this page; in the order of the steps
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
-before every other part of this page; most urgent first: B-128-a holds B-116 (ii)'s `Iter` declaration, 539-b a cell red on wasm; the rest hold
-one row each, or nothing built.
+before every other part of this page; most urgent first: 539-b holds a cell red on wasm; the rest hold one row each, or nothing built.
 
 #### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
@@ -1012,13 +1010,6 @@ one row each, or nothing built.
 - **Options.** (a) As built: memory first, a re-lowering per read. (b) The listing kept again: ~128 MB back on that project, no re-lowering.
 - **Recommendation.** (a) — the gate's memory is what brought the machine down; a re-lowering is one module's compile.
 - **Blocks.** Nothing built waits.
-
-#### B-128-a · Which iterator methods are the language's on `Iter<T, R>`? (decisions 553, 105; 144 B-128)
-- **Proposed (fable, 2026-10-16; awaiting the maintainer):** **(a): Node's `Iterator.prototype` helpers whole — `take`, `drop`, `map`, `filter`, `flatMap`, `forEach`, `toArray`, `reduce`, `some`, `every`, `find` — declared on `Iter<T, R>` in `builtins.d.bp`**, each target giving them.
-- **Measured.** `builtins.d.bp`'s `behavior Iterator<T>` declares only `next`; the others are Node's helpers reached through an untyped receiver on commonJS; B-128's erlang and beam runtime mirrors that set without `flatMap`.
-- **Options.** (a) As proposed. (b) Only `next` declared; the helpers a std module's functions.
-- **Recommendation.** (a) — one set on every target, typed.
-- **Blocks.** `flatMap` on a generator on erlang and beam; 553 (ii)'s `Iter` declaration.
 
 #### B-116-k · What a `component` lambda's body allows (decision 574; 144 B-116 (i))
 - **Proposed (opus, 2026-10-16; awaiting the maintainer; built as listed, the most restrictive):** (1) a `throw` or a propagating `try` in a component lambda is refused — `Component<Result<R, E>>` is B-116 (iii)'s; (2) its `use`s and `await`s join no hook node: the enclosing function's builder is cleared for its body, so its calls take 375's conservative asynchronous reading; (3) a body whose last expression ends with `;` is refused as a mismatch when `R` is not `void`, where a `component fn` would answer `rendered(null)`.
