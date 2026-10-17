@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**129 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**127 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **599**.
+número livre, que é **600**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -40,8 +40,7 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
-| 2 | **B-16-a** — uma chave de campo em tempo de execução: seu `typeName`, suas `annotations` e sua forma impressa (§ Máquina 1) | o que um `Type.Field<T>` carrega em tempo de execução | 144 B-140 | (a) só o seu nome; o resto membros de tempo de build |
-| 3 | **B-14-c** — um tipo derivado de um tipo `Type.partial`, e `Type.required`, como fonte de um spread (§ Máquina 1) | que linhagem `optional` / `required` mantêm num tipo derivado | 144 B-140, B-14 | (a) um partial derivado é um partial; `required` restaura a fonte |
+| 2 | **B-14-c** — um tipo derivado de um tipo `Type.partial`, e `Type.required`, como fonte de um spread (§ Máquina 1) | que linhagem `optional` / `required` mantêm num tipo derivado | 144 B-140, B-14 | (a) um partial derivado é um partial; `required` restaura a fonte |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
@@ -258,38 +257,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha da leitura de meta do 144 B-15.
-
-#### B-16-a · Uma chave de campo em runtime: qual é o seu `typeName`, as suas `annotations` e a sua forma impressa? (decisão 308; 144 B-16)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma chave em runtime é o seu nome** — em runtime `Type.Field<T>` carrega só `name`; `key.typeName` e `key.annotations` são membros de build, recusados fora de um corpo de decorator ou de template (`field-key-build-only`), e `@print(key)` imprime `.name`. Anotações são valores `Decorator`, que só existem no build; uma cópia em runtime seria uma segunda verdade, parcial. Viável: o record de runtime guarda um campo; o checker recusa os dois membros pelo estágio. Muda: uma cell de recusa; `field_key_runtime` imprime uma chave.
-- **Medido.** Como construído, uma chave em runtime guarda `typeName` como o checker o escreve e `annotations: []`; `@print(key)` imprime o record inteiro. As cells usam só `name`, `==`, `case`, `of`, `all`.
-- **Opções.**
-  (a) Só o nome.
-  ```bp
-  val k = Recipe.Key.of("title") ?? .title;
-  @print(k);           // .title
-  k.annotations;       // refused at run time: field-key-build-only
-  ```
-  (b) O record inteiro, como construído.
-  ```bp
-  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da chave em runtime do 144 B-16.
-
-#### B-16-b · `Type.keys(R)` num `val` anotado: recusado? (decisões 307, 308; 144 B-16)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado** — `#[x] pub val K = Type.keys(R)` é `derived-type-arguments` na anotação: `Type.keys` nomeia um tipo existente (um alias), não uma nova declaração, então não há o que um decorator anotar; um record derivado (`pick`, `omit`, …) continua anotável. Viável: como construído. Muda: nada.
-- **Medido.** Construído como (a).
-- **Opções.**
-  (a) Recusado.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
-  ```
-  (b) Aceito, o decorator vendo o tipo das chaves de `Recipe`.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `val` anotado do 144 B-16.
 
 #### B-17-a · Um corpo que roda no build chama uma função host com forma de build: permitido? (decisões 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma função host com forma de build (cell `std:`, `@External.Wasm` `fn:`) é `Any`; o run-in-build recusa só as outras**, substituindo `comptime-host-cell-unavailable` pela mensagem da 376. A 434/452 tornaram exatamente essas chamáveis no build; a 376, escrita antes delas, desfaria isso.

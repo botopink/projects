@@ -475,8 +475,7 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
       that record, and rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) moves to `Type.Field<unknown>`; `pick` /
       `omit` are declared (Done); the spelling of a `type` answer is fixed here with `01-checker` step 28; builtins' `Field` leaves in this step, no alias kept: validation's `decorators.bp` (`Array<Field>`) and
       rakun-data's `orm/entity.bp` migrate to `Type.Field<unknown>` as its consumer commits (rule 10)
-- [ ] a field key's `typeName`, `annotations` and printed form at run time · question B-16-a
-- [ ] `Type.keys` on an annotated `val` refused (`derived-type-arguments`, as built) · question B-16-b
+- [x] a field key at run time — removed by decision 599 (no use outside the compiler's cells): `Type.keys`, `Field.of`, `Field.all`, the five `field_key_*` / `type_keys_*` cells and `docs.md`'s paragraph go in B-140; the build-time `.field` argument (280 example 6) stays
 - [x] the four bare names (`partial`, `pick`, `omit`, `mergeRecords`) leave `tryResolveTypeManipulationCall`
       when `01-checker` step 28 keys its resolver on `Type`
 - [ ] [`examples/types.bp`](134-builtins-declared/examples/types.bp) — the whole `Type` surface, signatures and results —
@@ -2554,6 +2553,7 @@ Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
 
+- [ ] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `Type.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
 - [ ] `Type.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
       lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `Type.Field<unknown>` (308)
 - [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by

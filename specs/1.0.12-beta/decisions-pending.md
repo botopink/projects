@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**127 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **599**.
+number, which is **600**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -40,8 +40,7 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 2 | **B-16-a** — a field key at run time: its `typeName`, `annotations` and printed form (§ Machine 1) | what a run-time `Type.Field<T>` carries | 144 B-140 | (a) its name only; the rest build-time members |
-| 3 | **B-14-c** — a type derived from a `Type.partial` type, and `Type.required`, as a spread's source (§ Machine 1) | what lineage `optional` / `required` keep on a derived type | 144 B-140, B-14 | (a) a derived partial is a partial; `required` restores the source |
+| 2 | **B-14-c** — a type derived from a `Type.partial` type, and `Type.required`, as a spread's source (§ Machine 1) | what lineage `optional` / `required` keep on a derived type | 144 B-140, B-14 | (a) a derived partial is a partial; `required` restores the source |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -258,38 +257,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-15's meta-read row.
-
-#### B-16-a · A field key at run time: what are its `typeName`, its `annotations` and its printed form? (decision 308; 144 B-16)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a run-time key is its name** — at run time `Type.Field<T>` carries `name` only; `key.typeName` and `key.annotations` are build-time members, refused outside a decorator or template body (`field-key-build-only`), and `@print(key)` prints `.name`. Annotations are `Decorator` values, which exist only at build; a run-time copy would be a second, partial truth. Viable: the run-time record keeps one field; the checker refuses the two members by stage. Changes: a refusal cell; `field_key_runtime` prints a key.
-- **Measured.** As built, a run-time key holds `typeName` as the checker spells it and `annotations: []`; `@print(key)` prints the whole record. The cells use only `name`, `==`, `case`, `of`, `all`.
-- **Options.**
-  (a) Its name only.
-  ```bp
-  val k = Recipe.Key.of("title") ?? .title;
-  @print(k);           // .title
-  k.annotations;       // refused at run time: field-key-build-only
-  ```
-  (b) The whole record, as built.
-  ```bp
-  @print(k);           // Field(name: "title", typeName: "string", annotations: [])
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-16's run-time key row.
-
-#### B-16-b · `Type.keys(R)` on an annotated `val`: refused? (decisions 307, 308; 144 B-16)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused** — `#[x] pub val K = Type.keys(R)` is `derived-type-arguments` at the annotation: `Type.keys` names an existing type (an alias), not a new declaration, so there is nothing for a decorator to annotate; a derived record (`pick`, `omit`, …) stays annotatable. Viable: as built. Changes: none.
-- **Measured.** Built as (a).
-- **Options.**
-  (a) Refused.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // refused: an alias is not a new type
-  ```
-  (b) Accepted, the decorator seeing `Recipe`'s keys type.
-  ```bp
-  #[validated] pub val K = Type.keys(Recipe);   // decl.kind == .Alias
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-16's annotated-`val` row.
 
 #### B-17-a · A body that runs at build calls a host function with a build form: allowed? (decisions 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a host function with a build form (`std:` cell, `@External.Wasm` `fn:`) is `Any`; run-in-build refuses only the others**, replacing `comptime-host-cell-unavailable` with 376's message. 434/452 made exactly these callable at build; 376 written before them would undo it.
