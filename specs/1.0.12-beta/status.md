@@ -88,11 +88,14 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
-- [ ] 144 B-128 — erlang, beam, wasm: a generator runs its whole body at the call, against 105's laziness · nothing
+- [ ] 144 B-128 — a generator runs one step per item (105): erlang and beam landed (a process per generator); left: wasm · nothing
 - [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
 - [x] 144 B-131 — wasm: the three `std_decorator_*` cells' recorded `mocks.bp` lines re-recorded after B-08 and B-126 (no compiler change)
 - [x] 144 B-132 — `cell check`'s scratch copy keeps an outside directory symlink a symlink; rakun-service's six cells green
+- [ ] 144 B-133 — erlang, beam: a generator nobody closes outlives its creator · nothing
+- [ ] 144 B-134 — erlang, beam: a generator of only literal `yield`s is a list and replays · nothing
+- [ ] 144 B-135 — erlang, beam: an `iter` loop's captured `var` is a copy after an outer write · nothing
 - [x] 144 B-118 — beam: a lambda's tail `iter loop` is the closure's value (`lambda_tail_iter_loop`)
 - [x] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted `async` (`behavior_default_awaits`)
 - [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
@@ -333,7 +336,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 ## L5 — blocked on a decision
 
 Full text in [`decisions-pending.md`](decisions-pending.md); confirmations (1.0.10 choices) in its
-last section. Open: 139 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
+last section. Open: 140 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
 `decisions-pending.md`).
 
 **First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:

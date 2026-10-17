@@ -2263,9 +2263,45 @@ commonJS does so. erlang (`codegen/erlang.zig`'s `GenScope`: "a generator is the
 body runs"), beam and wasm run the whole body at the call — a print before and after a `yield` comes out at once, and an
 endless `iter loop` cannot be consumed. Found by B-116 P1.
 
-- [ ] a generator's body runs one step per item asked for on every target — a cell with a print before and after the
+- [x] a generator's body runs one step per item asked for on every target — a cell with a print before and after the
       first `yield` on each form (an `iter fn`, an `iter loop`, a marked lambda) and an endless generator taken by
       `take(3)`, red on erlang, beam and wasm today, green on commonJS
+      — erlang and beam: each generator a process (`codegen/beam/gen_runtime.zig`, one text for both) that waits for a
+      request before it starts and at every `yield`; `generator_body_lazy` green on commonJS, erlang and beam
+- [ ] wasm: a generator's body a resumable state machine as a `@Task`'s (392), each `yield` a suspension point; `for`,
+      `.next()` and the iterator methods step it; `generator_body_lazy` green on wasm
+
+### B-133 — erlang, beam: a generator nobody closes outlives its creator
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+B-128 makes a generator a process; one abandoned (a `next()` by hand, an unfinished `map` / `filter` / `drop` chain) waits
+until the node halts, with an open io device if it reads a file. No library creates one today; a rakun handler reading
+`f.lines()` per request would leak one per request.
+
+- [ ] the generator monitors its creator and exits when it dies; a unit test over the helper text or an
+      `erlang:processes()` count
+
+### B-134 — erlang, beam: a generator of only literal `yield`s is a list and replays
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet
+
+`isPlainYieldGenerator`'s typed path in `erlang.zig` keeps a body of literal `yield`s a list: a second `for` over the
+same handle prints its items again (commonJS: once), and `next()` on a non-local receiver never advances (105, 553).
+
+- [ ] a generator handle is stateful whatever its body; cell `generator_handle_stateful` (a second `for` over an
+      exhausted handle, both forms), red on erlang, beam and wasm today
+
+### B-135 — erlang, beam: an `iter` loop's captured `var` is a copy after an outer write
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the lowering of captured variables)
+
+105 captures the enclosing scope's variables as a closure, one variable both ways. B-128's `GenCell` re-reads the cell
+only before a later statement of the same sequence; an outer write ends the tracking, and a read inside a nested block or
+lambda after the loop reads the pre-loop value.
+
+- [ ] every read and write of a captured name after the loop goes through the cell; cell
+      `generator_captured_var_shared`, red on erlang, beam and wasm today
 
 ### B-129 — the gate's job budget counts 768 MiB a job; the commit hook alone runs a 31 GB machine out of memory
 
