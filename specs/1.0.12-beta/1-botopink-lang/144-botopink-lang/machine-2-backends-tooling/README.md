@@ -2592,6 +2592,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (every backend) · **After:** B-136; its last box after 165 s10
 
+- [ ] decision 576 (7), (15): `Declared<T>`, `DeclaredMeta`, `DeclaredTypedMeta` and the run-time `@TypeInfo.all` removed with `compile` in: each run-time catalogue cell (`typeinfo_all_*`, comptime_expand_boot's run-time half) registers through its marker's `compiler.compile`, its answer kept
 - [ ] `compile(expr executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
       module's init function and the program's init list, run once before `main` — modules in dependency order,
       declarations in source order, calls in order; a library module's executors run in the program that imports it;
