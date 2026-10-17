@@ -1,14 +1,12 @@
 // Front 134 — builtins declared · examples/types.bp
 //
-// Demonstrates: std's `Type` (decisions 307, 308) — the derived-type functions
-// and the field key, with every signature and what each call produces.
+// Demonstrates: std's `Type` (decisions 307, 308, 598, 599) — the derived-type functions
+// and the build-time field, with every signature and what each call produces.
 //
 // Target file: `libs/std/src/types.bp`, exported by std's `root.bp` as `types`.
-// Everything here runs at compile time except the members of `Field<T>`, which
-// also hold at run time. The bodies are the compiler's (`declare fn`; today's
-// `tryResolveTypeManipulationCall` in `comptime/infer.zig`, keyed on these
-// declarations instead of the bare names `partial`, `pick`, `omit`,
-// `mergeRecords`).
+// Everything here runs at compile time. The bodies are botopink over `compiler.*`
+// (599 (3)): `compiler.fields(T)` reads, `compiler.buildType` builds; no function is a
+// bodyless `declare fn` (575 (6)).
 //
 // OPEN (this front, with `01-checker` step 28): the spelling of a type that only
 // holds static members (`pub type Type { … }` with no case) and of a `type`
@@ -18,24 +16,22 @@
 
 pub type Type {
 
-    // The field key. One value per field of `T`'s declaration; nobody declares
-    // them. `.title` is the shorthand, resolved against the expected `T`.
-    pub type Field<T> {
-        val name: string;                         // "title"
-        val typeName: string;                     // "string", "?string", "Array<string>"
-        val annotations: DeclAnnotation[];        // the field's markers
-
-        pub declare fn of(text: string) -> ?Field<T>;   // "title" → .title; unknown → null
-        pub declare fn all() -> Field<T>[];              // declaration order
-    }
+    // A field of `T`'s declaration, a build-time value (599): nobody declares
+    // them, and none exists at run time. `.title` is the shorthand where a
+    // `Type.Field<T>` is expected in a decorator's argument, resolved against `T`.
+    pub type Field<T>(
+        name: string,                             // "title"
+        type: anytype,                            // the field's type
+        annotations: DeclAnnotation[],            // the field's markers
+        defaultValue: ?anyvalue,                  // the default as written, null when none (598)
+    )
 
     // The type functions — compile time only, every parameter `comptime`.
-    pub declare fn keys<T>(comptime source: type T) -> type;          // = Type.Field<T>
-    pub declare fn partial<T>(comptime source: type T) -> type;       // every field F → ?F
-    pub declare fn required<T>(comptime source: type T) -> type;      // every field ?F → F
-    pub declare fn pick<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type;
-    pub declare fn omit<T>(comptime source: type T, comptime ..fields: Type.Field<T>[]) -> type;
-    pub declare fn merge<A, B>(comptime first: type A, comptime second: type B) -> type;
+    pub fn partial<T>(comptime source: type<T>) -> anytype { … }     // every field F → ?F
+    pub fn required<T>(comptime source: type<T>) -> anytype { … }    // every field ?F → F
+    pub fn pick<T>(comptime source: type<T>, comptime ..fields: Type.Field<T>[]) -> anytype { … }
+    pub fn omit<T>(comptime source: type<T>, comptime ..fields: Type.Field<T>[]) -> anytype { … }
+    pub fn merge<A, B>(comptime first: type<A>, comptime second: type<B>) -> anytype { … }
 }
 
 // ── an application module ───────────────────────────────────────────────────
@@ -57,9 +53,6 @@ pub type Recipe(
 // type position, exported and imported like any type; the source fields'
 // markers come with them; a decorator on the `val` sees a type declaration.
 
-pub val RecipeKey = Type.keys(Recipe);
-//   Type.Field<Recipe> — .title, .description, .ingredients
-
 #[validated] pub val RecipePatch = Type.partial(Recipe);
 //   type RecipePatch(#[minLength(1)] title: ?string, description: ?string, ingredients: ?Array<string>)
 
@@ -79,14 +72,7 @@ pub val RecipeKey = Type.keys(Recipe);
 
 // ── the key at run time ─────────────────────────────────────────────────────
 
-// Exhaustive: a field added to `Recipe` makes this `case` an error until handled.
-pub fn sortBy(list: Recipe[], key: RecipeKey) -> Recipe[] {
-    return case key {
-        .title -> list.sortBy({ r -> r.title });
-        .description -> list.sortBy({ r -> r.description ?? "" });
-        .ingredients -> list.sortBy({ r -> r.ingredients.length });
-    };
-}
+// Removed by decision 599: no `Type.keys`, `Field.of` or `Field.all`, no run-time field key.
 
 // A PATCH applies only what the client sent.
 pub fn applyPatch(recipe: Recipe, patch: RecipePatch) -> Recipe {
@@ -96,17 +82,6 @@ pub fn applyPatch(recipe: Recipe, patch: RecipePatch) -> Recipe {
         description: patch.description ?? recipe.description,
         ingredients: patch.ingredients ?? recipe.ingredients,
     );
-}
-
-test "a key read from outside, by its name" {
-    val key = RecipeKey.of("title") ?? .ingredients;
-    assert key == .title;
-    assert key.name == "title";
-    assert RecipeKey.of("nope") == null;
-}
-
-test "every key, in declaration order" {
-    assert RecipeKey.all().map({ k -> k.name }).join(",") == "title,description,ingredients";
 }
 
 test "a derived type is a type: constructed, passed, matched" {
@@ -126,13 +101,13 @@ test "a patch changes what it names and nothing else" {
 
 // ── in a decorator and in reflection ────────────────────────────────────────
 
-// pub fn unique<T>(comptime decl: @Decl<T>, comptime field: Type.Field<T>) { … }
-// pub fn index<T>(comptime decl: @Decl<T>, comptime ..fields: Type.Field<T>[]) { … }
-// pub fn check<T>(comptime decl: @Decl<T>, comptime rule: ?fn(v: T) -> bool = null,
+// pub fn unique<T>(expr decl: T, comptime field: Type.Field<T>) { … }
+// pub fn index<T>(expr decl: T, comptime ..fields: Type.Field<T>[]) { … }
+// pub fn check<T>(expr decl: T, comptime rule: ?fn(v: T) -> bool = null,
 //                 comptime at: ?Type.Field<T> = null, …) { … }
 //
-// `@Decl<T>.fields` is `Type.Field<T>[]`; a `@Decl` without `T` hands out
-// `Type.Field<unknown>[]`.
+// `compiler.fields(T)` answers `Type.Field<T>[]` (575 (3)); a decorator over an
+// `expr decl: unknown` reads `Type.Field<unknown>[]`.
 
 // ── does not compile (one `reject/` cell each, `01-checker` step 28) ─────────
 

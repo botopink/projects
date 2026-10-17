@@ -2,13 +2,13 @@
 
 Aprovados pelo mantenedor em 04/10 como os casos de uso da decisão 280; são os alvos do passo 24 do
 `01-checker` (cada exemplo vira uma célula `run/` e as suas recusas, células `reject/`). Partes
-ilustrativas, que não são da 280: a emissão por função (`decl.addMember("validate", fn…)`) não é
-decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`decl.setMeta(Table(…))`) é da 298; `decl.wrapWith` (exemplo 5) é da 316 (`01-checker` passo 30);
-`decl.addToCatalogue()` é a forma do catálogo de 216 (4).
+ilustrativas, que não são da 280: a emissão por função (`compiler.addMember("validate", fn…)`) não é
+decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`compiler.setMeta(Table(…))`) é da 298; `compiler.wrapWith` (exemplo 5) é da 316 (`01-checker` passo 30);
+o catálogo de 216 (4) é `compiler.find(with: …)` (576 (7)), que lê as declarações marcadas. Em cada decorator `compiler` vem de `import {compiler} from "std";` (579), omitido nos trechos.
 
 Cada exemplo mostra quatro partes:
 
-1. **A lib** — o decorator, com todos os parâmetros `comptime`.
+1. **A lib** — o decorator, com a declaração anotada em `expr decl` e os demais parâmetros `comptime`.
 2. **O uso** — o código de quem usa a lib.
 3. **O que sobra em runtime** — o que o decorator gera. Os argumentos não existem mais nessa hora:
    eles foram usados em comptime e viraram constantes dentro do código gerado.
@@ -16,15 +16,15 @@ Cada exemplo mostra quatro partes:
 
 As regras que os exemplos usam:
 
-- **(0)** Todo parâmetro de decorator é `comptime`, escrito explicitamente.
+- **(0)** O primeiro parâmetro de decorator é `expr decl` (a declaração anotada); todos os outros são `comptime`, escritos explicitamente.
 - **(1)** O argumento é tipado: pode ser função, `type`, `Type.Field<T>` (308), enum ou record.
-- **(2)** `@Decl<T>`: o `T` é inferido da declaração anotada; quando a assinatura não usa o `T`, ele é `unknown`.
+- **(2)** `expr decl: T`: o `T` é inferido da declaração anotada; quando a assinatura não usa o `T`, ele é `unknown`.
 - **(3)** `Type.Field<T>` (da std, decisão 308) e o atalho `.campo`.
 - **(4)** O atalho `.Nome` resolve exatamente o nome declarado (maiúsculas contam): `.Custom`, nunca
   `.custom`; nenhuma saída converte caixa — um nome de outro sistema é string explícita.
 
-> **Sobre a emissão.** Hoje o `decl.addMember` recebe o código como string (216). Nos exemplos ele
-> recebe uma **função de verdade**: `decl.addMember("validate", fn(self: T) -> … { … })`. Essa função
+> **Sobre a emissão.** Hoje o `compiler.addMember` recebe o código como string (216). Nos exemplos ele
+> recebe uma **função de verdade**: `compiler.addMember("validate", fn(self: T) -> … { … })`. Essa função
 > captura os argumentos `comptime`, que entram no código gerado como constantes. Essa forma de
 > emitir não é decidida (a `nat-c` fechou em 293–300 sem ela). Onde aparece, está marcada como ilustrativa.
 
@@ -47,7 +47,7 @@ pub type Violation(field: string, code: Code, message: string)
 // `message` primeiro e obrigatória: um default só é seguido de outros (244, 406);
 // num campo a regra é `#[refine(rule)]`, cujo texto vem de `#[message]` como em todo marcador
 pub fn check<T>(
-    comptime decl: @Decl<T>,
+    expr decl: T,
     comptime message: string,
     comptime rule: ?fn(v: T) -> bool = null,
     comptime at: ?Type.Field<T> = null,
@@ -55,25 +55,25 @@ pub fn check<T>(
 ) {
     if (rule == null) {
         // forma na função: confere a forma da regra
-        if (decl.kind != DeclKind.Fn || decl.returnType != "bool" || decl.params.length != 1)
-            decl.fail("#[check] sem `rule` vai numa `fn(x) -> bool`");
-        if (at != null) decl.fail("`at` só existe no #[check] escrito no tipo");
+        if (compiler.kind(decl) != DeclKind.Fn || compiler.returnType(decl) != "bool" || compiler.params(decl).length != 1)
+            compiler.fail("#[check] sem `rule` vai numa `fn(x) -> bool`", at: decl);
+        if (at != null) compiler.fail("`at` só existe no #[check] escrito no tipo", at: decl);
         // só vale no módulo que declara o tipo validado (67)
-        if (decl.params[0].module != decl.module)
-            decl.fail("a regra precisa estar no módulo que declara `${decl.params[0].typeName}`");
-        decl.addToCatalogue();                      // o validate do tipo encontra a regra aqui
+        if (compiler.params(decl)[0].module != compiler.moduleOf(decl))
+            compiler.fail("a regra precisa estar no módulo que declara `${compiler.params(decl)[0].typeName}`", at: decl);
+        // sem mais nada: o validate do tipo encontra a regra por `compiler.find(with: check)`
         return;
     }
     // forma no tipo: grava a regra; o único `validate` é do #[validated] (404)
-    decl.addMeta(Check(message: message, rule: rule, at: at, code: code));
+    compiler.addMeta(Check(message: message, rule: rule, at: at, code: code));
 }
 
-pub type Check<T>(message: @Expr<string>, rule: @Expr<fn(v: T) -> bool>, at: ?Type.Field<T>, code: Code)
+pub type Check<T>(message: string, rule: fn(v: T) -> bool, at: ?Type.Field<T>, code: Code)
 
 // um decorator só escreve o membro; dois `addMember("validate", …)` seriam
 // `decorator-member-duplicate` (216 (1), 404)
-pub fn validated<T>(comptime decl: @Decl<T>) {
-    decl.addMember("validate", fn(self: T) -> Violation[] {
+pub fn validated<T>(expr decl: T) {
+    compiler.addMember("validate", fn(self: T) -> Violation[] {
         var out: Violation[] = [];
         for (comptime @typeInfo(T).metaAll(Check)) { c ->
             if (!c.rule(self))
@@ -137,19 +137,19 @@ type T(#[check("…", isEven)] n: i32)                    // ❌ num campo a reg
 
 ## 2. Eventos — `#[on]` sem argumento nenhum (rakun 04)
 
-O tipo do evento sai da assinatura da função, pelo padrão `@Decl<fn(e: E) -> unknown>`.
+O tipo do evento sai da assinatura da função, pelo padrão `expr decl: fn(e: E) -> unknown`.
 
 ### A lib
 ```bp
 // rakun/src/events.bp
-pub fn on<E>(comptime decl: @Decl<fn(e: E) -> unknown>) {
-    decl.addToCatalogue();           // @TypeInfo.all(with: on) acha todos os listeners
+pub fn on<E>(expr decl: fn(e: E) -> unknown) {
+    // o registro de run time é escrito pelo executor do decorator (575 (3), 581)
+    compiler.compile({ -> eventRegistry.add<E>(decl) });
 }
 
-// publish é genérico; a tabela de quem ouve cada E é montada em comptime
+// publish percorre o registro que os executores preencheram, na ordem do código (580)
 pub fn publish<E>(event: E) {
-    val listeners = comptime @TypeInfo.all(with: on).filter({ l -> l.value is fn(e: E) -> unknown });
-    for (l in listeners) (l.value as fn(e: E) -> unknown)(event);
+    eventRegistry.publish<E>(event);
 }
 ```
 
@@ -171,8 +171,10 @@ fn checkout(o: Order) {
 
 ### O que sobra em runtime
 ```bp
-// publish<OrderPlaced> com a lista resolvida em comptime
-fn publish__OrderPlaced(event: OrderPlaced) { sendReceipt(event); updateStock(event); }
+// os executores de #[on], na ordem do código (580), cada um com o registro do seu `E`
+eventRegistry.add<OrderPlaced>(sendReceipt);
+eventRegistry.add<OrderPlaced>(updateStock);
+eventRegistry.add<OrderCancelled>(refund);
 ```
 
 ### O que não compila
@@ -189,8 +191,8 @@ publish("OrderPlaced")                   // compila, mas nenhum listener recebe 
 ### A lib
 ```bp
 // rakun/src/conditions.bp
-pub fn conditionalOnMissingBean(comptime decl: @Decl, comptime t: type) {
-    decl.setMeta(OnMissing(type: t));      // meta tipado (298); o registro em comptime lê isto
+pub fn conditionalOnMissingBean(expr decl: unknown, comptime t: anytype) {
+    compiler.setMeta(OnMissing(type: t));      // meta tipado (298); o registro em comptime lê isto
 }
 ```
 
@@ -220,7 +222,7 @@ resta só a tabela já resolvida.
 
 > **Forma da página emendada pela 293:** a página não recebe mais `route: PageContext<P, D>`; ela lê
 > `use params<P>()` e `use pageData<D>()`, e o `#[page]` confere `paths:` contra esses `use` (via
-> `Decl.hooks`). O mecanismo da 280 (argumento função tipado) continua o mesmo.
+> `compiler.hooks(decl)`). O mecanismo da 280 (argumento função tipado) continua o mesmo.
 
 Os parâmetros da rota (`P`) e os dados (`D`) saem da assinatura da página. `paths` e `head` têm que
 concordar com eles.
@@ -229,13 +231,13 @@ concordar com eles.
 ```bp
 // jhonstart/src/routes.bp
 pub fn page<P, D>(
-    comptime decl: @Decl<fn(route: PageContext<P, D>) -> View>,
+    expr decl: fn(route: PageContext<P, D>) -> View,
     comptime seg: string,                                  // a URL pública: continua string
     comptime paths: ?fn() -> @Task<#(P, D)[]> = null,      // as páginas pré-renderizadas
     comptime head: ?fn(p: P, d: D) -> Head = null,
 ) {
-    decl.setMeta(PageMeta(seg: seg));
-    // kind S/D pelo Decl.hooks (277); paths, quando houver, é chamado no build
+    compiler.setMeta(PageMeta(seg: seg));
+    // kind S/D por `compiler.hooks(decl)` (277, 576 (8)); paths, quando houver, é chamado no build
 }
 ```
 
@@ -273,11 +275,11 @@ pub fn staticPaths() -> …                 // não é mais lido: o papel vai no
 pub type Cache<T>(name: string)              // `name` é o nome no Redis/ETS: continua string
 
 pub fn cacheable<A, T>(
-    comptime decl: @Decl<fn(a: A) -> T>,
-    comptime cache: @Expr<Cache<T>>,          // o T do cache tem que ser o T devolvido; um valor é `@Expr` (370)
+    expr decl: fn(a: A) -> T,
+    expr cache: Cache<T>,                     // o T do cache tem que ser o T devolvido; um valor é `expr` (575 (4))
 ) {
     // embrulhar a função (316): o wrapper é um lambda escrito na chamada, `call.run()` roda o corpo original
-    decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });
+    compiler.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });
 }
 ```
 
@@ -296,7 +298,7 @@ fn byCategory(c: string) -> Product[] { return db.query(…); }
 val users = Cache<User[]>("users");
 #[cacheable(users)] fn byCategory(c: string) -> Product[]   // ❌ esperado Cache<Product[]>, recebido Cache<User[]>
 #[cacheable("products")]                                     // ❌ esperado Cache<…>, recebido string
-decl.wrapWith(cachedCall(cache))                              // ❌ `decorator-wrap-not-lambda`: o wrapper é um lambda (pergunta B-11-a)
+compiler.wrapWith(cachedCall(cache))                              // ❌ `decorator-wrap-not-lambda`: o wrapper é um lambda (pergunta B-11-a)
 ```
 
 ---
@@ -308,17 +310,17 @@ decl.wrapWith(cachedCall(cache))                              // ❌ `decorator-
 // rakun-data-sql/src/entity.bp
 import {types.Type} from "std";
 
-pub fn entity<T>(comptime decl: @Decl<T>, comptime table: string) {        // nome SQL: string
-    decl.setMeta(Table(name: table));
+pub fn entity<T>(expr decl: T, comptime table: string) {        // nome SQL: string
+    compiler.setMeta(Table(name: table));
 }
-pub fn index<T>(comptime decl: @Decl<T>, comptime ..fields: Type.Field<T>[]) {   // variádico (267)
-    decl.setMeta(Index(columns: fields.map({ f -> f.name })));
+pub fn index<T>(expr decl: T, comptime ..fields: Type.Field<T>[]) {   // variádico (267)
+    compiler.setMeta(Index(columns: fields.map({ f -> f.name })));
 }
-pub fn unique<T>(comptime decl: @Decl<T>, comptime field: Type.Field<T>) {
-    decl.setMeta(Unique(column: field.name));
+pub fn unique<T>(expr decl: T, comptime field: Type.Field<T>) {
+    compiler.setMeta(Unique(column: field.name));
 }
-pub fn column<T>(comptime decl: @Decl<T>, comptime name: string) {          // num campo: T = tipo do campo
-    decl.setMeta(Column(name: name));
+pub fn column<T>(expr decl: T, comptime name: string) {          // num campo: T = tipo do campo
+    compiler.setMeta(Column(name: name));
 }
 ```
 
@@ -351,14 +353,14 @@ Renomear `state` → `uf` deixa vermelhos todos os `.state`. Com string, o erro 
 
 ## 7. Anotação de tag — handler como função (278 + 280)
 
-Na tag, o `@Decl` é o do componente (278). O handler é uma função do próprio componente.
+Na tag, o `expr decl` é o do componente (278). O handler é uma função do próprio componente.
 
 ### A lib
 ```bp
 // jhonstart/src/events.bp
-// 302: anotação de tag = decorator — não devolve nada, grava meta no `decl` da tag
-pub fn onClick(comptime decl: @Decl, comptime handler: fn() -> unknown) {
-    decl.addMeta(EventBinding(event: .Click, handler: handler));   // o html gera o registro na ilha
+// 302: anotação de tag = decorator — não devolve nada, grava meta no `decl` da tag (`compiler.addMeta`)
+pub fn onClick(expr decl: unknown, comptime handler: fn() -> unknown) {
+    compiler.addMeta(EventBinding(event: .Click, handler: handler));   // o html gera o registro na ilha
 }
 ```
 
@@ -398,7 +400,7 @@ bind(root, 0, "click", like);
 | `entity("cities")`, `column("state_name")` | nomes do banco |
 | `page("blog/[slug]")` | URL pública |
 | `Cache<Product[]>("products")` | nome do cache no Redis/ETS |
-| `@External.Erlang("string:slice($0, 0, 1)")` | código do host (a string sem rótulo); `fn: tanBody` é referência à função botopink (305) |
+| `#[@external(.Erlang("string:slice($0, 0, 1)"))]` | código do host (a string sem rótulo); `fn: tanBody` é referência à função botopink (305) |
 | `config("rakun.data")` | caminho no arquivo de configuração |
 | `message: "As senhas não batem"` | texto para o usuário |
 
