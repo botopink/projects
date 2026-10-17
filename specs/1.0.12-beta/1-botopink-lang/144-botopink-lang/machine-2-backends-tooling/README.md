@@ -2612,10 +2612,12 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`
       (`compiler.compile({ -> count() })` refused at `count()`) and `compile_executor_named_answers`
       (`compiler.compile(count)` at `count`)
-- [ ] the init order of executors and a module's own body: one list, source order, the hidden `val _bp_init_<k>` at the
-      declaration's index (decision 580); a cell `compile_executor_module_val_order` (`["second", "first", "later", "own"]`);
-      a handle inside an executor is its declaration at run time, typed (581), cell `compile_executor_handle_typed`;
-      `compiler.catalogue` renamed `compiler.find` (581)
+- [x] the init order of executors and a module's own body: one list, source order, an executor's declarations right
+      after its annotated declaration (decision 580); cell `compile_executor_module_val_order`
+      (`["second", "first", "later", "own"]`); a handle inside an executor is its declaration at run time, typed (581 (2)),
+      cells `compile_executor_handle_typed`, `compile_executor_handle_mistyped`
+- [ ] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
+      package (its catalogue cells)
 - [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
       `erlang.zig` deleted, the 32 `emit` cells and the 3 `conformance/test/` suites rewritten over `compile` or
       removed, each stated
