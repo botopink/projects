@@ -2593,12 +2593,14 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (every backend) · **After:** B-136; its last box after 165 s10
 
 - [ ] decision 576 (7), (15): `Declared<T>`, `DeclaredMeta`, `DeclaredTypedMeta` and the run-time `@TypeInfo.all` removed with `compile` in: each run-time catalogue cell (`typeinfo_all_*`, comptime_expand_boot's run-time half) registers through its marker's `compiler.compile`, its answer kept
-- [ ] `compile(expr executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
+- [x] `compile(expr executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
       module's init function and the program's init list, run once before `main` — modules in dependency order,
       declarations in source order, calls in order; a library module's executors run in the program that imports it;
       any number per declaration
-- [ ] cells: one executor on commonJS, erlang, beam and wasm; the order across two modules and a dependency; an
+- [x] cells: one executor on commonJS, erlang, beam and wasm; the order across two modules and a dependency; an
       executor from a library's decorator; `expr-captures-build` inside one; `compiler-output-outside-decorator`
+      (`compile_executor_before_main`, `compile_init_order_modules`, `compile_executor_from_library`,
+      `compile_executor_captures_build`, `compile_output_outside_decorator`)
 - [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
       `erlang.zig` deleted, the 32 `emit` cells and the 3 `conformance/test/` suites rewritten over `compile` or
       removed, each stated
@@ -2664,3 +2666,17 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       four targets, `print` by cell on four targets
 
 Oracle: the whole suite; `test-docs`; the cold gate.
+
+### B-141 — wasm: a method on an optional's list, a coalesced list and a module's map over a component
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (each defect has a measured repro and the language's answer
+is the other targets') · **After:** nothing — the builtins group's closure (§ Machines rule 9: its full gate must be green)
+
+B-136's migration of the string `setMeta` to typed meta records found three wasm defects; commonJS, erlang and beam answer
+each. Backend code only: no std, no `decorator_*` / `template_*` / `comptime_*` cell, no library.
+
+- [ ] `@typeInfo(X).meta(T)?.list.join(",")` resolves `join/1` on wasm; a cell red on wasm, green on every target
+- [ ] `(@typeInfo(X).meta(T)?.list ?? []).join(",")` answers `a,b` on wasm (it answers `296,304`); a cell red on wasm,
+      green on every target
+- [ ] `[1, 2].map(Card)` in a module another module imports resolves `map/1` on wasm; then `decl_hooks_dynamic_call`'s
+      string `setMeta` moves to a typed meta record, its answer kept
