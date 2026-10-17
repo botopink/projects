@@ -2765,15 +2765,22 @@ rebinding of `v`, so `val seen = names();` keeps the list of its moment. The `.N
 push: on commonJS `seen` and a caller's argument grow with the `var`. `compile_executor_module_val_order` passed on the
 parent on commonJS for that reason alone, blind to 580.
 
-- [ ] commonJS lowers a statement `v.push(x)` as erlang does: the `var` `v` — a module `var` or a mutable local —
+- [x] commonJS lowers a statement `v.push(x)` as erlang does: the `var` `v` — a module `var` or a mutable local —
       rebound to a new array (`v = [...v, x]` or the equivalent), the old array untouched; a `push` whose receiver is
       no `var` keeps its lowering and the value, as on erlang (its refusal is no part of this step)
-- [ ] cell `array_push_rebinds_var` (four targets): a module `var xs: string[] = [];` with `fn add(s)` pushing;
+- [x] cell `array_push_rebinds_var` (four targets): a module `var xs: string[] = [];` with `fn add(s)` pushing;
       `val before = all();` then `add("b")`, `@print(before)` then `@print(all())` → `out ["a"]`, `out ["a", "b"]`; and
       inside a `fn`, `var ys = [1]; val snap = ys; ys.push(2); @print(snap); @print(ys);` → `out [1]`, `out [1, 2]` —
       red on the parent on commonJS, green on erlang and beam
-- [ ] `compile_executor_module_val_order` widened so it sees 580 on commonJS too: `val before = names();` written
+- [x] `compile_executor_module_val_order` widened so it sees 580 on commonJS too: `val before = names();` written
       above `#[registered] pub fn own()`, printed first → `out ["second", "first", "later"]` before the four names —
       red on the parent on commonJS
+
+- [ ] `pop` on a `var` rebound on commonJS as on erlang and beam (the popped value and the shrunk array together);
+      a cell where a `val` copy of the `var` keeps its length; the `.Node` cells of `shift`, `unshift`, `splice`, `sort`
+      and `reverse` checked for the same aliasing
+
+The three boxes above are committed on their branch and land after B-136 (both cells red on the parent on commonJS; six
+commonJS codegen snapshots now read `x = x.concat([v])`).
 
 Oracle: the two cells on commonJS, erlang, beam and wasm.
