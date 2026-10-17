@@ -173,7 +173,7 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
       wasm today; found by 144 B-116 P1) — a cell on every target
 - [ ] `failure.attempt` over an `i64` answer (today refused on wasm: "would narrow an `i64` value to an `i32` slot") — an
       `i64::MIN / -1` line in `abort_text_overflow` under `attempt`
-- [ ] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
+- [x] a field read on a record the module does not declare is placed (today refused: cannot place `.path`) — cell
       `embed_field_read_other_module` and `declared_field_read_other_module` on wasm, their `through` host binding and
       `targets` narrowing removed (144 B-95, B-97)
 - [x] a loop's label read (`break :outer`, `continue :outer`) — cells `block_jump_label_reaches_loop`,

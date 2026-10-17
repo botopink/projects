@@ -1860,8 +1860,7 @@ B-95's cause (`Declared` is the compiler's record, which the dependency does not
 covers only `Asset` and `SourceLocation`: read through the value's tag, it regressed the comptime builtins that are maps
 at run time (`@Decl`). The general fix needs the emitter to know which imported records are tagged tuples.
 
-- [x] a `Declared`'s field read anywhere answers the field on beam; a cell on every target — wasm out until 164 s2c's
-      box (a field of a record the module does not declare)
+- [x] a `Declared`'s field read anywhere answers the field on beam; a cell on every target
 - [ ] rakun's `conformance/rakun/boot_modules` green on beam (a 150 consumer row)
 
 ### B-93 — commonJS: a positional pattern lowered against another package's same-named variant
@@ -2442,8 +2441,7 @@ On beam a field read on a value whose type the module does not declare (std read
 compiler's record) lowers to `'__bp_field'/2`, which answers the whole record. std reads `Asset`'s fields through two
 host cells (`assetPath`, `assetHandle`) to avoid it.
 
-- [x] a cell: a field read on an imported record the module does not declare, red on beam today — on commonJS, erlang
-      and beam; wasm out until 164 s2c's box
+- [x] a cell: a field read on an imported record the module does not declare, red on beam today — on the four targets
 - [x] std's two host cells removed, `Asset`'s fields read directly — `assetPath` removed; the memory handle
       `{mem, bytes, counters}` stays a host cell (`memoryHandle`), a value only the host builds
 
