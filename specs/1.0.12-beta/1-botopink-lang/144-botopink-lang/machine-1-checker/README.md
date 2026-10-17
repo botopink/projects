@@ -2545,6 +2545,7 @@ Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
       `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
+- [ ] a unit test holds `conformance/docs.md` § Builtins to the builtins std declares (`#[builtin]`, `compiler.bp`): a row per builtin, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed
 - [ ] cells: the twelve derived-type cells unchanged; `record_field_duplicate`; `merge`'s duplicate located at the
       second argument; a `type` value printed; `RecipeKey.all()` at run time, computed at build
 
