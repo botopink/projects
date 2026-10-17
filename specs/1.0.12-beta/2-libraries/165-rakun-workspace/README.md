@@ -164,6 +164,7 @@ before 144 B-137's last box and B-139's rakun commit
       `expr x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `expr decl: unknown`, `decl.*` →
       `compiler.*`; the seven identifiers `compiler` of `rakun-cli`'s tests renamed
 - [ ] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
+- [ ] the string `setMeta(key, value)` and its readers on typed meta records, a record per decorator (576 (11)); a meta field `@Expr<T>` → `T` (576 (12))
 - [ ] rakun-bpp's routes without `Declared<T>` (576 (7)): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.compile` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
 - [ ] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)
 - [ ] every `@emit` (23 files — `rakun/src/{decorators,context,autoconfig,config,conditions,lifecycle}.bp`,
