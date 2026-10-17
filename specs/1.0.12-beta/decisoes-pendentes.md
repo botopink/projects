@@ -42,6 +42,7 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 | 2 | **b140-a** — a linhagem de spread de um tipo derivado quando `compiler.buildType` recebe texto (§ Máquina 1) | se `buildType` recebe `from:` ou se o spread a partir da fonte de um tipo derivado sai | a peça de tipos derivados do B-140 | (a) `from:` em `buildType` |
 | 3 | **b140-b** — qual módulo da std declara `DeclAnnotation` (§ Máquina 1) | o ciclo de imports `types.bp` ↔ `compiler.bp` | a primeira peça do B-140 | (a) `types.bp` |
+| 4 | **165-d** — código calculado no build sem `@emit` (§ Máquina 1) | se um decorator emenda um valor construído (`compiler.build`) num membro, ou se o `addMember` string fica | a remoção do `addMember` string do B-140; os dez membros calculados do rakun | (a) `compiler.build` no corpo de um decorator |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
@@ -710,6 +711,47 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para um campo onde quer que seja lido.
 - **Bloqueia.** Nada (construído como (a) se não respondida).
 
+#### 165-c · O registro da 605 (1) lê `compiler` dentro do executor, o que a 575 (4) recusa (decisões 575 (4), 605; frente 165 s10)
+- **Proposta (opus, 2026-10-17; construída como (a), aguardando o mantenedor):** **(a).**
+- **Medido.** A 605 e a caixa do 165 s10 escrevem um registro como `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Dentro de um executor, `compiler` é um valor de build, e a 575 (4) recusa capturá-lo (`expr-captures-build`, cell `compile_executor_captures_build`). A cell `compile_executor_before_main` mostra a forma aceita: o valor de build lido antes do executor.
+- **Opções.**
+  (a) O nome é lido no corpo do decorator e o executor captura a string: `val declName = compiler.name(decl)!; compiler.compile({ -> rkRegisterX(declName, decl); });`. O texto da 605 e a caixa são corrigidos para essa forma.
+  (b) `compiler.name(decl)` é permitido dentro de um executor como exceção à 575 (4).
+- **Recomendação.** (a): é a regra que as cells já seguram, e só a redação do exemplo muda.
+- **Bloqueia.** Nada (construída como (a)).
+
+#### 165-d · Código calculado no build, sem `@emit`: como um decorator escreve um membro cujo corpo ele calcula (decisões 576 (14), 577, 578, 605; frente 165 s10, 144 B-140)
+- **Proposta (opus, 2026-10-17; construída como (c) por ora, aguardando o mantenedor):** **(a).**
+- **Medido.** O rakun tem membros cujo corpo depende do que a reflexão encontra: os métodos encontrados por reflexão (rotas, beans, hooks e listeners de ciclo de vida, advice, comandos da CLI, agendamentos, jobs, listeners de mensageria, beans de autoconfig), um tipo nomeado numa string de anotação (`#[imports]`), e construtores montados sobre os campos de um tipo (`bind`, `new`, `gated`). A árvore de um executor é escrita literalmente, e um texto de template `` @`…` `` não guarda parte calculada. Por isso o 165 s10 escreve esses membros como membros estáticos na forma string `addMember(source)`: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, e os corpos de `bind`, `new` e `gated`. Cada um é rodado por `compiler.compile({ -> decl.rkX(); })`. A 576 (14) mantém a forma string só até o B-140, que a remove.
+- **Opções.**
+  (a) `compiler.build(text) -> anyvalue` é permitido no corpo de um decorator. O seu resultado é guardado num `val` do corpo e emendado num executor ou num membro tipado, então o texto é checado onde é emendado.
+  ```bp
+  val routes = compiler.build(routeCalls.join("; "));
+  compiler.addMember("rkRoutes", fn() { routes; });
+  ```
+  (b) Nenhum código calculado. Cada marcador de método se registra por `compile`, com o `decl` do método como valor de runtime, e encontra o seu dono por um registro pelo nome. Cada um dos dez registros é reescrito em torno disso.
+  (c) A forma string `addMember(source)` fica para membros calculados, e o B-140 a mantém.
+- **Recomendação.** (a): um valor construído, checado na emenda, e nenhum membro string. (b) multiplica os registros de runtime, e (c) desfaz a 576 (14).
+- **Bloqueia.** A peça do B-140 que remove o `addMember` string. Os membros do rakun mudam de novo depois da resposta.
+
+#### 165-e · Um membro estático acrescentado a um `behavior`, e um tipo que uma árvore não consegue escrever (decisões 576 (14), 578; frente 165 s10)
+- **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** O `#[httpExchange]` do rakun-restclient anota um `behavior Name` e gerava `httpName(): Name`. No 165 s10 isso virou `Name.http()`, um `addMember` tipado no behavior. Nenhuma decisão diz se um behavior aceita um membro estático. Dentro do lambda do membro, o tipo behavior `Name` também não pode ser escrito: o lambda é escrito no módulo do decorator, onde o nome da declaração anotada não está no escopo. Então o tipo de retorno é inferido como o `Name.Http` gerado.
+- **Opções.**
+  (a) Um behavior aceita membros estáticos por `addMember`, como um tipo. Dentro de um membro tipado, `Self` nomeia a declaração anotada, então `fn() -> Self { … }` é o behavior.
+  (b) Um behavior não aceita membro: o rakun-restclient mantém uma função gerada `http<Name>()` construída por `addType` num tipo companheiro.
+- **Recomendação.** (a): `Self` já é como um membro nomeia o seu dono.
+- **Bloqueia.** O tipo de retorno de `Name.http()` do rakun-restclient.
+
+#### 165-f · Onde os nomes dentro de um `compiler.buildType(text)` são resolvidos (decisões 578 (3), 599 (3); frente 165 s10, 144 B-140)
+- **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** O rakun constrói os seus tipos gerados (`Name.Tx`, `Name.Sec`, `Name.Http`) com `compiler.buildType(<string calculada>)`, como `entity.bp` e `cached.bp` já fazem. O texto nomeia funções e tipos de runtime. Hoje o texto de uma contribuição é analisado e resolvido no módulo anotado (o host) (`mergeAssocTypes`), então um helper do módulo do decorator precisa ser importado pelo host ou escrito qualificado. Nenhuma decisão fixa isso.
+- **Opções.**
+  (a) O texto de um tipo construído é resolvido no módulo que chama `buildType` (o módulo do decorator), como a árvore de um executor (581).
+  (b) É resolvido no módulo host, como construído hoje. O decorator escreve nomes qualificados.
+- **Recomendação.** (a): uma regra para o código que um decorator escreve, qualquer que seja a forma que o carrega.
+- **Bloqueia.** Nada hoje (construída como (b) com nomes qualificados).
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
@@ -723,7 +765,7 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) Como (a) para um type, um behavior e um campo; o handle de um método é o método como valor de função pelo caminho do seu dono (`City.make`, seu tipo declarado), um método estático igual.
   (c) Manter o splice pousado: o handle é o nome nu, resolvido no módulo anotado; um type é o valor de `type<T>` onde o checker admite um.
 - **Recomendação.** (a): a única leitura em que nenhum executor liga outra declaração por acidente e nada é definido pelo que um nome por acaso resolve; (b) é um alargamento posterior com sua própria tipagem a decidir (o `self` de um método de instância), (c) é a ligação errada silenciosa medida acima. Células: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, cada uma `refused` na anotação.
-- **Bloqueia.** A caixa do B-137 "a handle inside an executor is its declaration at run time, typed", para os tipos de declaração além de `fn` e `val`; os marcadores do 165 s10 em types (`#[component]`, `#[page]` num type).
+- **Bloqueia.** A caixa do B-137 "a handle inside an executor is its declaration at run time, typed", para os tipos de declaração além de `fn` e `val`; os marcadores do 165 s10 em types (`#[component]`, `#[page]` num type); os registros do 165 s10, construídos lendo o `decl` de um tipo como o nome do tipo emendado (`decl.make()`, `decl.Tx.make()`, `decl.bind(prefix)`) — essa leitura muda com a resposta.
 
 #### b139-a · Qual módulo da std declara `builtin`, e os ciclos entre `compiler.bp`, `external.bp` e `reflection.bp` (decisões 575 (2), (6), 576 (13); 144 B-139)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**

@@ -42,6 +42,7 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 | 2 | **b140-a** — a derived type's spread lineage once `compiler.buildType` takes text (§ Machine 1) | whether `buildType` takes `from:` or the spread from a derived type's source goes | B-140's derived-type piece | (a) `from:` on `buildType` |
 | 3 | **b140-b** — which std module declares `DeclAnnotation` (§ Machine 1) | the `types.bp` ↔ `compiler.bp` import cycle | B-140's first piece | (a) `types.bp` |
+| 4 | **165-d** — code computed at build with `@emit` gone (§ Machine 1) | whether a decorator splices a built value (`compiler.build`) into a member, or the string `addMember` stays | B-140's string-`addMember` removal; rakun's ten computed members | (a) `compiler.build` in a decorator body |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -710,6 +711,47 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for a field wherever it is read.
 - **Blocks.** Nothing (built as (a) unless answered).
 
+#### 165-c · 605 (1)'s registration reads `compiler` inside the executor, which 575 (4) refuses (decisions 575 (4), 605; front 165 s10)
+- **Proposed (opus, 2026-10-17; built as (a), awaiting the maintainer):** **(a).**
+- **Measured.** 605 and 165 s10's box write a registration as `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Inside an executor, `compiler` is a build value, and 575 (4) refuses capturing it (`expr-captures-build`, cell `compile_executor_captures_build`). Cell `compile_executor_before_main` shows the accepted form: the build value read before the executor.
+- **Options.**
+  (a) The name is read in the decorator body and the executor captures the string: `val declName = compiler.name(decl)!; compiler.compile({ -> rkRegisterX(declName, decl); });`. 605's text and the box are corrected to that form.
+  (b) `compiler.name(decl)` is allowed inside an executor as an exception to 575 (4).
+- **Recommendation.** (a): it is the rule the cells already hold, and only the example's wording changes.
+- **Blocks.** Nothing (built as (a)).
+
+#### 165-d · Code computed at build, with `@emit` gone: how a decorator writes a member whose body it computes (decisions 576 (14), 577, 578, 605; front 165 s10, 144 B-140)
+- **Proposed (opus, 2026-10-17; built as (c) for now, awaiting the maintainer):** **(a).**
+- **Measured.** rakun has members whose body depends on what reflection finds: the methods found by reflection (routes, beans, lifecycle hooks and listeners, advice, CLI commands, schedules, jobs, messaging listeners, autoconfig beans), a type named in an annotation string (`#[imports]`), and constructors built over a type's fields (`bind`, `new`, `gated`). An executor's tree is written literally, and a template text `` @`…` `` holds no computed part. So 165 s10 writes these members as static members in the string `addMember(source)` form: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, and the bodies of `bind`, `new` and `gated`. Each is run by `compiler.compile({ -> decl.rkX(); })`. 576 (14) keeps the string form only until B-140, which removes it.
+- **Options.**
+  (a) `compiler.build(text) -> anyvalue` is allowed in a decorator body. Its result is held in a body `val` and spliced into an executor or a typed member, so the text is checked where it is spliced.
+  ```bp
+  val routes = compiler.build(routeCalls.join("; "));
+  compiler.addMember("rkRoutes", fn() { routes; });
+  ```
+  (b) No computed code. Each method marker registers itself through `compile`, with the method's `decl` as a run-time value, and finds its owner through a registry by name. Each of the ten registrations is rewritten around that.
+  (c) The string `addMember(source)` stays for computed members, and B-140 keeps it.
+- **Recommendation.** (a): one built value, checked at the splice, and no string member. (b) multiplies the run-time registries, and (c) undoes 576 (14).
+- **Blocks.** B-140's piece that removes the string `addMember`. rakun's members change again after the answer.
+
+#### 165-e · A static member added to a `behavior`, and a type a tree cannot write (decisions 576 (14), 578; front 165 s10)
+- **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**
+- **Measured.** rakun-restclient's `#[httpExchange]` annotates a `behavior Name` and used to generate `httpName(): Name`. In 165 s10 this became `Name.http()`, a typed `addMember` on the behavior. No decision says whether a behavior takes a static member. Inside the member's lambda, the behavior type `Name` cannot be written either: the lambda is written in the decorator's module, where the annotated declaration's name is not in scope. So the return type is inferred as the generated `Name.Http`.
+- **Options.**
+  (a) A behavior takes static members through `addMember`, as a type does. Inside a typed member, `Self` names the annotated declaration, so `fn() -> Self { … }` is the behavior.
+  (b) A behavior takes no member: rakun-restclient keeps a generated function `http<Name>()` built by `addType` on a companion type.
+- **Recommendation.** (a): `Self` is already how a member names its owner.
+- **Blocks.** rakun-restclient's `Name.http()` return type.
+
+#### 165-f · Where names inside a `compiler.buildType(text)` resolve (decisions 578 (3), 599 (3); front 165 s10, 144 B-140)
+- **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**
+- **Measured.** rakun builds its generated types (`Name.Tx`, `Name.Sec`, `Name.Http`) with `compiler.buildType(<computed string>)`, as `entity.bp` and `cached.bp` already do. The text names run-time functions and types. Today a contribution's text is parsed and resolved in the annotated (host) module (`mergeAssocTypes`), so a helper of the decorator's module must be imported by the host or written fully qualified. No decision fixes it.
+- **Options.**
+  (a) A built type's text resolves in the module that calls `buildType` (the decorator's module), like an executor's tree (581).
+  (b) It resolves in the host module, as built today. The decorator writes qualified names.
+- **Recommendation.** (a): one rule for code a decorator writes, whatever form carries it.
+- **Blocks.** Nothing today (built as (b) with qualified names).
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
@@ -723,7 +765,7 @@ before every other part of this page; each holds one row, or nothing built.
   (b) As (a) for a type, a behavior and a field; a method's handle is the method as a function value by its owner's path (`City.make`, its declared type), a static method the same.
   (c) Keep the landed splice: the handle is the bare name, resolved in the annotated module; a type is `type<T>`'s value where the checker admits one.
 - **Recommendation.** (a): the only reading in which no executor binds another declaration by accident and nothing is defined by what a name happens to resolve to; (b) is a later widening with its own typing to decide (an instance method's `self`), (c) is the silent misbinding measured above. Cells: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, each `refused` at the annotation.
-- **Blocks.** B-137's "a handle inside an executor is its declaration at run time, typed" box, for the kinds other than `fn` and `val`; 165 s10's markers on types (`#[component]`, `#[page]` on a type).
+- **Blocks.** B-137's "a handle inside an executor is its declaration at run time, typed" box, for the kinds other than `fn` and `val`; 165 s10's markers on types (`#[component]`, `#[page]` on a type); 165 s10's registrations, built reading a type's `decl` as the type's name spliced in (`decl.make()`, `decl.Tx.make()`, `decl.bind(prefix)`) — that reading changes with the answer.
 
 #### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
