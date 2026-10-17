@@ -27,7 +27,7 @@ import {failNext, failAlways, killCoordinatorAfterStep, resumeCoordinator} from 
 // annotates — the `expr decl` handle, read through `compiler.*`, exposes kind, name, fields,
 // methods, params and annotations and no statements — so `#[saga]` cannot pair each call in a method
 // with its compensation. A saga is a VALUE whose steps are function pairs. With
-// `compiler.body(decl)` this would be a decorated method and a missing compensation
+// a read of a method's body at build this would be a decorated method and a missing compensation
 // would be a compile error instead of a review comment.
 //
 // LANGUAGE GAP: there is no assignment to a `self` field, so the context cannot
