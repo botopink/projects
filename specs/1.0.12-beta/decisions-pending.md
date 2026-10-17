@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**132 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**131 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **595**.
+number, which is **596**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -33,9 +33,8 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | **537-a** — what `catch` catches when its left side is not a bare `try e` (§ Machine 2) | a 144 row: the checker and the four backends | (a) `catch` delimits a try region |
-| 2 | **B-128-a** — which iterator methods the language declares on `Iter<T, R>` (§ Machine 2) | `flatMap` on erlang and beam; 553 (ii)'s `Iter` declaration (B-116) | (a) Node's helpers whole, typed, on every target |
-| 3 | **539-b** — does a `defer` add `.exceptions` to the program's `needs`? (§ Machine 2) | a cell red on wasm until 164 s2b | (a) a function holding a `defer` adds `.exceptions` |
+| 1 | **B-128-a** — which iterator methods the language declares on `Iter<T, R>` (§ Machine 2) | `flatMap` on erlang and beam; 553 (ii)'s `Iter` declaration (B-116) | (a) Node's helpers whole, typed, on every target |
+| 2 | **539-b** — does a `defer` add `.exceptions` to the program's `needs`? (§ Machine 2) | a cell red on wasm until 164 s2b | (a) a function holding a `defer` adds `.exceptions` |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -791,8 +790,8 @@ group), answered before every other part of this page; in the order of the steps
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
-before every other part of this page; most urgent first: 537-a holds a row of the checker and the four backends, B-128-a
-B-116 (ii)'s `Iter` declaration, 539-b a cell red on wasm; the rest hold one row each, or nothing built.
+before every other part of this page; most urgent first: B-128-a holds B-116 (ii)'s `Iter` declaration, 539-b a cell red on wasm; the rest hold
+one row each, or nothing built.
 
 #### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
@@ -943,13 +942,6 @@ B-116 (ii)'s `Iter` declaration, 539-b a cell red on wasm; the rest hold one row
 - **Options.** (a) A function holding a `defer` adds `.exceptions`. (b) Only when `attempt` is also reached (today). (c) A `defer` refused on wasm when nothing adds `.exceptions`.
 - **Recommendation.** (a) — one answer on every target (434 (5)).
 - **Blocks.** The cell above, red on wasm until it lands (164 s2b).
-
-#### 537-a · `catch` over a left side that is not a bare `try e` (decision 537; 144)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): `catch` delimits a try region** — every `try` in its left side is caught by it, on every backend (the checker reads the region as the fallible channel; the backends wrap the left side); it is the reading 537's own example asserts, and it makes `x.a + try f() catch 0` mean one thing.
-- **Measured.** `try e catch h` folds into one `tryCatch`; any other left side (`(try await t) + 1 catch 0`, 537's example) parses as 537 says, but its inner `try` is checked against the function's channel: refused `effect-try-without-fallible-channel` without a `@Result` channel, and with one the `try` propagates to the function and the `catch` is reached by nothing. 537 fixes the parse, not what `catch` catches.
-- **Options.** (a) As proposed. (b) Refuse a `catch` whose left side is not `try e` / `try await e`, "parenthesise the `try`" — against 537's "no refusal remains". (c) Keep as built and document that `catch` binds only a leading `try`.
-- **Recommendation.** (a); cell `catch_region_covers_left_side`.
-- **Blocks.** A 144 row (the checker and four backends), machine 2.
 
 #### 537-b · `??`'s precedence against 537's parenthetical (decisions 537 (2), 28, 330)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): keep `??` tight; 537 (2) amended to "`catch` is the infix of the lowest precedence, below `??`"** — no program changes meaning, and 330's parenthesisation rule already covers the one ambiguous neighbour.

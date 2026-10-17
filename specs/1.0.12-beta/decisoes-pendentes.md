@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**132 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**131 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **595**.
+número livre, que é **596**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -33,9 +33,8 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | Bloqueia | Recomendação |
 |---|---|---|---|
-| 1 | **537-a** — o que o `catch` pega quando o seu lado esquerdo não é um `try e` puro (§ Máquina 2) | uma linha do 144: o checker e os quatro backends | (a) o `catch` delimita uma região de `try` |
-| 2 | **B-128-a** — quais métodos de iterador a linguagem declara em `Iter<T, R>` (§ Máquina 2) | `flatMap` em erlang e beam; a declaração de `Iter` da 553 (ii) (B-116) | (a) os helpers do Node inteiros, tipados, em todo alvo |
-| 3 | **539-b** — um `defer` acrescenta `.exceptions` ao `needs` do programa? (§ Máquina 2) | uma célula vermelha em wasm até o 164 s2b | (a) uma função que tem um `defer` acrescenta `.exceptions` |
+| 1 | **B-128-a** — quais métodos de iterador a linguagem declara em `Iter<T, R>` (§ Máquina 2) | `flatMap` em erlang e beam; a declaração de `Iter` da 553 (ii) (B-116) | (a) os helpers do Node inteiros, tipados, em todo alvo |
+| 2 | **539-b** — um `defer` acrescenta `.exceptions` ao `needs` do programa? (§ Máquina 2) | uma célula vermelha em wasm até o 164 s2b | (a) uma função que tem um `defer` acrescenta `.exceptions` |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -791,8 +790,8 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
-máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a 537-a segura uma linha do checker e dos quatro
-backends, a B-128-a a declaração de `Iter` da 553 (ii), a 539-b uma célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
+máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a B-128-a segura a declaração de `Iter` da 553 (ii), a 539-b uma
+célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
 
 #### b139-a · Qual módulo da std declara `builtin`, e os ciclos entre `compiler.bp`, `external.bp` e `reflection.bp` (decisões 575 (2), (6), 576 (13); 144 B-139)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
@@ -943,13 +942,6 @@ backends, a B-128-a a declaração de `Iter` da 553 (ii), a 539-b uma célula ve
 - **Opções.** (a) Uma função que contém um `defer` adiciona `.exceptions`. (b) Só quando o `attempt` também é alcançado (hoje). (c) Um `defer` recusado no wasm quando nada adiciona `.exceptions`.
 - **Recomendação.** (a) — uma resposta em todos os targets (434 (5)).
 - **Bloqueia.** A célula acima, vermelha no wasm até pousar (164 s2b).
-
-#### 537-a · `catch` sobre um lado esquerdo que não é um `try e` nu (decisão 537; 144)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): `catch` delimita uma região de try** — todo `try` no seu lado esquerdo é capturado por ele, em todo backend (o checker lê a região como o canal falível; os backends envolvem o lado esquerdo); é a leitura que o próprio exemplo da 537 afirma, e faz `x.a + try f() catch 0` significar uma coisa só.
-- **Medido.** `try e catch h` se dobra num único `tryCatch`; qualquer outro lado esquerdo (`(try await t) + 1 catch 0`, o exemplo da 537) é analisado como a 537 diz, mas seu `try` interno é checado contra o canal da função: recusado `effect-try-without-fallible-channel` sem um canal `@Result`, e com um o `try` propaga para a função e o `catch` não é alcançado por nada. A 537 fixa a análise, não o que o `catch` captura.
-- **Opções.** (a) Como proposto. (b) Recusar um `catch` cujo lado esquerdo não é `try e` / `try await e`, "coloque o `try` entre parênteses" — contra o "nenhuma recusa permanece" da 537. (c) Manter como construído e documentar que o `catch` liga só um `try` inicial.
-- **Recomendação.** (a); célula `catch_region_covers_left_side`.
-- **Bloqueia.** Uma linha da 144 (o checker e quatro backends), máquina 2.
 
 #### 537-b · A precedência do `??` contra o parêntese da 537 (decisões 537 (2), 28, 330)
 - **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(b): manter o `??` apertado; 537 (2) emendada para "`catch` é o infixo de menor precedência, abaixo do `??`"** — nenhum programa muda de significado, e a regra de parênteses da 330 já cobre o único vizinho ambíguo.
