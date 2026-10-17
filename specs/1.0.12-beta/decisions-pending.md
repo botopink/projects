@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**138 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**141 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1018,6 +1018,52 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): the most restrictive reading, the one `docs.md` already advises; today's behaviour type-checks a program that fails at run time.
 - **Blocks.** Nothing; the run-time failure stays a defect row until answered.
+
+#### 564-a · May a typed catalogue entry's `value` be read outside a 562 expansion? (decision 564; 144 B-19 step 7)
+- **Proposed (opus, 2026-10-16; built as (b), awaiting the maintainer):** (a): any read of a `Declared<B>` entry's `value` outside an expansion refused.
+- **Context.** Decision 564 makes `@TypeInfo.all(with: d)` answer `Declared<B>[]` and allows calling `B`'s functions on an entry's `value` only inside a 562 expansion. Outside one, a type entry has no run-time value: the catalogue writes it as `null` typed `B`.
+- **Measured.** Only the direct call `d.value.start()` is refused outside an expansion; binding it first (`val v = d.value; v.start()`) type-checks and reaches `null` at run time.
+- **Options.**
+  (a) ★ Every read of a typed entry's `value` outside an expansion is refused, located.
+  ```bp
+  for (mods) { d -> val v = d.value; }   // refused: an entry's `value` is read only inside an expansion
+  ```
+  (b) As built: only the call on `value` is refused, as 564 words it.
+  ```bp
+  for (mods) { d -> d.value.start(); }        // refused
+  for (mods) { d -> val v = d.value; v.start(); }   // accepted; null at run time
+  ```
+- **Recommendation.** (a): the strictest reading; (b) type-checks a program that fails at run time.
+- **Blocks.** Nothing.
+
+#### 564-b · A catalogue over decorators naming different behaviors (decision 564; 144 B-19 step 7)
+- **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (a): answered `Declared<unknown>[]`, no `member:` needed.
+- **Context.** Decision 564: a query over several decorators answers the behaviors they share, `unknown` when none. Before 564 a query whose decorators gave no common shape needed `member:` (`typeinfo-all-needs-member`), and `member:` is going.
+- **Measured.** `@TypeInfo.all(with: [a, b])`, `a` over `@Decl<A>` and `b` over `@Decl<B>`: answers `Declared<unknown>[]`, each `value` `null`. A behavior decorator beside a plain one still needs `member:`.
+- **Options.**
+  (a) ★ As built: `Declared<unknown>[]`.
+  ```bp
+  val all = @TypeInfo.all(with: [a, b]);   // Declared<unknown>[]
+  ```
+  (b) Refused like `typeinfo-all-needs-member`.
+  ```bp
+  val all = @TypeInfo.all(with: [a, b]);   // refused: the decorators share no behavior
+  ```
+- **Recommendation.** (a): what 564's "`unknown` when none" states, and `member:` is going away.
+- **Blocks.** Nothing.
+
+#### 564-c · The text of the refusal of a behavior call outside an expansion (decision 564; 144 B-19 step 7)
+- **Proposed (opus, 2026-10-16; built, awaiting the maintainer):** the refusal as built, with a diagnostic code of its own.
+- **Context.** Decision 564 refuses calling a behavior's function on an entry's `value` outside a 562 expansion, located, but gives no message.
+- **Measured.** Built with no diagnostic code and the thread's wording (`typeinfo_all_behavior_call_outside_expansion`).
+- **Options.**
+  (a) ★ A code of its own, `behavior-call-outside-expansion`, the message naming the call and the expansion rule.
+  ```text
+  error[behavior-call-outside-expansion]: `d.value.start()` calls `Module.start` on a catalogue entry — legal only inside a function expanded at its call site (decision 562)
+  ```
+  (b) The wording as built, no code.
+- **Recommendation.** (a): every refusal of the checker has a code.
+- **Blocks.** Nothing.
 
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 

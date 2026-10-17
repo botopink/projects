@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**138 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**141 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1018,6 +1018,52 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): a leitura mais restritiva, a que o `docs.md` já aconselha; o comportamento de hoje aceita na checagem de tipos um programa que falha em tempo de execução.
 - **Bloqueia.** Nada; a falha em tempo de execução segue como linha de defeito até a resposta.
+
+#### 564-a · O `value` de uma entrada tipada do catálogo pode ser lido fora de uma expansão 562? (decisão 564; 144 B-19 passo 7)
+- **Proposta (opus, 2026-10-16; construída como (b), aguardando o mantenedor):** (a): toda leitura do `value` de uma entrada `Declared<B>` fora de uma expansão recusada.
+- **Contexto.** A decisão 564 faz `@TypeInfo.all(with: d)` responder `Declared<B>[]` e permite chamar as funções de `B` sobre o `value` de uma entrada só dentro de uma expansão 562. Fora dela, uma entrada de tipo não tem valor de tempo de execução: o catálogo a escreve como `null` tipado `B`.
+- **Medido.** Só a chamada direta `d.value.start()` é recusada fora de uma expansão; ligá-la antes (`val v = d.value; v.start()`) passa na checagem de tipos e chega a `null` em tempo de execução.
+- **Opções.**
+  (a) ★ Toda leitura do `value` de uma entrada tipada fora de uma expansão é recusada, localizada.
+  ```bp
+  for (mods) { d -> val v = d.value; }   // refused: an entry's `value` is read only inside an expansion
+  ```
+  (b) Como construído: só a chamada sobre `value` é recusada, como a 564 a enuncia.
+  ```bp
+  for (mods) { d -> d.value.start(); }        // refused
+  for (mods) { d -> val v = d.value; v.start(); }   // accepted; null at run time
+  ```
+- **Recomendação.** (a): a leitura mais estrita; (b) aceita na checagem de tipos um programa que falha em tempo de execução.
+- **Bloqueia.** Nada.
+
+#### 564-b · Um catálogo sobre decorators que nomeiam behaviors diferentes (decisão 564; 144 B-19 passo 7)
+- **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (a): respondido `Declared<unknown>[]`, sem precisar de `member:`.
+- **Contexto.** Decisão 564: uma consulta sobre vários decorators responde os behaviors que eles compartilham, `unknown` quando nenhum. Antes da 564 uma consulta cujos decorators não davam forma comum precisava de `member:` (`typeinfo-all-needs-member`), e o `member:` está saindo.
+- **Medido.** `@TypeInfo.all(with: [a, b])`, `a` sobre `@Decl<A>` e `b` sobre `@Decl<B>`: responde `Declared<unknown>[]`, cada `value` `null`. Um decorator de behavior ao lado de um simples ainda precisa de `member:`.
+- **Opções.**
+  (a) ★ Como construído: `Declared<unknown>[]`.
+  ```bp
+  val all = @TypeInfo.all(with: [a, b]);   // Declared<unknown>[]
+  ```
+  (b) Recusado como `typeinfo-all-needs-member`.
+  ```bp
+  val all = @TypeInfo.all(with: [a, b]);   // refused: the decorators share no behavior
+  ```
+- **Recomendação.** (a): o que o "`unknown` quando nenhum" da 564 enuncia, e o `member:` está saindo.
+- **Bloqueia.** Nada.
+
+#### 564-c · O texto da recusa de uma chamada de behavior fora de uma expansão (decisão 564; 144 B-19 passo 7)
+- **Proposta (opus, 2026-10-16; construída, aguardando o mantenedor):** a recusa como construída, com um código de diagnóstico próprio.
+- **Contexto.** A decisão 564 recusa chamar a função de um behavior sobre o `value` de uma entrada fora de uma expansão 562, localizada, mas não dá mensagem.
+- **Medido.** Construída sem código de diagnóstico e com o texto da thread (`typeinfo_all_behavior_call_outside_expansion`).
+- **Opções.**
+  (a) ★ Um código próprio, `behavior-call-outside-expansion`, a mensagem nomeando a chamada e a regra da expansão.
+  ```text
+  error[behavior-call-outside-expansion]: `d.value.start()` calls `Module.start` on a catalogue entry — legal only inside a function expanded at its call site (decision 562)
+  ```
+  (b) O texto como construído, sem código.
+- **Recomendação.** (a): toda recusa do checker tem um código.
+- **Bloqueia.** Nada.
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
 

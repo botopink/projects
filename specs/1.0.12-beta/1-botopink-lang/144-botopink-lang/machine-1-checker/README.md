@@ -1013,11 +1013,15 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 
 #### Step 7 — references, not strings (decision 281) (was `130-decorator-outputs` s7)
 
-- [ ] decision 564: a decorator's `@Decl<B>` names the behavior its declarations implement — `#[d]` on a type not
-      implementing `B` refused at the annotation; `@TypeInfo.all(with: d)` answers `Declared<B>[]` (the behaviors a
-      multi-decorator query shares, else `unknown`); a behavior's function on an entry's `value` called only inside a
-      562 expansion, refused elsewhere — cells: the refused annotation, the typed answer, the call emitted direct, the
-      call refused outside an expansion; `member:` still accepted beside it, botopink-lang's own sites migrated
+- [x] decision 564: a decorator's `@Decl<B>` names the behavior its declarations implement — `#[d]` on a type not
+      implementing `B` refused at the annotation, an imported decorator bringing its behavior from its own module;
+      `@TypeInfo.all(with: d)` answers `Declared<B>[]` (the behavior a multi-decorator query shares, else `unknown`); a
+      behavior's function on an entry's `value` refused outside a 562 expansion; `member:` still accepted beside it,
+      botopink-lang's cells migrated (`decorator_decl_behavior_not_implemented`, `typeinfo_all_behavior_typed`,
+      `typeinfo_all_behavior_shared`, `typeinfo_all_behavior_none_shared`,
+      `typeinfo_all_behavior_call_outside_expansion`)
+- [ ] the call emitted direct inside an expansion (`UsersModule.make().start()`) — after B-99-d; open: 564-a, 564-b,
+      564-c
 - [ ] `member:` removed with its string (256, 281), refused naming decision 564 — after front 165 s5 has migrated
       rakun's sites (a library is never edited from here, 433)
 
