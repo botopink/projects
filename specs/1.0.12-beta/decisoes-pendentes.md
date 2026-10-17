@@ -40,6 +40,8 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
+| 2 | **b140-a** — a linhagem de spread de um tipo derivado quando `compiler.buildType` recebe texto (§ Máquina 1) | se `buildType` recebe `from:` ou se o spread a partir da fonte de um tipo derivado sai | a peça de tipos derivados do B-140 | (a) `from:` em `buildType` |
+| 3 | **b140-b** — qual módulo da std declara `DeclAnnotation` (§ Máquina 1) | o ciclo de imports `types.bp` ↔ `compiler.bp` | a primeira peça do B-140 | (a) `types.bp` |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
@@ -664,6 +666,49 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
+
+#### b140-a · De onde vem a linhagem de spread de um tipo derivado quando `compiler.buildType` recebe texto? (decisões 359 (2), 578 (3), 599 (3), 600; 144 B-140)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** `comptime/derived_types.zig` reescreve `val X = Type.<fn>(…)` antes do checker em `pub type X(…)` e define `TypeDecl.derivedFrom` / `derivedPartial`; as regras de spread da 359 (2) e da 600 os leem (`record_spread_derived_partial`, `record_spread_required`, `record_spread_partial`). Pela 599 (3) as cinco funções viram corpos da std que terminam em `compiler.buildType(text)`, e um texto não carrega linhagem.
+- **Opções.**
+  (a) `compiler.buildType(source: string, from: anytype[] = [])`: os corpos da std passam `[source]` para `pick` / `omit`, `[first, second]` para `merge`, `[]` para `partial` / `required`; o compilador define `derivedFrom` a partir dele (a 578 (3) ganha um parâmetro rotulado).
+  ```bp
+  pub fn pick<T>(comptime source: type<T>, comptime ..fields: Type.Field<T>[]) -> anytype {
+      return compiler.buildType(recordText(kept), from: [source]);
+  }
+  ```
+  (b) O compilador lê a linhagem da chamada do `val` (`Type.pick(X, …)` → `[X]`): um caso chaveado pelos nomes das funções da std.
+  (c) Nenhum spread a partir da fonte de um tipo derivado: a fonte de um spread é só o próprio tipo do record; 359 (2) e 600 emendadas, três cells `record_spread_*` mudam.
+- **Recomendação.** (a): a std declara a linhagem, o compilador lê um valor, e a 599 (3) se mantém (nenhum nome da std conhecido pelo compilador).
+- **Bloqueia.** A peça de tipos derivados do B-140 (os cinco corpos do `types.bp`).
+
+#### b140-b · Qual módulo da std declara `DeclAnnotation` quando `Type.Field<T>` é o único record de campo? (decisões 576 (13), 598, 599; 144 B-140)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a)**; **(b)** se o `reflection.bp` do B-139 pousar antes.
+- **Medido.** `Compiler.fields` responde `Type.Field<unknown>[]`, então `compiler.bp` importa `types.bp`; `Type.Field<T>.annotations` é `DeclAnnotation[]`, declarado em `compiler.bp` (576 (13)), então `types.bp` importa `compiler.bp`. `stdModuleOrder` ordena a std pelos imports e não tem diagnóstico de ciclo: um ciclo aparece como tipo desconhecido.
+- **Opções.**
+  (a) `DeclAnnotation` e `Decorator` (que ele nomeia) vão para `types.bp`; `import {types.DeclAnnotation} from "std"`; o caminho da 576 (13) atualizado (um importador hoje).
+  (b) Um terceiro módulo (o `reflection.bp` do B-139) declara `DeclAnnotation`; `types.bp` e `compiler.bp` ambos o importam.
+  (c) `Compiler.fields` responde `unknown[]`, a tabela da superfície o tipa: sem ciclo, sem assinatura na std.
+- **Recomendação.** (a) agora, (b) se o `reflection.bp` estiver na `feat` antes: todo tipo que as assinaturas da std nomeiam é declarado num módulo que os dois lados podem importar; (c) deixa um builtin sem sua assinatura (575 (2)).
+- **Bloqueia.** A primeira peça do B-140 (o record de campo).
+
+#### b140-c · No B-140, uma biblioteca pode declarar seu próprio construtor de tipo `-> anytype`, ou só as cinco funções da std? (decisões 578, 599 (3); 144 B-140)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
+- **Medido.** A 578 faz de `compiler.buildType` a única forma de construir um tipo; a 599 (3) nomeia as funções `Type` da std. Hoje um `val` derivado é encontrado só pelo binder `Type` da std; as doze cells `derived_type_*` chamam todas as da std.
+- **Opções.**
+  (a) Todo `val` de nível de módulo cujo inicializador chama uma função declarada `-> anytype` (da std ou de uma biblioteca) é avaliado no build e vira um tipo; a função chamada resolvida pelo grafo de imports.
+  (b) Só as funções `Type` da std no B-140; a forma geral num passo posterior com suas próprias cells.
+- **Recomendação.** (b): as doze cells são o oráculo do B-140; (a) acrescenta um caminho de resolução que nenhuma cell segura.
+- **Bloqueia.** Nada no B-140 se (b); (a) acrescenta uma peça.
+
+#### b140-d · O que `compiler.text(f.defaultValue!)` responde para um default que não viaja (o default não fechado de um record importado) (decisões 598, s28-a; 144 B-140)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** O default de um campo atravessa um módulo só quando fechado (`travelled` descarta o resto); a 598 diz que `defaultValue` é o default "como escrito". Um tipo derivado construído a partir de um record importado escreve os defaults dos seus campos de volta no texto.
+- **Opções.**
+  (a) Esse campo chega com `defaultValue: null`, como viaja hoje: o tipo derivado o exige na construção.
+  (b) `defaultValue` guarda o texto como escrito, mas o texto do record derivado o omite.
+- **Recomendação.** (a): uma regra para um campo onde quer que seja lido.
+- **Bloqueia.** Nada (construído como (a) se não respondida).
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
 

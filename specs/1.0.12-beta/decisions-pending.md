@@ -40,6 +40,8 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
+| 2 | **b140-a** — a derived type's spread lineage once `compiler.buildType` takes text (§ Machine 1) | whether `buildType` takes `from:` or the spread from a derived type's source goes | B-140's derived-type piece | (a) `from:` on `buildType` |
+| 3 | **b140-b** — which std module declares `DeclAnnotation` (§ Machine 1) | the `types.bp` ↔ `compiler.bp` import cycle | B-140's first piece | (a) `types.bp` |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -664,6 +666,49 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
 - **Blocks.** Nothing.
+
+#### b140-a · Where does a derived type's spread lineage come from once `compiler.buildType` takes text? (decisions 359 (2), 578 (3), 599 (3), 600; 144 B-140)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
+- **Measured.** `comptime/derived_types.zig` rewrites `val X = Type.<fn>(…)` before the checker into `pub type X(…)` and sets `TypeDecl.derivedFrom` / `derivedPartial`; the spread rules of 359 (2) and 600 read them (`record_spread_derived_partial`, `record_spread_required`, `record_spread_partial`). Under 599 (3) the five functions become std bodies ending in `compiler.buildType(text)`, and a text carries no lineage.
+- **Options.**
+  (a) `compiler.buildType(source: string, from: anytype[] = [])`: std's bodies pass `[source]` for `pick` / `omit`, `[first, second]` for `merge`, `[]` for `partial` / `required`; the compiler sets `derivedFrom` from it (578 (3) gains one labelled parameter).
+  ```bp
+  pub fn pick<T>(comptime source: type<T>, comptime ..fields: Type.Field<T>[]) -> anytype {
+      return compiler.buildType(recordText(kept), from: [source]);
+  }
+  ```
+  (b) The compiler reads the lineage off the `val`'s call (`Type.pick(X, …)` → `[X]`): a case keyed on std's function names.
+  (c) No spread from a derived type's source: a spread source is the record's own type only; 359 (2) and 600 amended, three `record_spread_*` cells change.
+- **Recommendation.** (a): std states the lineage, the compiler reads a value, and 599 (3) holds (no std name known to the compiler).
+- **Blocks.** B-140's derived-type piece (`types.bp`'s five bodies).
+
+#### b140-b · Which std module declares `DeclAnnotation` once `Type.Field<T>` is the one field record? (decisions 576 (13), 598, 599; 144 B-140)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a)**; **(b)** if B-139's `reflection.bp` lands first.
+- **Measured.** `Compiler.fields` answers `Type.Field<unknown>[]`, so `compiler.bp` imports `types.bp`; `Type.Field<T>.annotations` is `DeclAnnotation[]`, declared in `compiler.bp` (576 (13)), so `types.bp` imports `compiler.bp`. `stdModuleOrder` orders std by imports and has no cycle diagnostic: a cycle surfaces as an unknown type.
+- **Options.**
+  (a) `DeclAnnotation` and `Decorator` (which it names) move to `types.bp`; `import {types.DeclAnnotation} from "std"`; 576 (13)'s path updated (one importer today).
+  (b) A third module (B-139's `reflection.bp`) declares `DeclAnnotation`; `types.bp` and `compiler.bp` both import it.
+  (c) `Compiler.fields` answers `unknown[]`, the surface table types it: no cycle, no signature in std.
+- **Recommendation.** (a) now, (b) if `reflection.bp` is on `feat` first: every type std's signatures name is declared in a module both sides can import; (c) leaves a builtin without its signature (575 (2)).
+- **Blocks.** B-140's first piece (the field record).
+
+#### b140-c · In B-140, may a library declare its own `-> anytype` type builder, or only std's five functions? (decisions 578, 599 (3); 144 B-140)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
+- **Measured.** 578 makes `compiler.buildType` the one way a type is built; 599 (3) names std's `Type` functions. Today a derived `val` is found by the std `Type` binder only; the twelve `derived_type_*` cells all call std's.
+- **Options.**
+  (a) Any module-level `val` whose initializer calls a function declared `-> anytype` (std's or a library's) is evaluated at build and becomes a type; the callee resolved through the import graph.
+  (b) std's `Type` functions only in B-140; the general form a later step with its own cells.
+- **Recommendation.** (b): the twelve cells are B-140's oracle; (a) adds a resolution path no cell holds.
+- **Blocks.** Nothing in B-140 if (b); (a) adds a piece.
+
+#### b140-d · What `compiler.text(f.defaultValue!)` answers for a default that does not travel (an imported record's non-closed default) (decisions 598, s28-a; 144 B-140)
+- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
+- **Measured.** A field's default crosses a module only when closed (`travelled` drops the rest); 598 says `defaultValue` is the default "as written". A derived type built from an imported record writes its fields' defaults back into the text.
+- **Options.**
+  (a) Such a field arrives with `defaultValue: null`, as it travels today: the derived type requires it at construction.
+  (b) `defaultValue` holds the text as written, but the derived record's text omits it.
+- **Recommendation.** (a): one rule for a field wherever it is read.
+- **Blocks.** Nothing (built as (a) unless answered).
 
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 
