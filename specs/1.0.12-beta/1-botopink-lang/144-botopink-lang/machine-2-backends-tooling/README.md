@@ -2703,6 +2703,10 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       std, `embed` on four targets with `text()` at run time (a non-UTF-8 asset an `FsError`), `Result`'s methods on
       four targets, `print` by cell on four targets
 
+Open: questions b139-a (the module of `builtin`, the `compiler.bp` / `reflection.bp` cycle), b139-b (`Result`'s
+shape), b139-c (`io/mod.bp`), b139-d (`emit` / `code` / `expr` until B-137's last box). The file kind (box 1) and
+B-138's box 4 run first; the `#[builtin]` mechanism and the modules after B-136's final package.
+
 Oracle: the whole suite; `test-docs`; the cold gate.
 
 ### B-141 — wasm: a method on an optional's list, a coalesced list and a module's map over a component

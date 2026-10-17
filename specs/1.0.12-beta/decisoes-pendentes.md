@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**132 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -793,6 +793,62 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a 537-a segura uma linha do checker e dos quatro
 backends, a B-128-a a declaração de `Iter` da 553 (ii), a 539-b uma célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
+
+#### b139-a · Qual módulo da std declara `builtin`, e os ciclos entre `compiler.bp`, `external.bp` e `reflection.bp` (decisões 575 (2), (6), 576 (13); 144 B-139)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** `libs/std/src/compiler.bp` nomeia `SourceLocation` (`val src: SourceLocation`), `Implementation`, `DeclKind`, `HookNode` e `TypeInfo`; `external.bp` declara `Implementation`, `WasmNeed`, `WasmHost`, `WasiAdapter` e `external`, sem importar nada; o `DeclAnnotation(decorator: Decorator)` de `builtins.d.bp` nomeia o behavior `Decorator`. A 575 (2) põe `src` e `typeInfo` em `reflection.bp` e `Compiler` em `compiler.bp`; a 576 (13) põe `DeclKind` e os registros de handle (`HookNode`, `Field`, `Method`, `Param`, `DeclAnnotation`) em `compiler.bp`; o README do B-139 põe `SourceLocation`, `TypeInfo`, `DeclKind` e `Field` em `reflection.bp`. Lidos juntos: `compiler.bp` → `reflection.bp` (`SourceLocation`, `TypeInfo`) → `compiler.bp` (`DeclKind`, `Field`, `Decorator`); e `compiler.bp` → `external.bp` (`Implementation`) → `compiler.bp` (o `#[builtin]` sobre `external` nomeia o decorator `builtin`). `primitives.bp` escreve `#[external(…)]` e é inferido antes de todo módulo da std (`comptime.zig` `registerStdlib`, `registerExternalPrelude`), então o módulo que declara `builtin` e o que declara `Implementation` precisam ambos ser inferidos antes dele; `stdModuleOrder` ordena os módulos da std pelos seus imports e não admite ciclo.
+- **Opções.**
+  (a) `compiler.bp` autocontido e primeiro: `builtin`, `Compiler`, `Implementation` com seus três enums, `SourceLocation`, `TypeInfo<T>`, `DeclKind`, `Decorator`, `Annotation` e os registros de handle; `external.bp` fica só com `external` e importa `compiler.Implementation`; `reflection.bp` fica com `src`, `typeInfo` (e `Declared*` até a caixa 0 do B-137) e importa seus tipos. Ordem: `compiler` → `external` → `primitives` → o resto.
+  ```bp
+  // reflection.bp
+  import {compiler.SourceLocation, compiler.TypeInfo} from "std";
+  #[builtin] pub fn src() -> SourceLocation { return compiler.src; }
+  #[builtin] pub fn typeInfo<T>(comptime t: type<T>) -> TypeInfo<T> { return compiler.typeInfo(t); }
+  ```
+  (b) `reflection.bp` guarda os tipos como o README lê; `Compiler.src` e `Compiler.typeInfo` são tipados `unknown` em `compiler.bp`, e a tabela da palavra-chave (`parser/compiler_surface.zig` `members`) os tipa.
+  (c) Um módulo só: `compiler.bp` guarda também `src` e `typeInfo`, e não há `reflection.bp`.
+- **Recomendação.** (a): todo tipo que o behavior `Compiler` nomeia é declarado no módulo que declara `Compiler` — a regra da 576 (13) levada a `SourceLocation`, `TypeInfo` e `Implementation` —; um programa escreve `import {compiler.SourceLocation} from "std"` como escreve `compiler.Span`; nenhum nome de prelúdio e nenhum caso de bootstrap além de `compiler.bp` ser o primeiro módulo da std.
+- **Bloqueia.** O mecanismo do `#[builtin]` e o `reflection.bp` do B-139.
+
+#### b139-b · `Result` declarado em `result.bp`: a forma de host da decisão 118, ou a de um enum (decisões 118, 575 (2), (7); 144 B-139)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** `@Result<R, E>` é uma forma de tipo do checker, pré-registrada por `Env.registerBuiltins`; `builtins.d.bp` declara `Result` só como documentação (`prelude.zig`: reparsá-lo dá vermelho por registro duplicado). Seu valor é `{ok, V} | {error, E}` no erlang e no beam (`codegen/erlang.zig` `variantTag` trata `isResultPath` à parte; `resultShowClause`) e `{ ok: V } | { error: E }` no commonJS; a variante de um enum é uma tupla marcada pelo seu nome no erlang (`'__bp_tagged'/2`) e uma instância com `.tag === "Variant"` no commonJS. Os cinco métodos são as linhas de `comptime/builtins.zig` `methods`, baixados inline por cada backend (`infer.zig` `inferResultOptionMethod`). A 575 (7) escreve os métodos como um `case` sobre `Ok` / `Error` e remove o baixamento inline; nem a 575 nem a 118 dizem se um `Result` declarado na std mantém a forma de valor da 118.
+- **Opções.**
+  (a) `result.bp` declara o enum com seus corpos; o checker liga `@Result` a essa declaração, e todo backend mantém a forma da 118 para esse único enum — o caso especial passa de "um namespace builtin" para "o `Result` da std".
+  ```bp
+  // result.bp
+  #[builtin]
+  pub type Result<R, E> {
+      Ok(result: R),
+      Error(error: E),
+      fn isOk(self: Self<R, E>) -> bool {
+          case (self) { Ok(_) -> return true; Error(_) -> return false; }
+      }
+  }
+  ```
+  (b) A mesma declaração baixada como qualquer enum: `{'Ok', V}`, `x.tag === "Ok"` — todo `.d.ts`, a convenção `{ok, V}` do `__bp_await` (432), todo chamador Erlang de uma função da std e a forma impressa mudam.
+  (c) `Result` segue a forma do checker; `result.bp` escreve só os métodos, `extend Result<R, E> { … }`, sem declaração do tipo.
+- **Recomendação.** (a): uma declaração, um baixamento por alvo como hoje, os corpos dos métodos da std; nenhuma flag, nenhuma segunda forma.
+- **Bloqueia.** O `result.bp` do B-139.
+
+#### b139-c · O módulo `io`: `io/mod.bp` ou um novo `io.bp` (decisão 575 (2); 144 B-139)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** A 575 (2) e o README do B-139 nomeiam `io.bp` para `print`; a std não tem `io.bp`: o módulo `io` é `libs/std/src/io/mod.bp` (`pub mod fs; pub mod http; …`), a forma que o `build.zig` documenta (`root.bp`, `io/mod.bp`), com dez submódulos sob `io/`. Um arquivo `io.bp` ao lado do diretório `io/` seriam dois módulos chamados `io` (a regra de `files_one_module_twice`).
+- **Opções.**
+  (a) `print`, `println`, `debug` vão para `io/mod.bp`, sem `@` dentro da std, `@print` fora; o `io.bp` da decisão lido como "o módulo `io`".
+  (b) Um novo submódulo `io/console.bp` os declara; os nomes builtin seguem `@print`, o import do módulo `io.console.print`.
+- **Recomendação.** (a): a decisão nomeia o módulo, e o arquivo que é o módulo é `io/mod.bp`.
+- **Bloqueia.** A peça `io` do B-139.
+
+#### b139-d · Onde `emit`, `code` e `expr` ficam declarados entre a remoção de `builtins.d.bp` e a última caixa do B-137 (decisões 575 (8), 576 (15); 144 B-137, B-139; 165 s10)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** A 575 (8) remove `@emit`, `@code` e `@expr` depois que os registros do rakun migram no 165 s10; a última caixa do B-137 ("depois do 165 s10") apaga seus braços em `infer.zig`, os caminhos de splice de `commonJS.zig` / `erlang.zig`, as 32 células `emit` e 3 suítes de `conformance/test` (`decorator_emit.bp` entre elas). O 165 s10 corre "depois do B-136 e do B-138, antes da última caixa do B-137 e do commit do rakun do B-139": os commits do compilador do B-139 podem pousar enquanto o rakun ainda escreve `@emit`. Hoje os três são declarados em `builtins.d.bp` e suas linhas ficam em `comptime/builtins.zig` `table`; o B-139 apaga esse arquivo e faz de todo `@name` uma declaração `#[builtin]`.
+- **Opções.**
+  (a) O B-139 os estaciona em `compiler.bp` como `#[builtin] pub declare fn emit(source: string);` (e `code`, `expr`), resolvidos pela mesma tabela de todo builtin, seus braços intocados; a última caixa do B-137 apaga as três linhas junto com os braços.
+  (b) A remoção de `builtins.d.bp` pelo B-139 espera a última caixa do B-137: o arquivo vive até o 165 s10 e a remoção do emit pousarem.
+  (c) `builtins.zig` mantém uma tabela residual para nomes declarados em lugar nenhum, lida quando `builtinDecls` não tem o nome.
+- **Recomendação.** (a): o único caminho com uma resolução para todo `@name` e nenhum tipo de arquivo mantido além da sua decisão; (c) é uma segunda busca, (b) serializa duas máquinas no rakun.
+- **Bloqueia.** A remoção de `builtins.d.bp` pelo B-139.
 
 #### b138-a · A célula de corpo botopink de `Implementation`: chamada `body:` (`fn` é reservada) e tipada `?unknown`, em quais variantes? (decisões 575 (6), 590, 594 (1); 144 B-138)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
