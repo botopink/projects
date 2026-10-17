@@ -2666,6 +2666,9 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       s3 lands `.Wasm(std: "print")`)
 - [ ] `print` on wasm by `.Wasm(std: "print" | "println" | "debug")`: a row of 164 s3 (this step's header: the wasm half
       after 164 s3, never beside), `print_bound_by_cells`'s wasm answer its oracle
+- [ ] the codemod's misses: `modules/compiler-cli/tests/{cli_contract,test_tooling,closure_invariant}.sh`, the fixture
+      `modules/compiler-cli/tests/cell/departs`, `scripts/test-libs.sh`, `cli/{libs,test_cmd}.zig` still write
+      `#[@External.X(…)]`; `cli_contract.sh` red (25 assertions in its sidecar and cell-check sections)
 - [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp` from `declare-without-implementation` deleted
       when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption is question b138-c
 
@@ -2676,12 +2679,14 @@ Oracle: the 158 `external_*` cells; every library's hook on this compiler; the c
 **Repository:** botopink-lang (`--lang`), then rakun's consumer commit (165 s10) · **Model:** opus (std's bodies and the
 cells' answers decide language versus defect; the file kind's removal is mechanical) · **After:** B-138
 
-- [ ] the file kind: `manifest`'s `DECLARATION_EXT` / `isDeclarationFile` / the `.d.bp`-first strip order,
+- [x] the file kind: `manifest`'s `DECLARATION_EXT` / `isDeclarationFile` / the `.d.bp`-first strip order,
       `Module.declaration` and every reader (`cli/{libs,diagnostics,bpp,resolver,scanner,check,test_cmd,config,
       format_cmd}.zig`, `language-server/src/{server,project_graph,project_index}.zig`, `lib-test-runner/src/
       discovery.zig`), `format-staged.sh`, the codemod scripts' extension lists, `cli_contract.sh`; a file still ending
       in `.d.bp` is a module named `x.d`; the cells `local_dependency` (`shapes.bp`) and `files_one_module_twice` (one
       file listed twice; its snapshot and `docs.md` stated)
+      — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `types.bp`) until the
+      modules dissolve; `builtins.d.bp` / `builtins_fns.d.bp` are std modules `builtins.d` / `builtins_fns.d` until then
 - [ ] `#[builtin]` (`compiler.setBuiltin`; `builtin-twice`, `setBuiltin-outside-std`): `@name` resolves through std's
       marked declarations; inside the declaring module the name is bare; `prelude.zig`'s two embeds go — std's modules
       are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults`
