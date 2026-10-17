@@ -2517,6 +2517,7 @@ modifier says how its argument arrives. Every later step of the group writes its
       body's `val`s, literals); `expr-captures-build`; `expr-call-outside-expr`
 - [ ] `type<T>` parsed in a type position and bound by a type argument; `type T` goes at its seven sites;
       `@typeInfo(city)` with a value refused; `type(` / `type {` unchanged
+- [ ] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
 - [ ] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
       (the read dropped), `expr x: T` where it hands `x` on or reads its syntax (`.text()` → `compiler.text(x)`,
       `.fail(m)` → `compiler.fail(m, at: x)`); `@expr(v)` → `v` with `-> expr T`; `comptime decl: @Decl` →
