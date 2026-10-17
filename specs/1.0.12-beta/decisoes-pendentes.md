@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**147 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**148 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1063,6 +1063,23 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
   (b) O texto como construído, sem código.
 - **Recomendação.** (a): toda recusa do checker tem um código.
+- **Bloqueia.** Nada.
+
+#### 564-d · Um módulo pode declarar um nome ao qual o compilador dá regras? (decisão 564; linha da máquina 1 do 144)
+- **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (b) para os nomes aos quais o compilador dá regras, (a) para o resto.
+- **Contexto.** O `behavior` próprio ou importado de um módulo agora é dono do seu nome em toda posição de tipo, como um `type` de mesmo nome já era (`conformance/docs.md` § behavior). Alguns nomes do prelúdio carregam regras da linguagem: `Result` (`try`, `throw`), `Task`, `Component`, `Iterator`.
+- **Medido.** Como construído, `pub behavior Result { fn score(self: Self) -> i32; }` compila e despacha; o `Result` do módulo é o que o nome lê ali, e `try` / `throw` ficam com o da std.
+- **Opções.**
+  (a) Sim, para todo nome: a declaração do módulo é o que o nome lê (construído).
+  ```bp
+  pub behavior Result { fn score(self: Self) -> i32; }   // accepted
+  ```
+  (b) ★ Recusado na declaração para um nome ao qual o compilador dá regras, localizado, nomeando a declaração da std, como `primitive-type-name-taken` faz para os primitivos; (a) para o resto.
+  ```bp
+  pub behavior Result { … }      // refused: `Result` is std's (builtins.d.bp), the language's rules use it
+  pub behavior Component { … }   // accepted
+  ```
+- **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)

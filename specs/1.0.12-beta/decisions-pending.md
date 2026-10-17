@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**147 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**148 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1063,6 +1063,23 @@ group), answered before every other part of this page; in the order of the steps
   ```
   (b) The wording as built, no code.
 - **Recommendation.** (a): every refusal of the checker has a code.
+- **Blocks.** Nothing.
+
+#### 564-d · May a module declare a name the compiler gives rules to? (decision 564; 144 machine-1 row)
+- **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (b) for the names the compiler has rules for, (a) for the rest.
+- **Context.** A module's own or imported `behavior` now owns its name in every type position, as a `type` of the same name already did (`conformance/docs.md` § behavior). Some prelude names carry language rules: `Result` (`try`, `throw`), `Task`, `Component`, `Iterator`.
+- **Measured.** As built, `pub behavior Result { fn score(self: Self) -> i32; }` compiles and dispatches; the module's `Result` is what the name reads there, and `try` / `throw` keep std's.
+- **Options.**
+  (a) Yes, for every name: the module's declaration is what the name reads (built).
+  ```bp
+  pub behavior Result { fn score(self: Self) -> i32; }   // accepted
+  ```
+  (b) ★ Refused at the declaration for a name the compiler has rules for, located, naming std's declaration, as `primitive-type-name-taken` does for primitives; (a) for the rest.
+  ```bp
+  pub behavior Result { … }      // refused: `Result` is std's (builtins.d.bp), the language's rules use it
+  pub behavior Component { … }   // accepted
+  ```
+- **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
 - **Blocks.** Nothing.
 
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
