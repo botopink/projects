@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**130 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**129 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **597**.
+número livre, que é **598**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -31,9 +31,7 @@ As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam pr
 poucas linhas — o problema, um exemplo, as opções, a recomendação e por quê — e a sua entrada completa (Medido, todas as
 opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coordenador transforma a resposta marcada numa decisão, e a pergunta sai desta lista.
 
-| # | Pergunta | Bloqueia | Recomendação |
-|---|---|---|---|
-| 1 | **539-b** — um `defer` acrescenta `.exceptions` ao `needs` do programa? (§ Máquina 2) | uma célula vermelha em wasm até o 164 s2b | (a) uma função que tem um `defer` acrescenta `.exceptions` |
+Nenhuma pergunta segura o trabalho da máquina 2 hoje; as abertas seguram uma linha cada, ou nada construído (§ Máquina 2).
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -789,7 +787,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
-máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a 539-b segura uma célula vermelha em wasm; as demais seguram uma linha cada, ou nada construído.
+máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
 
 #### b139-a · Qual módulo da std declara `builtin`, e os ciclos entre `compiler.bp`, `external.bp` e `reflection.bp` (decisões 575 (2), (6), 576 (13); 144 B-139)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
@@ -933,13 +931,6 @@ máquina 1 antes de toda outra parte desta página; as mais urgentes primeiro: a
 - **Opções.** (a) Recusar as duas formas, `catch` incluído. (b) Permitir: o erro adiado substitui o do bloco (hoje, não documentado). (c) Como proposto.
 - **Recomendação.** (c).
 - **Bloqueia.** Nada construído; duas células de recusa quando respondida.
-
-#### 539-b · Um `defer` adiciona `.exceptions` aos `needs` do programa? (decisões 539 (3), 518; 164)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): uma função que contém um `defer` adiciona `.exceptions`** — a 518 (2) reúne o que o programa alcança; o rebaixamento de um `defer` alcança a tag de panic exatamente como o `attempt`, sem anotação, então a 518 (3) se mantém.
-- **Medido.** No wasm com exceptions desligadas um panic faz trap e os defers do bloco não rodam; o erlang e o node rodam o defer antes de um panic não capturado encerrar o processo. A célula `defer @print("x"); @panic("y")` em `main` responde `x` e depois o abort em todos os targets menos o wasm.
-- **Opções.** (a) Uma função que contém um `defer` adiciona `.exceptions`. (b) Só quando o `attempt` também é alcançado (hoje). (c) Um `defer` recusado no wasm quando nada adiciona `.exceptions`.
-- **Recomendação.** (a) — uma resposta em todos os targets (434 (5)).
-- **Bloqueia.** A célula acima, vermelha no wasm até pousar (164 s2b).
 
 #### 537-b · A precedência do `??` contra o parêntese da 537 (decisões 537 (2), 28, 330)
 - **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(b): manter o `??` apertado; 537 (2) emendada para "`catch` é o infixo de menor precedência, abaixo do `??`"** — nenhum programa muda de significado, e a regra de parênteses da 330 já cobre o único vizinho ambíguo.

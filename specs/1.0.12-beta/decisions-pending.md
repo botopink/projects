@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**130 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**129 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **597**.
+number, which is **598**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -31,9 +31,7 @@ The questions that hold machine 2's work back today, most blocking first. Each i
 problem, an example, the options, the recommendation and why — and its full entry (Measured, every option) stays in
 § Machine 2. Tick one option per question (`[x]`); the coordinator turns a ticked answer into a decision, and the question leaves this list.
 
-| # | Question | Blocks | Recommendation |
-|---|---|---|---|
-| 1 | **539-b** — does a `defer` add `.exceptions` to the program's `needs`? (§ Machine 2) | a cell red on wasm until 164 s2b | (a) a function holding a `defer` adds `.exceptions` |
+No question holds machine 2's work today; the open ones hold one row each, or nothing built (§ Machine 2).
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -789,7 +787,7 @@ group), answered before every other part of this page; in the order of the steps
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
-before every other part of this page; most urgent first: 539-b holds a cell red on wasm; the rest hold one row each, or nothing built.
+before every other part of this page; each holds one row, or nothing built.
 
 #### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
@@ -933,13 +931,6 @@ before every other part of this page; most urgent first: 539-b holds a cell red 
 - **Options.** (a) Refuse both forms, `catch` included. (b) Allow: the deferred error replaces the block's (today, undocumented). (c) As proposed.
 - **Recommendation.** (c).
 - **Blocks.** Nothing built; two refusal cells once answered.
-
-#### 539-b · Does a `defer` add `.exceptions` to the program's `needs`? (decisions 539 (3), 518; 164)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): a function holding a `defer` adds `.exceptions`** — 518 (2) gathers what the program reaches; a `defer`'s lowering reaches the panic tag exactly as `attempt` does, with no annotation, so 518 (3) holds.
-- **Measured.** On wasm with exceptions off a panic traps and the block's defers do not run; erlang and node run the defer before an uncaught panic ends the process. The cell `defer @print("x"); @panic("y")` in `main` answers `x` then the abort on every target but wasm.
-- **Options.** (a) A function holding a `defer` adds `.exceptions`. (b) Only when `attempt` is also reached (today). (c) A `defer` refused on wasm when nothing adds `.exceptions`.
-- **Recommendation.** (a) — one answer on every target (434 (5)).
-- **Blocks.** The cell above, red on wasm until it lands (164 s2b).
 
 #### 537-b · `??`'s precedence against 537's parenthetical (decisions 537 (2), 28, 330)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): keep `??` tight; 537 (2) amended to "`catch` is the infix of the lowest precedence, below `??`"** — no program changes meaning, and 330's parenthesisation rule already covers the one ambiguous neighbour.
