@@ -41,10 +41,10 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 In order across the two machines (144 README § Machines rule 9); nothing else new opens until B-140 lands.
 
 - [ ] 144 B-136 (575, 576) — the keyword `compiler` and the behavior `Compiler`; `comptime` / `expr` on a parameter, no `Expr<T>`, `-> expr T`, the tree rule; `type<T>`; the codemod over std and conformance · nothing — machine 1, opens now
-- [ ] 144 B-137 — `compiler.compile`: a decorator's run-time code in the program's init list on every target; `@emit` / `@code` removed after 165 s10 · landed: `compile` and its cells on four targets, the 409 check, the init order (580), the typed handle (581 (2)); open: `compiler.find` (581 (3)) and `Declared<T>` / the run-time `@TypeInfo.all` removed (576 (7), (15)) after B-136's final package, the `@emit` removal after 165 s10 — machine 2
+- [ ] 144 B-137 — `compiler.compile`: a decorator's run-time code in the program's init list on every target; `@emit` / `@code` / `@expr` removed in B-139 (605) · landed: `compile` and its cells on four targets, the 409 check, the init order (580), the typed handle (581 (2)); open: `compiler.find` (581 (3)) and `Declared<T>` / the run-time `@TypeInfo.all` removed (576 (7), (15)) after B-136's final package — machine 2
 - [ ] 144 B-138 — `external` as one function over `Implementation`, `compiler.implement`, `declare-without-implementation`, the backends read `Implementation` alone, `print` by its cells · landed but `print` by its cells (every backend still intercepts it by name) and the wasm half (164 s3); the libraries' codemod is 165 s10's — machine 2
-- [ ] 165 s10 — rakun and jhonstart on the new spelling: the two codemods, every `@emit` → `compiler.compile` / typed `addMember` / `addType`, `rakun.d.bp` deleted · B-136, B-138
-- [ ] 144 B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module with its body; the removed builtins · B-138; its rakun commit after 165 s10 — machine 2
+- [ ] 165 s10 — rakun and jhonstart on the new spelling: the two codemods, every `@emit` → `compiler.compile` / typed `addMember` / a template text to `addType` / rakun-bpp's `pageParams` helper, `@expr(v)` → `v` (605), `rakun.d.bp` deleted · B-136, B-138; before B-139
+- [ ] 144 B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module with its body; the removed builtins, `@emit` / `@code` / `@expr` gone with the file (605) · B-138, 165 s10 — machine 2
 - [ ] 144 B-140 — `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.buildType` / `fields` / `optional` / `required` · B-139 — machine 1
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order

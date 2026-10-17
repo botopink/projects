@@ -101,8 +101,7 @@ The front runs on two machines, each with its own coordinator, gate pool and mai
 8. Each machine's memory is its own: a coordinator keeps its threads within its pool (`scripts/gate.sh status`) and
    never more compiler builds at once than its memory holds.
 9. **The builtins group (decision 575) is next on both machines** (the maintainer, 2026-10-17): B-136 (machine 1) opens
-   now; B-137 and B-138 (machine 2) open as soon as B-136 lands, B-139 after B-138, B-140 (machine 1) after B-139, 165 s10
-   between B-138 and B-139's rakun commit. Until B-140 lands no other new step opens on either machine — what is already
+   now; B-137 and B-138 (machine 2) open as soon as B-136 lands, 165 s10 (machine 1) after B-138, B-139 after 165 s10 (decision 605: it removes `@emit` / `@code` / `@expr` with `builtins.d.bp`), B-140 (machine 1) after B-139. Until B-140 lands no other new step opens on either machine — what is already
    open finishes; the module-model group (rule 6) opens after it. The group edits `libs/std/**`, every backend and every
    library, so rule 6's exclusivity holds for it from B-136 on. The group's threads commit with `--no-verify`
    (the maintainer, 2026-10-17 — the exception to `scripts/thread-rules.md`, stated in each prompt), after their own

@@ -164,7 +164,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 **Repository:** rakun, and jhonstart's one `@emit` · **Model:** sonnet (the codemods are 144's; the registrations' move
 to `compiler.compile` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138 on the main checkout's compiler;
-before 144 B-137's last box and B-139's rakun commit
+before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `builtins.d.bp`)
 
 - [ ] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
       `expr x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `expr decl: unknown`, `decl.*` →
@@ -179,9 +179,12 @@ before 144 B-137's last box and B-139's rakun commit
       `rakun-security/src/method_security.bp`, `rakun-scheduling/src/{markers,jobstore/markers}.bp`,
       `rakun-messaging/src/markers.bp`, `rakun-websocket/src/endpoint.bp`, `rakun-bpp/src/routes.bp`,
       `rakun-cli/src/plugins.bp`; jhonstart's `routes.bp`): a `val __rk*` registration →
-      `compiler.compile({ -> rkRegisterX(…, compiler.name(decl)!, decl); })`; the generated functions `__rkBind_` /
-      `__rkCheck_` / `__rkAutoGated_` / `http…` → typed `addMember`; the generated types `<Name>Tx` / `Http…` →
-      `addType`; what fits none of the three is a `language-gaps.md` row, and the step pauses on it
+      `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`; the generated functions beside a type
+      (`__rkBind_` / `__rkCheck_` / `__rkAutoGated_` / `__rkNew_` / `http…`) → static members by typed `addMember`
+      (`Name.bind(prefix)`, `Name.check()`, `Name.gated()`, `Name.new()`, `Name.http()`); the generated types `<Name>Tx` /
+      `Http…` → a template text `` @`…` `` answering the type, handed to `addType`; rakun-bpp's `<Name>Params(route)` →
+      a run-time helper `pageParams(route)` over the schema `#[page]` registers through `compile`; rakun-stylesheet's
+      `@expr(safe)` → `safe`, the template's return typed (decision 605 — every site has its replacement; no gap row)
 - [ ] `modules/rakun/src/rakun.d.bp` deleted with its `botopink.json` `files` entry; `AGENTS.md`, the three
       `conformance/rakun-bpp/*/docs.md` and the `examples/rakun-container` comments naming it
 - [ ] rakun's gate green on the main checkout's compiler

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**122 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **605**.
+number, which is **606**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -770,16 +770,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) A new submodule `io/console.bp` declares them; the builtin names stay `@print`, the module import `io.console.print`.
 - **Recommendation.** (a): the decision names the module, and the file that is the module is `io/mod.bp`.
 - **Blocks.** B-139's `io` piece.
-
-#### b139-d · Where `emit`, `code` and `expr` are declared between `builtins.d.bp`'s deletion and B-137's last box (decisions 575 (8), 576 (15); 144 B-137, B-139; 165 s10)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** 575 (8) removes `@emit`, `@code` and `@expr` after rakun's registrations migrate in 165 s10; B-137's last box ("after 165 s10") deletes their `infer.zig` arms, the splice paths of `commonJS.zig` / `erlang.zig`, the 32 `emit` cells and 3 `conformance/test` suites (`decorator_emit.bp` among them). 165 s10 runs "after B-136 and B-138, before B-137's last box and B-139's rakun commit": B-139's compiler commits may land while rakun still writes `@emit`. Today the three are declared in `builtins.d.bp` and their rows sit in `comptime/builtins.zig` `table`; B-139 deletes that file and makes every `@name` a `#[builtin]` declaration.
-- **Options.**
-  (a) B-139 parks them in `compiler.bp` as `#[builtin] pub declare fn emit(source: string);` (and `code`, `expr`), resolved through the same table as every builtin, their arms untouched; B-137's last box deletes the three lines with the arms.
-  (b) B-139's deletion of `builtins.d.bp` waits for B-137's last box: the file lives until 165 s10 and the emit removal land.
-  (c) `builtins.zig` keeps a residual table for names declared nowhere, read when `builtinDecls` has none.
-- **Recommendation.** (a): the only path with one resolution for every `@name` and no file kind kept past its decision; (c) is a second lookup, (b) serializes two machines on rakun.
-- **Blocks.** B-139's deletion of `builtins.d.bp`.
 
 #### b138-a · `Implementation`'s botopink-body cell: named `body:` (`fn` is reserved) and typed `?unknown`, on which variants? (decisions 575 (6), 590, 594 (1); 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

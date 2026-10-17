@@ -2619,9 +2619,9 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 - [ ] a handle inside an executor on a type, a behavior, a field or a method — question b137-b
 - [ ] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
       package (its catalogue cells)
-- [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
-      `erlang.zig` deleted, the 32 `emit` cells and the 3 `conformance/test/` suites rewritten over `compile` or
-      removed, each stated
+- [ ] moved into B-139 by decision 605: `@emit`, `@code` and `@expr` removed with `builtins.d.bp` (`unknown-builtin`), the emit
+      splice paths of `commonJS.zig` / `erlang.zig` deleted, the 32 `emit` cells, the 3 `conformance/test/` suites and
+      the compiler-cli fixture rewritten over `compile` or removed, each stated — after 165 s10
 
 Oracle: the cells; `test-libs` on the main checkout's rakun after 165 s10.
 
@@ -2715,7 +2715,7 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       four targets, `print` by cell on four targets
 
 Open: questions b139-a (the module of `builtin`, the `compiler.bp` / `reflection.bp` cycle), b139-b (`Result`'s
-shape), b139-c (`io/mod.bp`), b139-d (`emit` / `code` / `expr` until B-137's last box). The file kind (box 1) and
+shape), b139-c (`io/mod.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
 B-138's box 4 run first; the `#[builtin]` mechanism and the modules after B-136's final package.
 
 Oracle: the whole suite; `test-docs`; the cold gate.
