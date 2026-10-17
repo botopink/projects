@@ -384,6 +384,9 @@ Where each step is (its machine's folder holds its whole text).
 | B-138 | [2](machine-2-backends-tooling/README.md) | `external` as one std function over `Implementation`; `compiler.implement`; `declare-without-implementation`; the backends read `Implementation` alone; `print` / `println` / `debug` by their cells (decision 575 (6)) |
 | B-139 | [2](machine-2-backends-tooling/README.md) | no `.d.bp`; `#[builtin]`; every builtin in its std module with its body — `Result`, `src`, `embed` / `Asset`, `typeInfo`, `print`, `panic` —; the removed builtins (decision 575 (1), (2), (7), (8)) |
 | B-140 | [1](machine-1-checker/README.md) | `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.record` / `fields` / `optional` / `required` (decision 575 (5), (7)) |
+| B-141 | [2](machine-2-backends-tooling/README.md) | wasm: `join` on an optional meta's list, a coalesced list's `join`, `map(Card)` in an imported module (found by B-136's `setMeta` migration) |
+| B-142 | [2](machine-2-backends-tooling/README.md) | wasm: a generator in a linear-memory module (and `@Stream`) runs its whole body at the call (decision 105) |
+| B-143 | [2](machine-2-backends-tooling/README.md) | commonJS: `push` on an array mutates every binding that holds it — a `val` copy of a `var`, a caller's argument — where erlang rebinds the `var` and leaves the value alone (decisions 447 (2), 448 (2), 547) |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

@@ -101,6 +101,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
 - [x] 144 B-128 — a generator runs one step per item (105): erlang, beam (a process per generator) and wasm in a GC module (a resumable state machine over 392's `@Task` frames); `generator_body_lazy`, `generator_handle_stateful`, `generator_captured_var_shared` green on four targets; a linear-memory module is B-142
 - [ ] 144 B-142 — wasm: a generator in a linear-memory module (and `@Stream`) runs its whole body at the call, against 105 · the builtins group — machine 2
+- [ ] 144 B-143 — commonJS: `push` on a `var`'s array mutates every binding that holds it, where erlang rebinds the `var` (447 (2), 448 (2), 547); cells `array_push_rebinds_var`, `compile_executor_module_val_order` widened · B-138's box 4 — machine 2
 - [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
 - [x] 144 B-131 — wasm: the three `std_decorator_*` cells' recorded `mocks.bp` lines re-recorded after B-08 and B-126 (no compiler change)

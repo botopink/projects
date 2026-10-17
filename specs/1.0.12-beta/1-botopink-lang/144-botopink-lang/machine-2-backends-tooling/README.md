@@ -2616,6 +2616,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       after its annotated declaration (decision 580); cell `compile_executor_module_val_order`
       (`["second", "first", "later", "own"]`); a handle inside an executor is its declaration at run time, typed (581 (2)),
       cells `compile_executor_handle_typed`, `compile_executor_handle_mistyped`
+- [ ] a handle inside an executor on a type, a behavior, a field or a method — question b137-b
 - [ ] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
       package (its catalogue cells)
 - [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
@@ -2748,3 +2749,28 @@ on wasm too.
       WasmGC whole); a cell per fallback cause with a print before and after the first `yield`, red on wasm today,
       green on commonJS, erlang and beam
 - [ ] `@Stream` on wasm one step per item, the same cell shape
+
+### B-143 — commonJS: `push` mutates the array every binding holds, not the `var` it was called on (decisions 447 (2), 448 (2), 547)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-138's box 4 (both edit `commonJS.zig`); B-137's
+oracle, so the builtins group's closure (§ Machines rule 9)
+
+A botopink value is immutable; a `var` is the one mutable cell, rebound (447 (2), 448 (2), 547; docs § Arrays: "an
+array method answers a value and leaves its receiver alone, on every target"). std's `push` is a pure Erlang cell
+(`($0 ++ [$1])`, `primitives.bp`) and `erlang.zig`'s `receiverMutation` lowers a statement `v.push(x)` on a `var` to a
+rebinding of `v`, so `val seen = names();` keeps the list of its moment. The `.Node("push")` cell is JavaScript's in-place
+push: on commonJS `seen` and a caller's argument grow with the `var`. `compile_executor_module_val_order` passed on the
+parent on commonJS for that reason alone, blind to 580.
+
+- [ ] commonJS lowers a statement `v.push(x)` as erlang does: the `var` `v` — a module `var` or a mutable local —
+      rebound to a new array (`v = [...v, x]` or the equivalent), the old array untouched; a `push` whose receiver is
+      no `var` keeps its lowering and the value, as on erlang (its refusal is no part of this step)
+- [ ] cell `array_push_rebinds_var` (four targets): a module `var xs: string[] = [];` with `fn add(s)` pushing;
+      `val before = all();` then `add("b")`, `@print(before)` then `@print(all())` → `out ["a"]`, `out ["a", "b"]`; and
+      inside a `fn`, `var ys = [1]; val snap = ys; ys.push(2); @print(snap); @print(ys);` → `out [1]`, `out [1, 2]` —
+      red on the parent on commonJS, green on erlang and beam
+- [ ] `compile_executor_module_val_order` widened so it sees 580 on commonJS too: `val before = names();` written
+      above `#[registered] pub fn own()`, printed first → `out ["second", "first", "later"]` before the four names —
+      red on the parent on commonJS
+
+Oracle: the two cells on commonJS, erlang, beam and wasm.

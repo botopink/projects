@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**128 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**129 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -772,6 +772,16 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### b137-b · Dentro de um executor, o que é o handle para um type, um behavior, um campo ou um método — ou se esses tipos de declaração são recusados (decisões 581 (2), 575 (4); 144 B-137)
+- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** A 581 (2) fixa o handle dentro de um executor `compiler.compile` para um caso: "a própria declaração anotada como valor de tempo de execução, com seu tipo declarado" — `make: decl` numa `fn`. O commit `c4bc973a0` faz o splice do handle como o nome da declaração anotada para todo tipo de declaração (`comptime/infer.zig` `executorSource`: `splices[values.len + captured.len] = .{ .param = declName, .lexeme = annotated }`, `annotated` sendo o `.name` do handle), e `invokeDecorators` constrói um handle `Field` com o nome nu do campo, um handle `Method` com o nome nu do método, um handle `Type` e um `Behavior` com o nome do tipo (`.name = fld.name`, `.name = m.name`, `.name = tdecl.name`, `.name = i.name`). O executor com splice é reanalisado no módulo anotado, então o nome nu resolve no escopo daquele módulo: um método ou um campo cujo nome uma declaração de nível de módulo compartilha liga-se a essa declaração, em silêncio; senão, o erro de nome não resolvido do próprio checker, localizado na anotação (567), sem nomear handle algum; um type ou um behavior escrito nu responde o que quer que um nome de tipo signifique em posição de expressão. Nenhuma célula exercita um executor lendo o handle de um type, um behavior, um campo ou um método; `compile_executor_handle_typed` / `_mistyped` anotam só `fn`s. Não existe recusa.
+- **Opções.**
+  (a) O handle dentro de um executor é admitido só quando a declaração anotada é um valor de tempo de execução — uma `fn` ou um `val`; num type, num behavior, num campo, num método (e numa variante de enum) um decorator cujo executor lê o handle é recusado na anotação, código `executor-handle-not-a-value`, texto nomeando o tipo de declaração e a declaração (`the executor reads `decl`, and `City` is a type: no run-time value`), a chamada `compiler.compile` como sua linha `called from` (567); um erro por anotação que falha.
+  (b) Como (a) para um type, um behavior e um campo; o handle de um método é o método como valor de função pelo caminho do seu dono (`City.make`, seu tipo declarado), um método estático igual.
+  (c) Manter o splice pousado: o handle é o nome nu, resolvido no módulo anotado; um type é o valor de `type<T>` onde o checker admite um.
+- **Recomendação.** (a): a única leitura em que nenhum executor liga outra declaração por acidente e nada é definido pelo que um nome por acaso resolve; (b) é um alargamento posterior com sua própria tipagem a decidir (o `self` de um método de instância), (c) é a ligação errada silenciosa medida acima. Células: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, cada uma `refused` na anotação.
+- **Bloqueia.** A caixa do B-137 "a handle inside an executor is its declaration at run time, typed", para os tipos de declaração além de `fn` e `val`; os marcadores do 165 s10 em types (`#[component]`, `#[page]` num type).
 
 #### b139-a · Qual módulo da std declara `builtin`, e os ciclos entre `compiler.bp`, `external.bp` e `reflection.bp` (decisões 575 (2), (6), 576 (13); 144 B-139)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
