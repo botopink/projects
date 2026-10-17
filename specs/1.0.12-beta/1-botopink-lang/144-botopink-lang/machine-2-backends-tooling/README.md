@@ -2628,23 +2628,25 @@ Oracle: the cells; `test-libs` on the main checkout's rakun after 165 s10.
 library at once; `fable` if opus fails once) · **After:** B-136; its wasm half (`wat.zig`'s `checkHostBindings`,
 `host_cells.zig`) after 164 s3 — handed to 164 or landed after it, never beside
 
-- [ ] `libs/std/src/external.bp`: `Implementation` with `Wasm`'s cells spelled whole (`WasiAdapter`, `WasmHost` enums
+- [x] `libs/std/src/external.bp`: `Implementation` with `Wasm`'s cells spelled whole (`WasiAdapter`, `WasmHost` enums
       beside `WasmNeed`), `external` variadic; `compiler.implement` (`implementation-twice`, `implement-with-body`)
-- [ ] the checker reads a declaration's `Implementation` metas into `FnDecl.implementations` after its annotations ran;
+- [x] the checker reads a declaration's `Implementation` metas into `FnDecl.implementations` after its annotations ran;
       `infer.zig`'s `external_variants`, `ast.translateExternalCells`, `ExternalRef`, `validateExternalAnnotation`'s
       shape checks, `scanDeclareFnExternal` (commonJS, erlang) and the commonJS prelude fallback go; the table checks —
       `fn:` (`hostFnBinding.zig`), `op:`, `std:` (454), `wasi:`, `result:` (`refuseResultReturn`), `host:` twice, 516 —
       stay over the value, located at the annotation; every backend reads `implementations`
-- [ ] `declare-without-implementation` at the declaration (top-level, a type's, static); `declare-in-behavior`;
+- [x] `declare-without-implementation` at the declaration (top-level, a type's, static); `declare-in-behavior`;
       `DelegateDecl` and both delegate parse paths deleted (an unannotated `declare fn` is a `FnDecl`); `#[@Host]`
       deleted; `bodyless_method_without_binding`'s answer moves from the call to the declaration (its snapshots stated)
-- [ ] `print`, `println`, `debug`: no backend intercepts by name; `.Wasm(std: "print" | "println" | "debug")` answered
+- [ ] `print`, `println`, `debug`: no backend intercepts by name (erlang, beam, wasm and commonJS still do; commonJS's
+      inline print templates are gone); `.Wasm(std: "print" | "println" | "debug")` answered
       by std-wasm; erlang and beam still emit `'__bp_print'/1`, referenced by the template
-- [ ] the codemod `#[@External.X(…)]` → `#[@external(.X(…))]`, several annotations of one declaration merged into one,
+- [x] the codemod `#[@External.X(…)]` → `#[@external(.X(…))]`, several annotations of one declaration merged into one,
       every cell's labels kept: std (268 sites) and `conformance/` (158) here, the libraries by 165 s10 (~1740)
-- [ ] cells: `declare_without_implementation` (three shapes), `declare_in_behavior`, `implementation_twice`,
-      `implement_with_body`, a library-defined source annotation, `print` on wasm; the ~12 `external_*` shape cells
-      answer the enum constructor's texts, each stated
+- [x] cells: `declare_without_implementation` (three shapes), `declare_in_behavior`, `implementation_twice`,
+      `implement_with_body`, a library-defined source annotation (`external_library_source_annotation`); the ~12
+      `external_*` shape cells answer the enum constructor's texts, each stated
+- [ ] `print` on wasm by `.Wasm(std: "print")`, with box 4
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
 
