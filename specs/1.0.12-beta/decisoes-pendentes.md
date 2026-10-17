@@ -711,6 +711,16 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para um campo onde quer que seja lido.
 - **Bloqueia.** Nada (construído como (a) se não respondida).
 
+#### b140-e · Um meta record que guarda um `Type.Field<T>`, lido em runtime, quando a 599 remove o campo de runtime (decisões 298, 308, 599 (1); 144 B-140)
+- **Proposta (sonnet, 2026-10-17; aguardando o mantenedor):** **(a).**
+- **Medido.** A cell `meta_field_tuple_and_field_key` (298) grava `Sort<Book>(by: .pages, keys: [.pages])` por `compiler.setMeta`, e `main` lê `@typeInfo(Book).meta(Sort)` em runtime e imprime `o?.by?.name`. Quando a primeira caixa do B-140 remove a chave de runtime (599 (1): "a `Type.Field<T>` as a run-time value"), a leitura falha com `unbound variable 'pages'` num local sintético (`src/main.bp:1000002:31`). Isso não é nem uma recusa localizada nem uma resposta de cell. A 599 não diz o que acontece com um meta record cujo campo é um `Type.Field<T>`.
+- **Opções.**
+  (a) Ler esse meta em runtime é recusado na leitura, localizado, código `field-key-at-run-time`, o texto nomeando o campo do record e a 599. A cell se divide: a metade da tupla continua uma cell de execução, e a metade do campo vira uma cell de recusa. Um decorator ainda lê o record no build (`compiler.meta`).
+  (b) O campo é reduzido ao seu nome em runtime, como um valor de tipo é reduzido ao seu nome (575 (7)): `o?.by` é a string `"pages"`, e a forma de runtime de `Sort` tem `by: string`.
+  (c) `compiler.setMeta` recusa um record com um campo `Type.Field<T>`: um meta record guarda só dados de runtime.
+- **Recomendação.** (a): a 599 mantém o campo um valor de build, a recusa diz isso onde o programa o encontra, e a leitura no build fica.
+- **Bloqueia.** A primeira caixa do B-140 (a cell fica vermelha até a resposta).
+
 #### 165-c · O registro da 605 (1) lê `compiler` dentro do executor, o que a 575 (4) recusa (decisões 575 (4), 605; frente 165 s10)
 - **Proposta (opus, 2026-10-17; construída como (a), aguardando o mantenedor):** **(a).**
 - **Medido.** A 605 e a caixa do 165 s10 escrevem um registro como `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Dentro de um executor, `compiler` é um valor de build, e a 575 (4) recusa capturá-lo (`expr-captures-build`, cell `compile_executor_captures_build`). A cell `compile_executor_before_main` mostra a forma aceita: o valor de build lido antes do executor.

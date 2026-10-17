@@ -711,6 +711,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for a field wherever it is read.
 - **Blocks.** Nothing (built as (a) unless answered).
 
+#### b140-e · A meta record holding a `Type.Field<T>`, read at run time, once 599 removes the run-time field (decisions 298, 308, 599 (1); 144 B-140)
+- **Proposed (sonnet, 2026-10-17; awaiting the maintainer):** **(a).**
+- **Measured.** Cell `meta_field_tuple_and_field_key` (298) records `Sort<Book>(by: .pages, keys: [.pages])` through `compiler.setMeta`, and `main` reads `@typeInfo(Book).meta(Sort)` at run time and prints `o?.by?.name`. Once B-140's first box removes the run-time key (599 (1): "a `Type.Field<T>` as a run-time value"), the read fails with `unbound variable 'pages'` at a synthetic location (`src/main.bp:1000002:31`). That is neither a located refusal nor a cell answer. 599 does not say what happens to a meta record whose field is a `Type.Field<T>`.
+- **Options.**
+  (a) Reading such a meta at run time is refused at the read, located, code `field-key-at-run-time`, the text naming the record's field and 599. The cell splits: the tuple half stays a run cell, and the field half becomes a refusal cell. A decorator still reads the record at build (`compiler.meta`).
+  (b) The field lowers to its name at run time, as a type value lowers to its name (575 (7)): `o?.by` is the string `"pages"`, and `Sort`'s run-time shape has `by: string`.
+  (c) `compiler.setMeta` refuses a record with a `Type.Field<T>` field: a meta record holds run-time data only.
+- **Recommendation.** (a): 599 keeps the field a build-time value, the refusal says so where the program meets it, and the build-time read stays.
+- **Blocks.** B-140's first box (the cell is red until answered).
+
 #### 165-c · 605 (1)'s registration reads `compiler` inside the executor, which 575 (4) refuses (decisions 575 (4), 605; front 165 s10)
 - **Proposed (opus, 2026-10-17; built as (a), awaiting the maintainer):** **(a).**
 - **Measured.** 605 and 165 s10's box write a registration as `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Inside an executor, `compiler` is a build value, and 575 (4) refuses capturing it (`expr-captures-build`, cell `compile_executor_captures_build`). Cell `compile_executor_before_main` shows the accepted form: the build value read before the executor.
