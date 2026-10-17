@@ -1,7 +1,7 @@
 // NOTE: the GET list, the POST create and the dynamic-segment GET have
 // counterparts in route-handler-example.bp; the DELETE handler does not.
 //
-// LANGUAGE GAP: nothing reflects a module's export names and `@Decl` carries no
+// LANGUAGE GAP: nothing reflects a module's export names and the `expr decl` handle carries no
 // source location, so `pub fn GET` in a `route.bp` cannot register itself — 25
 // spells the verb as `#[getRoute("api/posts")]` / `#[deleteRoute("api/posts/[id]")]`.
 // NOTE: `Response.json(json.encode(posts))` — std's `json.encode` (decision 336,

@@ -40,8 +40,8 @@ import {Element, bracketPair, div, h1, p, ul, li, text, renderToString} from "ra
 import {page, layout, PageContext, LayoutProps} from "rakun-bpp";   // front 30
 import {collections.Dict} from "std";
 
-// LANGUAGE GAP: `@Decl` carries no source location, so a decorator cannot read the file it
-// annotates; the app-relative directory has to be passed as an argument. With `decl.source()`
+// LANGUAGE GAP: the `expr decl` handle carries no source location, so a decorator cannot read the file it
+// annotates; the app-relative directory has to be passed as an argument. With `compiler.source(decl)`
 // these would all be a bare `#[page]` / `#[layout]`.
 
 // ---- app/layout.bp — the root layout ------------------------------------------

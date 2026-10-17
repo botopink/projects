@@ -21,7 +21,7 @@ import {resetSingletons, resetContext, contextSnapshot} from "rakun-test";
 // The mocking layer is std's `testing.mocks`, not a second one in rakun-test.
 // `#[mocks.mock]` splices the double and its factory into THIS module, and the
 // emitted body reaches std's cells through the `mocks` handle this import binds
-// — the same rule every @emit-based decorator follows (a leaf import of `mock`
+// — the same rule every decorator that compiles code beside its declaration follows (a leaf import of `mock`
 // is refused, since it would leave the emitted code no handle).
 import {testing.mocks} from "std";
 

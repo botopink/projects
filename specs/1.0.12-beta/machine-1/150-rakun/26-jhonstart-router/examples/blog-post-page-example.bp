@@ -42,10 +42,10 @@ pub type BlogParams(slug: string)
 // The data source. On the BEAM a repository call is a host cell; front 08
 // delivers the real one. The rows come back `|`-delimited, which keeps the
 // example honest about what crosses an erlang boundary: strings.
-#[@External.Erlang("blog_repo", "post_by_slug")]
+#[@external(.Erlang("blog_repo:post_by_slug($0)"))]
 declare fn postRow(slug: string) -> string;
 
-#[@External.Erlang("blog_repo", "comments_for")]
+#[@external(.Erlang("blog_repo:comments_for($0)"))]
 declare fn commentRows(postId: string) -> string;
 
 // A loader: a `@Task<T>` return and a body that does the decoding. The return

@@ -56,7 +56,7 @@ pub fn newsletterAction() -> ActionRef<Signup, Subscribed> {
 
 // ── src/actions/newsletter.bp — the implementation, server only ─────────────
 
-// LANGUAGE GAP: a method's own `@Decl` has no parameter list — a decorator on
+// LANGUAGE GAP: a method's own `expr decl` handle has no parameter list — a decorator on
 // a function reads its return type and not its parameters, so it cannot read
 // `input`'s type; the type's name is the decorator's argument.
 #[action("Signup")]

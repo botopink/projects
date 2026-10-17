@@ -35,7 +35,7 @@ pub type Post(slug: string, title: string)
 // The slow half: a server component, `fn … -> @Component<Element>`
 // (decision 104), which is the thunk type `Boundary.child` takes. Nothing about
 // it knows it is inside a boundary.
-#[@External.Erlang("blog_repo", "recent_posts")]
+#[@external(.Erlang("blog_repo:recent_posts($0)"))]
 declare fn recentPostRows() -> string;
 
 fn PostList() -> @Component<Element> {

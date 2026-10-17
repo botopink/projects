@@ -31,6 +31,7 @@
 
 import html, {classIf, classList, raw, View, renderToString} from "rakun-bpp";
 import {article, div, p, pre, code, span} from "rakun-bpp";
+import {compiler} from "std";
 
 // ── raw: Astro's set:html ───────────────────────────────────────────────────
 
@@ -75,9 +76,9 @@ pub fn Snippet() -> View {
 // ── an annotation that only checks ──────────────────────────────────────────
 
 // Records nothing: `html` calls it and changes nothing. Any library may declare one.
-// The same shape as a declaration's decorator (302): the tag is a `@Decl`.
-pub fn mustBeBox(comptime decl: @Decl) {
-    if (decl.name != "div") decl.fail("#[mustBeBox] goes on a <div>");
+// The same shape as a declaration's decorator (302): the tag is an `expr decl`.
+pub fn mustBeBox(expr decl: unknown) {
+    if (compiler.name(decl) != "div") compiler.fail("#[mustBeBox] goes on a <div>", at: decl);
 }
 
 pub fn Checked() -> View {
@@ -122,4 +123,4 @@ test "a void annotation renders nothing of its own" {
 //
 //   <div #[clientVisible] />
 //     error: `clientVisible` annotates a component; `div` is an element
-//            (its first parameter is `@Decl` — front 120)          at the annotation
+//            (its first parameter is `expr decl` — front 120)          at the annotation

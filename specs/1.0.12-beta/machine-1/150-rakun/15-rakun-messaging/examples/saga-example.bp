@@ -24,10 +24,10 @@ import {resetFixtures, seats, payments, tickets} from "rakun-tx";
 import {failNext, failAlways, killCoordinatorAfterStep, resumeCoordinator} from "rakun-tx";
 
 // LANGUAGE GAP: a decorator cannot read the body of the declaration it
-// annotates — `@Decl` exposes kind, name, fields, methods, params and
-// annotations and no statements — so `#[saga]` cannot pair each call in a method
+// annotates — the `expr decl` handle, read through `compiler.*`, exposes kind, name, fields,
+// methods, params and annotations and no statements — so `#[saga]` cannot pair each call in a method
 // with its compensation. A saga is a VALUE whose steps are function pairs. With
-// `decl.body()` this would be a decorated method and a missing compensation
+// `compiler.body(decl)` this would be a decorated method and a missing compensation
 // would be a compile error instead of a review comment.
 //
 // LANGUAGE GAP: there is no assignment to a `self` field, so the context cannot

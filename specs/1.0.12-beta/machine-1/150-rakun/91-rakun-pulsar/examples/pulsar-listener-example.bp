@@ -2,7 +2,7 @@
 //
 // Server-side file. The Pulsar binary protocol itself is not in this file and cannot
 // be: with no byte type and no bitwise operators, the frame codec lives entirely in an
-// `#[@External.Erlang]` module and botopink holds the façade. What is left here — topic
+// `#[@external(.Erlang(…))]` module and botopink holds the façade. What is left here — topic
 // names, cursors, subscription types, the outcome contract — is the part an application
 // author touches, and all of it is assertable without a broker.
 //
