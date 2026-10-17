@@ -2323,8 +2323,11 @@ scratch copy to read the refusal, and that copy's manifest names the literal wor
 (`deps/rakun/botopink.json`) without copying it — `workspaces entry "rakun": … does not exist`. The cells' own targets
 answer.
 
-- [ ] the probe's copy carries every literal workspace entry the cell's manifest names (or reads the refusal in place); the
+- [x] the probe's copy carries every literal workspace entry the cell's manifest names (or reads the refusal in place); the
       six cells green; a fixture in `cli_contract.sh`'s cell-workspace tests with a literal entry and an excluded target
+      — the copy keeps a symlink to a directory outside the cell as a symlink (rakun's `deps/rakun-service` had become
+      a directory whose own manifest the compiler read); fixture `excluded_target_literal_entry`; two of the cells also
+      wrote their lambda's tail with `;` (541), fixed in rakun
 
 ### B-116 — the body markers: `iter`, `async`, `async iter`, `component` (decision 553)
 
