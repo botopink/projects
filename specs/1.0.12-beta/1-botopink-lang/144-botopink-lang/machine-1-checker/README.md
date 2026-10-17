@@ -2494,7 +2494,7 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
 
 Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
 
-### B-136 — the keyword `compiler`, `comptime` / `expr` on a parameter, `type<T>` (decision 575 (3), (4), (5); 576; 577)
+### B-136 — the keyword `compiler`, `comptime` / `expr` on a parameter, `type<T>` (decision 575 (3), (4), (5); 576; 577; 578)
 
 **Repository:** botopink-lang (`--lang`), then the consumer commits (165 s10 for the libraries) · **Model:** opus (the
 decision's first build; its cells' answers decide language versus defect) · **After:** nothing — opens now (§ Machines
@@ -2519,6 +2519,7 @@ modifier says how its argument arrives. Every later step of the group writes its
 - [ ] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
 - [ ] decision 576: `Expr<E>`, `@Expr`, `Decl`, `@Decl` removed whole; the `Expr` members and the template model (`parts`, `source`, `context`, `lookup`, `bindings`, `build`, `note`, `fail` with a span, `tagDecl`, `annotate`, a declaration handle's reads) as `compiler.*`; `@ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`; `Span`, `Part`, `Source`, `ExprContext`, `CustomNode` in `compiler.bp`; the codemod's rewrites (576 (6)); the cells of 275, 302, 415, 426 unchanged but for the spelling
 - [ ] decision 576 (8)–(12): the other declaration reads as `compiler.<r>(d)`; `compiler.addMeta` / `wrapWith`; a decorator is a function whose first parameter is `expr`; the string `setMeta(key, value)` and its readers removed, std's and `conformance/`'s sites on typed meta records by hand; a meta field written `@Expr<T>` written `T`
+- [ ] decision 578: no `-> expr`; a template is marked by its `expr q: string` first parameter (after an `expr self` receiver for a template method), returns `T` or `anytype` (typed by `compiler.build`'s code at the call; `anytype-outside-template`); `-> expr T` in the parser and the codemod's output respelled `-> T`
 - [ ] decision 577: the template text `` @`…` `` (lexer: multi-line, raw, `` \` `` its one escape); a template takes it alone and is called only as `` name @`…` `` or `` #[name @`…`] ``; any other call `expr-call-outside-expr`; any other template signature `template-signature`; `Part` / `compiler.parts` removed; the codemod's rewrite, the rest by hand
 - [ ] decision 576 (7), (15): `compiler.catalogue` answers declaration handles read at build through `compiler.*` (comptime_expand_boot, typeinfo_all_duplicate_at_entry, template_reads_program_catalogue's `named=` line restored); the hooks model's `fn` / `callee` / `context` handles — `Declared<T>` and the run-time `@TypeInfo.all` go in B-137
 - [ ] decision 576 (13): `compiler.bp`'s types imported, no prelude names; the codemod adds the imports
