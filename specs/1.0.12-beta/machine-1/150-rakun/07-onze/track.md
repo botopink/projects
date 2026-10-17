@@ -76,7 +76,7 @@ Recommendation (a): restart the node per change (`build` + `start` over a file w
 `onze-cli/src/main.bp:101`'s "not available yet" text describes (b) (reload into the running node)
 and cites "front 50 step 6" — 1.0.10's numbering; here it is 50 step 2, which removes the text.
 
-Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: decision 390 (390), worked by [`20-snap`](../../../3-medium/135-snap/20-snap/context.md) step 5.
+Module-level snapshot maps of §§ 50 · 51 · 52 · 70 · 71 and 53's runner: decision 390 (390), worked by [`20-snap`](../../../machine-1/135-snap/20-snap/context.md) step 5.
 
 
 ## Former front 162 — onze: stand-up, CLI, image, release, Astro's routing, content, data, CLI — and the example app, last

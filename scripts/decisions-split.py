@@ -131,7 +131,7 @@ def resolve_num(num, steps, by_name, by_num):
 
 PROCESS_MARK = re.compile(
     r"^—$|\bevery front\b(?! that| writing)|\bevery track\b|\bfronts\.md\b|\bREADME\.md\b|\bstatus\.md\b"
-    r"|3-medium/(?:163|136|105|107|98|135)\b|3-medium/\d+|machine-2/163\b")
+    r"|3-medium/(?:163|136|105|107|98|135)\b|3-medium/\d+|machine-2/(?:163|107|98)\b|machine-1/(?:136|105|135)\b")
 
 TOKEN = re.compile(
     r"(?P<newtr>\b(?:[123]-[a-z][a-z0-9-]*|machine-[12])/(?P<newn>\d+))" + STEP.format(n="ns") + r"|"

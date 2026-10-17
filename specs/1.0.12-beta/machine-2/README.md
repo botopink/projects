@@ -26,8 +26,9 @@ step's README; what still waits on the maintainer is listed at the end and is **
 
 | Path | What |
 |---|---|
-| [`144-backends-tooling/`](144-backends-tooling/README.md) | front 144's machine-2 steps: lanes B and C (backends, runtimes, std, tooling, the gate), the error contract of 431 / 432, the cache group, the structural residue, B-137 … B-139, B-116, B-141 … B-143, with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`); the front's shared rules and index stay in [`../1-botopink-lang/144-botopink-lang/README.md`](../1-botopink-lang/144-botopink-lang/README.md) |
+| [`144-backends-tooling/`](144-backends-tooling/README.md) | front 144's machine-2 steps: lanes B and C (backends, runtimes, std, tooling, the gate), the error contract of 431 / 432, the cache group, the structural residue, B-137 … B-139, B-116, B-141 … B-143, with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`); the front's shared rules and index stay in [`../machine-1/144-botopink-lang/README.md`](../machine-1/144-botopink-lang/README.md) |
 | [`144-backends-tooling/164-wasm-gc/`](144-backends-tooling/164-wasm-gc/README.md) | front 164 — the wasm target on WasmGC, the comptime runtime on wasmtime, std-wasm in botopink and `.wat`; where new development is centred |
+| [`107-release/`](107-release/README.md) · [`98-packaging-tail/`](98-packaging-tail/README.md) | the medium-tier tooling fronts (were `3-medium/`): the bundled `release`, packaging checked everywhere |
 | [`163-meta-ci/`](163-meta-ci/README.md) | the meta repository's CI, the gate scheduler, the pointers' sweep, the specs' drift rule, the measurements at the end (s9) |
 
 ## The group (first)

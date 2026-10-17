@@ -56,7 +56,7 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 |---|---|---|
 | 05emilia-a … 05emilia-k (e → 358) | the filter chain inline; `BackdropFilter`; `drop-shadow-none`; snap strictness fallback; `fullOptions()`; `--inset-shadow-*`; `space-*` / `divide-*` selector; siblings never import `from "emilia"` (05emilia-h → 206: `from "<module of this package>"` is an error, a sibling imports by path); `@property` blocks; selector-list modifiers; `spacingNegHalf` | — |
 
-Snapshot suites and the eight cross-front examples: decision 390 (390), worked by [`20-snap`](../../../3-medium/135-snap/20-snap/context.md) step 4.
+Snapshot suites and the eight cross-front examples: decision 390 (390), worked by [`20-snap`](../../../machine-1/135-snap/20-snap/context.md) step 4.
 
 ### 05emilia-n · The unplaced Tailwind rows — closed (401)
 

@@ -25,9 +25,11 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 
 | Path | What |
 |---|---|
-| [`144-checker/`](144-checker/README.md) | front 144's machine-1 steps: lane A (the checker, the parser, the formatter), B-19, B-22 … B-27, B-55, B-60, B-136, B-140, the module-model group, with the old fronts `01-checker`, `01-compiler`, `116-bpp-file-format`, `129-import-without-from`, `130-decorator-outputs`, `134-builtins-declared`, `139-bigint`, `140-wasm-host`; the front's shared rules and index stay in [`../1-botopink-lang/144-botopink-lang/README.md`](../1-botopink-lang/144-botopink-lang/README.md) |
+| [`144-checker/`](144-checker/README.md) | front 144's machine-1 steps: lane A (the checker, the parser, the formatter), B-19, B-22 … B-27, B-55, B-60, B-136, B-140, the module-model group, with the old fronts `01-checker`, `01-compiler`, `116-bpp-file-format`, `129-import-without-from`, `130-decorator-outputs`, `134-builtins-declared`, `139-bigint`, `140-wasm-host`; the front's shared rules and index stay in [`../machine-1/144-botopink-lang/README.md`](../machine-1/144-botopink-lang/README.md) |
+| [`144-botopink-lang/`](144-botopink-lang/README.md) | front 144's shared rules and index — § Machines, § Lanes, the alias table, the steps' order; read by both machines, edited at a landing by the coordinator that lands |
 | [`165-rakun-workspace/`](165-rakun-workspace/README.md) | the `rakun` workspace of 17 packages, `query` outside; s5 and s10 are in the queue below |
 | [`145-query/`](145-query/README.md) · [`146-validation/`](146-validation/README.md) · [`147-css/`](147-css/README.md) · [`150-rakun/`](150-rakun/README.md) · [`151-json/`](151-json/README.md) · [`152-yaml/`](152-yaml/README.md) · [`155-http/`](155-http/README.md) · [`156-log/`](156-log/README.md) · [`157-routing/`](157-routing/README.md) · [`158-markdown/`](158-markdown/README.md) · [`159-actions/`](159-actions/README.md) · [`160-snap/`](160-snap/README.md) · [`161-vscode-extension/`](161-vscode-extension/README.md) | one front per library repository (the libraries' lane runs the main checkout's compiler, 144 README § Worktrees) |
+| [`136-cardume/`](136-cardume/README.md) · [`105-i18n/`](105-i18n/README.md) · [`135-snap/`](135-snap/README.md) | the medium-tier library fronts (were `3-medium/`): cardume, the bundled `i18n`, snap's library tail |
 
 ## The group (first)
 

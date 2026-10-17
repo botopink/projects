@@ -1,6 +1,6 @@
 # Front 142 — data formats: `json`, `yaml` and `markdown`, one repository each (decision 396)
 
-> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../../1-botopink-lang/144-botopink-lang/README.md): s1 boxes 1, 2 → B-27; [151-json](../README.md): s1 box 3 → 151 s1; [152-yaml](../../152-yaml/README.md): s2 → 152 s1; [158-markdown](../../158-markdown/README.md): s3 → 158 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
+> **Former front — context only** (decision 433): its goal, mechanism and notes, kept beside the steps that took its open work — [144-botopink-lang](../../../machine-1/144-botopink-lang/README.md): s1 boxes 1, 2 → B-27; [151-json](../README.md): s1 box 3 → 151 s1; [152-yaml](../../152-yaml/README.md): s2 → 152 s1; [158-markdown](../../158-markdown/README.md): s3 → 158 s1. Its done steps are in git history, `decisions-taken.md` and the 1.0.11 closure.
 
 **Priority:** medium — `08-bpp/121` step 3 (frontmatter) waits on `yaml`; every other consumer works
 today against std's `json` · **State:** step 0 done (the three repositories scaffolded, submodules); steps 1–3 open

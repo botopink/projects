@@ -86,7 +86,7 @@ Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../..
 | 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`, `compose` taking the page as a thunk (a page is `fn() -> View`, no `route` parameter — 293); `Suspense(b)` registers its `Boundary(id, fallback, child)` with the render (`child` the unstarted thunk); `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |
 
-Module-level snapshot map: decision 390 (390), worked by [`20-snap`](../../../3-medium/135-snap/20-snap/context.md) step 3.
+Module-level snapshot map: decision 390 (390), worked by [`20-snap`](../../../machine-1/135-snap/20-snap/context.md) step 3.
 
 ### 67-a · Where the DOM-side forms boxes are asserted
 

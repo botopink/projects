@@ -204,7 +204,7 @@ started. Each member's contract is asserted by its own `test/**`.
 **Recommendation.** (a).
 **Blocks.** 73 step 3.
 
-The snapshot layer is decision 390 (390), worked by [`20-snap`](../../../3-medium/135-snap/20-snap/context.md) step 2.
+The snapshot layer is decision 390 (390), worked by [`20-snap`](../../../machine-1/135-snap/20-snap/context.md) step 2.
 
 ### 03r-ak · CycloneDX: a `required` / `type` validator over the checked-in schema
 

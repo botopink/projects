@@ -1,7 +1,7 @@
 # Fronts — 1.0.12-beta: who may touch what, when
 
 The open work is cut by repository in three tiers (decision 433): front 144 for `repository/botopink-lang`,
-one front per library repository (145–162, 150 holding the former 148, 149, 153, 154 and 162), and the medium tier (`3-medium/`). This file is the
+one front per library repository (145–162, 150 holding the former 148, 149, 153, 154 and 162), and the medium tier (136, 105, 135 under `machine-1/`; 163, 107, 98 under `machine-2/`). The directories are laid out by the machine that runs each front (2026-10-17), not by tier. This file is the
 milestone-level view: the rules for a front, who owns which repository, the sequences, the execution order,
 and § Gate, the standard landing every front README cites. Where each front stands is
 [`status.md`](status.md). The old track fronts keep their numbers; their ids resolve through each new
