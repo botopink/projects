@@ -1867,7 +1867,6 @@ local change in the named place). Full 1.0.10 text under the same id in
 |---|---|---|
 | 01c-a | A comptime module's atom is `bp@comptime@<owner path>__tpl__<decl>__<hash>` | comptime |
 | 01c-b | A section leaf takes the leading-dot shorthand where the position's type is that section; with no expectation refused naming its section | checker |
-| ck2-a | `@module()` refused at the call (`builtin-not-lowered`) until a rule says what a module value is | `builtins.d.bp` · `reject/builtin_module_not_lowered` |
 | ck2-b | A section member may share a name with a top-level variant of the same enum (path and position type tell them apart); a variant declared twice at one level is `enum-variant-duplicate` | `modules/enum_section_leaf_beside_variant` |
 | ck2-d | A label in a call of a function value is `label-on-function-value` | `reject/label_on_function_value` |
 | ck2-e | A std decorator is reached via its module handle (`#[<handle>.<fn>]`); a leaf import of one is `std-decorator-leaf-import`; `#[<handle>.<not a decorator>]` is `unknown-annotation`; the handle is still needed after 216 (`mocks.mock`'s `addType` / `addMember` text names `mocks.invoke`, `testing/mocks.bp:212-220`), while 282/289 already leaf-import other libraries' decorators | checker |
@@ -1894,7 +1893,6 @@ local change in the named place). Full 1.0.10 text under the same id in
 
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 01c-a:** confirm as a name and cache key only: the scheme (`__tpl__`, and `__dec__` for a decorator) lives in `template_eval.zig` `ownerId` and `decorator_eval.zig`, read by `crossModule.erlDeclAtom` / `decodeAtom`; the comptime module is still written as Erlang text that `runtime/wat/erl_parse.zig` and `lower.zig` lower to wasm (434) — the Where's "comptime" is that path, no BEAM runtime.
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 01c-b:** confirm (369's and 382's reading of a leading-dot path under an expected section type; not re-measured).
-- **Proposed (fable, 2026-10-12; awaiting the maintainer) — ck2-a:** confirm (cell `builtin_module_not_lowered`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — ck2-b:** confirm (cell `enum_section_leaf_beside_variant`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — ck2-d:** confirm (cell `label_on_function_value`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — ck2-e:** reverse to one rule for every package (386): a std decorator is imported as a library's is — by leaf (`import {testing.mocks.mock} from "std"`, written `#[mock]`) or through its namespace (`#[mocks.mock]`) — and `std-decorator-leaf-import` goes; `#[<handle>.<not a decorator>]` stays `unknown-annotation`. Two import rules for one kind of thing is what 386 removed for libraries; `#[mocks.mock]`'s text naming `mocks.invoke` is a message to fix, not a reason. Viable: `infer.zig` `registerStdDecorators`; cells `std_decorator_leaf_import` (becomes a run cell), `std_decorator_unknown_through_handle`, `std_decorator_through_namespace`.

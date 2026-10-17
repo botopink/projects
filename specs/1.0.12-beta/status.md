@@ -36,6 +36,17 @@ In order; the step gate (460, B-29 step G) and the hook's `--no-conformance` (47
 - [ ] 163 s12 — `scripts/land-check.py`, the coordinator's check before a landing (484) · nothing
 - [ ] 163 s6 — a language tour (`botopink/tour`) generated from `botopink-lang/conformance/`, nothing duplicated · after 144 B-29 step I
 
+### Second — the builtins group (decision 575): B-136 … B-140 and 165 s10, before every other open step (the maintainer, 2026-10-17)
+
+In order across the two machines (144 README § Machines rule 9); nothing else new opens until B-140 lands.
+
+- [ ] 144 B-136 — the keyword `compiler` and the behavior `Compiler`; `comptime` / `expr` on a parameter, no `Expr<T>`, `-> expr T`, the tree rule; `type<T>`; the codemod over std and conformance · nothing — machine 1, opens now
+- [ ] 144 B-137 — `compiler.compile`: a decorator's run-time code in the program's init list on every target; `@emit` / `@code` removed after 165 s10 · B-136 — machine 2
+- [ ] 144 B-138 — `external` as one function over `Implementation`, `compiler.implement`, `declare-without-implementation`, the backends read `Implementation` alone, `print` by its cells · B-136; its wasm half after 164 s3 — machine 2
+- [ ] 165 s10 — rakun and jhonstart on the new spelling: the two codemods, every `@emit` → `compiler.compile` / typed `addMember` / `addType`, `rakun.d.bp` deleted · B-136, B-138
+- [ ] 144 B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module with its body; the removed builtins · B-138; its rakun commit after 165 s10 — machine 2
+- [ ] 144 B-140 — `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.record` / `fields` / `optional` / `required` · B-139 — machine 1
+
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
 - [ ] 144 B-63 — `botopink cell check --jobs <N>` landed (cells in parallel, report in the cells' order); left: a library's `scripts/gate.sh --jobs` and botopink-lang's `test-conformance` handing their share to `cell check` (469; `runner-standalone.sh`, one text in 17 libraries), emilia's `conformance/` measured with `--jobs 1` and the default, the Conformance step · nothing

@@ -154,6 +154,29 @@ lacks is a build error naming it; removing the dependency removes the module; no
       form; botopink-lang's tooling that reads rakun's former conformance roots (`test-analysis-equivalence`) is 144
       B-112
 
+### s10 — the builtins' new spelling (144 B-136 … B-139; decision 575)
+
+**Repository:** rakun, and jhonstart's one `@emit` · **Model:** sonnet (the codemods are 144's; the registrations' move
+to `compiler.compile` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138 on the main checkout's compiler;
+before 144 B-137's last box and B-139's rakun commit
+
+- [ ] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
+      `expr x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `expr decl: unknown`, `decl.*` →
+      `compiler.*`; the seven identifiers `compiler` of `rakun-cli`'s tests renamed
+- [ ] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)
+- [ ] every `@emit` (23 files — `rakun/src/{decorators,context,autoconfig,config,conditions,lifecycle}.bp`,
+      `rakun/src/actuator_api/registration.bp`, `rakun-service/src/convention.bp`, `rakun-app/src/{route_handler,
+      actions}.bp`, `rakun-data/src/{orm/entity,sql/query,sql/transactional}.bp`, `rakun-restclient/src/exchange.bp`,
+      `rakun-security/src/method_security.bp`, `rakun-scheduling/src/{markers,jobstore/markers}.bp`,
+      `rakun-messaging/src/markers.bp`, `rakun-websocket/src/endpoint.bp`, `rakun-bpp/src/routes.bp`,
+      `rakun-cli/src/plugins.bp`; jhonstart's `routes.bp`): a `val __rk*` registration →
+      `compiler.compile({ -> rkRegisterX(…, compiler.name(decl)!, decl); })`; the generated functions `__rkBind_` /
+      `__rkCheck_` / `__rkAutoGated_` / `http…` → typed `addMember`; the generated types `<Name>Tx` / `Http…` →
+      `addType`; what fits none of the three is a `language-gaps.md` row, and the step pauses on it
+- [ ] `modules/rakun/src/rakun.d.bp` deleted with its `botopink.json` `files` entry; `AGENTS.md`, the three
+      `conformance/rakun-bpp/*/docs.md` and the `examples/rakun-container` comments naming it
+- [ ] rakun's gate green on the main checkout's compiler
+
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 
 **Repository:** rakun · **Model:** opus

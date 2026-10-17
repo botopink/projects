@@ -2494,3 +2494,55 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
 
 Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
 
+### B-136 — the keyword `compiler`, `comptime` / `expr` on a parameter, `type<T>` (decision 575 (3), (4), (5))
+
+**Repository:** botopink-lang (`--lang`), then the consumer commits (165 s10 for the libraries) · **Model:** opus (the
+decision's first build; its cells' answers decide language versus defect) · **After:** nothing — opens now (§ Machines
+rule 9)
+
+The first step of the builtins group: a build-time body talks to the compiler through one keyword, and a parameter's
+modifier says how its argument arrives. Every later step of the group writes its std bodies against this.
+
+- [ ] the keyword `compiler` (lexer, parser): in a body that runs at build — a decorator, a template, a function called
+      at build, a `comptime` block — the `Compiler` of that point, the annotated declaration in a decorator, the call
+      site elsewhere; a `Build` resource (376 (1)); `compiler-at-run-time` in a run-time-only body; never a parameter
+- [ ] `libs/std/src/compiler.bp`: the behavior `Compiler` with the members 575 (3) lists but `compile`, `implement`,
+      `setBuiltin`, `embed`, `record`, `fields`, `optional`, `required` (B-137 … B-140's); a unit test holds the
+      compiler's table of members to the file; `comptime.zig`'s `decl_reflection_src` mirror and `Decl<T>` go,
+      `Declared<T>` stays; `addMember` keeps only 370 (2)'s typed form (`decorator-member-not-one-fn` goes)
+- [ ] `comptime x: T` holds the value (364 (4) reverted); `expr x: T` the tree, opaque; a decorator's first `expr` the
+      annotated declaration, checked against the parameter's type (280 (2)); `-> expr T` a template's return, spliced
+      at the call; an `expr` argument to an `expr` parameter hands its tree on; `@Expr<T>`, `.value`, `@expr` go
+- [ ] the tree rule: run-time code (resolved where written, 384), `expr` (spliced), `comptime` (parameters and the
+      body's `val`s, literals); `expr-captures-build`; `expr-call-outside-expr`
+- [ ] `type<T>` parsed in a type position and bound by a type argument; `type T` goes at its seven sites;
+      `@typeInfo(city)` with a value refused; `type(` / `type {` unchanged
+- [ ] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
+      (the read dropped), `expr x: T` where it hands `x` on or reads its syntax (`.text()` → `compiler.text(x)`,
+      `.fail(m)` → `compiler.fail(m, at: x)`); `@expr(v)` → `v` with `-> expr T`; `comptime decl: @Decl` →
+      `expr decl: unknown`, `decl.name` → `compiler.name(decl)!`, `decl.fail(m)` → `compiler.fail(m, at: decl)`,
+      `decl.setMeta` / `addMember` / `addType` / `wrapWith` → `compiler.*`; run over std and `conformance/` here, over
+      the libraries by 165 s10 (482 parameters, 605 `.value` reads, 29 `@expr`, 7 `type T` measured on 2026-10-16)
+- [ ] cells: a decorator with the three parameter kinds, read at build and spliced; `-> expr` template; a `type<T>`
+      parameter; the three refusals; every `decorator_*` / `template_*` / `comptime_*` cell's answer unchanged but for
+      the spellings the codemod rewrites, each stated
+- [ ] `conformance/docs.md` § Decorators, § Templates, § Builtins rewritten to the new spelling; the compiler's
+      `AGENTS.md` files
+
+Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout once 165 s10 lands.
+
+### B-140 — `types.bp` in botopink: `compiler.record`, `fields`, `optional`, `required` (decision 575 (5), (7))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
+
+- [ ] `Type.Field<T>(name: string, type: type, annotations: DeclAnnotation[])` — `typeName` goes; a `type` value is
+      lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `Type.Field<unknown>` (308)
+- [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.record` (307's naming by
+      the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and
+      markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
+      `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`
+- [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
+- [ ] cells: the twelve derived-type cells unchanged; `record_field_duplicate`; `merge`'s duplicate located at the
+      second argument; a `type` value printed; `RecipeKey.all()` at run time, computed at build
+
+Oracle: the derived-type cells; `test-libs`.

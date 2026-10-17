@@ -100,6 +100,14 @@ The front runs on two machines, each with its own coordinator, gate pool and mai
 7. **B-00 first:** machine 2 closes B-00's last boxes before machine 1 opens lane A.
 8. Each machine's memory is its own: a coordinator keeps its threads within its pool (`scripts/gate.sh status`) and
    never more compiler builds at once than its memory holds.
+9. **The builtins group (decision 575) is next on both machines** (the maintainer, 2026-10-17): B-136 (machine 1) opens
+   now; B-137 and B-138 (machine 2) open as soon as B-136 lands, B-139 after B-138, B-140 (machine 1) after B-139, 165 s10
+   between B-138 and B-139's rakun commit. Until B-140 lands no other new step opens on either machine — what is already
+   open finishes; the module-model group (rule 6) opens after it. The group edits `libs/std/**`, every backend and every
+   library, so rule 6's exclusivity holds for it from B-136 on. The group's threads commit with `--no-verify`
+   (the maintainer, 2026-10-17 — the exception to `scripts/thread-rules.md`, stated in each prompt), after their own
+   reached checks; one full gate (`scripts/gate.sh --cold` with conformance, on each machine's main checkout) runs at the
+   group's end, before B-140's landing closes it.
 
 ## Lanes
 
@@ -371,6 +379,11 @@ Where each step is (its machine's folder holds its whole text).
 | B-133 | [2](machine-2-backends-tooling/README.md) | erlang, beam: a generator nobody closes outlives its creator |
 | B-134 | [2](machine-2-backends-tooling/README.md) | erlang: a generator of only literal `yield`s is a list and replays |
 | B-135 | [2](machine-2-backends-tooling/README.md) | erlang, beam: an `iter` loop's captured `var` is a copy after an outer write |
+| B-136 | [1](machine-1-checker/README.md) | the keyword `compiler` and the behavior `Compiler`; `comptime` / `expr` on a parameter, no `Expr<T>` type, `-> expr T`, the tree rule; `type<T>`; the codemod over std and conformance (decision 575 (3)–(5)) |
+| B-137 | [2](machine-2-backends-tooling/README.md) | `compiler.compile`: a decorator's run-time code in the program's init list, before `main`, on every target; `@emit` and `@code` removed after 165 s10 (decision 575 (3), (8)) |
+| B-138 | [2](machine-2-backends-tooling/README.md) | `external` as one std function over `Implementation`; `compiler.implement`; `declare-without-implementation`; the backends read `Implementation` alone; `print` / `println` / `debug` by their cells (decision 575 (6)) |
+| B-139 | [2](machine-2-backends-tooling/README.md) | no `.d.bp`; `#[builtin]`; every builtin in its std module with its body — `Result`, `src`, `embed` / `Asset`, `typeInfo`, `print`, `panic` —; the removed builtins (decision 575 (1), (2), (7), (8)) |
+| B-140 | [1](machine-1-checker/README.md) | `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.record` / `fields` / `optional` / `required` (decision 575 (5), (7)) |
 | B-109 | [2](machine-2-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](machine-2-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](machine-2-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

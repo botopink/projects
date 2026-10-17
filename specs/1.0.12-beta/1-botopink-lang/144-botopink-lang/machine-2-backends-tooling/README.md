@@ -2585,3 +2585,78 @@ measurement). **Consumer commits:** none.
 
 The step is closed as superseded: its built boxes (the measurement, `heap.zig`, beam-to-wasm's terms, the trap, the cycle) stay as landed; question B-30-b's answer has no effect. Its Conformance step is none — the group's is B-85.
 
+### B-137 — `compiler.compile`: a decorator's run-time code in the program's init list (decision 575 (3), (8))
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (every backend) · **After:** B-136; its last box after 165 s10
+
+- [ ] `compile(expr executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
+      module's init function and the program's init list, run once before `main` — modules in dependency order,
+      declarations in source order, calls in order; a library module's executors run in the program that imports it;
+      any number per declaration
+- [ ] cells: one executor on commonJS, erlang, beam and wasm; the order across two modules and a dependency; an
+      executor from a library's decorator; `expr-captures-build` inside one; `compiler-output-outside-decorator`
+- [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
+      `erlang.zig` deleted, the 32 `emit` cells and the 3 `conformance/test/` suites rewritten over `compile` or
+      removed, each stated
+
+Oracle: the cells; `test-libs` on the main checkout's rakun after 165 s10.
+
+### B-138 — `external` as one function over `Implementation`; a `declare fn` names its sources (decision 575 (6))
+
+**Repository:** botopink-lang (`--lang`), then the consumer commits (165 s10) · **Model:** opus (every backend and every
+library at once; `fable` if opus fails once) · **After:** B-136; its wasm half (`wat.zig`'s `checkHostBindings`,
+`host_cells.zig`) after 164 s3 — handed to 164 or landed after it, never beside
+
+- [ ] `libs/std/src/external.bp`: `Implementation` with `Wasm`'s cells spelled whole (`WasiAdapter`, `WasmHost` enums
+      beside `WasmNeed`), `external` variadic; `compiler.implement` (`implementation-twice`, `implement-with-body`)
+- [ ] the checker reads a declaration's `Implementation` metas into `FnDecl.implementations` after its annotations ran;
+      `infer.zig`'s `external_variants`, `ast.translateExternalCells`, `ExternalRef`, `validateExternalAnnotation`'s
+      shape checks, `scanDeclareFnExternal` (commonJS, erlang) and the commonJS prelude fallback go; the table checks —
+      `fn:` (`hostFnBinding.zig`), `op:`, `std:` (454), `wasi:`, `result:` (`refuseResultReturn`), `host:` twice, 516 —
+      stay over the value, located at the annotation; every backend reads `implementations`
+- [ ] `declare-without-implementation` at the declaration (top-level, a type's, static); `declare-in-behavior`;
+      `DelegateDecl` and both delegate parse paths deleted (an unannotated `declare fn` is a `FnDecl`); `#[@Host]`
+      deleted; `bodyless_method_without_binding`'s answer moves from the call to the declaration (its snapshots stated)
+- [ ] `print`, `println`, `debug`: no backend intercepts by name; `.Wasm(std: "print" | "println" | "debug")` answered
+      by std-wasm; erlang and beam still emit `'__bp_print'/1`, referenced by the template
+- [ ] the codemod `#[@External.X(…)]` → `#[@external(.X(…))]`, several annotations of one declaration merged into one,
+      every cell's labels kept: std (268 sites) and `conformance/` (158) here, the libraries by 165 s10 (~1740)
+- [ ] cells: `declare_without_implementation` (three shapes), `declare_in_behavior`, `implementation_twice`,
+      `implement_with_body`, a library-defined source annotation, `print` on wasm; the ~12 `external_*` shape cells
+      answer the enum constructor's texts, each stated
+
+Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
+
+### B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module (decision 575 (1), (2), (7), (8))
+
+**Repository:** botopink-lang (`--lang`), then rakun's consumer commit (165 s10) · **Model:** opus (std's bodies and the
+cells' answers decide language versus defect; the file kind's removal is mechanical) · **After:** B-138
+
+- [ ] the file kind: `manifest`'s `DECLARATION_EXT` / `isDeclarationFile` / the `.d.bp`-first strip order,
+      `Module.declaration` and every reader (`cli/{libs,diagnostics,bpp,resolver,scanner,check,test_cmd,config,
+      format_cmd}.zig`, `language-server/src/{server,project_graph,project_index}.zig`, `lib-test-runner/src/
+      discovery.zig`), `format-staged.sh`, the codemod scripts' extension lists, `cli_contract.sh`; a file still ending
+      in `.d.bp` is a module named `x.d`; the cells `local_dependency` (`shapes.bp`) and `files_one_module_twice` (one
+      file listed twice; its snapshot and `docs.md` stated)
+- [ ] `#[builtin]` (`compiler.setBuiltin`; `builtin-twice`, `setBuiltin-outside-std`): `@name` resolves through std's
+      marked declarations; inside the declaring module the name is bare; `prelude.zig`'s two embeds go — std's modules
+      are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults`
+      finds `todo` / `panic`); the type mirrors of `comptime.zig` (`type_info_src`, `yield_step_src`, …) go where a
+      module now declares the type; the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig`
+      read the modules or die
+- [ ] the modules: `result.bp` (`Result` with its five bodies; the backends' inline lowering and the `methods` rows go),
+      `reflection.bp` (`SourceLocation`, `src`, `TypeInfo`, `typeInfo`, `Declared`, `DeclKind`, `Field` until B-140),
+      `asset.bp` (`Asset`, `embed`; `File.ofBytes` in `io/fs.bp`; `openAsset`, `Asset.open()`, `embed-text-not-utf8`,
+      `embed-text-not-at-build` go), `io.bp` (`print`, `println`, `debug`), `panic.bp` (`panic`, `todo`), the effect
+      wrappers and the ambient behaviors in the modules that own them — each declaration's reference prose moved to
+      `conformance/docs.md` § Builtins
+- [ ] removed: `module` (the cell `builtin_module_not_lowered` goes), `trap`, `field`, `TypeOf`, `makeRecord`,
+      `RecordField`, `RecordKeys`, `comptimeError`, `compilerError` — their `infer.zig` arms, table rows and docs
+- [ ] `libs/std/botopink.json`, `build.zig`, `analysis_entry.zig`, `test_warmup.zig`; `libs/std/AGENTS.md`,
+      `compiler-cli/AGENTS.md`, `conformance/AGENTS.md`, `conformance/docs.md` (§ Builtins, the manifest table), every
+      cell `docs.md` and comment naming `builtins.d.bp`; `scripts/decisions-split.py` untouched
+- [ ] cells: `builtin_twice`, `setbuiltin_outside_std`, a builtin reached as `@name` from a program and bare inside
+      std, `embed` on four targets with `text()` at run time (a non-UTF-8 asset an `FsError`), `Result`'s methods on
+      four targets, `print` by cell on four targets
+
+Oracle: the whole suite; `test-docs`; the cold gate.
