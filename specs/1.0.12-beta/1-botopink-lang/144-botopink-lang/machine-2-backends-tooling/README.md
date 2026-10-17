@@ -2653,9 +2653,12 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
 - [ ] a library's `compiler.implement` survives the module's re-analysis: `Env.implementContributions` are kept on the
       declaration when a decorator of the same module emits, adds a member (`addMember`) or wraps (`wrapWith`) — cells
       `external_library_source_beside_member`, `external_library_source_beside_wrap`,
-      `external_library_source_beside_emit` (a `#[bif]` beside each, four targets, the erlang answer the template's)
-- [ ] a variant constructor called with labels and defaults left out — `Implementation.Wasm(op: "f64.floor", result:
-      true)` and a user enum — answers one value on erlang, beam, commonJS and wasm (`planLabelledCall` always plans;
+      `external_library_source_beside_emit` (a `#[bif]` beside each, four targets, the erlang answer the template's); those three are green on the parent, so they
+      prove nothing: a cell red on the parent is still owed, and the fallback text-splice path in `comptime.zig` (a
+      contribution that fails to parse standalone) still loses `compiler.implement`; `_beside_emit` is rewritten with
+      B-137's last box (`@emit` goes)
+- [ ] a variant constructor called with labels and defaults left out — `Implementation.Wasm(op: "f64.floor")` (an
+      `op:` cell takes no `result:`, 491) and a user enum — answers one value on erlang, beam, commonJS and wasm (`planLabelledCall` always plans;
       `defaultInjections` read by every backend, wasm verified) — cells `enum_variant_labelled_defaults` (four targets)
       and `enum_variant_labelled_reorder`
 - [ ] `?unknown` admits a function value (`body: reverseBody`) — cell `optional_unknown_takes_function`;
@@ -2669,9 +2672,10 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       s3 lands `.Wasm(std: "print")`)
 - [ ] `print` on wasm by `.Wasm(std: "print" | "println" | "debug")`: a row of 164 s3 (this step's header: the wasm half
       after 164 s3, never beside), `print_bound_by_cells`'s wasm answer its oracle
-- [ ] the codemod's misses: `modules/compiler-cli/tests/{cli_contract,test_tooling,closure_invariant}.sh`, the fixture
+- [x] the codemod's misses: `modules/compiler-cli/tests/{cli_contract,test_tooling,closure_invariant}.sh`, the fixture
       `modules/compiler-cli/tests/cell/departs`, `scripts/test-libs.sh`, `cli/{libs,test_cmd}.zig` still write
-      `#[@External.X(…)]`; `cli_contract.sh` red (25 assertions in its sidecar and cell-check sections)
+      `#[@External.X(…)]` — rewritten, with the fixtures `cell/narrowed`, `closure_invariant/hosted`,
+      `cell-workspace/group/excluded_target_literal_entry`; `cli_contract.sh`, `test_tooling.sh`, `closure_invariant.sh` green
 - [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp` from `declare-without-implementation` deleted
       when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption is question b138-c
 
