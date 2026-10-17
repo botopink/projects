@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**124 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**123 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **603**.
+number, which is **604**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -571,23 +571,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-21's method row.
-
-#### B-23-a · Decision 310: does a type of this module beside an aliased import of a same-named type count as two modules? (decision 310; 144 B-23)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — `type T` declared here and `import {other.T as U}` are two types, legal under 310 like two imports: the alias is the program's name for the other module's type, and identity is by module. Refusing it would make 310 depend on where a declaration sits. Viable: with 310's module-qualified identity (B-23's open row), nothing more. Changes: a cell beside `import_two_types_one_name`.
-- **Measured.** Today the checker and the four backends name a type by its declared name, so both forms collide (`import-name-collision` for two imports); 310 is open.
-- **Options.**
-  (a) Two types.
-  ```bp
-  import {shapes.Box as ShapeBox};
-  pub type Box(v: i32)
-  val a = Box(v: 1);  val b = ShapeBox(w: 2);   // accepted, two types
-  ```
-  (b) Refused: a local type and an alias of a same-named type collide.
-  ```bp
-  import {shapes.Box as ShapeBox};   // refused: `Box` is declared in this module
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-23's 310 row.
 
 #### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.

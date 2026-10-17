@@ -1569,11 +1569,11 @@ The list goes to the chain's first link (`receiverTypeArgs`); the checker binds 
       its module; `modules/import_two_types_one_name` becomes an accept cell on every target (until
       then the refusal is a `language-gaps.md` row) — its own work: a type's identity by module throughout the checker
       and the four backends, which name a type by its declared name alone today; whether a type of this
-      module beside an aliased import of a same-named type counts is question B-23-a
+      module beside an aliased import of a same-named type counts is decision 603 (two types)
       — built: the checker keys an aliased type by its alias, erlang / beam / wasm follow, names unchanged with one type
       per name; `import_two_types_one_name` accepted on four targets, one alias alone too; the two-packages row falls with
-      it. A local type beside an aliased import stays `import-name-collision` (question B-23-a; `decorator_member_type_same_name`
-      with it). Left:
+      it. A local type beside an aliased import stays `import-name-collision` today — decision 603 accepts it (cell
+      `import_alias_beside_local_type`; `decorator_member_type_same_name` re-read). Left:
 - [x] a std type in the pair (`import {collections.Dict as D} from "std"` beside an aliased `Dict`) still refused
       — legal (`import_std_type_beside_aliased_type`); an un-aliased non-std type beside an aliased std one stays refused
 - [x] an imported function's signature renamed through a namespace call (`m.f()`), an imported template function and
