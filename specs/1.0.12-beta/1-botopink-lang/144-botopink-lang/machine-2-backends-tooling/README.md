@@ -2397,6 +2397,11 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       (the component-fn path, captures carried) on commonJS, erlang, beam and wasm; `component-lambda-not-lowered`
       deleted; cells: one bound to a typed `val`, one passed to a typed parameter, rendered, one answer everywhere — `component_lambda_typed_val`,
       `component_lambda_typed_param`; lowered through `lowerComponentBody` (question B-116-k)
+- [ ] (i) decision 584: a lambda's marker inside the brace, before the parameters (`{ async x -> … }`, `{ iter -> … }`,
+      `{ async iter x -> … }`, `{ component -> … }`), `async {` always the block, the trailing form admitted; a marked
+      lambda's body a function body (`return v` the `R`, a top-level `continue` and `break v` refused), `docs.md`'s
+      `iter loop` equivalence dropped; `async fn f()` with no return type refused `marker-type-mismatch`; the formatter
+      migrates the 7 `marker_*` cells; 574's example rewritten
 - [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
       `@Result` → `Result`, declared in std's `.bp`; `Async.resolve(v: T) -> Async<T>` (570); `comptime/effect_chain.zig` reduced to what the markers need; a
       codemod over botopink-lang and every library; every cell the same
@@ -2607,8 +2612,10 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`
       (`compiler.compile({ -> count() })` refused at `count()`) and `compile_executor_named_answers`
       (`compiler.compile(count)` at `count`)
-- [ ] the init order of executors and a module's own body — question b137-a; a cell `compile_executor_module_val_order`
-      once answered
+- [ ] the init order of executors and a module's own body: one list, source order, the hidden `val _bp_init_<k>` at the
+      declaration's index (decision 580); a cell `compile_executor_module_val_order` (`["second", "first", "later", "own"]`);
+      a handle inside an executor is its declaration at run time, typed (581), cell `compile_executor_handle_typed`;
+      `compiler.catalogue` renamed `compiler.find` (581)
 - [ ] after 165 s10: `@emit` and `@code` removed (`unknown-builtin`), the emit splice paths of `commonJS.zig` /
       `erlang.zig` deleted, the 32 `emit` cells and the 3 `conformance/test/` suites rewritten over `compile` or
       removed, each stated

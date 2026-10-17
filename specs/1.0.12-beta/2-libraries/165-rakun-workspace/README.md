@@ -112,13 +112,19 @@ lacks is a build error naming it; removing the dependency removes the module; no
 
 ### s5 — plug-and-play: `rakun.module`, `rakun.boot()`, `rakun.config`
 
-**Repository:** rakun · **Model:** sonnet (the design is this README's) · **After:** s4, 144 B-98, B-19 step 7 (decision 564's form), B-99 (decision 562's box: `boot`'s body expanded at the call site, each module's `make().start()` emitted in `main`; `d.value.make()` typed as question B-99-d answers); `boot_modules` on beam after B-97
+**Repository:** rakun · **Model:** sonnet (the design is this README's) · **After:** s4, s10, 144 B-98, B-137 (decision 580's executor order, 581's typed handle); `boot_modules` on beam after B-97
 
-- [ ] `rakun`: the `Module` behavior (`make`, `start`), the `#[rakun.module]` decorator over `@Decl<Module>` (decision 564), `rakun.boot()` (discovery by the catalogue, the
-      layer order, the start), `#[rakun.config]` and the typed overrides; the two build errors (one thing contributed
-      twice; a required package absent), each a cell
-- [ ] every `@TypeInfo.all(…, member: "…")` site (the container's, its tests and cells, the examples) moved to decision
-      564's form — the behavior in the decorator's `@Decl<B>`, no `member:` — after 144 B-19 step 7's first box
+- [ ] `rakun` (decision 581): `type Service(name: string)`, `type Lifecycle { Eager, Lazy(afterMs: i32), Manual }`,
+      `type Module(name: string, lifecycle: Lifecycle, make: fn() -> Component<Service>)`; the decorator
+      `#[module(lifecycle: Lifecycle = .Eager)]` over a `pub component fn x() -> Component<Service>` only — a
+      `fn() -> Service` or another return refused at build, located (`#[module] goes on a component fn() -> Component<Service>`) —,
+      its executor `compiler.compile({ -> registry.add(Module(name: name, lifecycle: lifecycle, make: decl)) })`, `decl`
+      the function at run time, checked against `make`; the hooks `use inject(x)` (a module started once, on demand, the
+      boot order the dependency order) and `use onStop(f)`; `rakun.boot()` ordinary run-time code mounting each module
+      into a `ServiceScope` (the `RenderScope` without a DOM, 388, 504) by `case (m.lifecycle)`, `start(name) ->
+      @Result<void, string>` for `.Manual`, `registry.find(name) -> ?Module`; `#[rakun.config]` and the typed overrides;
+      the two build errors (one thing contributed twice; a required package absent), each a cell
+- [ ] every `@TypeInfo.all` site gone with s10 (576 (7)); a build body that needs the list reads `compiler.find(with: module)`
 - [ ] every package declares its module at its root with its defaults; `examples/` of a program that adds one package
       at a time; the gate green
 

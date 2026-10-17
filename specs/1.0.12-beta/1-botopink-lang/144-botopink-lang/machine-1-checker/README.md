@@ -1020,7 +1020,8 @@ reflection over the project** (declaration half; the `@project()` manifest half 
       botopink-lang's cells migrated (`decorator_decl_behavior_not_implemented`, `typeinfo_all_behavior_typed`,
       `typeinfo_all_behavior_shared`, `typeinfo_all_behavior_none_shared`,
       `typeinfo_all_behavior_call_outside_expansion`)
-- [ ] the call emitted direct inside an expansion (`UsersModule.make().start()`) — after B-99-d; open: 564-a, 564-b,
+- [x] the call emitted direct inside an expansion (`UsersModule.make().start()`) — withdrawn by decision 581 (a registry is
+      written by the decorator's executor; no expanded `boot`); open: 564-a, 564-b,
       564-c
 - [ ] `member:` removed with its string (256, 281), refused naming decision 564 — after front 165 s5 has migrated
       rakun's sites (a library is never edited from here, 433)
@@ -1228,6 +1229,12 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Impacted tests:** `modules/decorator_member_fn_imported_name`, `run/fn_expr_typed_anywhere`, `run/fn_tail_value`
 and its siblings. **Model:** opus. **Consumer commits:** none.
+
+#### Decision 583 — every function typed where it is written
+
+- [ ] a lambda nothing types refused `lambda-untyped`, located, the hint naming the typed form and the `val` annotation;
+      328's inference from later calls removed with its tests; the 69 cells migrated (the inference cells become refusal
+      cells); one migration commit per library (rakun 16, query 13, std 5 sites), by hand; `docs.md` § Lambdas
 
 #### Step 37 — the typed function expression in every position (decision 408) (was `01-checker` s37)
 
@@ -2364,6 +2371,10 @@ located `dependency loop`. In order:
       imports src/a.bp`), in place of today's `unbound variable`
 - [ ] the orphan warning and the blind-scan fallback go (`sources.zig`); `AGENTS.md` (compiler-cli, resolver) updated
 - [ ] cells red on the parent: a module by path, `mod` refused, `internal/` refused from outside, the cycle refusal
+- [ ] decision 582: `import {a.b}` always binds the namespace `b`, callable as the module's default (`namespace-not-a-value`
+      without one); `module-item-collision` for an item and a module of one name; `import pkg;` ≡ `import {pkg} from "pkg"`,
+      the package's default that of `src/<pkg>.bp`; `expandImports` (`default_fn.zig`) and the "prefix symbol wins" rule
+      go; cells: the callable namespace on four targets, the two refusals; `docs.md` § Imports
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
 ### B-70 — `src/comptime/`, the build layer (B-55-a (e) (3))
@@ -2489,10 +2500,10 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
       imports resolved as in its module in the emitted code, a caller's own type of the same name refused
       `import-name-collision` at the call; a refusal in that code located in the declaring module, the call as its
       called-from frame (`comptime_expand_library_names`, `comptime_expand_library_type_error`)
-- [ ] `d.value` in an expanded body typed as B-99-d answers (decision 562's `d.value.make().start()` refused today
-      at the declaration: "cannot call a method on an `unknown` value") — a cell, red today
+- [x] `d.value` in an expanded body — withdrawn by decision 581: 576 (7) removed `Declared<T>` and `.value`; a handle inside
+      an executor is its declaration at run time, typed (B-137's cell `compile_executor_handle_typed`)
 
-Open: B-99-c — a dependency's own root is refused, as built. B-99-d — how `d.value` is typed in an expanded body. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
+Open: B-99-c — a dependency's own root is refused, as built. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
 
 ### B-136 — the keyword `compiler`, `comptime` / `expr` on a parameter, `type<T>` (decision 575 (3), (4), (5); 576; 577; 578)
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**149 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**124 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **563**.
+number, which is **595**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -33,7 +33,9 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | B-116-f, g — the body markers' first build (§ Machine 2) | P1 builds (a); a different answer reverts that part | (a) for each |
+| 1 | **537-a** — what `catch` catches when its left side is not a bare `try e` (§ Machine 2) | a 144 row: the checker and the four backends | (a) `catch` delimits a try region |
+| 2 | **B-128-a** — which iterator methods the language declares on `Iter<T, R>` (§ Machine 2) | `flatMap` on erlang and beam; 553 (ii)'s `Iter` declaration (B-116) | (a) Node's helpers whole, typed, on every target |
+| 3 | **539-b** — does a `defer` add `.exceptions` to the program's `needs`? (§ Machine 2) | a cell red on wasm until 164 s2b | (a) a function holding a `defer` adds `.exceptions` |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -42,9 +44,9 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 2 | **B-99-d** — how `d.value` is typed in the body of a function expanded at its call site (§ Front 165, under B-99-c) | whether decision 562's own `d.value.make().start()` type-checks, or `rakun.boot()` calls a run-time helper on each entry | 165 s5, s7 (`rakun.boot()` as 562's example writes it) | (b) the expanded body checked per expansion, `d.value` the declaration itself |
-
-Answered and waiting only for their number in `decisions-taken.md`, so blocking nothing on the maintainer: **434-b** (2026-10-11), **116-a** (2026-10-12, its answer since superseded by B-55-a (e)).
+| 2 | **B-10-a** — the name of `Field`'s default member, `default` being a keyword (§ Machine 1) | what `Type.Field<T>` carries for a field's default | 144 B-140 (`types.bp` declares `Type.Field<T>`) | (a) `defaultValue`, the default as written |
+| 3 | **B-16-a** — a field key at run time: its `typeName`, `annotations` and printed form (§ Machine 1) | what a run-time `Type.Field<T>` carries | 144 B-140 | (a) its name only; the rest build-time members |
+| 4 | **B-14-c** — a type derived from a `Type.partial` type, and `Type.required`, as a spread's source (§ Machine 1) | what lineage `optional` / `required` keep on a derived type | 144 B-140, B-14 | (a) a derived partial is a partial; `required` restores the source |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -113,22 +115,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) Milliseconds only when nonzero.
   ```bp
   clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-d · A bare variant in expression position (`Two(t)`, no enum qualifier): refused or lowered? (144 B-10 G2)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), with B-22-a (the same question): a bare variant in expression position is refused at the call, located, naming `E.Two(t)` or `.Two(t)` (the expected type naming the enum); a bare variant stays a `case` pattern's (decision 8). One rule, both questions.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused at the call, located, naming `.Two(t)` or `E.Two(t)`** — `docs.md` already says it is not lowered; the checker accepting what no backend emits is the defect. One spelling: the qualified or the dot form.
-- **Measured.** `Two(t)` checks, then fails on commonJS, erlang and beam; `docs.md` calls it unlowered.
-- **Options.**
-  (a) Refused.
-  ```bp
-  val m = Two(t);   // refused: write `.Two(t)` or `Mode.Two(t)`
-  ```
-  (b) Lowered on every target.
-  ```bp
-  val m = Two(t);   // a Mode, on every target
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10's row.
@@ -209,24 +195,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (b).
 - **Blocks.** 144 B-11's generic row.
-
-#### B-14-a · `Name(..base, f: v)` (decision 37) beside 359's `Name(...base, f: v)`: does `..` go? (144 B-14)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 529: `..` is the one spelling of "the rest" — a record's construction spreads with `..` (`Name(..base, f: v)`), a tag with `{..p}`, and `...` goes, kept only for the inclusive range; `botopink format` migrates. The reverse of the proposal.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `..` goes** — one spelling for copying a record's fields; `Name(..base, …)` is refused, located, naming `...base`, and a codemod rewrites std and the libraries in the step that lands it. Two spellings for one thing is what decision 67 refuses; `...` is 359's, also the tag's (`<Card {...p} />`). Viable: the parser's `..` arm in a constructor's arguments; `grep -rn '(\.\.[a-z]'` over the repositories. Changes: a refusal cell; decision 37 amended.
-- **Measured.** Both compile on `feat`: decision 37's `..base` (source limited to a name) and 359's `...src` (any expression of the record's type or a 307 derived type).
-- **Options.**
-  (a) `..` goes.
-  ```bp
-  val p = Pessoa(...old, nome: "Ana");   // the one form
-  val q = Pessoa(..old, nome: "Ana");    // refused: write `...old`
-  ```
-  (b) Both stay.
-  ```bp
-  val p = Pessoa(...old, nome: "Ana");
-  val q = Pessoa(..old, nome: "Ana");    // same record
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-14's `..` row.
 
 #### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
@@ -509,43 +477,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (b).
 - **Blocks.** 144 B-17's extension-block row.
 
-#### 04s12-a · A `@Component` method, lambda or `default fn` has no hooks node (375 (2), 04-js step 12)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(c), and a type may be a component — every form behaves and is called as a `fn` component.** (1) A method, a lambda or a `default fn` answering `@Component<R>` lowers as a top-level component: a lambda over the `RenderScope` (388) answering its tree and its children's scope, with `use provide` / `use context` / `await` in its body, marked by its own body (s23-j); calling it only makes the lambda and marks no caller. (2) A type implementing `Component<R>` is a component: its fields are its props and its `render(self) -> R` is its body — `type Menu(items: string[]) implement Component<Element> { fn render(self: Self) -> Element { val t = use context(Theme); return <ul class={t.cls}>…</ul>; } }` — written and called as `fn Menu(items: string[]) -> @Component<Element>` is: `<Menu items={["a", "b"]}/>`, the same lowering `(props) => (scope) => …`, the same marks. The scope is never a field (388 (5): nothing captured; the renderer hands it at each run, a `Suspense` fill included). (3) Each has its own hooks node, and a method's or a type's node enters `decl.hooks` (277 amended: a method call followed through its receiver's type), so a decorator sees `Menu`'s hooks as it sees `fn App`'s. **(2) in detail** (the maintainer, 2026-10-12): a type implementing `Component<R>` is sugar for a `fn` component. Its fields are the parameters — defaults, optionals, `children`, generics as in a `fn`, immutable — and its `fn render(self: Self) -> @Component<R>` is the body, `self` reading the fields and the type's helper methods. `X(fields…)` and `<X …/>` answer the component (the lambda `(props) => (scope) => …`), never a record, so a caller cannot tell the two forms apart. The same lowering on commonJS, erlang, beam and wasm, the same `.d.ts` (`export declare function X(props: {…}): Component<R>`), the same marks (s23-j: a `render` with `await` is asynchronous), the same `decl.hooks` for decorators (`#[page] type` and `#[page] fn` interchangeable), the same comptime (434-b). Hooks only in `render`; a helper method not answering `@Component` is an ordinary function. Refused, located: `implement Component` with no `render`; a `render` of another signature; a `RenderScope` field (388 (5)); a `use` outside `render`; `X.render()` called directly (`call the component, not its body: <X …/> or X(…)`). **(2) amended — a component's props are one record** (the maintainer, 2026-10-12): a component, `fn` or type, takes its props as one record parameter, never a list of parameters. `type MenuProps(items: string[], title: string = "Menu");` — then `fn Menu(props: MenuProps) -> @Component<Element> { val t = use context(Theme); return <nav class={t.cls}><h2>{title}</h2><ul>{items.map({ i -> <li>{i}</li> })}</ul></nav>; }`, or the same component as a type: `type Menu(props: MenuProps) implement Component<Element> { fn render(self: Self) -> @Component<Element> { …<h2>{self.title}</h2><ul>{self.items.map({ i -> self.item(i) })}</ul>… } fn item(self: Self, i: string) -> Element { return <li>{i}</li>; } }` (`item` does not answer `@Component`: an ordinary helper). The record's fields are in scope: bare in the `fn` body (`title`, `items`), on `self` in `render` and the helpers (`self.title`, `self.items`); `props` names the whole record. Defaults, optionals, `children` and generics are the record's, written once on `MenuProps`. A caller never builds the record: the attributes are its fields — `<Menu items={["a", "b"]}/>` (`title` taking its default), `<Menu items={["a", "b"]} title="Principal"/>`, `<Layout view={ { -> <Menu items={xs}/> } }/>` (inside a lambda prop alike) — and the compiler builds the `MenuProps` from them, checked field by field as a record construction is (a missing field, an unknown attribute, a wrong type: located on the attribute). A component with no props takes no parameter (`fn App() -> @Component<Element>`). The lowering is unchanged — `(props) => (scope) => …`, `props` the record — and the `.d.ts` names it: `export declare function Menu(props: MenuProps): Component<Element>`, `MenuProps` exported beside it. Refused, located: a component with more than one parameter, or whose one parameter is not a record type (`a component takes its props as one record: type MenuProps(…); fn Menu(props: MenuProps)`).
-- **Measured.** 04-js step 12 asks a method, a lambda and a `default fn` to follow the mark "alike", but 277's
-  nodes are the module's top-level functions only. Built: each stays an `async function` / `async` arrow on
-  commonJS, and a call of one keeps its `await` (a call the checker cannot follow, s23-j (1)).
-- **Options.** (a) As built. (b) The checker marks every `@Component` body — a method, a `default fn`, a lambda —
-  by 375's rule (a node of its own, not listed in `decl.hooks`), commonJS emits each by its mark:
-  ```bp
-  type Menu(items: string[]) { fn render(self: Self) -> @Component<Element> { return Element(…); } }
-  // (a): `async render(map) {…}`, `await menu.render(map)`; (b): `render(map) {…}`, no `await`
-  ```
-  (c) (b), and a method's node enters `decl.hooks` (277 amended: a method call followed through its receiver's
-  type).
-- **Recommendation.** (b): the rule is the body's, wherever the body is written; (c) changes what a `.hooks`
-  reader sees and is 277's question.
-- **Blocks.** 04-js step 12 box 1's method, lambda and `default fn`.
-
-#### 434-b · The render-resident and at-build paths under one wasm comptime runtime (434, 378 (4))
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **Every library runs at build on the wasm comptime runtime (434), jhonstart first; a function only Erlang or Node can run is a located error there.** (1) A host cell (`@External.Erlang` / `@External.Node`) reached at build runs through its wasm form — a botopink body (`#[@External.Wasm(fn: …)]`) or a std-wasm export (`std:`, 481) — so `comptime renderToString(<Rodape ano={2026} />)` answers one string for every target. (2) Each library gives its pure cells (escape, formatting, parsing — logic written in Erlang or JS for convenience) a wasm form: jhonstart's renderer (`jhonstart_render.erl`) first, for 144 B-17, then every library front (145–162) in a step of its own. (3) A function with no wasm form — 100% Erlang or Node, or a real host effect (network, database, fs, process) — reached by a `comptime` is refused at build, located, naming the cell: `error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm form — it cannot run at build (give it a botopink body, or remove `comptime`)`. No translation stands in for a missing wasm form at build (no beam-to-wasm fallback), and never the target's VM (c). The build's target does not narrow this: a `comptime` runs on wasm whatever `--target` is, so an erlang build reaching an `@External.Erlang`-only cell at build is refused as a commonJS build is. The comptime's reading is otherwise unchanged (388 (4): `RenderScope.root()`).
-- **Context.** `comptime` evaluates an expression while the program is built and puts its value in the output; decision 378 (4) lets a component be rendered that way, so `comptime renderToString(<Rodape ano={2026} />)` becomes a constant string in the program. Before decision 434 an erlang build did that render on the BEAM; 434 runs every comptime evaluation on wasm only, and jhonstart's renderer is an Erlang sidecar (`jhonstart_render.erl`) with no wasm form. The question is what such a build-time render does when it reaches a function only Erlang or Node can run. The maintainer answered it (above); the answer waits for its number in `decisions-taken.md` before 144 B-17's box is built.
-- **Measured.** 84 sent a comptime evaluation to the target's VM, so an erlang build rendered a `Build` / `Any` component at build on the BEAM (`render_resident`'s erl step) and a commonJS build on wat. 378 (4) asks the comptime runtime to run a component's lambda with `RenderScope.root()` (388) — `comptime renderToString(<Rodape ano={2026} />)`; 134 step 6's last box (144 B-17). Under 434 the only runtime is wasm, and jhonstart's renderer on the BEAM is a sidecar (`jhonstart_render.erl`).
-- **Options.**
-  (a) The renderer runs at build on wasm only: jhonstart's render path reached at build is botopink (or std-wasm), its Erlang cell translated by beam-to-wasm where it has no botopink body; the answer is one string for every target.
-  ```bp
-  val footer = comptime renderToString(<Rodape ano={2026} />);   // "<footer>2026</footer>" on the four targets
-  ```
-  (b) A component is rendered at build only when every function it reaches has a botopink or std-wasm body; one reaching an Erlang cell is refused at the `comptime`, naming the cell.
-  ```text
-  error: `Rodape` reaches jhonstart_render:escape/1, which has no wasm body — it renders at run time (remove `comptime`)
-  ```
-  (c) Keep the target's VM for at-build rendering alone (a BEAM step inside the compile for erlang/beam builds).
-  ```bp
-  val footer = comptime renderToString(<Rodape ano={2026} />);   // erlang: rendered by a BEAM step inside the compile; commonJS: on wasm
-  ```
-- **Recommendation.** (b) now — no at-build answer that depends on a translation not proved; (a) once beam-to-wasm covers the renderer's cells; never (c), which 434 removes.
-- **Blocks.** 144 B-17 (134 step 6's 378 (4) box); nothing in B-00.
-
 #### B-18-a · How is a template method found: by a name in the call site's scope, or through the receiver's type? (decisions 397, 415; 144 B-18)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): by a name in the call site's scope, as built** — `value.method "…"` resolves `method` as a template whose `self` takes the receiver, local or imported; nothing reaches a library's template without an import, as for every other name. A receiver's type never imports code by itself. Changes: 145's example imports `query`.
 - **Measured.** Built as (a); 145's example writes `self.db.query """…"""` with no import of `query`.
@@ -699,22 +630,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): no untested path ships.
 - **Blocks.** Nothing on Linux.
 
-#### B-21-a · A lambda's last expression written with `;`: still its value? (decision 409; 144 B-21)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 525-a (1): a lambda answers its last expression written without `;` (409, 525); `{ x -> x + 1; }` answers nothing — after `botopink format` removes, once, the `;` of every existing lambda's last expression statement. The reverse of the proposal.
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): keep it the value, for lambdas and untyped `fn(x) { … }` only** — 409's tail rule binds the bodies with a written return type (`fn`, method, typed `fn` expression); a lambda has no written return, its value has always been its last statement, and the formatter has always ended that line with `;`. Reading 409 strictly there means a codemod over 3,800 lambda bodies (std 180, `conformance/` 207, rakun 1855 …) for no rule a lambda gains. Viable: as built. Changes: 409's text names the bodies it binds.
-- **Measured.** No named `fn`, method or typed `fn`-expression body ends without `;` anywhere; lambda bodies ending with `;` are std 180, `conformance/` 207, examples 5, emilia 373, erika 79, jhonstart 288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20.
-- **Options.**
-  (a) Strict: with `;` a lambda's last expression is a statement.
-  ```bp
-  xs.map({ x -> x + 1; })   // answers void: write `{ x -> x + 1 }`
-  ```
-  (b) A lambda's last statement is its value, `;` or not.
-  ```bp
-  xs.map({ x -> x + 1; })   // answers x + 1, as today
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-21's lambda row.
-
 #### B-21-b · A method with no `->`: when is a non-`void` tail refused? (decisions 409, 06 C9; 144 B-21)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: the checker reads the body's valued `return`s before the tail. Changes: a cell.
 - **Measured.** B-21's thread reported (a); its Conformance step measured `feat` refusing a non-`void` tail next to a valued `return` too, in a method and in a free fn — (b) as built.
@@ -730,40 +645,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-21's method row.
-
-#### B-21-c · Does the formatter print a `case` arm block's last expression as written? (decision 409; 144 B-21)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** 525 and 525-a (3): the formatter removes, once, the last `;` of a `case` arm used as a value and the arm's `break <value>`, making the arm's tail its value; elsewhere it prints a block's last expression as written (409's formatter rule).
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — as written, like a body's tail** — the printer adds and removes no `;` anywhere (409's formatter rule), an arm block included; one rule for every block.
-- **Measured.** The formatter adds `;` to a `case` arm block's last expression; 409's text covers function bodies.
-- **Options.**
-  (a) As written.
-  ```bp
-  case s { Circle(r) -> { val d = r * 2; d } }   // printed as written
-  ```
-  (b) `;` added in arms.
-  ```bp
-  case s { Circle(r) -> { val d = r * 2; d; } }
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-21's arm row.
-
-#### B-22-a · A bare variant constructor in an expression (`Num(4)` for `Value.Num(4)`)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** (a), with B-10-d (the same question): refused, located, naming the qualified form — `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` and `val c: Value = .Num(4)` stay; a bare variant stays a `case` pattern's (decision 8).
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): a bare variant constructor in an expression is refused, located, naming the qualified form** — `val a = Num(4);` is `` `Num` is a variant of `Value` — write `Value.Num(4)` ``; `Value.Num(4)` and `val c: Value = .Num(4)` (the expected type names the enum) stay the two legal forms; a bare variant stays a `case` pattern's (decision 8, the subject fixes the enum). Refuse over accept (67): today `check` passes and commonJS, erlang and beam fail at run time (`Num is not defined`, `function 'Num'/1 undefined`, `{unresolved_call,'Num',1}`) while wasm prints an address — four wrong answers; (b) would add a fourth spelling to every backend. Viable: `infer.zig` `registerEnum` binds the bare name (`env.bind(v.name, ctorType)`, `noteVariantClaim`), and `refuseAmbiguousVariant` refuses two claimants — the single-claimant call path becomes the refusal for a non-pattern use, the pattern path kept; one refusal cell. Changes: `conformance/docs.md` § type — enums; two defects to file beside it: on wasm an unannotated `val b = Value.Num(4); @print(b)` prints an address, and `"${b}"` of a payload variant prints `[object Object]` / an erlang tuple / an address by target (no printer for a variant in a template; the 01-compiler row in `status.md` names the enum half).
-- **Measured.** The checker admits `val v = Num(4);` for `type Value { Num(n: i32), … }`; erlang, beam and commonJS then fail on an unbound `Num` at run time (`conformance/docs.md` § type — enums records the defect today). Decision 8's pattern rule allows a bare variant in a `case` pattern, where the subject fixes the enum; an expression has no subject.
-- **Options.**
-  (a) Refused, located, naming the qualified form; the leading-dot `.Num(4)` with an expected type stays legal.
-  ```bp
-  val a = Num(4);          // error: `Num` is a variant of `Value` — write `Value.Num(4)`
-  val b = Value.Num(4);    // legal
-  val c: Value = .Num(4);  // legal, the expected type names the enum
-  ```
-  (b) Legal: every backend lowers the bare constructor to the variant's.
-  ```bp
-  val a = Num(4);          // Value.Num(4) on every target
-  ```
-- **Recommendation.** (a) — the strictest reading: refuse over accept, the qualified form and the leading-dot form kept; a bare variant stays a `case` pattern's (decision 8).
-- **Blocks.** The checker row and the three backends' failure; `conformance/docs.md` § type — enums.
 
 #### B-22-b · How does a value of an enum section print? (144 B-22; `docs.md` § Sections of an enum)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): the leaf's whole path, as written** — `@print(Token.Color.White)` writes `Token.Color.White` on every target; a name at two levels (`Token.After` and `Token.Layout.Break.After`) stays two texts. One text for a value on every target (434 (5)), and no internal name (`_inner`, `__Token__Color`) in a program's output. Viable: each backend's printer for an enum value reads the section path the checker already resolves. Changes: a cell `enum_section_value_print` on the four targets; `docs.md` § Sections of an enum.
@@ -814,22 +695,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-23's 310 row.
 
-#### B-23-b · A raise in the module's own template: located at the call site, or at the call that raised? (decision 451 (3); 144 B-23)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** B-48-a: at the call that raised, inside the template body, in its own file (451 (3)), with every call of the chain as a `called from` line down to the program's use of the template — one rule for every comptime body, the module's own template included. As proposed.
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): at the call that raised, inside the template's body, as a decorator in the same module is (451 (3))** — one rule for every comptime body; another module's template already names its file and line. Changes: the cells that pin such a raise move their location.
-- **Measured.** Another module's template names `src/tpl.bp:3:5` (`template_raise_names_body_file`); the module's own template is reported at the call site with no line in its body.
-- **Options.**
-  (a) At the raising call.
-  ```bp
-  // error at 4:9 in the template's body — while `shout` ran the template's body
-  ```
-  (b) At the call site, as built.
-  ```bp
-  // error at the call `shout "x"`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-23's template-raise row.
-
 #### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
 - **Measured.** Built as (a); `std_async_on_every_target` green on four targets and both hosts.
@@ -859,165 +724,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-25's `io/http` rows (steps 4, 5, 6, 17).
-
-#### B-25-c · log's two wasm markers: a host value per name and `wasi:filesystem`, or 405's interim in log? (decisions 334, 405; 144 B-25)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** Neither: fs-a supersedes both markers — `io.fs` gains wasm bindings (`wasi:filesystem`, `needs: [.Filesystem]`), so log's file cells call `io.fs` on wasm as on every target, no adapter of log's own and no interim; on the browser host the call is refused at the call (fs-a). 156's two markers are removed.
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): 405's interim in log now** — the file cells bound to a `fn:` that reaches no file on wasm, located refusal at use; the host-value-per-name adapter and `wasi:filesystem` wait for a decision of their own. No B-25 box and no decision fixes either adapter's shape.
-- **Measured.** log's two markers name both needs; neither adapter exists.
-- **Options.**
-  (a) 405's interim.
-  ```bp
-  @External.Wasm(fn: noFileOnWasm) fn appendLine(path: string, line: string)
-  ```
-  (b) Both adapters designed in 144 now.
-  ```bp
-  @External.Wasm(wasi: .FileAppend) fn appendLine(path: string, line: string)
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 156's wasm markers.
-
-#### 116-a · The prelude module's own `import {bpp} from "std"` (decision 361 × 270) (*proposed*)
-- **Answered (the maintainer, 2026-10-12; awaiting its number in `decisions-taken.md`):** **(f), a sixth option: the prelude is the items marked `#[bpp.htmlPrelude]` where they are declared, one by one.** A marked `pub val` / `pub fn` / `pub type` of a module the package's root (s23-i) reaches through `pub mod` only — the root itself included — is in the prelude: a `.bpp` sees it by its plain name without importing (`#[bpp.htmlPrelude] pub fn Card(…)` in `src/components.bp`, `pub mod components;` in the root, `<Card/>` in a `.bpp`). The root re-exports nothing for it. A `pub` item without the marker is the library's API, not the prelude. Imports are private — the `import {bpp} from "std";` each marked module needs included — so none reaches a `.bpp`. No name is shadowed: two marked items of one name, or a `.bpp` that declares or imports a name the prelude already gives, is refused, located, naming both places (`` `Card` is already in the prelude (src/components.bp:4) — rename one ``). Refused, located: the marker on an item without `pub`, on a `mod`, in a module reached through a private `mod` (`` `X` is marked for the prelude but `internal` is a private mod — make it `pub mod` or drop the mark ``), or on an item re-exporting another package's item (242). `src/prelude.bp` and its `pub val prelude = bpp.Prelude()` go. Front 116 lists a package's prelude — every item, its name and where it is declared — by `botopink prelude` and in the language server (a `.bpp` name's origin on hover). Amends 361 and 270. **Under B-55-a (e)** (2026-10-12): the prelude is any marked `pub` item outside `src/internal/`; there is no root to reach it from.
-- **Context.** A `.bpp` file sees some names without importing them — its package's prelude (decision 270) — so its markup can write `<Card/>` directly. Decision 361 marks the prelude module with `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();`, which needs `import {bpp} from "std"` in that module; decision 270 makes every import of the prelude module part of the prelude and refuses an item of another package (242). Read together, that one import is both a prelude item and a refused line. The maintainer answered (f) on 2026-10-12, which replaces the prelude module by marked items; the answer waits for its number before 116 step 2's prelude box is built.
-- **Measured** (front 116 step 1). 361 puts the prelude's marker in the prelude
-  module — `#[bpp.htmlPrelude] pub val prelude = bpp.Prelude();` — so the module must import std's
-  `bpp` (jhonstart's `src/prelude.bp` now ends `import {bpp} from "std"; #[bpp.htmlPrelude] pub val
-  prelude = bpp.Prelude();`). 270 says "that module's imports are the prelude" and refuses, at the
-  line, "an item of another package (242)". Read together, the marker's own import is both a prelude
-  item (every `.bpp` file would resolve `bpp` through it) and a refused line. Step 1 checks only that
-  the module holds imports and its marker; the prelude scope and its refusals are step 2's.
-- **Options.**
-  (a) The import of std's `bpp` (or a leaf of it) is the marker's, not the prelude's: left out of the
-  item list handed to `compiler-core`, and exempt from 242's refusal — every other `from "std"` item
-  in a prelude stays refused:
-  ```bp
-  // src/prelude.bp
-  import {element.Element};          // a prelude item
-  import {bpp} from "std";           // the marker's import — not a prelude item, not refused
-  #[bpp.htmlPrelude]
-  pub val prelude = bpp.Prelude();
-  // Card.bpp: `bpp.Prelude()` in its header is `unbound variable 'bpp'`
-  ```
-  (b) The marker's import is a prelude item like any other: a `.bpp` file resolves `bpp` without
-  importing it, and 242's refusal exempts std:
-  ```bp
-  // Card.bpp header: `val p = bpp.Prelude();` compiles through the prelude
-  ```
-  (c) 242 stands for the prelude: a prelude module may import nothing from another package, so the
-  marker is spelled through a path the language does not have today (a qualified annotation with no
-  import, `#[std.bpp.htmlPrelude]`), a parser and checker change:
-  ```bp
-  #[std.bpp.htmlPrelude]
-  pub val prelude = Prelude();   // `Prelude` unbound: (c) needs a qualified constructor too
-  ```
-  (f) The maintainer's answer (above): no prelude module; each item is marked where it is declared, and every import stays private.
-  ```bp
-  // src/components.bp
-  import {bpp} from "std";                          // private: reaches no `.bpp`
-  #[bpp.htmlPrelude] pub fn Card(…) -> View { … }   // `<Card/>` in any `.bpp` of the package, no import
-  ```
-- **Recommendation.** (a): the prelude stays the package's own modules (242), and the one import the
-  marker needs reaches no `.bpp` file.
-- **Blocks.** 116 step 2's prelude box (the item list and its refusals); nothing in step 1.
-
-#### s23-a · Two field names of decision 277's records (contradiction with the reserved words)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `HookNode(function: Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read `n.function.name` and `u.context.name` by a decorator at build; 277's `fn` is a reserved word and is not a field name.
-- **Measured.** 277 writes `HookNode(fn: Declared<unknown>, …)`; every keyword is reserved in every position
-  (`reserved-word-as-name`: `type N(fn: string)` is refused at the field). 354 (4) asks `Decl.hooks` to carry each
-  `provide` / `context` "with its object" and names no field. Built (`01-checker` step 23): `HookNode(function:
-  Declared<unknown>, uses: HookUse[], calls: HookCall[])` and `HookUse(…, context: ?Declared<unknown>)`, read
-  `n.function.name` and `u.context.name` (`run/decl_hooks_context` prints `App: std/context.provide(main.ThemeContext)`).
-- **Options.** (a) As built: `n.function`, `u.context`. (b) `n.decl` / `u.target`: `n.decl.name`, `u.target.name`.
-  (c) `n.of` / `u.object`: `n.of.name`, `u.object.name`.
-- **Recommendation.** (a): the words the decisions use for them, no exception to the reserved words.
-- **Blocks.** Nothing — built as (a); a rename touches `builtins.d.bp`, `comptime.zig`'s mirror, `hooks.zig` and the cells.
-
-#### s23-g · Where `Decorator.same` is declared (371's `extend Decorator { … }` does not parse)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(a), as built.** `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }` in `builtins.d.bp`, mirrored in `comptime.zig`'s `decl_reflection_src`; 371's anonymous `extend Decorator { … }` reads as this member, and `a.decorator.same(serverOnly)` is unchanged.
-- **Measured.** 371 writes `extend Decorator { pub fn same(self, other: Decorator) -> bool; }` in `builtins.d.bp`. An
-  `extend` is always named (`'extend' needs a name`, `parser.zig` `reportAnonImplExtendError`), `builtins.d.bp` is
-  parsed by the drift test (`comptime/builtins.zig` `collectTypes`), and that test holds a builtin type's instance
-  methods inside its declaration. Built and landed: a member of the behavior, mirrored in
-  `comptime.zig`'s `decl_reflection_src` — `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`;
-  `a.decorator.same(serverOnly)` reads the same either way.
-- **Options.** (a) As built: `pub behavior Decorator { fn same(self: Self, other: Decorator) -> bool; }`. (b) A named
-  extension: `pub DecoratorIdentity extend Decorator { fn same(self: Self, other: Decorator) -> bool; }`, the drift
-  test taught to read an `extend`'s methods into its target. (c) The parser takes an anonymous `extend Decorator { … }`
-  in `builtins.d.bp` only.
-- **Recommendation.** (a): no exception to the parser for one file, and the drift test already holds it.
-- **Blocks.** Nothing — built as (a).
-
-#### B-55-a · Whole-package analysis: may two modules of a package import each other? (s23-i, 372, 419, 130-s8-c, 14s8-d)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(e), a counter-proposal: a file is a module, and the build has a layer of its own.** (1) Every `.bp` under `src/` is a module of the package, its path its name (`pages.home`, `comptime.route`); no `lib.bp`, no `mod` / `pub mod`. (2) `src/main.bp` is an executable's entry (`pub fn main()`), imported by no module; a library has none. (3) `src/comptime/` is the build layer: analysed before every other module of the package, it imports only std, dependencies and `src/comptime/` itself (else refused, located); a decorator or a template is declared only there, in std or in a dependency (else refused, located). (4) The program's modules import each other freely: modules importing each other form a block (a strongly connected component); a block's headers (`fn` signatures, types, annotated `val`s) are registered before its bodies; at run time a module-level `val` is a ref, a memoised getter (commonJS hoists its functions onto `exports` before any `require`). (5) Per block: headers, bodies, then every decorator over them (the build layer is already compiled), then every `@typeInfo(X).meta(T)` and catalogue of the block is filled — 130-s8-c's step 4, per block. (6) The only order refusal is `dependency loop`, located: a value needing itself across modules (`pub val x = b.y + 1` / `pub val y = a.x + 1`), or a `comptime` needing a meta, a catalogue or a value of its own block before its decorators ran. (7) `@TypeInfo.all` is read in any module. (8) `src/internal/` is private to its package; every other `pub` item is the package's API. (9) The prelude (116-a) is any marked `pub` item outside `internal/`. Replaces s23-i's root rules (`lib.bp`, `mod`, the catalogue in the root), 419's and 14s8-d's refusals and 353's second compile; B-56 stands. The cost on `zig build test` and on the language server is measured before the implementation steps; a high cost returns the question to the maintainer.
-- **Measured.** Today the resolver sorts a package's modules by their imports and each module is analysed whole before its importers (372's three phases, then `registerExports`); a cycle is not refused by name — the parent reports an unrelated `unbound variable` (`error: unbound variable 'base' --> src/b.bp:4:18` for `a ↔ b`). A function's signature never depends on its body (an omitted return type is `void`). A prototype (144 B-55, not landed) orders a cycle as one strongly connected component and registers its modules' headers (signatures, types, annotated values) before their bodies: the maintainer's `a.title` ↔ `b.format` / `b.header` and `a.isEven` ↔ `b.isOdd` run on erlang, beam and wasm; `pub val x = b.y + 1` / `pub val y = a.x + 1` is refused, located: ``dependency loop: `a.x` → `b.y` → `a.x` ``. Headers alone are not enough: `home.bp` and `blog.bp` importing each other, each `#[route]`-decorated and reading the other's `@typeInfo(X).meta(Route)`, print `none` for the module analysed first — the meta must be demanded, its decorator run on demand. commonJS's `const { f } = require(…)` answers `undefined` for a function and a value of a `require` cycle (`TypeError: title is not a function`); hoisting the functions onto `exports` before any `require` and making module-level values memoised getters runs the cycle correctly (checked by hand under node). The cost on `zig build test` and on the language server's check is not measured yet.
-- **Options.**
-  (a) Keep the acyclic rule, with its own refusal: the resolver names the cycle, located, in place of `unbound variable`; 419, 130-s8-c (b′)'s step 4, s23-i's root rules and 14s8-d's refusal stay.
-  ```text
-  error: import cycle: src/a.bp imports src/b.bp, which imports src/a.bp — modules of a package import each other acyclically
-  ```
-  (b) Adopt whole-package on-demand analysis, keeping s23-i's root rules: modules of a package import each other freely; a declaration is analysed when something needs it (a `fn` or type by its header, a `val` whole, a meta by running its decorators over the bodies it reads); the only refusal is a `dependency loop`; 130-s8-c's step 4 becomes the general rule, 419 and 14s8-d's refusal go, 353's second compile goes; `@TypeInfo.all` stays in `lib.bp` (or `main.bp` without `lib.bp`) and no module imports the root. Steps: (i) the resolver's components and an `import-cycle` refusal until (ii)–(iv) land; (ii) a package `Env`, lazy imports, header and body states; (iii) a `val` demanded whole, `dependency loop`; (iv) plain decorators in the header; (v) meta on demand (`.hooks` readers); (vi) the catalogue on demand; (vii) 14s8-d; (viii) commonJS's hoisted exports and lazy values; (ix) the language server checks the edited module's component and its importers.
-  ```bp
-  // src/a.bp
-  import {b.format};
-  pub fn title(x: string) -> string { return format(x) + "!"; }
-  // src/b.bp
-  import {a.title};
-  pub fn format(x: string) -> string { return x.toUpper(); }
-  pub fn header() -> string { return title("hi"); }        // "HI!"
-  // src/c.bp, src/d.bp
-  pub val x = d.y + 1;   pub val y = c.x + 1;   // error: dependency loop: c.x needs d.y, which needs c.x
-  ```
-  (b′) As (b), with s23-i's root rules relaxed: `@TypeInfo.all` read in any module and any module may import the root; a catalogue whose value the build needs inside a declaration it lists (or one its hooks reach) is the `dependency loop`.
-  ```bp
-  // src/pages/index.bp
-  pub val pages = @TypeInfo.all(with: route);                 // a run-time value: answered after every #[route]
-  pub val nav = comptime renderNav(@TypeInfo.all(with: route)); // in a #[route] page: dependency loop
-  ```
-- **Recommendation.** (b) — one rule (a dependency loop) in place of four order-dependent refusals, and an answer that no longer depends on which module the resolver placed first; s23-i's root rules kept (decision 67's strictest reading, and the tidy tree they were chosen for) until a front needs (b′). Until (b)'s step (ii) lands, (a)'s located refusal replaces today's `unbound variable`.
-- **Blocks.** Nothing built depends on it; 144 B-55's follow-up steps, 130-s8-c's step 4 and s23-i's catalogue rule are written against the answer.
-
-#### B-60-a · A dependency's `.d.bp` that does not check: does `build` refuse it as `check` now does? (decisions 514, 515; 144 B-60)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): every command refuses it** — `build`, `run`, `test` and `cell check` stop on a dependency's `.d.bp` with an error, as `check` does since 514/515 made the module set one; one module set, one answer (67: refuse over accept). Viable: `check.zig` renders every module's errors; `build` drops a failure in a declaration file alone — that branch becomes the refusal. Changes: a cell (a dependency whose `.d.bp` names an unknown type) refused on every command.
-- **Measured.** Since 514/515 `check`, `test` and `cell check` keep a dependency's `.d.bp` modules as `build` and `run` do. `check` renders and fails on any module's error, so a dependency whose `.d.bp` does not check fails `check`; `build` ignores a failure in a declaration file alone and builds.
-- **Options.**
-  (a) Every command refuses a dependency's `.d.bp` that does not check.
-  ```bp
-  // deps/shapes/src/shapes.d.bp
-  pub declare fn area(r: Rectt) -> f64;   // unknown type
-  ```
-  `botopink check` and `botopink build` both: `error: unknown type 'Rectt' --> deps/shapes/src/shapes.d.bp:2:25`.
-  (b) `check` follows `build`: a failure in a dependency's declaration file alone is ignored by every command.
-  ```bp
-  // deps/shapes/src/shapes.d.bp
-  pub declare fn area(r: Rectt) -> f64;   // unknown type
-  ```
-  `botopink check` and `botopink build` both succeed; the error appears only where `area` is called.
-- **Recommendation.** (a) — the strictest reading: a broken declaration is an error wherever it is read, and the two commands answer one module set alike.
-- **Blocks.** Nothing today; the cell and `build`'s branch.
-
-#### B-05-a · May a bare enum variant stand as a value? (decision 208; 144 machine-1 rows found by B-05)
-- **Proposed (opus, 2026-10-16; awaiting the maintainer):** (a): refused in expression position everywhere; only `Enum.V`, `.V` or a case pattern names a variant.
-- **Context.** An enum's variants are named qualified (`Color.Red`) or by the leading dot (`.Red`). A namespace import of std's `failure` no longer brings bare names, but a leaf import of an enum still binds its variants as bare names, and so does a local enum.
-- **Measured.** After `import {failure.HostErrorName} from "std"` (or `{colors.Color}` from the program's own module), `Error(x)` is `callee-not-a-function`, and a bare `Red` in an expression type-checks but fails at run time (commonJS `Red is not defined`); a local enum's bare variant does the same. `conformance/docs.md` § Enums advises "always write the qualified form".
-- **Options.**
-  (a) ★ A bare variant in expression position is refused on every target, naming the qualified form.
-  ```bp
-  import {colors.Color} from "./colors";
-  val c = Red;          // refused: write `Color.Red` or `.Red`
-  val d: Color = .Red;  // accepted
-  ```
-  (b) A bare variant stays bound, and every backend lowers it.
-  ```bp
-  val c = Red;          // Color.Red on every target
-  ```
-  (c) A bare variant is bound only for an enum the module declares itself.
-  ```bp
-  enum Local { A, B }
-  val a = A;            // accepted
-  val c = Red;          // refused (imported enum)
-  ```
-- **Recommendation.** (a): the most restrictive reading, the one `docs.md` already advises; today's behaviour type-checks a program that fails at run time.
-- **Blocks.** Nothing; the run-time failure stays a defect row until answered.
 
 #### 564-a · May a typed catalogue entry's `value` be read outside a 562 expansion? (decision 564; 144 B-19 step 7)
 - **Proposed (opus, 2026-10-16; built as (b), awaiting the maintainer):** (a): any read of a `Declared<B>` entry's `value` outside an expansion refused.
@@ -1085,30 +791,8 @@ group), answered before every other part of this page; in the order of the steps
 ## Machine 2 — maximum priority (front 144, `machine-2-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
-before every other part of this page; most urgent first: B-07-a holds a commit already built, B-29-a every
-Conformance step, the rest one step each but 17-c, which holds nothing built (B-26's surface stands until widened).
-Machine 1's B-60-a holds machine 2's B-77 too.
-
-#### b137-a · An executor and the module's own body: one list in source order, or the executors after the module's `val`s? (decisions 140, 575 (3); 144 B-137)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a): one list, source order.**
-- **Measured.** `executorSource` (`modules/compiler-core/src/comptime/infer.zig`) renders each executor as `fn __bp_executor_<k>()` plus `val _bp_init_<k> = __bp_executor_<k>();` and appends both to the **end** of the annotated declaration's module. So in `compile_init_order_modules`, adding to `src/main.bp` a module-level `val seen = names();` written *below* `#[registered] pub fn own()` and printing `seen` in `main` answers `["second", "first", "later"]`: `beta`'s and `alpha`'s registrations ran first (decision 140), but `own`'s did not, although `own` is declared above `seen`. Under 575 (3)'s "declarations in source order" read with 140's "in declaration order", `own`'s executor would have run before `seen`. Re-runnable: the cell as described, on any of the four targets.
-- **Options.**
-  (a) **One list, source order.** An executor is a statement of the module body at its annotated declaration's position: `val`s, `var`s, `_` statements and executors run in the one order 140 and 575 (3) both name — modules in dependency order, within a module in source order, a declaration's calls in order. The hidden `val _bp_init_<k>` is placed at the declaration's index, not appended.
-  ```bp
-  #[registered] pub fn own() -> string { return "own"; }
-  val seen = names();        // ["second", "first", "later", "own"]
-  ```
-  (b) **As built.** A module's executors run after its own body, before the importer's body; a module-level `val` never observes its own module's executors, only its dependencies'.
-  ```bp
-  #[registered] pub fn own() -> string { return "own"; }
-  val seen = names();        // ["second", "first", "later"]
-  ```
-  (c) **Two phases.** Every module body of the program first (140's order), then every executor (575 (3)'s order); no module-level `val` observes any executor.
-  ```bp
-  val seen = names();        // [] in every module
-  ```
-- **Recommendation.** (a). It is the only reading under which both rows hold literally with one order and nothing added: 140's "declaration order" and 575 (3)'s "declarations in source order" are the same order, and an executor is a declaration's statement like the `val` beside it. (b) and (c) each invent a phase no row names, and (b) makes the answer depend on which module wrote the `val` — the kind of latitude decision 67 refuses. No flag chooses the order.
-- **Blocks.** 144 B-137's init-list row (`compile_init_order_modules` keeps its answer under (a); a new cell `compile_executor_module_val_order` with the `val seen` above waits on the answer); 165 s10 — rakun's registries written by `#[page]` / `#[layout]` / `#[template]` (576 (7)) and read by a module-level `val` of the same module.
+before every other part of this page; most urgent first: 537-a holds a row of the checker and the four backends, B-128-a
+B-116 (ii)'s `Iter` declaration, 539-b a cell red on wasm; the rest hold one row each, or nothing built.
 
 #### 521-a · An `f64` that reaches commonJS's text only through a generic `T` loses its `.0` (decision 521; 144 B-78)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a): a generic body that writes a `T` as text receives the text function of its type argument** — the call site, which knows `T`, hands the body a hidden `show` for it (as the checker already specialises per call); one JS body per function kept.
@@ -1173,13 +857,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a); (b) acceptable if the binary is kept and the rule written down.
 - **Blocks.** Every library landing across the rule; 524's reformats.
 
-#### 541-b · An untyped `fn(x) { x * 2; }`: still its value? (decisions 541 (1), 409; 144)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): 409 strict — an untyped `fn` expression answers nothing with `;`, the lambda's rule** — one rule for every unwritten return type.
-- **Measured.** 409: "in every body … a `fn` expression and a lambda … with `;` it is a statement"; 541 reversed B-21-a's option (b), which grouped lambdas and untyped `fn(x) { … }` together. The cell `lambda_last_statement_semicolon` (line 5, `out 8` for `dbl(4)`) and `conformance/docs.md` § Lambdas assert the untyped `fn` expression keeps the value, citing 409; the compiler keeps it (the discard runs for a lambda only).
-- **Options.** (a) As proposed; the cell's line becomes a refusal or moves to a cell `fn_expr_untyped_semicolon`. (b) Keep as built; 541 amended to name the exception.
-- **Recommendation.** (a).
-- **Blocks.** `lambda_last_statement_semicolon` line 5; `docs.md` § Lambdas.
-
 #### 535-a · A float division by zero on erlang and beam: `crash: badarith` or `panic`? (decisions 535, 527 (3), 492, 444; 144)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): float `/` on erlang and beam checked like the integer one, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — one shape for every division by zero; the departure (444: commonJS and wasm answer `Infinity`) is then only in aborting.
 - **Measured.** 535 cites `panic: division by zero`; 492 lists "a division by zero" under `panic`; 527 (3) checks only the integer one. `float_nan_infinity_words`'s erlang and beam departures now claim `stderr crash: badarith` — the compiler's answer (an unmarked `badarith`), not one a decision fixes.
@@ -1229,33 +906,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Recommendation.** (a).
 - **Blocks.** Nothing in P1.
 
-#### 164-s3-h … 164-s3-l · What s3 P2 leaves open (decisions 549, 559, 560, 565; 164 s3 P2)
-- **Proposed (fable, 2026-10-16; awaiting the maintainer):**
-  - **164-s3-h** · `Array` methods' wasm body (565 names `String`): **(a) in GC, lower the `default fn` bodies `primitives.bp` already holds (`slice`, `append`, `unique`, …), no cell**; (b) extend 565's `fn:` cell to `Array` members. Blocks P2-b.
-  - **164-s3-i** · `random`'s state (a seed, a stream): **(a) a mutable global the codegen declares in `wat_prelude` and the leaf names by name — 549's rule applied to globals**; (b) the `.wat` reader admits `(global …)` in a leaf now (560 gives it to the runtime after P5); (c) a module `var` in `io/random.bp` (pulls `std/beam` on erlang and beam). Blocks P2-e.
-  - **164-s3-j** · a leaf naming a `wat_prelude` function (`$__wasi_random_f64`, the host's entropy, 442 (1)): **(a) allowed, named and never declared, as a type is**; (b) the codegen passes the draw in. Blocks P2-e.
-  - **164-s3-k** · `encoding`'s byte codecs: **(a) botopink bodies over three leaves (`bytes.length`, `bytes.at`, `bytes.ofWords`)** — the README's wording; (b) four direct leaves. Blocks P2-d.
-  - **164-s3-l** · `hash.contentHash` as a `fn:` body before P4: its body runs at comptime through the Erlang layer until 550 lands. **(a) flip it in P2, every `COMPTIME REPLY` byte-equal as the oracle**; (b) with P4. Blocks P2-c.
-- **Measured.** Today a GC module reaches integer text, the bodyless array members, `contentHash`, the `Bytes` codecs and `random` through std-wasm's linear exports; the `.wat` reader refuses every top-level form but `func`; `random`'s draw writes 8 bytes into linear scratch.
-- **Options.** As above.
-- **Recommendation.** (a) for each.
-- **Blocks.** P2-b … P2-e; P2-a (integer text) waits on none.
-
-#### B-116-f, B-116-g · What the body markers' first build leaves open (decision 553; 144 B-116 (i))
-- **Proposed (fable, 2026-10-15; awaiting the maintainer; P1 builds each recommendation, a different answer reverts that part):**
-  - **B-116-f** · `async fn f()` with no return type: **(a) refused by `marker-type-mismatch` in (i), "write `-> @Task<…>`"**, the `@` types being kept; (b) inferred `@Task<void>`.
-  - **B-116-g** · A marked trailing lambda `f(1) async { x -> … }`: **(a) not parsed in (i), written inside the parentheses**; (b) parsed.
-- **Measured.** No lambda awaits or yields today (`inferFunctionExprExpectedInner` clears the generator and task context), so a marked lambda is a new surface; `botopink migrate` was removed (B-56) and the formatter carries migrations (525, 541); std declares 8 bodyless `-> @Task` host bindings; 125 cells write `await`, 59 `yield`, 66 `use`.
-- **Options.** Each point (a) or (b) above.
-- **Recommendation.** (a) for each — the most restrictive reading, every cell's answer unchanged.
-- **Blocks.** Nothing built waits (P1 builds (a)).
-
-#### B-116-j · A marked lambda's body: a function body or a loop body? (decision 553; 144 B-116)
-- **Proposed (fable, 2026-10-16; awaiting the maintainer):** **(a): a function body, as an `iter fn`'s — `return v` is the iterator's `R` (553 (2)), a top-level `continue` refused, `break v` refused; `conformance/docs.md`'s equivalence `iter { x -> b }` ≡ `{ x -> iter loop { b; break; } }` dropped.**
-- **Measured.** B-116 P1 lowers `iter { x -> b }` onto `iter loop { b; break; }` (`desugarMarked`), so the body takes 125's loop rules: `return v` is refused `iterator-return-forbidden` (an `iter fn` says `iter-mixed-yield-return`), a top-level `continue` re-runs the body (an `iter fn` refuses `continue-outside-loop`), `break v` emits and ends. No `marker_*` cell exercises them; the reference states the lowering as the language.
-- **Options.** (a) A function body, one rule for a marked `fn` and a marked lambda. (b) The loop body, as built.
-- **Recommendation.** (a) — 553 makes a lambda a generator "when it carries `iter`", as an `iter fn`; the lowering is P1's own, and (iii) builds `R` anyway.
-- **Blocks.** A lambda's `return v` in (iii); a cell either way.
 #### B-127-a · A trace's listing: lowered again on each read, or kept? (144 B-127)
 - **Proposed (opus, 2026-10-16; awaiting the maintainer; built as (a)):** **(a): lowered again from the module's Erlang text each time a snapshot or the code cache reads it** — the wat build cache keeps the Erlang text (35 MB on validation's refused-marker project) instead of the listing (128 MB).
 - **Measured.** `botopink build` renders each module's trace once, a snapshot once per target; the code cache writes a listing as the string it renders (its entries byte-identical before and after).
@@ -1297,7 +947,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** rakun, erika's consumers, emilia, styled, jhonstart, onze and dbcontext become one repository, `botopink/rakun`, a botopink workspace (512): one directory per package under `modules/`, the package named by its directory, each with its own `botopink.json`, `src/`, tests and `AGENTS.md`, the cells under `conformance/<package>/`, one version and tag, one gate, hook and CI. The packages, by layer (each depending on lower layers only, a cycle refused): `rakun` (core) · `rakun-data` (dbcontext + rakun-data) · `rakun-restclient` (rakun-client) · `rakun-style` (styled) · `rakun-bpp` (jhonstart, -html, -link, -forms, -test, -dom-test) · `rakun-stylesheet` (emilia, jhonstart-emilia) · `rakun-service` (rakun-web, rakun-actuator) · `rakun-scheduling` · `rakun-session` · `rakun-cache` · `rakun-security` · `rakun-websocket` · `rakun-metrics` · `rakun-messaging` · `rakun-mail` · `rakun-app` · `rakun-ssr` (onze and its eight). erika stays a repository of its own, renamed `query` (a pure typed-query DSL; front 145 continues as `query`); `css`, `actions`, `routing`, `validation`, `snap`, `markdown`, `http`, `log`, `json`, `yaml` stay external. The `rakun-starter-*` go; each `*-test` becomes its package's `testing/` module. **Plug-and-play:** adding a package to `botopink.json` is all a program does — a package declares its contribution at its root (`#[rakun.module] pub fn … -> Module`), `rakun.boot()` discovers every module of the program's dependencies through the catalogue, orders them by layer and starts them with their defaults and the program's typed overrides (`#[rakun.config]`); everything resolves at build (a thing contributed twice, a required package absent: build errors naming them), no run-time discovery. Needs 144 B-86: `@TypeInfo.all` reaching a dependency's declarations (its catalogue exported with its analysis, level B storing it). History kept by `git subtree add`; the six repositories archived; the six fronts' open steps refiled under 150 (front 165 s8). Amends 326 (the libraries as repositories), 338, 391, 398 (dbcontext as a repository of its own), 433 (one front per repository: rakun's is 150, with lanes by layer).
 - **Context.** Raised by the maintainer, 2026-10-14: seven repositories for one web platform, 40 thin packages and starters to combine them; names (erika, emilia, jhonstart, onze) saying nothing of the role.
 
-
 #### B-86-a · The lib-agnostic gate's `query`, and the catalogue's reach across packages (144 B-86, front 165 s4)
 - **Proposed (opus, 2026-10-14; awaiting the maintainer):** (1) the gate refuses `rakun` in any case anywhere in `compiler-core/src`, and `query` only as a package — the import source `"query"` or the handle `import query`; (2) `jhonstart` leaves the gate's list, as the box says; (3) a dependency's catalogue entry has `module` = `<package>/<module>` (`plugin/root`), and a transitive dependency's declarations are listed too — built so, pinned by `modules/typeinfo_all_dependency_declarations`.
 - **Measured.** `grep -riIE 'rakun|query' modules/compiler-core/src` matches about 111 lines: `query` is the catalogue's own word (`Query`, "a template body's query"). `@TypeInfo.all` already listed every module of the build, the dependencies included, and level B's journal already stores `declared` and `meta`: the new cell is green on the parent, on every target, cold and from level B. The reference says "every module of the build", while decision 242 lets a program import only its direct dependencies. Order and collisions follow the existing rule (module path, then declaration order; the key is module and name).
@@ -1308,7 +957,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a) for each: (1) refuses every package spelling without renaming the language's own word; (2) is the box's text; (3) is what `rakun.boot()` needs — a module contributed by a package two layers down is discovered.
 - **Blocks.** Nothing — built as (a); 165 s5 reads (3).
-
 
 #### B-98-a · A `.bp` and a `.d.bp` of one stem in a package: refused, or one module? (144 B-98)
 - **Proposed (opus, 2026-10-15; built, awaiting the maintainer):** (a) refused at the second `files` entry — "`"files" lists p.bp and p.d.bp, one module (`p`) written twice — keep one of the two files`" — as `x.bp` beside `x.bpp` and beside `x/mod.bp` already are.
@@ -1344,30 +992,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a): the strictest reading, and it follows 551's "Level B stores the declaring package, never the calling one".
 - **Blocks.** Nothing.
-
-#### B-99-d · How is `d.value` typed in the body of a function expanded at its call site? (decision 562; 144 B-99)
-- **Context.** Decision 562 expands a function whose every parameter is `comptime` at its call site, and its example starts each module with `d.value.make().start()`. The body is still type-checked once, at its declaration, where an entry's `value` is `unknown`.
-- **Measured.** At the declaration `d.value.make()` is refused "cannot call a method on an `unknown` value". Narrowing with `if (d.value is …)` is a condition on a run-time value, which 562 refuses (`run-in-build`). The cells call a run-time helper instead (`start(d.value)`). Calling another expanded function with a loop variable inside the body (`banner(d.name)` inside `boot`) is refused `comptime-arg-not-known` at the declaration.
-- **Options.**
-  (a) The body stays checked at its declaration; an entry's `value` is reached through a run-time helper.
-  ```bp
-  fn start(m: unknown) { if (m is fn() -> string) say(m()); }
-  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
-      for (modules.value) { d -> start(d.value); }
-  }
-  ```
-  (b) ★ An expanded function's body is type-checked per expansion, where `d.value` is the declaration itself and a loop variable is build data.
-  ```bp
-  pub fn boot(comptime modules: @Expr<Declared<unknown>[]> = @TypeInfo.all(with: module)) {
-      for (modules.value) { d -> d.value.make().start(); banner(d.name); }   // typed against each declaration
-  }
-  ```
-  (c) The body stays checked at its declaration, and `is` on an entry's `value` is folded at build, its type being build data.
-  ```bp
-  for (modules.value) { d -> if (d.value is Module) { d.value.make().start(); } }
-  ```
-- **Recommendation.** (b): it is what 562's example implies, and it settles the call of an expanded function with a loop variable too.
-- **Blocks.** 165 s5 and s7: `rakun.boot()` written as 562's example writes it.
 
 #### B-99-e · Where is a caller's argument that breaks an expanded generic body located? (decision 562; 144 B-99)
 - **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (a): at the caller's argument.
@@ -1422,7 +1046,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
 - **Options.** (a) ★ None until s2: after the rename every package is `rakun-*`, the rows are written then, and the filter goes. (b) A version set outside the core (a workspace-level file the gate reads), every member a row now.
 - **Recommendation.** (a): s2 renames every package to a `rakun-*` name, so the rows need no exception; one version for the workspace (the README) makes the table one row per package at s2.
 - **Blocks.** Nothing before s2; s2 writes the rows.
-
 
 #### 165-b · Three packages outside 165's table: `onze-server`, `jhonstart-dom-test`, `rakun-cli` (front 165 s2)
 - **Context.** Front 165 joins seven repositories into one `rakun` workspace and gives every package a `rakun-*` name and a row in its table (mono-a). Three packages did not fit: `onze-server` and `jhonstart-dom-test` would join a package built for a different set of targets, and `rakun-cli` has no row. The language sets targets per package, not per module or per dependency, so 165 s2 left them as packages of their own; the question is what they are called and whether the table gains their rows.
@@ -1674,7 +1297,6 @@ Machine 1's B-60-a holds machine 2's B-77 too.
   ```
 - **Recommendation.** (a) until a front needs (b) or (c).
 - **Blocks.** Nothing — built as (a).
-
 
 #### ctr-o · Decision 146 against confirmation `lem-c`
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Confirm `lem-c`, and read 146 with it as one rule** — a host cell with no binding for the target (a free `declare fn` or a type's `declare fn`) may be declared; any bodied function, free or method, whose body reaches it is refused for that target at the call expression inside that body, whether or not anything calls that function. The two texts name one behaviour: 146's "at its declaration, called or not" is the function refused by its own body, `lem-c`'s "where it is called" is where the caret stands; refusing the type's declaration would forbid a type declared once for several targets, and nothing runs silently either way (67). Viable, built: `codegen/hostMethods.zig` `missingAt`, called at the call in `commonJS.zig`, `erlang.zig`, `beam_asm.zig` and `wat.zig`; every bodied function is emitted, so the call fails called or not; cells `bodyless_method_without_binding`, `external_method_erlang_only`, `external_wrapper_keeps_refusal`, `std_asserts_host_cell_on_wasm`; `conformance/docs.md` already states both. Changes: 146's row and `lem-c` restated as the one rule above (no code); two 144 rows to file: on wasm a behavior method with type parameters is emitted only when reached (`wat.zig`), so 146 is not held there; `hostMethods.binds(.wasm)` is hard-coded `false`, so a type method carrying an `@External.Wasm(fn:` / `std:)` cell is refused on wasm against `docs.md`.
@@ -2248,7 +1870,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Recommendation.** (a).
 - **Blocks.** Nothing waits; the track is cut as (a).
 
-
 ### 04-rakun
 
 #### erk-b · `#[documentQuery]` under 313 (*proposed*)
@@ -2568,7 +2189,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Rules.** 185: an optional capability goes through a core extension point, "no member-to-member edge". `04-rakun/09` § Open point: the Elasticsearch arm over `rakun-client` adds a `rakun-data → rakun-client` edge every data consumer loads.
 - **Recommendation.** The arm reaches HTTP via a core extension point (or `httpc` directly, as 65's relay does), not a `rakun-client` edge; answered with `03r-ab`'s arm list.
 - **Blocks.** 09 step 3.
-
 
 #### 119-a · Step 1's grep box against CI check 4's byte-identical hook
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): the box greps the package's own text — `{src,test,botopink.json}` of `css` and `styled`** — the hook is one text owned by the gate (CI check 4), `AGENTS.md` and `decisions-taken.md` name the neighbours by design (338's layering), and `css`'s `{src,test,botopink.json}` is empty today; `styled`'s is not (`src/styled.bp` and `test/styled_example_test.bp` name emilia's `flush()` and jhonstart's render in comments) — 150 s32 rewords those two comments (338 (2): `styled` names no jhonstart and no emilia). Viable: a grep. Changes: 119 step 1's box; the entry's "line 31" is `runner-standalone.sh:45`, and `css/AGENTS.md` does hold `emilia` (by design).
