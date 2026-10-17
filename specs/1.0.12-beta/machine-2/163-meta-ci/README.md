@@ -200,10 +200,10 @@ After 144 B-37 (`bpmp link`, `.botopinkbuild/deps/` first).
 
 **Repository:** the meta repository (a meta-only worktree) · **Model:** sonnet
 
-- [ ] `scripts/land-check.py <repo> <branch>` prints green, or each reason it is red, one line each: the branch is
+- [x] `scripts/land-check.py <repo> <branch>` prints green, or each reason it is red, one line each: the branch is
       not a fast-forward of `origin/feat`; a tracked `*.snap.new`, `*.snap.md.new` or `todo.md`; in the meta specs a
       scratch reference (`scratch-refs.py`'s patterns) or a commit hash; an English/Portuguese pair whose ids or code
       blocks differ; a `snapshot/targets/` file the branch adds (named, for the coordinator to read against 458)
-- [ ] exit 1 when red; a test per reason, red on a branch built to fail it
-- [ ] the meta `AGENTS.md` § Layout names it
+- [x] exit 1 when red; a test per reason, red on a branch built to fail it
+- [x] the meta `AGENTS.md` § Layout names it
 
