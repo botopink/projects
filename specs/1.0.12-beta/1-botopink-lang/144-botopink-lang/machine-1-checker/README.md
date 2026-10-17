@@ -1434,7 +1434,7 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
 - [~] union of primitives a `case` produces (`test/case_value_union`) prints an address on wasm — superseded by group
       wasm-gc (B-83): a union value is a reference to any GC type; the cell is B-83's
 - [ ] a bare name inside a multi-subject arm (`Shape.Square(side), m -> …`) binds, against `docs.md`'s "a name alone is not a
-      pattern" · question B-22-d
+      pattern" · decision 602: refused `case-bare-name-arm` in both forms; `case_multi_subject_patterns` rewritten, `case_multi_subject_bare_name`
 - [x] nested constructor in a `val` binding (`val Pair(Circle(r), n) = p;`) refused on wasm —
       `01-checker` step 13's `run/val_nested_ctor_pattern` needs it lowered (each binding off its
       field's slot, as the one-level form)

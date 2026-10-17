@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**125 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**124 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **602**.
+number, which is **603**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -571,21 +571,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-21's method row.
-
-#### B-22-d · A bare name inside a multi-subject arm: a binding, or refused like a name alone? (144 B-22)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): refused, as a name alone is** — `docs.md` says a name alone is not a pattern, and the braced form already refuses it inside a multi-subject arm; the arrow form follows: `_` for any, a pattern to bind. One rule for every arm. Changes: `case_multi_subject_patterns` rewritten with patterns.
-- **Measured.** The arrow form binds `Shape.Square(side), m -> …` and `_, y -> …` (`case_multi_subject_patterns` pins it); the braced form refuses the same arm.
-- **Options.**
-  (a) Refused.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
-  ```
-  (b) A binding.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-22's multi-subject row.
 
 #### B-23-a · Decision 310: does a type of this module beside an aliased import of a same-named type count as two modules? (decision 310; 144 B-23)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — `type T` declared here and `import {other.T as U}` are two types, legal under 310 like two imports: the alias is the program's name for the other module's type, and identity is by module. Refusing it would make 310 depend on where a declaration sits. Viable: with 310's module-qualified identity (B-23's open row), nothing more. Changes: a cell beside `import_two_types_one_name`.

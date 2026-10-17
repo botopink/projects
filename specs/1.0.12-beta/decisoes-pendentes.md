@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**125 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**124 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **602**.
+número livre, que é **603**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -571,21 +571,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do método do 144 B-21.
-
-#### B-22-d · Um nome sozinho dentro de um braço de vários sujeitos: um binding, ou recusado como um nome sozinho? (144 B-22)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): recusado, como um nome sozinho é** — o `docs.md` diz que um nome sozinho não é padrão, e a forma com chaves já o recusa dentro de um braço de vários sujeitos; a forma com seta segue: `_` para qualquer um, um padrão para fazer binding. Uma regra para todo braço. Muda: `case_multi_subject_patterns` reescrita com padrões.
-- **Medido.** A forma com seta faz binding de `Shape.Square(side), m -> …` e `_, y -> …` (`case_multi_subject_patterns` fixa isso); a forma com chaves recusa o mesmo braço.
-- **Opções.**
-  (a) Recusado.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // refused: `m` is a name alone
-  ```
-  (b) Um binding.
-  ```bp
-  case s, n { Shape.Square(side), m -> side + m; }   // m binds n
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha de vários sujeitos do 144 B-22.
 
 #### B-23-a · Decisão 310: um tipo deste módulo ao lado de um import com alias de um tipo de mesmo nome conta como dois módulos? (decisão 310; 144 B-23)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — `type T` declarado aqui e `import {other.T as U}` são dois tipos, legais sob a 310 como dois imports: o alias é o nome que o programa dá ao tipo do outro módulo, e a identidade é por módulo. Recusar faria a 310 depender de onde uma declaração está. Viável: com a identidade qualificada por módulo da 310 (a linha aberta do B-23), nada mais. Muda: uma cell ao lado de `import_two_types_one_name`.
