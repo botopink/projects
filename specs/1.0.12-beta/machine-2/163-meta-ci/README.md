@@ -99,8 +99,10 @@ yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one
       one text (the cheap test of 478: the "not found" reds appear only on a runner with no sibling library)
 - [x] actions, css, http, log, routing, styled and validation: their workflow never fired (no check suite of GitHub
       Actions on any push, though enabled and active); turning Actions off and on in each made every push fire it
-- [ ] every library's workflow has at least one green run on `feat` — read with `gh` (474); erika's red waits on
-      144 B-35 (`@println` on wasm) and jhonstart's on B-34 (styled's `spliced/2` on beam)
+- [ ] every library's workflow has at least one green run on `feat`, and its latest run green — read with `gh` (474).
+      Measured: actions, http, log, routing, css, snap and markdown green; rakun, query and validation have green runs
+      but their latest is red on the builtins group's spelling (rakun's and query's land with 165 s10 after B-136,
+      validation's B-138 migration is open); json and yaml have no `test` workflow at all
 - [x] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
 
 ### 163 s6 — a language tour generated from `botopink-lang/conformance/` (after 144 B-29 step I)
