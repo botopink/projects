@@ -2750,12 +2750,12 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       `embed` (the link only: `Link` in `compiler.bp`, `Asset(link)` in `asset.bp` importing `compiler` and `io.fs`, `open()` the `File`, when by the `comptime` at the read, 607) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
       `external.bp` gone) are members of `compiler`, written under `comptime` in a run-time body; every std decorator
       written `#[name]` — `#[compiler.external(…)]`, an annotation `#[compiler.m(…)]` calling `m` on the annotated
-      declaration —, `use`, `future`, `generator`, `resultGenerator`, `Stage`, `BeamMemory` imported — a keyword collision
-      (`use`) is a question; `Env.registerBuiltins`' `@` names,
+      declaration —, `Stage`, `BeamMemory` imported (`use` / `future` / `generator` / `resultGenerator` are 118's removed effect
+      annotations, not decorators); `Env.registerBuiltins`' `@` names,
       `prelude.zig`'s two embeds and the type mirrors of `comptime.zig` (`type_info_src`, `yield_step_src`, …) go — std's modules
       are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults` finds `panic`'s
       default); the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig` read the modules or die; the
-      codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
+      codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…)` /
       `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
       `compiler.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
 - [ ] decisions 624, 630: `Field<T>` and `Info<T>` declared in `compiler.bp` — `compiler.Field<T>` / `compiler.Info<T>`, the 27
