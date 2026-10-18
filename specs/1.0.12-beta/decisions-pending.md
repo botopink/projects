@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**110 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**109 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **626**.
+number, which is **627**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -689,16 +689,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) Both: leaves when recorded, the word-copy rule otherwise.
 - **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
 - **Blocks.** Nothing (built as (a)).
-
-#### 165-g · How a typed member a decorator adds to a type reaches that type's static members (decisions 370 (2), 575 (4), 576 (14); 144 B-137 question b137-b; front 165 s10)
-- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(b).**
-- **Measured.** A typed member that reads the decorator's `syntax decl` is refused (`decorator-member-captures`, "the decorator's `@Decl` handle, which exists only while the program compiles"): `compiler.addMember("check", fn() -> string { return decl.make().name; })` on `#[checked] pub type City(…) { pub fn make() -> City … }`. `Self.make()` is a parse error in a hand-written type body as well as in the member ("unexpected `.`"). rakun's `#[configurationProperties]` `check` and rakun-restclient's `http` need the owner's static members. They are written in the string `addMember(source)` form until this is answered; 576 (14) removes that form in B-140.
-- **Options.**
-  (a) Inside a typed member, `syntax decl` of a type splices as the type's name (575 (4)'s tree rule), so `decl.make()` reads `City.make()`. The `decorator-member-captures` refusal is kept for a handle read as a build value (`compiler.name(decl)`). This is b137-b's question for members.
-  (b) `Self` names the owner type in a type body and in a member added to it: `Self.make()`, `-> Self`. No run-time handle exists, and a member reads its owner by the name every method body already has for it.
-  (c) A typed member reaches its owner only through an instance receiver (`self: Self`). A static member that needs the owner stays a string member.
-- **Recommendation.** (b): it makes no handle a run-time value (b137-b's recommendation stands), and it also answers 165-e's `-> Self`.
-- **Blocks.** B-140's string-`addMember` removal for rakun's `check` and `http`; 165-e.
 
 #### 165-e · A static member added to a `behavior`, and a type a tree cannot write (decisions 576 (14), 578; front 165 s10)
 - **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**

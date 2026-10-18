@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**110 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**109 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **626**.
+número livre, que é **627**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -689,16 +689,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) As duas: folhas quando gravadas, a regra da palavra copiada senão.
 - **Recomendação.** (a) agora, porque está verde em toda biblioteca e cell. Depois (c) como passo posterior, para que uma sub-linguagem que grava folhas seja exata mesmo onde uma palavra se repete.
 - **Bloqueia.** Nada (construída como (a)).
-
-#### 165-g · Como um membro tipado que um decorator acrescenta a um tipo alcança os membros estáticos desse tipo (decisões 370 (2), 575 (4), 576 (14); 144 B-137 pergunta b137-b; frente 165 s10)
-- **Proposta (coordenador, 2026-10-18; aguardando o mantenedor):** **(b).**
-- **Medido.** Um membro tipado que lê o `syntax decl` do decorator é recusado (`decorator-member-captures`, "the decorator's `@Decl` handle, which exists only while the program compiles"): `compiler.addMember("check", fn() -> string { return decl.make().name; })` em `#[checked] pub type City(…) { pub fn make() -> City … }`. `Self.make()` é um erro de parse tanto num corpo de tipo escrito à mão quanto no membro ("unexpected `.`"). O `check` do `#[configurationProperties]` do rakun e o `http` do rakun-restclient precisam dos membros estáticos do dono. Eles ficam escritos na forma string `addMember(source)` até esta resposta; a 576 (14) remove essa forma no B-140.
-- **Opções.**
-  (a) Dentro de um membro tipado, o `syntax decl` de um tipo é emendado como o nome do tipo (a regra da árvore da 575 (4)), então `decl.make()` lê `City.make()`. A recusa `decorator-member-captures` fica para um handle lido como valor de build (`compiler.name(decl)`). É a pergunta da b137-b para membros.
-  (b) `Self` nomeia o tipo dono num corpo de tipo e num membro acrescentado a ele: `Self.make()`, `-> Self`. Nenhum handle de runtime existe, e um membro lê o seu dono pelo nome que todo corpo de método já tem para ele.
-  (c) Um membro tipado alcança o seu dono só por um receptor de instância (`self: Self`). Um membro estático que precisa do dono fica um membro string.
-- **Recomendação.** (b): não torna nenhum handle um valor de runtime (a recomendação da b137-b se mantém), e também responde o `-> Self` da 165-e.
-- **Bloqueia.** A remoção do `addMember` string do B-140 para o `check` e o `http` do rakun; 165-e.
 
 #### 165-e · Um membro estático acrescentado a um `behavior`, e um tipo que uma árvore não consegue escrever (decisões 576 (14), 578; frente 165 s10)
 - **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**

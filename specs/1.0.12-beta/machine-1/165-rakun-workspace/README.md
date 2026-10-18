@@ -195,6 +195,8 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
 
 - [ ] `rakun-bpp/src/html/html.bp`: the generator answers `compiler.ast(…)` — the `Node` records of `compiler.bp` — in place of the concatenated source and `compiler.build(code)`; `rakun-style`'s template the same; `platform_test.bp`'s templates
 - [ ] the registrations of 165 s10 written as 625 (1): each method marker registers itself through `compiler.init` with its declaration as code (613), the run-time registry grouping by owner; `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners` and the string `addMember(source)` go
+- [ ] `configurationProperties`'s `make` / `check` and rakun-restclient's `http` as typed members naming the owner `decl`
+      (626); `syntax decl` typed by a behavior where the decorator calls members (`Configurable { fn make() -> Self; }`)
 - [ ] rakun's gate on the main checkout's compiler; `conformance/` green; `test-libs`
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
