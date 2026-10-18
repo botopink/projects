@@ -102,7 +102,7 @@ yaml, markdown and dbcontext have none. Locally, in the meta checkout, every one
 - [ ] every library's workflow has at least one green run on `feat`, and its latest run green — read with `gh` (474).
       Measured: actions, http, log, routing, css, snap and markdown green; rakun, query and validation have green runs
       but their latest is red on the builtins group's spelling (rakun's and query's land with 165 s10 after B-136,
-      validation's B-138 migration is open); json and yaml have no `test` workflow at all
+      validation's B-138 migration is open); json and yaml carry the shared `test` workflow and a manifest with no source yet
 - [x] no row that cannot fail, no `continue-on-error` (gate-f); 163 s7 later makes each workflow call `scripts/gate.sh`
 
 ### 163 s6 — a language tour generated from `botopink-lang/conformance/` (after 144 B-29 step I)
