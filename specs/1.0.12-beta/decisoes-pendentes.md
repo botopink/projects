@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**87 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**85 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **672**.
+número livre, que é **674**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -559,13 +559,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Recomendação.** (b) — uma folha não responde nada fora do seu domínio e nenhuma palavra é truncada em silêncio; o `-1` de `text.byteAt` fica o do P1-a até o mantenedor estender a resposta a ele.
 - **Bloqueia.** Nada construído espera; a metade `.bp` do P2-d (depois do B-139 e do s2 P5) lê a resposta antes de ser escrita.
 
-#### 521-a · Um `f64` que chega ao texto do commonJS só por um `T` genérico perde o `.0` (decisão 521; 144 B-78)
-- **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(a): um corpo genérico que escreve um `T` como texto recebe a função de texto do seu argumento de tipo** — o ponto de chamada, que conhece `T`, entrega ao corpo um `show` oculto para ele (como o checker já especializa por chamada); um corpo JS por função mantido.
-- **Medido.** Construído como (a) para uma chamada direta no mesmo módulo (144 B-114): uma fn genérica de topo que escreve um `T` como texto recebe um `__bp_ty_<T>` oculto final por parâmetro de tipo, a forma de impressão do tipo ligado; os valores `T` e o `.d.ts` inalterados; um valor fn, outro módulo e um método genérico são o 144 B-115. Desde a 521 o commonJS escreve um `f64` como o std-wasm (`5.0`, `1.0e21`) onde quer que o checker saiba que é um `f64`. Um float que chega só a um parâmetro de tipo — `Box<T>(value: 2.0)` impresso, `fn show<T>(v: T) -> string { "${v}" }` chamado com `3.0` — imprime `2` / `3`: um número JS não distingue `f64` de inteiro, e um corpo JS serve todo `T`. erlang, beam e wasm imprimem `2.0` / `3.0`.
-- **Opções.** (a) Uma função de texto oculta por parâmetro de tipo usado como texto, passada na chamada. (b) Um `f64` encaixotado no commonJS (um objeto ou um número marcado), em todo lugar — um custo em todo float. (c) Especializar todo corpo genérico pelos seus argumentos de tipo no commonJS.
-- **Recomendação.** (a) — o custo cai só onde um genérico escreve um `T` como texto.
-- **Bloqueia.** A linha 04-js (um float por um `T` genérico); um texto para um valor em todo alvo (434 (5)).
-
 #### 529-a · O que `..` como único spread deixa em aberto (decisões 529 (3), 359, 37; 144)
 - **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(a) para cada um:** (1) nenhuma ferramenta de migração — nenhuma biblioteca escreve hoje um spread `...` em chamada (o único `{...pairs}` do jhonstart é um spread de tag que o compilador ainda não implementa); (2) a recusa da 37 de uma base que não é nome acabou: 359 (6) permite qualquer expressão de origem, avaliada uma vez (`record_update_base_not_a_name` responde `out 1`); (3) a atualização `..` de uma variante de enum continua recusada como `call-spread` (a linha de variante de enum da 359); (4) o caminho morto de atualização da decisão 37 em `infer.zig` é apagado.
 - **Medido.** A 529 (3) pousou: `..src` é o spread de record, `...src` como spread é `spread-dot-dot-dot` nomeando `..`, o formatador imprime `..`, o botopink-lang migrado. Juntar as duas formas de spread moveu três respostas: `record_update_base_not_a_name` (uma recusa sob a 37) agora responde `out 1` sob a 359 (6); `Subject.Animal(..alice)` é `call-spread` (era um type mismatch); dois carets de recusa andaram uma coluna (o `..` mais curto). O parser recusa `...`, então o formatador não consegue ler um spread `...` antigo para migrá-lo.
@@ -600,13 +593,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) O `??` vai para o nível do `catch`, com uma reescrita do formatador colocando parênteses em todo `??` ao lado de um operador aritmético. (b) Como proposto. (c) O `??` no nível do `||` (JS), o `catch` abaixo dele — a mesma migração de (a).
 - **Recomendação.** (b).
 - **Bloqueia.** Nada construído; só o texto da 537.
-
-#### 541-a · Quando a migração do `;` do lambda sai do formatador (decisão 541)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): a reescrita mantida sob um `botopink format --migrate 541` explícito, removida quando todo repositório em `repository/` e todo branch aberto estiverem migrados** — um branch rebaseado além da regra sem a migração recebe o `void` silencioso que a 541 foi escrita para evitar, e o formatador do `feat` não consegue repará-lo.
-- **Medido.** A migração viveu em um commit do botopink-lang e saiu no seguinte, que fez a regra valer; as bibliotecas são migradas com um binário construído no primeiro. vscode-extension, cardume, branches abertos e código de usuário não têm migração no compilador do `feat`.
-- **Opções.** (a) Como proposto. (b) Como construído: o coordenador roda o binário da migração sobre cada branch no seu rebase, a regra escrita em `fronts.md`. (c) A reescrita readicionada incondicionalmente até as reformatações da 524 pousarem.
-- **Recomendação.** (a); (b) aceitável se o binário for mantido e a regra escrita.
-- **Bloqueia.** Todo pouso de biblioteca através da regra; as reformatações da 524.
 
 #### 535-a · Uma divisão de float por zero no erlang e no beam: `crash: badarith` ou `panic`? (decisões 535, 527 (3), 492, 444; 144)
 - **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o `/` de float no erlang e no beam checado como o de inteiro, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — uma forma para toda divisão por zero; a divergência (444: commonJS e wasm respondem `Infinity`) fica então só no abortar.

@@ -2140,7 +2140,7 @@ erlang, beam and wasm; `@print(x)` and `"v=" + x` the same. Found by B-78's Conf
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (a design: the shape crosses a value or a module)
 
-B-114 hands a top-level generic fn the print shape of each type parameter at a direct call in its own module. Three
+Decision 673 confirms the shape (521-a (a)). B-114 hands a top-level generic fn the print shape of each type parameter at a direct call in its own module. Three
 calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for `2.0`):
 
 - [ ] a generic fn passed as a value (`xs.map(show)`): the host callback's extra arguments (the index) land in the

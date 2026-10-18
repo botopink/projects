@@ -1893,6 +1893,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang, with consumer commits in jhonstart and the `json` consumers (through 151) (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
+- [ ] decision 672: 541's lambda-`;` rewrite kept as `botopink format --migrate 541`, explicit; a landing's rebase across the rule runs it first; removed once every repository and every open branch is migrated, stated
 116's botopink-lang half (the vscode-extension box is 161's) with 01-checker step 22's prelude scope;
 26 s9; std purity (23) and effects by return (24 — 24-a answered by 431, 24-b by 432; 24-c, 24-g open); std's
 snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-json.md` lines; 142 s1's std half

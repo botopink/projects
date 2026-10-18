@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**87 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**85 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **672**.
+number, which is **674**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -559,13 +559,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
 - **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
 
-#### 521-a · An `f64` that reaches commonJS's text only through a generic `T` loses its `.0` (decision 521; 144 B-78)
-- **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a): a generic body that writes a `T` as text receives the text function of its type argument** — the call site, which knows `T`, hands the body a hidden `show` for it (as the checker already specialises per call); one JS body per function kept.
-- **Measured.** Built as (a) for a direct call in the same module (144 B-114): a top-level generic fn that writes a `T` as text takes one hidden trailing `__bp_ty_<T>` per type parameter, the print shape of the bound type; the `T` values and the `.d.ts` unchanged; a fn value, another module and a generic method are 144 B-115. Since 521 commonJS writes an `f64` as std-wasm does (`5.0`, `1.0e21`) wherever the checker knows it is an `f64`. A float reaching only a type parameter — `Box<T>(value: 2.0)` printed, `fn show<T>(v: T) -> string { "${v}" }` called with `3.0` — prints `2` / `3`: a JS number carries no `f64` / integer distinction, and one JS body serves every `T`. erlang, beam and wasm print `2.0` / `3.0`.
-- **Options.** (a) A hidden text function per type parameter used as text, passed at the call. (b) A boxed `f64` on commonJS (an object or a tagged number), everywhere — a cost on every float. (c) Specialise every generic body by its type arguments on commonJS.
-- **Recommendation.** (a) — the cost lands only where a generic writes a `T` as text.
-- **Blocks.** The 04-js row (a float through a generic `T`); one text for a value on every target (434 (5)).
-
 #### 529-a · What `..` as the one spread leaves open (decisions 529 (3), 359, 37; 144)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a) for each:** (1) no migration tool — no library writes a `...` call-site spread today (jhonstart's one `{...pairs}` is a tag spread the compiler does not implement yet); (2) 37's refusal of a non-name base is gone: 359 (6) allows any source expression, evaluated once (`record_update_base_not_a_name` answers `out 1`); (3) an enum variant's `..` update stays refused as `call-spread` (359's enum-variant row); (4) the dead decision-37 update path in `infer.zig` is deleted.
 - **Measured.** 529 (3) landed: `..src` is the record spread, `...src` as a spread is `spread-dot-dot-dot` naming `..`, the formatter prints `..`, botopink-lang migrated. Merging the two spread forms moved three answers: `record_update_base_not_a_name` (a refusal under 37) now answers `out 1` under 359 (6); `Subject.Animal(..alice)` is `call-spread` (it was a type mismatch); two refusal carets moved one column (the shorter `..`). The parser refuses `...`, so the formatter cannot read an old `...` spread to migrate it.
@@ -600,13 +593,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) `??` moves to `catch`'s level, with a formatter rewrite parenthesising every `??` beside an arithmetic operator. (b) As proposed. (c) `??` at `||`'s level (JS), `catch` below it — the same migration as (a).
 - **Recommendation.** (b).
 - **Blocks.** Nothing built; 537's text only.
-
-#### 541-a · When the lambda-`;` migration leaves the formatter (decision 541)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): the rewrite kept under an explicit `botopink format --migrate 541`, removed once every repository under `repository/` and every open branch is migrated** — a branch rebased past the rule without the migration gets the silent `void` 541 was written to prevent, and `feat`'s formatter cannot repair it.
-- **Measured.** The migration lived in one botopink-lang commit and left at the next, which made the rule take effect; the libraries are migrated with a binary built at the first. vscode-extension, cardume, open branches and user code have no migration in `feat`'s compiler.
-- **Options.** (a) As proposed. (b) As built: the coordinator runs the migration binary over every branch at its rebase, the rule written in `fronts.md`. (c) The rewrite re-added unconditionally until 524's reformats land.
-- **Recommendation.** (a); (b) acceptable if the binary is kept and the rule written down.
-- **Blocks.** Every library landing across the rule; 524's reformats.
 
 #### 535-a · A float division by zero on erlang and beam: `crash: badarith` or `panic`? (decisions 535, 527 (3), 492, 444; 144)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): float `/` on erlang and beam checked like the integer one, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — one shape for every division by zero; the departure (444: commonJS and wasm answer `Infinity`) is then only in aborting.
