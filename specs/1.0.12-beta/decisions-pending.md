@@ -40,9 +40,7 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 2 | **b140-a** — a derived type's spread lineage once `compiler.buildType` takes text (§ Machine 1) | whether `buildType` takes `from:` or the spread from a derived type's source goes | B-140's derived-type piece | (a) `from:` on `buildType` |
-| 3 | **b140-b** — which std module declares `DeclAnnotation` (§ Machine 1) | the `types.bp` ↔ `compiler.bp` import cycle | B-140's first piece | (a) `types.bp` |
-| 4 | **165-d** — code computed at build with `@emit` gone (§ Machine 1) | whether a decorator splices a built value (`compiler.build`) into a member, or the string `addMember` stays | B-140's string-`addMember` removal; rakun's ten computed members | (a) `compiler.build` in a decorator body |
+| 2 | **b146-a** — `v is T` with `T` a type parameter of the enclosing function (§ Machine 1) | whether an undecidable `is` test is refused at the test, reified at run time, or allowed on wasm only | B-146's third box | (a) refused, `is-type-parameter` |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as

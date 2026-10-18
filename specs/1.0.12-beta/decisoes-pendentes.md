@@ -40,9 +40,7 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
-| 2 | **b140-a** — a linhagem de spread de um tipo derivado quando `compiler.buildType` recebe texto (§ Máquina 1) | se `buildType` recebe `from:` ou se o spread a partir da fonte de um tipo derivado sai | a peça de tipos derivados do B-140 | (a) `from:` em `buildType` |
-| 3 | **b140-b** — qual módulo da std declara `DeclAnnotation` (§ Máquina 1) | o ciclo de imports `types.bp` ↔ `compiler.bp` | a primeira peça do B-140 | (a) `types.bp` |
-| 4 | **165-d** — código calculado no build sem `@emit` (§ Máquina 1) | se um decorator emenda um valor construído (`compiler.build`) num membro, ou se o `addMember` string fica | a remoção do `addMember` string do B-140; os dez membros calculados do rakun | (a) `compiler.build` no corpo de um decorator |
+| 2 | **b146-a** — `v is T` com `T` um parâmetro de tipo da função que o envolve (§ Máquina 1) | se um teste `is` indecidível é recusado no teste, reificado em run time, ou permitido só no wasm | a terceira caixa do B-146 | (a) recusado, `is-type-parameter` |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
