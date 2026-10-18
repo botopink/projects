@@ -55,32 +55,32 @@ refused), **B-99-c** (a dependency's own root calling a catalogue default, built
 The questions machine 1's steps wait on (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, the module-model
 group), answered before every other part of this page; in the order of the steps they block.
 
-#### B-02-c · `"std:…"` written on `@External.Node` / `@External.Erlang`: host code, or refused like the other prefixes? (decisions 305, 481; 144 B-02)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every target, naming the labelled form** — `conformance/docs.md` § Host bindings already says the four prefixed strings are refused at the argument on every target; a string that reads as a cell and runs as host code is the ambiguity 305 removed. Changes: `checkExternalCells` refuses `"std:"` off wasm too; a cell.
-- **Measured.** `checkExternalCells` refuses `"std:…"` only on `@External.Wasm`; on Node and Erlang it is host code ("`std:` was only ever a wasm cell").
+#### B-02-c · `"std:…"` written as a `.JavaScript` / `.Erlang` `template`: host code, or refused like the other prefixes? (decisions 305, 481; 144 B-02)
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every target, naming the labelled form** — `conformance/docs.md` § Host bindings already says the four prefixed strings are refused at the argument on every target; a string that reads as a cell and runs as host code is the ambiguity 305 removed. Since 575 (6), 610 and 621 the cell is a value of `Implementation` and `std` is a labelled field of `.Wasm` alone (`.Wasm(std: "hash.contentHash")`); `.JavaScript` and `.Erlang` have only `template` and `body`, so the question narrows to a `template` text that starts with `std:`. Changes: the `template` check refuses `"std:"` on `.JavaScript` and `.Erlang` too; a cell.
+- **Measured.** The table checks (516, kept over the value by 575 (6)) refuse `"std:…"` only in a `.Wasm` template (before 606: `@External.Wasm`); in a `.JavaScript` / `.Erlang` template it is host code ("`std:` was only ever a wasm cell").
 - **Options.**
   (a) Refused everywhere.
   ```bp
-  #[@External.JavaScript("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
+  #[compiler.external(.JavaScript("std:hash.contentHash"))]   // refused: a `std:` cell is `.Wasm(std: …)`'s
   ```
   (b) Host code off wasm, the text corrected.
   ```bp
-  #[@External.JavaScript("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
+  #[compiler.external(.JavaScript("std:hash.contentHash"))]   // JavaScript source `std:hash.contentHash`
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-02's `std:` row.
 
-#### B-10-b · `Decl.variants`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name, fields: Field[], annotations, section: ?string)`** — a payload variant lists its fields as `decl.fields` does; a section is not an entry, its variants carry the section's name. One entry per constructible variant.
-- **Measured.** `Decl.variants` carries names only, sections listed among them.
+#### B-10-b · `compiler.variants(d)`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name: string, fields: compiler.Field<unknown>[], annotations: DeclAnnotation[], section: ?string)`**, a record of `compiler.bp` beside the handle records (608) — a payload variant lists its fields as `compiler.fields(T)` does (576 (8), 630); a section is not an entry, its variants carry the section's name. One entry per constructible variant.
+- **Measured.** `compiler.variants(d)` (before 576: `Decl.variants`) carries names only, sections listed among them.
 - **Options.**
   (a) Typed entries, sections as a field.
   ```bp
-  decl.variants[0].fields[0].name   // "amount"
+  compiler.variants(decl)[0].fields[0].name   // "amount"
   ```
   (b) As today: names.
   ```bp
-  decl.variants[0]   // "Paid" — a name, sections among them
+  compiler.variants(decl)[0]   // "Paid" — a name, sections among them
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10's row.
@@ -100,13 +100,13 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10's row.
 
-#### B-10-e · How does a type alias of `@Component<Styled>` implement a behavior? (144 B-10 G2)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): it does not — an alias is its target**: `Styleable` is implemented by `Styled`, and `@Component<Styled>` reaches it through `R`; an alias declares nothing (a second name, not a type). styled's marker is rewritten over `Styled`'s implementation.
-- **Measured.** `pub val StyledView = @Component<Styled>` cannot carry `implement`; no spelling exists.
+#### B-10-e · How does a type alias of `Component<Styled>` implement a behavior? (144 B-10 G2)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): it does not — an alias is its target**: `Styleable` is implemented by `Styled`, and `Component<Styled>` (bare since 606 (1)) reaches it through `R`; an alias declares nothing (a second name, not a type). styled's marker is rewritten over `Styled`'s implementation. Re-read under 629: a `val` names a type wherever a type is named (629 (2)), but only a nominal type — declared, or built by `compiler.buildType(name, fields, implements)` — carries an `implement` clause; `buildTypeInline(fields)` takes none (629 (1)). 629 does not say whether a `val` naming the nominal `Component<Styled>` could carry one, so (a) stays a question and not a spelling.
+- **Measured.** `pub val StyledView = Component<Styled>` cannot carry `implement`; no spelling exists.
 - **Options.**
   (a) An alias with `implement`.
   ```bp
-  pub val StyledView = @Component<Styled> implement Styleable;
+  pub val StyledView = Component<Styled> implement Styleable;
   ```
   (b) Only the target type implements.
   ```bp
@@ -115,55 +115,59 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (b).
 - **Blocks.** 144 B-10's row.
 
-#### B-10-f · How does a decorator read whether a `@Component<R>` return's `R` implements `@Renderable`? (decisions 268, 280; 144 B-10 G3)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): through `@typeInfo` of the declared return** — `@typeInfo(decl.returnType).implements(@Renderable)`; `@Decl` stays a declaration's handle and type questions go through `@typeInfo`, the one reflection of a type. Viable: `decl.returnType` as a type value (today a name) and `TypeInfo.implements(B)`. Changes: two members; jhonstart's marker in `client.bp` goes.
-- **Measured.** No reflection answers it: `decl.returnType` is the type's name as text, and no member asks whether a type implements a behavior.
+#### B-10-f · How does a decorator read whether a `Component<R>` return's `R` implements `Renderable`? (decisions 268, 280; 144 B-10 G3)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): through `compiler.typeInfo` of the declared return** — `compiler.typeInfo(compiler.returnType(decl)).typeArg(0).implements(Renderable)`; the handle stays a declaration's handle read through `compiler.*` (576 (3)) and type questions go through `compiler.typeInfo`, the one reflection of a type (606 (3)). Viable: `compiler.returnType(d)` as a type value (today a name) and `compiler.Info<T>.implements(B)`. Changes: two members; jhonstart's marker in `client.bp` goes.
+- **Measured.** No reflection answers it: `compiler.returnType(d)` (before 576: `decl.returnType`) is the type's name as text, and no member asks whether a type implements a behavior. Since 626 (2) a decorator's handle may be typed by what the decorator requires (`syntax decl: fn() -> string`), checked at the annotation — a third route, (c).
 - **Options.**
-  (a) `@typeInfo` of the return type.
+  (a) `compiler.typeInfo` of the return type.
   ```bp
-  if (!@typeInfo(decl.returnType).typeArg(0).implements(@Renderable)) decl.fail("…");
+  if (!compiler.typeInfo(compiler.returnType(decl)).typeArg(0).implements(Renderable)) compiler.fail("…", at: decl);
   ```
-  (b) A member of `@Decl`.
+  (b) A `Compiler` read on the handle.
   ```bp
-  if (!decl.returnImplements(@Renderable)) decl.fail("…");
+  if (!compiler.returnImplements(decl, Renderable)) compiler.fail("…", at: decl);
+  ```
+  (c) The handle's type says it (626 (2)); whether `Component<Element>` fits `Component<Renderable>` through `Element implement Renderable` is a generic rule 626 does not state.
+  ```bp
+  pub fn page(syntax decl: fn() -> Component<Renderable>) -> void { … }   // a return whose R is no Renderable refused at the annotation
   ```
 - **Recommendation.** (a).
-- **Blocks.** 144 B-10 G3's `@Renderable` row.
+- **Blocks.** 144 B-10 G3's `Renderable` row.
 
-#### B-10-g · A template declared `-> @ExprCustom<View>` whose built code is an `Element`: is the expansion a `View`? (decisions 275, 276; 144 B-10 G3)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes — the expansion is what the template declares** — `html` declared `-> @ExprCustom<View>` answers a `View` (`@Component<Element>`), and a built `Element` is checked against it as a component's body; jhonstart's `renderNode(html …)` and its `-> Element` components move to `View`. A template's declared type is its call's type (426); keeping `Element` at the call would make the declaration decorative. Viable: the built code's check against `View` accepts an `Element` as a component's answer. Changes: jhonstart's components (a consumer commit), a cell.
-- **Measured.** With `-> @ExprCustom<View>` every `html` expansion fails `expected Component, got Element`.
+#### B-10-g · A template declared `-> View` whose built code is an `Element`: is the expansion a `View`? (decisions 275, 276; 144 B-10 G3)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes — the expansion is what the template declares** — `html` declared `-> View` (576 (4), 578 (2): a template returns an ordinary type, its reference tree attached by `compiler.custom(ast)`) answers a `View` (`Component<Element>`), and a built `Element` is checked against it as a component's body; jhonstart's `renderNode(html …)` and its `-> Element` components move to `View`. Viable: the built code's check against `View` accepts an `Element` as a component's answer. Changes: jhonstart's components (a consumer commit), a cell.
+- **Measured.** With `-> View` (before 576: `-> @ExprCustom<View>`) every `html` expansion fails `expected Component, got Element`. 578 (2) makes the declared `T` the call's type, so the former option — the call keeping `Element` while the declaration says `View` — cannot be written and is gone; what is left is whether the built `Element` code is accepted against `View` as a component's answer, or refused, the template having to build the component itself.
 - **Options.**
-  (a) A `View`.
+  (a) A `View`: the built `Element` accepted as a component's answer.
   ```bp
-  fn Card() -> View { html`<div/>` }   // the expansion is a View
+  fn Card() -> View { html @`<div/>` }   // the expansion is a View
   ```
-  (b) The call keeps `Element`.
+  (b) Refused as today; `html` builds the component around its `Element` itself.
   ```bp
-  fn Card() -> Element { html`<div/>` }   // the declared View ignored at the call
+  fn Card() -> View { html @`<div/>` }   // expected Component, got Element — unless html answers the component
   ```
 - **Recommendation.** (a).
-- **Blocks.** 144 B-10 G3's `@ExprCustom<View>` row.
+- **Blocks.** 144 B-10 G3's `View` row.
 
-#### B-11-a · `decl.wrapWith(f)`: is the wrapper only a lambda written at the call, or any value of the call type? (decision 316; 144 B-11)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a lambda written at the call** — `decl.wrapWith({ call -> … })`; any other expression is `decorator-wrap-not-lambda`, located at the argument. It is 370 (2)'s rule for a member function a decorator adds: the code the decorator writes is checked as the program's, never a value computed at build. Viable: as built. Changes: none.
-- **Measured.** Built as (a). The call type is internal (`__Decl__Call<A, R>`, one per wrapped function), so a helper returning a wrapper (`cachedCall(cache)`) cannot name its parameter's type; (b) would need that type nameable.
+#### B-11-a · `compiler.wrapWith(f)`: is the wrapper only a lambda written at the call, or any `syntax` expression of the call type? (decision 316; 144 B-11)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a lambda written at the call** — `compiler.wrapWith({ call -> … })`; any other expression is `decorator-wrap-not-lambda`, located at the argument. It is 370 (2)'s rule for a member function a decorator adds: the code the decorator writes is checked as the program's, never a value computed at build. Viable: as built. Changes: none.
+- **Measured.** Built as (a). The wrapper arrives as `compiler.wrapWith<F>(syntax wrapper: F)` — code as written, spliced (576 (9), 616) —, so the lambda is typed by the wrapped declaration's call type (316), the one position that fixes it (583). That type is internal (`__Decl__Call<A, R>`, one per wrapped function): a helper returning a wrapper (`cachedCall(cache)`) cannot name its parameter's type, and (b)'s former spelling `Decl.Call<A, R>` cannot be written since 576 (1). The question is therefore two: a lambda only, or any `syntax` expression of the call type — and, for the second, how that type is named.
 - **Options.**
   (a) A lambda at the call.
   ```bp
-  decl.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
-  decl.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
+  compiler.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });   // accepted
+  compiler.wrapWith(cachedCall(cache));                                  // refused: decorator-wrap-not-lambda
   ```
-  (b) Any value of a nameable call type.
+  (b) Any `syntax` expression of a nameable call type (the name — `compiler.Call<A, R>` here — is the question's).
   ```bp
-  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: Decl.Call<A, R>) -> R { … }
-  decl.wrapWith(cachedCall(cache));                                  // accepted
+  fn cachedCall<A, R>(cache: Cache<R>) -> fn(call: compiler.Call<A, R>) -> R { … }
+  compiler.wrapWith(cachedCall(cache));                                  // accepted
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-11's wrapper row.
 
-#### B-11-b · May `decl.wrapWith` wrap a generic function or a member of a generic type? (decision 316; 144 B-11)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): yes, as a 144 row** — the wrapper is checked against the signature with its type parameters, and the wrapped function stays generic. 316 names no exception for generics, and a cache or a retry is as useful on `fn byId<T>(…)`. Viable: the generated call type takes the function's type parameters. Changes: a cell; `decorator-wrap-generic` goes.
+#### B-11-b · May `compiler.wrapWith` wrap a generic function or a member of a generic type? (decision 316; 144 B-11)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): yes, as a 144 row** — the wrapper (`compiler.wrapWith<F>(syntax wrapper: F)`, 576 (9)) is checked against the signature with its type parameters, and the wrapped function stays generic. 316 names no exception for generics, and a cache or a retry is as useful on `fn byId<T>(…)`. Viable: the generated call type takes the function's type parameters. Changes: a cell; `decorator-wrap-generic` goes.
 - **Measured.** A generic function or owner is refused today, `decorator-wrap-generic`, located at the decorator.
 - **Options.**
   (a) Refused, as built.
@@ -179,75 +183,75 @@ group), answered before every other part of this page; in the order of the steps
 
 #### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
-- **Measured.** A source that is not a name is bound once before the call, so it is evaluated before every labelled value, even one written before it: `Pessoa(nome: say("n"), ...make())` prints `make` then `n`.
+- **Measured.** A source that is not a name is bound once before the call, so it is evaluated before every labelled value, even one written before it: `Pessoa(nome: say("n"), ..make())` prints `make` then `n`.
 - **Options.**
   (a) Written order.
   ```bp
-  val p = Pessoa(nome: say("n"), ...make());   // prints n, then make
+  val p = Pessoa(nome: say("n"), ..make());   // prints n, then make
   ```
   (b) The sources first, then the labelled values (as built).
   ```bp
-  val p = Pessoa(nome: say("n"), ...make());   // prints make, then n
+  val p = Pessoa(nome: say("n"), ..make());   // prints make, then n
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-14's order row.
 
-#### B-15-b · Does a template body's `Binding` carry its `Decorator`, for `Decorator.same`? (decisions 268, 302, 371; 144 B-15)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): no — meta is read by type** — a template body tells annotations apart by the meta they record (`d.meta(RawBody)`), as 302 says; `Binding` carries no `Decorator`, and B-15's box naming `Decorator.same` is dropped. One way to identify what an annotation did, by its typed answer, not by which function it was. Viable: as built. Changes: the box's text.
-- **Measured.** `Binding` (a looked-up name in a template body) has no `Decorator`; `html` reads meta by type.
+#### B-15-b · Does a handle `compiler.bindings(e)` answers carry its `Decorator`, for `Decorator.same`? (decisions 268, 302, 371; 144 B-15)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): no — meta is read by type** — a template body tells annotations apart by the meta they record (`compiler.meta<RawBody>(d)`, 576 (11)), as 302 says; a binding's handle carries no `Decorator`, and B-15's box naming `Decorator.same` is dropped. One way to identify what an annotation did, by its typed answer, not by which function it was. Viable: as built. Changes: the box's text.
+- **Measured.** A looked-up name in a template body is an opaque declaration handle `compiler.bindings(e)` answers, read through `compiler.*` (576 (2), (3); before 576: the `Binding` record); no read answers its `Decorator` (the behavior now in `compiler.bp`, 608); `html` reads meta by type.
 - **Options.**
-  (a) `Binding.decorator`.
+  (a) A `Compiler` read answering the binding's `Decorator`.
   ```bp
-  if (b.decorator?.same(isRaw)) { … }
+  if (compiler.decorator(b)?.same(isRaw)) { … }
   ```
   (b) By meta type.
   ```bp
-  if (d.meta(RawBody) != null) { … }
+  if (compiler.meta<RawBody>(d) != null) { … }
   ```
 - **Recommendation.** (b).
 - **Blocks.** 144 B-15's `Decorator.same` row.
 
 #### B-15-c · May an annotation read the meta an earlier annotation recorded on the same declaration or tag? (decisions 298, 302; 144 B-15)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): no, as built** — inside a decorator, `decl.meta(T)` is refused; a declaration's meta is read by the code that consumes it (`@typeInfo(X).meta(T)`, a template body over `d.meta(T)`), after every annotation ran. Annotations then do not depend on their written order. Viable: as built. Changes: none.
-- **Measured.** `d.meta(T)` on a decorator's own `@Decl` parameter is refused.
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): no, as built** — inside a decorator, `compiler.meta<T>(decl)` on its own handle is refused; a declaration's meta is read by the code that consumes it (`comptime compiler.typeInfo(X).meta(T)` in a run-time body, 606 (3); a template body over `compiler.meta<T>(d)`), after every annotation ran. Annotations then do not depend on their written order. Viable: as built. Changes: none.
+- **Measured.** `compiler.meta<T>(decl)` (before 576: `d.meta(T)`) on a decorator's own `syntax decl: unknown` parameter (576 (10), 616) is refused.
 - **Options.**
   (a) Refused inside a decorator.
   ```bp
-  pub fn raw(comptime decl: @Decl) { decl.meta(ClassName); }   // refused
+  pub fn raw(syntax decl: unknown) -> void { compiler.meta<ClassName>(decl); }   // refused
   ```
   (b) Read, in annotation order.
   ```bp
-  pub fn raw(comptime decl: @Decl) { if (decl.meta(ClassName) != null) decl.fail("…"); }
+  pub fn raw(syntax decl: unknown) -> void { if (compiler.meta<ClassName>(decl) != null) compiler.fail("…", at: decl); }
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-15's meta-read row.
 
 #### B-17-b · How is a function's stage written? (decision 376 (4); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `#[@Stage.Any]`, as built** — `pub type Stage { Build, Run, Any }` in `builtins.d.bp`; only `Any` is written (Build and Run follow from resources), so `#[@Stage.Build]` / `#[@Stage.Run]` are refused as unknown annotations.
-- **Measured.** Built as (a); std's `math` host functions carry it.
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `#[Stage.Any]`, as built** — `pub type Stage { Build, Run, Any }` in the std module that owns it, imported where written (606 (4); `builtins.d.bp` is gone, 575 (1)); only `Any` is written (Build and Run follow from resources), so `#[Stage.Build]` / `#[Stage.Run]` are refused as unknown annotations. A bodyless `declare fn` names its host sources with `#[compiler.external(…)]` beside it (575 (6), 606 (4)).
+- **Measured.** Built as (a) (before 606: `#[@Stage.Any]`); std's `math` host functions carry it.
 - **Options.**
-  (a) `#[@Stage.Any]`.
+  (a) `#[Stage.Any]`, imported from its std module.
   ```bp
-  #[@Stage.Any] pub declare fn sqrt(x: f64) -> f64;
+  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(op: "f64.sqrt"))] #[Stage.Any] pub declare fn sqrt(x: f64) -> f64;
   ```
   (b) `#[pure]`.
   ```bp
-  #[pure] pub declare fn sqrt(x: f64) -> f64;
+  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(op: "f64.sqrt"))] #[pure] pub declare fn sqrt(x: f64) -> f64;
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.
 
 #### B-17-d · Does a stage follow declarations only? (decision 376 (2); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a comptime-`@Expr` function and reads the clock is `build-and-run`, as 376 writes.
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a function taking a `syntax` parameter (576 (1), 616; before 576: a comptime-`@Expr` function) and reads the clock is `build-and-run`, as 376 writes.
 - **Measured.** Built as (a).
 - **Options.**
   (a) Declarations only.
   ```bp
-  fn main() { val f = clock.now; f() }   // Any: a function value adds nothing
+  pub fn main() -> void { val f = clock.now; val t = f(); }   // Any: a function value adds nothing
   ```
   (b) Function values too.
   ```bp
-  fn main() { val f = clock.now; f() }   // Run: the value's declaration counted
+  pub fn main() -> void { val f = clock.now; val t = f(); }   // Run: the value's declaration counted
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.
@@ -268,16 +272,17 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-17's row.
 
 #### B-17-f · Which `Any` function does 380 fold at build? (decisions 376, 380; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — an `Any` function that writes no `@panic` / `@todo` / `throw`, no `@print`, no module `var`, no function-value call and no method of a declared type; its calls through other such functions fold too.
-- **Measured.** Built as (a) (`hole_any_call_at_build`, `hole_any_call_raises`).
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — an `Any` function that writes no `panic` / `throw` (`todo` is gone: `panic("not implemented")`, 606 (2)), no `print`, no module `var`, no function-value call and no method of a declared type; its calls through other such functions fold too. 632 settles one piece and defers the rest here: `print` is an effect and never folds at build; which other `Any` calls 380 (1) folds is this question's.
+- **Measured.** Built as (a) (`hole_any_call_at_build`, `hole_any_call_raises`; before 606: `@panic` / `@todo` / `@print`). The former (b) folded a function writing `print` ("every `Any` function"); 632 removed that reading, so (b) is now every `Any` function that writes no `print`.
 - **Options.**
   (a) As built.
   ```bp
   fn shout(s: string) -> string { s.toUpper() }   // folded
   ```
-  (b) Every `Any` function.
+  (b) Every `Any` function but one writing `print` (632): a module `var`, a method of a declared type or a function-value call fold too.
   ```bp
-  fn logShout(s: string) -> string { @print(s); s.toUpper() }   // folded too
+  var n: i32 = 0;
+  fn shoutCounted(s: string) -> string { n = n + 1; return s.toUpper(); }   // folded too; n never moves at run time
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.
@@ -298,14 +303,21 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-17's row.
 
 #### B-17-h · math's `op:`-only host functions at build: given `std:` cells? (decisions 452, 481; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — one `std:` binding cell per function in std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), so the comptime runtime answers them and they fold (380); an opcode has no host form at build otherwise.
-- **Measured.** They are refused at build (452) and no longer treated as foldable.
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — one `std:` binding cell per function in std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), so the comptime runtime answers them and they fold (380); an opcode has no host form at build otherwise. Since 610 a third way exists beside `std:` and run-time-only: a botopink body, `.Wasm(body: f)`, which 594 (1) and 633 name a build form as `std:` is; a `Wasm` cell holds one of `op` / `std` / `body`, so (a) and (b) alike take the opcode off the wasm target.
+- **Measured.** They are refused at build (452) and no longer treated as foldable; 633 confirms the rule — a wasm form (`std:` or `body:`) is callable at build, an `op:` alone is not.
 - **Options.**
   (a) A `std:` cell each.
   ```bp
-  val r = "${math.sqrt(16.0)}";   // computed at build
+  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(std: "math.sqrt"))] pub declare fn sqrt(x: f64) -> f64;
+  val r = "${math.sqrt(16.0)}";   // computed at build by std-wasm's export
   ```
-  (b) Run time only.
+  (b) A botopink body each (610).
+  ```bp
+  fn sqrtBody(x: f64) -> f64 { … }
+  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(body: sqrtBody))] pub declare fn sqrt(x: f64) -> f64;
+  val r = "${math.sqrt(16.0)}";   // computed at build by the body
+  ```
+  (c) Run time only.
   ```bp
   val r = "${math.sqrt(16.0)}";   // computed at run time
   ```
@@ -328,13 +340,13 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-17's row.
 
 #### B-17-m · A type implementing a behavior only through an extension block: a value of that behavior? (decisions 379, 416; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(b): refused, as built** — an extension block (`Sym implement B for T`) adds methods where the block is visible; it does not make `T` a `B` value for a parameter, a return or a context, since no backend dispatches a behavior call to the block. The strictest reading; accepting it would mean behavior dispatch to the block's methods on four targets.
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(b): refused, as built** — an extension block (`Sym implement B for T`) adds methods where the block is visible; it does not make `T` a `B` value for a parameter, a return or a context, since no backend dispatches a behavior call to the block. The strictest reading; accepting it would mean behavior dispatch to the block's methods on four targets. Two later rules read differently here and the answer must say which governs a block: 617 (1) finds a type's methods through its `implement` clause, read from the text — a block's clause is written on the block, not on `T` —; 626 (2) checks a decorator's `syntax decl: B` handle against `B`'s members structurally, asking no `implement` of the type at all. Under 617 a block makes `T` no `B`; under 626's reading of a handle, a `T` with the members would pass — the question is whether a value follows 617 (the clause, (b)) or the structural check ((a)).
 - **Measured.** Refused everywhere (contexts and `B`-typed parameters); a probe accepting it aborted on commonJS, erlang and beam, and wasm refused it.
 - **Options.**
   (a) Accepted, dispatched to the block.
   ```bp
   Sym implement Shape for Circle { … }
-  fn draw(s: Shape) { … }  draw(Circle(r: 1));   // accepted
+  fn draw(s: Shape) -> void { … }  draw(Circle(r: 1));   // accepted
   ```
   (b) Refused.
   ```bp
@@ -344,30 +356,30 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 144 B-17's extension-block row.
 
 #### B-18-a · How is a template method found: by a name in the call site's scope, or through the receiver's type? (decisions 397, 415; 144 B-18)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): by a name in the call site's scope, as built** — `value.method "…"` resolves `method` as a template whose `self` takes the receiver, local or imported; nothing reaches a library's template without an import, as for every other name. A receiver's type never imports code by itself. Changes: 145's example imports `query`.
-- **Measured.** Built as (a); 145's example writes `self.db.query """…"""` with no import of `query`.
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): by a name in the call site's scope, as built** — `` value.method @`…` `` (577 (3)) resolves `method` as a template whose `syntax self: R` receiver (578 (1)) takes the receiver, local or imported; nothing reaches a library's template without an import, as for every other name. A receiver's type never imports code by itself. Changes: 145's example imports `query`.
+- **Measured.** Built as (a); 145's example writes `` self.db.query @`…` `` (before 577: `self.db.query """…"""`) with no import of `query`.
 - **Options.**
   (a) A name in scope.
   ```bp
   import {query} from "query";
-  self.db.query """select …"""
+  self.db.query @`select …`
   ```
   (b) Through the receiver's type.
   ```bp
-  self.db.query """select …"""   // erika's query found through Db, no import
+  self.db.query @`select …`   // query's template found through Db, no import
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-18's lookup row; 145's example.
 
-#### B-18-b · Confirm B-18's surface: `q.note`'s text, `bindings()` as `Decl[]`, `@Decl.module` on every handle (decisions 415, 426; 144 B-18)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): as built** — a note is appended to the mismatch line as `— note: …`, so a cell's `refused` line pins it; `bindings()` answers `Decl[]` and `Binding.ref()` goes with the `Binding` record (one handle, the `@Decl`); every `@Decl` carries `module`, not only a looked-up one.
+#### B-18-b · Confirm B-18's surface: `compiler.note`'s text — appended `— note: …` or a line of its own (decisions 415, 426; 144 B-18)
+- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): as built** — a note (`compiler.note(message)`, 576 (2)) is appended to the mismatch line as `— note: …`, so a cell's `refused` line pins it. The entry's two other parts are settled: `compiler.bindings(e)` answers opaque declaration handles read through `compiler.*` — `Decl[]` cannot be written and the `Binding` record with `Binding.ref()` is gone (576 (1), (2), (3)) —, and every handle's module is `compiler.moduleOf(d)` (576 (3)), a looked-up one included. Only the note's placement is left.
 - **Measured.** Built as (a).
 - **Options.**
   (a) As built.
   ```bp
   // error: type mismatch: expected User, got Order — note: the query selects from orders
   ```
-  (b) A note on its own line, `Binding` kept beside `Decl`.
+  (b) A note on its own line.
   ```bp
   // error: type mismatch: expected User, got Order
   //   note: the query selects from orders
@@ -445,19 +457,19 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** The `cli` library's Ctrl-C handling on erlang.
 
 #### B-27-g2 · `io.terminal.keys()` on erlang and beam (decisions 506 (c), 553; 144 B-27 step 6)
-- **Proposed (sonnet, 2026-10-15; awaiting the maintainer):** (b): add `readKey() -> @Task<?Key>` on every target.
-- **Context.** `keys()` answers a stream of key presses for interactive prompts. On erlang and beam a `@Stream` is lowered eagerly.
+- **Proposed (sonnet, 2026-10-15; awaiting the maintainer):** (b): add `readKey() -> Task<?Key>` (bare since 606 (1)) on every target.
+- **Context.** `keys()` answers a stream of key presses for interactive prompts. On erlang and beam a `Stream` is lowered eagerly.
 - **Measured.** On erlang / beam `keys()` gathers all input before yielding its first key, so it never answers on a live terminal (a hang under a pty); commonJS yields lazily. `stdin.readChunk()` + `terminal.parseKey` works on the three targets.
 - **Options.**
   (a) `keys()` as is; an interactive loop on erlang reads `readChunk()` and `parseKey`.
   ```bp
   val chunk = await stdin.readChunk(); val key = terminal.parseKey(chunk);
   ```
-  (b) ★ `readKey() -> @Task<?Key>` on every target, `keys()` kept.
+  (b) ★ `readKey() -> Task<?Key>` on every target, `keys()` kept.
   ```bp
   val key = await terminal.readKey();   // one key, null at end of input
   ```
-  (c) Wait for a lazy `async iter` lowering on erlang (553), `keys()` the one API.
+  (c) Wait for a lazy `{ async iter -> … }` lowering on erlang (553; 584's marker spelling), `keys()` the one API.
   ```bp
   for (await terminal.keys()) { k -> … }   // lazy once 553 lands on erlang
   ```
@@ -497,16 +509,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** Nothing on Linux.
 
 #### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
-- **Measured.** Built as (a); `std_async_on_every_target` green on four targets and both hosts.
+- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones. 623 answered B-25-b alone (`fetch`'s surface); the unbound cells stand here.
+- **Measured.** Built as (a) (before 606: `@External.Wasm(wasi: …)`); `std_async_on_every_target` green on four targets and both hosts.
 - **Options.**
   (a) As built.
   ```bp
-  @External.Wasm(wasi: .GateNew)
+  #[compiler.external(.Wasm(wasi: .GateNew))]
   ```
   (b) The test cells bound too, now.
   ```bp
-  @External.Wasm(wasi: .GateNew)   // and countUp, countOf … bound on wasm
+  #[compiler.external(.Wasm(wasi: .GateNew))]   // and countUp, countOf … bound on wasm
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-25's adapter row.
@@ -736,7 +748,7 @@ before every other part of this page; each holds one row, or nothing built.
 
 #### 521-a · An `f64` that reaches commonJS's text only through a generic `T` loses its `.0` (decision 521; 144 B-78)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a): a generic body that writes a `T` as text receives the text function of its type argument** — the call site, which knows `T`, hands the body a hidden `show` for it (as the checker already specialises per call); one JS body per function kept.
-- **Measured.** Built as (a) for a direct call in the same module (144 B-114): a top-level generic fn that writes a `T` as text takes one hidden trailing `__bp_ty_<T>` per type parameter, the print shape of the bound type; the `T` values and the `.d.ts` unchanged; a fn value, another module and a generic method are 144 B-115. Since 521 commonJS writes an `f64` as std-wasm does (`5.0`, `1.0e21`) wherever the checker knows it is an `f64`. A float reaching only a type parameter — `Box<T>(value: 2.0)` printed, `fn show<T>(v: T) { "${v}" }` called with `3.0` — prints `2` / `3`: a JS number carries no `f64` / integer distinction, and one JS body serves every `T`. erlang, beam and wasm print `2.0` / `3.0`.
+- **Measured.** Built as (a) for a direct call in the same module (144 B-114): a top-level generic fn that writes a `T` as text takes one hidden trailing `__bp_ty_<T>` per type parameter, the print shape of the bound type; the `T` values and the `.d.ts` unchanged; a fn value, another module and a generic method are 144 B-115. Since 521 commonJS writes an `f64` as std-wasm does (`5.0`, `1.0e21`) wherever the checker knows it is an `f64`. A float reaching only a type parameter — `Box<T>(value: 2.0)` printed, `fn show<T>(v: T) -> string { "${v}" }` called with `3.0` — prints `2` / `3`: a JS number carries no `f64` / integer distinction, and one JS body serves every `T`. erlang, beam and wasm print `2.0` / `3.0`.
 - **Options.** (a) A hidden text function per type parameter used as text, passed at the call. (b) A boxed `f64` on commonJS (an object or a tagged number), everywhere — a cost on every float. (c) Specialise every generic body by its type arguments on commonJS.
 - **Recommendation.** (a) — the cost lands only where a generic writes a `T` as text.
 - **Blocks.** The 04-js row (a float through a generic `T`); one text for a value on every target (434 (5)).
@@ -847,10 +859,10 @@ before every other part of this page; each holds one row, or nothing built.
 - **Blocks.** Nothing built waits.
 
 #### B-116-i · The choices B-116 P1 made where no decision speaks (decision 553, 147; 144 B-116)
-- **Proposed (opus, 2026-10-15; awaiting the maintainer; built as listed):** (1) an expected return type that is still a free type variable accepts any marker; (2) an expected type that is not a function type is left to ordinary unification; (3) an `implement` method is checked against its marker only when it writes a return type; (4) a non-yielding marked behavior or type method stays a factory in P1 (the codegen reads the old rule until P4); (5) `component { -> … }` is checked, then refused at the marker with `component-lambda-not-lowered` until B-116 (iii).
-- **Measured.** Each is a case the decision's text and 147 leave open; the cells `marker_*` hold the built answers where they are observable.
+- **Proposed (opus, 2026-10-15; awaiting the maintainer; built as listed):** (1) an expected return type that is still a free type variable accepts any marker — narrowed by 583: a bare lambda nothing types is refused `lambda-untyped` there, so (1) is left for the typed forms (`fn(x: T) -> R { … }`, `iter fn`, `async fn`), whose marker is their own; (2) an expected type that is not a function type is left to ordinary unification; (3) dissolved by 622 — every method writes its `->`, so an `implement` method is always checked against its marker; (4) a non-yielding marked behavior or type method stays a factory in P1 (the codegen reads the old rule until P4); (5) `{ component -> … }` (584's spelling) is checked, then refused at the marker with `component-lambda-not-lowered` until B-116 (iii).
+- **Measured.** Each is a case the decision's text and 147 leave open; the cells `marker_*` hold the built answers where they are observable (584 (1) migrates the 7 `marker_*` cells to the brace-first spelling).
 - **Options.** Each point as built, or (b) refused.
-- **Recommendation.** As built for (4) and (5) (temporary by their step); (1)–(3) refused once the codemod has run (P4), the stricter reading.
+- **Recommendation.** As built for (4) and (5) (temporary by their step); (1) and (2) refused once the codemod has run (P4), the stricter reading — (3) has no object since 622.
 - **Blocks.** B-116 P4's refusal list.
 
 #### 518-a · Two `needs:` refusals no decision states (decision 518 (1); 144 B-07)
