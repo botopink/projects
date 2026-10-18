@@ -179,7 +179,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `rakun-security/src/method_security.bp`, `rakun-scheduling/src/{markers,jobstore/markers}.bp`,
       `rakun-messaging/src/markers.bp`, `rakun-websocket/src/endpoint.bp`, `rakun-bpp/src/routes.bp`,
       `rakun-cli/src/plugins.bp`; jhonstart's `routes.bp`): a `val __rk*` registration →
-      `val declName = compiler.name(decl)!; compiler.compile({ -> rkRegisterX(declName, decl); }) (611)`; the generated functions beside a type
+      `val declName = compiler.name(decl); compiler.compile({ -> rkRegisterX(declName, decl); }) (611)`; the generated functions beside a type
       (`__rkBind_` / `__rkCheck_` / `__rkAutoGated_` / `__rkNew_` / `http…`) → static members by typed `addMember`
       (`Name.bindProperties(prefix)` — not `bind`, validation's `#[validated]` owns it (327) —, `Name.check()`, `Name.gated()`, `Name.new()`, `Name.http()`); the generated types `<Name>Tx` /
       `Http…` → a template text `` @`…` `` answering the type, handed to `addType`; rakun-bpp's `<Name>Params(route)` →

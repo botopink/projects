@@ -2539,7 +2539,7 @@ modifier says how its argument arrives. Every later step of the group writes its
 - [x] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
       (the read dropped), `expr x: T` where it hands `x` on or reads its syntax (`.text()` → `compiler.text(x)`,
       `.fail(m)` → `compiler.fail(m, at: x)`); `@expr(v)` → `v` with `-> expr T`; `comptime decl: @Decl` →
-      `expr decl: unknown`, `decl.name` → `compiler.name(decl)!`, `decl.fail(m)` → `compiler.fail(m, at: decl)`,
+      `expr decl: unknown`, `decl.name` → `compiler.name(decl)` (a `string`, 612), `decl.fail(m)` → `compiler.fail(m, at: decl)`,
       `decl.setMeta` / `addMember` / `addType` / `wrapWith` → `compiler.*`; run over std and `conformance/` here, over
       the libraries by 165 s10 (482 parameters, 605 `.value` reads, 29 `@expr`, 7 `type T` measured on 2026-10-16)
 - [x] cells: a decorator with the three parameter kinds, read at build and spliced; `-> expr` template; a `type<T>`
