@@ -93,9 +93,9 @@ The copies left the compiler with their libraries (138); each is its owner's ste
 
 **Repository:** validation (`--repo validation`) · **Model:** sonnet
 
-- [ ] a comptime decorator parameter's default (125 s12) and a decorator argument read as a value, not its lexeme
+- [x] a comptime decorator parameter's default (125 s12) and a decorator argument read as a value, not its lexeme
       (125 s7): validation's decorators take them, the markers that name them go
-- [ ] `#[each("email")]` → `#[each(email)]` (125 s8): the field named, not written as a string
+- [x] `#[each("email")]` → `#[each(email)]` (125 s8): the field named, not written as a string
 
 ### 146 Conformance — the front's last step (decision 465)
 

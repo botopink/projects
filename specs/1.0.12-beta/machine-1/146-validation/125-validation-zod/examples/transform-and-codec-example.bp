@@ -49,9 +49,7 @@ fn isEven(n: i32) -> bool {
 #[validated]
 pub type Invite(
     #[minLength(1)] title: string,
-    // LANGUAGE GAP: a decorator's name is not a value a package's decorator
-    // can take (`Decorator` is unknown there), so the marker is named as text.
-    #[each("email")] #[each("lowercased")] guests: Array<string>,
+    #[each(email)] #[each(lowercased)] guests: Array<string>,
     #[preprocess(digitsToNumber)] seats: i32,
     #[refine(isEven)] tables: i32,
 )

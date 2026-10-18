@@ -33,9 +33,7 @@ pub type Catch(
     fish: Fish,
     #[literal("kg")] unit: string,
     // A string union without declaring an enum. One comma-joined argument:
-    // LANGUAGE GAP: a decorator argument is a raw lexeme, so `#[oneOf("net", "rod")]`
-    // with a variable count has no declaration; `oneOf` takes one string.
-    #[oneOf("net,rod,trap")] gear: string,
+    #[oneOf("net", "rod", "trap")] gear: string,
     // `z.union([z.number(), z.string()])`
     tagId: i32 | string,
 )
