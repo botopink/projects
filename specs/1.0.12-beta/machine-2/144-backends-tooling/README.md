@@ -2630,7 +2630,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       withdrawn — `compile_executor_captures_build` rewritten as `init_executor_reads_compiler` (`out home`); a
       `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`
       (`init_executor_compiler_arg_at_run_time`); `addMember` / `wrapWith` trees keep the refusal (question b137-c);
-      612's `compiler.name` a `string`, `syntax-has-no-name` (cell `compiler_name_of_lambda`; question b137-d)
+      643's `compiler.name -> ?string`, `null` for a nameless expression (cell `compiler_name_of_lambda`, `out null`; 612 reversed)
 - [x] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is
       refused at the tail with 409's refusal, a named executor (or an `syntax` handed on) of type `fn() -> X` at the
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`

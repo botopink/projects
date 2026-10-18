@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**106 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **643**.
+number, which is **644**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -789,15 +789,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) As proposed. (b) `needs:` on another form is accepted and ignored. (c) A single value is accepted as a one-element list.
 - **Recommendation.** (a).
 - **Blocks.** Nothing built; two refusal cells once answered.
-
-#### b137-d · Does `syntax-has-no-name` (612) at a decorator's argument carry a `called from` line? (decision 612; 144 B-137)
-- **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a).**
-- **Measured.** 612 asks for a `called from` line. A refusal at an annotation's argument carries none today, as `compiler.fail(at:)` carries none. The cell `compiler_name_of_lambda` holds the refusal without it.
-- **Options.**
-  (a) As built: the refusal at the argument, no `called from` line, like every refusal at an annotation's argument.
-  (b) Every refusal raised by a decorator at its annotation's argument gains the `called from` line naming the decorator body's call.
-- **Recommendation.** (a) here; (b) as its own step if wanted, for every such refusal at once.
-- **Blocks.** Nothing.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

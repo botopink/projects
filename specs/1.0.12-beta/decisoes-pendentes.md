@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **643**.
+número livre, que é **644**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -789,15 +789,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) Como proposto. (b) `needs:` noutra forma aceito e ignorado. (c) Um valor só aceito como lista de um elemento.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada construído; duas células de recusa uma vez respondida.
-
-#### b137-d · `syntax-has-no-name` (612) no argumento de um decorador carrega uma linha `called from`? (decisão 612; 144 B-137)
-- **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
-- **Medido.** A 612 pede uma linha `called from`. Uma recusa no argumento de uma anotação não carrega nenhuma hoje, como `compiler.fail(at:)` não carrega nenhuma. A célula `compiler_name_of_lambda` guarda a recusa sem ela.
-- **Opções.**
-  (a) Como construído: a recusa no argumento, sem linha `called from`, como toda recusa no argumento de uma anotação.
-  (b) Toda recusa levantada por um decorador no argumento da sua anotação ganha a linha `called from` nomeando a chamada do corpo do decorador.
-- **Recomendação.** (a) aqui; (b) como passo próprio se desejado, para toda recusa assim de uma vez.
-- **Bloqueia.** Nada.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
