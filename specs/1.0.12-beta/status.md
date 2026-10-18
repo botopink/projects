@@ -285,6 +285,10 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
 
+### 166 decision-cells (medium)
+
+- [ ] 166 s1–s2 — `scripts/decision-cells.py` (scaffold · compile · promote · check) and meta CI check 7; the ledger's `process` tags — ready now (meta files only) · s3 per repository after the group's codemods over it; s4 (the flip to `botopink cell check`) after the group's end · questions 166-a … 166-d
+
 ## L4 — later
 
 The `(W<n>)` marks are the old waves, kept as relative order; the order in force is [`fronts.md`](fronts.md) § Execution order.

@@ -27,6 +27,7 @@ step's README; what still waits on the maintainer is listed at the end and is **
 | Path | What |
 |---|---|
 | [`144-backends-tooling/`](144-backends-tooling/README.md) | front 144's machine-2 steps: lanes B and C (backends, runtimes, std, tooling, the gate), the error contract of 431 / 432, the cache group, the structural residue, B-137 … B-139, B-116, B-141 … B-143, with every other old front's directory (`00-gate`, `02-erlang` … `114-gate-docs-and-ci`); the front's shared rules and index stay in [`../machine-1/144-botopink-lang/README.md`](../machine-1/144-botopink-lang/README.md) |
+| [`166-decision-cells/`](166-decision-cells/README.md) | one cell per decision in the repository it binds; the script, check 7, the flip |
 | [`144-backends-tooling/164-wasm-gc/`](144-backends-tooling/164-wasm-gc/README.md) | front 164 — the wasm target on WasmGC, the comptime runtime on wasmtime, std-wasm in botopink and `.wat`; where new development is centred |
 | [`107-release/`](107-release/README.md) · [`98-packaging-tail/`](98-packaging-tail/README.md) | the medium-tier tooling fronts (were `3-medium/`): the bundled `release`, packaging checked everywhere |
 | [`163-meta-ci/`](163-meta-ci/README.md) | the meta repository's CI, the gate scheduler, the pointers' sweep, the specs' drift rule, the measurements at the end (s9) |
@@ -65,6 +66,7 @@ step's README; what still waits on the maintainer is listed at the end and is **
 | 16 | **`conformance/docs.md`'s examples updated** to decisions 575–605 — every example and `<!-- example: … -->` reference in the current spelling (`compiler` imported, `comptime` / `syntax`, no `@Decl` / `@Expr` / `@emit`, `{ async x -> … }`, `try { … } catch …`, `defaultValue`, no run-time field key, `Token.Color.White`, a marker `{}`), the paragraphs the decisions removed gone (the run-time key, the `iter loop` equivalence); each cell the reference names still exists | 575–605 | `conformance/docs.md`, its cells | sonnet | `botopink cell check` over the cells the reference names; the unit test holding `docs.md` to the builtins (B-140's box) |
 | 17 | **B-29 steps G–J's remaining boxes** (B-29-a is answered) — every box but the Conformance steps' boxes 1, 2 and 5 | the step's README | lane C, `docs.md` | haiku / sonnet | the step gate |
 | 18 | **B-130** — std: `json`, `regex`, `process` answer their own error enums (486); the raw cells mapped from `HostError` — after B-139 (std) | 486 | `libs/std` | sonnet | the std cells |
+| 19 | **166 s1–s2** — `scripts/decision-cells.py` (scaffold · compile · promote · check 7) and the ledger's `process` tags: meta files only, disjoint from everything — now, once 166-a … 166-d are answered (s3 per repository after the group's codemods; s4 after the group's end) | [166](166-decision-cells/README.md) | sonnet (script), coordinator (tags) | check 7 over a known-good and a known-bad tree |
 
 ## The group's end
 

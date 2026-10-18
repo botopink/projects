@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**104 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**108 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -913,6 +913,45 @@ before every other part of this page; each holds one row, or nothing built.
   ```
 - **Recommendation.** (a): a package is the unit of a target set today; three named rows keep 165's rule (every package a `rakun-*` name, one row each) without a new language feature.
 - **Blocks.** Nothing; the names move in s5's second box or s7.
+
+## Front 166 — decision cells (the maintainer, 2026-10-18)
+
+#### 166-a · The package name of a decision cell under `conformance/modules/decisions-taken/<N>/` (decisions 511, 512; front 166)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** A package name starts with a lowercase letter (an erlang atom) and 511 makes a cell's name its directory's; `<N>` is a number.
+- **Options.**
+  (a) Keep the directory `<N>` (the ledger's key, the path the maintainer wrote) and amend 511 with one derivation: a numeric directory names the package `decision<N>`, written and checked in `cell check` (an s4 compiler box).
+  (b) Name the directory `decision<N>`; no compiler change.
+- **Recommendation.** (a): the number is what every reader and check 7 look for.
+- **Blocks.** 166 s1's scaffold.
+
+#### 166-b · How phase 1's examples stay out of the gate until the flip (decisions 67, 265, 464 (3), 475 (6); front 166)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** `cell check` takes every directory with a `src/` as a cell, and a cell with no snapshot is red by design; 67 forbids a skip list.
+- **Options.**
+  (a) Phase 1 writes `decisions-taken/<N>/main.bp` (no `src/`, no manifest): nothing is a cell until `promote` moves it to `src/main.bp` and writes `botopink.json`.
+  (b) The full cell shape from the first commit, each answer accepted in the same batch — asserted at once.
+  (c) A `cell check` verdict `pending` for a cell with no `snapshot/` — amends 464 (3) and 475 (6), lets a cell exist unasserted.
+- **Recommendation.** (a): the maintainer's two moments, no flag, no list, nothing the gate finds and skips.
+- **Blocks.** 166 s1's scaffold and `promote`.
+
+#### 166-c · One include form for a `docs.md`: `{<path>}` or `<!-- example: … -->` (decision 461 (2); front 166)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** The maintainer wrote `{src/main.bp}` for the decision cells' docs; the root reference's `<!-- example: modules/<cell> -->` is read by `test-docs` today.
+- **Options.**
+  (a) `{<path>}` everywhere: `{src/main.bp}` inside a cell, `{modules/<cell>}` in the root reference; the `<!-- example: … -->` lines migrated in s4 and `test-docs` reading the new form (461 (2) amended).
+  (b) Keep `<!-- example: … -->` and write the decision cells' include as `<!-- example: src/main.bp -->`.
+- **Recommendation.** (a): the maintainer's spelling, one form in every `docs.md` at the end.
+- **Blocks.** 166 s1's docs skeleton; s4's `test-docs` box.
+
+#### 166-d · Who commits under `conformance/modules/decisions-taken/**` in a library repository (decision 433; fronts.md rule 1; front 166)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** 433 and rule 1 let only a repository's own front edit it; most libraries have no front open while 166 writes.
+- **Options.**
+  (a) A carve-out of 433 and rule 1 for that one subtree in every repository: 166's threads commit there directly, one thread per repository, botopink-lang's in a `--lang` worktree.
+  (b) Each repository's front gains the box and writes its own; 166 keeps the script and the check.
+- **Recommendation.** (a): one shape, one script, one landing rule.
+- **Blocks.** 166 s3.
 
 ## Part 1 — What blocks tracks 00–03
 

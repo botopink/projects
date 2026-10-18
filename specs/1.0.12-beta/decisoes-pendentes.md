@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**104 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**108 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -913,6 +913,45 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   ```
 - **Recomendação.** (a): um pacote é hoje a unidade de um conjunto de alvos; três linhas nomeadas mantêm a regra do 165 (todo pacote um nome `rakun-*`, uma linha cada) sem feature nova da linguagem.
 - **Trava.** Nada; os nomes mudam na segunda caixa do s5 ou no s7.
+
+## Frente 166 — células de decisão (o mantenedor, 2026-10-18)
+
+#### 166-a · O nome de pacote de uma célula de decisão em `conformance/modules/decisions-taken/<N>/` (decisões 511, 512; frente 166)
+- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** Um nome de pacote começa com letra minúscula (um átomo erlang) e a 511 faz o nome de uma célula ser o do seu diretório; `<N>` é um número.
+- **Opções.**
+  (a) Manter o diretório `<N>` (a chave do ledger, o caminho que o mantenedor escreveu) e emendar a 511 com uma derivação: um diretório numérico nomeia o pacote `decision<N>`, escrito e checado no `cell check` (uma caixa de compilador do s4).
+  (b) Nomear o diretório `decision<N>`; nenhuma mudança no compilador.
+- **Recomendação.** (a): o número é o que todo leitor e o check 7 procuram.
+- **Bloqueia.** O scaffold do 166 s1.
+
+#### 166-b · Como os exemplos da fase 1 ficam fora do gate até a virada (decisões 67, 265, 464 (3), 475 (6); frente 166)
+- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** O `cell check` toma todo diretório com um `src/` como célula, e uma célula sem snapshot é vermelha por desenho; a 67 proíbe lista de exceções.
+- **Opções.**
+  (a) A fase 1 escreve `decisions-taken/<N>/main.bp` (sem `src/`, sem manifesto): nada é célula até o `promote` mover para `src/main.bp` e escrever o `botopink.json`.
+  (b) A forma completa de célula desde o primeiro commit, cada resposta aceita no mesmo lote — asserida de imediato.
+  (c) Um veredito `pending` do `cell check` para célula sem `snapshot/` — emenda 464 (3) e 475 (6), deixa uma célula existir sem asserção.
+- **Recomendação.** (a): os dois momentos do mantenedor, sem flag, sem lista, nada que o gate encontre e pule.
+- **Bloqueia.** O scaffold e o `promote` do 166 s1.
+
+#### 166-c · Uma forma de inclusão num `docs.md`: `{<path>}` ou `<!-- example: … -->` (decisão 461 (2); frente 166)
+- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** O mantenedor escreveu `{src/main.bp}` para os docs das células de decisão; o `<!-- example: modules/<cell> -->` da referência raiz é lido pelo `test-docs` hoje.
+- **Opções.**
+  (a) `{<path>}` em todo lugar: `{src/main.bp}` dentro de uma célula, `{modules/<cell>}` na referência raiz; as linhas `<!-- example: … -->` migradas no s4 e o `test-docs` lendo a forma nova (461 (2) emendada).
+  (b) Manter `<!-- example: … -->` e escrever a inclusão das células de decisão como `<!-- example: src/main.bp -->`.
+- **Recomendação.** (a): a grafia do mantenedor, uma forma em todo `docs.md` ao fim.
+- **Bloqueia.** O esqueleto de docs do 166 s1; a caixa do `test-docs` no s4.
+
+#### 166-d · Quem commita em `conformance/modules/decisions-taken/**` num repositório de biblioteca (decisão 433; regra 1 do fronts.md; frente 166)
+- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** A 433 e a regra 1 só deixam a própria frente de um repositório editá-lo; a maioria das bibliotecas não tem frente aberta enquanto a 166 escreve.
+- **Opções.**
+  (a) Uma exceção à 433 e à regra 1 para essa única subárvore em todo repositório: as threads da 166 commitam ali diretamente, uma thread por repositório, a do botopink-lang num worktree `--lang`.
+  (b) A frente de cada repositório ganha a caixa e escreve as suas; a 166 fica com o script e o check.
+- **Recomendação.** (a): uma forma, um script, uma regra de pouso.
+- **Bloqueia.** 166 s3.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 
