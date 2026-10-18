@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **641**.
+número livre, que é **642**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -656,42 +656,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) O tipo construído ganha seus métodos por `addMember` sobre ele, cada um um nó `ast` (o membro adicionado da 627).
 - **Recomendação.** (b): uma só forma de adicionar um membro, a que a 627 já dá.
 - **Bloqueia.** A última peça do B-149 (P4), `mocks.bp`.
-
-#### b148-a · Os nomes de tipo e de contrato dos primitivos não numéricos: `string` / `String`, `bool` / `Bool`, `bigint` / `BigInt`, e `Bytes`, `Array<T>`, hoje nome tanto de um behavior quanto de um tipo (decisão 617 (1); 144 B-148)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** `primitives.bp` declara `String`, `Bool`, `BigInt`, `Bytes` e `Array` como behaviors; um programa escreve `string`, `bool`, `Bytes`, `T[]` / `Array<T>` como tipos. A 617 (1) declara cada um como `pub type … implement <contract>`.
-- **Opções.**
-  (a) O nome minúsculo é o tipo, o maiúsculo o contrato (`pub type string implement String`, `bool implement Bool`, `bigint implement BigInt`); `Bytes` e `Array<T>` mantêm seu nome como o tipo e seu contrato é renomeado (`BytesLike`, `ArrayLike`) ou dissolvido num tipo sem contrato.
-  (b) `bytes` e `array<T>` como os tipos, ao lado de `Bytes` e `Array` como contratos.
-- **Recomendação.** (a): os nomes que os programas escrevem hoje ficam; só `primitives.bp` muda.
-- **Bloqueia.** A terceira peça do B-148 (as células de `Bytes`, `String`, `Array`).
-
-#### b148-b · Um estático com célula (`String.fromCodepoint`, `Array.range` / `repeat`, `Bytes.fromUtf8`, `bigint.of` / `parse`) quando um behavior não carrega célula (decisões 617 (2), 628, 332; 144 B-148)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** Esses estáticos carregam células no behavior hoje. A 617 (2) recusa uma célula num membro de behavior. Sítios: `String.fromCodepoint` 8 células, 5 std, 1 biblioteca; `Array.range` 4 / 2 / 6; `Array.repeat` 6 / 2 / 1; `Bytes.fromUtf8` 19 / 2 / 1.
-- **Opções.**
-  (a) Um estático exigido do contrato (`fn fromCodepoint(cp: i32) -> string;`), fornecido pelo tipo com suas células, chamado pelo nome do tipo (`string.fromCodepoint(65)`, a forma `bigint.of` da 332); os sítios da std e das células codemodados no B-148, os das bibliotecas nas suas frentes.
-  (b) O estático continua chamado pelo nome do contrato (`String.fromCodepoint`), despachado ao único tipo que o fornece.
-- **Recomendação.** (a): um nome por membro, o do tipo.
-- **Bloqueia.** A terceira peça do B-148.
-
-#### b137-c · A avaliação em tempo de build de `compiler.*` da 614 alcança as árvores de `addMember` / `wrapWith`, ou só um executor? (decisões 611, 614; 144 B-137)
-- **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
-- **Medido.** A 614 avalia uma chamada `compiler.*` dentro de um executor em tempo de build e encaixa sua resposta, e retira `syntax-captures-build`. Como construído, a avaliação se aplica só a executores. Dentro de uma árvore de `addMember` ou `wrapWith` uma chamada `compiler.*` continua recusada, com o código antigo `syntax-captures-build`.
-- **Opções.**
-  (a) Como construído: a avaliação é do executor; as outras árvores mantêm a recusa, sob seu nome antigo.
-  (b) Toda árvore `syntax` que um decorador entrega ao compilador (`addMember`, `wrapWith`, `init`) dobra suas chamadas `compiler.*` em tempo de build; a recusa sai de todo lugar.
-- **Recomendação.** (b): a 614 retira a recusa, e uma regra para toda árvore é o que um leitor espera.
-- **Bloqueia.** Nada construído espera (construído como (a) a menos que respondido).
-
-#### b137-d · `syntax-has-no-name` (612) no argumento de um decorador carrega uma linha `called from`? (decisão 612; 144 B-137)
-- **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
-- **Medido.** A 612 pede uma linha `called from`. Uma recusa no argumento de uma anotação não carrega nenhuma hoje, como `compiler.fail(at:)` não carrega nenhuma. A célula `compiler_name_of_lambda` guarda a recusa sem ela.
-- **Opções.**
-  (a) Como construído: a recusa no argumento, sem linha `called from`, como toda recusa no argumento de uma anotação.
-  (b) Toda recusa levantada por um decorador no argumento da sua anotação ganha a linha `called from` nomeando a chamada do corpo do decorador.
-- **Recomendação.** (a) aqui; (b) como passo próprio se desejado, para toda recusa assim de uma vez.
-- **Bloqueia.** Nada.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `String.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

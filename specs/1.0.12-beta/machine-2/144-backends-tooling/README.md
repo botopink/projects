@@ -2877,6 +2877,10 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
       `primitive-type-redeclared` (a literal's type is not shadowed; every other prelude name shadows as 606 (1)); cell
       `primitive_type_redeclared`
 - [ ] `pub type i32 implement Signed { … }` and its siblings declared in `primitives.bp` (`bool`, `string`, `Bytes`, `BigInt`, `Array<T>`, `Pair<A, B>`, `Function` as 617 (1) applies); the six empty behaviors go; `infer.zig`'s width table and the four backends' chains replaced by a read of the `implement` clauses — one resolution, from the text
+- [ ] decision 641: the primitive types lowercase (`bool`, `string`, `bigint`, `bytes`, `array<T>`), `String` / `Bool` / `BigInt` / `Bytes` /
+      `Array` dissolved into them, their statics on the type with their cells (`string.fromCodepoint`, `array.range`, `bytes.fromUtf8`);
+      the 2,500 sites respelled by codemod (std and the cells here, the libraries in their fronts); cells `primitive_static_on_type`,
+      `primitive_contract_dissolved`
 - [ ] every behavior of the file holds signatures and `default fn` bodies only — no `#[compiler.external(…)]` on a behavior member (refused there, `external-on-behavior`, at the annotation); the 87 cells move to `declare fn` members of the types, `Self` concrete; a member one target runs in botopink and another in the host uses 610's `.Wasm(body: f)` on the type
 - [ ] a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature
 - [ ] decision 628 (window: 640 (4) — rakun's and query's one-line commits land with it, machine 1 told the hash): a behavior's member without `self` is a static written `fn` (with a body, the behavior's own; without, provided by each implementor); `default` on it refused `default-on-static`; the 56 `default fn` without `self` (std 10, the cells 44) drop `default` by codemod, the libraries' in their fronts; `conformance/docs.md`'s "associated `default fn`" rewritten

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **641**.
+number, which is **642**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -656,42 +656,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The built type gains its methods through `addMember` on it, each an `ast` node (627's added member).
 - **Recommendation.** (b): one way to add a member, the one 627 already gives.
 - **Blocks.** B-149's last piece (P4), `mocks.bp`.
-
-#### b148-a · The type and contract names of the non-numeric primitives: `string` / `String`, `bool` / `Bool`, `bigint` / `BigInt`, and `Bytes`, `Array<T>`, today both a behavior's and a type's name (decision 617 (1); 144 B-148)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** `primitives.bp` declares `String`, `Bool`, `BigInt`, `Bytes` and `Array` as behaviors; a program writes `string`, `bool`, `Bytes`, `T[]` / `Array<T>` as types. 617 (1) declares each as `pub type … implement <contract>`.
-- **Options.**
-  (a) The lowercase name is the type, the capitalised one the contract (`pub type string implement String`, `bool implement Bool`, `bigint implement BigInt`); `Bytes` and `Array<T>` keep their name as the type and their contract is renamed (`BytesLike`, `ArrayLike`) or dissolved into a type with no contract.
-  (b) `bytes` and `array<T>` as the types, beside `Bytes` and `Array` as contracts.
-- **Recommendation.** (a): the names programs write today stay; only `primitives.bp` changes.
-- **Blocks.** B-148's third piece (the cells of `Bytes`, `String`, `Array`).
-
-#### b148-b · A static with a cell (`String.fromCodepoint`, `Array.range` / `repeat`, `Bytes.fromUtf8`, `bigint.of` / `parse`) once a behavior carries no cell (decisions 617 (2), 628, 332; 144 B-148)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** These statics carry cells on the behavior today. 617 (2) refuses a cell on a behavior member. Sites: `String.fromCodepoint` 8 cells, 5 std, 1 library; `Array.range` 4 / 2 / 6; `Array.repeat` 6 / 2 / 1; `Bytes.fromUtf8` 19 / 2 / 1.
-- **Options.**
-  (a) A required static of the contract (`fn fromCodepoint(cp: i32) -> string;`), provided by the type with its cells, called by the type's name (`string.fromCodepoint(65)`, 332's `bigint.of` form); std's and the cells' sites codemodded in B-148, the libraries' in their fronts.
-  (b) The static stays called through the contract's name (`String.fromCodepoint`), dispatched to the one type that provides it.
-- **Recommendation.** (a): one name per member, the type's.
-- **Blocks.** B-148's third piece.
-
-#### b137-c · Does 614's build-time evaluation of `compiler.*` reach `addMember` / `wrapWith` trees, or only an executor? (decisions 611, 614; 144 B-137)
-- **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a).**
-- **Measured.** 614 evaluates a `compiler.*` call inside an executor at build and splices its answer, and withdraws `syntax-captures-build`. As built, the evaluation applies to executors only. Inside an `addMember` or `wrapWith` tree a `compiler.*` call is still refused, with the old code `syntax-captures-build`.
-- **Options.**
-  (a) As built: the evaluation is the executor's; the other trees keep the refusal, under its old name.
-  (b) Every `syntax` tree a decorator hands the compiler (`addMember`, `wrapWith`, `init`) folds its `compiler.*` calls at build; the refusal goes everywhere.
-- **Recommendation.** (b): 614 withdraws the refusal, and one rule for every tree is what a reader expects.
-- **Blocks.** Nothing built waits (built as (a) unless answered).
-
-#### b137-d · Does `syntax-has-no-name` (612) at a decorator's argument carry a `called from` line? (decision 612; 144 B-137)
-- **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a).**
-- **Measured.** 612 asks for a `called from` line. A refusal at an annotation's argument carries none today, as `compiler.fail(at:)` carries none. The cell `compiler_name_of_lambda` holds the refusal without it.
-- **Options.**
-  (a) As built: the refusal at the argument, no `called from` line, like every refusal at an annotation's argument.
-  (b) Every refusal raised by a decorator at its annotation's argument gains the `called from` line naming the decorator body's call.
-- **Recommendation.** (a) here; (b) as its own step if wanted, for every such refusal at once.
-- **Blocks.** Nothing.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `String.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
