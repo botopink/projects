@@ -7,8 +7,8 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 
 **Rules for the night**
 
-1. The builtins group comes first (144 README § Machines rule 9), in the order decision 605 fixed:
-   **B-136 → 165 s10 → B-139 → B-140**. Rule 9's "no other new step opens" is relaxed by the maintainer for
+1. The builtins group comes first (144 README § Machines rule 9), in the order decision 605 fixed, amended by 617 and 625 (the maintainer, 2026-10-18, evening):
+   **B-136 ✓ → 165 s10 → B-137's tail → B-138's boxes → B-139 → B-149 → B-148 → B-140**. Rule 9's "no other new step opens" is relaxed by the maintainer for
    the items of § After the group below, under one condition: an item runs only when its files are disjoint
    from the group's open threads (`libs/std/**`, the builtins, `compiler.bp`, the backends' `Implementation`
    readers, `decorator_*` / `template_*` / `comptime_*` cells). An item that would touch them waits.
@@ -35,12 +35,14 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 
 | # | Item | Fixed by | Model | Oracle |
 |---|---|---|---|---|
-| 1 | **B-136 lands**: the final stack rebased onto `origin/feat`, verified (`zig build`, `zig build test`, every cell; `fs_asset_opens_as_file` and `fs_file_handle` may be red, B-139's), fast-forwarded; the hash posted to machine 2; the main checkout's compiler rebuilt (`zig build -Doptimize=ReleaseSafe`) | 575–579 | coordinator | the cells, `zig build test` |
-| 2 | **rakun and query: the 579 imports** land (the branches already prepared), on the rebuilt compiler | 579 | sonnet | each library's gate |
-| 3 | **165 s10** — rakun and jhonstart on the new spelling: B-136's codemod (`--imports`), B-138's codemod (`#[@External.X]` → `#[@external(.X(…))]`), every `@emit` replaced as decision 605 lists — a `val __rk*` registration → `val declName = compiler.name(decl); compiler.init({ -> rkRegisterX(declName, decl); })`; a generated function beside a type → a static member by typed `addMember`; a generated type → a template text `` @`…` `` to `addType`; rakun-bpp's `<Name>Params` → the run-time helper `pageParams(route)`; rakun-stylesheet's `@expr(safe)` → `safe`; every marker with an empty body `{}` (604); `rakun.d.bp` deleted. One thread per package group (rakun core · rakun-app/-bpp/-ssr · rakun-data/-service/-security · the rest), each rebasing onto the previous landing | 604, 605, 575 (8), 576 | sonnet | rakun's and jhonstart's gates on the main checkout's compiler; `test-libs` |
-| 4 | **165 s5** — `#[module]` over a `pub component fn x() -> Component<Service>` only, `Service` / `Lifecycle` / `Module`, `use inject`, `use onStop`, `rakun.boot()` over a `ServiceScope`, `#[rakun.config]`; the two build errors, each a cell | 581, 580, 584 | opus | the cells; `boot_modules` |
-| 5 | **B-140's plan** (a `Plan` thread on `fable`, as 144 README § `fable` as a consultant): `Type` in botopink, inside `compiler.bp` (624) over `compiler.fields` + `compiler.buildType`, `Type.Field<T>(name, type, annotations, defaultValue)`, the run-time key removed, the derived types kept and written in botopink; its open points filed as `b140-*`. The build opens after B-139 | 575 (7), 578, 598, 599, 600 | fable (plan) | — |
-| 6 | **B-140** builds, after B-139 lands | the plan | sonnet / opus per piece | the derived-type cells; `test-libs` |
+| 1 | **B-145 and 150 s31 land** (verified; the hashes posted) | 575, the s31 box | coordinator | the cells, rakun's gate |
+| 2 | **B-25's `io/http`** (623: `fetch(req: Request) -> Task<Result<Response, HttpError>>`, `fetch(url)` removed, std's and `http`'s sites) with the `http` library's B-138 fix — running | 623, 334, 393 | sonnet | `http_fetch_request`, `http_fetch_url_removed`; `http`'s gate |
+| 3 | **B-146** — the three checker defects 165 s5 measured (`typeinfo-all-imported` against 551, `.Variant` in an annotation argument, …) — now, lane A, disjoint from the group | the step | sonnet | its cells red on the parent |
+| 4 | **165 s10's routes** (rakun-bpp) — after B-137's package hash from machine 2, with 612–616 applied in the same commit (`init`, `syntax`, no `!`, `#[compiler.external`) | 605, 611–616 | sonnet | rakun's gate on the rebuilt compiler |
+| 5 | **B-21** (622: every function writes its return type, `-> void` included; `fn-return-missing`; 06 C9 removed): the compiler, std and the 1,927 cells — **after B-139's codemod hash** from machine 2 (the two touch every cell file); rakun 305 / validation 95 / query 24 in their fronts | 622 | opus (checker), sonnet (codemod) | `fn_return_missing`; every cell on four targets |
+| 6 | **B-140** (598–600, 624): `Type` in botopink inside `compiler.bp` — `Field<T>`, `Info<T>`, the five utilities over `compiler.fields` + `buildType(name, fields)`, the run-time field key removed — after B-139; the pieces b140-a (lineage of a derived type) and b140-e (a meta record holding a `Type.Field<T>`) block wait on the maintainer, the rest builds; the string-`addMember` removal after 165 s11 | 598–600, 624, 625 | sonnet / opus per piece | the derived-type cells; `test-libs` |
+| 7 | **165 s11** (625, 626, 627): rakun-bpp's `html.bp` and rakun-style over `compiler.ast`; every marker registering itself through `compiler.init` (the ten `rk*` members gone); `configurationProperties`'s `make` / `check` and rakun-restclient's `Api.http()` as typed members naming the owner `decl`, `-> decl`; `syntax decl` typed by a behavior where members are called — after B-149 | 625–627, 613 | opus | rakun's `conformance/`; `test-libs` |
+| 8 | **165 s5's rest** (B-146 / B-147 landed; 165-h open), then **165 s7**; 146's and 145's sites (`syntax`, `-> void`, `.JavaScript(`) one commit per library at their fronts' next landing | 581, 616, 618, 622 | sonnet | the libraries' gates; `boot_modules` |
 
 ## After the group — or beside it, when the files are disjoint
 
