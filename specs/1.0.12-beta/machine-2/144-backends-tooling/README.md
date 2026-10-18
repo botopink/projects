@@ -2625,12 +2625,14 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 - [x] decision 615: `compiler.compile` renamed `compiler.init` at every site (std, the cells, `conformance/docs.md`, the
       AGENTS.md); the cells `compile_executor_*` → `init_executor_*`, `compile_init_order_modules` → `init_order_modules`,
       `compile_output_outside_decorator` → `init_output_outside_decorator`; rakun's and query's sites in 165 s10
-- [ ] decision 642: the fold extended to every tree (`addMember` member; the `wrapWith` wrapper is gone, 714), `syntax-captures-build` gone
+- [x] decision 642: the fold extended to every tree (`addMember` member; the `wrapWith` wrapper is gone, 714), `syntax-captures-build` gone
       everywhere; a `syntax` parameter takes the argument as written (`compiler.name(x)` in a member answers `"x"`); only a
       `comptime` parameter given a run-time value refused (`compiler-arg-at-run-time`); cells `member_reads_compiler_name`,
       `wrapper_reads_compiler_name`, `member_names_its_parameter`; a wrapper holds the decorator body's literal locals as a
       member does (614's two forms equal in a wrapper too); a `syntax` argument that is not an identifier
-      (`compiler.text(x + 1)`) taken as written (`member_texts_its_expression`)
+      (`compiler.text(x + 1)`) taken as written (`member_texts_its_expression`) — built as: `compiler.text(<expr>)` folds to
+      the expression's text, `compiler.name` to an identifier's name or a path's last segment (`x.y` → `"y"`); a `comptime`
+      expression under a member is left to the comptime pass; the wrapper's literal locals dropped with 714
 - [ ] decision 716: the `syntax decl` parameter's declared type is the contract (`unknown` no member, a behavior its members and the annotation refused on a type not implementing it, `fn` a function, `T` any), every tree checked once at the decorator by that type (581 (2) and 613 amended); `decl` the declaration as code in a member too (b137-i (a)) — `decorator-member-captures` gone, `decorator_member_captures_handle` a run cell; cells `decl_unknown_no_member`, `decl_behavior_contract_refused`, `decl_behavior_member_typed`, `member_decl_as_code`
 - [ ] decision 718: `Compiler.src` is `fn src(self: Self) -> SourceLocation`, written `comptime compiler.src()` — `compiler.bp`'s `val src` becomes it; cells `src_location` and `compiler_at_run_time` rewritten with the call, cell `compiler_src_is_a_call` (a run-time function receiving its caller's location as an argument the caller writes); `module`, `package`, `isStd` unchanged
 - [x] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `syntax-captures-build`
