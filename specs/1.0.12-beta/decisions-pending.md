@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**109 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **640**.
+number, which is **641**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -648,16 +648,6 @@ group), answered before every other part of this page; in the order of the steps
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
 
-#### b149-a · Which step owns `buildType` over fields, the `Type.*` bodies, `mocks.bp` and `derived_types.zig`'s reduction: B-149 or B-140? (decisions 625, 629; 144 B-149, B-140)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 629 binds both steps. B-149 (machine 2) and B-140 (machine 1) each list `buildType(name, fields, implements)`, `buildTypeInline`, `mocks.bp` and the materialiser in `comptime/derived_types.zig`.
-- **Options.**
-  (a) B-149 owns the two builders' surface (`compiler.bp`, `compiler_surface.zig`), `mocks.bp` and the cell `build_type_from_fields`; B-140 owns the `Type.*` bodies in botopink, `compiler.fields` and the materialiser's reduction.
-  (b) B-149 owns all of it; B-140 keeps `Type.*` over the builders as they land.
-  (c) B-140 owns all of it; B-149 stops at `compiler.ast` and `build`'s removal.
-- **Recommendation.** (a): each machine keeps its files (machine 2 the compiler surface, machine 1 `types.bp`).
-- **Blocks.** B-149's last piece (P4).
-
 #### b149-b · How `mocks.bp`'s `Mock` writes one method per behavior member once `buildType(name, fields, implements)` takes no members (decisions 625, 627; 144 B-149)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(b).**
 - **Measured.** `Mock` writes each method as text today: `fn m(sig) -> R { return invoke(…); }`. 625 removes code from text. `buildType` takes fields and the behaviors implemented, no members.
@@ -666,24 +656,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The built type gains its methods through `addMember` on it, each an `ast` node (627's added member).
 - **Recommendation.** (b): one way to add a member, the one 627 already gives.
 - **Blocks.** B-149's last piece (P4), `mocks.bp`.
-
-#### b149-e · What `compiler.addType("Columns", compiler.buildType("(id: string)"))` becomes, and in which step (decision 625 (3); 144 B-149, B-140)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 14 `decorator_add_type*` cells write that form. 625 (3) makes `addType(name, syntax source: anytype)` written code.
-- **Options.**
-  (a) `compiler.addType("Columns", type(id: string))`, the 14 cells rewritten in B-149 with `build`'s removal.
-  (b) The same spelling, rewritten in B-140.
-- **Recommendation.** (a): the cells read `buildType(text)`, which B-149 removes.
-- **Blocks.** B-149's `build` removal (P3).
-
-#### b149-f · Is `compiler.ast(…)` in a decorator body (627's `val client = compiler.ast(…)`) B-149's or 165 s11's? (decisions 625, 627; 144 B-149, 165 s11)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** B-149's `ast` is a template-site member (`.site` in `compiler_surface.zig`). 627's example stands in a decorator.
-- **Options.**
-  (a) B-149 admits `ast` in a decorator body too, with a cell; 165 s11 uses it.
-  (b) B-149 admits the template site only; the decorator form is 165 s11's.
-- **Recommendation.** (a): 165 s11 is a library step and cannot change the compiler (433).
-- **Blocks.** 165 s11 (machine 1) if (b).
 
 #### b148-a · The type and contract names of the non-numeric primitives: `string` / `String`, `bool` / `Bool`, `bigint` / `BigInt`, and `Bytes`, `Array<T>`, today both a behavior's and a type's name (decision 617 (1); 144 B-148)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
@@ -702,15 +674,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The static stays called through the contract's name (`String.fromCodepoint`), dispatched to the one type that provides it.
 - **Recommendation.** (a): one name per member, the type's.
 - **Blocks.** B-148's third piece.
-
-#### b148-d · `default-on-static` (628) turns rakun's and query's one site each red: one landing window with their two one-line commits, or the refusal held until their fronts land? (decision 628; 144 B-148, 165)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** rakun and query each write one `default fn` without `self`.
-- **Options.**
-  (a) B-148 lands the refusal with the two libraries' one-line commits in the same window, machine 1 told the hash.
-  (b) The refusal waits until rakun's and query's fronts next land.
-- **Recommendation.** (a): two lines, no front waits.
-- **Blocks.** B-148's fifth piece.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `String.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
