@@ -731,6 +731,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
 - **Blocks.** Nothing (built as (a)).
 
+#### 165-g · How a typed member a decorator adds to a type reaches that type's static members (decisions 370 (2), 575 (4), 576 (14); 144 B-137 question b137-b; front 165 s10)
+- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(b).**
+- **Measured.** A typed member that reads the decorator's `expr decl` is refused (`decorator-member-captures`, "the decorator's `@Decl` handle, which exists only while the program compiles"): `compiler.addMember("check", fn() -> string { return decl.make().name; })` on `#[checked] pub type City(…) { pub fn make() -> City … }`. `Self.make()` is a parse error in a hand-written type body as well as in the member ("unexpected `.`"). rakun's `#[configurationProperties]` `check` and rakun-restclient's `http` need the owner's static members. They are written in the string `addMember(source)` form until this is answered; 576 (14) removes that form in B-140.
+- **Options.**
+  (a) Inside a typed member, `expr decl` of a type splices as the type's name (575 (4)'s tree rule), so `decl.make()` reads `City.make()`. The `decorator-member-captures` refusal is kept for a handle read as a build value (`compiler.name(decl)`). This is b137-b's question for members.
+  (b) `Self` names the owner type in a type body and in a member added to it: `Self.make()`, `-> Self`. No run-time handle exists, and a member reads its owner by the name every method body already has for it.
+  (c) A typed member reaches its owner only through an instance receiver (`self: Self`). A static member that needs the owner stays a string member.
+- **Recommendation.** (b): it makes no handle a run-time value (b137-b's recommendation stands), and it also answers 165-e's `-> Self`.
+- **Blocks.** B-140's string-`addMember` removal for rakun's `check` and `http`; 165-e.
+
 #### 165-c · 605 (1)'s registration reads `compiler` inside the executor, which 575 (4) refuses (decisions 575 (4), 605; front 165 s10)
 - **Proposed (opus, 2026-10-17; built as (a), awaiting the maintainer):** **(a).**
 - **Measured.** 605 and 165 s10's box write a registration as `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Inside an executor, `compiler` is a build value, and 575 (4) refuses capturing it (`expr-captures-build`, cell `compile_executor_captures_build`). Cell `compile_executor_before_main` shows the accepted form: the build value read before the executor.
