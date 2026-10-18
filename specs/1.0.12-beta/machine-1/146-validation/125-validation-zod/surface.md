@@ -198,7 +198,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `z.looseObject({…})` | a field `#[rest] extra: Dict<string, Json>` | have | unknown members kept, document order |
 | `.catchall(schema)` | `#[rest] extra: Dict<string, T>` | have | each unknown member decoded as `T` |
 | `.shape` | `@typeInfo(Dog).fields` | add · 12 | reflection reads the type (306); `fields` is `typeinfo-unknown-member` today (`01-checker`, `language-gaps.md`) |
-| `.keyof()` | no counterpart: the run-time field key is removed (decision 599); `.field` written where a `Type.Field<T>` is expected stays a build-time key | gap | decision 599 |
+| `.keyof()` | no counterpart: the run-time field key is removed (decision 599); `.field` written where a `compiler.Field<T>` is expected stays a build-time key | gap | decision 599 |
 | `.extend({…})` | `#[validated] pub val DogWithBreed = Type.merge(Dog, Breed);` (307) | add · 5 | waits on `01-checker` step 28; `#[extending]` goes |
 | `.safeExtend({…})` | `Type.merge` refuses an incompatibly retyped field (307) | add · 5 | waits on `01-checker` step 28 |
 | `.pick({…})` · `.omit({…})` | `#[validated] pub val RecipeTitle = Type.pick(Recipe, .title);` · `Type.omit` (307) | add · 5 | waits on `01-checker` step 28 and 134 step 4 (the variadic parameter, 267) |

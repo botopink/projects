@@ -17,9 +17,9 @@ Cada exemplo mostra quatro partes:
 As regras que os exemplos usam:
 
 - **(0)** O primeiro parâmetro de decorator é `syntax decl` (a declaração anotada); todos os outros são `comptime`, escritos explicitamente.
-- **(1)** O argumento é tipado: pode ser função, `type`, `Type.Field<T>` (308), enum ou record.
+- **(1)** O argumento é tipado: pode ser função, `type`, `compiler.Field<T>` (308), enum ou record.
 - **(2)** `syntax decl: T`: o `T` é inferido da declaração anotada; quando a assinatura não usa o `T`, ele é `unknown`.
-- **(3)** `Type.Field<T>` (da std, decisão 308) e o atalho `.campo`.
+- **(3)** `compiler.Field<T>` (da std, decisão 308) e o atalho `.campo`.
 - **(4)** O atalho `.Nome` resolve exatamente o nome declarado (maiúsculas contam): `.Custom`, nunca
   `.custom`; nenhuma saída converte caixa — um nome de outro sistema é string explícita.
 
@@ -50,7 +50,7 @@ pub fn check<T>(
     syntax decl: T,
     comptime message: string,
     comptime rule: ?fn(v: T) -> bool = null,
-    comptime at: ?Type.Field<T> = null,
+    comptime at: ?compiler.Field<T> = null,
     comptime code: Code = .Custom,
 ) {
     if (rule == null) {
@@ -68,7 +68,7 @@ pub fn check<T>(
     compiler.addMeta(Check(message: message, rule: rule, at: at, code: code));
 }
 
-pub type Check<T>(message: string, rule: fn(v: T) -> bool, at: ?Type.Field<T>, code: Code)
+pub type Check<T>(message: string, rule: fn(v: T) -> bool, at: ?compiler.Field<T>, code: Code)
 
 // um decorator só escreve o membro; dois `addMember("validate", …)` seriam
 // `decorator-member-duplicate` (216 (1), 404)
@@ -313,10 +313,10 @@ import {types.Type} from "std";
 pub fn entity<T>(syntax decl: T, comptime table: string) {        // nome SQL: string
     compiler.setMeta(Table(name: table));
 }
-pub fn index<T>(syntax decl: T, comptime ..fields: Type.Field<T>[]) {   // variádico (267)
+pub fn index<T>(syntax decl: T, comptime ..fields: compiler.Field<T>[]) {   // variádico (267)
     compiler.setMeta(Index(columns: fields.map({ f -> f.name })));
 }
-pub fn unique<T>(syntax decl: T, comptime field: Type.Field<T>) {
+pub fn unique<T>(syntax decl: T, comptime field: compiler.Field<T>) {
     compiler.setMeta(Unique(column: field.name));
 }
 pub fn column<T>(syntax decl: T, comptime name: string) {          // num campo: T = tipo do campo

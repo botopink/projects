@@ -2719,7 +2719,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `modules/compiler-cli/tests/cell/departs`, `scripts/test-libs.sh`, `cli/{libs,test_cmd}.zig` still write
       `#[@External.X(…)]` — rewritten, with the fixtures `cell/narrowed`, `closure_invariant/hosted`,
       `cell-workspace/group/excluded_target_literal_entry`; `cli_contract.sh`, `test_tooling.sh`, `closure_invariant.sh` green
-- [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `compiler.bp`'s `Type` (624) from `declare-without-implementation` deleted
+- [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) from `declare-without-implementation` deleted
       when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption goes by decision 604 (a marker is `fn x(syntax decl: unknown) {}`; cells `declare_without_implementation_decorator`, `decorator_marker_empty_body`)
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
@@ -2735,13 +2735,13 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       discovery.zig`), `format-staged.sh`, the codemod scripts' extension lists, `cli_contract.sh`; a file still ending
       in `.d.bp` is a module named `x.d`; the cells `local_dependency` (`shapes.bp`) and `files_one_module_twice` (one
       file listed twice; its snapshot and `docs.md` stated)
-      — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `compiler.bp`'s `Type` (624)) until the
+      — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)) until the
       modules dissolve; `builtins.d.bp` / `builtins_fns.d.bp` are std modules `builtins.d` / `builtins_fns.d` until then
 - [ ] no `#[builtin]`, no `@name` (606): the types and behaviors `builtins.d.bp` declares (`Result`, `Task`, `Component`, `Renderable`,
       `Iterator`, `Stream`, `Future`, `Use`, `Display`, `Closeable`, `Index`, `Slice`, `Annotation`, `Decorator`) move into
       `primitives.bp` with their bodies — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
       two functions stay, imported, inside std too: `print` in `io/terminal.bp`, `panic` in `failure.bp`; `println`, `todo`,
-      `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `Type.Info<T>`, the record in `compiler.bp`'s `Type` (624)),
+      `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `compiler.Info<T>`, the record in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)),
       `embed` (the link only: `Link` in `compiler.bp`, `Asset(link)` in `asset.bp` importing `compiler` and `io.fs`, `open()` the `File`, when by the `comptime` at the read, 607) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
       `external.bp` gone) are members of `compiler`, written under `comptime` in a run-time body; every std decorator
       written `#[name]` — `#[compiler.external(…)]`, an annotation `#[compiler.m(…)]` calling `m` on the annotated
@@ -2752,9 +2752,10 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       default); the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig` read the modules or die; the
       codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
       `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
-      `Type.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
-- [ ] decision 624: `Type` (`Field<T>`, `Info<T>`, the five utilities) declared inside `compiler.bp`; `types.bp` goes;
-      `import {types.Type}` → `import {compiler.Type}` in the 55 cell files, in the codemod commit
+      `compiler.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
+- [ ] decisions 624, 630: `Field<T>` and `Info<T>` declared in `compiler.bp` — `compiler.Field<T>` / `compiler.Info<T>`, the 27
+      std and cell files respelled in the codemod commit —; `types.bp` kept, `Type`'s five utilities as statics (628) importing
+      `compiler`; `import {types.Type}` unchanged
 - [ ] the modules: `Result` in `primitives.bp` with its five bodies, 118's shape kept per target, keyed to that declaration
       (609; the backends' inline lowering and the `methods` rows go; no `result.bp`); `compiler.bp` self-contained and first
       (608: `SourceLocation`, `Link`, `Implementation`, `DeclKind`, `Decorator`, `Annotation`, the handle records; no
@@ -2890,7 +2891,7 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
 
 - [ ] the `Node` records in `compiler.bp`, one per kind the parser's `ast.Expr` has that a template may answer (`Call`, `Name`, `Lit`, `List`, `Arg`, `Lambda`, `Record`, `Field`, `If`, `Case`, …) — the vocabulary measured off the parser and written in `conformance/docs.md` § `compiler.ast`; a kind no template needs is not exposed
 - [ ] `fn ast(self: Self, comptime node: Node) -> anyvalue`: the tree checked and lowered where the call stands (426 (1)); an ill-formed tree (an `Arg` outside a `Call`, a `Name` nothing binds) refused at the `ast` call naming the node
-- [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; `buildType(self, comptime name: string, comptime fields: Type.Field<unknown>[], comptime implements: anytype[] = []) -> anytype` and `buildTypeInline(self, comptime fields: Type.Field<unknown>[]) -> anytype` (629), the record-text form gone
+- [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; `buildType(self, comptime name: string, comptime fields: compiler.Field<unknown>[], comptime implements: anytype[] = []) -> anytype` and `buildTypeInline(self, comptime fields: compiler.Field<unknown>[]) -> anytype` (629), the record-text form gone
 - [ ] the std bodies: `Type.pick` / `omit` / `partial` / `required` / `merge` over `buildType(name, fields)`, `mocks.bp`'s type over `implements:`; the template cells rewritten over `compiler.ast` (`bpp_*`'s `deps/markup`, `template_*`); `compiler.text(t)` unchanged
 - [ ] cells: `template_answers_ast` (four targets), `ast_ill_formed_refused`, `build_type_from_fields`, `compiler_build_removed` (refused as an unknown member)
 - [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `compiler.ast`; later, the std module `code.bp` — the template `code` (`` code @`…` `` with holes) over the AST, written in botopink, imported where used — its own step, opened when 625 (4) is scheduled

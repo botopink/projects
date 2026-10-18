@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **630**.
+number, which is **631**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -655,13 +655,13 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for a field wherever it is read.
 - **Blocks.** Nothing (built as (a) unless answered).
 
-#### b140-e · A meta record holding a `Type.Field<T>`, read at run time, once 599 removes the run-time field (decisions 298, 308, 575 (4), 599 (1), 606 (3); 144 B-140)
+#### b140-e · A meta record holding a `compiler.Field<T>`, read at run time, once 599 removes the run-time field (decisions 298, 308, 575 (4), 599 (1), 606 (3); 144 B-140)
 - **Proposed (fable, 2026-10-18, re-read against 606–609; awaiting the maintainer):** **(a).**
-- **Measured.** Cell `meta_field_tuple_and_field_key` (298) records `Sort<Book>(by: .pages, keys: [.pages])` through `compiler.setMeta`, and `main` reads it at run time. Under 606 (3) the read is written `val o = comptime compiler.typeInfo(Book).meta(Sort);` (B-139's codemod). A `comptime` expression's value is spliced into the run-time body as a literal (575 (4)), and a `Type.Field<T>` has no run-time form (599 (1)). So the failure is the splice of `Sort(by: .pages, …)`: the `unbound variable 'pages'` at a synthetic location (`src/main.bp:1000002:31`) once B-140's first box removes the run-time key. 606 (3) also gives (b) a precedent in the same record: `Type.Field<T>.type: anytype` is a build-time value lowered as its name (575 (7)).
+- **Measured.** Cell `meta_field_tuple_and_field_key` (298) records `Sort<Book>(by: .pages, keys: [.pages])` through `compiler.setMeta`, and `main` reads it at run time. Under 606 (3) the read is written `val o = comptime compiler.typeInfo(Book).meta(Sort);` (B-139's codemod). A `comptime` expression's value is spliced into the run-time body as a literal (575 (4)), and a `compiler.Field<T>` has no run-time form (599 (1)). So the failure is the splice of `Sort(by: .pages, …)`: the `unbound variable 'pages'` at a synthetic location (`src/main.bp:1000002:31`) once B-140's first box removes the run-time key. 606 (3) also gives (b) a precedent in the same record: `compiler.Field<T>.type: anytype` is a build-time value lowered as its name (575 (7)).
 - **Options.**
-  (a) Refused at the `comptime` expression whose value holds a `Type.Field<T>`. The error is located at the `comptime`, with code `field-key-at-run-time`, and names the record's field (`Sort.by`) and 599. The decorator's build-time read stays. The cell splits: the tuple half runs, and the field half becomes a refusal cell.
+  (a) Refused at the `comptime` expression whose value holds a `compiler.Field<T>`. The error is located at the `comptime`, with code `field-key-at-run-time`, and names the record's field (`Sort.by`) and 599. The decorator's build-time read stays. The cell splits: the tuple half runs, and the field half becomes a refusal cell.
   (b) The field lowers to its name, as its own `type` member does: `o?.by` is `"pages"`, and `Sort`'s run-time shape is `by: string`, `keys: string[]`.
-  (c) `compiler.setMeta` refuses a record with a `Type.Field<T>` field.
+  (c) `compiler.setMeta` refuses a record with a `compiler.Field<T>` field.
 - **Recommendation.** (a): it refuses where the build value meets run time, a point 606 (3) now spells (`comptime`). (b) is cheapest, but it gives one record two shapes.
 - **Blocks.** B-140's first box (the cell is red on its branch).
 
@@ -2123,7 +2123,7 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 | 03r-s | OTLP pushed as HTTP/JSON (`json:encode` in `rakun_metrics.erl`) | 17 |
 | 03r-t | Front 76's keys under `rakun.management.*`, in one `management.bp` plus the `rakun_probes` sidecar | 11 |
 | 03r-u | Liveness group admits only `livenessState`, `ping`, `diskSpace`; any other name refuses the boot | 11 |
-| 03r-v | Typed query builder's operator is the enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`): `queryOf(City.entityMeta()).where(City.columns().state, Op.Eq, "CA")`; the column as `Type.Field<City>` (308) is a separate question | 08 · `orm/query.bp:84-115` |
+| 03r-v | Typed query builder's operator is the enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`): `queryOf(City.entityMeta()).where(City.columns().state, Op.Eq, "CA")`; the column as `compiler.Field<City>` (308) is a separate question | 08 · `orm/query.bp:84-115` |
 | 03r-w | OAuth2's explicit endpoints are `OAuth2Provider` fields (`authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri`); client credentials are `withClientToken(id, call)`, retrying once on 401 | 79 · 13 |
 | 03r-x | Outbox relay claims by conditional `UPDATE` (a crashed relay's claims return via `reclaimStale`); saga and 2PC coordinators persist every transition and resume at boot (`resumeSagas`, `recover2pc`); job store claims triggers and takes over leases the same way | 15 |
 | 04-a | The core's tag epoch only grows (`rkResetContext` leaves it), is `i64`, and the empty tag is refused in `rkBumpTag` / `rkTagEpoch` | 04 step 1 · `rakun/src/runtime.bp`, `rakun_runtime.erl` |
@@ -2145,7 +2145,7 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-s:** confirm (`rakun_metrics.erl` `otlp_*_json`, `json:encode`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-t:** confirm (`rakun-actuator/src/management.bp`, `rakun_probes.erl`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-u:** confirm (`management.bp`).
-- **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-v:** confirm as the state on feat (`rakun-data/src/orm/query.bp` `Op`, `queryOf`, `City.columns()`); superseded in direction by 312 / 397 / 398: the typed builder leaves rakun-data when erika's `self.db.query "…"` and dbcontext land (137, 143), one query language — the `Type.Field<City>` column question (308) is moot then.
+- **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-v:** confirm as the state on feat (`rakun-data/src/orm/query.bp` `Op`, `queryOf`, `City.columns()`); superseded in direction by 312 / 397 / 398: the typed builder leaves rakun-data when erika's `self.db.query "…"` and dbcontext land (137, 143), one query language — the `compiler.Field<City>` column question (308) is moot then.
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-w:** confirm (`rakun-security/src/oauth2/provider.bp`; `client_credentials.bp` `withClientToken`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-x:** confirm (`tx/outbox.bp` `reclaimStale`, `saga.bp` `resumeSagas`, `twopc.bp` `recover2pc`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 04-a:** confirm (the entry above).

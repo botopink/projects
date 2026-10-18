@@ -378,12 +378,12 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [x] proposed cell: `@emit` on a tag (`tag-annotation-output`)
       — `tag_annotation_emit`
 
-### B-16 — 280, 307, 308: typed decorator arguments' rest, derived types' rest, `Type.Field<T>`
+### B-16 — 280, 307, 308: typed decorator arguments' rest, derived types' rest, `compiler.Field<T>`
 
 **Repository:** botopink-lang, with consumer commits in rakun, validation (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/field_key_runtime`, `examples/types.bp` on four targets, the seven 280 examples.
-**Model:** opus. **Consumer commits:** rakun-data (`orm/entity.bp` to `Type.Field<unknown>`); unblocks validation
+**Model:** opus. **Consumer commits:** rakun-data (`orm/entity.bp` to `compiler.Field<unknown>`); unblocks validation
 125's residue, jhonstart 26 s13 (362), 118.
 
 #### Step 24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (decision 280) (was `01-checker` s24)
@@ -406,10 +406,10 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Landed
       when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
       `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
       (`reject/decorator_decl_pattern_{mismatch,return}`)
-- [ ] `Field<T>` — `Type.Field<T>` in std's `compiler.bp`'s `Type` (624) (decision 308), not `builtins.d.bp` — (`name`, the
+- [ ] `Field<T>` — `compiler.Field<T>` in std's `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) (decision 308), not `builtins.d.bp` — (`name`, the
       field's type); `.name` resolved against the expected `T`, a missing field refused at it; variadic
-      `..fields: Type.Field<T>[]` (267); `decl.fields` hands out `Type.Field<unknown>` — built but the
-      last clause (`decl.fields` is still `builtins.d.bp`'s `Field`, the same shape; `compiler.bp`'s `Type` (624) gives it
+      `..fields: compiler.Field<T>[]` (267); `decl.fields` hands out `compiler.Field<unknown>` — built but the
+      last clause (`decl.fields` is still `builtins.d.bp`'s `Field`, the same shape; `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) gives it
       to `134` step 2)
 - [x] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error;
       `reject/decorator_variant_case`, `reject/decorator_field_key_case`)
@@ -432,7 +432,7 @@ it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questi
 
 - [x] `Type.partial`, `Type.required`, `Type.pick`, `Type.omit`, `Type.merge` answered at build, keyed on
       the receiver bound to std's `types.Type` (an alias included); fields as `.title`; a string field
-      `derived-type-field-string` naming `.title`; an unknown field the `Type.Field<T>` error at it; a field
+      `derived-type-field-string` naming `.title`; an unknown field the `compiler.Field<T>` error at it; a field
       twice, no field, an `omit` leaving none `derived-type-fields`; a non-record source (enum, namespace
       type, primitive, generic record, imported alias) `derived-type-source-not-record`; a field on both
       sides of `merge` `derived-type-merge-duplicate` at the second argument; arity / label
@@ -448,33 +448,33 @@ it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questi
 - [x] `run/derived_type_functions`, `run/derived_type_decorated`, `modules/derived_type_imported` on the
       four targets; eleven `reject/derived_type_*` cells; all red on the parent — the derived-record
       row of `language-gaps.md` closes when 125 s5's example runs (its `#[validated]` half is 125's)
-- [x] `Type.keys(Recipe)` is `Type.Field<Recipe>` (decision 308) — the same type, not a copy: not a record
+- [x] `Type.keys(Recipe)` is `compiler.Field<Recipe>` (decision 308) — the same type, not a copy: not a record
       derivation, not answered
-- [x] a `Type.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
+- [x] a `compiler.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
       `T`'s fields (a field added to `T` makes a `case` without it an error); `key.name`, `Key.of(text) ->
       ?Key`, `Key.all()` in declaration order — `run/field_key_runtime` on the four targets
-- [ ] `decl.fields` as `Type.Field<unknown>` (134 s2's box) — not part of this mechanism (the reflection
+- [ ] `decl.fields` as `compiler.Field<unknown>` (134 s2's box) — not part of this mechanism (the reflection
       record is `comptime.zig`'s `__Decl__Field`): left to 134 s2
 
 #### Step 2 — declare the rest — part (was `134-builtins-declared` s2 boxes 1, 2, 3, 6)
 
 Left: `?T`'s methods (`map`, `flatMap`, `unwrapOr`) and the builtin `result` namespace
 (`result.map/then/unwrap/isOk/isError`), prose in `builtins.d.bp` — under 330 the first leave and the
-second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `Type.pick` / `Type.omit`.
+second is deleted; `Type`'s namespace-type spelling (329), `compiler.Field<T>` and `Type.pick` / `Type.omit`.
 
 - [x] the rest declared under 330: `?T` declares no method (its surface is `01-checker` step 31's operators) — the
       `?T` rows (`map`, `flatMap`, `unwrapOr`) leave `infer.zig` `inferResultOptionMethod`; the `result` namespace
       (`inferResultNamespaceCall`) is deleted, not declared; the prose in `builtins.d.bp` goes
-- [x] std's `compiler.bp`'s `Type` (624) spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
+- [x] std's `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
       refused, a `self` function in its body refused
 - [ ] `Type` also declares the associated type `Field<T>` inside its body (308, 330), `keys` answering it —
       declared (`pub type Field<T>(name, typeName, annotations)`, `run/std_type_field_associated`);
-      `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `Type.Field<unknown>[]` — open: the record
+      `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `compiler.Field<unknown>[]` — open: the record
       `decl.fields` hands out is the compiler's `__Decl__Field` (`comptime.zig` `decl_reflection_src`, aliased
       `Field` and drift-checked against `builtins.d.bp`'s `Field`), so std's hoisted `Type__Field` has to become
-      that record, and rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) moves to `Type.Field<unknown>`; `pick` /
+      that record, and rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) moves to `compiler.Field<unknown>`; `pick` /
       `omit` are declared (Done); the spelling of a `type` answer is fixed here with `01-checker` step 28; builtins' `Field` leaves in this step, no alias kept: validation's `decorators.bp` (`Array<Field>`) and
-      rakun-data's `orm/entity.bp` migrate to `Type.Field<unknown>` as its consumer commits (rule 10)
+      rakun-data's `orm/entity.bp` migrate to `compiler.Field<unknown>` as its consumer commits (rule 10)
 - [x] a field key at run time — removed by decision 599 (no use outside the compiler's cells): `Type.keys`, `Field.of`, `Field.all`, the five `field_key_*` / `type_keys_*` cells and `docs.md`'s paragraph go in B-140; the build-time `.field` argument (280 example 6) stays
 - [x] the four bare names (`partial`, `pick`, `omit`, `mergeRecords`) leave `tryResolveTypeManipulationCall`
       when `01-checker` step 28 keys its resolver on `Type`
@@ -1050,10 +1050,10 @@ calls the checker answers, so the two coexist).
 - [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`
       and `#[client]`), then `setMeta(key, value)`, `.meta.<decorator>.<key>` and `DeclaredMeta(key,
       value)` gone (`Declared.meta` / `TypeInfo<T>.meta` the typed reads only)
-- [ ] a meta field of a record type, a `Type.Field<T>` (364 (2)'s data family) or a tuple: refused
+- [ ] a meta field of a record type, a `compiler.Field<T>` (364 (2)'s data family) or a tuple: refused
       today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
       reader's scope (an `@Expr<T>` field carries such a value as written)
-      — tuple and `Type.Field<T>` fields rebuilt where read, a generic meta record keyed by its parameter
+      — tuple and `compiler.Field<T>` fields rebuilt where read, a generic meta record keyed by its parameter
       (`meta_field_tuple_and_field_key`); left: record-typed fields (the nested record aliased into the reader, as 385)
 - [x] an `@Expr<T>` meta field read in another module resolves its names where the annotation wrote them
       (385): each module publishes its scope (`Reflection.scopes`, `comptime/written_names.zig`), and the
@@ -1165,7 +1165,7 @@ type's body is a parse error.
       refusals land. Built and run over botopink-lang (std, the five shared libraries, the language suite,
       `examples/`); the five library repositories' migrations are prepared, one per repository
 - [x] a `type` declared in a type's body is that type's associated type (the `decl.addType` node, 216):
-      `pub type Type { pub type Field<T>(…) { … } }` reads `Type.Field<T>` (308); `reject/` cells for a nested
+      `pub type Type { pub type Field<T>(…) { … } }` reads `compiler.Field<T>` (308); `reject/` cells for a nested
       type named like a member
 - [x] `docs.md` § Operators and § Optionals (07's prose) list the five operators and the five rules
 - [x] wasm: `?.()` over a function answering a plain value is refused (`run/optional_call_operator`'s
@@ -2573,18 +2573,18 @@ covers only the `#[@Family]` forms.
 - [ ] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
 - [ ] in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
 
-### B-140 — `Type` in botopink, inside `compiler.bp` (624): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
+### B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
 
-- [ ] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `Type.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
-- [ ] `Type.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
-      lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `Type.Field<unknown>` (308)
+- [ ] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `compiler.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
+- [ ] `compiler.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
+      lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `compiler.Field<unknown>` (308)
 - [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by
       the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
-      `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `compiler.bp`'s `Type` (624)
-- [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `Type.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
+      `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)
+- [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `compiler.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
 - [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
 - [ ] a unit test holds `conformance/docs.md` § Prelude to the names `primitives.bp` declares and each imported std function's row to its module's declaration (606): a row per name, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed

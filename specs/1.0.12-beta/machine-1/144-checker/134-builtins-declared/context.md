@@ -4,7 +4,7 @@
 
 **Priority:** high · **State:** partial: steps 1, 3, 4 and 5 done; step 2 partial (calls, `@Result`'s
 methods, the mirrored types and `@is` held; std's `Type` declared with `pick` / `omit`, `Decl.fields`'
-`Type.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 (354, 357)
+`compiler.Field<unknown>` open; `?T` methods and the `result` namespace removed under 330); step 6 (354, 357)
 partial: boxes 1, 2, 3, 5 (357), 6 (the codemod), the measurement and 4b (388: a component is a lambda over
 a `RenderScope`, with 389's edges; erlang, beam, commonJS — wasm refuses, 354-wasm) done, 4b landed
 (with `05-jhonstart/26` step 14, 414)
@@ -27,6 +27,6 @@ implementation to the declarations; `docs.md` documents each from its declaratio
 `134-g` → 388 (a component is a lambda over a `RenderScope`, run by the render library); `134-i` → 387, replaced by 388.
 
 Answered: `134-f` → 354 (contexts), 329, 330 (`134-e`: a namespace type, `?T` methodless, `result` deleted,
-`Type.Field<T>` associated — step 2), 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
+`compiler.Field<T>` associated — step 2), 322 (`@is` refused, step 2), 267 (step 4), 268 (step 5), 269 (step 6).
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-language`, `test-docs`, `test-libs`, `tsc-check` green

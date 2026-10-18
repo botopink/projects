@@ -4,7 +4,7 @@
 
 **Priority:** high · **State:** partial: steps 1–9, 11, 12, 14–17, 19, 20 on feat; step 18 built on
 feat (botopink-lang `49455602` merges `19d59508`, `6185db3c`) with one box open; step 24 landed
-but three boxes; step 23 landed (and 371, 372); step 28 landed but `Type.keys` and the run-time `Type.Field<T>`; step 6
+but three boxes; step 23 landed (and 371, 372); step 28 landed but `Type.keys` and the run-time `compiler.Field<T>`; step 6
 box 3, steps 13, 21, 22, 24–33 and ten rows open
 **Depends on:** `04-js` step 6 (step 6 box 3) · `05-wasm` nested
 constructor in a `val` (step 13) · `08-bpp/116` prelude list (step 22) · (lg2-q answered by 403, by design: `@Decl` carries no source location; lg2-a is step 32, decision 346;

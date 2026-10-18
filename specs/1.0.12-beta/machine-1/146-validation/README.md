@@ -4,7 +4,7 @@
 **Repository:** `validation` — worktree `--repo validation` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
 **Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/validation/**`
-**Depends on:** 144 B-10 G1 (12 markers go), B-16 (derived types, `Type.Field<T>`), B-19 (298, `@typeInfo(T).fields`)
+**Depends on:** 144 B-10 G1 (12 markers go), B-16 (derived types, `compiler.Field<T>`), B-19 (298, `@typeInfo(T).fields`)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
 front pauses on the 144 step that fixes it (fronts.md rules 1, 9); another library's files except a consumer
 commit (decision 188), producer first.

@@ -323,7 +323,7 @@ Blast radius: none outside the owned files; 13, 92, 93 consume the unchanged reg
 
 - [ ] `#[entityRepository(City)]` takes the type; `derivedSql("CityRepo", "countByState")` takes the
       function; an operator is `Op`'s variant, never `">="`
-- [ ] `index`, `unique` take `Type.Field<T>` (`.state`; 308); table and column names stay strings (SQL's, 280 example 6)
+- [ ] `index`, `unique` take `compiler.Field<T>` (`.state`; 308); table and column names stay strings (SQL's, 280 example 6)
 - [ ] `examples/city-entity-example.bp`, `examples/audit-and-revisions-example.bp` rewritten to decision 281 (`#[entityRepository(City)]`, `derivedSql` by function, `Op`'s variant) and 299 (no `rkProp` / `rkPropInt` import)
 
 #### Step 5 — configuration as a typed record (decision 299) (was `08-rakun-data-sql` s5)
