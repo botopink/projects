@@ -37,6 +37,9 @@ what is the task's own: the step, its boxes, its worktree, its model.
   `zig build test`, `botopink cell check`, test binary run, and each library `git commit` (its hook runs
   a gate). It waits for a free job and holds the lock only while the command executes (the maintainer,
   2026-10-12). Never a gate or a build outside it.
+  The command runs in the meta repository's root (`gate.sh` changes to it), not in your directory: a
+  command that must run inside a worktree (a library's own `scripts/gate.sh`, its `git commit`) is given
+  as a script that changes to it first, or with an absolute path that does not depend on the directory.
 - Run only the tests your change reaches; a foreground `zig build test` gets at most 60 s, a longer
   run goes to the background.
 - Measure no time: timings belong to the final measurement step (163 s9).
