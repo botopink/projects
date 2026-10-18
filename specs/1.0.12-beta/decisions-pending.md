@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**97 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**97 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -1966,6 +1966,12 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Recommendation.** The arm reaches HTTP via a core extension point (or `io/http` directly, as 65's relay does), not a `rakun-restclient` edge; answered with `03r-ab`'s arm list.
 - **Blocks.** 150 s17 step 3.
 
+
+#### ctr-x · Decision 337 (2), (3) against 592 (1): `mod m;` and `pub mod` after "no `mod` / `pub mod`"
+- **Proposed (opus, 2026-10-18; awaiting the maintainer):** **337 (2) and (3) are overtaken by 592 (1); 337 keeps (1) and (4).**
+- **Rules.** 337 (2): `mod config;` and `pub mod config;` bind `config` as a namespace in the module that declares them; (3): a folder's `mod.bp` exposes a submodule's function by `pub val`, the submodule kept private. 592 (1): every `.bp` under `src/` is a module of the package, its path its name; no `lib.bp`, no `mod` / `pub mod`. Both rows are in force in the ledger. Front 166 s3 (yaml) wrote 337's decision cell as the (1) refusal only.
+- **Recommendation.** Amend 337 to its (1) `shorthand-import` refusal and its (4) migration; (2) and (3) "Overtaken by 592 (1)".
+- **Blocks.** The decision cells of 337 in every repository it binds (166 s3).
 ---
 
 ## Part 3 — Implementation choices of tracks 04–09

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**97 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**97 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -1965,6 +1965,12 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 - **Recomendação.** O braço alcança HTTP por um ponto de extensão do core (ou o `io/http` diretamente, como o relay da 65), não por uma aresta `rakun-restclient`; respondida com a lista de braços da `03r-ab`.
 - **Bloqueia.** 150 s17 passo 3.
 
+
+#### ctr-x · A decisão 337 (2), (3) contra a 592 (1): `mod m;` e `pub mod` depois de "sem `mod` / `pub mod`"
+- **Proposto (opus, 2026-10-18; aguardando o mantenedor):** **A 337 (2) e (3) são superadas pela 592 (1); a 337 mantém (1) e (4).**
+- **Regras.** 337 (2): `mod config;` e `pub mod config;` vinculam `config` como namespace no módulo que os declara; (3): o `mod.bp` de uma pasta expõe a função de um submódulo por `pub val`, o submódulo mantido privado. 592 (1): todo `.bp` sob `src/` é um módulo do pacote, seu caminho o seu nome; sem `lib.bp`, sem `mod` / `pub mod`. As duas linhas estão em vigor no ledger. A frente 166 s3 (yaml) escreveu a célula de decisão da 337 só como a recusa de (1).
+- **Recomendação.** Emendar a 337 à sua recusa `shorthand-import` de (1) e à sua migração de (4); (2) e (3) "Overtaken by 592 (1)".
+- **Bloqueia.** As células de decisão da 337 em todo repositório que ela vincula (166 s3).
 ---
 
 ## Parte 3 — Escolhas de implementação das trilhas 04–09
