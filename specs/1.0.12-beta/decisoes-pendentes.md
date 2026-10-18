@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**109 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**108 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **627**.
+número livre, que é **628**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -689,15 +689,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) As duas: folhas quando gravadas, a regra da palavra copiada senão.
 - **Recomendação.** (a) agora, porque está verde em toda biblioteca e cell. Depois (c) como passo posterior, para que uma sub-linguagem que grava folhas seja exata mesmo onde uma palavra se repete.
 - **Bloqueia.** Nada (construída como (a)).
-
-#### 165-e · Um membro estático acrescentado a um `behavior`, e um tipo que uma árvore não consegue escrever (decisões 576 (14), 578; frente 165 s10)
-- **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**
-- **Medido.** O `#[httpExchange]` do rakun-restclient anota um `behavior Name` e gerava `httpName(): Name`. No 165 s10 isso virou `Name.http()`, um `addMember` tipado no behavior. Nenhuma decisão diz se um behavior aceita um membro estático. Dentro do lambda do membro, o tipo behavior `Name` também não pode ser escrito: o lambda é escrito no módulo do decorator, onde o nome da declaração anotada não está no escopo. Então o tipo de retorno é inferido como o `Name.Http` gerado.
-- **Opções.**
-  (a) Um behavior aceita membros estáticos por `addMember`, como um tipo. Dentro de um membro tipado, `Self` nomeia a declaração anotada, então `fn() -> Self { … }` é o behavior.
-  (b) Um behavior não aceita membro: o rakun-restclient mantém uma função gerada `http<Name>()` construída por `addType` num tipo companheiro.
-- **Recomendação.** (a): `Self` já é como um membro nomeia o seu dono.
-- **Bloqueia.** O tipo de retorno de `Name.http()` do rakun-restclient.
 
 #### 165-f · Onde os nomes dentro de um `compiler.buildType(text)` são resolvidos (decisões 578 (3), 599 (3); frente 165 s10, 144 B-140)
 - **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**

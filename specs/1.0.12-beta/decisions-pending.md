@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**109 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**108 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **627**.
+number, which is **628**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -689,15 +689,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) Both: leaves when recorded, the word-copy rule otherwise.
 - **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
 - **Blocks.** Nothing (built as (a)).
-
-#### 165-e · A static member added to a `behavior`, and a type a tree cannot write (decisions 576 (14), 578; front 165 s10)
-- **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** rakun-restclient's `#[httpExchange]` annotates a `behavior Name` and used to generate `httpName(): Name`. In 165 s10 this became `Name.http()`, a typed `addMember` on the behavior. No decision says whether a behavior takes a static member. Inside the member's lambda, the behavior type `Name` cannot be written either: the lambda is written in the decorator's module, where the annotated declaration's name is not in scope. So the return type is inferred as the generated `Name.Http`.
-- **Options.**
-  (a) A behavior takes static members through `addMember`, as a type does. Inside a typed member, `Self` names the annotated declaration, so `fn() -> Self { … }` is the behavior.
-  (b) A behavior takes no member: rakun-restclient keeps a generated function `http<Name>()` built by `addType` on a companion type.
-- **Recommendation.** (a): `Self` is already how a member names its owner.
-- **Blocks.** rakun-restclient's `Name.http()` return type.
 
 #### 165-f · Where names inside a `compiler.buildType(text)` resolve (decisions 578 (3), 599 (3); front 165 s10, 144 B-140)
 - **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**
