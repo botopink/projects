@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**115 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**114 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **621**.
+number, which is **622**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -800,19 +800,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) As built. (b) Both trap: `bytes.at` is the bare `array.get_u` (a trap outside `0..length-1`, a negative index read unsigned included) and `bytes.ofWords` is `unreachable` at the first word outside `0..255`; the `.bp` codecs keep their own bounds; the unit test's three lines replaced. (c) `bytes.at` as `text.byteAt` (`-1`: one answer for one read over one layout), `bytes.ofWords` trapping.
 - **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
 - **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
-
-#### b138-d · A flag of `Implementation` written positionally: the constructor's fill, or the label required? (decisions 67, 575 (6); front 20 F9; 144 B-138)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
-- **Decision 618 (2026-10-18).** `Typescript` is removed from `Implementation` (618, 619), so the silently accepted `.Typescript("…", true)` is gone; what is left of the question is `.Erlang("…", f)` read as `body: f` — a positional argument that is not the template. (b) refuses it, naming the label (`write body: f`).
-- **Measured.** A positional argument fills the variant's next field (`parser/implementations.zig` `variant_fields`): `.JavaScript("…", true)` and `.Erlang("…", true)` fill `body:` and are refused ("writes a second cell, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` reads `f` as a body, and `.Typescript("…", true)` fills `result: true` and is accepted silently — the unlabelled switch front 20 F9's cell was written to refuse. No `.Typescript(` cell exists. `inline:`, `result:`, `host:`, `needs:` are written by label at every one of the 426 std and cell sites.
-- **Options.**
-  (a) As landed: the constructor's positional order is the language; `.Typescript("…", true)` is `result: true`.
-  (b) Only `template` is positional: a second positional argument on any variant is refused at the argument, naming the label (`write result: true`), a check beside the cell checks the constructor cannot state; `external_flag_bare_bool_refused` answers that text on `.JavaScript`, and a twin `external_flag_bare_bool_typescript` on `.Typescript`.
-  ```bp
-  #[@external(.Typescript("Math.max($0, $1)", true))]   // refused: write `result: true`
-  ```
-- **Recommendation.** (b): one spelling for a flag (67), no variant where the bare bool means something.
-- **Blocks.** 144 B-138's two cells.
 
 #### 521-a · An `f64` that reaches commonJS's text only through a generic `T` loses its `.0` (decision 521; 144 B-78)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a): a generic body that writes a `T` as text receives the text function of its type argument** — the call site, which knows `T`, hands the body a hidden `show` for it (as the checker already specialises per call); one JS body per function kept.

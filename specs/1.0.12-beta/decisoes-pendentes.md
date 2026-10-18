@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**115 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**114 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **621**.
+número livre, que é **622**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -800,19 +800,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) Como construído. (b) Ambas dão trap: `bytes.at` é o `array.get_u` nu (um trap fora de `0..length-1`, um índice negativo lido sem sinal incluído) e `bytes.ofWords` é `unreachable` na primeira palavra fora de `0..255`; os codecs `.bp` guardam os seus próprios limites; as três linhas do teste unitário substituídas. (c) `bytes.at` como `text.byteAt` (`-1`: uma resposta para uma leitura sobre um layout), `bytes.ofWords` dando trap.
 - **Recomendação.** (b) — uma folha não responde nada fora do seu domínio e nenhuma palavra é truncada em silêncio; o `-1` de `text.byteAt` fica o do P1-a até o mantenedor estender a resposta a ele.
 - **Bloqueia.** Nada construído espera; a metade `.bp` do P2-d (depois do B-139 e do s2 P5) lê a resposta antes de ser escrita.
-
-#### b138-d · Uma flag de `Implementation` escrita posicionalmente: o preenchimento do construtor, ou o rótulo exigido? (decisões 67, 575 (6); frente 20 F9; 144 B-138)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Decisão 618 (2026-10-18).** `Typescript` saiu de `Implementation` (618, 619), então o `.Typescript("…", true)` aceito em silêncio não existe mais; o que resta da pergunta é `.Erlang("…", f)` lido como `body: f` — um argumento posicional que não é o template. (b) o recusa, nomeando o rótulo (`write body: f`).
-- **Medido.** Um argumento posicional preenche o próximo campo da variante (`parser/implementations.zig` `variant_fields`): `.JavaScript("…", true)` e `.Erlang("…", true)` preenchem `body:` e são recusados ("escreve uma segunda célula, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` lê `f` como corpo, e `.Typescript("…", true)` preenche `result: true` e é aceito em silêncio — a chave sem rótulo que a célula da frente 20 F9 foi escrita para recusar. Não existe célula `.Typescript(`. `inline:`, `result:`, `host:`, `needs:` são escritos por rótulo em cada um dos 426 locais do std e das células.
-- **Opções.**
-  (a) Como pousado: a ordem posicional do construtor é a linguagem; `.Typescript("…", true)` é `result: true`.
-  (b) Só `template` é posicional: um segundo argumento posicional em qualquer variante é recusado no argumento, nomeando o rótulo (`write result: true`), uma checagem ao lado das checagens de célula que o construtor não consegue enunciar; `external_flag_bare_bool_refused` responde esse texto em `.JavaScript`, e uma gêmea `external_flag_bare_bool_typescript` em `.Typescript`.
-  ```bp
-  #[@external(.Typescript("Math.max($0, $1)", true))]   // refused: write `result: true`
-  ```
-- **Recomendação.** (b): uma grafia para uma flag (67), nenhuma variante onde o bool solto signifique algo.
-- **Bloqueia.** As duas células do 144 B-138.
 
 #### 521-a · Um `f64` que chega ao texto do commonJS só por um `T` genérico perde o `.0` (decisão 521; 144 B-78)
 - **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(a): um corpo genérico que escreve um `T` como texto recebe a função de texto do seu argumento de tipo** — o ponto de chamada, que conhece `T`, entrega ao corpo um `show` oculto para ele (como o checker já especializa por chamada); um corpo JS por função mantido.
