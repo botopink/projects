@@ -2920,7 +2920,7 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
       `decorator_add_type*` cells written `compiler.addType("Columns", type(id: string))` (640 (2)); `compiler.ast` admitted in a
       decorator body with a cell (640 (3)); the builders' surface, `mocks.bp` and `build_type_from_fields` are this step's, `Type`'s
       bodies and `derived_types.zig`'s reduction B-140's (640 (1)); `buildType(self, comptime name: string, comptime fields: compiler.Field<unknown>[], comptime implements: anytype[] = []) -> anytype` and `buildTypeInline(self, comptime fields: compiler.Field<unknown>[]) -> anytype` (629), the record-text form gone
-- [ ] the std bodies: `Type.pick` / `omit` / `partial` / `required` / `merge` over `buildType(name, fields)`, `mocks.bp`'s type over `implements:`; the template cells rewritten over `compiler.ast` (`bpp_*`'s `deps/markup`, `template_*`); `compiler.text(t)` unchanged
+- [ ] the std bodies: `Type.pick` / `omit` / `partial` / `required` / `merge` over `buildType(name, fields)`; `mocks.bp` as 644 — `mock<T>(comptime t: type<T>) -> T`, the built type over `implements: [t]`, its methods by `addMember(M, name, member)` (the target argument added), `#[mockable]` / `Greeter.Mock` / `mock()` gone, the mock cells rewritten; the template cells rewritten over `compiler.ast` (`bpp_*`'s `deps/markup`, `template_*`); `compiler.text(t)` unchanged
 - [ ] cells: `template_answers_ast` (four targets), `ast_ill_formed_refused`, `build_type_from_fields`, `compiler_build_removed` (refused as an unknown member)
 - [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `code` / `compiler.ast`
 

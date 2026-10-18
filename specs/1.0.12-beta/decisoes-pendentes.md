@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**104 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **644**.
+número livre, que é **645**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -657,15 +657,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### b149-b · Como o `Mock` de `mocks.bp` escreve um método por membro do behavior quando `buildType(name, fields, implements)` não recebe membros (decisões 625, 627; 144 B-149)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(b).**
-- **Medido.** O `Mock` escreve hoje cada método como texto: `fn m(sig) -> R { return invoke(…); }`. A 625 remove o código a partir de texto. `buildType` recebe campos e os behaviors implementados, nenhum membro.
-- **Opções.**
-  (a) `buildType` ganha um parâmetro `members`: métodos como nós de `compiler.ast`.
-  (b) O tipo construído ganha seus métodos por `addMember` sobre ele, cada um um nó `ast` (o membro adicionado da 627).
-- **Recomendação.** (b): uma só forma de adicionar um membro, a que a 627 já dá.
-- **Bloqueia.** A última peça do B-149 (P4), `mocks.bp`.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `String.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

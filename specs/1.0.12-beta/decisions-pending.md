@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**104 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **644**.
+number, which is **645**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -657,15 +657,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b149-b · How `mocks.bp`'s `Mock` writes one method per behavior member once `buildType(name, fields, implements)` takes no members (decisions 625, 627; 144 B-149)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(b).**
-- **Measured.** `Mock` writes each method as text today: `fn m(sig) -> R { return invoke(…); }`. 625 removes code from text. `buildType` takes fields and the behaviors implemented, no members.
-- **Options.**
-  (a) `buildType` gains a `members` parameter: methods as `compiler.ast` nodes.
-  (b) The built type gains its methods through `addMember` on it, each an `ast` node (627's added member).
-- **Recommendation.** (b): one way to add a member, the one 627 already gives.
-- **Blocks.** B-149's last piece (P4), `mocks.bp`.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `String.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
