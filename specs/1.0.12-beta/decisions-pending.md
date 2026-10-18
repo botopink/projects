@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**122 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **606**.
+number, which is **607**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -806,6 +806,7 @@ before every other part of this page; each holds one row, or nothing built.
 
 #### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
+- **Decision 606 (2026-10-18).** `builtin` is no decorator, `external` is `compiler.external` and `TypeInfo` is `Type.Info` in `types.bp`: `external.bp` and its cycle are gone and `Compiler` names `SourceLocation` and `Asset` alone. The question is `SourceLocation`'s module, and whether `reflection.bp` exists at all; the recommendation stays (a): `compiler.bp` declares it, no `reflection.bp`.
 - **Measured.** `libs/std/src/compiler.bp` names `SourceLocation` (`val src: SourceLocation`), `Implementation`, `DeclKind`, `HookNode` and `TypeInfo`; `external.bp` declares `Implementation`, `WasmNeed`, `WasmHost`, `WasiAdapter` and `external`, importing nothing; `builtins.d.bp`'s `DeclAnnotation(decorator: Decorator)` names the behavior `Decorator`. 575 (2) places `src` and `typeInfo` in `reflection.bp` and `Compiler` in `compiler.bp`; 576 (13) places `DeclKind` and the handle records (`HookNode`, `Field`, `Method`, `Param`, `DeclAnnotation`) in `compiler.bp`; B-139's README places `SourceLocation`, `TypeInfo`, `DeclKind` and `Field` in `reflection.bp`. Read together: `compiler.bp` → `reflection.bp` (`SourceLocation`, `TypeInfo`) → `compiler.bp` (`DeclKind`, `Field`, `Decorator`); and `compiler.bp` → `external.bp` (`Implementation`) → `compiler.bp` (`#[builtin]` on `external` names the decorator `builtin`). `primitives.bp` writes `#[external(…)]` and is inferred before every std module (`comptime.zig` `registerStdlib`, `registerExternalPrelude`), so the module declaring `builtin` and the one declaring `Implementation` must both be inferred before it; `stdModuleOrder` orders the std modules by their imports and admits no cycle.
 - **Options.**
   (a) `compiler.bp` self-contained and first: `builtin`, `Compiler`, `Implementation` with its three enums, `SourceLocation`, `TypeInfo<T>`, `DeclKind`, `Decorator`, `Annotation` and the handle records; `external.bp` keeps `external` alone and imports `compiler.Implementation`; `reflection.bp` keeps `src`, `typeInfo` (and `Declared*` until B-137 box 0) and imports its types. Order: `compiler` → `external` → `primitives` → the rest.
@@ -840,15 +841,6 @@ before every other part of this page; each holds one row, or nothing built.
   (c) `Result` stays the checker's form; `result.bp` writes only the methods, `extend Result<R, E> { … }`, no declaration of the type.
 - **Recommendation.** (a): one declaration, one lowering per target as today, the methods' bodies std's; no flag, no second shape.
 - **Blocks.** B-139's `result.bp`.
-
-#### b139-c · The module `io`: `io/mod.bp` or a new `io.bp` (decision 575 (2); 144 B-139)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** 575 (2) and B-139's README name `io.bp` for `print`; std has no `io.bp`: the module `io` is `libs/std/src/io/mod.bp` (`pub mod fs; pub mod http; …`), the form `build.zig` documents (`root.bp`, `io/mod.bp`), with ten submodules under `io/`. A file `io.bp` beside the directory `io/` would be two modules named `io` (`files_one_module_twice`'s rule).
-- **Options.**
-  (a) `print`, `println`, `debug` go into `io/mod.bp`, bare inside std, `@print` outside; `io.bp` in the decision read as "the module `io`".
-  (b) A new submodule `io/console.bp` declares them; the builtin names stay `@print`, the module import `io.console.print`.
-- **Recommendation.** (a): the decision names the module, and the file that is the module is `io/mod.bp`.
-- **Blocks.** B-139's `io` piece.
 
 #### b138-a · `Implementation`'s botopink-body cell: named `body:` (`fn` is reserved) and typed `?unknown`, on which variants? (decisions 575 (6), 590, 594 (1); 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

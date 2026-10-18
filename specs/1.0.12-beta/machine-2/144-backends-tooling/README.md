@@ -2689,7 +2689,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
 
-### B-139 — no `.d.bp`; `#[builtin]`; every builtin in its std module (decision 575 (1), (2), (7), (8))
+### B-139 — no `.d.bp`; the prelude and the imported std functions; every builtin in its std module (decisions 575 (1), (2), (7), (8), 606)
 
 **Repository:** botopink-lang (`--lang`), then rakun's consumer commit (165 s10) · **Model:** opus (std's bodies and the
 cells' answers decide language versus defect; the file kind's removal is mechanical) · **After:** B-138
@@ -2702,16 +2702,26 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       file listed twice; its snapshot and `docs.md` stated)
       — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `types.bp`) until the
       modules dissolve; `builtins.d.bp` / `builtins_fns.d.bp` are std modules `builtins.d` / `builtins_fns.d` until then
-- [ ] `#[builtin]` (`compiler.setBuiltin`; `builtin-twice`, `setBuiltin-outside-std`): `@name` resolves through std's
-      marked declarations; inside the declaring module the name is bare; `prelude.zig`'s two embeds go — std's modules
-      are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults`
-      finds `todo` / `panic`); the type mirrors of `comptime.zig` (`type_info_src`, `yield_step_src`, …) go where a
-      module now declares the type; the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig`
-      read the modules or die
+- [ ] no `#[builtin]`, no `@name` (606): the types and behaviors `builtins.d.bp` declares (`Result`, `Task`, `Component`, `Renderable`,
+      `Iterator`, `Stream`, `Future`, `Use`, `Display`, `Closeable`, `Index`, `Slice`, `Annotation`, `Decorator`) move into
+      `primitives.bp` with their bodies — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
+      two functions stay, imported, inside std too: `print` in `io/terminal.bp`, `panic` in `failure.bp`; `println`, `todo`,
+      `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `Type.Info<T>`, the record in `types.bp`),
+      `embed` (`Asset` in `compiler.bp`) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
+      `external.bp` gone) are members of `compiler`, written under `comptime` in a run-time body; every std decorator
+      written `#[name]` — `#[compiler.external(…)]`, an annotation `#[compiler.m(…)]` calling `m` on the annotated
+      declaration —, `use`, `future`, `generator`, `resultGenerator`, `Stage`, `BeamMemory` imported — a keyword collision
+      (`use`) is a question; `Env.registerBuiltins`' `@` names,
+      `prelude.zig`'s two embeds and the type mirrors of `comptime.zig` (`type_info_src`, `yield_step_src`, …) go — std's modules
+      are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults` finds `todo` /
+      `panic`); the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig` read the modules or die; the
+      codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
+      `panic(…)`, `@typeInfo` / `@embed` → `comptime compiler.typeInfo` / `comptime compiler.embed`, `@TypeInfo` →
+      `Type.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
 - [ ] the modules: `result.bp` (`Result` with its five bodies; the backends' inline lowering and the `methods` rows go),
-      `reflection.bp` (`SourceLocation`, `src`, `TypeInfo`, `typeInfo`, `Declared`, `DeclKind`, `Field` until B-140),
-      `asset.bp` (`Asset`, `embed`; `File.ofBytes` in `io/fs.bp`; `openAsset`, `Asset.open()`, `embed-text-not-utf8`,
-      `embed-text-not-at-build` go), `io.bp` (`print`, `println`, `debug`), `panic.bp` (`panic`, `todo`), the effect
+      `reflection.bp` only if b139-a keeps it (`SourceLocation`, `Declared`, `DeclKind`, `Field` until B-140; `src` / `typeInfo` are `compiler`'s, 606),
+      `Asset` in `compiler.bp` (`File.ofBytes` in `io/fs.bp`; `openAsset`, `Asset.open()`, `embed-text-not-utf8`,
+      `embed-text-not-at-build` go), `print` in `io/terminal.bp`, `panic` in `failure.bp` (606), the effect
       wrappers and the ambient behaviors in the modules that own them — each declaration's reference prose moved to
       `conformance/docs.md` § Builtins
 - [ ] removed: `module` (the cell `builtin_module_not_lowered` goes), `trap`, `field`, `TypeOf`, `makeRecord`,
@@ -2721,11 +2731,12 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       cell `docs.md` and comment naming `builtins.d.bp`; `scripts/decisions-split.py` untouched
 - [ ] cells: `builtin_twice`, `setbuiltin_outside_std`, a builtin reached as `@name` from a program and bare inside
       std, `embed` on four targets with `text()` at run time (a non-UTF-8 asset an `FsError`), `Result`'s methods on
-      four targets, `print` by cell on four targets
+      four targets, `print` by cell on four targets, `#[compiler.external(…)]` on a `declare fn`, `comptime compiler.embed`
+      and `comptime compiler.typeInfo` in a run-time body
 
-Open: questions b139-a (the module of `builtin`, the `compiler.bp` / `reflection.bp` cycle), b139-b (`Result`'s
-shape), b139-c (`io/mod.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
-B-138's box 4 run first; the `#[builtin]` mechanism and the modules after B-136's final package.
+Open: questions b139-a (`SourceLocation`'s module after 606, whether `reflection.bp` exists), b139-b (`Result`'s
+shape); b139-c answered by decision 606 (`print` in `io/terminal.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
+B-138's box 4 run first; the prelude move, the imports, the codemod and the modules after B-136's final package.
 
 Oracle: the whole suite; `test-docs`; the cold gate.
 

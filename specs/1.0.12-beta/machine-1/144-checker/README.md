@@ -2575,7 +2575,7 @@ covers only the `#[@Family]` forms.
 - [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `Type.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
 - [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
-- [ ] a unit test holds `conformance/docs.md` § Builtins to the builtins std declares (`#[builtin]`, `compiler.bp`): a row per builtin, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed
+- [ ] a unit test holds `conformance/docs.md` § Prelude to the names `primitives.bp` declares and each imported std function's row to its module's declaration (606): a row per name, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed
 - [ ] cells: the twelve derived-type cells unchanged; `record_field_duplicate`; `merge`'s duplicate located at the
       second argument; a `type` value printed; `RecipeKey.all()` at run time, computed at build
 
