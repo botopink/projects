@@ -778,7 +778,7 @@ fn Button() -> @Component<Element> {
       — `fun f/A` in the comptime module (`comptime_function_value_argument`)
 - [ ] a raise other than an arithmetic error while folding is a build error at the expression, the target's message (380 (2)) · decision 721 (a); after the runtime-exactness line above; cells `fold_raise_is_build_error` (index, conversion, missing key, a `panic` inside an `Any` function), `fold_dead_branch_panic_stays` (380 (3))
 - [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
-- [ ] a context is read by its declared value, `use context(themeContext)`, imported as any name — no type-keyed read, no search (decision 722); the 51 `use context(<Type>)` sites of std, the cells and rakun rewritten (rakun's in 165 s10); cell `context_read_by_value`; the provide shape and `inject` wait on question 722-a
+- [ ] a context is read through a context value the reader imports, `use context(themeContext)` — never a bare type name —, matched to the provider by the context's type, the handle's default when none (decisions 722, 723); `use provide(ctx)` alone, a body making its own with `comptime createContext(…)` or `use memo({ -> createContext(…) })`; `use context(<Type>)` refused at the argument, naming the form; the 51 sites of std, the cells and rakun rewritten (rakun's in 165 s10); cells `context_read_by_value`, `context_provide_made_in_body`
 
 #### B-17 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

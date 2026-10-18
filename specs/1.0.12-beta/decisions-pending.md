@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**43 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**42 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **723**.
+number, which is **724**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -144,30 +144,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `View` row.
-
-#### 722-a · How does a component provide a value for a declared context, and what does `inject` read? (decisions 722, 379 (2), 416; 144 B-17 step 6)
-- **Opened by decision 722 (2026-10-18).** A context is now read by its declared value, `use context(themeContext)`. 379 (2) provided by making a new context of the type — `use provide(createContext(Theme(primary: "#111")));` — which no reader holds once reads are by value; and 416's `use inject(Deps)` reads each field by its type.
-- **Example.**
-  ```bp
-  // theme.bp
-  pub type Theme(primary: string, cls: string);
-  pub val themeContext = comptime createContext(Theme(primary: "#e11d48", cls: "light"));
-
-  // page.bp
-  import {themeContext} from "theme";
-  component fn Page(dark: bool) -> Component<Element> {
-      use provide(themeContext, Theme(primary: "#111", cls: "dark"));   // (a)
-      return <Card/>;
-  }
-  component fn Card() -> Component<Element> {
-      val t = use context(themeContext);     // Theme(primary: "#111", cls: "dark")
-      return <div class={t.cls}>…</div>;
-  }
-  ```
-- **Options.** (a) `use provide(ctx, value)`: the context and the value for the children's scope, the value's type checked against the context's — React's `<Ctx.Provider value>`; `createContext` is a declaration alone and is refused inside a body; `use provide(ctx)` alone provides the default again. (b) `use provide(ctx.with(value))`: a method of `Context<T>` answering the same context carrying another value; one argument kept, `createContext` inside a body refused the same way. (c) Keep 379 (2): `use provide(createContext(value))` makes a context of `value`'s type and a read of `themeContext` finds it by type — identity by type for providers, by value for readers: two rules.
-- **`inject`.** Under (a) or (b) 416's `type Deps(service: MyService, repository: MyRepository)` cannot read by field type: (i) each field names its context as a default — `type Deps(service: MyService = use context(serviceContext), …)`, `use inject(Deps)` builds the record from its defaults, 416's behavior keying (`createContext(value, Behavior)`) removed; (ii) `inject` removed, a record of reads written by hand.
-- **Recommendation.** (a) with (i) — one identity, the value; one way to provide; a provider with the wrong type refused where written.
-- **Blocks.** 144 B-17 step 6; 165 s10's rewrite of rakun's 30 sites; `inject`'s 10 sites.
 
 #### B-17-h · math's `op:`-only host functions at build: given `std:` cells? (decisions 452, 481; 144 B-17)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — one `std:` binding cell per function in std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), so the comptime runtime answers them and they fold (380); an opcode has no host form at build otherwise. Since 610 a third way exists beside `std:` and run-time-only: a botopink body, `.Wasm(body: f)`, which 594 (1) and 633 name a build form as `std:` is; a `Wasm` cell holds one of `op` / `std` / `body`, so (a) and (b) alike take the opcode off the wasm target.

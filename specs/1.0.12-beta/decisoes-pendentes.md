@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**43 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**42 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **723**.
+número livre, que é **724**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -144,30 +144,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `View` do 144 B-10 G3.
-
-#### 722-a · Como um componente fornece um valor para um contexto declarado, e o que o `inject` lê? (decisões 722, 379 (2), 416; 144 B-17 passo 6)
-- **Aberta pela decisão 722 (2026-10-18).** Um contexto agora é lido pelo seu valor declarado, `use context(themeContext)`. A 379 (2) fornecia criando um novo contexto do tipo — `use provide(createContext(Theme(primary: "#111")));` — que nenhum leitor segura quando as leituras são por valor; e o `use inject(Deps)` da 416 lê cada campo pelo seu tipo.
-- **Exemplo.**
-  ```bp
-  // theme.bp
-  pub type Theme(primary: string, cls: string);
-  pub val themeContext = comptime createContext(Theme(primary: "#e11d48", cls: "light"));
-
-  // page.bp
-  import {themeContext} from "theme";
-  component fn Page(dark: bool) -> Component<Element> {
-      use provide(themeContext, Theme(primary: "#111", cls: "dark"));   // (a)
-      return <Card/>;
-  }
-  component fn Card() -> Component<Element> {
-      val t = use context(themeContext);     // Theme(primary: "#111", cls: "dark")
-      return <div class={t.cls}>…</div>;
-  }
-  ```
-- **Opções.** (a) `use provide(ctx, value)`: o contexto e o valor para o escopo dos filhos, o tipo do valor checado contra o do contexto — o `<Ctx.Provider value>` do React; `createContext` é só declaração e é recusado dentro de um corpo; `use provide(ctx)` sozinho fornece o default de novo. (b) `use provide(ctx.with(value))`: um método de `Context<T>` que responde o mesmo contexto carregando outro valor; um argumento só, `createContext` dentro de um corpo recusado do mesmo jeito. (c) Manter a 379 (2): `use provide(createContext(value))` cria um contexto do tipo de `value` e uma leitura de `themeContext` o encontra pelo tipo — identidade por tipo para quem fornece, por valor para quem lê: duas regras.
-- **`inject`.** Sob (a) ou (b) o `type Deps(service: MyService, repository: MyRepository)` da 416 não consegue ler pelo tipo do campo: (i) cada campo nomeia seu contexto como default — `type Deps(service: MyService = use context(serviceContext), …)`, `use inject(Deps)` monta o record pelos defaults, a chave por behavior da 416 (`createContext(value, Behavior)`) removida; (ii) `inject` removido, um record de leituras escrito à mão.
-- **Recomendação.** (a) com (i) — uma identidade, o valor; um jeito de fornecer; um provider com o tipo errado recusado onde foi escrito.
-- **Bloqueia.** 144 B-17 passo 6; a reescrita dos 30 sites do rakun no 165 s10; os 10 sites do `inject`.
 
 #### B-17-h · As funções host só-`op:` do math no build: ganham cells `std:`? (decisões 452, 481; 144 B-17)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — uma cell de binding `std:` por função no std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), para o runtime de comptime as responder e elas dobrarem (380); um opcode não tem forma de host no build de outro jeito. Desde a 610 existe um terceiro caminho ao lado de `std:` e de só-runtime: um corpo botopink, `.Wasm(body: f)`, que a 594 (1) e a 633 nomeiam forma de build como `std:` é; uma cell `Wasm` guarda um só de `op` / `std` / `body`, então (a) e (b) igualmente tiram o opcode do target wasm.
