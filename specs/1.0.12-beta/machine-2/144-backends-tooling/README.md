@@ -2930,6 +2930,11 @@ Each box is a library's decision-cell draft that builds on commonJS, erlang and 
 - [ ] `?.` on wasm: `x?.name` where the receiver's type comes from a field of an optional record is refused with
       `the wasm backend cannot place ?.name: the receiver's type is not known here` (actions'
       `optional_typescript_operators-330` draft, 330); a cell of the shape, four targets, red on wasm on the parent
+- [ ] comptime: a call to a dependency's function written module-qualified inside a `comptime` block
+      (`markdown.toHtml(markdown.parse(source))`, `status.reasonPhrase(…)`, `cookie.serialize(…)`) is refused with `the
+      comptime block calls .toHtml(…) with 1 argument(s) …, which no primitive type and no type the block reaches
+      provides`; the same function imported by name passes (markdown's and http's `libraries_run_at_build_on_wasm-594`
+      drafts, 594); a cell with a module-qualified call in a `comptime` block, red on the parent
 
 ### B-147 — erlang / beam defects found by 165 s5
 
