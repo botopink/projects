@@ -2569,8 +2569,8 @@ covers only the `#[@Family]` forms.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured; repros in rakun's `AGENTS.md`)
 
-- [ ] a decorator body that reads `compiler.catalogue(with: …)` (`compiler.find` after B-137's package) makes every importer of its module fail `typeinfo-all-imported`; only a template body is exempt, yet 551 says a catalogue read in a dependency answers for that dependency alone — a cell red on the parent
-- [ ] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
+- [x] a decorator body that reads `compiler.catalogue(with: …)` (`compiler.find` after B-137's package) makes every importer of its module fail `typeinfo-all-imported`; only a template body is exempt, yet 551 says a catalogue read in a dependency answers for that dependency alone — a cell red on the parent
+- [x] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
 - [ ] (question b146-a) in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
 - [ ] an imported generic function called with an explicit type argument (`resolve<Box>(…)`) is refused "`resolve` takes no type arguments, 1 given" — found by B-146; a cell red on the parent
 - [ ] a decorator argument's enum value read at build by its bare type name: with a second same-named enum anywhere in the program (another dependency or the annotating module), `#[kit.m(lifecycle: .Manual)]` checks and the decorator body runs with the wrong variant (`Eager`) — `decoratorArgValue` re-reads the argument as source and `blockEval.typesReached` resolves types by name; the value must carry the parameter's type identity (module + name, 603) — a cell with two `Lifecycle` enums red on the parent
