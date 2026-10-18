@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**111 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**110 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **625**.
+number, which is **626**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -699,20 +699,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) A typed member reaches its owner only through an instance receiver (`self: Self`). A static member that needs the owner stays a string member.
 - **Recommendation.** (b): it makes no handle a run-time value (b137-b's recommendation stands), and it also answers 165-e's `-> Self`.
 - **Blocks.** B-140's string-`addMember` removal for rakun's `check` and `http`; 165-e.
-
-#### 165-d · Code computed at build, with `@emit` gone: how a decorator writes a member whose body it computes (decisions 576 (14), 577, 578, 605; front 165 s10, 144 B-140)
-- **Proposed (opus, 2026-10-17; built as (c) for now, awaiting the maintainer):** **(a).**
-- **Measured.** rakun has members whose body depends on what reflection finds: the methods found by reflection (routes, beans, lifecycle hooks and listeners, advice, CLI commands, schedules, jobs, messaging listeners, autoconfig beans), a type named in an annotation string (`#[imports]`), and constructors built over a type's fields (`bind`, `new`, `gated`). An executor's tree is written literally, and a template text `` @`…` `` holds no computed part. So 165 s10 writes these members as static members in the string `addMember(source)` form: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, and the bodies of `bind`, `new` and `gated`. Each is run by `compiler.init({ -> decl.rkX(); })`. 576 (14) keeps the string form only until B-140, which removes it.
-- **Options.**
-  (a) `compiler.build(text) -> anyvalue` is allowed in a decorator body. Its result is held in a body `val` and spliced into an executor or a typed member, so the text is checked where it is spliced.
-  ```bp
-  val routes = compiler.build(routeCalls.join("; "));
-  compiler.addMember("rkRoutes", fn() { routes; });
-  ```
-  (b) No computed code. Each method marker registers itself through `compile`, with the method's `decl` as a run-time value, and finds its owner through a registry by name. Each of the ten registrations is rewritten around that.
-  (c) The string `addMember(source)` stays for computed members, and B-140 keeps it.
-- **Recommendation.** (a): one built value, checked at the splice, and no string member. (b) multiplies the run-time registries, and (c) undoes 576 (14).
-- **Blocks.** B-140's piece that removes the string `addMember`. rakun's members change again after the answer.
 
 #### 165-e · A static member added to a `behavior`, and a type a tree cannot write (decisions 576 (14), 578; front 165 s10)
 - **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**

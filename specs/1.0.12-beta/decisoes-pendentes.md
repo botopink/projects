@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**111 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**110 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **625**.
+número livre, que é **626**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -699,20 +699,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) Um membro tipado alcança o seu dono só por um receptor de instância (`self: Self`). Um membro estático que precisa do dono fica um membro string.
 - **Recomendação.** (b): não torna nenhum handle um valor de runtime (a recomendação da b137-b se mantém), e também responde o `-> Self` da 165-e.
 - **Bloqueia.** A remoção do `addMember` string do B-140 para o `check` e o `http` do rakun; 165-e.
-
-#### 165-d · Código calculado no build, sem `@emit`: como um decorator escreve um membro cujo corpo ele calcula (decisões 576 (14), 577, 578, 605; frente 165 s10, 144 B-140)
-- **Proposta (opus, 2026-10-17; construída como (c) por ora, aguardando o mantenedor):** **(a).**
-- **Medido.** O rakun tem membros cujo corpo depende do que a reflexão encontra: os métodos encontrados por reflexão (rotas, beans, hooks e listeners de ciclo de vida, advice, comandos da CLI, agendamentos, jobs, listeners de mensageria, beans de autoconfig), um tipo nomeado numa string de anotação (`#[imports]`), e construtores montados sobre os campos de um tipo (`bind`, `new`, `gated`). A árvore de um executor é escrita literalmente, e um texto de template `` @`…` `` não guarda parte calculada. Por isso o 165 s10 escreve esses membros como membros estáticos na forma string `addMember(source)`: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, e os corpos de `bind`, `new` e `gated`. Cada um é rodado por `compiler.init({ -> decl.rkX(); })`. A 576 (14) mantém a forma string só até o B-140, que a remove.
-- **Opções.**
-  (a) `compiler.build(text) -> anyvalue` é permitido no corpo de um decorator. O seu resultado é guardado num `val` do corpo e emendado num executor ou num membro tipado, então o texto é checado onde é emendado.
-  ```bp
-  val routes = compiler.build(routeCalls.join("; "));
-  compiler.addMember("rkRoutes", fn() { routes; });
-  ```
-  (b) Nenhum código calculado. Cada marcador de método se registra por `compile`, com o `decl` do método como valor de runtime, e encontra o seu dono por um registro pelo nome. Cada um dos dez registros é reescrito em torno disso.
-  (c) A forma string `addMember(source)` fica para membros calculados, e o B-140 a mantém.
-- **Recomendação.** (a): um valor construído, checado na emenda, e nenhum membro string. (b) multiplica os registros de runtime, e (c) desfaz a 576 (14).
-- **Bloqueia.** A peça do B-140 que remove o `addMember` string. Os membros do rakun mudam de novo depois da resposta.
 
 #### 165-e · Um membro estático acrescentado a um `behavior`, e um tipo que uma árvore não consegue escrever (decisões 576 (14), 578; frente 165 s10)
 - **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**

@@ -2880,3 +2880,18 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
 - [ ] cells: `primitive_width_is_a_type` (`i32` in a type position and `implement Signed` read), `external_on_behavior` refused, `primitive_default_fn_overridden` (a width's own cell beside the contract's body, four targets), `implement_with_body` with the behavior case
 
 Oracle: the whole suite on four targets; `test-libs`; the cold gate.
+
+### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (the node vocabulary and the cells' answers decide language versus defect) · **After:** B-137's tail (616's arrivals) · **Before:** 165 s11
+
+Today a template's body answers code as a string — `compiler.build(code)` after concatenating botopink source (113 sites: the template cells; rakun-bpp's `html.bp` generator, 1,400 lines) — and `Type.pick` / `omit` / `partial` / `required` / `merge` write a record's text for `compiler.buildType(text)` (23 sites). Decision 625: code enters the compiler written (a `syntax` parameter, a template text) or as the typed AST, never as a string.
+
+- [ ] the `Node` records in `compiler.bp`, one per kind the parser's `ast.Expr` has that a template may answer (`Call`, `Name`, `Lit`, `List`, `Arg`, `Lambda`, `Record`, `Field`, `If`, `Case`, …) — the vocabulary measured off the parser and written in `conformance/docs.md` § `compiler.ast`; a kind no template needs is not exposed
+- [ ] `fn ast(self: Self, comptime node: Node) -> anyvalue`: the tree checked and lowered where the call stands (426 (1)); an ill-formed tree (an `Arg` outside a `Call`, a `Name` nothing binds) refused at the `ast` call naming the node
+- [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; `buildType(self, comptime name: string, comptime fields: Type.Field<unknown>[], comptime implements: anytype[] = []) -> anytype`, the record-text form gone
+- [ ] the std bodies: `Type.pick` / `omit` / `partial` / `required` / `merge` over `buildType(name, fields)`, `mocks.bp`'s type over `implements:`; the template cells rewritten over `compiler.ast` (`bpp_*`'s `deps/markup`, `template_*`); `compiler.text(t)` unchanged
+- [ ] cells: `template_answers_ast` (four targets), `ast_ill_formed_refused`, `build_type_from_fields`, `compiler_build_removed` (refused as an unknown member)
+- [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `compiler.ast`; later, the std template `code` (`` code @`…` `` with holes) over the AST — its own step, opened when 625 (4) is scheduled
+
+Oracle: the template cells on four targets; `test-libs`; the cold gate.
