@@ -276,7 +276,7 @@ pub type Cache<T>(name: string)              // `name` é o nome no Redis/ETS: c
 
 pub fn cacheable<A, T>(
     syntax decl: fn(a: A) -> T,
-    expr cache: Cache<T>,                     // o T do cache tem que ser o T devolvido; um valor é `syntax` (575 (4))
+    syntax cache: Cache<T>,                     // o T do cache tem que ser o T devolvido; um valor é `syntax` (575 (4))
 ) {
     // embrulhar a função (316): o wrapper é um lambda escrito na chamada, `call.run()` roda o corpo original
     compiler.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });
