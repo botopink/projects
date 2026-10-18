@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**114 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**113 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **622**.
+número livre, que é **623**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -558,22 +558,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): nenhum caminho sem teste é entregue.
 - **Bloqueia.** Nada no Linux.
-
-#### B-21-b · Um método sem `->`: quando um tail não-`void` é recusado? (decisões 409, 06 C9; 144 B-21)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): só quando o método não tem `return` com valor** — um método sem `->` infere o retorno dos seus `return`s (06 C9); sem nenhum ele não responde nada e um tail não-`void` ali é recusado nele; com um `return` com valor, o tail é mais uma das suas respostas, tipado junto com elas. Viável: o checker lê os `return`s com valor do corpo antes do tail. Muda: uma cell.
-- **Medido.** O thread do B-21 reportou (a); o seu passo Conformance mediu a `feat` recusando um tail não-`void` ao lado de um `return` com valor também, num método e numa fn livre — (b) como construído.
-- **Opções.**
-  (a) Recusado só sem `return` com valor.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
-  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
-  ```
-  (b) Sempre recusado sem `->`.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do método do 144 B-21.
 
 #### B-25-a · Confirmar os adaptadores de gate do B-25 no wasm e as cells deixadas sem binding (decisões 334, 335 (3); 144 B-25)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): como construído** — `.GateNew`, `.GateOpen`, `.GateAwait` (um gate é uma task pendente que nenhum host responde; abri-lo descarta o timer de cada espera pendente); as cells só de teste da std (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) ficam sem binding no wasm até o `botopink test` rodar wasm (335 (3)), então as "doze cells" da 334 são as de uso do `async`.

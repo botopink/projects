@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**114 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**113 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **622**.
+number, which is **623**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -558,22 +558,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): no untested path ships.
 - **Blocks.** Nothing on Linux.
-
-#### B-21-b · A method with no `->`: when is a non-`void` tail refused? (decisions 409, 06 C9; 144 B-21)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): only when the method has no valued `return`** — a method with no `->` infers its return from its `return`s (06 C9); with none it answers nothing and a non-`void` tail there is refused at it; with a valued `return`, the tail is one more of its answers, typed with them. Viable: the checker reads the body's valued `return`s before the tail. Changes: a cell.
-- **Measured.** B-21's thread reported (a); its Conformance step measured `feat` refusing a non-`void` tail next to a valued `return` too, in a method and in a free fn — (b) as built.
-- **Options.**
-  (a) Refused only without a valued `return`.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // answers i32
-  fn n(self: Self) { 2 }                          // refused: a value in a body answering nothing
-  ```
-  (b) Always refused without `->`.
-  ```bp
-  fn m(self: Self) { if (self.x) return 1; 2 }   // refused: write `-> i32`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-21's method row.
 
 #### B-25-a · Confirm B-25's wasm gate adapters and the cells left unbound (decisions 334, 335 (3); 144 B-25)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): as built** — `.GateNew`, `.GateOpen`, `.GateAwait` (a gate is a pending task no host answers; opening it drops each pending wait's timer); std's test-only cells (`monoMillis`, `hostTarget`, `newCounter`, `countUp`, `countOf`, `panicOf`) stay unbound on wasm until `botopink test` runs wasm (335 (3)), so 334's "twelve cells" are `async`'s user-facing ones.
