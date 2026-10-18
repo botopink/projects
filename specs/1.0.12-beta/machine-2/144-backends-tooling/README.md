@@ -2632,6 +2632,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       member does (614's two forms equal in a wrapper too); a `syntax` argument that is not an identifier
       (`compiler.text(x + 1)`) taken as written (`member_texts_its_expression`)
 - [ ] decision 716: the `syntax decl` parameter's declared type is the contract (`unknown` no member, a behavior its members and the annotation refused on a type not implementing it, `fn` a function, `T` any), every tree checked once at the decorator by that type (581 (2) and 613 amended); `decl` the declaration as code in a member too (b137-i (a)) — `decorator-member-captures` gone, `decorator_member_captures_handle` a run cell; cells `decl_unknown_no_member`, `decl_behavior_contract_refused`, `decl_behavior_member_typed`, `member_decl_as_code`
+- [ ] decision 718: `Compiler.src` is `fn src(self: Self) -> SourceLocation`, written `comptime compiler.src()` — `compiler.bp`'s `val src` becomes it; cells `src_location` and `compiler_at_run_time` rewritten with the call, cell `compiler_src_is_a_call` (a run-time function receiving its caller's location as an argument the caller writes); `module`, `package`, `isStd` unchanged
 - [x] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `syntax-captures-build`
       withdrawn — `compile_executor_captures_build` rewritten as `init_executor_reads_compiler` (`out home`); a
       `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`

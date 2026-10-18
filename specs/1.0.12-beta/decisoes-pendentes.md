@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**46 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**45 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **718**.
+número livre, que é **719**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -309,13 +309,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) Como construído. (b) Ambas dão trap: `bytes.at` é o `array.get_u` nu (um trap fora de `0..length-1`, um índice negativo lido sem sinal incluído) e `bytes.ofWords` é `unreachable` na primeira palavra fora de `0..255`; os codecs `.bp` guardam os seus próprios limites; as três linhas do teste unitário substituídas. (c) `bytes.at` como `text.byteAt` (`-1`: uma resposta para uma leitura sobre um layout), `bytes.ofWords` dando trap.
 - **Recomendação.** (b) — uma folha não responde nada fora do seu domínio e nenhuma palavra é truncada em silêncio; o `-1` de `text.byteAt` fica o do P1-a até o mantenedor estender a resposta a ele.
 - **Bloqueia.** Nada construído espera; a metade `.bp` do P2-d (depois do B-139 e do s2 P5) lê a resposta antes de ser escrita.
-
-#### 160-a · Como uma chamada de snapshot em tempo de execução descobre a localização do teste? (decisões 391 (2), 606 (2); frente 160, 166 s3)
-- **Perguntado pela frente 166 s3 (drafts do snap, 2026-10-18).** 391 (2) dá ao snap `SourceLocation` da std, e 606 (2) diz que a localização é `compiler.src` e nada mais, escrita `comptime compiler.src` num corpo de tempo de execução (606 (3)). O motor precisa da localização do **chamador** — arquivo e linha do teste — para nomear e colocar um snapshot. Nenhuma linha diz como uma chamada em tempo de execução a entrega. Os drafts leem 606 (3) como `comptime compiler.src` no teste.
-- **Exemplo.** Em `tests/render.bp`: `snap.matches(render(page));`. O `pub fn matches(value: unknown, at: SourceLocation = comptime compiler.src) -> void` do snap avaliaria o default onde está escrito (regra de 671 para um default: resolvido onde escrito) — o próprio módulo do snap, não `tests/render.bp:12`.
-- **Opções.** (a) Um default de parâmetro que lê `compiler.src` é a localização da **chamada**, como o `@src()` do Zig num default: uma exceção a "resolvido onde escrito", o teste escreve `snap.matches(render(page));`. (b) Sem exceção: o teste passa, `snap.matches(render(page), comptime compiler.src);` — um argumento por chamada, como as bibliotecas de snapshot do Zig recebem `@src()` explicitamente; uma chamada sem ele é recusada pela verificação ordinária de aridade. (c) O runner de testes entrega ao motor a localização da declaração do **teste** (lado do runner, sem argumento), o snapshot nomeado pelo teste e um contador — uma segunda chamada num teste não tem linha própria.
-- **Recomendação.** (b) — uma regra para defaults (671), a localização onde está escrito, e a necessidade do motor atendida pelo mecanismo ordinário; (a) é um caso especial de um nome, (c) perde a linha.
-- **Bloqueia.** Os drafts do snap em 166 s3 promovem (s4) quando a forma da chamada estiver fixada; frente 160.
 
 #### 529-a · O que `..` como único spread deixa em aberto (decisões 529 (3), 359, 37; 144)
 - **Proposto (sonnet, 2026-10-14; aguardando o mantenedor):** **(a) para cada um:** (1) nenhuma ferramenta de migração — nenhuma biblioteca escreve hoje um spread `...` em chamada (o único `{...pairs}` do jhonstart é um spread de tag que o compilador ainda não implementa); (2) a recusa da 37 de uma base que não é nome acabou: 359 (6) permite qualquer expressão de origem, avaliada uma vez (`record_update_base_not_a_name` responde `out 1`); (3) a atualização `..` de uma variante de enum continua recusada como `call-spread` (a linha de variante de enum da 359); (4) o caminho morto de atualização da decisão 37 em `infer.zig` é apagado.

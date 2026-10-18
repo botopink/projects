@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**46 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**45 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **718**.
+number, which is **719**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -309,13 +309,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) As built. (b) Both trap: `bytes.at` is the bare `array.get_u` (a trap outside `0..length-1`, a negative index read unsigned included) and `bytes.ofWords` is `unreachable` at the first word outside `0..255`; the `.bp` codecs keep their own bounds; the unit test's three lines replaced. (c) `bytes.at` as `text.byteAt` (`-1`: one answer for one read over one layout), `bytes.ofWords` trapping.
 - **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
 - **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
-
-#### 160-a · How does a run-time snapshot call learn the test's location? (decisions 391 (2), 606 (2); front 160, 166 s3)
-- **Asked by front 166 s3 (snap's drafts, 2026-10-18).** 391 (2) gives snap `SourceLocation` from std, and 606 (2) says the location is `compiler.src` and nothing else, written `comptime compiler.src` in a run-time body (606 (3)). The engine needs the **caller's** location — the test's file and line — to name and place a snapshot. No row says how a run-time call hands it over. The drafts read 606 (3) as `comptime compiler.src` at the test.
-- **Example.** In `tests/render.bp`: `snap.matches(render(page));`. snap's `pub fn matches(value: unknown, at: SourceLocation = comptime compiler.src) -> void` would evaluate the default where it is written (671's rule for a default: resolved where written) — snap's own module, not `tests/render.bp:12`.
-- **Options.** (a) A parameter default that reads `compiler.src` is the location of the **call**, as Zig's `@src()` in a default is: one exception to "resolved where written", the test writes `snap.matches(render(page));`. (b) No exception: the test passes it, `snap.matches(render(page), comptime compiler.src);` — one argument per call, as Zig's snapshot libraries take `@src()` explicitly; a call without it is refused by the ordinary arity check. (c) The test runner hands the engine the **test's** declaration location (runner-side, no argument), the snapshot named by the test and a counter — a second call in one test has no line of its own.
-- **Recommendation.** (b) — one rule for defaults (671), the location where it is written, and the engine's need met by the ordinary mechanism; (a) is a special case of one name, (c) loses the line.
-- **Blocks.** snap's 166 s3 drafts promote (s4) once the call's shape is fixed; front 160.
 
 #### 529-a · What `..` as the one spread leaves open (decisions 529 (3), 359, 37; 144)
 - **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a) for each:** (1) no migration tool — no library writes a `...` call-site spread today (jhonstart's one `{...pairs}` is a tag spread the compiler does not implement yet); (2) 37's refusal of a non-name base is gone: 359 (6) allows any source expression, evaluated once (`record_update_base_not_a_name` answers `out 1`); (3) an enum variant's `..` update stays refused as `call-spread` (359's enum-variant row); (4) the dead decision-37 update path in `infer.zig` is deleted.

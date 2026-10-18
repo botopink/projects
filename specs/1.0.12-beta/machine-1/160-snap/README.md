@@ -14,6 +14,12 @@ commit (decision 188), producer first.
 rakun 150 s24, jhonstart 150 s45, emilia 150 s55, onze 150 s68; the coordination is machine-1/135-snap. It receives
 consumer commits only: 144 B-08 (17 sites), B-20, B-28.
 
+### 160 — the caller's location (decision 718)
+
+**Repository:** snap · **Model:** sonnet · **After:** B-137's 718 item
+
+- [ ] every snapshot function that names or places a snapshot takes `at: SourceLocation` as an ordinary parameter, no default; the test writes `snap.matches(value, comptime compiler.src());`; the reference and the engine's own tests updated; front 166's snap cells promote on it (s4)
+
 ### 160 Conformance — the front's last step (decision 465)
 
 **Repository:** snap (`--repo snap`) · **Model:** opus
