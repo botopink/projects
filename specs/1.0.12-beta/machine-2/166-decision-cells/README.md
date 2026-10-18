@@ -14,19 +14,19 @@
 
 `repository/<repo>/decisions-taken.md` (482) tells a reader which decisions bind a repository, in prose; nothing in that repository shows a decision as code, and nothing reds when the compiler or a library departs from one. The ~1,595 cells of `botopink-lang/conformance/modules/` prove behaviours, 256 of them naming a decision in their header, but no cell is reachable from a decision's number, and most decisions name no cell. The maintainer, 2026-10-18: `*/conformance/modules/decisions-taken/<slug>-<N>/docs.md` and `src/*.bp` for every conformance directory — first the code that shows how the decision works, tied to real code; last, the cells really run under a gate that is solid by then.
 
-## Current state (measured 2026-10-18, `scripts/decisions-split.py`'s mapping over the 497 rows)
+## Current state (measured 2026-10-18 by `scripts/decision-cells.py scaffold --list` over the ledger's `Cell` column, 504 rows)
 
-| Repository | Ledger rows | One-liners (`Replaced by` / `Reversed by` / `Overtaken by`) | Process rows, estimated | **Cells, estimated** | Cells today |
+| Repository | Ledger rows | One-liners (`Replaced by` / `Reversed by` / `Overtaken by` / `Withdrawn`) | Process rows | **Cells** | Cells today |
 |---|---|---|---|---|---|
-| botopink-lang | 402 | 14 | ~45 | **~340** | 1,594 |
-| rakun | 172 | 6 | ~15 | **~150** | 1 (plus the feature cells of 548) |
-| query | 43 | 1 | ~9 | **~33** | 4 |
-| validation | 41 | 1 | ~4 | **~35** | 0 |
-| routing · http · log | 17 · 15 · 11 | 0 | ~1 each | **~15 · ~13 · ~9** | 0 |
-| json · actions · markdown · snap · yaml · css | 8 · 7 · 7 · 7 · 7 · 6 | 0 | ~1 each | **~6 · ~5 · ~5 · ~5 · ~5 · ~4** | 0 |
-| vscode-extension | 26 | 1 | — | **0** — no `conformance/`, no `.bp`; its rows are the extension's | — |
+| botopink-lang | 405 | 14 | 21 | **370** | 1,594 |
+| rakun | 174 | 6 | 10 | **158** | 1 (plus the feature cells of 548) |
+| query | 43 | 1 | 4 | **38** | 4 |
+| validation | 41 | 1 | 4 | **36** | 0 |
+| routing · http · log | 17 · 15 · 11 | 0 | 2 each | **15 · 13 · 9** | 0 |
+| json · actions · markdown · snap · yaml · css | 8 · 7 · 7 · 7 · 7 · 6 | 0 | 2 each | **6 · 5 · 5 · 5 · 5 · 4** | 0 |
+| vscode-extension | 26 | 1 | 2 | **0** — no `conformance/`, no `.bp`; its 23 slugged rows are the extension's | — |
 
-About **625 cells**. The process estimate is the id column's tags plus `decisions-split.py`'s `PROCESS_MARK`; s2 fixes it row by row. A row binding several repositories gets a cell in each (the rule as that repository meets it).
+**669 cells.** A row binding several repositories gets a cell in each (the rule as that repository meets it). A rule that opens `Overtaken by N` / `Reversed by N` and only restates the row in force (586, 612, 633–636) counts as a one-liner, as does `Withdrawn`.
 
 ## Mechanism
 
@@ -55,9 +55,9 @@ About **625 cells**. The process estimate is the id column's tags plus `decision
 
 **Repository:** meta · **Model:** opus (a reading of every row) · **After:** s1's `scaffold --list`, which prints the rows it would scaffold and the candidates it reads as process.
 
-- [ ] the ledger's table gains the fifth column `Cell` (647): every row that fixes program behaviour gets its slug (`lowercase_with_underscores`, unique, readable — `function_return_type_written`), a one-liner or a process row an empty cell; `scripts/decisions-split.py` carries the column into every repository's ledger and refuses two rows with one slug; the header's column list updated
-- [ ] every row that fixes no program behaviour carries `process` in its id column — the ledger's existing tag, added in the meta ledger only, no word of a rule changed; the per-repository ledgers regenerated (482, CI check 6)
-- [ ] `scripts/decision-cells.py scaffold --list` per repository agrees with the table in § Current state within what s2 found; the counts written into that table
+- [x] the ledger's table gains the fifth column `Cell` (647): every row that fixes program behaviour gets its slug (`lowercase_with_underscores`, unique, readable — `function_return_type_written`), a one-liner or a process row an empty cell; `scripts/decisions-split.py` carries the column into every repository's ledger and refuses two rows with one slug; the header's column list updated
+- [x] every row that fixes no program behaviour carries `process` in its id column — the ledger's existing tag, added in the meta ledger only, no word of a rule changed; the per-repository ledgers regenerated (482, CI check 6)
+- [x] `scripts/decision-cells.py scaffold --list` per repository agrees with the table in § Current state within what s2 found; the counts written into that table
 
 ### s3 — the cells, phase 1: docs and code, one repository per thread
 

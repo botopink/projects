@@ -6,6 +6,8 @@ to repositories: a front number (144 botopink-lang ... 162, rakun), or an old id
 alias tables at the top of each front README (old id -> the front that holds it now). Writes
 repository/<repo>/decisions-taken.md: the generated-from line, then every section that has rows,
 each with the table header and the rows binding that repository, verbatim, in the source's order.
+The rows carry the ledger's fifth column `Cell` (decision 647), the slug of the row's decision cell; two rows
+with one slug are refused (exit 1, in both modes).
 
   scripts/decisions-split.py           write the files
   scripts/decisions-split.py --check   exit 1 when a file differs from what would be written
@@ -45,6 +47,7 @@ WORDS = {
     "lib-test-runner": 144, "libs/std": 144, "libs/actions": 159, "std": 144,
 }
 
+SLUG = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*")
 HEADER = "Generated from botopink/projects · specs/{ms}/decisions-taken.md — edit there."
 STEP = r"(?:\s+(?:steps?\s+|s)(?P<{n}>\d+[a-z]?(?:(?:\s*,\s*|\s+and\s+|\s*[–-]\s*)s?\d+[a-z]?)*))?"
 
@@ -236,6 +239,7 @@ def main():
     sections = []  # (heading, header_lines, [(num, line, repos)])
     cur = None
     unmapped, process_rows = [], []
+    bad_rows, slugs = [], {}
     lines = src.read_text().splitlines()
     for i, ln in enumerate(lines):
         if ln.startswith("## "):
@@ -248,7 +252,19 @@ def main():
             body = ln.rstrip()
             if body.endswith("|"):
                 body = body[:-1].rstrip()
-            binds = body.rsplit(" | ", 1)[1]
+            # a rule may hold an unescaped `|` inside code: the last two columns are split from the right
+            tail = (body + " ").rsplit(" | ", 2)
+            if len(tail) != 3 or "|" in tail[2] or not body.startswith(f"| {num} | "):
+                bad_rows.append(f"decision {num}: not five columns (# · Id · Rule in force · Binds · Cell)")
+                continue
+            binds, slug = tail[1].strip(), tail[2].strip().strip("`")
+            if slug:
+                if not SLUG.fullmatch(slug):
+                    bad_rows.append(f"decision {num}: slug `{slug}` is not lowercase_with_underscores")
+                elif slug in slugs:
+                    bad_rows.append(f"decision {num}: slug `{slug}` is already decision {slugs[slug]}'s")
+                else:
+                    slugs[slug] = num
             repos, process = map_row(binds, by_name, by_num, all_repos)
             if not repos:
                 (process_rows if process else unmapped).append((num, binds))
@@ -265,6 +281,11 @@ def main():
                 n += len(mine)
         if n:
             outputs[repo] = (HEADER.format(ms=ms.name) + "\n\n" + "\n".join(body).rstrip("\n") + "\n", n)
+
+    if bad_rows:
+        for why in bad_rows:
+            print(f"refused: {src.relative_to(ROOT)}: {why}", file=sys.stderr)
+        sys.exit(1)
 
     for num, binds in unmapped:
         print(f"meta only (no repository mapped): decision {num}: Binds = {binds}", file=sys.stderr)

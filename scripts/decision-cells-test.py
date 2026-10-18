@@ -93,6 +93,15 @@ class Cells(unittest.TestCase):
         self.cell(14, f"Decision 14 {D} Overtaken by 10 and 13")
         self.assertRed("decision 14: row is a one-liner")
 
+    def test_opens_superseded_is_one_liner(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("dc", SCRIPT)
+        dc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dc)
+        self.assertEqual(dc.Row(20, "x", "Overtaken by 10 (1): the rule in force, restated.", "144").kind, "oneliner")
+        self.assertEqual(dc.Row(21, "x", "Reversed by 13 the same day: restated.", "144").kind, "oneliner")
+        self.assertEqual(dc.Row(22, "x", "**B-1 is overtaken by 10: a rule of its own.**", "144").kind, "code")
+
     def test_process_row(self):
         self.slug_on(12, "slug_12")
         self.cell(12, f"Decision 12 {D} A process rule.")

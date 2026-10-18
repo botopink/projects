@@ -81,6 +81,9 @@ SUPERSEDED = re.compile(r"(?:Replaced|Reversed|Overtaken) by\b|\bis (?:overtaken
 
 
 ONE_LINER = re.compile(r"(?:Replaced|Reversed|Overtaken) by [\d,\s]*(?:(?:and|with)[\d,\s]*)*\.?")
+# A rule that opens `Overtaken by N: …` / `Reversed by N …` only restates the row in force (586, 612, 633–636):
+# that row has the cell. `Withdrawn (…)` states no rule at all.
+OPENS_SUPERSEDED = re.compile(r"(?:(?:Replaced|Reversed|Overtaken) by \d|Withdrawn\b)")
 
 
 def strip_parens(text):
@@ -104,7 +107,7 @@ class Row:
         flat = re.sub(r"\s+", " ", strip_parens(rule.replace("**", ""))).strip()
         if re.search(r"\bprocess\b", rid, re.I):
             self.kind = "process"
-        elif ONE_LINER.fullmatch(flat):
+        elif ONE_LINER.fullmatch(flat) or OPENS_SUPERSEDED.match(flat):
             self.kind = "oneliner"
         else:
             self.kind = "code"
