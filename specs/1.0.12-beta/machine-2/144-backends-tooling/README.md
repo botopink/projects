@@ -2864,7 +2864,7 @@ commonJS runs it.
 - [ ] erlang: `await f().make()` in a component body never runs the component (binding it to a typed `val` first works)
 - [ ] beam: a `for` lambda loop loses a module (rakun loops by index), and `registry.find("store")?.name ?? "none"` answers `none` where the entry exists
 
-### B-146 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
+### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (std's bodies and the backends' dispatch decide language versus defect) · **After:** B-139 (which moves the prelude into `primitives.bp`) · **Before:** B-140
 
