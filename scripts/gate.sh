@@ -52,7 +52,8 @@
 # itself to the machine), so a run of it holds the whole pool. The commit hook's
 # gate (decision 470) runs outside the pool; a thread that commits runs it
 # through `exec`. Admissions are staggered: one gate starts at most every 60 s
-# while another runs, first come first served. Every run waits for a free job, `--no-conformance` included
+# while another runs, first come first served (a small gate may pass older full-pool waiters while the pool is
+# busy, one pass in flight, 163 s13). Every run waits for a free job, `--no-conformance` included
 # (the maintainer, 2026-10-12: the lock is held while a gate executes, never
 # skipped — unlocked runs piling up took the machine down).
 #
@@ -251,6 +252,7 @@ poolMemAvailableMiB() {
 # admission, so the capacity follows the memory as it frees and fills; below the margin nothing new is admitted
 # while a gate runs, and one job always exists so an empty pool never deadlocks.
 poolCapacity() {
+    if [ -n "${BOTOPINK_POOL_CAPACITY:-}" ]; then echo "$BOTOPINK_POOL_CAPACITY"; return; fi
     local cpus avail_mib by_mem jobs
     cpus="$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 4)"
     jobs=$(( cpus / 2 ))
@@ -301,20 +303,25 @@ poolUsed() {
     echo "$n"
 }
 
-POOL_STAGGER=60
+# Test knobs (scripts/gate-test.sh): the capacity and the stagger, read from the environment. The pool path is
+# `poolDir`'s, which a test points at a private directory through XDG_RUNTIME_DIR.
+POOL_STAGGER="${BOTOPINK_POOL_STAGGER:-60}"
 # The memory the pool always leaves free (decision 674): a job is admitted only out of what lies above
 # this margin, so the machine keeps room for the editor, the sessions and a build's peak. Not a flag.
 POOL_MEMORY_MARGIN_MIB=2048
 
-# poolOlderWaiter <id> — true when another live gate waits since before <id> (or <id> has not waited yet and
-# another waits at all).
+# poolOlderWaiter <id> [small] — true when another live gate waits since before <id> (or <id> has not waited yet and
+# another waits at all). With `small`, only an older waiter that asks for less than the capacity counts: the older
+# full-pool waiters are the ones a small gate may pass.
 poolOlderWaiter() {
-    local me="$pool/wait.$1" mine f t
+    local me="$pool/wait.$1" mine f t cap
+    [ "${2:-}" != small ] || cap="$(poolCapacity)"
     mine="$(leaseField "$me" start 2>/dev/null)"
     [ -n "$mine" ] || mine="$(date +%s)"
     for f in "$pool"/wait.*; do
         [ -e "$f" ] && [ "$f" != "$me" ] || continue
         alive "$(leaseField "$f" owner)" || continue
+        if [ "${2:-}" = small ] && [ "$(leaseField "$f" want)" -ge "$cap" ]; then continue; fi
         t="$(leaseField "$f" start)"
         if [ "$t" -lt "$mine" ] || { [ "$t" -eq "$mine" ] && [ ! -e "$me" ]; } || { [ "$t" -eq "$mine" ] && [[ "$f" < "$me" ]]; }; then
             return 0
@@ -323,10 +330,20 @@ poolOlderWaiter() {
     return 1
 }
 
+# poolPassing — the live leases admitted by passing an older full-pool waiter (`passed=1`), under the lock after poolReap.
+poolPassing() {
+    local f n=0
+    for f in "$pool"/lease.*; do
+        [ -e "$f" ] || continue
+        [ "$(leaseField "$f" passed)" = 1 ] && n=$(( n + 1 ))
+    done
+    echo "$n"
+}
+
 # poolAcquire <id> <name> <want> <log> — blocks until a job is free; prints the
 # jobs granted (min(want, free)) and leaves lease.<id>.
 poolAcquire() {
-    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0 last
+    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0 last passed
     while :; do
         poolLock
         poolReap
@@ -344,20 +361,31 @@ poolAcquire() {
         # hook under `exec --jobs <capacity>`) starts only on an empty pool and then holds all of it.
         if [ "$want" -ge "$cap" ] && [ "$used" -gt 0 ]; then free=0; fi
         # First come, first served: a gate is admitted only when no live gate has waited longer, so a thread
-        # running commands back to back never starves one that waits.
-        if [ "$free" -ge 1 ] && poolOlderWaiter "$id"; then free=0; fi
+        # running commands back to back never starves one that waits. One exception (163 s13): while the pool is
+        # not empty, a gate asking for less than the capacity may pass older waiters that all ask for the whole pool
+        # (they cannot start before the pool drains, so the free jobs would idle), at most one such pass in flight
+        # (a lease marked `passed=1`), so a stream of small gates cannot starve the full-pool one. Among small
+        # waiters the order stays first come, first served.
+        passed=0
+        if [ "$free" -ge 1 ] && poolOlderWaiter "$id"; then
+            if [ "$used" -gt 0 ] && [ "$want" -lt "$cap" ] && ! poolOlderWaiter "$id" small && [ "$(poolPassing)" -eq 0 ]; then
+                passed=1
+            else
+                free=0
+            fi
+        fi
         if [ "$free" -ge 1 ]; then
             date +%s >"$pool/last_admit"
             grant="$want"; [ "$grant" -le "$free" ] || grant="$free"
             [ "$grant" -le "$cap" ] || grant="$cap"
             rm -f "$pool/wait.$id"
-            printf 'owner=%s\nchild=\njobs=%s\nname=%s\nstart=%s\nlog=%s\n' "$$" "$grant" "$name" "$(date +%s)" "$log" >"$pool/lease.$id"
+            printf 'owner=%s\nchild=\njobs=%s\nname=%s\nstart=%s\nlog=%s\npassed=%s\n' "$$" "$grant" "$name" "$(date +%s)" "$log" "$passed" >"$pool/lease.$id"
             poolUnlock
             echo "$grant"
             return 0
         fi
         if [ "$waited" -eq 0 ]; then
-            printf 'owner=%s\nchild=\njobs=0\nname=%s\nstart=%s\nlog=%s\n' "$$" "$name" "$(date +%s)" "$log" >"$pool/wait.$id"
+            printf 'owner=%s\nchild=\njobs=0\nname=%s\nstart=%s\nlog=%s\nwant=%s\n' "$$" "$name" "$(date +%s)" "$log" "$want" >"$pool/wait.$id"
             waited=1
         fi
         poolUnlock
