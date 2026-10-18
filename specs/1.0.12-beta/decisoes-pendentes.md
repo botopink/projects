@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**95 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**92 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **665**.
+número livre, que é **667**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -521,35 +521,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Trava.** A linha dos adaptadores do 144 B-25.
 
-#### 564-b · Um catálogo sobre decorators que nomeiam behaviors diferentes (decisão 564; 144 B-19 passo 7)
-- **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (a): respondido `Declared<unknown>[]`, sem precisar de `member:`.
-- **Contexto.** Decisão 564: uma consulta sobre vários decorators responde os behaviors que eles compartilham, `unknown` quando nenhum. Antes da 564 uma consulta cujos decorators não davam forma comum precisava de `member:` (`typeinfo-all-needs-member`), e o `member:` está saindo.
-- **Medido.** `@TypeInfo.all(with: [a, b])`, `a` sobre `@Decl<A>` e `b` sobre `@Decl<B>`: responde `Declared<unknown>[]`, cada `value` `null`. Um decorator de behavior ao lado de um simples ainda precisa de `member:`.
-- **Opções.**
-  (a) ★ Como construído: `Declared<unknown>[]`.
-  ```bp
-  val all = @TypeInfo.all(with: [a, b]);   // Declared<unknown>[]
-  ```
-  (b) Recusado como `typeinfo-all-needs-member`.
-  ```bp
-  val all = @TypeInfo.all(with: [a, b]);   // refused: the decorators share no behavior
-  ```
-- **Recomendação.** (a): o que o "`unknown` quando nenhum" da 564 enuncia, e o `member:` está saindo.
-- **Bloqueia.** Nada.
-
-#### 564-c · O texto da recusa de uma chamada de behavior fora de uma expansão (decisão 564; 144 B-19 passo 7)
-- **Proposta (opus, 2026-10-16; construída, aguardando o mantenedor):** a recusa como construída, com um código de diagnóstico próprio.
-- **Contexto.** A decisão 564 recusa chamar a função de um behavior sobre o `value` de uma entrada fora de uma expansão 562, localizada, mas não dá mensagem.
-- **Medido.** Construída sem código de diagnóstico e com o texto da thread (`typeinfo_all_behavior_call_outside_expansion`).
-- **Opções.**
-  (a) ★ Um código próprio, `behavior-call-outside-expansion`, a mensagem nomeando a chamada e a regra da expansão.
-  ```text
-  error[behavior-call-outside-expansion]: `d.value.start()` calls `Module.start` on a catalogue entry — legal only inside a function expanded at its call site (decision 562)
-  ```
-  (b) O texto como construído, sem código.
-- **Recomendação.** (a): toda recusa do checker tem um código.
-- **Bloqueia.** Nada.
-
 #### 564-d · Um módulo pode declarar um nome ao qual o compilador dá regras? (decisão 564; linha da máquina 1 do 144)
 - **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (b) para os nomes aos quais o compilador dá regras, (a) para o resto.
 - **Contexto.** O `behavior` próprio ou importado de um módulo agora é dono do seu nome em toda posição de tipo, como um `type` de mesmo nome já era (`conformance/docs.md` § behavior). Alguns nomes do prelúdio carregam regras da linguagem: `Result` (`try`, `throw`), `Task`, `Component`, `Iterator`.
@@ -618,15 +589,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### b137-g · O que recusa `compiler.find(with: 42)` ou `compiler.find(with: someFn)` agora que `with` é tipado `unknown`? (decisão 581 (3); 144 B-137)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** `typeinfo_all_with_number` e `_with_ordinary_fn` são recusados hoje pelo erro de tipo do checker no parâmetro de `@TypeInfo.all`. `find(self, with: unknown, member: ?string = null)` admite qualquer valor, então nenhum texto do checker os recusa.
-- **Opções.**
-  (a) `find-with-not-a-decorator` no argumento, levantado pelo próprio `find`: `with` deve nomear um decorador (ou um behavior).
-  (b) As duas células saem: `find` sobre um valor que não nomeia decorador responde `[]`.
-- **Recomendação.** (a): um erro de digitação não deveria responder um catálogo vazio.
-- **Bloqueia.** O pacote final do B-137 (duas células).
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

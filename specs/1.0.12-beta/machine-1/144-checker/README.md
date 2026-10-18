@@ -1020,8 +1020,8 @@ reflection over the project** (declaration half; the `@project()` manifest half 
       `typeinfo_all_behavior_shared`, `typeinfo_all_behavior_none_shared`,
       `typeinfo_all_behavior_call_outside_expansion`)
 - [x] the call emitted direct inside an expansion (`UsersModule.make().start()`) — withdrawn by decision 581 (a registry is
-      written by the decorator's executor; no expanded `boot`); 564-a closed by 664; open: 564-b,
-      564-c
+      written by the decorator's executor; no expanded `boot`); 564-a closed by 664, 564-b and 564-c by 665 (no catalogue
+      at build)
 - [ ] `member:` removed with its string (256, 281), refused naming decision 564 — after front 165 s5 has migrated
       rakun's sites (a library is never edited from here, 433)
 

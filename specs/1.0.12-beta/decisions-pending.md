@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**95 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**92 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **665**.
+number, which is **667**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -521,35 +521,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-25's adapter row.
 
-#### 564-b · A catalogue over decorators naming different behaviors (decision 564; 144 B-19 step 7)
-- **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (a): answered `Declared<unknown>[]`, no `member:` needed.
-- **Context.** Decision 564: a query over several decorators answers the behaviors they share, `unknown` when none. Before 564 a query whose decorators gave no common shape needed `member:` (`typeinfo-all-needs-member`), and `member:` is going.
-- **Measured.** `@TypeInfo.all(with: [a, b])`, `a` over `@Decl<A>` and `b` over `@Decl<B>`: answers `Declared<unknown>[]`, each `value` `null`. A behavior decorator beside a plain one still needs `member:`.
-- **Options.**
-  (a) ★ As built: `Declared<unknown>[]`.
-  ```bp
-  val all = @TypeInfo.all(with: [a, b]);   // Declared<unknown>[]
-  ```
-  (b) Refused like `typeinfo-all-needs-member`.
-  ```bp
-  val all = @TypeInfo.all(with: [a, b]);   // refused: the decorators share no behavior
-  ```
-- **Recommendation.** (a): what 564's "`unknown` when none" states, and `member:` is going away.
-- **Blocks.** Nothing.
-
-#### 564-c · The text of the refusal of a behavior call outside an expansion (decision 564; 144 B-19 step 7)
-- **Proposed (opus, 2026-10-16; built, awaiting the maintainer):** the refusal as built, with a diagnostic code of its own.
-- **Context.** Decision 564 refuses calling a behavior's function on an entry's `value` outside a 562 expansion, located, but gives no message.
-- **Measured.** Built with no diagnostic code and the thread's wording (`typeinfo_all_behavior_call_outside_expansion`).
-- **Options.**
-  (a) ★ A code of its own, `behavior-call-outside-expansion`, the message naming the call and the expansion rule.
-  ```text
-  error[behavior-call-outside-expansion]: `d.value.start()` calls `Module.start` on a catalogue entry — legal only inside a function expanded at its call site (decision 562)
-  ```
-  (b) The wording as built, no code.
-- **Recommendation.** (a): every refusal of the checker has a code.
-- **Blocks.** Nothing.
-
 #### 564-d · May a module declare a name the compiler gives rules to? (decision 564; 144 machine-1 row)
 - **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (b) for the names the compiler has rules for, (a) for the rest.
 - **Context.** A module's own or imported `behavior` now owns its name in every type position, as a `type` of the same name already did (`conformance/docs.md` § behavior). Some prelude names carry language rules: `Result` (`try`, `throw`), `Task`, `Component`, `Iterator`.
@@ -618,15 +589,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b137-g · What refuses `compiler.find(with: 42)` or `compiler.find(with: someFn)` now that `with` is typed `unknown`? (decisions 581 (3); 144 B-137)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** `typeinfo_all_with_number` and `_with_ordinary_fn` are refused today by the checker's type mismatch on `@TypeInfo.all`'s parameter. `find(self, with: unknown, member: ?string = null)` admits any value, so no checker text refuses them.
-- **Options.**
-  (a) `find-with-not-a-decorator` at the argument, raised by `find` itself: `with` must name a decorator (or a behavior).
-  (b) The two cells go: `find` over a value that names no decorator answers `[]`.
-- **Recommendation.** (a): a typo should not answer an empty catalogue.
-- **Blocks.** B-137's final package (two cells).
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

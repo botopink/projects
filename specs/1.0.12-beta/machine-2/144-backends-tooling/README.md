@@ -2648,6 +2648,10 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       `_handle_not_module_name` with B-150 (its wasm answer)
 - [x] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
       package (its catalogue cells)
+- [ ] decision 665: `compiler.find` removed from `compiler.bp` with `member:`; the 87 `typeinfo_all_*` / `*_catalogue*` cells registry cells
+      or removed, each stated (the final package; 353 and 564 overtaken); decision 666: `Decorator` removed, `DeclAnnotation.decorator: unknown`,
+      `compiler.same(a, b)` over two handles (14 `.same(` sites), the `decorator_same_*` / `decorator_type_names_decorators` /
+      `decorator_argument_decorator_*` cells rewritten or removed
 - [ ] moved into B-139 by decision 605: `@emit`, `@code` and `@expr` removed with `builtins.d.bp` (`unknown-builtin`), the emit
       splice paths of `commonJS.zig` / `erlang.zig` deleted, the 32 `emit` cells, the 3 `conformance/test/` suites and
       the compiler-cli fixture rewritten over `compile` or removed, each stated — after 165 s10
@@ -2745,7 +2749,7 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       modules dissolve; `builtins.d.bp` / `builtins_fns.d.bp` are std modules `builtins.d` / `builtins_fns.d` until then
 - [ ] no `#[builtin]`, no `@name` (606): the types and behaviors `builtins.d.bp` declares (`Result`, `Task`, `Component`, `Renderable`,
       `Iterator`, `Stream`, `Future`, `Use`, `Display`, `Closeable`, `Index`, `Slice`) move into
-      `primitives.bp` with their bodies; `Annotation` goes and `Decorator` is `compiler.bp`'s, imported (663); `#[Stage.Any]` →
+      `primitives.bp` with their bodies; `Annotation` goes (663) and `Decorator` goes (666: `decorator: unknown`, `compiler.same`); `#[Stage.Any]` →
       `#[stage(.Any)]`, `#[BeamMemory.X(…)]` → `#[beamMemory(.X(…))]`, std decorators over the enums (63 sites) — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
       two functions stay, imported, inside std too: `print` in `io/terminal.bp`, `panic` in `failure.bp`; `println`, `todo`,
       `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `compiler.Info<T>`, the record in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)),
@@ -2765,7 +2769,7 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       `compiler`; `import {types.Type}` unchanged
 - [ ] the modules: `Result` in `primitives.bp` with its five bodies, 118's shape kept per target, keyed to that declaration
       (609; the backends' inline lowering and the `methods` rows go; no `result.bp`); `compiler.bp` self-contained and first
-      (608: `SourceLocation`, `Link`, `Implementation`, `DeclKind`, `Decorator`, `Annotation`, the handle records; no
+      (608: `SourceLocation`, `Link`, `Implementation`, `DeclKind`, the handle records — no `Decorator`, no `Annotation` (663, 666); no
       `reflection.bp`; `Declared*` goes with B-137's box 0; `primitives.bp` imports `compiler`; a unit test over
       `stdModuleOrder`),
       `asset.bp` (`Asset(link: Link)` with `open()` over `io.fs`, 607; `Asset.bytes` / `size` / `hash` / `text()`, `File.ofBytes`'s

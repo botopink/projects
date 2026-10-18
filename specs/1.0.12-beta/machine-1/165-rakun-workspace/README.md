@@ -124,7 +124,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
       into a `ServiceScope` (the `RenderScope` without a DOM, 388, 504) by `case (m.lifecycle)`, `start(name) ->
       @Result<void, string>` for `.Manual`, `registry.find(name) -> ?Module`; `#[rakun.config]` and the typed overrides;
       the two build errors (one thing contributed twice; a required package absent), each a cell
-- [ ] every `@TypeInfo.all` site gone with s10 (576 (7)); a build body that needs the list reads `compiler.find(with: module)`
+- [ ] every `@TypeInfo.all` site gone with s10 (576 (7)); no build body reads the list — `compiler.find` is gone (665), every reader is a registry
 - [ ] every package declares its module at its root with its defaults; `examples/` of a program that adds one package
       at a time; the gate green
 
