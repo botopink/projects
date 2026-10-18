@@ -2597,6 +2597,16 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 - [ ] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
 
+### B-154 — checker defects found by front 166's drafts (166 s3, css)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured repros; the cells decide) · **After:** B-146
+
+Front 166's decision cells are written as drafts before they compile; the first ones that do are the oracle. css's drafts (166 s3) measured:
+
+- [ ] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent
+
+Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its defect as a box here (checker) or as a 164 row (comptime on wasm, machine 2).
+
 ### B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
