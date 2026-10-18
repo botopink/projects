@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**117 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **613**.
+number, which is **614**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -790,16 +790,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) As built. (b) Both trap: `bytes.at` is the bare `array.get_u` (a trap outside `0..length-1`, a negative index read unsigned included) and `bytes.ofWords` is `unreachable` at the first word outside `0..255`; the `.bp` codecs keep their own bounds; the unit test's three lines replaced. (c) `bytes.at` as `text.byteAt` (`-1`: one answer for one read over one layout), `bytes.ofWords` trapping.
 - **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
 - **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
-
-#### b137-b · Inside an executor, what the handle is for a type, a behavior, a field or a method — or whether those kinds are refused (decisions 581 (2), 575 (4); 144 B-137)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** 581 (2) fixes the handle inside a `compiler.compile` executor for one case: "the annotated declaration itself as a run-time value, with its declared type" — `make: decl` on a `fn`. Commit `c4bc973a0` splices the handle as the annotated declaration's name for every kind (`comptime/infer.zig` `executorSource`: `splices[values.len + captured.len] = .{ .param = declName, .lexeme = annotated }`, `annotated` the handle's `.name`), and `invokeDecorators` builds a `Field` handle with the bare field name, a `Method` handle with the bare method name, a `Type` and a `Behavior` handle with the type's name (`.name = fld.name`, `.name = m.name`, `.name = tdecl.name`, `.name = i.name`). The spliced executor is re-analysed in the annotated module, so the bare name resolves in that module's scope: a method or a field whose name a module-level declaration shares binds to that declaration, silently; otherwise the checker's own unresolved-name error, located at the annotation (567), naming no handle; a type or a behavior written bare answers whatever a type name means in expression position. No cell exercises an executor reading the handle of a type, a behavior, a field or a method; `compile_executor_handle_typed` / `_mistyped` annotate `fn`s only. No refusal exists.
-- **Options.**
-  (a) The handle inside an executor is admitted only when the annotated declaration is a run-time value — a `fn` or a `val`; on a type, a behavior, a field, a method (and an enum variant) a decorator whose executor reads the handle is refused at the annotation, code `executor-handle-not-a-value`, text naming the kind and the declaration (`the executor reads `decl`, and `City` is a type: no run-time value`), the `compiler.compile` call its `called from` line (567); one error per failing annotation.
-  (b) As (a) for a type, a behavior and a field; a method's handle is the method as a function value by its owner's path (`City.make`, its declared type), a static method the same.
-  (c) Keep the landed splice: the handle is the bare name, resolved in the annotated module; a type is `type<T>`'s value where the checker admits one.
-- **Recommendation.** (a): the only reading in which no executor binds another declaration by accident and nothing is defined by what a name happens to resolve to; (b) is a later widening with its own typing to decide (an instance method's `self`), (c) is the silent misbinding measured above. Cells: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, each `refused` at the annotation.
-- **Blocks.** B-137's "a handle inside an executor is its declaration at run time, typed" box, for the kinds other than `fn` and `val`; 165 s10's markers on types (`#[component]`, `#[page]` on a type); 165 s10's registrations, built reading a type's `decl` as the type's name spliced in (`decl.make()`, `decl.Tx.make()`, `decl.bind(prefix)`) — that reading changes with the answer.
 
 #### b138-b · A behavior's `default fn` with a body and cells: `implement-with-body`, or the body the fallback? (decisions 575 (6), 585 (h); 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

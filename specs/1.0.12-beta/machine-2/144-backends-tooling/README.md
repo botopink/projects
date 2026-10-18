@@ -2625,7 +2625,11 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       after its annotated declaration (decision 580); cell `compile_executor_module_val_order`
       (`["second", "first", "later", "own"]`); a handle inside an executor is its declaration at run time, typed (581 (2)),
       cells `compile_executor_handle_typed`, `compile_executor_handle_mistyped`
-- [ ] a handle inside an executor on a type, a behavior, a field or a method — question b137-b
+- [ ] decision 613: `decl` inside an executor is the annotated declaration spliced as code and bound to it, on every kind —
+      a type `Users` (`decl.make()`), a method `Users.make`, a behavior, a field `Config.db` —, the checker's ordinary rules
+      on the result (`Users` where a value is expected refused with the checker's text at the annotation); never the bare
+      name resolved in the module; cells `compile_executor_handle_on_type`, `_on_method`, `_on_type_as_value`,
+      `_handle_not_module_name`
 - [ ] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
       package (its catalogue cells)
 - [ ] moved into B-139 by decision 605: `@emit`, `@code` and `@expr` removed with `builtins.d.bp` (`unknown-builtin`), the emit
