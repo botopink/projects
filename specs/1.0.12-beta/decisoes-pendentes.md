@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **648**.
+número livre, que é **649**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -920,7 +920,7 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
 - **Medido.** O `cell check` toma todo diretório com um `src/` como célula, e uma célula sem snapshot é vermelha por desenho; a 67 proíbe lista de exceções.
 - **Opções.**
-  (a) A fase 1 escreve `decisions-taken/<slug>/main.bp` (sem `src/`, sem manifesto): nada é célula até o `promote` mover para `src/main.bp` e escrever o `botopink.json`.
+  (a) A fase 1 escreve `decisions-taken/<slug>-<N>/main.bp` (sem `src/`, sem manifesto): nada é célula até o `promote` mover para `src/main.bp` e escrever o `botopink.json`.
   (b) A forma completa de célula desde o primeiro commit, cada resposta aceita no mesmo lote — asserida de imediato.
   (c) Um veredito `pending` do `cell check` para célula sem `snapshot/` — emenda 464 (3) e 475 (6), deixa uma célula existir sem asserção.
 - **Recomendação.** (a): os dois momentos do mantenedor, sem flag, sem lista, nada que o gate encontre e pule.
