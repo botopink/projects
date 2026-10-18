@@ -42,8 +42,7 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
-**548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
-stem, construído como recusado), **B-99-c** (a própria raiz de uma dependência chamando um default de catálogo, construído como recusado). **B-99-e** (onde fica um argumento do chamador que quebra um corpo genérico expandido, construído no argumento).
+**548-b** (os nomes de código que guardam o nome de uma biblioteca antiga).
 
 ---
 
@@ -1260,7 +1259,6 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 | 03r-v | O operador do construtor de queries tipado é o enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`): `queryOf(City.entityMeta()).where(City.columns().state, Op.Eq, "CA")`; a coluna como `compiler.Field<City>` (308) é uma pergunta separada | 08 · `orm/query.bp:84-115` |
 | 03r-w | Os endpoints explícitos do OAuth2 são campos de `OAuth2Provider` (`authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri`); as credenciais de cliente são `withClientToken(id, call)`, tentando uma vez de novo em 401 | 79 · 13 |
 | 03r-x | O relay do outbox reivindica por `UPDATE` condicional (as reivindicações de um relay que caiu voltam por `reclaimStale`); os coordenadores de saga e 2PC persistem toda transição e retomam no boot (`resumeSagas`, `recover2pc`); o job store reivindica triggers e assume leases do mesmo modo | 15 |
-| 04-a | A época de tag do core só cresce (`rkResetContext` a deixa), é `i64`, e a tag vazia é recusada em `rkBumpTag` / `rkTagEpoch` | 04 passo 1 · `rakun/src/runtime.bp`, `rakun_runtime.erl` |
 
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-a:** confirmar a regra só-erlang; sob a 512 (3) os 27 manifestos de membros, 8 de starters e 3 de exemplos que repetem `"targets": ["erlang"]` o largam (o workspace o declara uma vez) — com a `95-b`, a varredura de manifestos da 150.
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-c:** confirmar (`rakun/src/config.bp`, nenhum `rakun_config.erl`); os records `#[config]` da 299 ainda não estão construídos (`#[configurationProperties]` e `rkProp*` permanecem) — rakun 04 s7.
@@ -1282,7 +1280,6 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-v:** confirmar como o estado na feat (`rakun-data/src/orm/query.bp` `Op`, `queryOf`, `City.columns()`); superada em direção por 312 / 397 / 398: o builder tipado sai do rakun-data quando o `self.db.query "…"` do erika e o dbcontext pousarem (137, 143), uma linguagem de consulta — a pergunta da coluna como `compiler.Field<City>` (308) fica sem objeto então.
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-w:** confirmar (`rakun-security/src/oauth2/provider.bp`; `client_credentials.bp` `withClientToken`).
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 03r-x:** confirmar (`tx/outbox.bp` `reclaimStale`, `saga.bp` `resumeSagas`, `twopc.bp` `recover2pc`).
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor) — 04-a:** confirmar (a entrada acima).
 
 ### 05-jhonstart (9)
 

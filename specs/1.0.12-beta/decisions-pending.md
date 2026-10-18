@@ -42,8 +42,7 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
-**548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
-refused), **B-99-c** (a dependency's own root calling a catalogue default, built as refused). **B-99-e** (where a caller's argument that breaks an expanded generic body is located, built at the argument).
+**548-b** (the code names that keep a former library's name).
 
 ---
 
@@ -1261,7 +1260,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 | 03r-v | Typed query builder's operator is the enum `Op` (`Eq`, `Ne`, `Lt`, `Gt`, `Le`, `Ge`, `Like`): `queryOf(City.entityMeta()).where(City.columns().state, Op.Eq, "CA")`; the column as `compiler.Field<City>` (308) is a separate question | 08 · `orm/query.bp:84-115` |
 | 03r-w | OAuth2's explicit endpoints are `OAuth2Provider` fields (`authorizationUri`, `tokenUri`, `userinfoUri`, `jwksUri`); client credentials are `withClientToken(id, call)`, retrying once on 401 | 79 · 13 |
 | 03r-x | Outbox relay claims by conditional `UPDATE` (a crashed relay's claims return via `reclaimStale`); saga and 2PC coordinators persist every transition and resume at boot (`resumeSagas`, `recover2pc`); job store claims triggers and takes over leases the same way | 15 |
-| 04-a | The core's tag epoch only grows (`rkResetContext` leaves it), is `i64`, and the empty tag is refused in `rkBumpTag` / `rkTagEpoch` | 04 step 1 · `rakun/src/runtime.bp`, `rakun_runtime.erl` |
 
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-a:** confirm the erlang-only rule; under 512 (3) the 27 member, 8 starter and 3 example manifests repeating `"targets": ["erlang"]` drop it (the workspace declares it once) — with `95-b`, 150's manifest sweep.
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-c:** confirm (`rakun/src/config.bp`, no `rakun_config.erl`); 299's `#[config]` records are not built yet (`#[configurationProperties]` and `rkProp*` remain) — rakun 04 s7.
@@ -1283,7 +1281,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-v:** confirm as the state on feat (`rakun-data/src/orm/query.bp` `Op`, `queryOf`, `City.columns()`); superseded in direction by 312 / 397 / 398: the typed builder leaves rakun-data when erika's `self.db.query "…"` and dbcontext land (137, 143), one query language — the `compiler.Field<City>` column question (308) is moot then.
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-w:** confirm (`rakun-security/src/oauth2/provider.bp`; `client_credentials.bp` `withClientToken`).
 - **Proposed (fable, 2026-10-12; awaiting the maintainer) — 03r-x:** confirm (`tx/outbox.bp` `reclaimStale`, `saga.bp` `resumeSagas`, `twopc.bp` `recover2pc`).
-- **Proposed (fable, 2026-10-12; awaiting the maintainer) — 04-a:** confirm (the entry above).
 
 ### 05-jhonstart (9)
 
