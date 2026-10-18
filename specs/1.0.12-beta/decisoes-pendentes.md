@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**85 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**84 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **675**.
+número livre, que é **676**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -606,13 +606,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) O `??` vai para o nível do `catch`, com uma reescrita do formatador colocando parênteses em todo `??` ao lado de um operador aritmético. (b) Como proposto. (c) O `??` no nível do `||` (JS), o `catch` abaixo dele — a mesma migração de (a).
 - **Recomendação.** (b).
 - **Bloqueia.** Nada construído; só o texto da 537.
-
-#### 535-a · Uma divisão de float por zero no erlang e no beam: `crash: badarith` ou `panic`? (decisões 535, 527 (3), 492, 444; 144)
-- **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(a): o `/` de float no erlang e no beam checado como o de inteiro, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — uma forma para toda divisão por zero; a divergência (444: commonJS e wasm respondem `Infinity`) fica então só no abortar.
-- **Medido.** A 535 cita `panic: division by zero`; a 492 lista "uma divisão por zero" sob `panic`; a 527 (3) checa só a de inteiro. As divergências de erlang e beam da `float_nan_infinity_words` agora afirmam `stderr crash: badarith` — a resposta do compilador (um `badarith` sem marca), não uma que uma decisão fixa.
-- **Opções.** (a) Como proposto. (b) Manter `crash: badarith` — a 527 (3) é só de inteiro. (c) Literalmente `panic: division by zero`, uma terceira forma de mensagem.
-- **Recomendação.** (a).
-- **Bloqueia.** Os dois snapshots de divergência ficam provisórios; uma linha da 144 quando respondida.
 
 #### 535-b · Onde vive o texto de abort do commonJS: no guard do runner ou no programa emitido (decisão 535)
 - **Proposto (fable, 2026-10-14; aguardando o mantenedor):** **(b): o módulo de entrada (o que tem `main`, nunca um módulo de biblioteca — um `process.on` global numa biblioteca é um efeito colateral) emite o handler; o guard do runner mantido para o `.mjs` do browser** — a 535 é sobre o que o programa escreve; uma regeneração mecânica dos snapshots de codegen do commonJS.

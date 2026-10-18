@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**85 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**84 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **675**.
+number, which is **676**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -606,13 +606,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) `??` moves to `catch`'s level, with a formatter rewrite parenthesising every `??` beside an arithmetic operator. (b) As proposed. (c) `??` at `||`'s level (JS), `catch` below it — the same migration as (a).
 - **Recommendation.** (b).
 - **Blocks.** Nothing built; 537's text only.
-
-#### 535-a · A float division by zero on erlang and beam: `crash: badarith` or `panic`? (decisions 535, 527 (3), 492, 444; 144)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): float `/` on erlang and beam checked like the integer one, `panic: division by zero: / on f64 at <file>:<l>:<c>`** — one shape for every division by zero; the departure (444: commonJS and wasm answer `Infinity`) is then only in aborting.
-- **Measured.** 535 cites `panic: division by zero`; 492 lists "a division by zero" under `panic`; 527 (3) checks only the integer one. `float_nan_infinity_words`'s erlang and beam departures now claim `stderr crash: badarith` — the compiler's answer (an unmarked `badarith`), not one a decision fixes.
-- **Options.** (a) As proposed. (b) Keep `crash: badarith` — 527 (3) is integer-only. (c) Literally `panic: division by zero`, a third message shape.
-- **Recommendation.** (a).
-- **Blocks.** The two departure snapshots stay provisional; a 144 row once answered.
 
 #### 535-b · Where the commonJS abort text lives: the runner's guard or the emitted program (decision 535)
 - **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): the entry module (the one with `main`, never a library module — a global `process.on` in a library is a side effect) emits the handler; the runner's guard kept for the browser's `.mjs`** — 535 is about what the program writes; one mechanical regeneration of the commonJS codegen snapshots.

@@ -73,6 +73,6 @@ Every report to the maintainer and every reply is a file of `repository/conversa
 
 ## Blocked on the maintainer — not opened
 
-In the order the maintainer answers them (the queue of 2026-10-17): 535-a; then B-14-b, B-11-a / B-11-b (150 s29 waits on them),
+In the order the maintainer answers them (the queue of 2026-10-17): then B-14-b, B-11-a / B-11-b (150 s29 waits on them),
 B-15-b / c, B-17-a … m, B-18-a / b, B-10-b … g, B-02-c, B-27-g1 … g4, 50-b, 165-a / b, 548-a / b, B-98-a,
 B-99-c / e, B-86-a. A thread that reaches one of these stops at it and reports.

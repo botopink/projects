@@ -1527,6 +1527,8 @@ manifest, as any project's.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
+- [ ] decision 675: a float division by zero on erlang and beam is the integer one's `panic` (`panic: division by zero: / on f64 at <file>:<l>:<c>`), the float `/` checked as the integer `/` is; `float_nan_infinity_words`' erlang/beam departures claim that text, cell `float_division_by_zero_panic`
+
 emilia's `theme-unknown-namespace` cell aborts with `emilia theme: '--gutter' is in no known namespace` on commonJS;
 erlang and beam word the same abort differently, so the cell cannot claim its `stderr` in `output/` (458: no departure
 for a defect).
