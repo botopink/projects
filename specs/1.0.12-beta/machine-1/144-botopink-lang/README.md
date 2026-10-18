@@ -387,6 +387,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-142 | [2](../../machine-2/144-backends-tooling/README.md) | wasm: a generator in a linear-memory module (and `@Stream`) runs its whole body at the call (decision 105) |
 | B-143 | [2](../../machine-2/144-backends-tooling/README.md) | commonJS: `push` on an array mutates every binding that holds it — a `val` copy of a `var`, a caller's argument — where erlang rebinds the `var` and leaves the value alone (decisions 447 (2), 448 (2), 547) |
 | B-144 | [2](../../machine-2/144-backends-tooling/README.md) | erlang / beam: a namespace member's chained call (`query.of(…).where(…).select(…).toArray()`) dispatches `toArray()` on the `Query` record — `bp_unsupported_method join`; query's cell `generic_loader_binding` red on erlang and beam, query's feat CI red on it |
+| B-145 | [1](../144-checker/README.md) | an annotation `#[name]` that names no decorator (unbound, or a namespace such as `#[check]` naming a module) is dropped silently — no refusal, empty output |
 | B-109 | [2](../../machine-2/144-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](../../machine-2/144-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
 | B-111 | [2](../../machine-2/144-backends-tooling/README.md) | a `val` annotation naming an unknown type: `type mismatch`, located at the statement |

@@ -2550,6 +2550,17 @@ modifier says how its argument arrives. Every later step of the group writes its
 
 Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout once 165 s10 lands.
 
+### B-145 — an annotation that names no decorator is dropped silently
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro; the code is the step's)
+
+Found by decision 582's build: a bare `#[name]` whose `name` resolves to no decorator — unbound (`#[nope]`), or a
+namespace (`#[check]` where `check` is a module) — is dropped without a word and the program builds; `unknown-annotation`
+covers only the `#[@Family]` forms.
+
+- [ ] such an annotation is refused at the annotation, located, naming what `name` is (nothing, a namespace, a value);
+      a refusal cell per kind, red on the parent; no library site measured to rely on the silence (each found, listed)
+
 ### B-140 — `types.bp` in botopink: `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
