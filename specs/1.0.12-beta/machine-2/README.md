@@ -76,7 +76,7 @@ One full cold gate with conformance on this machine's main checkout before B-140
 
 ## Reports
 
-Every report to the maintainer and every reply is appended to `repository/conversation-chat/machine-2/YYYY-MM-DD.md` (the maintainer, 2026-10-18; the shape in that repository's README) and pushed to its `feat` at once; before writing, the machine runs that repository's `scripts/unread.sh <machine>` and checks (`[x]`) each entry it reads.
+Every report to the maintainer and every reply is a file of `repository/conversation-chat/machine-2/` — `<YYYYMMDD-HHMM>-<slug>-<id>.md`, started from that repository's `TEMPLATE.md` (`from`, `to`, `purpose`, `subject`, `read`) and pushed to its `feat` at once (the maintainer, 2026-10-18). Before writing, the machine runs that repository's `scripts/unread.sh machine-2` and ticks (`read: [x]`) each message it reads.
 
 ## Blocked on the maintainer — not opened
 
