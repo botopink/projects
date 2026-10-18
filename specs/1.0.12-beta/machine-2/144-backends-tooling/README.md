@@ -2613,9 +2613,13 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       declarations in source order, calls in order; a library module's executors run in the program that imports it;
       any number per declaration
 - [x] cells: one executor on commonJS, erlang, beam and wasm; the order across two modules and a dependency; an
-      executor from a library's decorator; `expr-captures-build` inside one; `compiler-output-outside-decorator`
+      executor from a library's decorator; `compiler-output-outside-decorator`
       (`compile_executor_before_main`, `compile_init_order_modules`, `compile_executor_from_library`,
-      `compile_executor_captures_build`, `compile_output_outside_decorator`)
+      `compile_output_outside_decorator`)
+- [ ] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `expr-captures-build`
+      withdrawn — `compile_executor_captures_build` rewritten as `compile_executor_reads_compiler` (`out home`); a
+      `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`
+      (`compile_executor_compiler_arg_at_run_time`)
 - [x] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is
       refused at the tail with 409's refusal, a named executor (or an `expr` handed on) of type `fn() -> X` at the
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`

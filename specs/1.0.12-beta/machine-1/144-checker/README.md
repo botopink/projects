@@ -2524,7 +2524,7 @@ modifier says how its argument arrives. Every later step of the group writes its
       annotated declaration, checked against the parameter's type (280 (2)); `-> expr T` a template's return, spliced
       at the call; an `expr` argument to an `expr` parameter hands its tree on; `@Expr<T>`, `.value`, `@expr` go
 - [x] the tree rule: run-time code (resolved where written, 384), `expr` (spliced), `comptime` (parameters and the
-      body's `val`s, literals); `expr-captures-build`; `expr-call-outside-expr`
+      body's `val`s, literals); `expr-captures-build` (withdrawn by 614: `compiler.*` inside a tree is folded at build); `expr-call-outside-expr`
 - [x] `type<T>` parsed in a type position and bound by a type argument; `type T` goes at its seven sites;
       `@typeInfo(city)` with a value refused; `type(` / `type {` unchanged
 - [x] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
