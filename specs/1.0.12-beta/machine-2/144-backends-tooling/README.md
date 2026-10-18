@@ -2914,6 +2914,7 @@ function, where the module also declares `pub fn make()`, stores the module's `m
 - [ ] erlang: `await f().make()` in a component body never runs the component (binding it to a typed `val` first works)
 - [ ] beam: a `for` lambda loop loses a module (rakun loops by index), and `registry.find("store")?.name ?? "none"` answers `none` where the entry exists
 - [ ] wasm: a generic function returning `T` from `e is fn() -> T` then `e()` prints garbage (`276`) — the type parameter's slot not monomorphised; found by B-146
+- [ ] erlang: `await e.view()` where `view` is a record field holding a component lambda is emitted as a method call (`function view/1 undefined`) — found by 150 s34
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 

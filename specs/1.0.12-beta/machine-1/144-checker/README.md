@@ -2586,6 +2586,14 @@ covers only the `#[@Family]` forms.
 
 Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are migrated.
 
+### B-153 — a template answering `Component<X>` refused as built outside its bound
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled>` whose built code calls `fn mk() -> Component<Styled>` is refused at every call `template-build-outside-bound: styled built code of type Styled, outside its answer Component` (`finishExpansionBuilt` compares the declared answer with the built code's unwrapped type). Written through an alias (`StyledView = Component<Styled>`) the check was skipped; 661 removes the alias.
+
+- [ ] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
+
 ### B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
