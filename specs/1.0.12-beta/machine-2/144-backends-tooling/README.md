@@ -2696,7 +2696,10 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
 - [ ] decision 617: `implement-with-body` on every bodied declaration, a behavior's `default fn` included — the exemption
       `ImplDecl.isDefault` goes, `implement_with_body` gains the behavior case; `primitives.bp`'s bodies-with-cells are
       B-146's to redistribute, so this box lands with B-146
-- [ ] decision 610: `body:` on `Erlang`, `Node`, `Wasm` alone, `template` optional only beside it; the refusals
+- [ ] decision 621: only `template` positional in a cell; a second unlabelled argument refused at the argument naming the
+      label (`external-field-unlabelled`); `conformance/docs.md` § `declare fn`; cells `external_flag_bare_bool_refused`
+      (the text, on `.JavaScript`) and `external_flag_bare_fn_refused` (`.Erlang("…", f)`)
+- [ ] decision 610: `body:` on `Erlang`, `JavaScript`, `Wasm` alone, `template` optional only beside it; the refusals
       `external-body-not-a-fn` (not a bare identifier naming a private bodied `fn` with the declaration's types),
       `external-source-empty` (neither `template` nor a cell), `external-all-bodies` (every source a `body:` — write the
       bodied `fn`), each at its argument or the annotation; `conformance/docs.md` § `declare fn` writes the cell's rule
