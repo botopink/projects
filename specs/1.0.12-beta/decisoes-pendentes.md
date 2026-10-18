@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**113 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**112 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **623**.
+número livre, que é **624**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -573,21 +573,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha dos adaptadores do 144 B-25.
-
-#### B-25-b · A superfície do `fetch` antes do `io/http` ter binding no wasm: `Request`, `HttpError`, o antigo `fetch(url)` (decisões 334, 393; 144 B-25)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): a std fixa primeiro, no 144, com `fetch(url)` removido no mesmo commit** — `fetch(req: Request) -> @Task<@Result<Response, HttpError>>`, `Request(method, url, headers, body: ?Bytes)`, `HttpError { NotAllowedOnHost, Network(message: string), Timeout }`; os sites de chamada (std, `http`) migram no pouso (uma grafia, 67).
-- **Medido.** a std só tem `fetch(url) -> @Result<Response, string>`; não existe `Request` nem `HttpError`.
-- **Opções.**
-  (a) A superfície tipada, a forma antiga removida.
-  ```bp
-  val r = await fetch(Request(method: .Get, url: u, headers: [], body: null));
-  ```
-  (b) A superfície tipada ao lado de `fetch(url)`.
-  ```bp
-  val r = await fetch(u);   // still accepted
-  ```
-- **Recomendação.** (a).
-- **Trava.** As linhas do `io/http` do 144 B-25 (passos 4, 5, 6, 17).
 
 #### 564-a · O `value` de uma entrada tipada do catálogo pode ser lido fora de uma expansão 562? (decisão 564; 144 B-19 passo 7)
 - **Proposta (opus, 2026-10-16; construída como (b), aguardando o mantenedor):** (a): toda leitura do `value` de uma entrada `Declared<B>` fora de uma expansão recusada.

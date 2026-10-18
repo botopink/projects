@@ -1828,7 +1828,7 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 - [x] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
       gate cells as pollables) and on `browser` (the same adapters, 394), through 392's scheduler; `RetryPolicy` / `nextDelay` unchanged;
       `run/std_async_on_every_target` asserts results and answer order only — never effect interleaving (335 (2))
-- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither) — `async` bound on both hosts; `io/http` waits on question B-25-b
+- [ ] the `browser` bindings of both modules in the same commit (334: a cell bound on both hosts or neither) — `async` bound on both hosts; `io/http` on decision 623's surface
 
 #### Steps 9 and 11 — a prebuilt wasm library (decision 333 (B)) — withdrawn as written (was `05-wasm` s9, `04-js` s11)
 
@@ -1839,7 +1839,9 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 
 - [ ] the adapter names `.GateNew` / `.GateOpen` / `.GateAwait`, and std's test-only cells (`monoMillis`, `hostTarget`, the
       counters) left unbound on wasm until `botopink test` runs wasm (335 (3)) · question B-25-a
-- [ ] `fetch`'s surface: `Request`, `HttpError` and the migration from `fetch(url)` · question B-25-b
+- [ ] decision 623: `fetch(req: Request) -> Task<Result<Response, HttpError>>`, `Request(method, url, headers = [], body = null)`,
+      `HttpError { NotAllowedOnHost, Network(message), Timeout }`; `fetch(url)` removed in the same commit, std's and `http`'s
+      call sites migrated; cells `http_fetch_request`, `http_fetch_url_removed`
 - [x] log's two markers — superseded by fs-a: `io.fs` binds `wasi:filesystem` on wasm, log calls it; 156's markers removed
 - [x] wasm: `async.retry(policy, { -> … })` refused — nothing at the call binds the type parameters `retry`'s body
       needs (the lambda's answer type not read) — found by B-25 — bound from the argument's answer type (`generic_thunk_result_binds`)
