@@ -51,7 +51,7 @@ class Cells(unittest.TestCase):
         return r.returncode, r.stdout + r.stderr
 
     def cell(self, n, title, promoted=False):
-        c = self.d / S.get(n, f"slug_{n}")
+        c = self.d / (f"{S[n]}-{n}" if n in S else f"slug_{n}-{n}")
         (c / "src" if promoted else c).mkdir(parents=True)
         inc = "src/main.bp" if promoted else "main.bp"
         (c / "docs.md").write_text(f"# {title}\n\nprose\n\n{{{inc}}}\n")
@@ -81,7 +81,7 @@ class Cells(unittest.TestCase):
 
     def test_unknown_row(self):
         self.cell(99, f"Decision 99 {D} x")
-        self.assertRed("snap: directory slug_99: directory is the slug of no row")
+        self.assertRed("snap: directory slug_99-99: directory name is <slug>-<N> with N naming no row")
 
     def test_one_liner_row(self):
         self.slug_on(11, "slug_11")
@@ -97,6 +97,11 @@ class Cells(unittest.TestCase):
         self.slug_on(12, "slug_12")
         self.cell(12, f"Decision 12 {D} A process rule.")
         self.assertRed("decision 12: row is tagged process")
+
+    def test_wrong_slug(self):
+        self.cell(10, T10)
+        (self.d / "code_rule_ten-10").rename(self.d / "other_name-10")
+        self.assertRed("directory other_name-10: directory slug differs from the row's (code_rule_ten)")
 
     def test_docs_first_line(self):
         c = self.cell(10, T10)
@@ -143,7 +148,7 @@ class Cells(unittest.TestCase):
 
     def test_targets_not_subset(self):
         c = self.cell(13, T13, promoted=True)
-        (c / "botopink.json").write_text('{"name": "another_code_rule", "targets": ["wasm"]}')
+        (c / "botopink.json").write_text('{"name": "another_code_rule-13", "targets": ["wasm"]}')
         self.assertRed("targets ['wasm'] are not the workspace's")
 
     def test_phase1_with_src(self):
@@ -162,7 +167,7 @@ class Cells(unittest.TestCase):
         dc.COMPLETE_REPOS.append("snap")
         reasons = dc.check_repo(self.root, "snap")
         self.assertEqual(sorted(r.split(": decision ")[1].split(":")[0] for r in reasons), ["10", "13", "15"])
-        self.assertIn("code-bearing row has no conformance/modules/decisions-taken/code_rule_ten directory", reasons[0])
+        self.assertIn("code-bearing row has no conformance/modules/decisions-taken/code_rule_ten-10 directory", reasons[0])
         self.assertIn("decision 15: code-bearing row has no slug", reasons[2])
         self.assertIn("front 166", reasons[0])
 
@@ -172,23 +177,23 @@ class Cells(unittest.TestCase):
         self.assertIn("snap: 6 rows, 2 one-liners, 1 tagged process, 3 to scaffold", out)
         self.assertFalse(self.d.exists())
         self.assertEqual(self.run_cmd("scaffold", "snap")[0], 0)
-        self.assertEqual(sorted(p.name for p in self.d.iterdir()), ["another_code_rule", "code_rule_ten"])
-        self.assertEqual((self.d / "code_rule_ten/docs.md").read_text(), f"# {T10}\n\n{{main.bp}}\n")
+        self.assertEqual(sorted(p.name for p in self.d.iterdir()), ["another_code_rule-13", "code_rule_ten-10"])
+        self.assertEqual((self.d / "code_rule_ten-10/docs.md").read_text(), f"# {T10}\n\n{{main.bp}}\n")
         self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
 
     def test_scaffold_rewrites_changed_lead(self):
         self.run_cmd("scaffold", "snap")
         (self.repo / "decisions-taken.md").write_text(LEDGER.replace("Code rule ten.", "Renamed rule."))
         self.run_cmd("scaffold", "snap")
-        self.assertEqual((self.d / "code_rule_ten/docs.md").read_text().split("\n")[0], f"# Decision 10 {D} Renamed rule.")
-        self.assertEqual((self.d / "code_rule_ten/main.bp").read_text().split("\n")[0], f"//// Decision 10 {D} Renamed rule.")
+        self.assertEqual((self.d / "code_rule_ten-10/docs.md").read_text().split("\n")[0], f"# Decision 10 {D} Renamed rule.")
+        self.assertEqual((self.d / "code_rule_ten-10/main.bp").read_text().split("\n")[0], f"//// Decision 10 {D} Renamed rule.")
 
     def test_promote(self):
         self.run_cmd("scaffold", "snap")
         self.assertEqual(self.run_cmd("promote", "snap")[0], 0)
-        self.assertTrue((self.d / "code_rule_ten/src/main.bp").is_file())
-        self.assertEqual(json.loads((self.d / "code_rule_ten/botopink.json").read_text()), {"name": "code_rule_ten"})
-        self.assertIn("{src/main.bp}", (self.d / "code_rule_ten/docs.md").read_text())
+        self.assertTrue((self.d / "code_rule_ten-10/src/main.bp").is_file())
+        self.assertEqual(json.loads((self.d / "code_rule_ten-10/botopink.json").read_text()), {"name": "code_rule_ten-10"})
+        self.assertIn("{src/main.bp}", (self.d / "code_rule_ten-10/docs.md").read_text())
         self.assertIn('"decisions-taken/*"', (self.repo / "conformance/modules/botopink.json").read_text())
         self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
 

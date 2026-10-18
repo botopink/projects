@@ -2,8 +2,8 @@
 """Decision cells (front 166): one conformance cell per decision in force, in the repository it binds.
 
 Reads the generated ledger repository/<repo>/decisions-taken.md (decisions-split.py, decision 482) and
-keeps `conformance/modules/decisions-taken/<slug>/` for every row that fixes program behaviour, the slug being
-the ledger's `Cell` column (decisions 646, 647).
+keeps `conformance/modules/decisions-taken/<slug>-<N>/` for every row that fixes program behaviour, the slug being
+the ledger's `Cell` column (decisions 646, 647, 648).
 
   scripts/decision-cells.py scaffold [--list] [<repo>]   create the missing directories (docs.md + stub
                                                          main.bp); --list prints what it would scaffold
@@ -42,14 +42,18 @@ DASH = "—"
 
 # ── the three open choices, one function each ───────────────────────────────────
 
-def package_name(slug):
-    """166-a (decisions 646, 647): the directory is the ledger's slug (`lowercase_with_underscores`) and
-    511 holds untouched: the package is named by its directory."""
-    return slug
+def cell_dirname(slug, num):
+    """Decision 648: the directory is `<slug>-<N>`, the ledger's slug, a hyphen, the number."""
+    return f"{slug}-{num}"
+
+
+def package_name(dirname):
+    """511 holds untouched: the package is named by its directory (a hyphen is legal)."""
+    return dirname
 
 
 def phase1_main(promoted):
-    """166-b (a): phase 1 is `<slug>/main.bp` (no `src/`, no manifest); promoted is `<slug>/src/main.bp`."""
+    """166-b (a): phase 1 is `<slug>-<N>/main.bp` (no `src/`, no manifest); promoted is `<slug>-<N>/src/main.bp`."""
     return "src/main.bp" if promoted else "main.bp"
 
 
@@ -103,6 +107,10 @@ class Row:
             self.kind = "oneliner"
         else:
             self.kind = "code"
+
+    @property
+    def dirname(self):
+        return cell_dirname(self.slug, self.num) if self.slug else None
 
     @property
     def title(self):
@@ -166,7 +174,7 @@ def cmd_scaffold(root, args):
         one = [r for r in rows if r.kind == "oneliner"]
         tagged = [r for r in rows if r.kind == "process"]
         code = [r for r in rows if r.kind == "code"]
-        todo = [r for r in code if not (r.slug and (d / r.slug).exists())]
+        todo = [r for r in code if not (r.slug and (d / r.dirname).exists())]
         cand = [r for r in todo if mark.search(r.binds)]
         sup = [r for r in todo if r not in cand and SUPERSEDED.search(r.rule[:200])]
         print(f"{repo}: {len(rows)} rows, {len(one)} one-liners, {len(tagged)} tagged process, "
@@ -186,7 +194,7 @@ def cmd_scaffold(root, args):
             if not r.slug:
                 print(f"  decision {r.num}: no slug in the ledger's Cell column (166 s2), not scaffolded", file=sys.stderr)
                 continue
-            m = d / r.slug
+            m = d / r.dirname
             promoted = (m / "src" / "main.bp").exists()
             if not m.exists():
                 m.mkdir(parents=True)
@@ -346,16 +354,20 @@ def check_repo(root, repo):
         out.append(f"decision-cells: {repo}: {label}: {why} (front 166)")
 
     rows = ledger(root, repo)
-    by_slug = {r.slug: r for r in rows or [] if r.slug}
+    by_num = {r.num: r for r in rows or []}
     d = cells_dir(root, repo)
     if d.is_dir():
         for m in sorted(d.iterdir(), key=lambda p: p.name):
             if not m.is_dir():
                 continue
             name = m.name
-            row = by_slug.get(name)
+            nm = re.fullmatch(r"(.+)-(\d+)", name)
+            row = by_num.get(int(nm.group(2))) if nm else None
             if row is None:
-                red(name, "directory is the slug of no row of the repository's decisions-taken.md")
+                red(name, "directory name is <slug>-<N> with N naming no row of the repository's decisions-taken.md")
+                continue
+            if row.slug != nm.group(1):
+                red(name, f"directory slug differs from the row's ({row.slug or 'none'})")
                 continue
             if row.kind == "oneliner":
                 red(row.num, "row is a one-liner (replaced / reversed / overtaken) and has no cell")
@@ -370,8 +382,8 @@ def check_repo(root, repo):
                 continue
             if not r.slug:
                 red(r.num, "code-bearing row has no slug in the ledger's Cell column")
-            elif not (d / r.slug).is_dir():
-                red(r.num, f"code-bearing row has no conformance/modules/decisions-taken/{r.slug} directory")
+            elif not (d / r.dirname).is_dir():
+                red(r.num, f"code-bearing row has no conformance/modules/decisions-taken/{r.dirname} directory")
     return out
 
 

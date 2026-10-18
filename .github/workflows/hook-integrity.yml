@@ -30,7 +30,7 @@
 #   6. `scripts/decisions-split.py --check` exits 0 — every repository's generated
 #      `decisions-taken.md` is what the script writes (decision 482);
 #   7. `scripts/decision-cells.py check` exits 0 (front 166) — every
-#      `conformance/modules/decisions-taken/<slug>/` is the `Cell` slug of a code-bearing ledger row of its
+#      `conformance/modules/decisions-taken/<slug>-<N>/` is the `Cell` slug of a code-bearing ledger row of its
 #      repository, with its docs.md and program in the generated shape; completeness
 #      per repository once its list in the script names it.
 #
