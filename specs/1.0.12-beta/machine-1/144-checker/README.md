@@ -2544,9 +2544,8 @@ modifier says how its argument arrives. Every later step of the group writes its
 - [x] cells: a decorator with the three parameter kinds, read at build and spliced; `-> expr` template; a `type<T>`
       parameter; the three refusals; every `decorator_*` / `template_*` / `comptime_*` cell's answer unchanged but for
       the spellings the codemod rewrites, each stated
-- [ ] `conformance/docs.md` § Decorators, § Templates, § Builtins rewritten to the new spelling; the compiler's
-      `AGENTS.md` files — left: the old spelling (`@Expr<T>`, `@Decl`, `-> expr`, `syntax`) in `conformance/AGENTS.md`,
-      `libs/std/AGENTS.md`, the compiler's `AGENTS.md` files and std's comments (`types.bp`, `testing/mocks.bp`)
+- [x] `conformance/docs.md` § Decorators, § Templates, § Builtins rewritten to the new spelling; the compiler's
+      `AGENTS.md` files
 
 Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout once 165 s10 lands.
 
