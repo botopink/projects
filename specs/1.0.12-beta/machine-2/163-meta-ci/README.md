@@ -223,10 +223,13 @@ with head-of-line blocking (`poolAcquire`):
 So a small gate waits behind every full-pool waiter queued before it. While one of those runs, the free jobs stay
 idle, because the older full-pool waiter cannot start and the small gate may not pass it.
 
-- [ ] the rule chosen and written in `gate.sh`'s comment and the meta `AGENTS.md` § Gate orchestrator. Recommended: while
+- [x] the rule chosen and written in `gate.sh`'s comment and the meta `AGENTS.md` § Gate orchestrator. Recommended: while
       the pool is not empty, a gate asking for less than the capacity may be admitted ahead of an older full-pool waiter,
       at most one such pass in flight. The full-pool gate cannot start until the pool drains anyway, and the bound
       keeps a stream of small gates from starving it. The alternative is to keep the strict order as it is and only
       write down its cost.
-- [ ] a test of the scheduler: two `exec --jobs <capacity>` waiters and one `exec --jobs 1`, the small one admitted
+- [x] a test of the scheduler: two `exec --jobs <capacity>` waiters and one `exec --jobs 1`, the small one admitted
       while the first full-pool gate runs (red on the parent) and the second full-pool gate still started after it
+      — built as: `scripts/gate-test.sh`, in a private pool. A running 1-job gate stands in for the first full-pool gate,
+      because a running full-pool gate leaves no job to take. The test-only overrides are `BOTOPINK_POOL_CAPACITY` and
+      `BOTOPINK_POOL_STAGGER`; the pool path stays fixed (67)
