@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **676**.
+número livre, que é **677**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -547,18 +547,21 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a) agora, porque está verde em toda biblioteca e cell. Depois (c) como passo posterior, para que uma sub-linguagem que grava folhas seja exata mesmo onde uma palavra se repete.
 - **Bloqueia.** Nada (construída como (a)).
 
-#### 660-a · Quatro leituras que a decisão 660 deixa abertas, como construídas (decisão 660; 144 máquina 1)
-- **Proposta (coordenador, 2026-10-18; construída como descrito, aguardando o mantenedor):** (1) como construído, (2) como construído, (3) **(b)**, (4) **(a)**.
-- **Medido.** A 660 está construída: os módulos de toda dependência declarada entram no programa, e os seus executores `compiler.init` rodam antes da entrada, pacotes por nível, empates na ordem em que o dependente os lista (cells `dependency_init_without_import`, `init_order_packages`). Quatro casos que a linha não fixa:
-  1. Dois pacotes do mesmo nível listados por dependentes diferentes (`solo` pelo projeto, `kit-core` por `kit-link`): construído na ordem em profundidade que os manifestos dão.
-  2. "Most dependencies last" é lido como a cadeia de dependências mais funda, não a contagem de dependências transitivas; as duas ordens diferem.
-  3. Uma dependência cujos `"targets"` deixam de fora o alvo do build: os seus módulos ainda rodam e são ligados, como seriam os de uma importada.
-  4. Os módulos do próprio pacote raiz que ninguém importa continuam sem rodar; a 660 fala só de dependências.
+#### 660-b · Os módulos do pacote raiz que nada importa: fazem parte do programa? (decisões 660, 676; 144 máquina 1)
+- **Proposta (coordenador, 2026-10-18; construído como (b), aguardando o mantenedor):** **(a).**
+- **Medido.** A 660 e a 676 colocam todo módulo de toda dependência declarada no programa, importado ou não, os executores `compiler.init` deles rodando antes da entrada. O pacote raiz mantém a regra antiga: só o que a entrada alcança por imports está no programa, então `src/jobs.bp` com `#[rakun.module] pub type Cleaner(…)` que nenhum arquivo importa nunca roda seu executor, e `Cleaner` falta no registro sem erro.
 - **Opções.**
-  (3a) Manter como construído. (3b) Recusar o build no manifesto, localizado, código `dependency-target-missing`, nomeando o pacote e o alvo. (3c) Pular os módulos desse pacote nesse alvo.
-  (4a) Todo módulo do pacote raiz também faz parte do programa, os seus executores na ordem da 580 (a regra da 660 levada à raiz, e o modelo de módulos, B-69, faz de um arquivo um módulo). (4b) Manter como construído: os módulos não importados da raiz não rodam.
-- **Recomendação.** (1) e (2) como construídos; (3b): uma dependência declarada que não pode ser construída para o alvo é um erro, nunca um pulo silencioso; (4a): uma regra para todo módulo do programa.
-- **Bloqueia.** Nada (a 660 pousa como construída).
+  (a) Todo módulo do pacote raiz também faz parte do programa, seus executores na ordem da 580 — a regra da 660 levada à raiz; um arquivo é um módulo (B-69) sem exceção.
+  ```bp
+  // src/jobs.bp, imported by nobody
+  #[rakun.module] pub type Cleaner(…)   // registers; rakun.boot() finds it
+  ```
+  (b) Como construído: um módulo do raiz que nada importa não está no programa.
+  ```bp
+  #[rakun.module] pub type Cleaner(…)   // never runs; absent from the registry, silently
+  ```
+- **Recomendação.** (a): uma regra só para o que está no programa, para uma dependência e para o raiz.
+- **Bloqueia.** Nada (construído como (b)).
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 

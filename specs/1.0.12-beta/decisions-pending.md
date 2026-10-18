@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **676**.
+number, which is **677**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -547,18 +547,21 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
 - **Blocks.** Nothing (built as (a)).
 
-#### 660-a · Four readings decision 660 leaves open, as built (decision 660; 144 machine 1)
-- **Proposed (coordinator, 2026-10-18; built as stated, awaiting the maintainer):** (1) as built, (2) as built, (3) **(b)**, (4) **(a)**.
-- **Measured.** 660 is built: every declared dependency's modules join the program, and their `compiler.init` executors run before the entry, packages by level, ties in the order the dependant lists them (cells `dependency_init_without_import`, `init_order_packages`). Four cases the row does not fix:
-  1. Two packages of one level listed by different dependants (`solo` from the project, `kit-core` from `kit-link`): built in the depth-first order the manifests give.
-  2. "Most dependencies last" is read as the deepest chain of dependencies, not the count of transitive dependencies; the two orders differ.
-  3. A dependency whose `"targets"` leave out the build target: its modules still run and are linked, as an imported one's would be.
-  4. The root package's own modules that nothing imports still do not run; 660 speaks of dependencies only.
+#### 660-b · The root package's modules that nothing imports: part of the program? (decisions 660, 676; 144 machine 1)
+- **Proposed (coordinator, 2026-10-18; built as (b), awaiting the maintainer):** **(a).**
+- **Measured.** 660 and 676 put every module of every declared dependency into the program, imported or not, their `compiler.init` executors run before the entry. The root package keeps the older rule: only what the entry reaches through imports is in the program, so `src/jobs.bp` with `#[rakun.module] pub type Cleaner(…)` that no file imports never runs its executor, and `Cleaner` is missing from the registry with no error.
 - **Options.**
-  (3a) Keep as built. (3b) Refuse the build at the manifest, located, code `dependency-target-missing`, naming the package and the target. (3c) Skip that package's modules on that target.
-  (4a) Every module of the root package is part of the program as well, its executors in 580's order (660's rule carried to the root, and the module model, B-69, makes a file a module). (4b) Keep as built: the root's unimported modules do not run.
-- **Recommendation.** (1) and (2) as built; (3b): a declared dependency that cannot build for the target is an error, never a silent skip; (4a): one rule for every module of the program.
-- **Blocks.** Nothing (660 lands as built).
+  (a) Every module of the root package is part of the program as well, its executors in 580's order — 660's rule carried to the root; a file is a module (B-69) with no exception.
+  ```bp
+  // src/jobs.bp, imported by nobody
+  #[rakun.module] pub type Cleaner(…)   // registers; rakun.boot() finds it
+  ```
+  (b) As built: a root module nothing imports is not in the program.
+  ```bp
+  #[rakun.module] pub type Cleaner(…)   // never runs; absent from the registry, silently
+  ```
+- **Recommendation.** (a): one rule for what is in the program, for a dependency and for the root.
+- **Blocks.** Nothing (built as (b)).
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
