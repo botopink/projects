@@ -2892,6 +2892,6 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
 - [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; `buildType(self, comptime name: string, comptime fields: Type.Field<unknown>[], comptime implements: anytype[] = []) -> anytype`, the record-text form gone
 - [ ] the std bodies: `Type.pick` / `omit` / `partial` / `required` / `merge` over `buildType(name, fields)`, `mocks.bp`'s type over `implements:`; the template cells rewritten over `compiler.ast` (`bpp_*`'s `deps/markup`, `template_*`); `compiler.text(t)` unchanged
 - [ ] cells: `template_answers_ast` (four targets), `ast_ill_formed_refused`, `build_type_from_fields`, `compiler_build_removed` (refused as an unknown member)
-- [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `compiler.ast`; later, the std template `code` (`` code @`…` `` with holes) over the AST — its own step, opened when 625 (4) is scheduled
+- [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `compiler.ast`; later, the std module `code.bp` — the template `code` (`` code @`…` `` with holes) over the AST, written in botopink, imported where used — its own step, opened when 625 (4) is scheduled
 
 Oracle: the template cells on four targets; `test-libs`; the cold gate.
