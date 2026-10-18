@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**108 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **629**.
+number, which is **630**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -636,21 +636,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
 - **Blocks.** Nothing.
-
-#### b140-a · Where does a derived type's spread lineage come from once `compiler.buildType` takes text? (decisions 359 (2), 578 (3), 599 (3), 600; 144 B-140)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** `comptime/derived_types.zig` rewrites `val X = Type.<fn>(…)` before the checker into `pub type X(…)` and sets `TypeDecl.derivedFrom` / `derivedPartial`; the spread rules of 359 (2) and 600 read them (`record_spread_derived_partial`, `record_spread_required`, `record_spread_partial`). Under 599 (3) the five functions become std bodies ending in `compiler.buildType(text)`, and a text carries no lineage.
-- **Options.**
-  (a) `compiler.buildType(source: string, from: anytype[] = [])`: std's bodies pass `[source]` for `pick` / `omit`, `[first, second]` for `merge`, `[]` for `partial` / `required`; the compiler sets `derivedFrom` from it (578 (3) gains one labelled parameter).
-  ```bp
-  pub fn pick<T>(comptime source: type<T>, comptime ..fields: Type.Field<T>[]) -> anytype {
-      return compiler.buildType(recordText(kept), from: [source]);
-  }
-  ```
-  (b) The compiler reads the lineage off the `val`'s call (`Type.pick(X, …)` → `[X]`): a case keyed on std's function names.
-  (c) No spread from a derived type's source: a spread source is the record's own type only; 359 (2) and 600 amended, three `record_spread_*` cells change.
-- **Recommendation.** (a): std states the lineage, the compiler reads a value, and 599 (3) holds (no std name known to the compiler).
-- **Blocks.** B-140's derived-type piece (`types.bp`'s five bodies).
 
 #### b140-c · In B-140, may a library declare its own `-> anytype` type builder, or only std's five functions? (decisions 578, 599 (3); 144 B-140)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

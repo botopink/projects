@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**108 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **629**.
+número livre, que é **630**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -636,21 +636,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
-
-#### b140-a · De onde vem a linhagem de spread de um tipo derivado quando `compiler.buildType` recebe texto? (decisões 359 (2), 578 (3), 599 (3), 600; 144 B-140)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
-- **Medido.** `comptime/derived_types.zig` reescreve `val X = Type.<fn>(…)` antes do checker em `pub type X(…)` e define `TypeDecl.derivedFrom` / `derivedPartial`; as regras de spread da 359 (2) e da 600 os leem (`record_spread_derived_partial`, `record_spread_required`, `record_spread_partial`). Pela 599 (3) as cinco funções viram corpos da std que terminam em `compiler.buildType(text)`, e um texto não carrega linhagem.
-- **Opções.**
-  (a) `compiler.buildType(source: string, from: anytype[] = [])`: os corpos da std passam `[source]` para `pick` / `omit`, `[first, second]` para `merge`, `[]` para `partial` / `required`; o compilador define `derivedFrom` a partir dele (a 578 (3) ganha um parâmetro rotulado).
-  ```bp
-  pub fn pick<T>(comptime source: type<T>, comptime ..fields: Type.Field<T>[]) -> anytype {
-      return compiler.buildType(recordText(kept), from: [source]);
-  }
-  ```
-  (b) O compilador lê a linhagem da chamada do `val` (`Type.pick(X, …)` → `[X]`): um caso chaveado pelos nomes das funções da std.
-  (c) Nenhum spread a partir da fonte de um tipo derivado: a fonte de um spread é só o próprio tipo do record; 359 (2) e 600 emendadas, três cells `record_spread_*` mudam.
-- **Recomendação.** (a): a std declara a linhagem, o compilador lê um valor, e a 599 (3) se mantém (nenhum nome da std conhecido pelo compilador).
-- **Bloqueia.** A peça de tipos derivados do B-140 (os cinco corpos do `types.bp`).
 
 #### b140-c · No B-140, uma biblioteca pode declarar seu próprio construtor de tipo `-> anytype`, ou só as cinco funções da std? (decisões 578, 599 (3); 144 B-140)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
