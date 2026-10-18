@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**100 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**98 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **662**.
+number, which is **663**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -638,15 +638,6 @@ group), answered before every other part of this page; in the order of the steps
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
 
-#### b137-e · The refusal codes `typeinfo-all-imported`, `-private`, `-hooks-reader`, `-arguments` once `@TypeInfo.all` goes: renamed `find-*`, or kept? (decisions 581 (3), 606; 144 B-137)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** The catalogue's completeness refusals (216 (4), 372) stay when the catalogue is read by `compiler.find` at build; their codes name the `@TypeInfo.all` spelling that 606 removes.
-- **Options.**
-  (a) Renamed `find-imported`, `find-private`, `find-hooks-reader`, `find-arguments`, after the one spelling (581 (3)).
-  (b) Kept as written, the code a name in the record only.
-- **Recommendation.** (a): a code names what a program writes.
-- **Blocks.** B-137's final package (its nine rewritten refusal cells).
-
 #### b137-f · Is 551 replaced by 581 (1) once no `comptime` default is a catalogue query, and does its "the catalogue passed explicitly overrides" survive? (decisions 551, 576 (7), 581 (1); 144 B-137)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
 - **Measured.** 551 lets a `comptime` default read the run-time catalogue and fills it at the caller; once `@TypeInfo.all` goes, a registry read in `main` replaces it (576 (7)), and `compiler.find` answers handles readable at build only. Cells `typeinfo_all_default_at_caller`, `_default_override`, `_default_outside_root`, `comptime_expand_boot`.
@@ -664,15 +655,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The two cells go: `find` over a value that names no decorator answers `[]`.
 - **Recommendation.** (a): a typo should not answer an empty catalogue.
 - **Blocks.** B-137's final package (two cells).
-
-#### b137-h · `decl_member_owner`: `compiler.owner(d)` answers a handle, not `Declared<unknown>` — a comment edit, or does the cell's answer change? (decisions 576 (3), (7); 144 B-137)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** The cell's comment names `Declared<unknown>` for the owner's answer; with `Declared*` gone the owner is a declaration handle (576 (3)); the cell prints the owner's name only.
-- **Options.**
-  (a) A comment edit; the printed answer is unchanged.
-  (b) The answer changes with the handle's shape, re-recorded.
-- **Recommendation.** (a).
-- **Blocks.** Nothing (built as (a) unless answered).
 
 #### b139-j · `Annotation` and `Decorator`: prelude names, or `compiler.bp`'s? (decisions 606 (1), 608; 144 B-139)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**

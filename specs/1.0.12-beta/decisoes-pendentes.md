@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**100 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**98 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **662**.
+número livre, que é **663**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -638,15 +638,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
 
-#### b137-e · Os códigos de recusa `typeinfo-all-imported`, `-private`, `-hooks-reader`, `-arguments` quando `@TypeInfo.all` sai: renomeados `find-*`, ou mantidos? (decisões 581 (3), 606; 144 B-137)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** As recusas de completude do catálogo (216 (4), 372) ficam quando o catálogo é lido por `compiler.find` em tempo de build; seus códigos nomeiam a grafia `@TypeInfo.all` que a 606 remove.
-- **Opções.**
-  (a) Renomeados `find-imported`, `find-private`, `find-hooks-reader`, `find-arguments`, pela grafia única (581 (3)).
-  (b) Mantidos como escritos, o código um nome só no registro.
-- **Recomendação.** (a): um código nomeia o que um programa escreve.
-- **Bloqueia.** O pacote final do B-137 (suas nove células de recusa reescritas).
-
 #### b137-f · A 551 é substituída pela 581 (1) quando nenhum default `comptime` é uma consulta ao catálogo, e o seu "o catálogo passado explicitamente sobrepõe" sobrevive? (decisões 551, 576 (7), 581 (1); 144 B-137)
 - **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
 - **Medido.** A 551 deixa um default `comptime` ler o catálogo de run time e o preenche no chamador; quando `@TypeInfo.all` sai, um registro lido em `main` o substitui (576 (7)), e `compiler.find` responde handles legíveis só em tempo de build. Células `typeinfo_all_default_at_caller`, `_default_override`, `_default_outside_root`, `comptime_expand_boot`.
@@ -664,15 +655,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) As duas células saem: `find` sobre um valor que não nomeia decorador responde `[]`.
 - **Recomendação.** (a): um erro de digitação não deveria responder um catálogo vazio.
 - **Bloqueia.** O pacote final do B-137 (duas células).
-
-#### b137-h · `decl_member_owner`: `compiler.owner(d)` responde um handle, não `Declared<unknown>` — uma edição de comentário, ou a resposta da célula muda? (decisões 576 (3), (7); 144 B-137)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** O comentário da célula nomeia `Declared<unknown>` para a resposta do dono; com `Declared*` fora, o dono é um handle de declaração (576 (3)); a célula imprime só o nome do dono.
-- **Opções.**
-  (a) Uma edição de comentário; a resposta impressa não muda.
-  (b) A resposta muda com a forma do handle, regravada.
-- **Recomendação.** (a).
-- **Bloqueia.** Nada (construído como (a) a menos que respondido).
 
 #### b139-j · `Annotation` e `Decorator`: nomes do prelude, ou do `compiler.bp`? (decisões 606 (1), 608; 144 B-139)
 - **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
