@@ -21,13 +21,13 @@ closest `AGENTS.md` in each directory you touch.
 | `specs/1.0.5-beta/` | Closed compiler milestone (`closure.md`); its open work went to 1.0.10-beta's `00-compiler-carry-over/` and now lives in `specs/1.0.12-beta/machine-1/144-botopink-lang/` |
 | `specs/1.0.0-beta/` … `1.0.4-beta/` | Closed. 1.0.6–1.0.9-beta were absorbed into 1.0.10-beta and deleted (decision 68); the mapping in `specs/1.0.10-beta/unification.md` |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `land-check.py <repo> <branch> [--base <ref>]` — the coordinator's check before a landing (decision 484): not a fast-forward of `origin/feat`, a tracked `*.snap.new` / `*.snap.md.new` / `todo.md`, in the meta specs a scratch reference or a commit hash or an English/Portuguese pair whose ids or code blocks differ, a `snapshot/targets/` file added; each reason one line, exit 1 when red; `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5; `decisions-split.py [--check]` (decision 482) — writes `repository/<repo>/decisions-taken.md` from the newest milestone's `decisions-taken.md` (each row to the repositories its Binds column names, old ids through the fronts' alias tables; a row it cannot map is printed to stderr, never guessed); `--check` fails when a file differs; CI check 6; a repository's commit holding only that file skips the hook (`--no-verify`, the maintainer, 2026-10-15) |
+| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `land-check.py <repo> <branch> [--base <ref>]` — the coordinator's check before a landing (decision 484): not a fast-forward of `origin/feat`, a tracked `*.snap.new` / `*.snap.md.new` / `todo.md`, in the meta specs a scratch reference or a commit hash or an English/Portuguese pair whose ids or code blocks differ, a `snapshot/targets/` file added; each reason one line, exit 1 when red; `scratch-refs.py [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.sh` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one outside the closed milestones' spec trees) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5; `decisions-split.py [--check]` (decision 482) — writes `repository/<repo>/decisions-taken.md` from the newest milestone's `decisions-taken.md` (each row to the repositories its Binds column names, old ids through the fronts' alias tables; a row it cannot map is printed to stderr, never guessed); `--check` fails when a file differs; CI check 6; a repository's commit holding only that file skips the hook (`--no-verify`, the maintainer, 2026-10-15); `decision-cells.py scaffold [--list] \| compile \| promote <repo> \| check` (front 166) — keeps `conformance/modules/decisions-taken/<slug>/` (the ledger's `Cell` column, decision 647; a `docs.md` and one example program) for every ledger row that fixes program behaviour; a one-liner (`Replaced by` / `Reversed by` / `Overtaken by`) or a `process` row has none; `check` is CI check 7, tested by `decision-cells-test.py` |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
 
 ## CI
 
-`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs/1.0.12-beta/machine-2/163-meta-ci`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the five checks locally, every red listed), and the checks are:
+`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs/1.0.12-beta/machine-2/163-meta-ci`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the seven checks locally, every red listed), and the checks are:
 
 1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never
    points at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD FETCH_HEAD`);
@@ -46,6 +46,12 @@ closest `AGENTS.md` in each directory you touch.
 6. `scripts/decisions-split.py --check` exits 0 — every `repository/<repo>/decisions-taken.md` is exactly what
    the script writes from the milestone's `decisions-taken.md` (decision 482); a repository's file is generated and
    never edited there.
+7. `scripts/decision-cells.py check` exits 0 (front 166) — every `conformance/modules/decisions-taken/<slug>/` of a
+   repository is the `Cell` slug of a code-bearing row of its generated ledger (not a one-liner, not `process`), holds a `docs.md`
+   whose first line is the row's, with `{path}` include lines naming existing files and no fenced code, and its
+   program (`main.bp`, or `src/main.bp` with `botopink.json` once promoted) under the row's generated header, a
+   promoted cell's `"targets"` within the workspace's; completeness (every code-bearing row has its directory) is
+   checked per repository once the script's list names it (every slug has its directory). A red names the repository, the row and front 166.
 
 A red check names the repository and the front that owns the fix; nothing here is soft.
 
@@ -56,7 +62,7 @@ machine's gate scheduler. A repository's gate — a library's `scripts/gate.sh`,
 nothing of it.
 
 ```sh
-scripts/gate.sh [check]          # the six checks of § CI, locally
+scripts/gate.sh [check]          # the seven checks of § CI, locally
 scripts/gate.sh run <target>…    # those gates together under the pool; --no-conformance is handed on
 scripts/gate.sh tasks            # every open task's gate (its own repositories)
 scripts/gate.sh libs             # every library's gate, on the main checkout's compiler

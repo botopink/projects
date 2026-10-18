@@ -3,7 +3,7 @@
 # (front 163 meta-ci, step s7; decisions 468, 469, 473).
 #
 #   scripts/gate.sh [check]            the meta repository's own checks — the
-#                                      five of `.github/workflows/hook-integrity.yml`,
+#                                      seven of `.github/workflows/hook-integrity.yml`,
 #                                      which calls this script — all run, every
 #                                      red listed, exit 1 if any
 #   scripts/gate.sh run <target>…      those repositories' / tasks' gates together
@@ -196,6 +196,12 @@ check6() {
     python3 scripts/decisions-split.py --check
 }
 
+# 7. every decision cell is consistent with the ledger (front 166, scripts/decision-cells.py).
+check7() {
+    [ -f scripts/decision-cells.py ] || { echo "  ✗ scripts/decision-cells.py is missing (166 s1)"; return 1; }
+    python3 scripts/decision-cells.py check
+}
+
 runChecks() {
     local titles=(
         "1. every submodule pointer is on its remote feat"
@@ -204,9 +210,10 @@ runChecks() {
         "4. the library repositories' guards, runner and gate are one text"
         "5. every LANGUAGE GAP marker has a row"
         "6. every repository's decisions-taken.md is what decisions-split.py writes"
+        "7. every decision cell matches its ledger row (decision-cells.py)"
     )
     local i red=""
-    for i in 1 2 3 4 5 6; do
+    for i in 1 2 3 4 5 6 7; do
         echo "── ${titles[$((i - 1))]}"
         if "check$i"; then :; else red="$red $i"; fi
     done
@@ -214,7 +221,7 @@ runChecks() {
         echo -e "${RED}✗ meta gate: check(s)$red red${NC}"
         return 1
     fi
-    echo -e "${GREEN}✓ meta gate: all six checks green${NC}"
+    echo -e "${GREEN}✓ meta gate: all seven checks green${NC}"
 }
 
 # ═════════════════════════════════════════════════════════════════════════════

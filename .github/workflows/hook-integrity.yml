@@ -27,7 +27,14 @@
 #   5. `scripts/language-gap-markers.sh` (113 step 4c) exits 0 — every
 #      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md.
 #
-# The six checks are the meta repository's `scripts/gate.sh` (front 163 s7,
+#   6. `scripts/decisions-split.py --check` exits 0 — every repository's generated
+#      `decisions-taken.md` is what the script writes (decision 482);
+#   7. `scripts/decision-cells.py check` exits 0 (front 166) — every
+#      `conformance/modules/decisions-taken/<slug>/` is the `Cell` slug of a code-bearing ledger row of its
+#      repository, with its docs.md and program in the generated shape; completeness
+#      per repository once its list in the script names it.
+#
+# The seven checks are the meta repository's `scripts/gate.sh` (front 163 s7,
 # decision 473): this workflow calls it, and `scripts/gate.sh` from the meta root
 # runs the same checks locally. The same script is the machine's gate scheduler
 # (`run`, `tasks`, `libs`, `status`); CI uses only its checks.
@@ -54,6 +61,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: scripts/gate.sh — the six checks
+      - name: scripts/gate.sh — the seven checks
         shell: bash
         run: bash scripts/gate.sh check
