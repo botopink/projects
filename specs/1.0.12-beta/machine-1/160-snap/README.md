@@ -14,11 +14,11 @@ commit (decision 188), producer first.
 rakun 150 s24, jhonstart 150 s45, emilia 150 s55, onze 150 s68; the coordination is machine-1/135-snap. It receives
 consumer commits only: 144 B-08 (17 sites), B-20, B-28.
 
-### 160 — the caller's location (decision 718)
+### 160 — the caller's location (decisions 718, 719)
 
-**Repository:** snap · **Model:** sonnet · **After:** B-137's 718 item
+**Repository:** snap · **Model:** sonnet · **After:** 144 B-156
 
-- [ ] every snapshot function that names or places a snapshot takes `at: SourceLocation` as an ordinary parameter, no default; the test writes `snap.matches(value, comptime compiler.src());`; the reference and the engine's own tests updated; front 166's snap cells promote on it (s4)
+- [ ] every snapshot function that names or places a snapshot is written in 719's shape — `pub fn matches(syntax value: unknown) -> anyvalue { val at = compiler.source(value); return code @`snap.matchesAt(${value}, ${at})`; }` over a run-time `matchesAt(value: unknown, at: Source) -> void` — so the test writes `snap.matches(render(page));` and the snapshot carries the test's file and line; the reference and the engine's own tests updated; front 166's snap cells promote on it (s4)
 
 ### 160 Conformance — the front's last step (decision 465)
 

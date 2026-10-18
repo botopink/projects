@@ -45,6 +45,7 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 | 8 | **165 s5's rest** (B-146 / B-147 landed; 660 answers 165-h: every declared dependency's executors run, in dependency order; 676: a dependency's `"targets"` hold every target of its dependant, `dependency-target-missing`; 677: the root's own modules are in the program whether imported or not, `"entry"` only where `main` starts), then **165 s7**; 146's and 145's sites (`syntax`, `-> void`, `.JavaScript(`) one commit per library at their fronts' next landing | 581, 616, 618, 622 | sonnet | the libraries' gates; `boot_modules` |
 | 9 | **B-152** (668): a type parameter bound by a parameter, never by the return alone — `type-parameter-unbound`, the cells, std's 13 sites and the cells' 11 migrated; the libraries' 41 sites listed by file for 165 s10, 145, 146 — after B-146 | 668, 667 | opus | the cells; `zig build test` |
 | 10 | **B-154** — checker defects found by 166 s3's drafts: a function value widening to `?fn(…)` (330) — after B-146; sonnet | 330 | sonnet | the cell, red on the parent |
+| 11 | **B-156** — a function with a `syntax` expression parameter expanded at its call (decision 719; the template's rule generalised) — after B-146; opus | 719, 578, 575 (4) | opus | three cells, red on the parent |
 
 ## After the group — or beside it, when the files are disjoint
 

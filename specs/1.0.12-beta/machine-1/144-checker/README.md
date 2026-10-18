@@ -2597,6 +2597,21 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 - [ ] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
 
+### B-156 — a function with a `syntax` expression parameter is expanded at its call (decision 719)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-146
+
+Decision 719 generalises the template (578): a function whose parameter is `syntax` is expanded where it is called — `syntax q: string` takes a template text `` @`…` `` as today, a `syntax` parameter of any other type takes the expression written between the parentheses of an ordinary call. The body is a build body (575 (4): the `syntax` value opaque, read by `compiler.*` or spliced), returning a type, `anyvalue` or `anytype`.
+
+- [ ] the checker admits `syntax` on a non-`string` parameter of a function that returns a type, `anyvalue` or `anytype`; a call to it with ordinary parentheses is expanded at the call as a template call is — the body evaluated at build with the argument captured as code, the answer's code spliced where the call stands and typed there (638); `compiler.source(value)` is the call's file, line and column, `compiler.text(value)` the expression as written
+- [ ] a `syntax q: string` parameter still takes a template text only: `markup("…")` stays `syntax-call-outside-syntax` (575 (4)); a `syntax` expression parameter given a template text is refused the same way, the message naming the form the parameter takes
+- [ ] a function with a `syntax` expression parameter and a run-time return type (`-> void`, `-> i32`) is refused at the declaration, located, naming 578 (2)'s three returns — a build body returns code, never a value
+- [ ] a decorator's `syntax decl` is untouched (576, 716); a template method's `syntax self: R` receiver is untouched (578 (1))
+- [ ] cells `syntax_fn_expanded_at_call` (snap's shape: `matches(syntax value: unknown) -> anyvalue` splicing `compiler.source(value)` into a run-time call, the file and line printed at the test's line), `syntax_fn_text_of_expression` (`assert(a == b)` printing `a == b`), `syntax_fn_string_param_needs_template_text` (reject), four targets; `conformance/docs.md` § Templates renamed to cover both forms
+- [ ] snap's `matches` rewritten in this shape by front 160's step (machine 1, after this lands); front 166's snap drafts promote on it (s4)
+
+Oracle: the cells; `zig build test`.
+
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured repros; the cells decide) · **After:** B-146
