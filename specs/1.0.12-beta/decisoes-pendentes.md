@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**104 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**97 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **652**.
+número livre, que é **660**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -1148,12 +1148,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Recomendação.** (a) até uma frente precisar de (b) ou (c).
 - **Bloqueia.** Nada — construído como (a).
 
-#### ctr-o · Decisão 146 contra a confirmação `lem-c`
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Confirmar `lem-c`, e ler a 146 junto com ela como uma só regra** — uma célula de host sem binding para o alvo (um `declare fn` livre ou um `declare fn` de um tipo) pode ser declarada; toda função com corpo, livre ou método, cujo corpo a alcança é recusada para esse alvo na expressão de chamada dentro desse corpo, chame-se ou não essa função. Os dois textos nomeiam um só comportamento: o "na sua declaração, chamada ou não" da 146 é a função recusada pelo próprio corpo, o "onde é chamada" da `lem-c` é onde fica o cursor; recusar a declaração do tipo proibiria um tipo declarado uma vez para vários alvos, e nada roda em silêncio de um jeito ou de outro (67). Viável, construído: `codegen/hostMethods.zig` `missingAt`, chamado na chamada em `commonJS.zig`, `erlang.zig`, `beam_asm.zig` e `wat.zig`; toda função com corpo é emitida, então a chamada falha chamada ou não; células `bodyless_method_without_binding`, `external_method_erlang_only`, `external_wrapper_keeps_refusal`, `std_asserts_host_cell_on_wasm`; `conformance/docs.md` já afirma as duas. Mudanças: a linha da 146 e a `lem-c` reescritas como a regra única acima (sem código); duas linhas 144 a registrar: em wasm um método de behavior com parâmetros de tipo é emitido só quando alcançado (`wat.zig`), então a 146 não vale ali; `hostMethods.binds(.wasm)` é `false` fixo, então um método de tipo que carrega uma célula `@External.Wasm(fn:` / `std:)` é recusado em wasm contra o `docs.md`.
-- **Regras.** 146: uma função cujo corpo alcança uma função de host sem binding para o alvo "é recusada em sua declaração, chamada ou não". `lem-c` (construído, a confirmar): um método de host sem binding "é recusado onde é CHAMADO" — recusar a declaração era a opção não tomada; a 311 mantém o mesmo na chamada.
-- **Recomendação.** Confirmar `lem-c` para uma declaração de host sem corpo (um tipo declarado uma vez ainda compila para um alvo que seu método não tem); declarar que a 146 rege qualquer função com corpo, livre ou método, que alcance uma; `docs.md` diz as duas coisas.
-- **Bloqueia.** A confirmação de `lem-c`.
-
 #### s23-j · O que a marca da 375 conta como "não consegue seguir", e um `@Component` de host
 - **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Um componente nunca é assíncrono por causa dos seus filhos.** Um componente é uma função que responde sua árvore (um array de nós, 388); compor outro componente — inclusive um valor recebido — só põe sua lambda na árvore. A marca `async` da 375 conta só o próprio corpo do componente: `await`, `async { }`, um hook assíncrono, uma chamada ao host que responde `@Task` / `@Component` (itens 2–5 como construídos). Um componente marcado responde uma Promise da sua árvore (uma máquina de estados no wasm, 140-e (d)); todo outro responde sua árvore direto. **A raiz é sempre assíncrona:** o render de um `#[page]` (e `renderToString`) percorre a árvore e faz await só nas lambdas marcadas. A marca transitiva (`subtreeAsync`: um componente que usa, direta ou indiretamente, um marcado; um componente recebido como valor contado a partir do argumento em cada uso, um valor desconhecido contado assíncrono) é calculada no build só como otimização, legível por decorators: falsa, um `#[page]` renderiza sem streaming e um `Suspense` emite seu filho direto, sem fallback; sem ela o renderer descobre ao descer, com a mesma resposta. O item 1 como construído (uma chamada por valor de função ou método que responde `@Component` marca o nó) sai. Amenda a 504 (140-e): seu renderer lê essa `subtreeAsync` de build onde ela é conhecida, e descobre ao descer só para um valor desconhecido.
 - **Medido.** Construído e pousado (`infer.zig` `noteAsyncCall`, `finishHookNode`,
@@ -1257,31 +1251,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   passo 36 do 01-checker dá quando pousar, e concorda com (a).
 - **Bloqueia.** Nada — construído como (a) (`block_eval.useReached`); a caixa da chamada `Any` do passo 8 o lê.
 
-#### 414-a · Uma chamada de componente num corpo: renderizada (128) ou o lambda (o exemplo da 414)
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Respondida pela 504 e pela resposta da s23-j: uma chamada num corpo faz o lambda** — `val inner = notFoundLevel(chain, i, route, page);` num corpo de componente é o `@Component<Element>` não executado, posto na árvore (`ErrorBoundaryNode(child: inner)`) e executado pelo renderizador com o escopo que seu pai respondeu; só um `await c` escrito executa `c` no corpo (388 (4)); uma leitura de campo num valor sem `await` continua a recusa do checker. 504: "chamar um componente só faz seu lambda, só o renderizador o executa", "`<main>{view()}</main>` guarda o lambda de `view()`"; s23-j: "compor outro componente só põe seu lambda na árvore"; o "renderiza onde lido como `R`" de (b) é mais fraco e infere intenção do uso. Viável: `infer.zig` `inferComponentCall` (o splice de `await` por `env.indexRewrites`) e seu ponto de chamada saem, `noteAsyncCall` e `context_lower.zig` seguem; o renderizador do jhonstart na feat já escreve toda execução como `await` e guarda seus filhos como thunks (`ErrorBoundaryNode.child: fn() -> @Component<Element>`, que vira `child: @Component<Element>` sob a 504 e a lg2-n); commonJS, erlang e beam hoje, wasm com o 144 B-25 passo 4 (cuja caixa ainda lê a recomendação pré-504). Mudanças: a caixa de hooks do 144 B-17 toma a remoção do splice e reescreve as duas células que codificam o renderizar-na-chamada da 128 (`component_call_renders`, `component_call_awaited`; `component_is_lambda` fica); a entrada fecha como (b) na redação da 504.
-- **Medido.** A cadeia da 128, mantida pela 388 (4) ("dentro de um corpo de componente `await c` roda `c` com o escopo
-  de filhos do corpo"), renderiza uma chamada de componente escrita num corpo de componente: o checker insere `await` em volta
-  dela (`inferComponentCall`), então `val inner = notFoundLevel(chain, i, route, page);` RODA `notFoundLevel` com
-  o escopo dos filhos e `inner` é seu `Element`. O exemplo da 414 escreve a mesma linha com o comentário "o
-  lambda, não rodado". Construído e pousado: a inserção vale; um corpo obtém um valor de componente não rodado
-  nomeando a função (`itens.map(Card)`) ou por um lambda — o `ErrorBoundaryNode` / `NotFoundBoundaryNode` do jhonstart
-  guardam `child: fn() -> @Component<Element>` (`{ -> notFoundLevel(…) }`), como o
-  `suspense.Boundary` já fazia.
-- **Opções.** (a) Como construído: uma chamada num corpo renderiza; um valor é um nome ou um lambda:
-  ```bp
-  fn caughtBelow(…) -> @Component<Element> {
-      return nodePlaceholder(TreeNode.Errors(ErrorBoundaryNode(id: …, child: { -> notFoundLevel(chain, i, route, page) }, …)));
-  }
-  ```
-  (b) Uma chamada num corpo faz o lambda onde seu valor não é lido como `R`, e renderiza só onde o
-  checker o lê como `R` (uma leitura de campo, um argumento tipado `R`) — `val inner = notFoundLevel(…);` um lambda,
-  `inner.tag` recusado sem `await`:
-  ```bp
-  val inner = notFoundLevel(chain, i, route, page);          // @Component<Element>, not run
-  return ErrorBoundaryNode(id: …, child: inner, …);
-  ```
-- **Recomendação.** (a): uma regra para uma chamada num corpo (128, inalterada pela 388), sem inferir intenção a partir do
-  uso; (b) muda o que o `val x = Card(…)` de todo corpo significa.
 ### 02-std-and-packaging
 
 #### 97-s16-a · Onde ficam as tabelas geradas do `unicode`
@@ -1637,27 +1606,6 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 
 ### 01-compiler — a linguagem
 
-#### lg2-b · O que `@Task<T>` significa no BEAM
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Respondida pela 392: um `@Task<T>` começa quando é feito e roda até seu primeiro `await` em todo alvo — em erlang e beam um processo por task; o lowering eager é um defeito** — dois `async.delay(300, …)` feitos antes de qualquer `await` levam ~300 ms, como em commonJS (392 (1): "a Promise do node, o processo por task do erlang, e wasm igualmente"; a 432 já termina "o processo da task" com `{error, E}`). Remedido na feat: commonJS 301 ms, erlang 603 ms, beam 603 ms — `codegen/erlang.zig` ("@Task — eager lowering") e `beam_asm.zig` ainda rodam o corpo onde é feito, e o cabeçalho de `async.bp` ainda diz isso. (1) contradiz o texto da 392, (3) acrescenta um segundo mecanismo ao lado de `@Task`. Viável: um processo por corpo `-> @Task` em erlang / beam (`spawn` + uma caixa de mensagens de que o `await` recebe, como `runAll` / `raceOf` já fazem por thunk em `async.bp`), o caminho rápido eager mantido só onde o checker prova que nenhum `await` observa a diferença — um passo 144 com a reprodução acima como sua célula. Mudanças: a linha "`@Task<T>` lowers eagerly on erlang" do `language-gaps.md` e o cabeçalho de `async.bp` fecham com ele; as linhas do rakun que citam a lg2-b leem a 392.
-- **Medido.** No erlang e no beam o corpo de uma Task roda até o fim onde é criada: dois `async.delay(300, …)` criados antes de qualquer um ser aguardado levam ≥ 600 ms (menos de 600 ms no commonJS).
-- **Opções.** (1) Uma Task promete o valor, nada sobre quando seu corpo roda; concorrência = o processo explícito do `std/async` por thunk não iniciado, documentado. (2) Um escalonador por trás de `@Task` no BEAM (um processo por Task, `await` um receive). (3) `spawn` / `join` na linguagem.
-- **Recomendação.** (1) — a leitura restritiva da 120 da 1.0.10.
-- **Bloqueia.** A linha; rakun 02, 23, 25, 28, 30, 60.
-
-#### lg2-d · Um decorator que lê o corpo que anota
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(1), já a regra pela 316 e pela 403** — um decorator nunca lê o corpo que anota (316: "um decorator nunca lê o corpo (lg2-d) nem escreve um como string"); o que ele pode fazer a um corpo é `decl.wrapWith(f)`, tipado (316, 144 B-11); a saga do rakun 83 continua um valor que emparelha cada passo com sua compensação. Recusar antes de uma API de statements que ninguém checa; (2) e (3) fariam a saída de um decorator depender de como um corpo é escrito. Viável: nada a construir — `Decl` não tem `body` (`builtins.d.bp`), a leitura é `unknown field 'body' on type 'Decl'` na leitura (medido na feat). Mudanças: a entrada fecha como documentação da 316; a linha do `language-gaps.md` vira by design.
-- **Medido.** `decl.body` é o `unknown field 'body' on type 'Decl'` do checker, localizado na leitura no corpo do decorator (a linha de corpo de decorator do `01-checker`; era `{error,{badkey,body}}` na anotação); o handle carrega kind, nome, campos, variantes, métodos, tipo de retorno, anotações.
-- **Opções.** (1) Nenhum acesso a statements. (2) Uma árvore de statements somente leitura no `@Decl`. (3) Uma API de comptime que percorre corpos.
-- **Recomendação.** (1); a saga da rakun 83 continua um valor que pareia cada passo com sua compensação.
-- **Bloqueia.** A linha; rakun 83.
-
-#### lg2-h · Lançar e capturar por tipo
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(1), já a regra por 431 / 486 / 489 / 490** — um erro é o `E` de um `@Result`: um erro tipado é um enum casado com `case` no corpo do `catch` (`try load(p) catch { e -> case e { NotFound(path) -> …; … } }`), uma falha de host chega como `HostError` sob `result: true` e um módulo do std a mapeia em seu próprio enum (486); nenhum braço de `catch` por tipo, nenhuma exceção de host tipada. Medido na feat: `catch { e: NotFound -> … }` não faz parse, a forma `case` checa e roda em commonJS e erlang. Viável: nada a construir. Mudanças: a entrada fecha como documentação da 431; a linha "No typed raise and no catch by type" do `language-gaps.md` vira by design; rakun 07 / 31 / 63 escrevem `case`.
-- **Medido.** `try load(p) catch { e: NotFound -> … }` não faz parse; o erro de um `@Result<T, E>` é tipado por `E`, lido com `case` no corpo do `catch`; uma exceção de host não é um `E`.
-- **Opções.** (1) Um erro é o `E` de um `@Result` (a 121 da 1.0.10): um erro tipado é um enum casado com `case`. (2) Um braço de `catch` por tipo. (3) Exceções de host tipadas.
-- **Recomendação.** (1) — a linha vira documentação da 121.
-- **Bloqueia.** A linha; rakun 07, 31, 63.
-
 #### lg2-l · Se `noreturn` é um tipo bottom
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(2), como o código já tem: `noreturn` é o tipo bottom, e um corpo `noreturn` não pode cair pelo fim** — uma chamada `noreturn` cabe em qualquer posição (`val s: string = notFound();`, `throw notFound();`, um ramo de `if`), encerra seu caminho (`stmtsAlwaysExit` / `callNeverReturns` estreitam depois dela), e uma função declarada `-> noreturn` cujo corpo pode completar é recusada na declaração, localizada. Medido na feat: `unify.zig` ("`noreturn` é o tipo bottom de mão única"), as células `builtin_noreturn_any_position` e `try_catch_null_and_noreturn_narrowing` fixam (2) nos quatro alvos; (1) quebraria as duas células sem ganho — uma posição de valor que um `noreturn` preenche nunca é produzida, então nada fica silenciosamente errado, e é o que deixa os sinais serem `-> noreturn` (nat-d6). Viável: construído; a checagem de queda pelo fim é mais um uso de `stmtsAlwaysExit` num corpo `-> noreturn` (`infer.zig`). Mudanças: uma linha 144 para o defeito (`fn bad(c: bool) -> noreturn { if (c) { @panic("x"); } }` compila e retorna); o Medido da entrada e as duas linhas de `noreturn` do `language-gaps.md` estão defasados.
 - **Medido.** `fn notFound() -> noreturn { raise("…"); }` encerra o caminho no commonJS e no erlang, mas `throw notFound();` num corpo `@Result` e `val s: string = notFound();` dão incompatibilidade → `notFound()` / `redirect()` do jhonstart declaram `-> string` (`error_boundary.bp:180-188`); o exemplo da frente 53 escreve `val _gone = redirect(…)` (`server-action-example.bp:79`); o app de blog do onze chama `notFound();` como statement. `@panic` / `@todo` são `noreturn`; um branch que termina numa chamada `noreturn` já estreita — pode ser confirmado de fato.
@@ -1711,13 +1659,6 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 - **Opções.** (a) O "duas ou mais bibliotecas" da 115 continua o único teste. (b) Acrescentar o teste de divergência.
 - **Recomendação.** (a): uma duplicata de uma biblioteca só vai para o std ou para o core da biblioteca dona.
 - **Bloqueia.** Nada; a regra para o próximo candidato (o `http` da frente 104 existe; o rakun o adota em seu passo 5).
-
-#### 07-h · Embutido, ou um repositório compartilhado separado
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 326** — as bibliotecas compartilhadas são repositórios próprios (`botopink/<pkg>`, um submódulo em `repository/<pkg>`), dependências comuns declaradas em `botopink.json` (242; uma dependência git pode nomear um `subdir`, 344), o compilador embutindo só o std (`build.zig` `bundled_packages`); o "versionado com o compilador, sem entrada em `dependencies`" de (a) é o estado que a 326 encerrou. Medido na feat: `routing`, `actions`, `validation` são dependências git de membros do rakun, jhonstart e onze; `http` e `log` ainda não têm dependente. Fechar removendo a entrada.
-- **Medido.** Fios que os dois frameworks devem acordar byte a byte seguem com o compilador que os embute; um repositório separado = uma dependência git, restringida pela 242 (só uma dependência direta é importável); um membro de um repositório instala por `subdir` (344).
-- **Opções.** (a) Embutido — versionado com o compilador, sem entrada em `dependencies`. (b) Um repositório compartilhado `botopink/common` com cadência própria.
-- **Recomendação.** (a).
-- **Bloqueia.** Nada espera; a trilha é cortada como (a).
 
 ### 04-rakun
 
@@ -2012,13 +1953,6 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 
 ### Propriedade
 
-#### own-a · Quem é dono dos test runners (*proposta*)
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a) como a 433 já corta: os runners do botopink-lang são da 144, os `scripts/**` da meta da 163** — o § Ownership do `fronts.md` o declara ("144 holds them; the meta `scripts/**` are 163's"); um passo que edita um runner o nomeia em seu commit; a 114 de (b) e a 07-residuals de (a) estão dentro da 144 desde a 433 (1). Viável: a regra está em vigor; o item aberto do `fronts.md` ainda lista `tests/language/run.sh`, que saiu com a 466. Mudanças: o item aberto fecha; o `fronts.md:55-59` da entrada é o § Ownership.
-- **Medido.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (além das linhas de orçamento da 114), `tests/language/run.sh` (além do relatório da 12), `modules/test-shard/**`, `modules/lib-test-runner/**`, os `scripts/**` do meta eram de `25-gate-perf`, 113, 115, 133, todas fechadas (`fronts.md` § Ownership, item aberto). Regra provisória ali (`fronts.md:55-59`) = opção (c): uma frente que edita nomeia a exceção em seu commit; duas frentes abertas não editam o mesmo arquivo. Nenhum passo aberto edita um runner: o passo 12 da 07-residuals "não edita nenhum runner", as linhas de orçamento do passo 5 da 114 já são da 114, o passo 7 da 114 só roda o gate.
-- **Opções.** (a) `01-compiler/07-residuals`, que já guarda o passo aberto da 25 (a compilação de dependência por célula). (b) `00-gate/114`, o resíduo do gate. (c) nenhuma: cada frente nomeia uma exceção por commit (a regra provisória de hoje, mantida).
-- **Recomendação.** (a): um dono, a frente que herdou o passo aberto da 25.
-- **Bloqueia.** Nada hoje; a regra provisória (c) vale até ser respondida.
-
 ### Contradições que não bloqueiam nenhum passo 00–03
 
 #### ctr-l · A terceira recusa da decisão 186 contra a decisão 202
@@ -2038,13 +1972,6 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 - **Regras.** 185: uma capacidade opcional passa por um ponto de extensão do core, "nenhuma aresta de membro para membro". `04-rakun/09` § Open point: o braço Elasticsearch sobre `rakun-client` acrescenta uma aresta `rakun-data → rakun-client` que todo consumidor de data carrega.
 - **Recomendação.** O braço alcança HTTP por um ponto de extensão do core (ou `httpc` diretamente, como o relay da 65), não por uma aresta `rakun-client`; respondida com a lista de braços da `03r-ab`.
 - **Bloqueia.** 09 passo 3.
-
-#### 119-a · A caixa de grep do passo 1 contra o hook byte-idêntico da checagem 4 do CI
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): a caixa faz grep no texto próprio do pacote — `{src,test,botopink.json}` de `css` e `styled`** — o hook é um só texto de que o gate é dono (checagem 4 do CI), `AGENTS.md` e `decisions-taken.md` nomeiam os vizinhos por design (as camadas da 338), e o `{src,test,botopink.json}` do `css` está vazio hoje; o do `styled` não (`src/styled.bp` e `test/styled_example_test.bp` nomeiam o `flush()` do emilia e o render do jhonstart em comentários) — a 150 s32 reescreve esses dois comentários (338 (2): `styled` não nomeia jhonstart nem emilia). Viável: um grep. Mudanças: a caixa do passo 1 da 119; a "linha 31" da entrada é `runner-standalone.sh:45`, e `css/AGENTS.md` contém `emilia` (por design).
-- **Regras.** 119 passo 1 e seu gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/rakun/modules/rakun-style` vazio (338). Checagem 4 do CI (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-idêntico em todo repositório de biblioteca — e sua linha 31 lê `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, então o grep o encontra em `repository/css` (e encontrará em `repository/rakun/modules/rakun-style`). `src/`, `test/`, `AGENTS.md` e o manifesto não guardam nenhum dos três nomes.
-- **Opções.** (a) A caixa faz grep no texto do próprio pacote: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/rakun/modules/rakun-style/{src,test,botopink.json}` — vazio hoje para `css`. (b) O comentário do hook compartilhado perde o nome, em todo repositório de biblioteca de uma vez (checagem 4), uma mudança que nenhum dos repositórios da 119 possui.
-- **Recomendação.** (a): a caixa mede o que o pacote sabe; o hook é um texto dono do gate.
-- **Bloqueia.** Só marcar a caixa de grep do passo 1 da 119.
 
 ---
 

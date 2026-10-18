@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**104 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**97 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **652**.
+number, which is **660**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -1148,12 +1148,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Recommendation.** (a) until a front needs (b) or (c).
 - **Blocks.** Nothing — built as (a).
 
-#### ctr-o · Decision 146 against confirmation `lem-c`
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Confirm `lem-c`, and read 146 with it as one rule** — a host cell with no binding for the target (a free `declare fn` or a type's `declare fn`) may be declared; any bodied function, free or method, whose body reaches it is refused for that target at the call expression inside that body, whether or not anything calls that function. The two texts name one behaviour: 146's "at its declaration, called or not" is the function refused by its own body, `lem-c`'s "where it is called" is where the caret stands; refusing the type's declaration would forbid a type declared once for several targets, and nothing runs silently either way (67). Viable, built: `codegen/hostMethods.zig` `missingAt`, called at the call in `commonJS.zig`, `erlang.zig`, `beam_asm.zig` and `wat.zig`; every bodied function is emitted, so the call fails called or not; cells `bodyless_method_without_binding`, `external_method_erlang_only`, `external_wrapper_keeps_refusal`, `std_asserts_host_cell_on_wasm`; `conformance/docs.md` already states both. Changes: 146's row and `lem-c` restated as the one rule above (no code); two 144 rows to file: on wasm a behavior method with type parameters is emitted only when reached (`wat.zig`), so 146 is not held there; `hostMethods.binds(.wasm)` is hard-coded `false`, so a type method carrying an `@External.Wasm(fn:` / `std:)` cell is refused on wasm against `docs.md`.
-- **Rules.** 146: a function whose body reaches a host function with no binding for the target "is refused at its declaration, called or not". `lem-c` (built, to confirm): a host method with no binding "is refused where it is CALLED" — refusing the declaration was the option not taken; 311 keeps the same at the call.
-- **Recommendation.** Confirm `lem-c` for a bodyless host declaration (a type declared once still compiles for a target its method lacks); state that 146 governs any bodied function, free or method, reaching one; `docs.md` says both.
-- **Blocks.** `lem-c`'s confirmation.
-
 #### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
 - **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **A component is never asynchronous because of its children.** A component is a function answering its tree (an array of nodes, 388); composing another component — a value received included — only puts its lambda in the tree. 375's `async` mark counts the component's own body only: `await`, `async { }`, an asynchronous hook, a host call answering `@Task` / `@Component` (items 2–5 as built). A marked component answers a Promise of its tree (a state machine on wasm, 140-e (d)); every other answers its tree directly. **The root is always asynchronous:** a `#[page]`'s render (and `renderToString`) walks the tree and awaits only the marked lambdas. The transitive mark (`subtreeAsync`: a component using, directly or not, a marked one; a component received as a value counted from the argument at each use, an unknown value counted asynchronous) is computed at build as an optimisation only, readable by decorators: false, a `#[page]` renders without streaming and a `Suspense` emits its child directly, with no fallback; without it the renderer finds out while descending, with the same answer. Item 1 as built (a call through a function value or a method answering `@Component` marks the node) goes. Amends 504 (140-e): its renderer reads this build-time `subtreeAsync` where it is known, and finds out while descending only for an unknown value.
 - **Measured.** Built and landed (`infer.zig` `noteAsyncCall`, `finishHookNode`,
@@ -1258,31 +1252,6 @@ before every other part of this page; each holds one row, or nothing built.
   01-checker step 36's stage gives once it lands, and agrees with (a).
 - **Blocks.** Nothing — built as (a) (`block_eval.useReached`); step 8's `Any`-call box reads it.
 
-#### 414-a · A component call in a body: rendered (128) or the lambda (414's example)
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Answered by 504 and by s23-j's answer: a call in a body makes the lambda** — `val inner = notFoundLevel(chain, i, route, page);` in a component body is the unrun `@Component<Element>`, placed in the tree (`ErrorBoundaryNode(child: inner)`) and run by the renderer with the scope its parent answered; only a written `await c` runs `c` in the body (388 (4)); a field read on an unawaited value stays the checker's refusal. 504: "calling a component only makes its lambda, only the renderer runs it", "`<main>{view()}</main>` stores `view()`'s lambda"; s23-j: "composing another component only puts its lambda in the tree"; (b)'s "renders where read as `R`" is weaker and infers intent from the use. Viable: `infer.zig` `inferComponentCall` (the `await` splice through `env.indexRewrites`) and its call site go, `noteAsyncCall` and `context_lower.zig` follow; jhonstart's renderer on feat already writes every run as `await` and holds its children as thunks (`ErrorBoundaryNode.child: fn() -> @Component<Element>`, which becomes `child: @Component<Element>` under 504 and lg2-n); commonJS, erlang and beam today, wasm with 144 B-25 step 4 (whose box still reads the pre-504 recommendation). Changes: 144 B-17's hooks box takes the splice removal and rewrites the two cells that encode 128's render-on-call (`component_call_renders`, `component_call_awaited`; `component_is_lambda` stands); the entry closes as (b) in 504's wording.
-- **Measured.** 128's chain, kept by 388 (4) ("inside a component body `await c` runs `c` with the body's
-  children scope"), renders a component call written in a component body: the checker splices `await` around
-  it (`inferComponentCall`), so `val inner = notFoundLevel(chain, i, route, page);` RUNS `notFoundLevel` with
-  the children's scope and `inner` is its `Element`. 414's example writes the same line with the comment "the
-  lambda, not run". Built and landed: the splice stands; a body gets an unrun component value
-  by naming the function (`itens.map(Card)`) or through a lambda — jhonstart's `ErrorBoundaryNode` /
-  `NotFoundBoundaryNode` hold `child: fn() -> @Component<Element>` (`{ -> notFoundLevel(…) }`), as
-  `suspense.Boundary` already did.
-- **Options.** (a) As built: a call in a body renders; a value is a name or a lambda:
-  ```bp
-  fn caughtBelow(…) -> @Component<Element> {
-      return nodePlaceholder(TreeNode.Errors(ErrorBoundaryNode(id: …, child: { -> notFoundLevel(chain, i, route, page) }, …)));
-  }
-  ```
-  (b) A call in a body makes the lambda wherever its value is not read as `R`, and renders only where the
-  checker reads it as `R` (a field read, an argument typed `R`) — `val inner = notFoundLevel(…);` a lambda,
-  `inner.tag` refused without `await`:
-  ```bp
-  val inner = notFoundLevel(chain, i, route, page);          // @Component<Element>, not run
-  return ErrorBoundaryNode(id: …, child: inner, …);
-  ```
-- **Recommendation.** (a): one rule for a call in a body (128, unchanged by 388), no inference of intent from
-  the use; (b) changes what every body's `val x = Card(…)` means.
 ### 02-std-and-packaging
 
 #### 97-s16-a · Where `unicode`'s generated tables live
@@ -1638,27 +1607,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 
 ### 01-compiler — the language
 
-#### lg2-b · What `@Task<T>` means on the BEAM
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Answered by 392: a `@Task<T>` starts when it is made and runs to its first `await` on every target — on erlang and beam a process per task; the eager lowering is a defect** — two `async.delay(300, …)` made before either is awaited take ~300 ms, as on commonJS (392 (1): "node's Promise, erlang's process per task, and wasm alike"; 432 already ends "the task's process" with `{error, E}`). Re-measured on feat: commonJS 301 ms, erlang 603 ms, beam 603 ms — `codegen/erlang.zig` ("@Task — eager lowering") and `beam_asm.zig` still run the body where it is made, and `async.bp`'s header still says so. (1) contradicts 392's text, (3) adds a second mechanism beside `@Task`. Viable: a process per `-> @Task` body on erlang / beam (`spawn` + a mailbox the `await` receives from, as `runAll` / `raceOf` already do per thunk in `async.bp`), the eager fast path kept only where the checker proves no `await` can observe the difference — a 144 step with the repro above as its cell. Changes: `language-gaps.md`'s "`@Task<T>` lowers eagerly on erlang" row and `async.bp`'s header close with it; rakun's rows that cite lg2-b read 392.
-- **Measured.** On erlang and beam a Task body runs to completion where created: two `async.delay(300, …)` created before either is awaited take ≥ 600 ms (under 600 ms on commonJS).
-- **Options.** (1) A Task promises the value, nothing about when its body runs; concurrency = `std/async`'s explicit process per unstarted thunk, documented. (2) A scheduler behind `@Task` on the BEAM (a process per Task, `await` a receive). (3) `spawn` / `join` in the language.
-- **Recommendation.** (1) — the restrictive reading of 1.0.10's 120.
-- **Blocks.** The row; rakun 02, 23, 25, 28, 30, 60.
-
-#### lg2-d · A decorator that reads the body it annotates
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(1), already the rule by 316 and 403** — a decorator never reads the body it annotates (316: "a decorator never reads the body (lg2-d) nor writes one as a string"); what it may do to a body is `decl.wrapWith(f)`, typed (316, 144 B-11); rakun 83's saga stays a value pairing each step with its compensation. Refuse over a statement API nobody checks; (2) and (3) would make a decorator's output depend on how a body is written. Viable: nothing to build — `Decl` has no `body` (`builtins.d.bp`), the read is `unknown field 'body' on type 'Decl'` at the read (measured on feat). Changes: the entry closes as documentation of 316; `language-gaps.md`'s row becomes by design.
-- **Measured.** `decl.body` is the checker's `unknown field 'body' on type 'Decl'`, located at the read in the decorator body (`01-checker`'s decorator-body row; it was `{error,{badkey,body}}` at the annotation); the handle carries kind, name, fields, variants, methods, return type, annotations.
-- **Options.** (1) No statement access. (2) A read-only statement tree on `@Decl`. (3) A body-walking comptime API.
-- **Recommendation.** (1); rakun 83's saga stays a value pairing each step with its compensation.
-- **Blocks.** The row; rakun 83.
-
-#### lg2-h · Raising and catching by type
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(1), already the rule by 431 / 486 / 489 / 490** — an error is a `@Result`'s `E`: a typed error is an enum matched with `case` in the `catch` body (`try load(p) catch { e -> case e { NotFound(path) -> …; … } }`), a host failure arrives as `HostError` under `result: true` and a std module maps it into its own enum (486); no `catch` arm per type, no typed host exception. Measured on feat: `catch { e: NotFound -> … }` does not parse, the `case` form checks and runs on commonJS and erlang. Viable: nothing to build. Changes: the entry closes as documentation of 431; `language-gaps.md`'s "No typed raise and no catch by type" row becomes by design; rakun 07 / 31 / 63 write `case`.
-- **Measured.** `try load(p) catch { e: NotFound -> … }` does not parse; a `@Result<T, E>`'s error is typed by `E`, read with `case` in the `catch` body; a host exception is not an `E`.
-- **Options.** (1) An error is a `@Result`'s `E` (1.0.10's 121): a typed error is an enum matched with `case`. (2) A `catch` arm per type. (3) Typed host exceptions.
-- **Recommendation.** (1) — the row becomes documentation of 121.
-- **Blocks.** The row; rakun 07, 31, 63.
-
 #### lg2-l · Whether `noreturn` is a bottom type
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(2), as the code already has it: `noreturn` is the bottom type, and a `noreturn` body must not fall through** — a `noreturn` call fits any position (`val s: string = notFound();`, `throw notFound();`, an `if` branch), ends its path (`stmtsAlwaysExit` / `callNeverReturns` narrow after it), and a function declared `-> noreturn` whose body can complete is refused at the declaration, located. Measured on feat: `unify.zig` ("`noreturn` is the one-way bottom type"), cells `builtin_noreturn_any_position` and `try_catch_null_and_noreturn_narrowing` pin (2) on the four targets; (1) would break both cells for no gain — a value position a `noreturn` fills is never produced, so nothing is silently wrong, and it is what lets the signals be `-> noreturn` (nat-d6). Viable: built; the fall-through check is one more use of `stmtsAlwaysExit` on a `-> noreturn` body (`infer.zig`). Changes: a 144 row for the defect (`fn bad(c: bool) -> noreturn { if (c) { @panic("x"); } }` compiles and returns); the entry's Measured and `language-gaps.md`'s two `noreturn` lines are stale.
 - **Measured.** `fn notFound() -> noreturn { raise("…"); }` ends the path on commonJS and erlang, but `throw notFound();` in a `@Result` body and `val s: string = notFound();` mismatch → jhonstart's `notFound()` / `redirect()` declare `-> string` (`error_boundary.bp:180-188`); front 53's example writes `val _gone = redirect(…)` (`server-action-example.bp:79`); onze's blog app calls `notFound();` as a statement. `@panic` / `@todo` are `noreturn`; a branch ending in a `noreturn` call already narrows — may be confirmed de facto.
@@ -1712,13 +1660,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 - **Options.** (a) 115's "two or more libraries" stays the only test. (b) Add the divergence test.
 - **Recommendation.** (a): a single-library duplicate goes to std or the owning library's core.
 - **Blocks.** Nothing; the rule for the next candidate (front 104's `http` exists; rakun adopts it in its step 5).
-
-#### 07-h · Bundled, or a separate shared repository
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 326** — the shared libraries are repositories of their own (`botopink/<pkg>`, a submodule at `repository/<pkg>`), ordinary dependencies declared in `botopink.json` (242; a git dependency may name a `subdir`, 344), the compiler embedding std alone (`build.zig` `bundled_packages`); (a)'s "versioned with the compiler, no `dependencies` entry" is the state 326 ended. Measured on feat: `routing`, `actions`, `validation` are git dependencies of rakun, jhonstart and onze members; `http` and `log` have no dependant yet. Close by removing the entry.
-- **Measured.** Wires both frameworks must agree on byte for byte ship with the compiler that embeds them; a separate repository = a git dependency, constrained by 242 (only a direct dependency importable); a member of a repository installs by `subdir` (344).
-- **Options.** (a) Bundled — versioned with the compiler, no `dependencies` entry. (b) A shared `botopink/common` repository with its own cadence.
-- **Recommendation.** (a).
-- **Blocks.** Nothing waits; the track is cut as (a).
 
 ### 04-rakun
 
@@ -2013,13 +1954,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 
 ### Ownership
 
-#### own-a · Who owns the test runners (*proposed*)
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a) as 433 already cuts it: botopink-lang's runners are 144's, the meta `scripts/**` 163's** — `fronts.md` § Ownership states it ("144 holds them; the meta `scripts/**` are 163's"); a step that edits a runner names it in its commit; (b)'s 114 and (a)'s 07-residuals are inside 144 since 433 (1). Viable: the rule is in force; `fronts.md`'s open item still lists `tests/language/run.sh`, which left with 466. Changes: the open item closes; the entry's `fronts.md:55-59` is § Ownership.
-- **Measured.** `scripts/{gate.sh,test-libs.sh,lib/pool.sh}` (beyond 114's budget lines), `tests/language/run.sh` (beyond 12's report), `modules/test-shard/**`, `modules/lib-test-runner/**`, the meta `scripts/**` were owned by `25-gate-perf`, 113, 115, 133, all closed (`fronts.md` § Ownership, open item). Provisional rule there (`fronts.md:55-59`) = option (c): an editing front names the carve-out in its commit; no two open fronts edit the same file. No open step edits a runner: 07-residuals step 12 "edits no runner", 114 step 5's budget lines are already 114's, 114 step 7 only runs the gate.
-- **Options.** (a) `01-compiler/07-residuals`, which already holds 25's open step (the per-cell dependency compile). (b) `00-gate/114`, the gate's residue. (c) none: each front names a carve-out per commit (today's provisional rule, kept).
-- **Recommendation.** (a): one owner, the front that inherited 25's open step.
-- **Blocks.** Nothing today; the provisional rule (c) holds until answered.
-
 ### Contradictions that block no 00–03 step
 
 #### ctr-l · Decision 186's third refusal against decision 202
@@ -2039,13 +1973,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Rules.** 185: an optional capability goes through a core extension point, "no member-to-member edge". `04-rakun/09` § Open point: the Elasticsearch arm over `rakun-client` adds a `rakun-data → rakun-client` edge every data consumer loads.
 - **Recommendation.** The arm reaches HTTP via a core extension point (or `httpc` directly, as 65's relay does), not a `rakun-client` edge; answered with `03r-ab`'s arm list.
 - **Blocks.** 09 step 3.
-
-#### 119-a · Step 1's grep box against CI check 4's byte-identical hook
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): the box greps the package's own text — `{src,test,botopink.json}` of `css` and `styled`** — the hook is one text owned by the gate (CI check 4), `AGENTS.md` and `decisions-taken.md` name the neighbours by design (338's layering), and `css`'s `{src,test,botopink.json}` is empty today; `styled`'s is not (`src/styled.bp` and `test/styled_example_test.bp` name emilia's `flush()` and jhonstart's render in comments) — 150 s32 rewords those two comments (338 (2): `styled` names no jhonstart and no emilia). Viable: a grep. Changes: 119 step 1's box; the entry's "line 31" is `runner-standalone.sh:45`, and `css/AGENTS.md` does hold `emilia` (by design).
-- **Rules.** 119 step 1 and its gate: `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/rakun/modules/rakun-style` empty (338). CI check 4 (meta `AGENTS.md` § CI): `scripts/git-hooks/lib/runner-standalone.sh` byte-identical across every library repository — and its line 31 reads `# one-at-a-time gate printed. Front 115 of 1.0.11-beta measured emilia's`, so the grep finds it in `repository/css` (and will in `repository/rakun/modules/rakun-style`). `src/`, `test/`, `AGENTS.md` and the manifest hold none of the three names.
-- **Options.** (a) The box greps the package's own text: `grep -rn "bpp\|jhonstart\|emilia" repository/css/{src,test,botopink.json} repository/rakun/modules/rakun-style/{src,test,botopink.json}` — empty today for `css`. (b) The shared hook's comment drops the name, in every library repository at once (check 4), a change none of 119's repositories owns.
-- **Recommendation.** (a): the box measures what the package knows; the hook is one text owned by the gate.
-- **Blocks.** Only ticking 119 step 1's grep box.
 
 ---
 
