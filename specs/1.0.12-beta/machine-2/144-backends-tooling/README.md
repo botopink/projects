@@ -2608,7 +2608,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (every backend) · **After:** B-136; its last box after 165 s10
 
 - [ ] decision 576 (7), (15): `Declared<T>`, `DeclaredMeta`, `DeclaredTypedMeta` and the run-time `@TypeInfo.all` removed with `compile` in: each run-time catalogue cell (`typeinfo_all_*`, comptime_expand_boot's run-time half) registers through its marker's `compiler.init`, its answer kept
-- [x] `compile(expr executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
+- [x] `compile(syntax executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
       module's init function and the program's init list, run once before `main` — modules in dependency order,
       declarations in source order, calls in order; a library module's executors run in the program that imports it;
       any number per declaration
@@ -2616,15 +2616,19 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       executor from a library's decorator; `compiler-output-outside-decorator`
       (`compile_executor_before_main`, `compile_init_order_modules`, `compile_executor_from_library`,
       `compile_output_outside_decorator`)
+- [ ] decision 616: the modifier `expr` renamed `syntax` at every site (std, the cells; `-> syntax T`; the refusal codes;
+      `parser/syntax_params.zig`, `comptime/syntax_param.zig`); `compiler.bp` written with every member's arrival as 616 lists
+      them (`syntax` for a tree, `comptime` for a build value), `compiler_surface.zig`'s table a mirror and its unit test
+      checking name and arrival; the libraries' sites in their fronts
 - [ ] decision 615: `compiler.compile` renamed `compiler.init` at every site (std, the cells, `conformance/docs.md`, the
       AGENTS.md); the cells `compile_executor_*` → `init_executor_*`, `compile_init_order_modules` → `init_order_modules`,
       `compile_output_outside_decorator` → `init_output_outside_decorator`; rakun's and query's sites in 165 s10
-- [ ] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `expr-captures-build`
+- [ ] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `syntax-captures-build`
       withdrawn — `compile_executor_captures_build` rewritten as `compile_executor_reads_compiler` (`out home`); a
       `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`
       (`compile_executor_compiler_arg_at_run_time`)
 - [x] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is
-      refused at the tail with 409's refusal, a named executor (or an `expr` handed on) of type `fn() -> X` at the
+      refused at the tail with 409's refusal, a named executor (or an `syntax` handed on) of type `fn() -> X` at the
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`
       (`compiler.init({ -> count() })` refused at `count()`) and `compile_executor_named_answers`
       (`compiler.init(count)` at `count`)
@@ -2702,7 +2706,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `#[@External.X(…)]` — rewritten, with the fixtures `cell/narrowed`, `closure_invariant/hosted`,
       `cell-workspace/group/excluded_target_literal_entry`; `cli_contract.sh`, `test_tooling.sh`, `closure_invariant.sh` green
 - [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp` from `declare-without-implementation` deleted
-      when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption goes by decision 604 (a marker is `fn x(expr decl: unknown) {}`; cells `declare_without_implementation_decorator`, `decorator_marker_empty_body`)
+      when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption goes by decision 604 (a marker is `fn x(syntax decl: unknown) {}`; cells `declare_without_implementation_decorator`, `decorator_marker_empty_body`)
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
 
@@ -2757,7 +2761,7 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       over `stdModuleOrder` (608)
 
 Open: nothing on the maintainer — b139-a answered by decision 608 (`compiler.bp` first, no `reflection.bp`), b139-b by 609
-(118's shape kept, `Result` in `primitives.bp`), b139-c by 606 (`print` in `io/terminal.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
+(118's shape kept, `Result` in `primitives.bp`), b139-c by 606 (`print` in `io/terminal.bp`), b139-d answered by decision 605 (`emit` / `code` / `syntax` removed here, after 165 s10). The file kind (box 1) and
 B-138's box 4 run first; the prelude move, the imports, the codemod and the modules after B-136's final package.
 
 Oracle: the whole suite; `test-docs`; the cold gate.

@@ -167,9 +167,9 @@ to `compiler.init` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138
 before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `builtins.d.bp`)
 
 - [x] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
-      `expr x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `expr decl: unknown`, `decl.*` →
+      `syntax x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `syntax decl: unknown`, `decl.*` →
       `compiler.*`; the seven identifiers `compiler` of `rakun-cli`'s tests renamed
-- [x] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
+- [x] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> syntax T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
 - [x] the string `setMeta(key, value)` and its readers on typed meta records, a record per decorator (576 (11)); a meta field `@Expr<T>` → `T` (576 (12))
 - [ ] rakun-bpp's routes without `Declared<T>` (576 (7)) — with B-137's final package (the run-time `@TypeInfo.all` removed): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.init` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
 - [x] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)

@@ -8,7 +8,7 @@ o catálogo de 216 (4) é `compiler.find(with: …)` (576 (7)), que lê as decla
 
 Cada exemplo mostra quatro partes:
 
-1. **A lib** — o decorator, com a declaração anotada em `expr decl` e os demais parâmetros `comptime`.
+1. **A lib** — o decorator, com a declaração anotada em `syntax decl` e os demais parâmetros `comptime`.
 2. **O uso** — o código de quem usa a lib.
 3. **O que sobra em runtime** — o que o decorator gera. Os argumentos não existem mais nessa hora:
    eles foram usados em comptime e viraram constantes dentro do código gerado.
@@ -16,9 +16,9 @@ Cada exemplo mostra quatro partes:
 
 As regras que os exemplos usam:
 
-- **(0)** O primeiro parâmetro de decorator é `expr decl` (a declaração anotada); todos os outros são `comptime`, escritos explicitamente.
+- **(0)** O primeiro parâmetro de decorator é `syntax decl` (a declaração anotada); todos os outros são `comptime`, escritos explicitamente.
 - **(1)** O argumento é tipado: pode ser função, `type`, `Type.Field<T>` (308), enum ou record.
-- **(2)** `expr decl: T`: o `T` é inferido da declaração anotada; quando a assinatura não usa o `T`, ele é `unknown`.
+- **(2)** `syntax decl: T`: o `T` é inferido da declaração anotada; quando a assinatura não usa o `T`, ele é `unknown`.
 - **(3)** `Type.Field<T>` (da std, decisão 308) e o atalho `.campo`.
 - **(4)** O atalho `.Nome` resolve exatamente o nome declarado (maiúsculas contam): `.Custom`, nunca
   `.custom`; nenhuma saída converte caixa — um nome de outro sistema é string explícita.
@@ -47,7 +47,7 @@ pub type Violation(field: string, code: Code, message: string)
 // `message` primeiro e obrigatória: um default só é seguido de outros (244, 406);
 // num campo a regra é `#[refine(rule)]`, cujo texto vem de `#[message]` como em todo marcador
 pub fn check<T>(
-    expr decl: T,
+    syntax decl: T,
     comptime message: string,
     comptime rule: ?fn(v: T) -> bool = null,
     comptime at: ?Type.Field<T> = null,
@@ -72,7 +72,7 @@ pub type Check<T>(message: string, rule: fn(v: T) -> bool, at: ?Type.Field<T>, c
 
 // um decorator só escreve o membro; dois `addMember("validate", …)` seriam
 // `decorator-member-duplicate` (216 (1), 404)
-pub fn validated<T>(expr decl: T) {
+pub fn validated<T>(syntax decl: T) {
     compiler.addMember("validate", fn(self: T) -> Violation[] {
         var out: Violation[] = [];
         for (comptime @typeInfo(T).metaAll(Check)) { c ->
@@ -137,12 +137,12 @@ type T(#[check("…", isEven)] n: i32)                    // ❌ num campo a reg
 
 ## 2. Eventos — `#[on]` sem argumento nenhum (rakun 04)
 
-O tipo do evento sai da assinatura da função, pelo padrão `expr decl: fn(e: E) -> unknown`.
+O tipo do evento sai da assinatura da função, pelo padrão `syntax decl: fn(e: E) -> unknown`.
 
 ### A lib
 ```bp
 // rakun/src/events.bp
-pub fn on<E>(expr decl: fn(e: E) -> unknown) {
+pub fn on<E>(syntax decl: fn(e: E) -> unknown) {
     // o registro de run time é escrito pelo executor do decorator (575 (3), 581)
     compiler.init({ -> eventRegistry.add<E>(decl) });
 }
@@ -191,7 +191,7 @@ publish("OrderPlaced")                   // compila, mas nenhum listener recebe 
 ### A lib
 ```bp
 // rakun/src/conditions.bp
-pub fn conditionalOnMissingBean(expr decl: unknown, comptime t: anytype) {
+pub fn conditionalOnMissingBean(syntax decl: unknown, comptime t: anytype) {
     compiler.setMeta(OnMissing(type: t));      // meta tipado (298); o registro em comptime lê isto
 }
 ```
@@ -231,7 +231,7 @@ concordar com eles.
 ```bp
 // jhonstart/src/routes.bp
 pub fn page<P, D>(
-    expr decl: fn(route: PageContext<P, D>) -> View,
+    syntax decl: fn(route: PageContext<P, D>) -> View,
     comptime seg: string,                                  // a URL pública: continua string
     comptime paths: ?fn() -> @Task<#(P, D)[]> = null,      // as páginas pré-renderizadas
     comptime head: ?fn(p: P, d: D) -> Head = null,
@@ -275,8 +275,8 @@ pub fn staticPaths() -> …                 // não é mais lido: o papel vai no
 pub type Cache<T>(name: string)              // `name` é o nome no Redis/ETS: continua string
 
 pub fn cacheable<A, T>(
-    expr decl: fn(a: A) -> T,
-    expr cache: Cache<T>,                     // o T do cache tem que ser o T devolvido; um valor é `expr` (575 (4))
+    syntax decl: fn(a: A) -> T,
+    expr cache: Cache<T>,                     // o T do cache tem que ser o T devolvido; um valor é `syntax` (575 (4))
 ) {
     // embrulhar a função (316): o wrapper é um lambda escrito na chamada, `call.run()` roda o corpo original
     compiler.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });
@@ -310,16 +310,16 @@ compiler.wrapWith(cachedCall(cache))                              // ❌ `decora
 // rakun-data-sql/src/entity.bp
 import {types.Type} from "std";
 
-pub fn entity<T>(expr decl: T, comptime table: string) {        // nome SQL: string
+pub fn entity<T>(syntax decl: T, comptime table: string) {        // nome SQL: string
     compiler.setMeta(Table(name: table));
 }
-pub fn index<T>(expr decl: T, comptime ..fields: Type.Field<T>[]) {   // variádico (267)
+pub fn index<T>(syntax decl: T, comptime ..fields: Type.Field<T>[]) {   // variádico (267)
     compiler.setMeta(Index(columns: fields.map({ f -> f.name })));
 }
-pub fn unique<T>(expr decl: T, comptime field: Type.Field<T>) {
+pub fn unique<T>(syntax decl: T, comptime field: Type.Field<T>) {
     compiler.setMeta(Unique(column: field.name));
 }
-pub fn column<T>(expr decl: T, comptime name: string) {          // num campo: T = tipo do campo
+pub fn column<T>(syntax decl: T, comptime name: string) {          // num campo: T = tipo do campo
     compiler.setMeta(Column(name: name));
 }
 ```
@@ -353,13 +353,13 @@ Renomear `state` → `uf` deixa vermelhos todos os `.state`. Com string, o erro 
 
 ## 7. Anotação de tag — handler como função (278 + 280)
 
-Na tag, o `expr decl` é o do componente (278). O handler é uma função do próprio componente.
+Na tag, o `syntax decl` é o do componente (278). O handler é uma função do próprio componente.
 
 ### A lib
 ```bp
 // jhonstart/src/events.bp
 // 302: anotação de tag = decorator — não devolve nada, grava meta no `decl` da tag (`compiler.addMeta`)
-pub fn onClick(expr decl: unknown, comptime handler: fn() -> unknown) {
+pub fn onClick(syntax decl: unknown, comptime handler: fn() -> unknown) {
     compiler.addMeta(EventBinding(event: .Click, handler: handler));   // o html gera o registro na ilha
 }
 ```
