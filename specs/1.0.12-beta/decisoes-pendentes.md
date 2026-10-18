@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**98 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**97 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **663**.
+número livre, que é **664**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -655,15 +655,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) As duas células saem: `find` sobre um valor que não nomeia decorador responde `[]`.
 - **Recomendação.** (a): um erro de digitação não deveria responder um catálogo vazio.
 - **Bloqueia.** O pacote final do B-137 (duas células).
-
-#### b139-j · `Annotation` e `Decorator`: nomes do prelude, ou do `compiler.bp`? (decisões 606 (1), 608; 144 B-139)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** Todo decorador e tag escreve `implement Decorator` / `implement Annotation` sem import hoje. A 606 (1) e o box 2 do B-139 listam ambos em `primitives.bp`, o prelude; a 608 lista ambos em `compiler.bp`, ao lado de `DeclKind` e dos registros de handle. O behavior `Compiler` não nomeia nenhum dos dois diretamente (`DeclAnnotation`, e `Decorator` só pelo `with:` de `find`). Ambos ainda estão em `builtins.d.bp`, então nada está vermelho ainda.
-- **Opções.**
-  (a) Prelude: `type Log implement Decorator`, sem import; a 608 emendada nos dois nomes.
-  (b) `compiler.bp`: `import {compiler.Decorator} from "std"` em toda célula de decorador (~200 sítios).
-- **Recomendação.** (a): nenhum import para o que todo decorador escreve.
-- **Bloqueia.** O box de módulos do B-139 (o módulo para onde cada um vai) e a linha de import do codemod.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
