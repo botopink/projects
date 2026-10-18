@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**112 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **633**.
+number, which is **637**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -192,24 +192,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-14's order row.
 
-#### B-15-a · How does a template body build a tag's `@Decl` and run its annotation? (decision 302; 144 B-15)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `q.tagDecl(kind, name, attrs)` and `q.annotate(decl, at: Span)`, as built** — the capture (`q`) builds the handle and runs the annotation written at a span of its own text, resolved in the caller's scope with its arguments checked there; the annotation's text is read from the span, never passed as a string (281). Both live on the capture because only it knows the caller's scope and text. Viable: as built (the run stops with `need`, the compiler runs the annotation, the body runs again with the answer). Changes: none.
-- **Measured.** Built as (a); `jhonstart`'s `html` uses it (`#[isRaw]` records `RawBody`).
-- **Options.**
-  (a) On the capture.
-  ```bp
-  val d = q.tagDecl(.Element, "div", attrs);
-  q.annotate(d, at: ann.span);
-  val names = d.metaAll(ClassName);
-  ```
-  (b) Free functions in std's `template` namespace.
-  ```bp
-  val d = template.tagDecl(q, .Element, "div", attrs);
-  template.annotate(q, d, ann.span);
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-15's spelling row.
-
 #### B-15-b · Does a template body's `Binding` carry its `Decorator`, for `Decorator.same`? (decisions 268, 302, 371; 144 B-15)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): no — meta is read by type** — a template body tells annotations apart by the meta they record (`d.meta(RawBody)`), as 302 says; `Binding` carries no `Decorator`, and B-15's box naming `Decorator.same` is dropped. One way to identify what an annotation did, by its typed answer, not by which function it was. Viable: as built. Changes: the box's text.
 - **Measured.** `Binding` (a looked-up name in a template body) has no `Decorator`; `html` reads meta by type.
@@ -240,21 +222,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-15's meta-read row.
 
-#### B-17-a · A body that runs at build calls a host function with a build form: allowed? (decisions 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a host function with a build form (`std:` cell, `@External.Wasm` `fn:`) is `Any`; run-in-build refuses only the others**, replacing `comptime-host-cell-unavailable` with 376's message. 434/452 made exactly these callable at build; 376 written before them would undo it.
-- **Measured.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` call host functions with a wasm form at build and pass; 376 as written refuses them.
-- **Options.**
-  (a) A build form makes it `Any`.
-  ```bp
-  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
-  ```
-  (b) 376 as written.
-  ```bp
-  comptime { random.seeded(1).next() }   // refused: a Run function at build
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
 #### B-17-b · How is a function's stage written? (decision 376 (4); 144 B-17)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `#[@Stage.Any]`, as built** — `pub type Stage { Build, Run, Any }` in `builtins.d.bp`; only `Any` is written (Build and Run follow from resources), so `#[@Stage.Build]` / `#[@Stage.Run]` are refused as unknown annotations.
 - **Measured.** Built as (a); std's `math` host functions carry it.
@@ -266,21 +233,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) `#[pure]`.
   ```bp
   #[pure] pub declare fn sqrt(x: f64) -> f64;
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-c · What is the `Build` resource: a read of a comptime parameter, or any `@typeInfo`? (decisions 364, 376 (1); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): a read of a comptime `@Decl` / `@Expr` parameter**; `@typeInfo(NamedType)` is a build constant, folded, not a resource. Otherwise every `main` that reads a type's meta becomes `Build` and cannot run.
-- **Measured.** Built as (a); `comptime t: type` is refused (364).
-- **Options.**
-  (a) A comptime parameter.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
-  ```
-  (b) Any `@typeInfo`.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.
@@ -371,21 +323,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) A record kept at run time.
   ```bp
   pub val Theme = createContext(Light);   // at run time: Context(contextValue: Light)
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
-
-#### B-17-j · Contexts keyed by the type's declared name or by its module and name? (decisions 310, 379; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): by module and name** — two same-named types of two packages are two types (310), so they are two contexts; styled's sheet keys still match across packages because they name one type, styled's.
-- **Measured.** Built keyed by the declared name: two same-named types of two packages share a key and hit `context-declared-twice`.
-- **Options.**
-  (a) By module and name.
-  ```bp
-  import {a.Theme as A}; import {b.Theme as B};   // two contexts
-  ```
-  (b) By the declared name, as built.
-  ```bp
-  import {a.Theme as A}; import {b.Theme as B};   // refused: context-declared-twice
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-17's row.

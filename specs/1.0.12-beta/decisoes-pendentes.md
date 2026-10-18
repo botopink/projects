@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**112 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **633**.
+número livre, que é **637**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -192,24 +192,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Bloqueia.** A linha de ordem do 144 B-14.
 
-#### B-15-a · Como um corpo de template constrói o `@Decl` de uma tag e roda a sua anotação? (decisão 302; 144 B-15)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `q.tagDecl(kind, name, attrs)` e `q.annotate(decl, at: Span)`, como construído** — a captura (`q`) constrói o handle e roda a anotação escrita num span do seu próprio texto, resolvida no escopo de quem chama, com os argumentos checados ali; o texto da anotação é lido do span, nunca passado como string (281). Os dois ficam na captura porque só ela conhece o escopo e o texto de quem chama. Viável: como construído (a execução para com `need`, o compilador roda a anotação, o corpo roda de novo com a resposta). Muda: nada.
-- **Medido.** Construído como (a); o `html` do `jhonstart` usa (`#[isRaw]` grava `RawBody`).
-- **Opções.**
-  (a) Na captura.
-  ```bp
-  val d = q.tagDecl(.Element, "div", attrs);
-  q.annotate(d, at: ann.span);
-  val names = d.metaAll(ClassName);
-  ```
-  (b) Funções livres no namespace `template` da std.
-  ```bp
-  val d = template.tagDecl(q, .Element, "div", attrs);
-  template.annotate(q, d, ann.span);
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha da grafia do 144 B-15.
-
 #### B-15-b · O `Binding` de um corpo de template carrega o seu `Decorator`, para `Decorator.same`? (decisões 268, 302, 371; 144 B-15)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não — a meta é lida pelo tipo** — um corpo de template distingue anotações pela meta que gravam (`d.meta(RawBody)`), como diz a 302; `Binding` não carrega `Decorator`, e a caixa do B-15 que nomeia `Decorator.same` sai. Uma só forma de identificar o que uma anotação fez, pela sua resposta tipada, não por qual função ela era. Viável: como construído. Muda: o texto da caixa.
 - **Medido.** `Binding` (um nome procurado num corpo de template) não tem `Decorator`; o `html` lê a meta pelo tipo.
@@ -240,21 +222,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Trava.** A linha da leitura de meta do 144 B-15.
 
-#### B-17-a · Um corpo que roda no build chama uma função host com forma de build: permitido? (decisões 376 (4), (5), 341, 434, 451 (3), 452; 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): uma função host com forma de build (cell `std:`, `@External.Wasm` `fn:`) é `Any`; o run-in-build recusa só as outras**, substituindo `comptime-host-cell-unavailable` pela mensagem da 376. A 434/452 tornaram exatamente essas chamáveis no build; a 376, escrita antes delas, desfaria isso.
-- **Medido.** `decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded`, `decorator_random_seeded_commonjs` chamam funções host com forma wasm no build e passam; a 376 como escrita as recusa.
-- **Opções.**
-  (a) Uma forma de build faz `Any`.
-  ```bp
-  comptime { random.seeded(1).next() }   // accepted: random has a std: cell
-  ```
-  (b) A 376 como escrita.
-  ```bp
-  comptime { random.seeded(1).next() }   // refused: a Run function at build
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
 #### B-17-b · Como se escreve o estágio de uma função? (decisão 376 (4); 144 B-17)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `#[@Stage.Any]`, como construído** — `pub type Stage { Build, Run, Any }` em `builtins.d.bp`; só `Any` é escrito (Build e Run decorrem dos recursos), então `#[@Stage.Build]` / `#[@Stage.Run]` são recusados como anotações desconhecidas.
 - **Medido.** Construído como (a); as funções host do `math` da std o carregam.
@@ -266,21 +233,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) `#[pure]`.
   ```bp
   #[pure] pub declare fn sqrt(x: f64) -> f64;
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-c · O que é o recurso `Build`: a leitura de um parâmetro comptime, ou qualquer `@typeInfo`? (decisões 364, 376 (1); 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): a leitura de um parâmetro comptime `@Decl` / `@Expr`**; `@typeInfo(NamedType)` é uma constante de build, dobrada, não um recurso. Senão todo `main` que lê a meta de um tipo vira `Build` e não roda.
-- **Medido.** Construído como (a); `comptime t: type` é recusado (364).
-- **Opções.**
-  (a) Parâmetro comptime.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Any: a constant
-  ```
-  (b) Qualquer `@typeInfo`.
-  ```bp
-  fn main() { @print(@typeInfo(User).fields.length) }   // Build: refused at run
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do 144 B-17.
@@ -371,21 +323,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) Um record mantido em runtime.
   ```bp
   pub val Theme = createContext(Light);   // at run time: Context(contextValue: Light)
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
-
-#### B-17-j · Contextos chaveados pelo nome declarado do tipo ou pelo módulo e nome? (decisões 310, 379; 144 B-17)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): por módulo e nome** — dois tipos de mesmo nome de dois pacotes são dois tipos (310), então são dois contextos; as chaves do sheet do styled continuam batendo entre pacotes porque nomeiam um tipo só, o do styled.
-- **Medido.** Construído chaveado pelo nome declarado: dois tipos de mesmo nome de dois pacotes compartilham uma chave e caem em `context-declared-twice`.
-- **Opções.**
-  (a) Por módulo e nome.
-  ```bp
-  import {a.Theme as A}; import {b.Theme as B};   // two contexts
-  ```
-  (b) Pelo nome declarado, como construído.
-  ```bp
-  import {a.Theme as A}; import {b.Theme as B};   // refused: context-declared-twice
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do 144 B-17.

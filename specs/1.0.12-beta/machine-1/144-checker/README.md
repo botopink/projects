@@ -338,7 +338,7 @@ they recorded — the same function shape as a declaration's decorator, named by
 - [x] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
       template function; the same annotation function also accepted on a declaration
 - [ ] the template side's spelling: `q.tagDecl(kind, name, attrs)` builds the handle, `q.annotate(decl, at: Span)`
-      runs the annotation written at a span of the template's text · question B-15-a
+      runs the annotation written at a span of the template's text · decision 636
 - [ ] `Decorator.same` inside a template body: a looked-up name's `Binding` carries no `Decorator` (meta read by
       type works, 302) · question B-15-b
 - [ ] `d.meta(T)` on a decorator's own `@Decl` parameter is refused, so an annotation cannot read what an earlier
@@ -603,9 +603,9 @@ fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + a
 - [ ] std declares `Any` on its pure host primitives (`string`, `math`), every other host binding `Run`
 
 - [ ] a run-in-build body calling a host function that has a build form (`std:`, `@External.Wasm` `fn:`): `Any`, or
-      376 as written (`decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded` change) · question B-17-a
+      376 as written (`decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded` change) · decision 633
 - [ ] the spelling `#[@Stage.Any]`, `pub type Stage { Build, Run, Any }` in `builtins.d.bp` · question B-17-b
-- [ ] the `Build` resource is a read of a comptime `@Decl` / `@Expr` parameter; `@typeInfo(NamedType)` a build constant · question B-17-c
+- [ ] the `Build` resource is a read of a comptime `@Decl` / `@Expr` parameter; `@typeInfo(NamedType)` a build constant · decision 634
 - [ ] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
       function and reading the clock is build-and-run · question B-17-d
 - [x] a `comptime x: @Expr<string>` function called at run time whose body uses `x.value` as a receiver
@@ -758,7 +758,7 @@ fn Button() -> @Component<Element> {
       found by its library gate run
 - [ ] math's `op:`-only functions given `std:` cells so they run at build · question B-17-h
 - [ ] `Context<T>(contextValue)` and a context lowered to its plain value at run time · question B-17-i
-- [ ] contexts keyed by the type's declared name, so two same-named types of two packages share one key · question B-17-j
+- [ ] contexts keyed by the type's declared name, so two same-named types of two packages share one key · decision 635
 - [x] `@Result` methods (`unwrapOr` …) refused at build by the comptime runtime — found by B-17
       — run at build (`comptime_result_methods`)
 - [x] `comptime createContext(0l)` fails: the `l` suffix reaches the comptime module — found by B-17
