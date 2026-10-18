@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**84 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**83 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **677**.
+number, which is **678**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -546,22 +546,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) Both: leaves when recorded, the word-copy rule otherwise.
 - **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
 - **Blocks.** Nothing (built as (a)).
-
-#### 660-b · The root package's modules that nothing imports: part of the program? (decisions 660, 676; 144 machine 1)
-- **Proposed (coordinator, 2026-10-18; built as (b), awaiting the maintainer):** **(a).**
-- **Measured.** 660 and 676 put every module of every declared dependency into the program, imported or not, their `compiler.init` executors run before the entry. The root package keeps the older rule: only what the entry reaches through imports is in the program, so `src/jobs.bp` with `#[rakun.module] pub type Cleaner(…)` that no file imports never runs its executor, and `Cleaner` is missing from the registry with no error.
-- **Options.**
-  (a) Every module of the root package is part of the program as well, its executors in 580's order — 660's rule carried to the root; a file is a module (B-69) with no exception.
-  ```bp
-  // src/jobs.bp, imported by nobody
-  #[rakun.module] pub type Cleaner(…)   // registers; rakun.boot() finds it
-  ```
-  (b) As built: a root module nothing imports is not in the program.
-  ```bp
-  #[rakun.module] pub type Cleaner(…)   // never runs; absent from the registry, silently
-  ```
-- **Recommendation.** (a): one rule for what is in the program, for a dependency and for the root.
-- **Blocks.** Nothing (built as (b)).
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 

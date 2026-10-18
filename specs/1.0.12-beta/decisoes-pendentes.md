@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**84 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**83 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **677**.
+número livre, que é **678**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -546,22 +546,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) As duas: folhas quando gravadas, a regra da palavra copiada senão.
 - **Recomendação.** (a) agora, porque está verde em toda biblioteca e cell. Depois (c) como passo posterior, para que uma sub-linguagem que grava folhas seja exata mesmo onde uma palavra se repete.
 - **Bloqueia.** Nada (construída como (a)).
-
-#### 660-b · Os módulos do pacote raiz que nada importa: fazem parte do programa? (decisões 660, 676; 144 máquina 1)
-- **Proposta (coordenador, 2026-10-18; construído como (b), aguardando o mantenedor):** **(a).**
-- **Medido.** A 660 e a 676 colocam todo módulo de toda dependência declarada no programa, importado ou não, os executores `compiler.init` deles rodando antes da entrada. O pacote raiz mantém a regra antiga: só o que a entrada alcança por imports está no programa, então `src/jobs.bp` com `#[rakun.module] pub type Cleaner(…)` que nenhum arquivo importa nunca roda seu executor, e `Cleaner` falta no registro sem erro.
-- **Opções.**
-  (a) Todo módulo do pacote raiz também faz parte do programa, seus executores na ordem da 580 — a regra da 660 levada à raiz; um arquivo é um módulo (B-69) sem exceção.
-  ```bp
-  // src/jobs.bp, imported by nobody
-  #[rakun.module] pub type Cleaner(…)   // registers; rakun.boot() finds it
-  ```
-  (b) Como construído: um módulo do raiz que nada importa não está no programa.
-  ```bp
-  #[rakun.module] pub type Cleaner(…)   // never runs; absent from the registry, silently
-  ```
-- **Recomendação.** (a): uma regra só para o que está no programa, para uma dependência e para o raiz.
-- **Bloqueia.** Nada (construído como (b)).
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
