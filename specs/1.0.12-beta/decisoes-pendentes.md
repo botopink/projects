@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **642**.
+número livre, que é **643**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -789,15 +789,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) Como proposto. (b) `needs:` noutra forma aceito e ignorado. (c) Um valor só aceito como lista de um elemento.
 - **Recomendação.** (a).
 - **Bloqueia.** Nada construído; duas células de recusa uma vez respondida.
-
-#### b137-c · A avaliação em tempo de build de `compiler.*` da 614 alcança as árvores de `addMember` / `wrapWith`, ou só um executor? (decisões 611, 614; 144 B-137)
-- **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
-- **Medido.** A 614 avalia uma chamada `compiler.*` dentro de um executor em tempo de build e encaixa sua resposta, e retira `syntax-captures-build`. Como construído, a avaliação se aplica só a executores. Dentro de uma árvore de `addMember` ou `wrapWith` uma chamada `compiler.*` continua recusada, com o código antigo `syntax-captures-build`.
-- **Opções.**
-  (a) Como construído: a avaliação é do executor; as outras árvores mantêm a recusa, sob seu nome antigo.
-  (b) Toda árvore `syntax` que um decorador entrega ao compilador (`addMember`, `wrapWith`, `init`) dobra suas chamadas `compiler.*` em tempo de build; a recusa sai de todo lugar.
-- **Recomendação.** (b): a 614 retira a recusa, e uma regra para toda árvore é o que um leitor espera.
-- **Bloqueia.** Nada construído espera (construído como (a) a menos que respondido).
 
 #### b137-d · `syntax-has-no-name` (612) no argumento de um decorador carrega uma linha `called from`? (decisão 612; 144 B-137)
 - **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
