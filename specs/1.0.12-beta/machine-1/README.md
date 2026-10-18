@@ -67,6 +67,10 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 One full cold gate with conformance on this machine's main checkout before B-140's landing closes the group
 (rule 9); its result posted to machine 2.
 
+## Reports
+
+Every report to the maintainer and every reply is appended to `repository/conversation-chat/machine-1/YYYY-MM-DD.md` (the maintainer, 2026-10-18; the shape in that repository's README) and pushed to its `feat` at once.
+
 ## Blocked on the maintainer — not opened
 
 In the order the maintainer answers them (the queue of 2026-10-17): 535-a; then B-14-b, B-11-a / B-11-b (150 s29 waits on them),

@@ -74,6 +74,10 @@ step's README; what still waits on the maintainer is listed at the end and is **
 One full cold gate with conformance on this machine's main checkout before B-140's landing closes the group
 (rule 9); its result posted to machine 1.
 
+## Reports
+
+Every report to the maintainer and every reply is appended to `repository/conversation-chat/machine-2/YYYY-MM-DD.md` (the maintainer, 2026-10-18; the shape in that repository's README) and pushed to its `feat` at once.
+
 ## Blocked on the maintainer — not opened
 
 In the order the maintainer answers them (the queue of 2026-10-17): 535-a, 529-a / b, 537-b, 539-a, 540-a / b, 532-a, 533-a, 543-a, B-116-i / k, B-127-a, 164-s3-g, 518-a. A thread that reaches one of these stops at it and reports.

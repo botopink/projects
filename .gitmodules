@@ -50,3 +50,6 @@
 	path = repository/markdown
 	url = git@github.com:botopink/markdown.git
 	branch = feat
+[submodule "repository/conversation-chat"]
+	path = repository/conversation-chat
+	url = git@github.com:botopink/conversation-chat.git
