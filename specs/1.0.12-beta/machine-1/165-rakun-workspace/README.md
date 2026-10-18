@@ -166,14 +166,14 @@ lacks is a build error naming it; removing the dependency removes the module; no
 to `compiler.compile` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138 on the main checkout's compiler;
 before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `builtins.d.bp`)
 
-- [ ] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
+- [x] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
       `expr x: T`, `.value` dropped, `@expr(v)` → `v`, `comptime decl: @Decl` → `expr decl: unknown`, `decl.*` →
       `compiler.*`; the seven identifiers `compiler` of `rakun-cli`'s tests renamed
-- [ ] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
-- [ ] the string `setMeta(key, value)` and its readers on typed meta records, a record per decorator (576 (11)); a meta field `@Expr<T>` → `T` (576 (12))
-- [ ] rakun-bpp's routes without `Declared<T>` (576 (7)): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.compile` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
-- [ ] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)
-- [ ] every `@emit` (23 files — `rakun/src/{decorators,context,autoconfig,config,conditions,lifecycle}.bp`,
+- [x] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
+- [x] the string `setMeta(key, value)` and its readers on typed meta records, a record per decorator (576 (11)); a meta field `@Expr<T>` → `T` (576 (12))
+- [ ] rakun-bpp's routes without `Declared<T>` (576 (7)) — with B-137's final package (the run-time `@TypeInfo.all` removed): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.compile` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
+- [x] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)
+- [x] every `@emit` (23 files — `rakun/src/{decorators,context,autoconfig,config,conditions,lifecycle}.bp`,
       `rakun/src/actuator_api/registration.bp`, `rakun-service/src/convention.bp`, `rakun-app/src/{route_handler,
       actions}.bp`, `rakun-data/src/{orm/entity,sql/query,sql/transactional}.bp`, `rakun-restclient/src/exchange.bp`,
       `rakun-security/src/method_security.bp`, `rakun-scheduling/src/{markers,jobstore/markers}.bp`,
@@ -185,9 +185,9 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `Http…` → a template text `` @`…` `` answering the type, handed to `addType`; rakun-bpp's `<Name>Params(route)` →
       a run-time helper `pageParams(route)` over the schema `#[page]` registers through `compile`; rakun-stylesheet's
       `@expr(safe)` → `safe`, the template's return typed (decision 605 — every site has its replacement; no gap row)
-- [ ] `modules/rakun/src/rakun.d.bp` deleted with its `botopink.json` `files` entry; `AGENTS.md`, the three
+- [x] `modules/rakun/src/rakun.d.bp` deleted with its `botopink.json` `files` entry; `AGENTS.md`, the three
       `conformance/rakun-bpp/*/docs.md` and the `examples/rakun-container` comments naming it
-- [ ] rakun's gate green on the main checkout's compiler
+- [x] rakun's gate green on the main checkout's compiler
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 
