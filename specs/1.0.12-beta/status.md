@@ -49,7 +49,7 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [x] 144 B-145 (part) — `#[name]` naming no decorator refused `annotation-not-a-decorator` (`annotation_not_decorator_{unbound,namespace,value}`), dotted paths through a namespace resolved (`annotation_dotted_through_mod`, `_through_import`, `_missing_in_import`); left: a missing segment through a `pub mod`
 - [x] 144 B-150 — wasm: a type's method as a record-constructor argument resolves to the module's same-named `fn` (`init_executor_handle_not_module_name`) — landed
 - [ ] 144 B-151 — wasm: a namespace import of a std module (`import {io.terminal}`) links every member's hosts · after B-139's compiler half — machine 2
-- [ ] 144 B-155 — wasm defects found by 166 s3's drafts: comptime `Context used before it is bound` (css 594), `?.name` receiver type unknown (actions 330) · after B-139 — machine 2
+- [ ] 144 B-155 — backend defects found by 166 s3's drafts: wasm comptime `Context used before it is bound` (css 594), wasm `?.name` receiver type unknown (actions 330), a module-qualified comptime call (markdown, http 594), erlang `?.` method on a `Dict` field (routing 330) · running — machine 2
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 

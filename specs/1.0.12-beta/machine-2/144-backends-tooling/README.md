@@ -2920,11 +2920,11 @@ function, where the module also declares `pub fn make()`, stores the module's `m
 - [ ] a namespace import links only the members the program reaches, on wasm as on the other targets; cell
       `terminal_namespace_import_print` (`terminal.print("x")` alone, four targets), red on wasm on the parent
 
-### B-155 — wasm defects found by 166 s3's drafts
+### B-155 — backend defects found by 166 s3's drafts
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (each a measured repro) · **After:** B-139 (the drafts' spelling)
 
-Each box is a library's decision-cell draft that builds on commonJS, erlang and beam and fails on wasm only.
+Each box is a library's decision-cell draft that builds on the other targets and fails on the one the box names.
 
 - [ ] comptime on wasm: css's own `parse` run inside a `comptime` block fails with `the comptime block's module did
       not compile: the wat runtime does not take variable Context used before it is bound` (css's
@@ -2938,6 +2938,9 @@ Each box is a library's decision-cell draft that builds on commonJS, erlang and 
       comptime block calls .toHtml(…) with 1 argument(s) …, which no primitive type and no type the block reaches
       provides`; the same function imported by name passes (markdown's and http's `libraries_run_at_build_on_wasm-594`
       drafts, 594); a cell with a module-qualified call in a `comptime` block, red on the parent
+- [ ] erlang: a method call through `?.` on a `Dict` field is not lowered — `post?.params.at("slug")` crashes at run time
+      with `{bp_unsupported_method,<<"at">>,1,{std@collections@@Dict,…}}` (routing's `optional_typescript_operators-330`
+      draft, 330); a cell of the shape, four targets, red on erlang on the parent
 
 ### B-147 — erlang / beam defects found by 165 s5
 
