@@ -82,9 +82,12 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   others (symlinks of a `--repo` / `--lang` task, checkouts left on the pointer) are linked siblings and
   are not gated by it.
 - **The pool** is one directory at a fixed per-machine path, `$XDG_RUNTIME_DIR/botopink-gate-pool` (else
-  `/tmp/botopink-gate-pool-<uid>`); not a flag or a variable (decision 67). The machine's jobs are one per
-  CPU bounded by `MemAvailable / 768 MiB`, a job counted as ~2 runnable threads, so `capacity = max(1,
-  jobs / 2)`. Each running gate owns a `lease.<id>` file (owner pid, child pid, jobs, name, start, log),
+  `/tmp/botopink-gate-pool-<uid>`); not a flag or a variable (decision 67). The machine's jobs are the tighter of
+  two bounds, read on every pass (decision 674): the CPUs, a job counted as ~2 runnable threads, and the
+  memory, one job per 768 MiB of `MemAvailable` above a 2 GiB margin the pool always leaves free —
+  `capacity = max(1, min(cpus / 2, (MemAvailable - 2 GiB) / 768 MiB))`; the CPU half is never applied to the
+  memory bound, and below the margin no new gate is admitted while one runs (a 16-CPU machine with 5.8 GB
+  free: 5 jobs, not 3). `status` prints the memory available and the margin. Each running gate owns a `lease.<id>` file (owner pid, child pid, jobs, name, start, log),
   each waiting one a `wait.<id>`; a `mkdir` lock serialises changes and a lease whose owner and child are
   both dead is reaped. A gate is admitted when at least one job is free and takes `min(share, free)`
   jobs, `share = max(1, capacity / gates of the run)`, returned when it ends; a library receives them as
