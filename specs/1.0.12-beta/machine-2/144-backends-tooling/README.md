@@ -2713,8 +2713,8 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       declaration —, `use`, `future`, `generator`, `resultGenerator`, `Stage`, `BeamMemory` imported — a keyword collision
       (`use`) is a question; `Env.registerBuiltins`' `@` names,
       `prelude.zig`'s two embeds and the type mirrors of `comptime.zig` (`type_info_src`, `yield_step_src`, …) go — std's modules
-      are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults` finds `todo` /
-      `panic`); the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig` read the modules or die; the
+      are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults` finds `panic`'s
+      default); the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig` read the modules or die; the
       codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
       `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
       `Type.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
@@ -2723,16 +2723,16 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       `asset.bp` (`Asset(link: Link)` with `open()` over `io.fs`, 607; `Asset.bytes` / `size` / `hash` / `text()`, `File.ofBytes`'s
       embedded copy, `openAsset`, `embed-text-not-utf8`, `embed-text-not-at-build`, `embed-open-needs-fs` go; the `embed_*` /
       `fs_asset_*` cells rewritten or removed), `print` in `io/terminal.bp`, `panic` in `failure.bp` (606), the effect
-      wrappers and the ambient behaviors in the modules that own them — each declaration's reference prose moved to
-      `conformance/docs.md` § Builtins
+      wrappers and the ambient behaviors in the modules that own them — each declaration's reference prose moved to its
+      module's section of `conformance/docs.md`, the prelude's to § Prelude (606 (5))
 - [ ] removed: `module` (the cell `builtin_module_not_lowered` goes), `trap`, `field`, `TypeOf`, `makeRecord`,
       `RecordField`, `RecordKeys`, `comptimeError`, `compilerError` — their `infer.zig` arms, table rows and docs
 - [ ] `libs/std/botopink.json`, `build.zig`, `analysis_entry.zig`, `test_warmup.zig`; `libs/std/AGENTS.md`,
-      `compiler-cli/AGENTS.md`, `conformance/AGENTS.md`, `conformance/docs.md` (§ Builtins, the manifest table), every
+      `compiler-cli/AGENTS.md`, `conformance/AGENTS.md`, `conformance/docs.md` (§ Builtins → § Prelude and § `compiler`, the manifest table), every
       cell `docs.md` and comment naming `builtins.d.bp`; `scripts/decisions-split.py` untouched
-- [ ] cells: `builtin_twice`, `setbuiltin_outside_std`, a builtin reached as `@name` from a program and bare inside
-      std, `embed` on four targets with `text()` at run time (a non-UTF-8 asset an `FsError`), `Result`'s methods on
-      four targets, `print` by cell on four targets, `#[compiler.external(…)]` on a `declare fn`, `comptime Asset(compiler.embed(…))`
+- [ ] cells: a prelude name bare in a program and shadowed by a local declaration; `print` imported from `io.terminal` and
+      `panic` from `failure`, each on four targets; `@print` / `@Result` refused as unknown names; `Result`'s methods on
+      four targets; an `Asset` read on four targets with `text()` at run time (a non-UTF-8 file an `FsError`); `#[compiler.external(…)]` on a `declare fn`, `comptime Asset(compiler.embed(…))`
       read at build and at run time, `comptime compiler.typeInfo` in a run-time body
 
 Open: questions b139-a (`SourceLocation`'s module after 606, whether `reflection.bp` exists), b139-b (`Result`'s
