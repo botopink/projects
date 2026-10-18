@@ -2575,6 +2575,16 @@ covers only the `#[@Family]` forms.
 - [ ] an imported generic function called with an explicit type argument (`resolve<Box>(…)`) is refused "`resolve` takes no type arguments, 1 given" — found by B-146; a cell red on the parent
 - [ ] a decorator argument's enum value read at build by its bare type name: with a second same-named enum anywhere in the program (another dependency or the annotating module), `#[kit.m(lifecycle: .Manual)]` checks and the decorator body runs with the wrong variant (`Eager`) — `decoratorArgValue` re-reads the argument as source and `blockEval.typesReached` resolves types by name; the value must carry the parameter's type identity (module + name, 603) — a cell with two `Lifecycle` enums red on the parent
 
+### B-152 — a type parameter is bound by a parameter, never by the return type alone (decision 668)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (a checker rule reaching std, the cells and every library) · **After:** B-146 (667's `is-type-parameter` and its cells share the generic-body analysis)
+
+- [ ] the checker: a function's, a method's or a lambda's type parameter that occurs in no parameter's type — directly, inside a type (`Array<T>`, `fn(T) -> R`, `Self<T>`), or as `comptime t: type<T>` — is refused at the declaration, located, `type-parameter-unbound`, naming the parameter; the return type is never a binding site; cells `type_parameter_unbound` (reject), `type_parameter_bound_by_token` (`failed(comptime t: type<T>)` on four targets), `type_parameter_bound_in_lambda_type`
+- [ ] std's 13 sites (668's list) migrated: a `comptime t: type<T>` where the caller names the type, `Self<Array<E>>` where the receiver carries it, `unknown` where no type is meant; `conformance/docs.md` § Generics states the rule
+- [ ] botopink-lang's 11 cell sites migrated, each stated; the libraries' 41 sites listed by file for 165 s10 (rakun, its cells), 145 (query) and 146 (validation) — the gap rows filed, the migrations theirs
+
+Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are migrated.
+
 ### B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
