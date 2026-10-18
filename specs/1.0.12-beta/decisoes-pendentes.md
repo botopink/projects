@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **650**.
+número livre, que é **651**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -861,16 +861,16 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Bloqueia.** Nada.
 
 #### 548-a · A referência de toda biblioteca linka seu código e checa os links? (decisão 548; 461, 463)
-- **Contexto.** A referência de uma biblioteca — o `docs.md` ao lado das suas cells de conformance — mostra código. As decisões 461 e 463 apontam para o código de uma cell com `<!-- example: <cell> -->`; a decisão 548 (2026-10-15) faz a referência do rakun linkar o seu código em vez disso, como `{src/main.bp}`, e checa que todo link nomeia um arquivo que existe. Hoje só o rakun faz isso; as outras bibliotecas e o botopink-lang mantêm a forma antiga, e o runner que elas compartilham não conhece nenhuma das duas. A pergunta é se todo repositório segue o rakun.
-- **Medido.** A decisão 548 faz a referência do rakun linkar seu código (`{src/main.bp}`, a base o diretório do `docs.md`) e o rakun checa todo link com seu próprio `scripts/check-doc-links.sh`, rodado pelo seu `repository-stages.sh`. As outras bibliotecas e o botopink-lang mantêm o `<!-- example: <cell> -->` da 461 / 463. O runner compartilhado (`runner-standalone.sh`, um texto entre as bibliotecas, check 4 da CI) não conhece nenhuma das formas.
+- **Contexto.** A referência de uma biblioteca — o `docs.md` ao lado das suas cells de conformance — mostra código. As decisões 461 e 463 apontam para o código de uma cell com `<!-- example: <cell> -->`; a decisão 548 (2026-10-15) faz a referência do rakun linkar o seu código em vez disso, como `[src/main.bp](src/main.bp)`, e checa que todo link nomeia um arquivo que existe. Hoje só o rakun faz isso; as outras bibliotecas e o botopink-lang mantêm a forma antiga, e o runner que elas compartilham não conhece nenhuma das duas. A pergunta é se todo repositório segue o rakun.
+- **Medido.** A decisão 548 faz a referência do rakun linkar seu código (`[src/main.bp](src/main.bp)`, a base o diretório do `docs.md`) e o rakun checa todo link com seu próprio `scripts/check-doc-links.sh`, rodado pelo seu `repository-stages.sh`. As outras bibliotecas e o botopink-lang mantêm o `<!-- example: <cell> -->` da 461 / 463. O runner compartilhado (`runner-standalone.sh`, um texto entre as bibliotecas, check 4 da CI) não conhece nenhuma das formas.
 - **Opções.**
   (a) ★ Toda biblioteca e o botopink-lang passam à forma da 548, a checagem de links no runner compartilhado (e `zig build test-docs` lendo `{path}`), uma frente por repositório.
   ```text
-  conformance/<feature>/docs.md, in every repository:  {src/main.bp}   ← a link to a file that does not exist fails the gate
+  conformance/<feature>/docs.md, in every repository:  [src/main.bp](src/main.bp)   ← a link to a file that does not exist fails the gate
   ```
   (b) Só o rakun; os outros mantêm `<!-- example -->`.
   ```text
-  rakun:                          {src/main.bp}
+  rakun:                          [src/main.bp](src/main.bp)
   other libraries, botopink-lang: <!-- example: <cell> -->
   ```
 - **Recomendação.** (a): um só jeito de ler uma referência entre os repositórios.
@@ -915,15 +915,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Trava.** Nada; os nomes mudam na segunda caixa do s5 ou no s7.
 
 ## Frente 166 — células de decisão (o mantenedor, 2026-10-18)
-
-#### 166-c · Uma forma de inclusão num `docs.md`: `{<path>}` ou `<!-- example: … -->` (decisão 461 (2); frente 166)
-- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** O mantenedor escreveu `{src/main.bp}` para os docs das células de decisão; o `<!-- example: modules/<cell> -->` da referência raiz é lido pelo `test-docs` hoje.
-- **Opções.**
-  (a) `{<path>}` em todo lugar: `{src/main.bp}` dentro de uma célula, `{modules/<cell>}` na referência raiz; as linhas `<!-- example: … -->` migradas no s4 e o `test-docs` lendo a forma nova (461 (2) emendada).
-  (b) Manter `<!-- example: … -->` e escrever a inclusão das células de decisão como `<!-- example: src/main.bp -->`.
-- **Recomendação.** (a): a grafia do mantenedor, uma forma em todo `docs.md` ao fim.
-- **Bloqueia.** O esqueleto de docs do 166 s1; a caixa do `test-docs` no s4.
 
 #### 166-d · Quem commita em `conformance/modules/decisions-taken/**` num repositório de biblioteca (decisão 433; regra 1 do fronts.md; frente 166)
 - **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**

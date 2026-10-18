@@ -153,7 +153,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
       cells (what the feature does, then its cells); `conformance/<package>/docs.md` the package's map, one line per
       feature linking its `docs.md`; the root `conformance/docs.md` indexing the packages; no former library's name or
       path left
-- [x] code in a `docs.md` is only linked — `{<cell>/src/main.bp}` in a feature's, `{src/main.bp}` in a cell's, the base
+- [x] code in a `docs.md` is only linked — `{<cell>/src/main.bp}` in a feature's, `[src/main.bp](src/main.bp)` in a cell's, the base
       the `docs.md`'s own directory, most links within its folder — never a ` ```bp ` fence nor `<!-- example: … -->`;
       a check that every link names a file; a fence that is no program stays `text`
 - [x] `botopink cell check conformance/` answers as before the move; `AGENTS.md` describes the layout and the link

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**106 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **650**.
+number, which is **651**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -861,16 +861,16 @@ before every other part of this page; each holds one row, or nothing built.
 - **Blocks.** Nothing.
 
 #### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
-- **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `{src/main.bp}`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.
-- **Measured.** Decision 548 makes rakun's reference link its code (`{src/main.bp}`, the base the `docs.md`'s directory) and rakun checks every link with its own `scripts/check-doc-links.sh`, run by its `repository-stages.sh`. The other libraries and botopink-lang keep 461 / 463's `<!-- example: <cell> -->`. The shared runner (`runner-standalone.sh`, one text across the libraries, CI check 4) knows neither form.
+- **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `[src/main.bp](src/main.bp)`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.
+- **Measured.** Decision 548 makes rakun's reference link its code (`[src/main.bp](src/main.bp)`, the base the `docs.md`'s directory) and rakun checks every link with its own `scripts/check-doc-links.sh`, run by its `repository-stages.sh`. The other libraries and botopink-lang keep 461 / 463's `<!-- example: <cell> -->`. The shared runner (`runner-standalone.sh`, one text across the libraries, CI check 4) knows neither form.
 - **Options.**
   (a) ★ Every library and botopink-lang move to 548's form, the link check in the shared runner (and `zig build test-docs` reading `{path}`), one front per repository.
   ```text
-  conformance/<feature>/docs.md, in every repository:  {src/main.bp}   ← a link to a file that does not exist fails the gate
+  conformance/<feature>/docs.md, in every repository:  [src/main.bp](src/main.bp)   ← a link to a file that does not exist fails the gate
   ```
   (b) rakun alone; the others keep `<!-- example -->`.
   ```text
-  rakun:                          {src/main.bp}
+  rakun:                          [src/main.bp](src/main.bp)
   other libraries, botopink-lang: <!-- example: <cell> -->
   ```
 - **Recommendation.** (a): one way to read a reference across the repositories.
@@ -915,15 +915,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Blocks.** Nothing; the names move in s5's second box or s7.
 
 ## Front 166 — decision cells (the maintainer, 2026-10-18)
-
-#### 166-c · One include form for a `docs.md`: `{<path>}` or `<!-- example: … -->` (decision 461 (2); front 166)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** The maintainer wrote `{src/main.bp}` for the decision cells' docs; the root reference's `<!-- example: modules/<cell> -->` is read by `test-docs` today.
-- **Options.**
-  (a) `{<path>}` everywhere: `{src/main.bp}` inside a cell, `{modules/<cell>}` in the root reference; the `<!-- example: … -->` lines migrated in s4 and `test-docs` reading the new form (461 (2) amended).
-  (b) Keep `<!-- example: … -->` and write the decision cells' include as `<!-- example: src/main.bp -->`.
-- **Recommendation.** (a): the maintainer's spelling, one form in every `docs.md` at the end.
-- **Blocks.** 166 s1's docs skeleton; s4's `test-docs` box.
 
 #### 166-d · Who commits under `conformance/modules/decisions-taken/**` in a library repository (decision 433; fronts.md rule 1; front 166)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
