@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**46 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**45 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **716**.
+número livre, que é **717**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -302,22 +302,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### b137-i · O `decl` da 613 chega a um membro e a um wrapper, como a 642 levou a dobra da 614 até lá? (decisões 613, 614, 642; 144 B-137)
-- **Proposto (revisão fable, 2026-10-18; aguardando o mantenedor; construído como (b)):** **(b): o handle da declaração continua recusado dentro de um membro de `addMember` e de um wrapper de `wrapWith` (`decorator-member-captures`); só uma leitura `compiler.*` sobre ele é dobrada ali.**
-- **Medido.** A 642 leva a dobra da 614 (uma chamada `compiler.*` avaliada no build, sua resposta inserida) a toda árvore que um decorator entrega ao compilador. A 613 insere `decl` como o código da declaração num executor de `init`. A caixa da 642 do B-137 dobra `compiler.name(decl)` dentro de um membro para `"Users"`, mas um `decl` nu no corpo de um membro continua recusado: `decorator_member_captures_handle` agora lê `decl.name` diretamente e recusa `decorator-member-captures`. O texto da recusa ainda diz "the decorator's `@Decl` handle", embora a 576 (1) tenha removido `@Decl`.
-- **Opções.**
-  (a) Sim — `decl` num membro ou num wrapper é a declaração como código, como num executor (613):
-  ```bp
-  compiler.addMember({ -> decl.name });        // the member answers Users
-  ```
-  (b) Não — como construído: o handle é recusado num membro ou num wrapper, e uma leitura `compiler.*` sobre ele é dobrada:
-  ```bp
-  compiler.addMember({ -> compiler.name(decl) });   // accepted, "Users"
-  compiler.addMember({ -> decl.name });             // refused: decorator-member-captures
-  ```
-- **Recomendação.** (b) — a leitura mais estreita, até uma biblioteca precisar da forma (a); o texto da recusa perde `@Decl` de qualquer forma.
-- **Bloqueia.** Nada construído; a resposta de `decorator_member_captures_handle`.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

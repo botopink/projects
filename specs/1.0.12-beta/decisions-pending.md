@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**46 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**45 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **716**.
+number, which is **717**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -302,22 +302,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b137-i · Does 613's `decl` reach a member and a wrapper, as 642 carried 614's fold there? (decisions 613, 614, 642; 144 B-137)
-- **Proposed (fable review, 2026-10-18; awaiting the maintainer; built as (b)):** **(b): the declaration handle stays refused inside an `addMember` member and a `wrapWith` wrapper (`decorator-member-captures`); only a `compiler.*` read over it is folded there.**
-- **Measured.** 642 carries 614's fold (a `compiler.*` call evaluated at build, its answer spliced) into every tree a decorator hands the compiler. 613 splices `decl` as the declaration's code in an `init` executor. B-137's 642 box folds `compiler.name(decl)` inside a member to `"Users"`, but a bare `decl` in a member body is still refused: `decorator_member_captures_handle` now reads `decl.name` directly and refuses `decorator-member-captures`. Its refusal text still says "the decorator's `@Decl` handle", although 576 (1) removed `@Decl`.
-- **Options.**
-  (a) Yes — `decl` in a member or a wrapper is the declaration as code, as in an executor (613):
-  ```bp
-  compiler.addMember({ -> decl.name });        // the member answers Users
-  ```
-  (b) No — as built: the handle is refused in a member or a wrapper, and a `compiler.*` read over it is folded:
-  ```bp
-  compiler.addMember({ -> compiler.name(decl) });   // accepted, "Users"
-  compiler.addMember({ -> decl.name });             // refused: decorator-member-captures
-  ```
-- **Recommendation.** (b) — the narrower reading, until a library needs the (a) form; the refusal text loses `@Decl` either way.
-- **Blocks.** Nothing built; the answer of `decorator_member_captures_handle`.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
