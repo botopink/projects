@@ -2718,8 +2718,11 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
       `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
       `Type.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
-- [ ] the modules: `result.bp` (`Result` with its five bodies; the backends' inline lowering and the `methods` rows go),
-      `reflection.bp` only if b139-a keeps it (`SourceLocation`, `Declared`, `DeclKind`, `Field` until B-140; `src` / `typeInfo` are `compiler`'s, 606),
+- [ ] the modules: `Result` in `primitives.bp` with its five bodies, 118's shape kept per target, keyed to that declaration
+      (609; the backends' inline lowering and the `methods` rows go; no `result.bp`); `compiler.bp` self-contained and first
+      (608: `SourceLocation`, `Link`, `Implementation`, `DeclKind`, `Decorator`, `Annotation`, the handle records; no
+      `reflection.bp`; `Declared*` goes with B-137's box 0; `primitives.bp` imports `compiler`; a unit test over
+      `stdModuleOrder`),
       `asset.bp` (`Asset(link: Link)` with `open()` over `io.fs`, 607; `Asset.bytes` / `size` / `hash` / `text()`, `File.ofBytes`'s
       embedded copy, `openAsset`, `embed-text-not-utf8`, `embed-text-not-at-build`, `embed-open-needs-fs` go; the `embed_*` /
       `fs_asset_*` cells rewritten or removed), `print` in `io/terminal.bp`, `panic` in `failure.bp` (606), the effect
@@ -2733,10 +2736,11 @@ cells' answers decide language versus defect; the file kind's removal is mechani
 - [ ] cells: a prelude name bare in a program and shadowed by a local declaration; `print` imported from `io.terminal` and
       `panic` from `failure`, each on four targets; `@print` / `@Result` refused as unknown names; `Result`'s methods on
       four targets; an `Asset` read on four targets with `text()` at run time (a non-UTF-8 file an `FsError`); `#[compiler.external(…)]` on a `declare fn`, `comptime Asset(compiler.embed(…))`
-      read at build and at run time, `comptime compiler.typeInfo` in a run-time body
+      read at build and at run time, `comptime compiler.typeInfo` in a run-time body; `compiler.SourceLocation` imported by a program; the std order
+      over `stdModuleOrder` (608)
 
-Open: questions b139-a (`SourceLocation`'s module after 606, whether `reflection.bp` exists), b139-b (`Result`'s
-shape); b139-c answered by decision 606 (`print` in `io/terminal.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
+Open: nothing on the maintainer — b139-a answered by decision 608 (`compiler.bp` first, no `reflection.bp`), b139-b by 609
+(118's shape kept, `Result` in `primitives.bp`), b139-c by 606 (`print` in `io/terminal.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
 B-138's box 4 run first; the prelude move, the imports, the codemod and the modules after B-136's final package.
 
 Oracle: the whole suite; `test-docs`; the cold gate.

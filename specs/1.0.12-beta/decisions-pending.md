@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**119 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **608**.
+number, which is **610**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -803,44 +803,6 @@ before every other part of this page; each holds one row, or nothing built.
   (c) Keep the landed splice: the handle is the bare name, resolved in the annotated module; a type is `type<T>`'s value where the checker admits one.
 - **Recommendation.** (a): the only reading in which no executor binds another declaration by accident and nothing is defined by what a name happens to resolve to; (b) is a later widening with its own typing to decide (an instance method's `self`), (c) is the silent misbinding measured above. Cells: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, each `refused` at the annotation.
 - **Blocks.** B-137's "a handle inside an executor is its declaration at run time, typed" box, for the kinds other than `fn` and `val`; 165 s10's markers on types (`#[component]`, `#[page]` on a type); 165 s10's registrations, built reading a type's `decl` as the type's name spliced in (`decl.make()`, `decl.Tx.make()`, `decl.bind(prefix)`) — that reading changes with the answer.
-
-#### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Decision 606 (2026-10-18).** `builtin` is no decorator, `external` is `compiler.external` and `TypeInfo` is `Type.Info` in `types.bp`: `external.bp` and its cycle are gone and `Compiler` names `SourceLocation` and `Link` alone (607: `Asset` is std's `asset.bp`, importing `compiler` and `io.fs`). The question is `SourceLocation`'s module, and whether `reflection.bp` exists at all; the recommendation stays (a): `compiler.bp` declares it, no `reflection.bp`.
-- **Measured.** `libs/std/src/compiler.bp` names `SourceLocation` (`val src: SourceLocation`), `Implementation`, `DeclKind`, `HookNode` and `TypeInfo`; `external.bp` declares `Implementation`, `WasmNeed`, `WasmHost`, `WasiAdapter` and `external`, importing nothing; `builtins.d.bp`'s `DeclAnnotation(decorator: Decorator)` names the behavior `Decorator`. 575 (2) places `src` and `typeInfo` in `reflection.bp` and `Compiler` in `compiler.bp`; 576 (13) places `DeclKind` and the handle records (`HookNode`, `Field`, `Method`, `Param`, `DeclAnnotation`) in `compiler.bp`; B-139's README places `SourceLocation`, `TypeInfo`, `DeclKind` and `Field` in `reflection.bp`. Read together: `compiler.bp` → `reflection.bp` (`SourceLocation`, `TypeInfo`) → `compiler.bp` (`DeclKind`, `Field`, `Decorator`); and `compiler.bp` → `external.bp` (`Implementation`) → `compiler.bp` (`#[builtin]` on `external` names the decorator `builtin`). `primitives.bp` writes `#[external(…)]` and is inferred before every std module (`comptime.zig` `registerStdlib`, `registerExternalPrelude`), so the module declaring `builtin` and the one declaring `Implementation` must both be inferred before it; `stdModuleOrder` orders the std modules by their imports and admits no cycle.
-- **Options.**
-  (a) `compiler.bp` self-contained and first: `builtin`, `Compiler`, `Implementation` with its three enums, `SourceLocation`, `TypeInfo<T>`, `DeclKind`, `Decorator`, `Annotation` and the handle records; `external.bp` keeps `external` alone and imports `compiler.Implementation`; `reflection.bp` keeps `src`, `typeInfo` (and `Declared*` until B-137 box 0) and imports its types. Order: `compiler` → `external` → `primitives` → the rest.
-  ```bp
-  // reflection.bp
-  import {compiler.SourceLocation, compiler.TypeInfo} from "std";
-  #[builtin] pub fn src() -> SourceLocation { return compiler.src; }
-  #[builtin] pub fn typeInfo<T>(comptime t: type<T>) -> TypeInfo<T> { return compiler.typeInfo(t); }
-  ```
-  (b) `reflection.bp` holds the types as the README reads; `Compiler.src` and `Compiler.typeInfo` are typed `unknown` in `compiler.bp`, the keyword's table (`parser/compiler_surface.zig` `members`) typing them.
-  (c) One module: `compiler.bp` holds `src` and `typeInfo` too, and there is no `reflection.bp`.
-- **Recommendation.** (a): every type the behavior `Compiler` names is declared in the module that declares `Compiler` — 576 (13)'s rule carried to `SourceLocation`, `TypeInfo` and `Implementation` —; a program writes `import {compiler.SourceLocation} from "std"` as it writes `compiler.Span`; no prelude name and no bootstrap case beyond `compiler.bp` being the first std module.
-- **Blocks.** B-139's `#[builtin]` mechanism and `reflection.bp`.
-
-#### b139-b · `Result` declared in `result.bp`: decision 118's host shape, or an enum's (decisions 118, 575 (2), (7); 144 B-139)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** `@Result<R, E>` is a type form of the checker, pre-registered by `Env.registerBuiltins`; `builtins.d.bp` declares `Result` doc-only (`prelude.zig`: re-parsing it reds on a duplicate registration). Its value is `{ok, V} | {error, E}` on erlang and beam (`codegen/erlang.zig` `variantTag` special-cases `isResultPath`; `resultShowClause`) and `{ ok: V } | { error: E }` on commonJS; an enum's variant is a tuple tagged by its name on erlang (`'__bp_tagged'/2`) and an instance with `.tag === "Variant"` on commonJS. The five methods are the rows of `comptime/builtins.zig` `methods`, lowered inline by each backend (`infer.zig` `inferResultOptionMethod`). 575 (7) writes the methods as a `case` over `Ok` / `Error` and removes the inline lowering; neither 575 nor 118 says whether a `Result` declared in std keeps 118's value shape.
-- **Options.**
-  (a) `result.bp` declares the enum with its bodies; the checker binds `@Result` to that declaration, and every backend keeps 118's shape for this one enum — the special case moves from "a builtin namespace" to "std's `Result`".
-  ```bp
-  // result.bp
-  #[builtin]
-  pub type Result<R, E> {
-      Ok(result: R),
-      Error(error: E),
-      fn isOk(self: Self<R, E>) -> bool {
-          case (self) { Ok(_) -> return true; Error(_) -> return false; }
-      }
-  }
-  ```
-  (b) The same declaration lowered as any enum: `{'Ok', V}`, `x.tag === "Ok"` — every `.d.ts`, `__bp_await`'s `{ok, V}` convention (432), every Erlang caller of a std function and the printed form change.
-  (c) `Result` stays the checker's form; `result.bp` writes only the methods, `extend Result<R, E> { … }`, no declaration of the type.
-- **Recommendation.** (a): one declaration, one lowering per target as today, the methods' bodies std's; no flag, no second shape.
-- **Blocks.** B-139's `result.bp`.
 
 #### b138-a · `Implementation`'s botopink-body cell: named `body:` (`fn` is reserved) and typed `?unknown`, on which variants? (decisions 575 (6), 590, 594 (1); 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
