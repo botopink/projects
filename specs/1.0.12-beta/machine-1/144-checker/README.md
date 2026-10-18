@@ -2571,7 +2571,8 @@ covers only the `#[@Family]` forms.
 
 - [ ] a decorator body that reads `compiler.catalogue(with: …)` (`compiler.find` after B-137's package) makes every importer of its module fail `typeinfo-all-imported`; only a template body is exempt, yet 551 says a catalogue read in a dependency answers for that dependency alone — a cell red on the parent
 - [ ] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
-- [ ] in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
+- [ ] (question b146-a) in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
+- [ ] an imported generic function called with an explicit type argument (`resolve<Box>(…)`) is refused "`resolve` takes no type arguments, 1 given" — found by B-146; a cell red on the parent
 
 ### B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 

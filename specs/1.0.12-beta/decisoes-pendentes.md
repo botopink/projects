@@ -643,6 +643,16 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma dependência declarada faz parte do programa, e a 580 já ordena os executores pela posição da declaração. A (c) acrescenta um campo de manifesto para o mesmo efeito.
 - **Bloqueia.** A metade "um pacote acrescentado é descoberto" do 165 s5; `boot_modules` mantém os seus imports até a resposta.
 
+#### b146-a · `v is T` onde `T` é um parâmetro de tipo da função que o envolve (144 B-146)
+- **Proposta (coordenador, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** Num corpo genérico, `v is T` responde false no erlang e no beam, aborta no commonJS, e é recusado no wasm ("a type parameter's slot is not monomorphised"). Os parâmetros de tipo são apagados em runtime, então nada pode decidir o teste. Encontrado pela frente 165 s5 (o registro do rakun), que contorna isso.
+- **Opções.**
+  (a) `x is T` com `T` um parâmetro de tipo da função que o envolve é recusado no teste, localizado, código `is-type-parameter`, nomeando o parâmetro. Um programa testa um tipo concreto, ou recebe um argumento `type<T>` e compara por `compiler.*` no build.
+  (b) `T` é reificado em runtime em todo alvo: cada chamada genérica passa os seus argumentos de tipo.
+  (c) É permitido só onde `T` é ligado por monomorfização (wasm), e recusado nos outros.
+- **Recomendação.** (a): um teste que não pode ser decidido é recusado, nunca respondido `false`. A (b) muda a convenção de chamada de toda chamada genérica, e a (c) faz o sentido de um programa depender do seu alvo.
+- **Bloqueia.** A terceira caixa do B-146.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

@@ -643,6 +643,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): a declared dependency is part of the program, and 580 already orders executors by declaration position. (c) adds a manifest field for the same effect.
 - **Blocks.** 165 s5's "a package dropped in is discovered" half; `boot_modules` keeps its imports until answered.
 
+#### b146-a · `v is T` where `T` is a type parameter of the enclosing function (144 B-146)
+- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** In a generic body, `v is T` answers false on erlang and beam, aborts on commonJS, and is refused on wasm ("a type parameter's slot is not monomorphised"). Type parameters are erased at run time, so nothing can decide the test. Found by front 165 s5 (rakun's registry), which works around it.
+- **Options.**
+  (a) `x is T` with `T` a type parameter of the enclosing function is refused at the test, located, code `is-type-parameter`, naming the parameter. A program tests a concrete type, or takes a `type<T>` argument and compares through `compiler.*` at build.
+  (b) `T` is reified at run time on every target: each generic call passes its type arguments.
+  (c) It is allowed only where `T` is bound by monomorphisation (wasm), and refused elsewhere.
+- **Recommendation.** (a): a test that cannot be decided is refused, never answered `false`. (b) changes every generic call's calling convention, and (c) makes a program's meaning depend on its target.
+- **Blocks.** B-146's third box.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
