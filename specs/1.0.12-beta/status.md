@@ -285,6 +285,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 163 meta-ci (medium)
 
+- [ ] 163 s13 — a small gate is not held behind every full-pool gate queued before it (head-of-line blocking in `poolAcquire`, measured by 166 s3) · now — machine 2
 - [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
 
 ### 166 decision-cells (medium)

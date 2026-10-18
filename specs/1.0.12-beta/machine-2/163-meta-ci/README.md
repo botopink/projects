@@ -209,3 +209,24 @@ After 144 B-37 (`bpmp link`, `.botopinkbuild/deps/` first).
 - [x] exit 1 when red; a test per reason, red on a branch built to fail it
 - [x] the meta `AGENTS.md` § Layout names it
 
+### 163 s13 — a small gate is not held behind every full-pool gate queued before it
+
+**Repository:** the meta repository (`scripts/gate.sh`) · **Model:** sonnet · **Found by:** 166 s3 (the maintainer, 2026-10-18: "file the 163 box")
+
+Measured on 2026-10-18: a library thread's `exec --jobs 3` (166 s3, json) waited about 78 minutes. In that time
+botopink-lang threads ran their `exec --jobs 10` commands one after another. The cause is first come, first served
+with head-of-line blocking (`poolAcquire`):
+
+- a gate asking for the whole pool starts only on an empty pool;
+- a gate is admitted only when no live gate has waited longer.
+
+So a small gate waits behind every full-pool waiter queued before it. While one of those runs, the free jobs stay
+idle, because the older full-pool waiter cannot start and the small gate may not pass it.
+
+- [ ] the rule chosen and written in `gate.sh`'s comment and the meta `AGENTS.md` § Gate orchestrator. Recommended: while
+      the pool is not empty, a gate asking for less than the capacity may be admitted ahead of an older full-pool waiter,
+      at most one such pass in flight. The full-pool gate cannot start until the pool drains anyway, and the bound
+      keeps a stream of small gates from starving it. The alternative is to keep the strict order as it is and only
+      write down its cost.
+- [ ] a test of the scheduler: two `exec --jobs <capacity>` waiters and one `exec --jobs 1`, the small one admitted
+      while the first full-pool gate runs (red on the parent) and the second full-pool gate still started after it
