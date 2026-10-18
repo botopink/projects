@@ -182,6 +182,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 ### B-11 — 316: `decl.wrapWith(f)`
 
+**Closed by decision 714:** `compiler.wrapWith` is removed — no library used it; behaviour around a function is a proxy type the decorator builds or a function around the call. The 13 `decorator_wrap*` / `*_wrap_with` cells and the `decorator-wrap-*` refusals go with B-139's codemod; nothing below is built further.
+
 **Repository:** botopink-lang, with consumer commits in rakun (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/decorator_wraps_function`, its `reject/` cells. **Model:** opus.

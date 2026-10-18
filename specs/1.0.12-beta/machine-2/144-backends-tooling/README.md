@@ -2625,7 +2625,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 - [x] decision 615: `compiler.compile` renamed `compiler.init` at every site (std, the cells, `conformance/docs.md`, the
       AGENTS.md); the cells `compile_executor_*` → `init_executor_*`, `compile_init_order_modules` → `init_order_modules`,
       `compile_output_outside_decorator` → `init_output_outside_decorator`; rakun's and query's sites in 165 s10
-- [ ] decision 642: the fold extended to every tree (`addMember` member, `wrapWith` wrapper), `syntax-captures-build` gone
+- [ ] decision 642: the fold extended to every tree (`addMember` member; the `wrapWith` wrapper is gone, 714), `syntax-captures-build` gone
       everywhere; a `syntax` parameter takes the argument as written (`compiler.name(x)` in a member answers `"x"`); only a
       `comptime` parameter given a run-time value refused (`compiler-arg-at-run-time`); cells `member_reads_compiler_name`,
       `wrapper_reads_compiler_name`, `member_names_its_parameter`; a wrapper holds the decorator body's literal locals as a
@@ -2634,7 +2634,7 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 - [x] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `syntax-captures-build`
       withdrawn — `compile_executor_captures_build` rewritten as `init_executor_reads_compiler` (`out home`); a
       `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`
-      (`init_executor_compiler_arg_at_run_time`); `addMember` / `wrapWith` trees keep the refusal (question b137-c)
+      (`init_executor_compiler_arg_at_run_time`); `addMember` trees keep the refusal (question b137-c; `wrapWith` gone, 714)
 - [ ] decision 643: `compiler.name -> ?string`, `null` for a nameless expression (cell `compiler_name_of_lambda`, `out null`;
       612 reversed)
 - [x] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is

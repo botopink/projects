@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**48 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**47 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **714**.
+number, which is **715**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `View` row.
-
-#### B-11-b · May `compiler.wrapWith` wrap a generic function or a member of a generic type? (decision 316; 144 B-11)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): yes, as a 144 row** — the wrapper (`compiler.wrapWith<F>(syntax wrapper: F)`, 576 (9)) is checked against the signature with its type parameters, and the wrapped function stays generic. 316 names no exception for generics, and a cache or a retry is as useful on `fn byId<T>(…)`. Viable: the generated call type takes the function's type parameters. Changes: a cell; `decorator-wrap-generic` goes.
-- **Measured.** A generic function or owner is refused today, `decorator-wrap-generic`, located at the decorator.
-- **Options.**
-  (a) Refused, as built.
-  ```bp
-  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // refused: decorator-wrap-generic
-  ```
-  (b) Wrapped, generic.
-  ```bp
-  #[counted] fn first<T>(xs: T[]) -> ?T { … }   // wrapped; first<i32>, first<string> both counted
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-11's generic row.
 
 #### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
