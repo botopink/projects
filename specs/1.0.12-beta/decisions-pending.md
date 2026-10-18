@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**116 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**115 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **617**.
+number, which is **618**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -790,20 +790,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) As built. (b) Both trap: `bytes.at` is the bare `array.get_u` (a trap outside `0..length-1`, a negative index read unsigned included) and `bytes.ofWords` is `unreachable` at the first word outside `0..255`; the `.bp` codecs keep their own bounds; the unit test's three lines replaced. (c) `bytes.at` as `text.byteAt` (`-1`: one answer for one read over one layout), `bytes.ofWords` trapping.
 - **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
 - **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
-
-#### b138-b · A behavior's `default fn` with a body and cells: `implement-with-body`, or the body the fallback? (decisions 575 (6), 585 (h); 144 B-138)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
-- **Measured.** 575 (6): `compiler.implement` "on a declaration with a body `implement-with-body`". B-138 exempts a behavior's `default fn` (`infer.zig` `ImplDecl.isDefault`): 20 members of `libs/std/src/primitives.bp` carry a body plus `.Erlang` / `.Node` cells (`Integer.isEven`, `Array.slice`, `Array.contains`, …), the body the fallback where a target has no cell (wasm, beam through erlang's); `conformance/docs.md` states it as language; `conformance/modules/implement_with_body` proves the top-level refusal only. 585 (h) (2026-10-17) says GC lowers "the `default fn` bodies `primitives.bp` already holds — no `.wat` cell", presupposing the pattern. A `default fn` with a cell for every running target keeps a body no target reaches.
-- **Options.**
-  (a) As landed: a `behavior`'s `default fn` may carry cells, its body the fallback; every other bodied declaration refused.
-  (b) (a), narrowed: a `default fn` whose cells cover every running target (`.Erlang`, `.Node`, `.Wasm`) is refused `implement-with-body` too — its body is dead code; a `default fn` keeps a body only for a target it has no cell for.
-  ```bp
-  #[external(.Node("""((__a) => __a % 2 === 0)($0)"""))]
-  default fn isEven(self: Self) -> bool { return self % 2 == 0; }   // wasm, erlang: the body
-  ```
-  (c) 575 (6) to the letter: a `default fn` carries no cells; a member with host code per target is a bodiless signature whose botopink algorithm is a `.Wasm(body: …)` / `.Erlang(body: …)` private fn — infeasible over a primitive behavior's `Self` (`Integer` spans every integer width; a private fn is monomorphic) and against 585 (h).
-- **Recommendation.** (b): the exemption is one construct's (a `behavior`'s `default fn`), 585 (h) stands, and no body is ever both written and unreachable. A cell `implement_with_body_default_covered` (a `default fn` with `.Erlang`, `.Node` and `.Wasm`) refused; `implement_with_body_default_fallback` green on four targets, the wasm and erlang answers the body's.
-- **Blocks.** 144 B-138's reference text; 164 s3 P2 (585 (h)).
 
 #### b138-d · A flag of `Implementation` written positionally: the constructor's fill, or the label required? (decisions 67, 575 (6); front 20 F9; 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

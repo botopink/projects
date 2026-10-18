@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**115 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **617**.
+número livre, que é **618**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -790,20 +790,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) Como construído. (b) Ambas dão trap: `bytes.at` é o `array.get_u` nu (um trap fora de `0..length-1`, um índice negativo lido sem sinal incluído) e `bytes.ofWords` é `unreachable` na primeira palavra fora de `0..255`; os codecs `.bp` guardam os seus próprios limites; as três linhas do teste unitário substituídas. (c) `bytes.at` como `text.byteAt` (`-1`: uma resposta para uma leitura sobre um layout), `bytes.ofWords` dando trap.
 - **Recomendação.** (b) — uma folha não responde nada fora do seu domínio e nenhuma palavra é truncada em silêncio; o `-1` de `text.byteAt` fica o do P1-a até o mantenedor estender a resposta a ele.
 - **Bloqueia.** Nada construído espera; a metade `.bp` do P2-d (depois do B-139 e do s2 P5) lê a resposta antes de ser escrita.
-
-#### b138-b · Uma `default fn` de behavior com corpo e células: `implement-with-body`, ou o corpo é o fallback? (decisões 575 (6), 585 (h); 144 B-138)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Medido.** 575 (6): `compiler.implement` "numa declaração com corpo `implement-with-body`". O B-138 isenta a `default fn` de um behavior (`infer.zig` `ImplDecl.isDefault`): 20 membros de `libs/std/src/primitives.bp` carregam um corpo mais células `.Erlang` / `.Node` (`Integer.isEven`, `Array.slice`, `Array.contains`, …), o corpo sendo o fallback onde um alvo não tem célula (wasm, beam pelo do erlang); o `conformance/docs.md` o enuncia como linguagem; `conformance/modules/implement_with_body` prova só a recusa de nível superior. A 585 (h) (2026-10-17) diz que o GC baixa "os corpos de `default fn` que o `primitives.bp` já tem — nenhuma célula `.wat`", pressupondo o padrão. Uma `default fn` com uma célula para cada alvo que roda mantém um corpo que nenhum alvo alcança.
-- **Opções.**
-  (a) Como pousado: a `default fn` de um `behavior` pode carregar células, seu corpo é o fallback; toda outra declaração com corpo é recusada.
-  (b) (a), estreitada: uma `default fn` cujas células cobrem todo alvo que roda (`.Erlang`, `.Node`, `.Wasm`) também é recusada `implement-with-body` — seu corpo é código morto; uma `default fn` só mantém corpo para um alvo para o qual não tem célula.
-  ```bp
-  #[external(.Node("""((__a) => __a % 2 === 0)($0)"""))]
-  default fn isEven(self: Self) -> bool { return self % 2 == 0; }   // wasm, erlang: the body
-  ```
-  (c) A 575 (6) ao pé da letra: uma `default fn` não carrega células; um membro com código de host por alvo é uma assinatura sem corpo cujo algoritmo botopink é uma fn privada `.Wasm(body: …)` / `.Erlang(body: …)` — inviável sobre o `Self` de um behavior primitivo (`Integer` cobre toda largura de inteiro; uma fn privada é monomórfica) e contra a 585 (h).
-- **Recomendação.** (b): a isenção é de um construto só (a `default fn` de um `behavior`), a 585 (h) se mantém, e nenhum corpo é ao mesmo tempo escrito e inalcançável. Uma célula `implement_with_body_default_covered` (uma `default fn` com `.Erlang`, `.Node` e `.Wasm`) recusada; `implement_with_body_default_fallback` verde em quatro alvos, as respostas de wasm e erlang sendo as do corpo.
-- **Bloqueia.** O texto de referência do 144 B-138; 164 s3 P2 (585 (h)).
 
 #### b138-d · Uma flag de `Implementation` escrita posicionalmente: o preenchimento do construtor, ou o rótulo exigido? (decisões 67, 575 (6); frente 20 F9; 144 B-138)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**

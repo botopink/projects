@@ -44,6 +44,7 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [ ] 165 s10 — landed: rakun and query on B-136's and B-138's spelling, every `@emit` replaced (605), `rakun.d.bp` deleted, the templates parse their own holes; left: rakun-bpp's routes and the run-time `@TypeInfo.all` sites, with B-137's final package · B-137
 - [ ] 144 B-139 — no `.d.bp`; no `#[builtin]` / `@name` (606): the prelude types and behaviors into `primitives.bp`, `print` in `io.terminal` and `panic` in `failure` imported, `typeInfo` / `embed` / `external` members of `compiler` (`embed` the link only, `Asset` in `asset.bp` over `io.fs`, 607), `Type.Info<T>` in `types.bp`, `println` / `todo` / `debug` / `src` removed, the codemod over the cells and the libraries; every builtin in its std module with its body, `compiler.bp` first and no `reflection.bp` / `result.bp` (608, 609); the removed builtins, `@emit` / `@code` / `@expr` gone with the file (605); nothing inside it waits on the maintainer · B-138, 165 s10 — machine 2
 - [ ] 144 B-140 — `types.bp` in botopink: `Type.Field<T>(name, type, annotations)`, `compiler.buildType` / `fields` / `optional` / `required` · B-139 — machine 1
+- [ ] 144 B-146 — the primitive widths are types, a behavior a contract with no cell: `pub type i32 implement Signed`, the cells on the types, the six empty behaviors and the four backends' chains gone (617) · after B-139, before B-140 — machine 2
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 

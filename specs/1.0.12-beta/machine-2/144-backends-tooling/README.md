@@ -2688,6 +2688,9 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
       formatter prints an annotation whose arguments end in a trailing comma one per line — cell
       `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
+- [ ] decision 617: `implement-with-body` on every bodied declaration, a behavior's `default fn` included — the exemption
+      `ImplDecl.isDefault` goes, `implement_with_body` gains the behavior case; `primitives.bp`'s bodies-with-cells are
+      B-146's to redistribute, so this box lands with B-146
 - [ ] decision 610: `body:` on `Erlang`, `Node`, `Wasm` alone, `template` optional only beside it; the refusals
       `external-body-not-a-fn` (not a bare identifier naming a private bodied `fn` with the declaration's types),
       `external-source-empty` (neither `template` nor a cell), `external-all-bodies` (every source a `body:` — write the
@@ -2844,3 +2847,18 @@ Found by machine 1's 165 s10 gate: query's cell `generic_loader_binding`
 commonJS runs it.
 
 - [ ] the chain answers the array on erlang and beam as on commonJS; a botopink-lang cell holding the shape, red on the parent
+
+### B-146 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (std's bodies and the backends' dispatch decide language versus defect) · **After:** B-139 (which moves the prelude into `primitives.bp`) · **Before:** B-140
+
+Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`, `Integer extends Number`, `Signed`, `Float` are contracts, and the widths are empty behaviors (`behavior I32 extends Signed {}`, `I64`, `U32`, `U64`, `F32`, `F64`); `infer.zig` maps `i32` to `I32`, and each backend writes the chain `I32 → Signed → Integer → Number` by hand (`erlang.zig` `prim_iface_chain`, `commonJS.zig` `numeric`, `wat.zig` `prelude_names`, `beam_asm.zig`). Twenty members carry a body and cells on one declaration (`default fn isEven` with `.Node(…)`), the body the fallback of the targets without a cell.
+
+- [ ] `pub type i32 implement Signed { … }` and its siblings declared in `primitives.bp` (`bool`, `string`, `Bytes`, `BigInt`, `Array<T>`, `Pair<A, B>`, `Function` as 617 (1) applies); the six empty behaviors go; `infer.zig`'s width table and the four backends' chains replaced by a read of the `implement` clauses — one resolution, from the text
+- [ ] every behavior of the file holds signatures and `default fn` bodies only — no `#[compiler.external(…)]` on a behavior member (refused there, `external-on-behavior`, at the annotation); the 87 cells move to `declare fn` members of the types, `Self` concrete; a member one target runs in botopink and another in the host uses 610's `.Wasm(body: f)` on the type
+- [ ] a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature
+- [ ] `implement-with-body` on a behavior's `default fn` (617 (4)): the B-138 box above lands here
+- [ ] every cell of `tests/language` green on four targets before and after — the answers of the primitives do not change, only where their code is written; `conformance/docs.md` § Primitives rewritten (the widths as types, the contracts, where host code lives); `libs/std/AGENTS.md`
+- [ ] cells: `primitive_width_is_a_type` (`i32` in a type position and `implement Signed` read), `external_on_behavior` refused, `primitive_default_fn_overridden` (a width's own cell beside the contract's body, four targets), `implement_with_body` with the behavior case
+
+Oracle: the whole suite on four targets; `test-libs`; the cold gate.

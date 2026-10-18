@@ -66,7 +66,7 @@ One full cold gate with conformance on this machine's main checkout before B-140
 
 ## Blocked on the maintainer — not opened
 
-In the order the maintainer answers them (the queue of 2026-10-17): b138-b, b138-d,
+In the order the maintainer answers them (the queue of 2026-10-17): b138-d,
 B-21-b, B-25-b, 541-a, 521-a, 535-a; then B-14-b, B-11-a / B-11-b (150 s29 waits on them),
 B-15-a … c, B-17-a … m, B-18-a / b, B-10-b … g, B-02-c, B-27-g1 … g4, 50-b, 165-a / b, 548-a / b, B-98-a,
 B-99-c / e, B-86-a. A thread that reaches one of these stops at it and reports.
