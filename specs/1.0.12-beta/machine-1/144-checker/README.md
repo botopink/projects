@@ -608,8 +608,9 @@ fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + a
       376 as written (`decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded` change) · decision 633
 - [ ] the spelling `#[@Stage.Any]`, `pub type Stage { Build, Run, Any }` in `builtins.d.bp` · question B-17-b
 - [ ] the `Build` resource is a read of a comptime `@Decl` / `@Expr` parameter; `@typeInfo(NamedType)` a build constant · decision 634
-- [ ] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
-      function and reading the clock is build-and-run · question B-17-d
+- [x] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
+      function and reading the clock is build-and-run · decision 720 (a): only what is written at the call counts, a `syntax` argument of any origin
+      type-checked once; a Run function reached through a value while the build executes is `run-in-build` at that call, located — cell `run_in_build_through_value`
 - [x] a `comptime x: @Expr<string>` function called at run time whose body uses `x.value` as a receiver
       (`names.value.split(",")`) emits an unbound variable on commonJS and erlang — found by B-17
 

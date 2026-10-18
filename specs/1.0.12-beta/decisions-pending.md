@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**45 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**44 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **720**.
+number, which is **721**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `View` row.
-
-#### B-17-d · Does a stage follow declarations only? (decision 376 (2); 144 B-17)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a function taking a `syntax` parameter (576 (1), 616; before 576: a comptime-`@Expr` function) and reads the clock is `build-and-run`, as 376 writes.
-- **Measured.** Built as (a).
-- **Options.**
-  (a) Declarations only.
-  ```bp
-  pub fn main() -> void { val f = clock.now; val t = f(); }   // Any: a function value adds nothing
-  ```
-  (b) Function values too.
-  ```bp
-  pub fn main() -> void { val f = clock.now; val t = f(); }   // Run: the value's declaration counted
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
 
 #### B-17-e · A raise while folding an expression at build: always a build error? (decision 380 (2); 144 B-17)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes, as 380 (2) writes — once the comptime runtime's primitives answer as the targets do** (that row first); until then folding stays limited to what the runtime answers right, so no wrong answer becomes a build error.

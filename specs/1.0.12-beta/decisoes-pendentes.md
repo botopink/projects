@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**45 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**44 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **720**.
+número livre, que é **721**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `View` do 144 B-10 G3.
-
-#### B-17-d · O estágio segue só declarações? (decisão 376 (2); 144 B-17)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o estágio de uma chamada é o da declaração chamada; uma chamada de método ou por um valor de função não acrescenta nada (`Any`); um corpo de run que chama uma função com um parâmetro `syntax` (576 (1), 616; antes da 576: uma função comptime-`@Expr`) e lê o relógio é `build-and-run`, como a 376 escreve.
-- **Medido.** Construído como (a).
-- **Opções.**
-  (a) Só declarações.
-  ```bp
-  pub fn main() -> void { val f = clock.now; val t = f(); }   // Any: a function value adds nothing
-  ```
-  (b) Valores de função também.
-  ```bp
-  pub fn main() -> void { val f = clock.now; val t = f(); }   // Run: the value's declaration counted
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
 
 #### B-17-e · Um raise ao dobrar uma expressão no build: sempre um erro de build? (decisão 380 (2); 144 B-17)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim, como a 380 (2) escreve — depois que as primitivas do runtime de comptime responderem como os targets** (essa linha antes); até lá a dobra fica limitada ao que o runtime responde certo, para nenhuma resposta errada virar erro de build.
