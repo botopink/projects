@@ -51,10 +51,11 @@ About **625 cells**. The process estimate is the id column's tags plus `decision
 - [ ] `scripts/decision-cells.py` with `scaffold`, `compile`, `promote`, `check`, as § Mechanism; the row classification (one-liner, `process`, code-bearing) read from the generated ledger only, never guessed; `--check` exit 1 with one line per reason; a test per reason (`scripts/decision-cells-test.py`, the shape of `land-check-test.py`)
 - [ ] check 7 in `scripts/gate.sh check` and `hook-integrity.yml`; `AGENTS.md` § CI, § Layout; the meta `scripts/gate.sh check` green on the tree as it is (no directory exists yet)
 
-### s2 — the ledger's `process` tags (meta, the coordinator)
+### s2 — the ledger's `Cell` column: the slugs and the `process` tags (meta, the coordinator; decision 647)
 
 **Repository:** meta · **Model:** opus (a reading of every row) · **After:** s1's `scaffold --list`, which prints the rows it would scaffold and the candidates it reads as process.
 
+- [ ] the ledger's table gains the fifth column `Cell` (647): every row that fixes program behaviour gets its slug (`lowercase_with_underscores`, unique, readable — `function_return_type_written`), a one-liner or a process row an empty cell; `scripts/decisions-split.py` carries the column into every repository's ledger and refuses two rows with one slug; the header's column list updated
 - [ ] every row that fixes no program behaviour carries `process` in its id column — the ledger's existing tag, added in the meta ledger only, no word of a rule changed; the per-repository ledgers regenerated (482, CI check 6)
 - [ ] `scripts/decision-cells.py scaffold --list` per repository agrees with the table in § Current state within what s2 found; the counts written into that table
 
@@ -94,7 +95,7 @@ Phase 1: `compile <repo>` green on every batch, check 7 (i) green, every example
 
 ## Open
 
-- **166-a** — answered by decision 646: the directory is a unique readable slug in the cells' spelling (`decisions-taken/<slug>/`), the decision's number in the docs' first line and `main.bp`'s header; 511 untouched; check 7 pairs slug and row one to one.
+- **166-a** — answered by decisions 646 and 647: the directory is the slug the ledger's `Cell` column gives the decision (`decisions-taken/<slug>/`), carried by `decisions-split.py`; `scaffold` reads it, check 7 derives the directories from the repository's ledger; 511 untouched.
 - **166-b** — how phase 1 stays out of the gate: (a) write the example as `decisions-taken/<slug>/main.bp` (no `src/`, no manifest) so nothing is a cell until `promote`, as § Mechanism; (b) write the full shape at once and accept each cell's answer in the same batch — asserted from the first commit, every departure a structural fix during the group; (c) a `cell check` verdict `pending` for a cell with no `snapshot/` — a compiler change that amends 464 (3) and 475 (6) and lets a cell exist unasserted (67, 265). **Recommendation: (a)**: the maintainer's two moments, no flag, no list, nothing the gate finds and skips; `src/*.bp` from the flip on.
 - **166-c** — the include form, one, not two: (a) `{<path>}` — `{src/main.bp}` inside a cell as the maintainer wrote, and `{modules/<cell>}` in the root reference, the `<!-- example: modules/<cell> -->` lines migrated in s4 and `test-docs` reading the new form (an s4 compiler box, 461 (2) amended); (b) keep `<!-- example: … -->` and write the decision cells' include as `<!-- example: src/main.bp -->`. **Recommendation: (a)** — the maintainer's spelling, and at the end one form in every `docs.md`; until s4 the two coexist, check 7 reading `{…}` only.
 - **166-d** — ownership of `conformance/modules/decisions-taken/**`: (a) a carve-out of 433 and fronts.md rule 1 for that one subtree in every repository — 166's threads commit there directly, one thread per repository, botopink-lang's in a `--lang` worktree; (b) each repository's front gains the box and writes its own, 166 keeping the script and the check. **Recommendation: (a)** — one shape, one script, one landing rule, and no library front is open for most of these repositories.
