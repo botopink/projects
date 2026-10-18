@@ -2670,21 +2670,21 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
 - [x] cells: `declare_without_implementation` (three shapes), `declare_in_behavior`, `implementation_twice`,
       `implement_with_body`, a library-defined source annotation (`external_library_source_annotation`); the ~12
       `external_*` shape cells answer the enum constructor's texts, each stated
-- [ ] `compiler.implement(.Erlang(…))`: the dot shorthand takes `implement`'s parameter type `Implementation` (587; under
+- [x] `compiler.implement(.Erlang(…))`: the dot shorthand takes `implement`'s parameter type `Implementation` (587; under
       579 an ordinary method's parameter) — cell `external_library_source_dot_shorthand` (`#[bif("lists")]` whose body
       writes `.Erlang(module + ":reverse($0)")`, four targets, `out [3, 2, 1]`); `external_library_source_annotation`
       keeps `Implementation.Erlang(…)`, which stays legal
-- [ ] a library's `compiler.implement` survives the module's re-analysis: the loss is the fallback text-splice path of
+- [x] a library's `compiler.implement` survives the module's re-analysis: the loss is the fallback text-splice path of
       `comptime.zig` (two `@emit` calls making one declaration: `parseAndMergeContributions` answers null and
       `analyzeSource` re-analysed with a fresh env), the contributions now carried into it — cell
       `external_library_source_beside_emit_split`, red on the parent; on the merged path no shape loses one, and
       `external_library_source_beside_{member,wrap,emit}` stay as regression oracles (green before the fix); the
-      `@emit` cells rewritten with B-137's last box — committed, landing after B-136
-- [ ] a variant constructor called with labels and defaults left out — `Implementation.Wasm(op: "f64.floor")` (an
+      `@emit` cells rewritten with B-139 (605)
+- [x] a variant constructor called with labels and defaults left out — `Implementation.Wasm(op: "f64.floor")` (an
       `op:` cell takes no `result:`, 491) and a user enum — answers one value on erlang, beam, commonJS and wasm (`planLabelledCall` always plans;
       `defaultInjections` read by every backend, wasm verified) — cells `enum_variant_labelled_defaults` (four targets)
       and `enum_variant_labelled_reorder`
-- [ ] `?unknown` admits a function value (`body: reverseBody`) — cell `optional_unknown_takes_function`;
+- [x] `?unknown` admits a function value (`body: reverseBody`) — cell `optional_unknown_takes_function`;
       `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
       formatter prints an annotation whose arguments end in a trailing comma one per line — cell
       `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
@@ -2699,6 +2699,9 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       the names `print` / `println` / `debug` — a grep gate in `zig build test` over `modules/compiler-core/src/codegen`
       (decision 67, like the lib-agnostic gate) and cell `print_bound_by_cells` (four targets; wasm's row red until 164
       s3 lands `.Wasm(std: "print")`)
+      — landed on the three backends with the grep gate (`wat.zig` allow-listed until 164 s3), `print` / `println` /
+      `debug` still declared in `builtins.d.bp`; left: the declaration's move to `io/terminal.bp` (B-139 box 2) and the
+      cell `print_bound_by_cells`
 - [ ] `print` on wasm by `.Wasm(std: "print" | "println" | "debug")`: a row of 164 s3 (this step's header: the wasm half
       after 164 s3, never beside), `print_bound_by_cells`'s wasm answer its oracle
 - [x] the codemod's misses: `modules/compiler-cli/tests/{cli_contract,test_tooling,closure_invariant}.sh`, the fixture
@@ -2822,12 +2825,11 @@ parent on commonJS for that reason alone, blind to 580.
       above `#[registered] pub fn own()`, printed first → `out ["second", "first", "later"]` before the four names —
       red on the parent on commonJS
 
-- [ ] `pop` on a `var` rebound on commonJS as on erlang and beam (the popped value and the shrunk array together);
+- [x] `pop` on a `var` rebound on commonJS as on erlang and beam (the popped value and the shrunk array together);
       a cell where a `val` copy of the `var` keeps its length; the `.Node` cells of `shift`, `unshift`, `splice`, `sort`
       and `reverse` checked for the same aliasing
 
-The three boxes above are committed on their branch and land after B-136 (both cells red on the parent on commonJS; six
-commonJS codegen snapshots now read `x = x.concat([v])`).
+Six commonJS codegen snapshots read `x = x.concat([v])`.
 
 Oracle: the two cells on commonJS, erlang, beam and wasm.
 
