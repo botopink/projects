@@ -2603,11 +2603,11 @@ measurement). **Consumer commits:** none.
 
 The step is closed as superseded: its built boxes (the measurement, `heap.zig`, beam-to-wasm's terms, the trap, the cycle) stay as landed; question B-30-b's answer has no effect. Its Conformance step is none — the group's is B-85.
 
-### B-137 — `compiler.compile`: a decorator's run-time code in the program's init list (decision 575 (3), (8))
+### B-137 — `compiler.init`: a decorator's run-time code in the program's init list (decision 575 (3), (8))
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (every backend) · **After:** B-136; its last box after 165 s10
 
-- [ ] decision 576 (7), (15): `Declared<T>`, `DeclaredMeta`, `DeclaredTypedMeta` and the run-time `@TypeInfo.all` removed with `compile` in: each run-time catalogue cell (`typeinfo_all_*`, comptime_expand_boot's run-time half) registers through its marker's `compiler.compile`, its answer kept
+- [ ] decision 576 (7), (15): `Declared<T>`, `DeclaredMeta`, `DeclaredTypedMeta` and the run-time `@TypeInfo.all` removed with `compile` in: each run-time catalogue cell (`typeinfo_all_*`, comptime_expand_boot's run-time half) registers through its marker's `compiler.init`, its answer kept
 - [x] `compile(expr executor: fn())`: the executor compiled beside the annotated declaration; each target emits a
       module's init function and the program's init list, run once before `main` — modules in dependency order,
       declarations in source order, calls in order; a library module's executors run in the program that imports it;
@@ -2616,6 +2616,9 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       executor from a library's decorator; `compiler-output-outside-decorator`
       (`compile_executor_before_main`, `compile_init_order_modules`, `compile_executor_from_library`,
       `compile_output_outside_decorator`)
+- [ ] decision 615: `compiler.compile` renamed `compiler.init` at every site (std, the cells, `conformance/docs.md`, the
+      AGENTS.md); the cells `compile_executor_*` → `init_executor_*`, `compile_init_order_modules` → `init_order_modules`,
+      `compile_output_outside_decorator` → `init_output_outside_decorator`; rakun's and query's sites in 165 s10
 - [ ] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `expr-captures-build`
       withdrawn — `compile_executor_captures_build` rewritten as `compile_executor_reads_compiler` (`out home`); a
       `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`
@@ -2623,8 +2626,8 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
 - [x] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is
       refused at the tail with 409's refusal, a named executor (or an `expr` handed on) of type `fn() -> X` at the
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`
-      (`compiler.compile({ -> count() })` refused at `count()`) and `compile_executor_named_answers`
-      (`compiler.compile(count)` at `count`)
+      (`compiler.init({ -> count() })` refused at `count()`) and `compile_executor_named_answers`
+      (`compiler.init(count)` at `count`)
 - [x] the init order of executors and a module's own body: one list, source order, an executor's declarations right
       after its annotated declaration (decision 580); cell `compile_executor_module_val_order`
       (`["second", "first", "later", "own"]`); a handle inside an executor is its declaration at run time, typed (581 (2)),

@@ -118,7 +118,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
       `type Module(name: string, lifecycle: Lifecycle, make: fn() -> Component<Service>)`; the decorator
       `#[module(lifecycle: Lifecycle = .Eager)]` over a `pub component fn x() -> Component<Service>` only — a
       `fn() -> Service` or another return refused at build, located (`#[module] goes on a component fn() -> Component<Service>`) —,
-      its executor `compiler.compile({ -> registry.add(Module(name: name, lifecycle: lifecycle, make: decl)) })`, `decl`
+      its executor `compiler.init({ -> registry.add(Module(name: name, lifecycle: lifecycle, make: decl)) })`, `decl`
       the function at run time, checked against `make`; the hooks `use inject(x)` (a module started once, on demand, the
       boot order the dependency order) and `use onStop(f)`; `rakun.boot()` ordinary run-time code mounting each module
       into a `ServiceScope` (the `RenderScope` without a DOM, 388, 504) by `case (m.lifecycle)`, `start(name) ->
@@ -163,7 +163,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
 ### s10 — the builtins' new spelling (144 B-136 … B-139; decisions 575, 576)
 
 **Repository:** rakun, and jhonstart's one `@emit` · **Model:** sonnet (the codemods are 144's; the registrations' move
-to `compiler.compile` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138 on the main checkout's compiler;
+to `compiler.init` is the shape 575 (8) fixes) · **After:** 144 B-136 and B-138 on the main checkout's compiler;
 before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `builtins.d.bp`)
 
 - [x] 144 B-136's codemod over every `.bp` / `.bpp`, example and test: `comptime x: @Expr<T>` → `comptime x: T` /
@@ -171,7 +171,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `compiler.*`; the seven identifiers `compiler` of `rakun-cli`'s tests renamed
 - [x] decision 576's rewrites, by B-136's codemod: `q.parts()` / `source()` / `context()` / `lookup` / `fail` … → `compiler.<m>(q, …)`, `-> @ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`, `Span` / `Part` / `CustomNode` from `compiler.bp`; a declaration handle's reads through `compiler.*`
 - [x] the string `setMeta(key, value)` and its readers on typed meta records, a record per decorator (576 (11)); a meta field `@Expr<T>` → `T` (576 (12))
-- [ ] rakun-bpp's routes without `Declared<T>` (576 (7)) — with B-137's final package (the run-time `@TypeInfo.all` removed): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.compile` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
+- [ ] rakun-bpp's routes without `Declared<T>` (576 (7)) — with B-137's final package (the run-time `@TypeInfo.all` removed): `#[page]`, `#[layout]`, `#[template]`, `#[defaultView]` each `compiler.init` their function's registration with its segment; `jhRegisterRoutes` and the run-time `@TypeInfo.all` calls (rakun-ssr's `start.bp` / `generate.bp`, `client.bp`, `context.bp`) go; the registry orders layouts, templates, pages, default views itself
 - [x] 144 B-138's codemod: `#[@External.X(…)]` → `#[@external(.X(…))]` (~1740 sites)
 - [x] every `@emit` (23 files — `rakun/src/{decorators,context,autoconfig,config,conditions,lifecycle}.bp`,
       `rakun/src/actuator_api/registration.bp`, `rakun-service/src/convention.bp`, `rakun-app/src/{route_handler,
@@ -179,7 +179,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `rakun-security/src/method_security.bp`, `rakun-scheduling/src/{markers,jobstore/markers}.bp`,
       `rakun-messaging/src/markers.bp`, `rakun-websocket/src/endpoint.bp`, `rakun-bpp/src/routes.bp`,
       `rakun-cli/src/plugins.bp`; jhonstart's `routes.bp`): a `val __rk*` registration →
-      `val declName = compiler.name(decl); compiler.compile({ -> rkRegisterX(declName, decl); }) (611)`; the generated functions beside a type
+      `val declName = compiler.name(decl); compiler.init({ -> rkRegisterX(declName, decl); }) (611)`; the generated functions beside a type
       (`__rkBind_` / `__rkCheck_` / `__rkAutoGated_` / `__rkNew_` / `http…`) → static members by typed `addMember`
       (`Name.bindProperties(prefix)` — not `bind`, validation's `#[validated]` owns it (327) —, `Name.check()`, `Name.gated()`, `Name.new()`, `Name.http()`); the generated types `<Name>Tx` /
       `Http…` → a template text `` @`…` `` answering the type, handed to `addType`; rakun-bpp's `<Name>Params(route)` →

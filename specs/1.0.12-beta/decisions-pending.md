@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **615**.
+number, which is **616**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -749,7 +749,7 @@ group), answered before every other part of this page; in the order of the steps
 
 #### 165-d · Code computed at build, with `@emit` gone: how a decorator writes a member whose body it computes (decisions 576 (14), 577, 578, 605; front 165 s10, 144 B-140)
 - **Proposed (opus, 2026-10-17; built as (c) for now, awaiting the maintainer):** **(a).**
-- **Measured.** rakun has members whose body depends on what reflection finds: the methods found by reflection (routes, beans, lifecycle hooks and listeners, advice, CLI commands, schedules, jobs, messaging listeners, autoconfig beans), a type named in an annotation string (`#[imports]`), and constructors built over a type's fields (`bind`, `new`, `gated`). An executor's tree is written literally, and a template text `` @`…` `` holds no computed part. So 165 s10 writes these members as static members in the string `addMember(source)` form: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, and the bodies of `bind`, `new` and `gated`. Each is run by `compiler.compile({ -> decl.rkX(); })`. 576 (14) keeps the string form only until B-140, which removes it.
+- **Measured.** rakun has members whose body depends on what reflection finds: the methods found by reflection (routes, beans, lifecycle hooks and listeners, advice, CLI commands, schedules, jobs, messaging listeners, autoconfig beans), a type named in an annotation string (`#[imports]`), and constructors built over a type's fields (`bind`, `new`, `gated`). An executor's tree is written literally, and a template text `` @`…` `` holds no computed part. So 165 s10 writes these members as static members in the string `addMember(source)` form: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, and the bodies of `bind`, `new` and `gated`. Each is run by `compiler.init({ -> decl.rkX(); })`. 576 (14) keeps the string form only until B-140, which removes it.
 - **Options.**
   (a) `compiler.build(text) -> anyvalue` is allowed in a decorator body. Its result is held in a body `val` and spliced into an executor or a typed member, so the text is checked where it is spliced.
   ```bp

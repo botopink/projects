@@ -144,7 +144,7 @@ O tipo do evento sai da assinatura da função, pelo padrão `expr decl: fn(e: E
 // rakun/src/events.bp
 pub fn on<E>(expr decl: fn(e: E) -> unknown) {
     // o registro de run time é escrito pelo executor do decorator (575 (3), 581)
-    compiler.compile({ -> eventRegistry.add<E>(decl) });
+    compiler.init({ -> eventRegistry.add<E>(decl) });
 }
 
 // publish percorre o registro que os executores preencheram, na ordem do código (580)

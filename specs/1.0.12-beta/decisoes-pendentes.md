@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **615**.
+número livre, que é **616**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -749,7 +749,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 #### 165-d · Código calculado no build, sem `@emit`: como um decorator escreve um membro cujo corpo ele calcula (decisões 576 (14), 577, 578, 605; frente 165 s10, 144 B-140)
 - **Proposta (opus, 2026-10-17; construída como (c) por ora, aguardando o mantenedor):** **(a).**
-- **Medido.** O rakun tem membros cujo corpo depende do que a reflexão encontra: os métodos encontrados por reflexão (rotas, beans, hooks e listeners de ciclo de vida, advice, comandos da CLI, agendamentos, jobs, listeners de mensageria, beans de autoconfig), um tipo nomeado numa string de anotação (`#[imports]`), e construtores montados sobre os campos de um tipo (`bind`, `new`, `gated`). A árvore de um executor é escrita literalmente, e um texto de template `` @`…` `` não guarda parte calculada. Por isso o 165 s10 escreve esses membros como membros estáticos na forma string `addMember(source)`: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, e os corpos de `bind`, `new` e `gated`. Cada um é rodado por `compiler.compile({ -> decl.rkX(); })`. A 576 (14) mantém a forma string só até o B-140, que a remove.
+- **Medido.** O rakun tem membros cujo corpo depende do que a reflexão encontra: os métodos encontrados por reflexão (rotas, beans, hooks e listeners de ciclo de vida, advice, comandos da CLI, agendamentos, jobs, listeners de mensageria, beans de autoconfig), um tipo nomeado numa string de anotação (`#[imports]`), e construtores montados sobre os campos de um tipo (`bind`, `new`, `gated`). A árvore de um executor é escrita literalmente, e um texto de template `` @`…` `` não guarda parte calculada. Por isso o 165 s10 escreve esses membros como membros estáticos na forma string `addMember(source)`: `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners`, e os corpos de `bind`, `new` e `gated`. Cada um é rodado por `compiler.init({ -> decl.rkX(); })`. A 576 (14) mantém a forma string só até o B-140, que a remove.
 - **Opções.**
   (a) `compiler.build(text) -> anyvalue` é permitido no corpo de um decorator. O seu resultado é guardado num `val` do corpo e emendado num executor ou num membro tipado, então o texto é checado onde é emendado.
   ```bp
