@@ -2573,6 +2573,7 @@ covers only the `#[@Family]` forms.
 - [ ] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
 - [ ] (question b146-a) in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
 - [ ] an imported generic function called with an explicit type argument (`resolve<Box>(…)`) is refused "`resolve` takes no type arguments, 1 given" — found by B-146; a cell red on the parent
+- [ ] a decorator argument's enum value read at build by its bare type name: with a second same-named enum anywhere in the program (another dependency or the annotating module), `#[kit.m(lifecycle: .Manual)]` checks and the decorator body runs with the wrong variant (`Eager`) — `decoratorArgValue` re-reads the argument as source and `blockEval.typesReached` resolves types by name; the value must carry the parameter's type identity (module + name, 603) — a cell with two `Lifecycle` enums red on the parent
 
 ### B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
