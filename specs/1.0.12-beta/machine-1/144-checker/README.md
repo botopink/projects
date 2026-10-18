@@ -2621,6 +2621,12 @@ Front 166's decision cells are written as drafts before they compile; the first 
 
 - [ ] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent; markdown's 330 draft meets the same (166 s3, markdown)
 - [ ] in a nested pattern a bare nullary variant binds a variable instead of matching the variant: `Error(NotAllowedOnHost)` and `Error(Timeout)` as `case` arms over a `Result<T, HttpError>` — erlang warns `variable 'NotAllowedOnHost' is unused`, commonJS takes the first arm for every error; at the top of a `case` the bare variant matches (std's `Method.verb`); a bare name inside a pattern that resolves to a nullary variant of the matched type is that variant (154's rule for expression position, applied to patterns), a binder only when no variant has the name; cell `nested_pattern_nullary_variant` (four targets), red on the parent (166 s3, http's 623 draft)
+- [ ] a dotted variant with a payload in an annotation argument is refused: `#[load(.Lazy(afterMs: 5))]` against a parameter typed by
+      the decorator's enum says nothing tells which type declares `.Lazy` — the parameter's declared type tells it, as for a nullary
+      `.Eager` (587, 603); cell `annotation_argument_dot_variant_payload`, red on the parent (found by B-146)
+- [ ] a dotted variant passed to a function another module declares is `unbound variable`: `phase.describe(.Slow)` with
+      `pub fn describe(p: Phase) -> string` in `phase` — the parameter's declared type resolves it (587); cell
+      `dot_variant_argument_imported_fn` (four targets), red on the parent (found by B-146)
 
 Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its defect as a box here (checker) or as a 164 row (comptime on wasm, machine 2).
 

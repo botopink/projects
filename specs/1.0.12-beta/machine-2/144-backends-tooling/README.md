@@ -2951,6 +2951,7 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] beam: a `for` lambda loop loses a module (rakun loops by index), and `registry.find("store")?.name ?? "none"` answers `none` where the entry exists
 - [ ] wasm: a generic function returning `T` from `e is fn() -> T` then `e()` prints garbage (`276`) — the type parameter's slot not monomorphised; found by B-146
 - [ ] erlang: `await e.view()` where `view` is a record field holding a component lambda is emitted as a method call (`function view/1 undefined`) — found by 150 s34
+- [ ] wasm: a generic method answering `?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 
