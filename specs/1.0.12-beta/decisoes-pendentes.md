@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**97 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**96 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **660**.
+número livre, que é **661**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -632,16 +632,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) Uma função comum pode desembrulhar um `Component<T>` sabidamente já resolvido: uma mudança no compilador, uma linha do 144.
 - **Recomendação.** (a): nada em montar uma folha de estilos é assíncrono, e o encadeamento fica. A medir antes: cada corpo de `toStyled()`, conferindo se algum faz `await`.
 - **Bloqueia.** O 150 s34, e o marcador "a method's behavior-typed parameter" em `layers.bp`.
-
-#### 165-h · O código de uma dependência declarada que nenhum módulo importa roda os seus executores de init? (decisões 580, 615, 551; frente 165 s5)
-- **Proposta (coordenador, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** O pacote `alpha` declara `#[rakun.module] pub component fn web() -> Component<Service>`, cujo decorator o registra por um executor `compiler.init`. O `main` do programa importa só `rakun` e lista `alpha` como dependência. O executor de `web` nunca roda, então o registro fica vazio. Acrescentar `import {alpha.web} from "alpha";` o faz rodar. O plug-and-play do rakun (165 s5: `rakun.boot()` monta todo módulo de todo pacote declarado) precisa do primeiro caso. `boot_modules` importa um nome de cada pacote para contornar isso.
-- **Opções.**
-  (a) Todo módulo de toda dependência declarada entra no build, e os seus executores `init` entram na lista de init em ordem de dependência (a regra da 580 entre pacotes), importados ou não.
-  (b) Só módulos importados rodam os seus executores. Um pacote que quer os seus registros rodados é importado por nome (o comportamento de hoje), e o plug-and-play escreve um import por pacote.
-  (c) Um pacote marca os módulos cujos executores rodam sem import (um campo do `botopink.json`, p. ex. `"init": ["src/web.bp"]`).
-- **Recomendação.** (a): uma dependência declarada faz parte do programa, e a 580 já ordena os executores pela posição da declaração. A (c) acrescenta um campo de manifesto para o mesmo efeito.
-- **Bloqueia.** A metade "um pacote acrescentado é descoberto" do 165 s5; `boot_modules` mantém os seus imports até a resposta.
 
 #### b146-a · `v is T` onde `T` é um parâmetro de tipo da função que o envolve (144 B-146)
 - **Proposta (coordenador, 2026-10-18; aguardando o mantenedor):** **(a).**

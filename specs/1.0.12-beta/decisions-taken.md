@@ -4,7 +4,7 @@ The rules the fronts implement against. Numbers continue from
 [1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](decisions-pending.md) under a lettered id and moves here with the next
-free number. **The next free number is 660.**
+free number. **The next free number is 661.**
 
 Each row: number · the id it answered · the rule in force · the fronts it binds · the cell's slug (647), empty for a one-liner or a row tagged `process` (a row that fixes no program behaviour). Each rule is stated
 once, as in force: a row amended by a later one states only what is in force and cites the
@@ -477,6 +477,7 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 | 657 | 07-h · (the maintainer, 2026-10-18) | **Overtaken by 326: the shared libraries are repositories and ordinary dependencies; option (a), bundled, is gone.** | `machine-1/150` | |
 | 658 | own-a · (the maintainer, 2026-10-18) | **Overtaken by 433 (1) and fronts.md § Ownership: botopink-lang's runners are 144's, the meta's `scripts/**` 163's.** | `machine-2/163` | |
 | 659 | 119-a · (the maintainer, 2026-10-18) | **Closed: the box that read it (150 s32 step 1's grep) is ticked citing it, and nothing else reads it.** | `machine-1/150` | |
+| 660 | 165-h · (the maintainer, 2026-10-18) | **(a): every module of every declared dependency is part of the program — it joins the build and its `compiler.init` executors join the init list whether or not anything imports it — and the init list is ordered by dependency resolution: a package that depends on nothing first, a package after every package it depends on, the ones with most dependencies last; two packages at the same level in the order their dependant's `botopink.json` lists them; inside a package, 580's order (modules in dependency order, declarations in source order).** `import` brings names into scope and nothing else; being declared is what makes a package's registrations run. `"dependencies": { "rakun": …, "alpha": … }` suffices for `#[rakun.module] pub component fn web()` of `alpha` to register, and `rakun`'s executors run before `alpha`'s because `alpha` depends on `rakun`; `rakun-ssr`'s after `rakun`'s for the same reason. (b) made `import` carry a second meaning and plug-and-play a list of imports; (c) said "part of the program" twice (the dependency and an `init` field). Cost: every module of a declared dependency is analysed, its dead code still not emitted. Cells: `init_order_packages` (three packages, the dependency order and the manifest tie-break), `dependency_init_without_import` (`boot_modules` loses its work-around imports). | `machine-1/165` s5 · `machine-1/144` B-137 | |
 
 ## Bundled libraries
 
