@@ -155,11 +155,11 @@ group), answered before every other part of this page; in the order of the steps
 
   // page.bp
   import {themeContext} from "theme";
-  fn Page(dark: bool) -> Component<Element> {
+  component fn Page(dark: bool) -> Component<Element> {
       use provide(themeContext, Theme(primary: "#111", cls: "dark"));   // (a)
       return <Card/>;
   }
-  fn Card() -> Component<Element> {
+  component fn Card() -> Component<Element> {
       val t = use context(themeContext);     // Theme(primary: "#111", cls: "dark")
       return <div class={t.cls}>…</div>;
   }
