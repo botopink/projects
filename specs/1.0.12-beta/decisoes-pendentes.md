@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**92 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**91 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **667**.
+número livre, que é **668**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -40,7 +40,6 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
-| 2 | **b146-a** — `v is T` com `T` um parâmetro de tipo da função que o envolve (§ Máquina 1) | se um teste `is` indecidível é recusado no teste, reificado em run time, ou permitido só no wasm | a terceira caixa do B-146 | (a) recusado, `is-type-parameter` |
 
 Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga), **B-98-a** (um `.bp` e um `.d.bp` de mesmo
@@ -574,16 +573,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) É resolvido no módulo host, como construído hoje. O decorator escreve nomes qualificados.
 - **Recomendação.** (a): uma regra para o código que um decorator escreve, qualquer que seja a forma que o carrega.
 - **Bloqueia.** Nada hoje (construída como (b) com nomes qualificados).
-
-#### b146-a · `v is T` onde `T` é um parâmetro de tipo da função que o envolve (144 B-146)
-- **Proposta (coordenador, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** Num corpo genérico, `v is T` responde false no erlang e no beam, aborta no commonJS, e é recusado no wasm ("a type parameter's slot is not monomorphised"). Os parâmetros de tipo são apagados em runtime, então nada pode decidir o teste. Encontrado pela frente 165 s5 (o registro do rakun), que contorna isso.
-- **Opções.**
-  (a) `x is T` com `T` um parâmetro de tipo da função que o envolve é recusado no teste, localizado, código `is-type-parameter`, nomeando o parâmetro. Um programa testa um tipo concreto, ou recebe um argumento `type<T>` e compara por `compiler.*` no build.
-  (b) `T` é reificado em runtime em todo alvo: cada chamada genérica passa os seus argumentos de tipo.
-  (c) É permitido só onde `T` é ligado por monomorfização (wasm), e recusado nos outros.
-- **Recomendação.** (a): um teste que não pode ser decidido é recusado, nunca respondido `false`. A (b) muda a convenção de chamada de toda chamada genérica, e a (c) faz o sentido de um programa depender do seu alvo.
-- **Bloqueia.** A terceira caixa do B-146.
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**92 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**91 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **667**.
+number, which is **668**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -40,7 +40,6 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
-| 2 | **b146-a** — `v is T` with `T` a type parameter of the enclosing function (§ Machine 1) | whether an undecidable `is` test is refused at the test, reified at run time, or allowed on wasm only | B-146's third box | (a) refused, `is-type-parameter` |
 
 Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name), **B-98-a** (a `.bp` and a `.d.bp` of one stem, built as
@@ -574,16 +573,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) It resolves in the host module, as built today. The decorator writes qualified names.
 - **Recommendation.** (a): one rule for code a decorator writes, whatever form carries it.
 - **Blocks.** Nothing today (built as (b) with qualified names).
-
-#### b146-a · `v is T` where `T` is a type parameter of the enclosing function (144 B-146)
-- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** In a generic body, `v is T` answers false on erlang and beam, aborts on commonJS, and is refused on wasm ("a type parameter's slot is not monomorphised"). Type parameters are erased at run time, so nothing can decide the test. Found by front 165 s5 (rakun's registry), which works around it.
-- **Options.**
-  (a) `x is T` with `T` a type parameter of the enclosing function is refused at the test, located, code `is-type-parameter`, naming the parameter. A program tests a concrete type, or takes a `type<T>` argument and compares through `compiler.*` at build.
-  (b) `T` is reified at run time on every target: each generic call passes its type arguments.
-  (c) It is allowed only where `T` is bound by monomorphisation (wasm), and refused elsewhere.
-- **Recommendation.** (a): a test that cannot be decided is refused, never answered `false`. (b) changes every generic call's calling convention, and (c) makes a program's meaning depend on its target.
-- **Blocks.** B-146's third box.
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
