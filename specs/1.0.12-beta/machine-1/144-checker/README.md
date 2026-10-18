@@ -2561,6 +2561,14 @@ covers only the `#[@Family]` forms.
 - [ ] such an annotation is refused at the annotation, located, naming what `name` is (nothing, a namespace, a value);
       a refusal cell per kind, red on the parent; no library site measured to rely on the silence (each found, listed)
 
+### B-146 — three checker defects found by 165 s5
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured; repros in rakun's `AGENTS.md`)
+
+- [ ] a decorator body that reads `compiler.catalogue(with: …)` (`compiler.find` after B-137's package) makes every importer of its module fail `typeinfo-all-imported`; only a template body is exempt, yet 551 says a catalogue read in a dependency answers for that dependency alone — a cell red on the parent
+- [ ] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
+- [ ] in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
+
 ### B-140 — `types.bp` in botopink: `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139

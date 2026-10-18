@@ -789,6 +789,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): nothing about building a stylesheet is asynchronous, and the chain stays. To be measured first: each `toStyled()` body, checking whether any of them awaits.
 - **Blocks.** 150 s34, and the marker "a method's behavior-typed parameter" in `layers.bp`.
 
+#### 165-h · Does a declared dependency's code that no module imports run its init executors (decisions 580, 615, 551; front 165 s5)
+- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** Package `alpha` declares `#[rakun.module] pub component fn web() -> Component<Service>`, whose decorator registers it through a `compiler.init` executor. The program's `main` imports only `rakun` and lists `alpha` as a dependency. `web`'s executor never runs, so the registry is empty. Adding `import {alpha.web} from "alpha";` makes it run. rakun's plug-and-play (165 s5: `rakun.boot()` mounts every module of every declared package) needs the first. `boot_modules` imports one name from each package to get around it.
+- **Options.**
+  (a) Every module of every declared dependency joins the build, and its `init` executors join the init list in dependency order (580's rule across packages), whether or not something imports from it.
+  (b) Only imported modules run their executors. A package that wants its registrations run is imported by name (today's behaviour), and plug-and-play writes one import per package.
+  (c) A package marks the modules whose executors run without an import (a field of `botopink.json`, e.g. `"init": ["src/web.bp"]`).
+- **Recommendation.** (a): a declared dependency is part of the program, and 580 already orders executors by declaration position. (c) adds a manifest field for the same effect.
+- **Blocks.** 165 s5's "a package dropped in is discovered" half; `boot_modules` keeps its imports until answered.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

@@ -257,7 +257,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 165 rakun-workspace
 
-- [ ] 165 s5 — `rakun.boot()` and each package declaring its module (rakun drops its empty `rakun.d.bp` to keep the module `rakun`, B-98) · decision 581 (`#[module]` over a `component fn() -> Component<Service>`, the registry written by its executor); s10
+- [ ] 165 s5 — landed: `#[rakun.module]` over a component fn, `Service` / `Lifecycle` / `Module`, `use inject` / `use onStop`, `rakun.boot()` over a `ServiceScope`, `#[rakun.config]`, `boot_modules`; left: the two build errors (B-146's catalogue read) and discovery without imports (question 165-h) · B-146 · 165-h
 - [ ] 165 s7 — Conformance, the front's last step · s5, s9
 
 ## L3 — ready to open now
