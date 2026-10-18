@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**89 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**87 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **671**.
+número livre, que é **672**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -537,15 +537,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
 
-#### b140-d · O que `compiler.text(f.defaultValue!)` responde para um default que não viaja (o default não fechado de um record importado) (decisões 598, s28-a; 144 B-140)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
-- **Medido.** O default de um campo atravessa um módulo só quando fechado (`travelled` descarta o resto); a 598 diz que `defaultValue` é o default "como escrito". Um tipo derivado construído a partir de um record importado escreve os defaults dos seus campos de volta no texto.
-- **Opções.**
-  (a) Esse campo chega com `defaultValue: null`, como viaja hoje: o tipo derivado o exige na construção.
-  (b) `defaultValue` guarda o texto como escrito, mas o texto do record derivado o omite.
-- **Recomendação.** (a): uma regra para um campo onde quer que seja lido.
-- **Bloqueia.** Nada (construído como (a) se não respondida).
-
 #### 577-a · Como um erro no código construído por um template encontra o seu lugar no texto do template: pela palavra que copia, ou pelas folhas de buraco que a sub-linguagem grava (decisões 577, 578; 144 B-136)
 - **Proposta (opus, 2026-10-18; construída como (a), aguardando o mantenedor):** **(a)** agora, **(b)** como passo posterior.
 - **Medido.** Uma sub-linguagem analisa os seus próprios buracos `${…}` a partir de `compiler.text(q)` e constrói código com `compiler.build(text)` (577). O texto construído não guarda ligação com a fonte do template, então o compilador precisa mapear um erro nele de volta. O query grava folhas de buraco que cobrem o `${missing}` inteiro, que nunca aparece no código construído. O rakun-style não grava folha nenhuma. Como construído em `infer.zig` `parseCodeTextAt` (`copiedAt`), todo identificador, número ou string que o código construído copia do texto do template é localizado na sua ocorrência ali. Casa palavras inteiras, varre para frente, e nunca olha dentro do trecho de uma folha. Nomes que o próprio módulo do template declara mantêm a sua localização antiga (`dsl_hygiene`). As quatro cells de recusa das bibliotecas e as cells `template_hole_error_at_column`, `_on_later_line` e `_far_in_built_code` seguram isso.
@@ -980,29 +971,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   d.metaAll(Check)              // Check<unknown>[]
   ```
 - **Recomendação.** (a).
-- **Bloqueia.** Nada — construído como (a).
-
-#### s28-a · O default de um campo de uma fonte importada que nomeia um binding de seu módulo (307)
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **Já respondida: decisão 421** ((a), como construído). Fechar removendo a entrada.
-- **Medido.** Construído: `Type.omit(Link, .href)` sobre um `Link(…, rel: string = defaultRel())` importado
-  copia o campo sem seu default — a regra que `registerExports` aplica ao parâmetro de uma função importada
-  (`infer.isClosedDefault`): um literal, `true` / `false`, `null`, um sinal, um array ou tupla desses
-  viaja, qualquer outra coisa não — então `NoHref(target: null)` é a recusa de campo ausente na
-  chamada (copiá-lo fez o erlc falhar: `function defaultRel/0 undefined`). Um default de enum (`= .Blank`) também não é
-  fechado.
-- **Opções.** (a) Como construído: o default não viaja, o campo é fornecido em toda construção.
-  (b) A derivação é recusada na chamada nomeando o campo (`derived-type-default-not-closed`).
-  (c) O default viaja, o módulo derivador chamando a função do módulo de origem (um import implícito).
-  Exemplo de (a):
-  ```bp
-  val NoHref = Type.omit(Link, .href);
-  val n = NoHref(target: null);           // error at the call: `rel` is missing
-  ```
-  Exemplo de (b):
-  ```bp
-  val NoHref = Type.omit(Link, .href);    // derived-type-default-not-closed: `rel`
-  ```
-- **Recomendação.** (a): nenhum import implícito, nenhum valor silencioso; (b) se um tipo derivado precisar manter todo default.
 - **Bloqueia.** Nada — construído como (a).
 
 #### s28-b · `Type.required` sobre um campo com default `null` (307)

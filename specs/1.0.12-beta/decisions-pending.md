@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**89 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**87 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **671**.
+number, which is **672**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -537,15 +537,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
 - **Blocks.** Nothing.
 
-#### b140-d · What `compiler.text(f.defaultValue!)` answers for a default that does not travel (an imported record's non-closed default) (decisions 598, s28-a; 144 B-140)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** A field's default crosses a module only when closed (`travelled` drops the rest); 598 says `defaultValue` is the default "as written". A derived type built from an imported record writes its fields' defaults back into the text.
-- **Options.**
-  (a) Such a field arrives with `defaultValue: null`, as it travels today: the derived type requires it at construction.
-  (b) `defaultValue` holds the text as written, but the derived record's text omits it.
-- **Recommendation.** (a): one rule for a field wherever it is read.
-- **Blocks.** Nothing (built as (a) unless answered).
-
 #### 577-a · How an error in template-built code finds its place in the template text: by the word it copies, or by the hole leaves the sub-language records (decisions 577, 578; 144 B-136)
 - **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a)** now, **(b)** as a later step.
 - **Measured.** A sub-language parses its own `${…}` holes from `compiler.text(q)` and builds code with `compiler.build(text)` (577). The built text keeps no link to the template's source, so the compiler must map an error in it back. query records hole leaves spanning the whole `${missing}`, which never appears in the built code. rakun-style records no leaves at all. As built in `infer.zig` `parseCodeTextAt` (`copiedAt`), every identifier, number or string the built code copies from the template text is located at its occurrence there. It matches whole words, scans forward, and never looks inside a leaf's span. Names the template's own module declares keep their old location (`dsl_hygiene`). The four library refusal cells and the cells `template_hole_error_at_column`, `_on_later_line` and `_far_in_built_code` hold it.
@@ -980,29 +971,6 @@ before every other part of this page; each holds one row, or nothing built.
   d.metaAll(Check)              // Check<unknown>[]
   ```
 - **Recommendation.** (a).
-- **Blocks.** Nothing — built as (a).
-
-#### s28-a · An imported source's field default that names a binding of its module (307)
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **Already answered: decision 421** ((a), as built). Close by removing the entry.
-- **Measured.** Built: `Type.omit(Link, .href)` over an imported `Link(…, rel: string = defaultRel())`
-  copies the field without its default — the rule `registerExports` applies to an imported function's
-  parameter (`infer.isClosedDefault`): a literal, `true` / `false`, `null`, a sign, an array or tuple of
-  those travels, anything else does not — so `NoHref(target: null)` is the missing-field refusal at the
-  call (copying it made erlc fail: `function defaultRel/0 undefined`). An enum default (`= .Blank`) is not
-  closed either.
-- **Options.** (a) As built: the default does not travel, the field is supplied at every construction.
-  (b) The derivation is refused at the call naming the field (`derived-type-default-not-closed`).
-  (c) The default travels, the deriving module calling the source module's function (an implicit import).
-  (a) example:
-  ```bp
-  val NoHref = Type.omit(Link, .href);
-  val n = NoHref(target: null);           // error at the call: `rel` is missing
-  ```
-  (b) example:
-  ```bp
-  val NoHref = Type.omit(Link, .href);    // derived-type-default-not-closed: `rel`
-  ```
-- **Recommendation.** (a): no implicit import, no silent value; (b) if a derived type must keep every default.
 - **Blocks.** Nothing — built as (a).
 
 #### s28-b · `Type.required` over a field with a `null` default (307)
