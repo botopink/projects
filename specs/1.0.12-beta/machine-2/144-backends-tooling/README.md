@@ -1889,7 +1889,9 @@ module-level tables (`everySpacingToken/0`, `front38TextLeaves/0`, `layoutLeaves
 - [x] the beam emitter splits or builds a large literal table within the assembler's limits; emilia's module assembles
       — a table counts its widest element's y-slots, not their sum (a 1100-row table assembled)
 - [ ] every emilia cell green on beam (`botopink cell check conformance/` in rakun) — emilia's `botopink.json` lists
-      commonJS and erlang only, so its cells read beam once rakun's emilia adds the target (a 165 consumer row)
+      commonJS and erlang only, so its cells read beam once rakun's emilia adds the target (a 165 consumer row); on
+      `2481d61c7` emilia's module (`rakun-stylesheet`, its `#[@External]` migrated by hand) assembles, and a 5000-row
+      table with a 14-way `.append` chain runs on beam — nothing left in botopink-lang
 - [x] a unit test the hook runs: a module with a literal table past the limit assembles (478)
 
 ### B-87 — erlang: a `var` reassigned inside a nested arm reaches a `defer` late (decision 539, amended)
@@ -2202,6 +2204,8 @@ write `process.Signal.Term`.
 Found by B-27 step 6: on beam a program's own `fn run(…)` is refused "`run` has no #[@External.<Target>] for the beam
 backend", and a program's `fn size(…)` answers `null`; commonJS and erlang call the user's function.
 
+- [ ] (staged, cell `user_fn_named_like_std`; the cause: `externalDeclFor` answered the std host declaration before
+      the program's own fn; `size` answering `null` did not reproduce) — landing once the hook is green (165 s10)
 - [ ] a user function named like a std binding (`run`, `size`) is the user's on beam — a cell on every target, red on
       beam today
 
@@ -2212,8 +2216,10 @@ backend", and a program's `fn size(…)` answers `null`; commonJS and erlang cal
 Found by B-27 step 6: `#(1, 2).toString()` aborts on beam with `unresolved_method`; commonJS and erlang print the
 tuple.
 
-- [ ] a tuple's `toString()` on beam answers the text the other targets print — a cell on every target, red on beam
-      today
+- [ ] a tuple's `toString()` on beam answers the text `@print` writes (`#(1, 2)`, `tuple_print`'s answer) — cell
+      `tuple_to_string`, red on beam on the parent; staged, landing once the hook is green (165 s10)
+- [ ] commonJS: a tuple's `toString()` answers `#(1, 2)`, not JavaScript's `Array.toString` (`1,2`) — the same cell
+- [ ] wasm: a tuple's `toString()` resolves (today `cannot resolve the call toString/0`) — the same cell
 
 ### B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused
 
@@ -2222,8 +2228,11 @@ tuple.
 Found by B-27 step 6: an `#[@External.Erlang("""…""")]` template matching `<<_/binary>>` or `<<"lit", X/binary>>`
 compiles on erlang and is refused on beam; std's templates were rewritten without such patterns.
 
-- [ ] beam accepts the binary patterns an Erlang host template writes (`X/binary`, a literal prefix) — a cell on erlang
-      and beam, red on beam today
+- [ ] beam accepts the binary patterns an Erlang host template writes — `X/binary` and a literal prefix already did; a
+      sized `X:N/binary`, `little` and `signed` whole-byte integers, and a literal prefix followed by an integer field
+      (beam answered `0` where erlang answers `121`) — cell `host_template_binary_patterns`, red on beam on the parent;
+      staged, landing once the hook is green (165 s10)
+- [ ] a `utf8` segment and `binary-unit:N` (`<<A:4/binary-unit:8>>` does not parse) — still refused on beam
 
 ### B-126 — std: an `FsError` carries its own text (decision 563)
 
