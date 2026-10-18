@@ -683,15 +683,21 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): std states the lineage, the compiler reads a value, and 599 (3) holds (no std name known to the compiler).
 - **Blocks.** B-140's derived-type piece (`types.bp`'s five bodies).
 
-#### b140-b · Which std module declares `DeclAnnotation` once `Type.Field<T>` is the one field record? (decisions 576 (13), 598, 599; 144 B-140)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a)**; **(b)** if B-139's `reflection.bp` lands first.
-- **Measured.** `Compiler.fields` answers `Type.Field<unknown>[]`, so `compiler.bp` imports `types.bp`; `Type.Field<T>.annotations` is `DeclAnnotation[]`, declared in `compiler.bp` (576 (13)), so `types.bp` imports `compiler.bp`. `stdModuleOrder` orders std by imports and has no cycle diagnostic: a cycle surfaces as an unknown type.
+#### b140-b · Which std module declares `Type.Field<T>` and `Type.Info<T>` once `compiler.bp` is self-contained and first (decisions 575 (3), 598, 599, 606 (3), 608; 144 B-139, B-140)
+- **Proposed (fable, 2026-10-18, re-read against 606–609; awaiting the maintainer):** **(a).**
+- **Measured.** 608 puts `DeclAnnotation`, `Decorator`, `Annotation`, `Method`, `Param`, `HookNode` and `DeclKind` in `compiler.bp`, with no `reflection.bp`. That rules out the earlier (a) and (b), but the cycle remains through the records 606 (3) keeps in `types.bp`.
+  - `types.bp` → `compiler.bp`: `Type.Field<T>.annotations: DeclAnnotation[]` and `Type.Info<T>.methods: Method[]`, plus the five bodies over `compiler.fields` / `compiler.buildType` (599 (3)).
+  - `compiler.bp` → `types.bp`: `Compiler.fields(d) -> Type.Field<unknown>[]`, `Compiler.typeInfo<T>(comptime t: type<T>) -> Type.Info<T>` (606 (3)), and the handle record `HookUse.typeArgs` (`TypeInfo<unknown>[]` today).
+  - Each std module is inferred seeing only the exports of the modules before it (`comptime.zig` ~4180), and `stdModuleOrder` admits no cycle. So `compiler.bp`, first, cannot name `types.bp`'s records.
+  - Today the cycle is hidden by prelude names (`decl_reflection_src`), which B-139 dissolves. B-139 meets it first, with `Type.Info<T>`.
+  - No library spells `Type.Field` or `TypeInfo<`; std and the cells do (27 files).
 - **Options.**
-  (a) `DeclAnnotation` and `Decorator` (which it names) move to `types.bp`; `import {types.DeclAnnotation} from "std"`; 576 (13)'s path updated (one importer today).
-  (b) A third module (B-139's `reflection.bp`) declares `DeclAnnotation`; `types.bp` and `compiler.bp` both import it.
-  (c) `Compiler.fields` answers `unknown[]`, the surface table types it: no cycle, no signature in std.
-- **Recommendation.** (a) now, (b) if `reflection.bp` is on `feat` first: every type std's signatures name is declared in a module both sides can import; (c) leaves a builtin without its signature (575 (2)).
-- **Blocks.** B-140's first piece (the field record).
+  (a) Both records are declared in `compiler.bp` (`Field<T>(name, type: anytype, annotations: DeclAnnotation[], defaultValue: ?anyvalue)`, `Info<T>(…)`). `types.bp` names them as `Type`'s associated aliases (`pub type Field<T> = compiler.Field<T>; pub type Info<T> = compiler.Info<T>;`), so programs keep writing `Type.Field<T>` / `Type.Info<T>`. 606 (3)'s "declared in `types.bp`" reads "named in `types.bp`". To measure: the parser accepting a generic alias in a type body.
+  (b) The records stay in `types.bp`, and a declare pass registers every std module's types before any signature is inferred, admitting a cycle for signatures only. This amends 608's "admitting no cycle".
+  (c) `Compiler.fields` / `typeInfo` / `HookUse.typeArgs` are typed `unknown` in `compiler.bp`, with the surface table typing them. 608 refuses this as two spellings.
+  (d) `Type` moves whole into `compiler.bp` and `types.bp` goes; every `import {types.Type}` changes.
+- **Recommendation.** (a): the records are the compiler's answers and live beside the behavior that gives them. The spelling programs write does not change, and 608 holds as written.
+- **Blocks.** B-139's modules box (`Type.Info<T>` with `compiler.bp` first) and B-140's piece 1.
 
 #### b140-c · In B-140, may a library declare its own `-> anytype` type builder, or only std's five functions? (decisions 578, 599 (3); 144 B-140)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
@@ -711,15 +717,15 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for a field wherever it is read.
 - **Blocks.** Nothing (built as (a) unless answered).
 
-#### b140-e · A meta record holding a `Type.Field<T>`, read at run time, once 599 removes the run-time field (decisions 298, 308, 599 (1); 144 B-140)
-- **Proposed (sonnet, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** Cell `meta_field_tuple_and_field_key` (298) records `Sort<Book>(by: .pages, keys: [.pages])` through `compiler.setMeta`, and `main` reads `@typeInfo(Book).meta(Sort)` at run time and prints `o?.by?.name`. Once B-140's first box removes the run-time key (599 (1): "a `Type.Field<T>` as a run-time value"), the read fails with `unbound variable 'pages'` at a synthetic location (`src/main.bp:1000002:31`). That is neither a located refusal nor a cell answer. 599 does not say what happens to a meta record whose field is a `Type.Field<T>`.
+#### b140-e · A meta record holding a `Type.Field<T>`, read at run time, once 599 removes the run-time field (decisions 298, 308, 575 (4), 599 (1), 606 (3); 144 B-140)
+- **Proposed (fable, 2026-10-18, re-read against 606–609; awaiting the maintainer):** **(a).**
+- **Measured.** Cell `meta_field_tuple_and_field_key` (298) records `Sort<Book>(by: .pages, keys: [.pages])` through `compiler.setMeta`, and `main` reads it at run time. Under 606 (3) the read is written `val o = comptime compiler.typeInfo(Book).meta(Sort);` (B-139's codemod). A `comptime` expression's value is spliced into the run-time body as a literal (575 (4)), and a `Type.Field<T>` has no run-time form (599 (1)). So the failure is the splice of `Sort(by: .pages, …)`: the `unbound variable 'pages'` at a synthetic location (`src/main.bp:1000002:31`) once B-140's first box removes the run-time key. 606 (3) also gives (b) a precedent in the same record: `Type.Field<T>.type: anytype` is a build-time value lowered as its name (575 (7)).
 - **Options.**
-  (a) Reading such a meta at run time is refused at the read, located, code `field-key-at-run-time`, the text naming the record's field and 599. The cell splits: the tuple half stays a run cell, and the field half becomes a refusal cell. A decorator still reads the record at build (`compiler.meta`).
-  (b) The field lowers to its name at run time, as a type value lowers to its name (575 (7)): `o?.by` is the string `"pages"`, and `Sort`'s run-time shape has `by: string`.
-  (c) `compiler.setMeta` refuses a record with a `Type.Field<T>` field: a meta record holds run-time data only.
-- **Recommendation.** (a): 599 keeps the field a build-time value, the refusal says so where the program meets it, and the build-time read stays.
-- **Blocks.** B-140's first box (the cell is red until answered).
+  (a) Refused at the `comptime` expression whose value holds a `Type.Field<T>`. The error is located at the `comptime`, with code `field-key-at-run-time`, and names the record's field (`Sort.by`) and 599. The decorator's build-time read stays. The cell splits: the tuple half runs, and the field half becomes a refusal cell.
+  (b) The field lowers to its name, as its own `type` member does: `o?.by` is `"pages"`, and `Sort`'s run-time shape is `by: string`, `keys: string[]`.
+  (c) `compiler.setMeta` refuses a record with a `Type.Field<T>` field.
+- **Recommendation.** (a): it refuses where the build value meets run time, a point 606 (3) now spells (`comptime`). (b) is cheapest, but it gives one record two shapes.
+- **Blocks.** B-140's first box (the cell is red on its branch).
 
 #### 577-a · How an error in template-built code finds its place in the template text: by the word it copies, or by the hole leaves the sub-language records (decisions 577, 578; 144 B-136)
 - **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a)** now, **(b)** as a later step.

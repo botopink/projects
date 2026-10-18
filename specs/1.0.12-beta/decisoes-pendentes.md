@@ -683,15 +683,21 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a std declara a linhagem, o compilador lê um valor, e a 599 (3) se mantém (nenhum nome da std conhecido pelo compilador).
 - **Bloqueia.** A peça de tipos derivados do B-140 (os cinco corpos do `types.bp`).
 
-#### b140-b · Qual módulo da std declara `DeclAnnotation` quando `Type.Field<T>` é o único record de campo? (decisões 576 (13), 598, 599; 144 B-140)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a)**; **(b)** se o `reflection.bp` do B-139 pousar antes.
-- **Medido.** `Compiler.fields` responde `Type.Field<unknown>[]`, então `compiler.bp` importa `types.bp`; `Type.Field<T>.annotations` é `DeclAnnotation[]`, declarado em `compiler.bp` (576 (13)), então `types.bp` importa `compiler.bp`. `stdModuleOrder` ordena a std pelos imports e não tem diagnóstico de ciclo: um ciclo aparece como tipo desconhecido.
+#### b140-b · Qual módulo da std declara `Type.Field<T>` e `Type.Info<T>` quando `compiler.bp` é autocontido e o primeiro (decisões 575 (3), 598, 599, 606 (3), 608; 144 B-139, B-140)
+- **Proposta (fable, 2026-10-18, relida contra 606–609; aguardando o mantenedor):** **(a).**
+- **Medido.** A 608 põe `DeclAnnotation`, `Decorator`, `Annotation`, `Method`, `Param`, `HookNode` e `DeclKind` em `compiler.bp`, sem `reflection.bp`. Isso descarta as antigas (a) e (b), mas o ciclo continua pelos records que a 606 (3) mantém em `types.bp`.
+  - `types.bp` → `compiler.bp`: `Type.Field<T>.annotations: DeclAnnotation[]` e `Type.Info<T>.methods: Method[]`, mais os cinco corpos sobre `compiler.fields` / `compiler.buildType` (599 (3)).
+  - `compiler.bp` → `types.bp`: `Compiler.fields(d) -> Type.Field<unknown>[]`, `Compiler.typeInfo<T>(comptime t: type<T>) -> Type.Info<T>` (606 (3)), e o record de handle `HookUse.typeArgs` (`TypeInfo<unknown>[]` hoje).
+  - Cada módulo da std é inferido vendo só as exportações dos módulos antes dele (`comptime.zig` ~4180), e `stdModuleOrder` não admite ciclo. Então `compiler.bp`, o primeiro, não pode nomear os records de `types.bp`.
+  - Hoje o ciclo fica escondido por nomes do prelude (`decl_reflection_src`), que o B-139 dissolve. O B-139 o encontra primeiro, com `Type.Info<T>`.
+  - Nenhuma biblioteca escreve `Type.Field` ou `TypeInfo<`; a std e as cells escrevem (27 arquivos).
 - **Opções.**
-  (a) `DeclAnnotation` e `Decorator` (que ele nomeia) vão para `types.bp`; `import {types.DeclAnnotation} from "std"`; o caminho da 576 (13) atualizado (um importador hoje).
-  (b) Um terceiro módulo (o `reflection.bp` do B-139) declara `DeclAnnotation`; `types.bp` e `compiler.bp` ambos o importam.
-  (c) `Compiler.fields` responde `unknown[]`, a tabela da superfície o tipa: sem ciclo, sem assinatura na std.
-- **Recomendação.** (a) agora, (b) se o `reflection.bp` estiver na `feat` antes: todo tipo que as assinaturas da std nomeiam é declarado num módulo que os dois lados podem importar; (c) deixa um builtin sem sua assinatura (575 (2)).
-- **Bloqueia.** A primeira peça do B-140 (o record de campo).
+  (a) Os dois records são declarados em `compiler.bp` (`Field<T>(name, type: anytype, annotations: DeclAnnotation[], defaultValue: ?anyvalue)`, `Info<T>(…)`). `types.bp` os nomeia como aliases associados de `Type` (`pub type Field<T> = compiler.Field<T>; pub type Info<T> = compiler.Info<T>;`), então os programas continuam escrevendo `Type.Field<T>` / `Type.Info<T>`. O "declared in `types.bp`" da 606 (3) passa a ler "named in `types.bp`". A medir: o parser aceitar um alias genérico num corpo de tipo.
+  (b) Os records ficam em `types.bp`, e uma passada de declaração registra os tipos de todo módulo da std antes de qualquer assinatura ser inferida, admitindo um ciclo só para assinaturas. Isso emenda o "admitting no cycle" da 608.
+  (c) `Compiler.fields` / `typeInfo` / `HookUse.typeArgs` são tipados `unknown` em `compiler.bp`, com a tabela da superfície tipando-os. A 608 recusa isso como duas grafias.
+  (d) `Type` vai inteiro para `compiler.bp` e `types.bp` sai; todo `import {types.Type}` muda.
+- **Recomendação.** (a): os records são as respostas do compilador e ficam ao lado do behavior que as dá. A grafia que os programas escrevem não muda, e a 608 se mantém como escrita.
+- **Bloqueia.** A caixa de módulos do B-139 (`Type.Info<T>` com `compiler.bp` primeiro) e a peça 1 do B-140.
 
 #### b140-c · No B-140, uma biblioteca pode declarar seu próprio construtor de tipo `-> anytype`, ou só as cinco funções da std? (decisões 578, 599 (3); 144 B-140)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
@@ -711,15 +717,15 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para um campo onde quer que seja lido.
 - **Bloqueia.** Nada (construído como (a) se não respondida).
 
-#### b140-e · Um meta record que guarda um `Type.Field<T>`, lido em runtime, quando a 599 remove o campo de runtime (decisões 298, 308, 599 (1); 144 B-140)
-- **Proposta (sonnet, 2026-10-17; aguardando o mantenedor):** **(a).**
-- **Medido.** A cell `meta_field_tuple_and_field_key` (298) grava `Sort<Book>(by: .pages, keys: [.pages])` por `compiler.setMeta`, e `main` lê `@typeInfo(Book).meta(Sort)` em runtime e imprime `o?.by?.name`. Quando a primeira caixa do B-140 remove a chave de runtime (599 (1): "a `Type.Field<T>` as a run-time value"), a leitura falha com `unbound variable 'pages'` num local sintético (`src/main.bp:1000002:31`). Isso não é nem uma recusa localizada nem uma resposta de cell. A 599 não diz o que acontece com um meta record cujo campo é um `Type.Field<T>`.
+#### b140-e · Um meta record que guarda um `Type.Field<T>`, lido em runtime, quando a 599 remove o campo de runtime (decisões 298, 308, 575 (4), 599 (1), 606 (3); 144 B-140)
+- **Proposta (fable, 2026-10-18, relida contra 606–609; aguardando o mantenedor):** **(a).**
+- **Medido.** A cell `meta_field_tuple_and_field_key` (298) grava `Sort<Book>(by: .pages, keys: [.pages])` por `compiler.setMeta`, e `main` o lê em runtime. Pela 606 (3) a leitura se escreve `val o = comptime compiler.typeInfo(Book).meta(Sort);` (codemod do B-139). O valor de uma expressão `comptime` é emendado no corpo de runtime como literal (575 (4)), e um `Type.Field<T>` não tem forma de runtime (599 (1)). Então a falha é a emenda de `Sort(by: .pages, …)`: o `unbound variable 'pages'` num local sintético (`src/main.bp:1000002:31`) quando a primeira caixa do B-140 remove a chave de runtime. A 606 (3) também dá à (b) um precedente no mesmo record: `Type.Field<T>.type: anytype` é um valor de build reduzido ao seu nome (575 (7)).
 - **Opções.**
-  (a) Ler esse meta em runtime é recusado na leitura, localizado, código `field-key-at-run-time`, o texto nomeando o campo do record e a 599. A cell se divide: a metade da tupla continua uma cell de execução, e a metade do campo vira uma cell de recusa. Um decorator ainda lê o record no build (`compiler.meta`).
-  (b) O campo é reduzido ao seu nome em runtime, como um valor de tipo é reduzido ao seu nome (575 (7)): `o?.by` é a string `"pages"`, e a forma de runtime de `Sort` tem `by: string`.
-  (c) `compiler.setMeta` recusa um record com um campo `Type.Field<T>`: um meta record guarda só dados de runtime.
-- **Recomendação.** (a): a 599 mantém o campo um valor de build, a recusa diz isso onde o programa o encontra, e a leitura no build fica.
-- **Bloqueia.** A primeira caixa do B-140 (a cell fica vermelha até a resposta).
+  (a) Recusado na expressão `comptime` cujo valor guarda um `Type.Field<T>`. O erro é localizado no `comptime`, com o código `field-key-at-run-time`, e nomeia o campo do record (`Sort.by`) e a 599. A leitura no build do decorator fica. A cell se divide: a metade da tupla roda, e a metade do campo vira uma cell de recusa.
+  (b) O campo é reduzido ao seu nome, como o seu próprio membro `type`: `o?.by` é `"pages"`, e a forma de runtime de `Sort` é `by: string`, `keys: string[]`.
+  (c) `compiler.setMeta` recusa um record com um campo `Type.Field<T>`.
+- **Recomendação.** (a): recusa onde o valor de build encontra o runtime, um ponto que a 606 (3) agora escreve (`comptime`). A (b) é mais barata, mas dá duas formas a um record.
+- **Bloqueia.** A primeira caixa do B-140 (a cell está vermelha na sua branch).
 
 #### 577-a · Como um erro no código construído por um template encontra o seu lugar no texto do template: pela palavra que copia, ou pelas folhas de buraco que a sub-linguagem grava (decisões 577, 578; 144 B-136)
 - **Proposta (opus, 2026-10-18; construída como (a), aguardando o mantenedor):** **(a)** agora, **(b)** como passo posterior.
