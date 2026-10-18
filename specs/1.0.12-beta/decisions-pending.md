@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -674,6 +674,24 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The static stays called through the contract's name (`String.fromCodepoint`), dispatched to the one type that provides it.
 - **Recommendation.** (a): one name per member, the type's.
 - **Blocks.** B-148's third piece.
+
+#### b137-c · Does 614's build-time evaluation of `compiler.*` reach `addMember` / `wrapWith` trees, or only an executor? (decisions 611, 614; 144 B-137)
+- **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a).**
+- **Measured.** 614 evaluates a `compiler.*` call inside an executor at build and splices its answer, and withdraws `syntax-captures-build`. As built, the evaluation applies to executors only. Inside an `addMember` or `wrapWith` tree a `compiler.*` call is still refused, with the old code `syntax-captures-build`.
+- **Options.**
+  (a) As built: the evaluation is the executor's; the other trees keep the refusal, under its old name.
+  (b) Every `syntax` tree a decorator hands the compiler (`addMember`, `wrapWith`, `init`) folds its `compiler.*` calls at build; the refusal goes everywhere.
+- **Recommendation.** (b): 614 withdraws the refusal, and one rule for every tree is what a reader expects.
+- **Blocks.** Nothing built waits (built as (a) unless answered).
+
+#### b137-d · Does `syntax-has-no-name` (612) at a decorator's argument carry a `called from` line? (decision 612; 144 B-137)
+- **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a).**
+- **Measured.** 612 asks for a `called from` line. A refusal at an annotation's argument carries none today, as `compiler.fail(at:)` carries none. The cell `compiler_name_of_lambda` holds the refusal without it.
+- **Options.**
+  (a) As built: the refusal at the argument, no `called from` line, like every refusal at an annotation's argument.
+  (b) Every refusal raised by a decorator at its annotation's argument gains the `called from` line naming the decorator body's call.
+- **Recommendation.** (a) here; (b) as its own step if wanted, for every such refusal at once.
+- **Blocks.** Nothing.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `String.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
