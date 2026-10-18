@@ -58,7 +58,7 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 | 14 | **146 s3** — validation's three API halves from 144 B-10: a comptime parameter's default (the gap closed), an argument read as a value, `#[each(email)]` | 598, 575 (4) | validation | sonnet | validation's gate |
 | 15 | **163 s8 last boxes** — a green `test.yml` run on `feat` for every library, read with `gh`; the dependency step one text | nothing | the libraries' workflows | haiku | `gh run list` |
 | 16 | **163 s12** — `scripts/land-check.py` (484): the coordinator's check before a landing — not written yet (`scripts/land-check.py` is missing) | 484 | `scripts/` | sonnet | the script over a known-good and a known-bad branch |
-| 17 | **150 s31**, **150 s34** — rakun-cache's racing-readers test asserts an order, not a deadline; `Sheet.add` over what `toStyled()` answers — after item 3 | nothing | rakun | sonnet | rakun's gate |
+| 17 | **150 s31**, **150 s34** — rakun-cache's racing-readers test asserts an order, not a deadline; `Sheet.add(layerName, item: Styleable) -> Sheet` storing `toStyled()`'s component value, resolved at `Sheet.render` (661, 504); the `StyledView` aliases removed — after item 3 | nothing | rakun | sonnet | rakun's gate |
 | 18 | **165 s7** — Conformance, the front's last step, after s5 and s9 | 465, 474, 477–480 | rakun | sonnet | `botopink cell check conformance/`; `feat`'s pipeline |
 
 ## The group's end

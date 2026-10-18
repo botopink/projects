@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**101 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**100 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **661**.
+number, which is **662**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -622,16 +622,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) It resolves in the host module, as built today. The decorator writes qualified names.
 - **Recommendation.** (a): one rule for code a decorator writes, whatever form carries it.
 - **Blocks.** Nothing today (built as (b) with qualified names).
-
-#### 150-s34-a · `Sheet.add` over a `Styleable` whose `toStyled()` answers `Component<Styled>`: an async `add`, or a plain function unwrapping a component (decisions 280, 432; front 150 s34)
-- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 150 s34 makes `Sheet.add(layerName, item: Styleable)` take the `Styled` that `item.toStyled()` answers. `toStyled()` returns `Component<Styled>`, and `await` in a plain function is refused (`await-without-async`: it needs a `Task` / `Stream` / `Component` return; rakun-stylesheet's `layers.bp`). So `add` cannot unwrap the item unless it becomes async itself. The tests and cells chain `Sheet.add(…).add(…)`.
-- **Options.**
-  (a) `toStyled()` answers `Styled` (a styled value is data, not a rendered component); `add` stays a plain function and keeps its chain.
-  (b) `add` returns `Component<Sheet>` and its callers `await` each step, which breaks `.add().add()`.
-  (c) A plain function may unwrap a `Component<T>` known to be already resolved: a compiler change, a 144 row.
-- **Recommendation.** (a): nothing about building a stylesheet is asynchronous, and the chain stays. To be measured first: each `toStyled()` body, checking whether any of them awaits.
-- **Blocks.** 150 s34, and the marker "a method's behavior-typed parameter" in `layers.bp`.
 
 #### b146-a · `v is T` where `T` is a type parameter of the enclosing function (144 B-146)
 - **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(a).**
