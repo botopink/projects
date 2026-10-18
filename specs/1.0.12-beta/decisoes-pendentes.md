@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**47 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**46 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **715**.
+número livre, que é **716**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `View` do 144 B-10 G3.
-
-#### B-14-b · Em que ordem a fonte de um spread e os valores rotulados são avaliados? (decisão 359 (3), (6); 144 B-14)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): na ordem escrita** — todo argumento, a fonte de um spread incluída, é avaliado da esquerda para a direita como escrito, uma vez; os campos então se aplicam da esquerda para a direita, o posterior vencendo (359 (3)). Os argumentos de uma chamada são avaliados na ordem escrita em todo outro lugar; um spread não é exceção. Viável: `infer.inferRecordSpread` liga todo argumento com efeito colateral a um local na ordem escrita, não só a fonte. Mudanças: uma célula cuja fonte e um valor rotulado imprimem.
-- **Medido.** Uma fonte que não é um nome é ligada uma vez antes da chamada, então é avaliada antes de todo valor rotulado, mesmo um escrito antes dela: `Pessoa(nome: say("n"), ..make())` imprime `make` e depois `n`.
-- **Opções.**
-  (a) Ordem escrita.
-  ```bp
-  val p = Pessoa(nome: say("n"), ..make());   // prints n, then make
-  ```
-  (b) As fontes primeiro, depois os valores rotulados (como construído).
-  ```bp
-  val p = Pessoa(nome: say("n"), ..make());   // prints make, then n
-  ```
-- **Recomendação.** (a).
-- **Bloqueia.** A linha de ordem do 144 B-14.
 
 #### B-17-d · O estágio segue só declarações? (decisão 376 (2); 144 B-17)
 - **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim** — o estágio de uma chamada é o da declaração chamada; uma chamada de método ou por um valor de função não acrescenta nada (`Any`); um corpo de run que chama uma função com um parâmetro `syntax` (576 (1), 616; antes da 576: uma função comptime-`@Expr`) e lê o relógio é `build-and-run`, como a 376 escreve.

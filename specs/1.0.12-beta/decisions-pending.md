@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**47 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**46 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **715**.
+number, which is **716**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `View` row.
-
-#### B-14-b · In which order are a spread's source and the labelled values evaluated? (decision 359 (3), (6); 144 B-14)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): in the order written** — every argument, a spread's source included, is evaluated left to right as written, once; the fields then apply left to right, the later winning (359 (3)). A call's arguments evaluate in the order written everywhere else; a spread is no exception. Viable: `infer.inferRecordSpread` binds every argument with a side effect to a local in written order, not the source alone. Changes: a cell whose source and a labelled value both print.
-- **Measured.** A source that is not a name is bound once before the call, so it is evaluated before every labelled value, even one written before it: `Pessoa(nome: say("n"), ..make())` prints `make` then `n`.
-- **Options.**
-  (a) Written order.
-  ```bp
-  val p = Pessoa(nome: say("n"), ..make());   // prints n, then make
-  ```
-  (b) The sources first, then the labelled values (as built).
-  ```bp
-  val p = Pessoa(nome: say("n"), ..make());   // prints make, then n
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-14's order row.
 
 #### B-17-d · Does a stage follow declarations only? (decision 376 (2); 144 B-17)
 - **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes** — a call's stage is the called declaration's; a method call or a call through a function value adds nothing (`Any`); a run body that calls a function taking a `syntax` parameter (576 (1), 616; before 576: a comptime-`@Expr` function) and reads the clock is `build-and-run`, as 376 writes.

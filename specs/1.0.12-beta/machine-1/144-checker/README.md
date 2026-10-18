@@ -286,7 +286,7 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
       name, so `import {Contato as C}` then `Pessoa(...c, …)` with `c: C` does not reach `Contato`'s source — follow
       the alias; one cell
 - [ ] `..base` (decision 37) beside 359's `...src` · question B-14-a
-- [ ] a source that is not a name is evaluated before the labelled values, even one written after it · question B-14-b
+- [ ] decision 715: every argument evaluated in the order written, the spread's source where it stands, once; a spread copies field values only, the record's methods its type's — `record_spread_evaluation_order` re-recorded, `record_spread_copies_values_only`
 - [x] `Type.pick` / `omit` / `merge` of a `Type.partial` type, and `Type.required`: their lineage · decision 600, (b) as built; the two cells' comments renamed in B-140
 
 #### B-14 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
