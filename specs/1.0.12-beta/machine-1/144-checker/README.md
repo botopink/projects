@@ -123,7 +123,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [ ] G2: the same for styled's and emilia's markers — built: a method's behavior-typed parameter takes an
       implementer (`method_behavior_parameter_implementer`); a template-reached enum variant or private record no
       longer reproduces across a package. Left:
-- [ ] a bare variant in expression position (`Two(t)`) checks but fails on commonJS, erlang and beam · question B-10-d
+- [x] a bare variant in expression position (`Two(t)`) checks but fails on commonJS, erlang and beam · question B-10-d
 - [x] an imported enum's variant by dot-shorthand, the enum not imported (reached through a signature): unbound
       `Mode` on commonJS and erlang (beam and wasm right) — the backends import a type the module reaches only
       through a signature
