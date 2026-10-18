@@ -855,9 +855,8 @@ untouched — separate blocks stay separate, a list stays a list — and a list 
 pub type Account(…)                     // stays two blocks
 
 #[
-    @External.JavaScript(fn: mixBody),
-    @External.Erlang(fn: mixBody),
-    @External.Beam(fn: mixBody),
+    compiler.external(.Erlang("math:fmod($0, $1)"), .JavaScript("$0 % $1")),
+    serverOnly,
 ]
 fn mix(…) -> …                          // stays one list, one per line (trailing comma)
 ```
@@ -2692,8 +2691,8 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `.typescript` row of `parser/implementations.zig` and every reader); `.Node(` → `.JavaScript(` at every std and cell
       site (654 in all with the libraries', theirs in their fronts); `external_variants`, `translateExternalCells`, the
       readers; the enum in `conformance/docs.md` § `declare fn`; `"typings": true` in `botopink.json` switches the `.d.ts`
-      emission and `botopink build --typescript` goes (`main.zig`, `compiler-cli/AGENTS.md`, `scripts/tsc-check.sh`,
-      `dts_compiler_types.zig` on the manifest key)
+      emission beside `botopink build --typescript`, either turning it on (619, 620; `manifest`, `main.zig`,
+      `compiler-cli/AGENTS.md`, `conformance/docs.md`)
 - [ ] decision 617: `implement-with-body` on every bodied declaration, a behavior's `default fn` included — the exemption
       `ImplDecl.isDefault` goes, `implement_with_body` gains the behavior case; `primitives.bp`'s bodies-with-cells are
       B-146's to redistribute, so this box lands with B-146

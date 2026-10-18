@@ -416,7 +416,7 @@ Kept for open markers: `examples/city-entity-example.bp`, `examples/audit-and-re
 
 #### Step 6 — Scheduling and defaults (R16-1, RX-2) (was `15-rakun-messaging` s6)
 
-- [ ] R16-1 ("the parser is an ordinary compiled function; the decorator body calls it") closes once `01-compiler/14` step 6 lands (341): a host cell it reaches needs `@External.Beam` only (rakun declares `["erlang"]`); until then README records the inlined parser's size and the one-line change
+- [ ] R16-1 ("the parser is an ordinary compiled function; the decorator body calls it") closes once `01-compiler/14` step 6 lands (341): a host cell it reaches needs an `.Erlang` cell only — the beam target reads it (437; rakun declares `["erlang"]`); until then README records the inlined parser's size and the one-line change
 - [ ] RX-2 (15, 86, 90): decorator-argument default re-measured in `decorators_test.bp`, result recorded
 
 #### Step 7 — configuration as a typed record (decision 299) (was `15-rakun-messaging` s7)
