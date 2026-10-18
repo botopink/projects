@@ -277,6 +277,23 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
 
+#### 667-a · Como `v is t` chega ao tipo concreto: uma cópia especializada, ou o teste passado em tempo de execução (decisão 667; 144 B-146)
+- **Proposto (sonnet, 2026-10-18; construído como (b), retido do pouso):** (a) como a 667 a enuncia.
+- **Contexto.** 667: o parâmetro `comptime t: type<T>` é a especialização da função (417), então `e is t` é `e is Users` na cópia em que `get(Users)` compila.
+- **Medido.** A thread não construiu cópia. A chamada passa a função de teste `{ v -> v is Users }` em tempo de execução e o corpo a chama. `is_type_parameter_refused` e `is_comptime_type_parameter` respondem igual nos quatro alvos. Uma diferença visível: repassar `t` a outra chamada (`r.count(t)`) é recusado `expr-value-of-type`, onde uma cópia especializada conheceria `t` no build e aceitaria (417).
+- **Opções.**
+  (a) ★ Uma cópia por argumento de tipo, como a 667 enuncia: `t` é conhecido no build dentro da cópia, e repassá-lo é um argumento `comptime` conhecido no build.
+  ```bp
+  pub fn count<T>(self: Registry, comptime t: type<T>) -> i32 { … }
+  pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // accepted
+  ```
+  (b) O teste passado em tempo de execução (construído): sem cópias, as mesmas respostas, e `t` não pode ser repassado.
+  ```bp
+  pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // refused: expr-value-of-type
+  ```
+- **Recomendação.** (a): a leitura da própria decisão, e a única em que `t` se comporta como todo outro argumento `comptime`.
+- **Bloqueia.** O pouso da 667 (terceira caixa do B-146); as outras duas caixas do B-146 pousam sem ela.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
