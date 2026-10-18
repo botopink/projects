@@ -8,8 +8,10 @@ the ledger's `Cell` column (decisions 646, 647, 648).
   scripts/decision-cells.py scaffold [--list] [<repo>]   create the missing directories (docs.md + stub
                                                          draft/main.bp); --list prints what it would scaffold
                                                          and the rows it reads as process, writes nothing
-  scripts/decision-cells.py compile <repo>               build every draft/ in a scratch cell with
-                                                         `botopink cell check`; red on a refusal
+  scripts/decision-cells.py compile [--verbose] <repo>   build every draft/ in a scratch cell with
+                                                         `botopink cell check`; red on a refusal, the
+                                                         first error per target under each FAIL line
+                                                         (--verbose: the whole report of each)
   scripts/decision-cells.py promote <repo>               draft/ -> src/ + botopink.json (s4)
   scripts/decision-cells.py check                        CI check 7: consistency always, completeness
                                                          for the repositories in COMPLETE_REPOS
@@ -245,9 +247,30 @@ def find_botopink(root):
     return None
 
 
+def first_diagnostics(block):
+    """The first diagnostic line under each target header of one failing cell's report: a header is a
+    line indented by two spaces (`  <targets>: <what>`), its diagnostics are the deeper lines below it."""
+    found, head, taken = [], None, True
+    for ln in block:
+        if not ln.strip():
+            continue
+        if re.match(r"  \S", ln):
+            if head is not None and not taken:
+                found.append(head.strip())  # a header with no detail under it is itself the message
+            head, taken = ln, False
+        elif head is not None and not taken and not ln.lstrip().startswith(("candidate ", "+ botopink-cell")):
+            found.append(f"{head.strip()} -> {ln.strip()}")
+            taken = True
+    if head is not None and not taken:
+        found.append(head.strip())
+    return found
+
+
 def cmd_compile(root, args):
+    verbose = "--verbose" in args
+    args = [a for a in args if a != "--verbose"]
     if len(args) != 1:
-        print("usage: decision-cells.py compile <repo>", file=sys.stderr)
+        print("usage: decision-cells.py compile [--verbose] <repo>", file=sys.stderr)
         return 2
     repo = args[0]
     repo_dir = root / "repository" / repo
@@ -283,19 +306,32 @@ def cmd_compile(root, args):
     r = subprocess.run([str(binary), "cell", "check", str(scratch.relative_to(repo_dir))],
                        cwd=repo_dir, capture_output=True, text=True)
     out = r.stdout + r.stderr
-    red, cur = [], None
+    red, cur, blocks = [], None, {}
     for ln in out.splitlines():
         m = re.match(r"FAIL (\S+)", ln)
         if m:
             cur = Path(m.group(1)).name
+            blocks[cur] = []
             if "a new cell" not in ln:
                 red.append((cur, ln))
         elif "+ refused" in ln and cur:
             red.append((cur, ln.strip()))
+        if cur and not m:
+            if re.match(r"(ok   |cells: )", ln):
+                cur = None
+            else:
+                blocks[cur].append(ln)
     shutil.rmtree(scratch, ignore_errors=True)
     if red:
         for cell, ln in red:
             print(f"compile {repo}: {cell}: {ln}")
+            if ln.startswith("FAIL "):
+                if verbose:
+                    for b in blocks.get(cell, []):
+                        print(f"    | {b}")
+                else:
+                    for b in first_diagnostics(blocks.get(cell, [])):
+                        print(f"    {b}")
         print("front 166: the example above does not build")
         return 1
     print(f"compile {repo}: {len(mains)} examples build")

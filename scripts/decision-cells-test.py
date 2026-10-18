@@ -60,6 +60,34 @@ class Cells(unittest.TestCase):
             (c / "botopink.json").write_text(json.dumps({"name": c.name}))
         return c
 
+    def fake_compiler(self):
+        b = self.root / "repository/botopink-lang/zig-out/bin/botopink"
+        b.parent.mkdir(parents=True)
+        b.write_text("#!/bin/sh\ncat <<'EOF'\n"
+                     "FAIL .botopinkbuild/tmp/decision-cells/code_rule_ten-10\n"
+                     "  main on commonJS: the targets disagree\n"
+                     "    commonJS: error: type mismatch at src/main.bp:3:1\n"
+                     "    commonJS: more detail\n"
+                     "  main on erlang: broke\n"
+                     "    erlang: error: no such function foo\n"
+                     "cells: 1 checked - 0 passed, 1 failed\nEOF\nexit 1\n")
+        b.chmod(0o755)
+
+    def test_compile_keeps_the_error_of_a_failing_draft(self):
+        self.cell(10, T10)
+        self.fake_compiler()
+        code, out = self.run_cmd("compile", "snap")
+        self.assertEqual(code, 1, out)
+        lines = out.splitlines()
+        i = next(k for k, ln in enumerate(lines) if ln.startswith("compile snap: code_rule_ten-10: FAIL "))
+        self.assertIn("commonJS: error: type mismatch at src/main.bp:3:1", lines[i + 1])
+        self.assertIn("erlang: error: no such function foo", lines[i + 2])
+        self.assertNotIn("more detail", out)
+        self.assertIn("front 166: the example above does not build", out)
+        code, out = self.run_cmd("compile", "--verbose", "snap")
+        self.assertEqual(code, 1, out)
+        self.assertIn("more detail", out)
+
     def slug_on(self, n, slug):
         lines = (self.repo / "decisions-taken.md").read_text().split("\n")
         lines = [ln[:-1] + slug + " |" if ln.startswith(f"| {n} |") else ln for ln in lines]
