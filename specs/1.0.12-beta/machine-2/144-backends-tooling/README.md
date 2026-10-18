@@ -2891,9 +2891,10 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
 
 - [ ] the `Node` records in `compiler.bp`, one per kind the parser's `ast.Expr` has that a template may answer (`Call`, `Name`, `Lit`, `List`, `Arg`, `Lambda`, `Record`, `Field`, `If`, `Case`, …) — the vocabulary measured off the parser and written in `conformance/docs.md` § `compiler.ast`; a kind no template needs is not exposed
 - [ ] `fn ast(self: Self, comptime node: Node) -> anyvalue`: the tree checked and lowered where the call stands (426 (1)); an ill-formed tree (an `Arg` outside a `Call`, a `Name` nothing binds) refused at the `ast` call naming the node
+- [ ] **P1b, `code.bp`** (637, 625 (4)): the std module whose template `code` turns code written with `${…}` holes into the AST, a hole a build value (a literal) or a `syntax` value (spliced as written); `compiler.holes(syntax t: string) -> unknown[]`, the caller's holes as `syntax` values; the 11 hole cells and every template cell rewritten over `code` in P2 — no `Hole(index)` node
 - [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; `buildType(self, comptime name: string, comptime fields: compiler.Field<unknown>[], comptime implements: anytype[] = []) -> anytype` and `buildTypeInline(self, comptime fields: compiler.Field<unknown>[]) -> anytype` (629), the record-text form gone
 - [ ] the std bodies: `Type.pick` / `omit` / `partial` / `required` / `merge` over `buildType(name, fields)`, `mocks.bp`'s type over `implements:`; the template cells rewritten over `compiler.ast` (`bpp_*`'s `deps/markup`, `template_*`); `compiler.text(t)` unchanged
 - [ ] cells: `template_answers_ast` (four targets), `ast_ill_formed_refused`, `build_type_from_fields`, `compiler_build_removed` (refused as an unknown member)
-- [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `compiler.ast`; later, the std module `code.bp` — the template `code` (`` code @`…` `` with holes) over the AST, written in botopink, imported where used — its own step, opened when 625 (4) is scheduled
+- [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `code` / `compiler.ast`
 
 Oracle: the template cells on four targets; `test-libs`; the cold gate.

@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**112 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**111 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **637**.
+number, which is **638**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -666,15 +666,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The built type gains its methods through `addMember` on it, each an `ast` node (627's added member).
 - **Recommendation.** (b): one way to add a member, the one 627 already gives.
 - **Blocks.** B-149's last piece (P4), `mocks.bp`.
-
-#### b149-c · Is a caller's `${…}` hole a `Node` of B-149 (`Hole(index)`), or do the 11 hole cells wait for `code.bp`? (decisions 577 (1), 625 (4); 144 B-149)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** Today the built text carries a `__bp_hole_<q>_<i>` placeholder that `substituteHoles` replaces with the caller's expression, typed in the caller's scope (577 (1)). 625 (4) names a later std module `code.bp`. 11 template cells write holes.
-- **Options.**
-  (a) `Hole(index: i32)` is a `Node` of `compiler.bp` in B-149, the caller's i-th hole; a hole past the text's holes is `ast-ill-formed`.
-  (b) The hole cells keep `compiler.build` until `code.bp`; `build`'s removal waits for them.
-- **Recommendation.** (a): `build` goes in one step; the hole is already a placeholder the tree can name.
-- **Blocks.** B-149's first piece (the `Node` vocabulary).
 
 #### b149-d · How a template method reaches its receiver's code once `compiler.text(self) + ".greet(…)"` is no text: a `Syntax(e)` node? (decisions 616, 625; 144 B-149)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**

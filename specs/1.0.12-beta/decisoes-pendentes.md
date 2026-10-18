@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**112 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**111 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **637**.
+número livre, que é **638**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -666,15 +666,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) O tipo construído ganha seus métodos por `addMember` sobre ele, cada um um nó `ast` (o membro adicionado da 627).
 - **Recomendação.** (b): uma só forma de adicionar um membro, a que a 627 já dá.
 - **Bloqueia.** A última peça do B-149 (P4), `mocks.bp`.
-
-#### b149-c · Um buraco `${…}` do chamador é um `Node` do B-149 (`Hole(index)`), ou as 11 células de buraco esperam `code.bp`? (decisões 577 (1), 625 (4); 144 B-149)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** Hoje o texto construído carrega um marcador `__bp_hole_<q>_<i>` que `substituteHoles` troca pela expressão do chamador, tipada no escopo do chamador (577 (1)). A 625 (4) nomeia um módulo std posterior `code.bp`. 11 células de template escrevem buracos.
-- **Opções.**
-  (a) `Hole(index: i32)` é um `Node` de `compiler.bp` no B-149, o i-ésimo buraco do chamador; um buraco além dos buracos do texto é `ast-ill-formed`.
-  (b) As células de buraco mantêm `compiler.build` até `code.bp`; a remoção de `build` espera por elas.
-- **Recomendação.** (a): `build` sai em um passo; o buraco já é um marcador que a árvore pode nomear.
-- **Bloqueia.** A primeira peça do B-149 (o vocabulário de `Node`).
 
 #### b149-d · Como um método de template alcança o código do seu receptor quando `compiler.text(self) + ".greet(…)"` não é texto: um nó `Syntax(e)`? (decisões 616, 625; 144 B-149)
 - **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
