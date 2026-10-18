@@ -143,7 +143,7 @@ TOKEN = re.compile(
     r"(?P<oldname>\b\d\d-[a-z][a-z0-9-]*)" + STEP.format(n="ons") + r"|"
     r"(?P<word>\blibs/std\b|\blibs/actions\b|\bonze-cli\b|\blib-test-runner\b|\brakun\b|\bjhonstart\b|\bonze\b|\bemilia\b|\bstyled\b|\bdbcontext\b|\berika\b|(?<![\w/-])std\b)|"
     r"(?P<range>\b145\s*…\s*162\b)|"
-    r"(?P<bare>\b\d{2,3}\b)" + STEP.format(n="bs")
+    r"(?P<bare>(?<![\w-])\d{2,3}\b)" + STEP.format(n="bs")  # not the number of a step id such as B-146
 )
 
 
