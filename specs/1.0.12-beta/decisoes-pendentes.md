@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -32,6 +32,24 @@ poucas linhas — o problema, um exemplo, as opções, a recomendação e por qu
 opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coordenador transforma a resposta marcada numa decisão, e a pergunta sai desta lista.
 
 Nenhuma pergunta segura o trabalho da máquina 2 hoje; as abertas seguram uma linha cada, ou nada construído (§ Máquina 2).
+
+#### b137-c · A avaliação em tempo de build de `compiler.*` da 614 alcança as árvores de `addMember` / `wrapWith`, ou só um executor? (decisões 611, 614; 144 B-137)
+- **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
+- **Medido.** A 614 avalia uma chamada `compiler.*` dentro de um executor em tempo de build e encaixa sua resposta, e retira `syntax-captures-build`. Como construído, a avaliação se aplica só a executores. Dentro de uma árvore de `addMember` ou `wrapWith` uma chamada `compiler.*` continua recusada, com o código antigo `syntax-captures-build`.
+- **Opções.**
+  (a) Como construído: a avaliação é do executor; as outras árvores mantêm a recusa, sob seu nome antigo.
+  (b) Toda árvore `syntax` que um decorador entrega ao compilador (`addMember`, `wrapWith`, `init`) dobra suas chamadas `compiler.*` em tempo de build; a recusa sai de todo lugar.
+- **Recomendação.** (b): a 614 retira a recusa, e uma regra para toda árvore é o que um leitor espera.
+- **Bloqueia.** Nada construído espera (construído como (a) a menos que respondido).
+
+#### b137-d · `syntax-has-no-name` (612) no argumento de um decorador carrega uma linha `called from`? (decisão 612; 144 B-137)
+- **Proposto (opus, 2026-10-18; construído como (a), aguardando o mantenedor):** **(a).**
+- **Medido.** A 612 pede uma linha `called from`. Uma recusa no argumento de uma anotação não carrega nenhuma hoje, como `compiler.fail(at:)` não carrega nenhuma. A célula `compiler_name_of_lambda` guarda a recusa sem ela.
+- **Opções.**
+  (a) Como construído: a recusa no argumento, sem linha `called from`, como toda recusa no argumento de uma anotação.
+  (b) Toda recusa levantada por um decorador no argumento da sua anotação ganha a linha `called from` nomeando a chamada do corpo do decorador.
+- **Recomendação.** (a) aqui; (b) como passo próprio se desejado, para toda recusa assim de uma vez.
+- **Bloqueia.** Nada.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
