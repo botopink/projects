@@ -233,3 +233,4 @@ idle, because the older full-pool waiter cannot start and the small gate may not
       — built as: `scripts/gate-test.sh`, in a private pool. A running 1-job gate stands in for the first full-pool gate,
       because a running full-pool gate leaves no job to take. The test-only overrides are `BOTOPINK_POOL_CAPACITY` and
       `BOTOPINK_POOL_STAGGER`; the pool path stays fixed (67)
+- [x] decision 717 records the rule; the overrides stay, the test's alone

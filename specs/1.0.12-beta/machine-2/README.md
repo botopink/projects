@@ -67,7 +67,7 @@ step's README; what still waits on the maintainer is listed at the end and is **
 | 17 | **B-29 steps G–J's remaining boxes** (B-29-a is answered) — every box but the Conformance steps' boxes 1, 2 and 5 | the step's README | lane C, `docs.md` | haiku / sonnet | the step gate |
 | 18 | **B-130** — std: `json`, `regex`, `process` answer their own error enums (486); the raw cells mapped from `HostError` — after B-139 (std) | 486 | `libs/std` | sonnet | the std cells |
 | 19 | **166 s1–s2** — `scripts/decision-cells.py` (scaffold · compile · promote · check 7) and the ledger's `Cell` column (the slugs, 647) and `process` tags: meta files only, disjoint from everything — now (166-a … 166-d answered, 646–651) (s3 per repository after the group's codemods; s4 after the group's end) | [166](166-decision-cells/README.md) | sonnet (script), coordinator (tags) | check 7 over a known-good and a known-bad tree |
-| 20 | **163 s13** — a small gate admitted ahead of an older full-pool waiter while the pool is not empty, at most one such pass in flight (head-of-line blocking measured by 166 s3) | the maintainer, 2026-10-18 | `scripts/gate.sh`, meta `AGENTS.md` | sonnet | the scheduler test, red on the parent |
+| 20 | **163 s13** — landed (decision 717): a small gate admitted ahead of an older full-pool waiter while the pool is not empty, at most one such pass in flight (head-of-line blocking measured by 166 s3) | the maintainer, 2026-10-18 | `scripts/gate.sh`, meta `AGENTS.md` | sonnet | the scheduler test, red on the parent |
 
 ## The group's end
 

@@ -2603,7 +2603,8 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 Front 166's decision cells are written as drafts before they compile; the first ones that do are the oracle. css's drafts (166 s3) measured:
 
-- [ ] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent
+- [ ] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent; markdown's 330 draft meets the same (166 s3, markdown)
+- [ ] in a nested pattern a bare nullary variant binds a variable instead of matching the variant: `Error(NotAllowedOnHost)` and `Error(Timeout)` as `case` arms over a `Result<T, HttpError>` — erlang warns `variable 'NotAllowedOnHost' is unused`, commonJS takes the first arm for every error; at the top of a `case` the bare variant matches (std's `Method.verb`); a bare name inside a pattern that resolves to a nullary variant of the matched type is that variant (154's rule for expression position, applied to patterns), a binder only when no variant has the name; cell `nested_pattern_nullary_variant` (four targets), red on the parent (166 s3, http's 623 draft)
 
 Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its defect as a box here (checker) or as a 164 row (comptime on wasm, machine 2).
 
