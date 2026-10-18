@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**111 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**109 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **638**.
+number, which is **640**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -667,15 +667,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Recommendation.** (b): one way to add a member, the one 627 already gives.
 - **Blocks.** B-149's last piece (P4), `mocks.bp`.
 
-#### b149-d · How a template method reaches its receiver's code once `compiler.text(self) + ".greet(…)"` is no text: a `Syntax(e)` node? (decisions 616, 625; 144 B-149)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 8 cells build a call on the receiver by text: `compiler.text(self) + ".greet(…)"`. The runtime carries a `syntax` parameter's code as the `__bp_capture` map, and `captureNodeFor` splices it.
-- **Options.**
-  (a) `Syntax(e: unknown)` is a `Node`: the code a `syntax` parameter holds, its one argument a `syntax` name, spliced as written.
-  (b) The receiver is reached another way (a `Member` over `self` resolved by the runtime).
-- **Recommendation.** (a): the capture already exists; the node only names it.
-- **Blocks.** B-149's first piece (the `Node` vocabulary), the 8 cells.
-
 #### b149-e · What `compiler.addType("Columns", compiler.buildType("(id: string)"))` becomes, and in which step (decision 625 (3); 144 B-149, B-140)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
 - **Measured.** 14 `decorator_add_type*` cells write that form. 625 (3) makes `addType(name, syntax source: anytype)` written code.
@@ -711,15 +702,6 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The static stays called through the contract's name (`String.fromCodepoint`), dispatched to the one type that provides it.
 - **Recommendation.** (a): one name per member, the type's.
 - **Blocks.** B-148's third piece.
-
-#### b148-c · A user module writing `type i32 { … }`: refused naming the prelude type, or a local declaration shadowing it? (decisions 606 (1), 617; 144 B-148)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 606 (1): a local declaration shadows a prelude name. Once the widths are prelude types, `i32` is such a name; a literal `1` is typed `i32` by the checker, not by name lookup.
-- **Options.**
-  (a) Refused at the name (`primitive-type-redeclared`): a literal's type cannot be shadowed.
-  (b) Shadowing as 606 (1): the module's `i32` is its own type, literals keep the prelude's.
-- **Recommendation.** (a): (b) gives `val x: i32 = 1` a type error no reader expects.
-- **Blocks.** B-148's first piece.
 
 #### b148-d · `default-on-static` (628) turns rakun's and query's one site each red: one landing window with their two one-line commits, or the refusal held until their fronts land? (decision 628; 144 B-148, 165)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**

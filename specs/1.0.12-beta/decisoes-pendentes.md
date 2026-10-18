@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**111 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**109 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **638**.
+número livre, que é **640**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -667,15 +667,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Recomendação.** (b): uma só forma de adicionar um membro, a que a 627 já dá.
 - **Bloqueia.** A última peça do B-149 (P4), `mocks.bp`.
 
-#### b149-d · Como um método de template alcança o código do seu receptor quando `compiler.text(self) + ".greet(…)"` não é texto: um nó `Syntax(e)`? (decisões 616, 625; 144 B-149)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** 8 células constroem uma chamada sobre o receptor por texto: `compiler.text(self) + ".greet(…)"`. O runtime carrega o código de um parâmetro `syntax` como o mapa `__bp_capture`, e `captureNodeFor` o encaixa.
-- **Opções.**
-  (a) `Syntax(e: unknown)` é um `Node`: o código que um parâmetro `syntax` guarda, seu único argumento um nome `syntax`, encaixado como escrito.
-  (b) O receptor é alcançado de outro jeito (um `Member` sobre `self` resolvido pelo runtime).
-- **Recomendação.** (a): a captura já existe; o nó só a nomeia.
-- **Bloqueia.** A primeira peça do B-149 (o vocabulário de `Node`), as 8 células.
-
 #### b149-e · No que `compiler.addType("Columns", compiler.buildType("(id: string)"))` se torna, e em qual passo (decisão 625 (3); 144 B-149, B-140)
 - **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
 - **Medido.** 14 células `decorator_add_type*` escrevem essa forma. A 625 (3) faz de `addType(name, syntax source: anytype)` código escrito.
@@ -711,15 +702,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) O estático continua chamado pelo nome do contrato (`String.fromCodepoint`), despachado ao único tipo que o fornece.
 - **Recomendação.** (a): um nome por membro, o do tipo.
 - **Bloqueia.** A terceira peça do B-148.
-
-#### b148-c · Um módulo de usuário escrevendo `type i32 { … }`: recusado nomeando o tipo do prelude, ou uma declaração local que o sombreia? (decisões 606 (1), 617; 144 B-148)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** 606 (1): uma declaração local sombreia um nome do prelude. Quando as larguras são tipos do prelude, `i32` é um desses nomes; um literal `1` é tipado `i32` pelo checker, não por busca de nome.
-- **Opções.**
-  (a) Recusado no nome (`primitive-type-redeclared`): o tipo de um literal não pode ser sombreado.
-  (b) Sombreamento como na 606 (1): o `i32` do módulo é seu próprio tipo, os literais mantêm o do prelude.
-- **Recomendação.** (a): (b) dá a `val x: i32 = 1` um erro de tipo que nenhum leitor espera.
-- **Bloqueia.** A primeira peça do B-148.
 
 #### b148-d · `default-on-static` (628) deixa vermelho um sítio do rakun e um do query: uma janela de pouso com seus dois commits de uma linha, ou a recusa segura até suas frentes pousarem? (decisão 628; 144 B-148, 165)
 - **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
