@@ -2596,7 +2596,7 @@ Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are m
 
 Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled>` whose built code calls `fn mk() -> Component<Styled>` is refused at every call `template-build-outside-bound: styled built code of type Styled, outside its answer Component` (`finishExpansionBuilt` compares the declared answer with the built code's unwrapped type). Written through an alias (`StyledView = Component<Styled>`) the check was skipped; 661 removes the alias.
 
-- [ ] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
+- [x] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
 
 ### B-156 — a function with a `syntax` expression parameter is expanded at its call (decision 719)
 
@@ -2627,6 +2627,9 @@ Front 166's decision cells are written as drafts before they compile; the first 
 - [ ] a dotted variant passed to a function another module declares is `unbound variable`: `phase.describe(.Slow)` with
       `pub fn describe(p: Phase) -> string` in `phase` — the parameter's declared type resolves it (587); cell
       `dot_variant_argument_imported_fn` (four targets), red on the parent (found by B-146)
+- [ ] a refusal naming two generic types prints each with its arguments: `template-build-outside-bound` for `Component<Other>`
+      against `-> Component<Styled>` prints both as `Component` (`typeLabelAlloc` drops the arguments); the snapshot of
+      `template_build_outside_bound_component` rewritten with the two full types (found by B-153)
 
 Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its defect as a box here (checker) or as a 164 row (comptime on wasm, machine 2).
 
