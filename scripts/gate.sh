@@ -41,9 +41,10 @@
 # that waits. The capacity is the machine's jobs, the tighter of two bounds
 # read on every pass (decision 674): the CPUs, a job counted as ~2 runnable
 # threads (the `botopink` child and its `erl` / `node`, measured in 144 B-29
-# step G), and the memory, one job per 768 MiB of `MemAvailable` — so
-# `capacity = max(1, min(cpus / 2, MemAvailable / 768 MiB))`; the CPU half is
-# never applied to the memory bound. A gate is admitted when at least one job is
+# step G), and the memory, one job per 768 MiB of `MemAvailable` above a margin
+# the pool always leaves free (`POOL_MEMORY_MARGIN_MIB`, 2 GiB) — so
+# `capacity = max(1, min(cpus / 2, (MemAvailable - 2 GiB) / 768 MiB))`; the CPU
+# half is never applied to the memory bound. A gate is admitted when at least one job is
 # free: it takes `min(share, free)` jobs, `share = max(1, capacity / gates of
 # this run)`, and gives them back when it ends; a lease whose owner and child
 # are both dead is reaped. The path is fixed, not a flag or a variable a commit
@@ -239,16 +240,24 @@ poolDir() {
 }
 pool="$(poolDir)"
 
-# poolCapacity — the machine's jobs: min(cpus / 2, MemAvailable / 768 MiB), at least 1 (decision 674).
-# A job is ~2 runnable threads, so the CPU bound is halved; the memory bound already counts whole jobs
-# and is never halved. Read on every pass, so the capacity follows the memory as it frees and fills.
+# poolMemAvailableMiB — the machine's MemAvailable, in MiB (empty when /proc/meminfo is unreadable).
+poolMemAvailableMiB() {
+    awk '/^MemAvailable:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null || true
+}
+
+# poolCapacity — the machine's jobs: min(cpus / 2, (MemAvailable - margin) / 768 MiB), at least 1 (decision 674).
+# A job is ~2 runnable threads, so the CPU bound is halved; the memory bound already counts whole jobs and is
+# never halved, and only the memory above POOL_MEMORY_MARGIN_MIB is handed out. Read on every pass of every
+# admission, so the capacity follows the memory as it frees and fills; below the margin nothing new is admitted
+# while a gate runs, and one job always exists so an empty pool never deadlocks.
 poolCapacity() {
-    local cpus avail_kb by_mem jobs
+    local cpus avail_mib by_mem jobs
     cpus="$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 4)"
     jobs=$(( cpus / 2 ))
-    avail_kb="$(awk '/^MemAvailable:/ { print $2 }' /proc/meminfo 2>/dev/null || true)"
-    if [ -n "$avail_kb" ]; then
-        by_mem=$(( avail_kb / (768 * 1024) ))
+    avail_mib="$(poolMemAvailableMiB)"
+    if [ -n "$avail_mib" ]; then
+        by_mem=$(( (avail_mib - POOL_MEMORY_MARGIN_MIB) / 768 ))
+        [ "$by_mem" -ge 0 ] || by_mem=0
         [ "$by_mem" -lt "$jobs" ] && jobs="$by_mem"
     fi
     [ "$jobs" -ge 1 ] || jobs=1
@@ -293,6 +302,9 @@ poolUsed() {
 }
 
 POOL_STAGGER=60
+# The memory the pool always leaves free (decision 674): a job is admitted only out of what lies above
+# this margin, so the machine keeps room for the editor, the sessions and a build's peak. Not a flag.
+POOL_MEMORY_MARGIN_MIB=2048
 
 # poolOlderWaiter <id> — true when another live gate waits since before <id> (or <id> has not waited yet and
 # another waits at all).
@@ -491,7 +503,7 @@ runPlan() {
 cmdStatus() {
     local f any=0 now name jobs start log stage
     now="$(date +%s)"
-    echo "pool $pool — capacity $(poolCapacity) job(s)"
+    echo "pool $pool — capacity $(poolCapacity) job(s); memory available $(poolMemAvailableMiB) MiB, margin kept free $POOL_MEMORY_MARGIN_MIB MiB"
     for f in "$pool"/lease.* "$pool"/wait.*; do
         [ -e "$f" ] || continue
         alive "$(leaseField "$f" owner)" || alive "$(leaseField "$f" child)" || continue
