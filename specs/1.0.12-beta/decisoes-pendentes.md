@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**116 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -698,6 +698,97 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### b149-a · Qual passo é dono de `buildType` sobre campos, dos corpos de `Type.*`, de `mocks.bp` e da redução de `derived_types.zig`: o B-149 ou o B-140? (decisões 625, 629; 144 B-149, B-140)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** A 629 vincula os dois passos. O B-149 (máquina 2) e o B-140 (máquina 1) listam ambos `buildType(name, fields, implements)`, `buildTypeInline`, `mocks.bp` e o materializador em `comptime/derived_types.zig`.
+- **Opções.**
+  (a) O B-149 é dono da superfície dos dois construtores (`compiler.bp`, `compiler_surface.zig`), de `mocks.bp` e da célula `build_type_from_fields`; o B-140 é dono dos corpos de `Type.*` em botopink, de `compiler.fields` e da redução do materializador.
+  (b) O B-149 é dono de tudo; o B-140 mantém `Type.*` sobre os construtores conforme pousam.
+  (c) O B-140 é dono de tudo; o B-149 para em `compiler.ast` e na remoção de `build`.
+- **Recomendação.** (a): cada máquina mantém seus arquivos (a máquina 2 a superfície do compilador, a máquina 1 `types.bp`).
+- **Bloqueia.** A última peça do B-149 (P4).
+
+#### b149-b · Como o `Mock` de `mocks.bp` escreve um método por membro do behavior quando `buildType(name, fields, implements)` não recebe membros (decisões 625, 627; 144 B-149)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(b).**
+- **Medido.** O `Mock` escreve hoje cada método como texto: `fn m(sig) -> R { return invoke(…); }`. A 625 remove o código a partir de texto. `buildType` recebe campos e os behaviors implementados, nenhum membro.
+- **Opções.**
+  (a) `buildType` ganha um parâmetro `members`: métodos como nós de `compiler.ast`.
+  (b) O tipo construído ganha seus métodos por `addMember` sobre ele, cada um um nó `ast` (o membro adicionado da 627).
+- **Recomendação.** (b): uma só forma de adicionar um membro, a que a 627 já dá.
+- **Bloqueia.** A última peça do B-149 (P4), `mocks.bp`.
+
+#### b149-c · Um buraco `${…}` do chamador é um `Node` do B-149 (`Hole(index)`), ou as 11 células de buraco esperam `code.bp`? (decisões 577 (1), 625 (4); 144 B-149)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** Hoje o texto construído carrega um marcador `__bp_hole_<q>_<i>` que `substituteHoles` troca pela expressão do chamador, tipada no escopo do chamador (577 (1)). A 625 (4) nomeia um módulo std posterior `code.bp`. 11 células de template escrevem buracos.
+- **Opções.**
+  (a) `Hole(index: i32)` é um `Node` de `compiler.bp` no B-149, o i-ésimo buraco do chamador; um buraco além dos buracos do texto é `ast-ill-formed`.
+  (b) As células de buraco mantêm `compiler.build` até `code.bp`; a remoção de `build` espera por elas.
+- **Recomendação.** (a): `build` sai em um passo; o buraco já é um marcador que a árvore pode nomear.
+- **Bloqueia.** A primeira peça do B-149 (o vocabulário de `Node`).
+
+#### b149-d · Como um método de template alcança o código do seu receptor quando `compiler.text(self) + ".greet(…)"` não é texto: um nó `Syntax(e)`? (decisões 616, 625; 144 B-149)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** 8 células constroem uma chamada sobre o receptor por texto: `compiler.text(self) + ".greet(…)"`. O runtime carrega o código de um parâmetro `syntax` como o mapa `__bp_capture`, e `captureNodeFor` o encaixa.
+- **Opções.**
+  (a) `Syntax(e: unknown)` é um `Node`: o código que um parâmetro `syntax` guarda, seu único argumento um nome `syntax`, encaixado como escrito.
+  (b) O receptor é alcançado de outro jeito (um `Member` sobre `self` resolvido pelo runtime).
+- **Recomendação.** (a): a captura já existe; o nó só a nomeia.
+- **Bloqueia.** A primeira peça do B-149 (o vocabulário de `Node`), as 8 células.
+
+#### b149-e · No que `compiler.addType("Columns", compiler.buildType("(id: string)"))` se torna, e em qual passo (decisão 625 (3); 144 B-149, B-140)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** 14 células `decorator_add_type*` escrevem essa forma. A 625 (3) faz de `addType(name, syntax source: anytype)` código escrito.
+- **Opções.**
+  (a) `compiler.addType("Columns", type(id: string))`, as 14 células reescritas no B-149 com a remoção de `build`.
+  (b) A mesma grafia, reescrita no B-140.
+- **Recomendação.** (a): as células leem `buildType(text)`, que o B-149 remove.
+- **Bloqueia.** A remoção de `build` do B-149 (P3).
+
+#### b149-f · `compiler.ast(…)` num corpo de decorador (o `val client = compiler.ast(…)` da 627) é do B-149 ou do 165 s11? (decisões 625, 627; 144 B-149, 165 s11)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** O `ast` do B-149 é um membro de sítio de template (`.site` em `compiler_surface.zig`). O exemplo da 627 está num decorador.
+- **Opções.**
+  (a) O B-149 admite `ast` num corpo de decorador também, com uma célula; o 165 s11 o usa.
+  (b) O B-149 admite só o sítio de template; a forma de decorador é do 165 s11.
+- **Recomendação.** (a): o 165 s11 é um passo de biblioteca e não pode mudar o compilador (433).
+- **Bloqueia.** O 165 s11 (máquina 1) se (b).
+
+#### b148-a · Os nomes de tipo e de contrato dos primitivos não numéricos: `string` / `String`, `bool` / `Bool`, `bigint` / `BigInt`, e `Bytes`, `Array<T>`, hoje nome tanto de um behavior quanto de um tipo (decisão 617 (1); 144 B-148)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** `primitives.bp` declara `String`, `Bool`, `BigInt`, `Bytes` e `Array` como behaviors; um programa escreve `string`, `bool`, `Bytes`, `T[]` / `Array<T>` como tipos. A 617 (1) declara cada um como `pub type … implement <contract>`.
+- **Opções.**
+  (a) O nome minúsculo é o tipo, o maiúsculo o contrato (`pub type string implement String`, `bool implement Bool`, `bigint implement BigInt`); `Bytes` e `Array<T>` mantêm seu nome como o tipo e seu contrato é renomeado (`BytesLike`, `ArrayLike`) ou dissolvido num tipo sem contrato.
+  (b) `bytes` e `array<T>` como os tipos, ao lado de `Bytes` e `Array` como contratos.
+- **Recomendação.** (a): os nomes que os programas escrevem hoje ficam; só `primitives.bp` muda.
+- **Bloqueia.** A terceira peça do B-148 (as células de `Bytes`, `String`, `Array`).
+
+#### b148-b · Um estático com célula (`String.fromCodepoint`, `Array.range` / `repeat`, `Bytes.fromUtf8`, `bigint.of` / `parse`) quando um behavior não carrega célula (decisões 617 (2), 628, 332; 144 B-148)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** Esses estáticos carregam células no behavior hoje. A 617 (2) recusa uma célula num membro de behavior. Sítios: `String.fromCodepoint` 8 células, 5 std, 1 biblioteca; `Array.range` 4 / 2 / 6; `Array.repeat` 6 / 2 / 1; `Bytes.fromUtf8` 19 / 2 / 1.
+- **Opções.**
+  (a) Um estático exigido do contrato (`fn fromCodepoint(cp: i32) -> string;`), fornecido pelo tipo com suas células, chamado pelo nome do tipo (`string.fromCodepoint(65)`, a forma `bigint.of` da 332); os sítios da std e das células codemodados no B-148, os das bibliotecas nas suas frentes.
+  (b) O estático continua chamado pelo nome do contrato (`String.fromCodepoint`), despachado ao único tipo que o fornece.
+- **Recomendação.** (a): um nome por membro, o do tipo.
+- **Bloqueia.** A terceira peça do B-148.
+
+#### b148-c · Um módulo de usuário escrevendo `type i32 { … }`: recusado nomeando o tipo do prelude, ou uma declaração local que o sombreia? (decisões 606 (1), 617; 144 B-148)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** 606 (1): uma declaração local sombreia um nome do prelude. Quando as larguras são tipos do prelude, `i32` é um desses nomes; um literal `1` é tipado `i32` pelo checker, não por busca de nome.
+- **Opções.**
+  (a) Recusado no nome (`primitive-type-redeclared`): o tipo de um literal não pode ser sombreado.
+  (b) Sombreamento como na 606 (1): o `i32` do módulo é seu próprio tipo, os literais mantêm o do prelude.
+- **Recomendação.** (a): (b) dá a `val x: i32 = 1` um erro de tipo que nenhum leitor espera.
+- **Bloqueia.** A primeira peça do B-148.
+
+#### b148-d · `default-on-static` (628) deixa vermelho um sítio do rakun e um do query: uma janela de pouso com seus dois commits de uma linha, ou a recusa segura até suas frentes pousarem? (decisão 628; 144 B-148, 165)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** O rakun e o query escrevem cada um um `default fn` sem `self`.
+- **Opções.**
+  (a) O B-148 pousa a recusa com os commits de uma linha das duas bibliotecas na mesma janela, a máquina 1 avisada do hash.
+  (b) A recusa espera até as frentes do rakun e do query pousarem de novo.
+- **Recomendação.** (a): duas linhas, nenhuma frente espera.
+- **Bloqueia.** A quinta peça do B-148.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `String.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
