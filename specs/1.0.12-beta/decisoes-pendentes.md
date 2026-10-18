@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**44 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**43 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **721**.
+número livre, que é **722**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `View` do 144 B-10 G3.
-
-#### B-17-e · Um raise ao dobrar uma expressão no build: sempre um erro de build? (decisão 380 (2); 144 B-17)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim, como a 380 (2) escreve — depois que as primitivas do runtime de comptime responderem como os targets** (essa linha antes); até lá a dobra fica limitada ao que o runtime responde certo, para nenhuma resposta errada virar erro de build.
-- **Medido.** Como construído só erros aritméticos (badarith) são erros de build; qualquer outro raise deixa o hole para renderizar.
-- **Opções.**
-  (a) Todo raise um erro de build, depois da linha do runtime.
-  ```bp
-  val h = "${parse("x")}";   // build error: the raise named
-  ```
-  (b) Só erros aritméticos.
-  ```bp
-  val h = "${parse("x")}";   // left to run
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
 
 #### B-17-g · Onde uma leitura de contexto encontra um default declarado num módulo que ela nem importa nem alcança pelo seu tipo? (decisões 378, 379; 144 B-17)
 - **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): no próprio módulo do tipo ou num módulo já analisado; senão recusada na leitura, nomeando o tipo** — um default é encontrado onde o programa o vê, nunca por uma busca no programa inteiro.

@@ -740,7 +740,7 @@ fn Button() -> @Component<Element> {
       value, or none — computed from the hooks list from the roots; the reading function then `Any` with build
       arguments — `run/context_read_at_build` (`corDoTema()` a constant when `Theme` is never provided),
       `run/context_read_run_time` (a provide from `use request()` keeps it at run time)
-      — waits on step 8's folding everywhere (questions B-17-e, B-17-f): a cell cannot tell a build value from a run one until then
+      — waits on step 8's folding everywhere (decision 721; question B-17-f): a cell cannot tell a build value from a run one until then
 - [ ] a `Build` / `Any` component called at build (378 (4)): the comptime runtime runs its lambda with
       `RenderScope.root()` (388; the comptime-runtime half of box 4b), a context answering
       its providers within the tree or its default — `run/comptime_render_component`
@@ -776,7 +776,7 @@ fn Button() -> @Component<Element> {
       — the value's behavior method first (`context_behavior_method_find`)
 - [x] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
       — `fun f/A` in the comptime module (`comptime_function_value_argument`)
-- [ ] a raise other than an arithmetic error while folding: a build error (380 (2)) or the hole left to render · question B-17-e
+- [ ] a raise other than an arithmetic error while folding is a build error at the expression, the target's message (380 (2)) · decision 721 (a); after the runtime-exactness line above; cells `fold_raise_is_build_error` (index, conversion, missing key, a `panic` inside an `Any` function), `fold_dead_branch_panic_stays` (380 (3))
 - [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
 - [ ] where a context read finds a default declared in a module it neither imports nor reaches through its type · question B-17-g
 

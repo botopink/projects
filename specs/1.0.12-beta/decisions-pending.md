@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**44 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**43 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **721**.
+number, which is **722**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -144,21 +144,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `View` row.
-
-#### B-17-e · A raise while folding an expression at build: always a build error? (decision 380 (2); 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes, as 380 (2) writes — once the comptime runtime's primitives answer as the targets do** (that row first); until then folding stays limited to what the runtime answers right, so no wrong answer becomes a build error.
-- **Measured.** As built only arithmetic errors (badarith) are build errors; any other raise leaves the hole to render.
-- **Options.**
-  (a) Every raise a build error, after the runtime row.
-  ```bp
-  val h = "${parse("x")}";   // build error: the raise named
-  ```
-  (b) Arithmetic errors only.
-  ```bp
-  val h = "${parse("x")}";   // left to run
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
 
 #### B-17-g · Where does a context read find a default declared in a module it neither imports nor reaches through its type? (decisions 378, 379; 144 B-17)
 - **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): in the type's own module or a module already analysed; otherwise refused at the read, naming the type** — a default is found where the program can see it, never by a whole-program search.
