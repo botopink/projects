@@ -336,7 +336,7 @@ The group's changes against the cells (B-01, B-03 … B-06; box 3, written once 
 #### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 1)
 
 ```bp
-#[@External.Node("JSON.parse($0)", throws: true), @External.Erlang("json:decode($0)", throws: true)]
+#[@External.JavaScript("JSON.parse($0)", throws: true), @External.Erlang("json:decode($0)", throws: true)]
 declare fn jsParse(s: string) -> @Result<Json, HostError>;
 val doc = try jsParse(texto);                      // a JS SyntaxError / an erlang raise is Error(HostError(…))
 ```
@@ -855,7 +855,7 @@ untouched — separate blocks stay separate, a list stays a list — and a list 
 pub type Account(…)                     // stays two blocks
 
 #[
-    @External.Node(fn: mixBody),
+    @External.JavaScript(fn: mixBody),
     @External.Erlang(fn: mixBody),
     @External.Beam(fn: mixBody),
 ]
@@ -1192,7 +1192,7 @@ gradeable. Batches landing in `comptime/infer.zig` conflict: one worker, one bat
 
 `src/codegen/tests/externals.zig:55`, `:67` named for an unimplemented equivalence (`template
 equivalent to @external(target, template)`, `mixed with @external() in one decl`); both bodies use
-only `#[@External.Erlang(…), @External.Node(…)]`. `src/comptime/tests/infer_decls.zig:147` `"infer:
+only `#[@External.Erlang(…), @External.JavaScript(…)]`. `src/comptime/tests/infer_decls.zig:147` `"infer:
 implement block is invisible to the binding list"` names a gone behaviour (`implement` blocks
 appear, read from `OkData.transformed.decls`).
 
@@ -2688,6 +2688,10 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
       formatter prints an annotation whose arguments end in a trailing comma one per line — cell
       `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
+- [ ] decision 618: `Implementation.Node` renamed `JavaScript`, `Typescript` folded into its `types: ?string` (the `.d.ts`
+      text, read by the `.d.ts` backend alone); `.Node(` → `.JavaScript(` at every std and cell site (654 in all with the
+      libraries', theirs in their fronts); `external_variants`, `translateExternalCells`, the readers; the enum in
+      `conformance/docs.md` § `declare fn`
 - [ ] decision 617: `implement-with-body` on every bodied declaration, a behavior's `default fn` included — the exemption
       `ImplDecl.isDefault` goes, `implement_with_body` gains the behavior case; `primitives.bp`'s bodies-with-cells are
       B-146's to redistribute, so this box lands with B-146
@@ -2698,7 +2702,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       beside `op:` / `std:` / `wasi:`'s; the 117 `body:` sites re-read for `external-all-bodies`; cells
       `external_body_not_a_fn`, `external_source_empty`, `external_all_bodies`
 - [ ] (box 4) `print` bound by its cell on erlang, beam and commonJS, as `io/terminal.bp`'s declaration (606; `println` and
-      `debug` are removed there): its `declare fn` carries `.Erlang(…)` / `.Node(…)`; `erlang.zig`, `beam_asm.zig`, `commonJS.zig` dispatch no builtin by
+      `debug` are removed there): its `declare fn` carries `.Erlang(…)` / `.JavaScript(…)`; `erlang.zig`, `beam_asm.zig`, `commonJS.zig` dispatch no builtin by
       the names `print` / `println` / `debug` — a grep gate in `zig build test` over `modules/compiler-core/src/codegen`
       (decision 67, like the lib-agnostic gate) and cell `print_bound_by_cells` (four targets; wasm's row red until 164
       s3 lands `.Wasm(std: "print")`)
@@ -2813,7 +2817,7 @@ oracle, so the builtins group's closure (§ Machines rule 9)
 A botopink value is immutable; a `var` is the one mutable cell, rebound (447 (2), 448 (2), 547; docs § Arrays: "an
 array method answers a value and leaves its receiver alone, on every target"). std's `push` is a pure Erlang cell
 (`($0 ++ [$1])`, `primitives.bp`) and `erlang.zig`'s `receiverMutation` lowers a statement `v.push(x)` on a `var` to a
-rebinding of `v`, so `val seen = names();` keeps the list of its moment. The `.Node("push")` cell is JavaScript's in-place
+rebinding of `v`, so `val seen = names();` keeps the list of its moment. The `.JavaScript("push")` cell is JavaScript's in-place
 push: on commonJS `seen` and a caller's argument grow with the `var`. `compile_executor_module_val_order` passed on the
 parent on commonJS for that reason alone, blind to 580.
 
@@ -2829,7 +2833,7 @@ parent on commonJS for that reason alone, blind to 580.
       red on the parent on commonJS
 
 - [x] `pop` on a `var` rebound on commonJS as on erlang and beam (the popped value and the shrunk array together);
-      a cell where a `val` copy of the `var` keeps its length; the `.Node` cells of `shift`, `unshift`, `splice`, `sort`
+      a cell where a `val` copy of the `var` keeps its length; the `.JavaScript` cells of `shift`, `unshift`, `splice`, `sort`
       and `reverse` checked for the same aliasing
 
 Six commonJS codegen snapshots read `x = x.concat([v])`.
@@ -2852,7 +2856,7 @@ commonJS runs it.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (std's bodies and the backends' dispatch decide language versus defect) · **After:** B-139 (which moves the prelude into `primitives.bp`) · **Before:** B-140
 
-Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`, `Integer extends Number`, `Signed`, `Float` are contracts, and the widths are empty behaviors (`behavior I32 extends Signed {}`, `I64`, `U32`, `U64`, `F32`, `F64`); `infer.zig` maps `i32` to `I32`, and each backend writes the chain `I32 → Signed → Integer → Number` by hand (`erlang.zig` `prim_iface_chain`, `commonJS.zig` `numeric`, `wat.zig` `prelude_names`, `beam_asm.zig`). Twenty members carry a body and cells on one declaration (`default fn isEven` with `.Node(…)`), the body the fallback of the targets without a cell.
+Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`, `Integer extends Number`, `Signed`, `Float` are contracts, and the widths are empty behaviors (`behavior I32 extends Signed {}`, `I64`, `U32`, `U64`, `F32`, `F64`); `infer.zig` maps `i32` to `I32`, and each backend writes the chain `I32 → Signed → Integer → Number` by hand (`erlang.zig` `prim_iface_chain`, `commonJS.zig` `numeric`, `wat.zig` `prelude_names`, `beam_asm.zig`). Twenty members carry a body and cells on one declaration (`default fn isEven` with `.JavaScript(…)`), the body the fallback of the targets without a cell.
 
 - [ ] `pub type i32 implement Signed { … }` and its siblings declared in `primitives.bp` (`bool`, `string`, `Bytes`, `BigInt`, `Array<T>`, `Pair<A, B>`, `Function` as 617 (1) applies); the six empty behaviors go; `infer.zig`'s width table and the four backends' chains replaced by a read of the `implement` clauses — one resolution, from the text
 - [ ] every behavior of the file holds signatures and `default fn` bodies only — no `#[compiler.external(…)]` on a behavior member (refused there, `external-on-behavior`, at the annotation); the 87 cells move to `declare fn` members of the types, `Self` concrete; a member one target runs in botopink and another in the host uses 610's `.Wasm(body: f)` on the type

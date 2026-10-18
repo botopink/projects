@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **618**.
+número livre, que é **619**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -61,11 +61,11 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Opções.**
   (a) Recusado em todo lugar.
   ```bp
-  #[@External.Node("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
+  #[@External.JavaScript("std:hash.contentHash")]   // refused: a `std:` cell is `@External.Wasm`'s
   ```
   (b) Código de host fora do wasm, o texto corrigido.
   ```bp
-  #[@External.Node("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
+  #[@External.JavaScript("std:hash.contentHash")]   // JavaScript source `std:hash.contentHash`
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `std:` do 144 B-02.
@@ -803,10 +803,11 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 #### b138-d · Uma flag de `Implementation` escrita posicionalmente: o preenchimento do construtor, ou o rótulo exigido? (decisões 67, 575 (6); frente 20 F9; 144 B-138)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Medido.** Um argumento posicional preenche o próximo campo da variante (`parser/implementations.zig` `variant_fields`): `.Node("…", true)` e `.Erlang("…", true)` preenchem `body:` e são recusados ("escreve uma segunda célula, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` lê `f` como corpo, e `.Typescript("…", true)` preenche `result: true` e é aceito em silêncio — a chave sem rótulo que a célula da frente 20 F9 foi escrita para recusar. Não existe célula `.Typescript(`. `inline:`, `result:`, `host:`, `needs:` são escritos por rótulo em cada um dos 426 locais do std e das células.
+- **Decisão 618 (2026-10-18).** `Typescript` foi dobrado em `JavaScript(types:)`, então o `.Typescript("…", true)` aceito em silêncio não existe mais; o que resta da pergunta é `.Erlang("…", f)` lido como `body: f` — um argumento posicional que não é o template. (b) o recusa, nomeando o rótulo (`write body: f`).
+- **Medido.** Um argumento posicional preenche o próximo campo da variante (`parser/implementations.zig` `variant_fields`): `.JavaScript("…", true)` e `.Erlang("…", true)` preenchem `body:` e são recusados ("escreve uma segunda célula, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` lê `f` como corpo, e `.Typescript("…", true)` preenche `result: true` e é aceito em silêncio — a chave sem rótulo que a célula da frente 20 F9 foi escrita para recusar. Não existe célula `.Typescript(`. `inline:`, `result:`, `host:`, `needs:` são escritos por rótulo em cada um dos 426 locais do std e das células.
 - **Opções.**
   (a) Como pousado: a ordem posicional do construtor é a linguagem; `.Typescript("…", true)` é `result: true`.
-  (b) Só `template` é posicional: um segundo argumento posicional em qualquer variante é recusado no argumento, nomeando o rótulo (`write result: true`), uma checagem ao lado das checagens de célula que o construtor não consegue enunciar; `external_flag_bare_bool_refused` responde esse texto em `.Node`, e uma gêmea `external_flag_bare_bool_typescript` em `.Typescript`.
+  (b) Só `template` é posicional: um segundo argumento posicional em qualquer variante é recusado no argumento, nomeando o rótulo (`write result: true`), uma checagem ao lado das checagens de célula que o construtor não consegue enunciar; `external_flag_bare_bool_refused` responde esse texto em `.JavaScript`, e uma gêmea `external_flag_bare_bool_typescript` em `.Typescript`.
   ```bp
   #[@external(.Typescript("Math.max($0, $1)", true))]   // refused: write `result: true`
   ```
@@ -1322,7 +1323,7 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   ```
   (c) Um host que responde `@Component` é síncrono (só um host que responde `@Task` é nomeado):
   ```bp
-  declare fn session() -> @Component<string>;        // #[@External.Node("""Promise.resolve("alice")""")]
+  declare fn session() -> @Component<string>;        // #[@External.JavaScript("""Promise.resolve("alice")""")]
   fn Page() -> @Component<Element> { val u = use session(); … }
   // (c): Page sync, `const u = session()` — a Promise where a string is read
   ```
