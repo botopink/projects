@@ -25,9 +25,9 @@ FRONT_REPO = {
     144: "botopink-lang", 145: "query", 146: "validation", 147: "css", 148: "rakun",
     149: "rakun", 150: "rakun", 151: "json", 152: "yaml", 153: "rakun", 154: "rakun",
     155: "http", 156: "log", 157: "routing", 158: "markdown", 159: "actions", 160: "snap",
-    161: "vscode-extension", 162: "rakun",
+    161: "vscode-extension", 162: "rakun", 165: "rakun",
 }
-# Front 165 joined rakun, styled, jhonstart, emilia, onze and dbcontext into the one `rakun` workspace
+# Front 165 (the rakun workspace, machine-1/165-rakun-workspace) maps to `rakun`; it joined rakun, styled, jhonstart, emilia, onze and dbcontext into the one `rakun` workspace
 # (fronts 148, 149, 153, 154, 162 map to it) and renamed erika to `query` (front 145).
 # Fronts of the medium tier: process, or a repository the front's README names that is not (yet)
 # under repository/ (cardume, i18n, release) -- no file is written for them.
