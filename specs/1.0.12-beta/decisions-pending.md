@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**91 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**90 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **669**.
+number, which is **670**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -564,15 +564,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) Both: leaves when recorded, the word-copy rule otherwise.
 - **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
 - **Blocks.** Nothing (built as (a)).
-
-#### 165-f · Where names inside a `compiler.buildType(text)` resolve (decisions 578 (3), 599 (3); front 165 s10, 144 B-140)
-- **Proposed (opus, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Measured.** rakun builds its generated types (`Name.Tx`, `Name.Sec`, `Name.Http`) with `compiler.buildType(<computed string>)`, as `entity.bp` and `cached.bp` already do. The text names run-time functions and types. Today a contribution's text is parsed and resolved in the annotated (host) module (`mergeAssocTypes`), so a helper of the decorator's module must be imported by the host or written fully qualified. No decision fixes it.
-- **Options.**
-  (a) A built type's text resolves in the module that calls `buildType` (the decorator's module), like an executor's tree (581).
-  (b) It resolves in the host module, as built today. The decorator writes qualified names.
-- **Recommendation.** (a): one rule for code a decorator writes, whatever form carries it.
-- **Blocks.** Nothing today (built as (b) with qualified names).
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**91 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**90 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **669**.
+número livre, que é **670**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -564,15 +564,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) As duas: folhas quando gravadas, a regra da palavra copiada senão.
 - **Recomendação.** (a) agora, porque está verde em toda biblioteca e cell. Depois (c) como passo posterior, para que uma sub-linguagem que grava folhas seja exata mesmo onde uma palavra se repete.
 - **Bloqueia.** Nada (construída como (a)).
-
-#### 165-f · Onde os nomes dentro de um `compiler.buildType(text)` são resolvidos (decisões 578 (3), 599 (3); frente 165 s10, 144 B-140)
-- **Proposta (opus, 2026-10-17; aguardando o mantenedor):** **(a).**
-- **Medido.** O rakun constrói os seus tipos gerados (`Name.Tx`, `Name.Sec`, `Name.Http`) com `compiler.buildType(<string calculada>)`, como `entity.bp` e `cached.bp` já fazem. O texto nomeia funções e tipos de runtime. Hoje o texto de uma contribuição é analisado e resolvido no módulo anotado (o host) (`mergeAssocTypes`), então um helper do módulo do decorator precisa ser importado pelo host ou escrito qualificado. Nenhuma decisão fixa isso.
-- **Opções.**
-  (a) O texto de um tipo construído é resolvido no módulo que chama `buildType` (o módulo do decorator), como a árvore de um executor (581).
-  (b) É resolvido no módulo host, como construído hoje. O decorator escreve nomes qualificados.
-- **Recomendação.** (a): uma regra para o código que um decorator escreve, qualquer que seja a forma que o carrega.
-- **Bloqueia.** Nada hoje (construída como (b) com nomes qualificados).
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
