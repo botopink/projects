@@ -6,18 +6,18 @@ keeps `conformance/modules/decisions-taken/<slug>-<N>/` for every row that fixes
 the ledger's `Cell` column (decisions 646, 647, 648).
 
   scripts/decision-cells.py scaffold [--list] [<repo>]   create the missing directories (docs.md + stub
-                                                         main.bp); --list prints what it would scaffold
+                                                         draft/main.bp); --list prints what it would scaffold
                                                          and the rows it reads as process, writes nothing
-  scripts/decision-cells.py compile <repo>               build every main.bp in a scratch cell with
+  scripts/decision-cells.py compile <repo>               build every draft/ in a scratch cell with
                                                          `botopink cell check`; red on a refusal
-  scripts/decision-cells.py promote <repo>               main.bp -> src/main.bp + botopink.json (s4)
+  scripts/decision-cells.py promote <repo>               draft/ -> src/ + botopink.json (s4)
   scripts/decision-cells.py check                        CI check 7: consistency always, completeness
                                                          for the repositories in COMPLETE_REPOS
 
 A row is classified from the ledger text alone, never guessed: a one-liner (its rule is only
 `Replaced by N` / `Reversed by N` / `Overtaken by N`), a process row (`process` in its id column), else
 code-bearing. `--root <dir>` points at another meta tree (the tests). Open questions 166-a, 166-b and
-166-c are each answered in one function below (the README's recommended (a)).
+166-c are each answered in one function below (decisions 646–650).
 """
 import importlib.util
 import json
@@ -53,16 +53,17 @@ def package_name(dirname):
 
 
 def phase1_main(promoted):
-    """166-b (a): phase 1 is `<slug>-<N>/main.bp` (no `src/`, no manifest); promoted is `<slug>-<N>/src/main.bp`."""
-    return "src/main.bp" if promoted else "main.bp"
+    """Decision 649: phase 1 is `<slug>-<N>/draft/main.bp` (no `src/`, no manifest); promoted is `<slug>-<N>/src/main.bp`."""
+    return "src/main.bp" if promoted else "draft/main.bp"
 
 
 def include_line(path):
-    """166-c (a): the include form is `{<path>}`, on a line of its own."""
-    return "{" + path + "}"
+    """Decision 650 (166-c): code is included by an ordinary Markdown relative link, `[<path>](<path>)`."""
+    return f"[{path}]({path})"
 
 
-INCLUDE = re.compile(r"^\{([^{}\s]+)\}$")
+INCLUDE = re.compile(r"\[[^\]]*\]\(([^()\s]+\.bp)\)")  # a relative link to a `.bp` file
+PLACEHOLDER = re.compile(r"^\{[^{}\s]+\}$")
 
 
 # ── the ledger ──────────────────────────────────────────────────────────────────
@@ -129,9 +130,13 @@ def ledger(root, repo):
             continue
         if not re.match(r"\| \d+ \| ", ln):
             continue
-        cells = [c.strip() for c in re.split(r"(?<!\\)\|", ln.strip())[1:-1]]
-        num, rid, rule, binds = cells[0], cells[1], cells[2], cells[3]
-        slug = (cells[4].strip("`") or None) if has_cell and len(cells) > 4 else None
+        # a rule may hold an unescaped `|` inside code: # and Id from the left, Binds and Cell from the right
+        body = ln.rstrip()
+        body = body[:-1].rstrip() if body.endswith("|") else body
+        num, rid, rest = [c.strip() for c in body[1:].split("|", 2)]
+        tail = [c.strip() for c in (rest + " ").rsplit(" | ", 2 if has_cell else 1)]
+        rule, binds = tail[0], tail[1]
+        slug = (tail[2].strip("`") or None) if has_cell else None
         rows.append(Row(int(num), rid, rule, binds, slug))
     return rows
 
@@ -199,7 +204,8 @@ def cmd_scaffold(root, args):
             if not m.exists():
                 m.mkdir(parents=True)
                 (m / "docs.md").write_text(docs_text(r, phase1_main(False)))
-                (m / "main.bp").write_text(main_text(r))
+                (m / "draft").mkdir()
+                (m / phase1_main(False)).write_text(main_text(r))
                 continue
             rewrite_first_line(m / "docs.md", f"# {r.title}")
             rewrite_first_line(m / phase1_main(promoted), f"//// {r.title}")
@@ -248,9 +254,9 @@ def cmd_compile(root, args):
               file=sys.stderr)
         return 1
     d = cells_dir(root, repo)
-    mains = sorted(p for p in d.glob("*/main.bp")) if d.is_dir() else []
+    mains = sorted(p for p in d.glob("*/draft/main.bp")) if d.is_dir() else []
     if not mains:
-        print(f"{repo}: no main.bp to compile")
+        print(f"{repo}: no draft/main.bp to compile")
         return 0
     scratch = repo_dir / ".botopinkbuild" / "tmp" / "decision-cells"
     shutil.rmtree(scratch, ignore_errors=True)
@@ -267,9 +273,9 @@ def cmd_compile(root, args):
                 dep["path"] = str((wm.parent / dep["path"]).resolve())
     (scratch / "botopink.json").write_text(json.dumps(ws, indent=2) + "\n")
     for m in mains:
-        c = scratch / package_name(m.parent.name)
-        (c / "src").mkdir(parents=True)
-        shutil.copy(m, c / "src" / "main.bp")
+        c = scratch / package_name(m.parent.parent.name)
+        c.mkdir(parents=True)
+        shutil.copytree(m.parent, c / "src")  # the whole draft/: main.bp and any <other>.bp
         (c / "botopink.json").write_text(json.dumps({"name": c.name}) + "\n")
     r = subprocess.run([str(binary), "cell", "check", str(scratch.relative_to(repo_dir))],
                        cwd=repo_dir, capture_output=True, text=True)
@@ -304,14 +310,14 @@ def cmd_promote(root, args):
     n = 0
     for m in sorted(d.iterdir()) if d.is_dir() else []:
         main = m / phase1_main(False)
-        if not main.is_file():
+        if not main.is_file() or (m / "src").exists():
             continue
-        (m / "src").mkdir(exist_ok=True)
-        main.rename(m / phase1_main(True))
+        main.parent.rename(m / "src")  # draft/ -> src/, every file of it
         (m / "botopink.json").write_text(json.dumps({"name": package_name(m.name)}) + "\n")
         docs = m / "docs.md"
         if docs.exists():
-            docs.write_text(docs.read_text().replace(include_line(phase1_main(False)), include_line(phase1_main(True))))
+            # every [draft/<file>](draft/<file>) link
+            docs.write_text(re.sub(r"\[draft/([^\]]*)\]\(draft/", r"[src/\1](src/", docs.read_text()))
         n += 1
     wm = workspace_manifest(root, repo)
     if n and wm:
@@ -389,7 +395,14 @@ def check_repo(root, repo):
 
 def check_cell(root, repo, m, row, red):
     n = row.num
-    promoted = (m / "src" / "main.bp").is_file() or (m / "botopink.json").is_file()
+    draft, src = (m / phase1_main(False)).is_file(), (m / phase1_main(True)).is_file()
+    if draft and src:
+        red(n, f"holds both {phase1_main(False)} and {phase1_main(True)} (decision 649: one or the other)")
+        return
+    if not draft and not src:
+        red(n, f"holds neither {phase1_main(False)} nor {phase1_main(True)} (decision 649)")
+        return
+    promoted = src
     program = m / phase1_main(promoted)
     docs = m / "docs.md"
     if not docs.is_file():
@@ -398,18 +411,17 @@ def check_cell(root, repo, m, row, red):
         lines = docs.read_text().split("\n")
         if lines[0] != f"# {row.title}":
             red(n, "docs.md first line is not the row's")
-        includes = [INCLUDE.match(ln.strip()) for ln in lines]
-        includes = [i.group(1) for i in includes if i]
+        includes = [inc for ln in lines for inc in INCLUDE.findall(ln)]
         if not includes:
-            red(n, "docs.md has no {path} include line")
+            red(n, "docs.md has no [path](path) link to its .bp example")
+        if any(PLACEHOLDER.match(ln.strip()) for ln in lines):
+            red(n, "docs.md holds a {path} placeholder; code is included by a Markdown link (decision 650)")
         for inc in includes:
             if not (m / inc).is_file():
-                red(n, f"docs.md includes {{{inc}}}, which does not exist")
+                red(n, f"docs.md links {inc}, which does not exist")
         if any(ln.lstrip().startswith("```") for ln in lines):
             red(n, "docs.md contains a fenced code block (code lives in the included file)")
-    if not program.is_file():
-        red(n, f"no {phase1_main(promoted)}")
-    else:
+    if program.is_file():
         first = program.read_text().split("\n")[0]
         if first != f"//// {row.title}":
             red(n, f"{phase1_main(promoted)} header is not the row's")

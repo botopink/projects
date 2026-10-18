@@ -52,9 +52,9 @@ class Cells(unittest.TestCase):
 
     def cell(self, n, title, promoted=False):
         c = self.d / (f"{S[n]}-{n}" if n in S else f"slug_{n}-{n}")
-        (c / "src" if promoted else c).mkdir(parents=True)
-        inc = "src/main.bp" if promoted else "main.bp"
-        (c / "docs.md").write_text(f"# {title}\n\nprose\n\n{{{inc}}}\n")
+        (c / ("src" if promoted else "draft")).mkdir(parents=True)
+        inc = "src/main.bp" if promoted else "draft/main.bp"
+        (c / "docs.md").write_text(f"# {title}\n\nprose\n\n[{inc}]({inc})\n")
         (c / inc).write_text(f"//// {title}\npub fn main() -> void {{}}\n")
         if promoted:
             (c / "botopink.json").write_text(json.dumps({"name": c.name}))
@@ -105,22 +105,27 @@ class Cells(unittest.TestCase):
 
     def test_docs_first_line(self):
         c = self.cell(10, T10)
-        (c / "docs.md").write_text("# wrong\n\n{main.bp}\n")
+        (c / "docs.md").write_text("# wrong\n\n[draft/main.bp](draft/main.bp)\n")
         self.assertRed("decision 10: docs.md first line is not the row's")
 
     def test_no_include(self):
         c = self.cell(10, T10)
         (c / "docs.md").write_text(f"# {T10}\n\nprose\n")
-        self.assertRed("docs.md has no {path} include line")
+        self.assertRed("docs.md has no [path](path) link")
 
     def test_include_missing_file(self):
         c = self.cell(10, T10)
-        (c / "docs.md").write_text(f"# {T10}\n\n{{other.bp}}\n")
-        self.assertRed("docs.md includes {other.bp}, which does not exist")
+        (c / "docs.md").write_text(f"# {T10}\n\n[other.bp](other.bp)\n")
+        self.assertRed("docs.md links other.bp, which does not exist")
+
+    def test_placeholder_include(self):
+        c = self.cell(10, T10)
+        (c / "docs.md").write_text(f"# {T10}\n\n[draft/main.bp](draft/main.bp)\n\n{{draft/main.bp}}\n")
+        self.assertRed("docs.md holds a {path} placeholder")
 
     def test_fenced_code(self):
         c = self.cell(10, T10)
-        (c / "docs.md").write_text(f"# {T10}\n\n```bp\nx\n```\n\n{{main.bp}}\n")
+        (c / "docs.md").write_text(f"# {T10}\n\n```bp\nx\n```\n\n[draft/main.bp](draft/main.bp)\n")
         self.assertRed("docs.md contains a fenced code block")
 
     def test_no_docs(self):
@@ -128,15 +133,21 @@ class Cells(unittest.TestCase):
         (c / "docs.md").unlink()
         self.assertRed("decision 10: no docs.md")
 
-    def test_no_program(self):
+    def test_neither_draft_nor_src(self):
         c = self.cell(10, T10)
-        (c / "main.bp").unlink()
+        (c / "draft/main.bp").unlink()
         (c / "docs.md").write_text(f"# {T10}\n\n{{docs.md}}\n")
-        self.assertRed("decision 10: no main.bp")
+        self.assertRed("decision 10: holds neither draft/main.bp nor src/main.bp")
+
+    def test_both_draft_and_src(self):
+        c = self.cell(10, T10)
+        (c / "src").mkdir()
+        (c / "src/main.bp").write_text((c / "draft/main.bp").read_text())
+        self.assertRed("decision 10: holds both draft/main.bp and src/main.bp")
 
     def test_header(self):
         c = self.cell(10, T10)
-        (c / "main.bp").write_text("//// stale\n")
+        (c / "draft/main.bp").write_text("//// stale\n")
         self.assertRed("main.bp header is not the row's")
 
     def test_promoted_without_manifest(self):
@@ -178,7 +189,7 @@ class Cells(unittest.TestCase):
         self.assertFalse(self.d.exists())
         self.assertEqual(self.run_cmd("scaffold", "snap")[0], 0)
         self.assertEqual(sorted(p.name for p in self.d.iterdir()), ["another_code_rule-13", "code_rule_ten-10"])
-        self.assertEqual((self.d / "code_rule_ten-10/docs.md").read_text(), f"# {T10}\n\n{{main.bp}}\n")
+        self.assertEqual((self.d / "code_rule_ten-10/docs.md").read_text(), f"# {T10}\n\n[draft/main.bp](draft/main.bp)\n")
         self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
 
     def test_scaffold_rewrites_changed_lead(self):
@@ -186,14 +197,15 @@ class Cells(unittest.TestCase):
         (self.repo / "decisions-taken.md").write_text(LEDGER.replace("Code rule ten.", "Renamed rule."))
         self.run_cmd("scaffold", "snap")
         self.assertEqual((self.d / "code_rule_ten-10/docs.md").read_text().split("\n")[0], f"# Decision 10 {D} Renamed rule.")
-        self.assertEqual((self.d / "code_rule_ten-10/main.bp").read_text().split("\n")[0], f"//// Decision 10 {D} Renamed rule.")
+        self.assertEqual((self.d / "code_rule_ten-10/draft/main.bp").read_text().split("\n")[0], f"//// Decision 10 {D} Renamed rule.")
 
     def test_promote(self):
         self.run_cmd("scaffold", "snap")
         self.assertEqual(self.run_cmd("promote", "snap")[0], 0)
         self.assertTrue((self.d / "code_rule_ten-10/src/main.bp").is_file())
+        self.assertFalse((self.d / "code_rule_ten-10/draft").exists())
         self.assertEqual(json.loads((self.d / "code_rule_ten-10/botopink.json").read_text()), {"name": "code_rule_ten-10"})
-        self.assertIn("{src/main.bp}", (self.d / "code_rule_ten-10/docs.md").read_text())
+        self.assertIn("[src/main.bp](src/main.bp)", (self.d / "code_rule_ten-10/docs.md").read_text())
         self.assertIn('"decisions-taken/*"', (self.repo / "conformance/modules/botopink.json").read_text())
         self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
 
