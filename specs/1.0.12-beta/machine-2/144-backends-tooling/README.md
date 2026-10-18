@@ -2703,7 +2703,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
       formatter prints an annotation whose arguments end in a trailing comma one per line — cell
       `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
-- [ ] decisions 618, 619: `Implementation.Node` renamed `JavaScript`; the `Typescript` variant removed (0 sites; the
+- [x] decisions 618, 619: `Implementation.Node` renamed `JavaScript`; the `Typescript` variant removed (0 sites; the
       `.typescript` row of `parser/implementations.zig` and every reader); `.Node(` → `.JavaScript(` at every std and cell
       site (654 in all with the libraries', theirs in their fronts); `external_variants`, `translateExternalCells`, the
       readers; the enum in `conformance/docs.md` § `declare fn`; `"typings": true` in `botopink.json` switches the `.d.ts`
@@ -2712,15 +2712,17 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
 - [ ] decision 617: `implement-with-body` on every bodied declaration, a behavior's `default fn` included — the exemption
       `ImplDecl.isDefault` goes, `implement_with_body` gains the behavior case; `primitives.bp`'s bodies-with-cells are
       B-146's to redistribute, so this box lands with B-146
-- [ ] decision 621: only `template` positional in a cell; a second unlabelled argument refused at the argument naming the
+- [x] decision 621: only `template` positional in a cell; a second unlabelled argument refused at the argument naming the
       label (`external-field-unlabelled`); `conformance/docs.md` § `declare fn`; cells `external_flag_bare_bool_refused`
       (the text, on `.JavaScript`) and `external_flag_bare_fn_refused` (`.Erlang("…", f)`)
-- [ ] decision 610: `body:` on `Erlang`, `JavaScript`, `Wasm` alone, `template` optional only beside it; the refusals
+- [x] decision 610: `body:` on `Erlang`, `JavaScript`, `Wasm` alone, `template` optional only beside it; the refusals
       `external-body-not-a-fn` (not a bare identifier naming a private bodied `fn` with the declaration's types),
       `external-source-empty` (neither `template` nor a cell), `external-all-bodies` (every source a `body:` — write the
       bodied `fn`), each at its argument or the annotation; `conformance/docs.md` § `declare fn` writes the cell's rule
       beside `op:` / `std:` / `wasi:`'s; the 117 `body:` sites re-read for `external-all-bodies`; cells
       `external_body_not_a_fn`, `external_source_empty`, `external_all_bodies`
+      — built as: a bare `bool` names `result:` (`inline:` beside it on `.Erlang`), a name `body:`; 610 turned std's
+      `pow` and `fromCodepoint` into plain `fn`s (every source was a `body:`); no library site needed the codemod
 - [ ] (box 4) `print` bound by its cell on erlang, beam and commonJS, as `io/terminal.bp`'s declaration (606; `println` and
       `debug` are removed there): its `declare fn` carries `.Erlang(…)` / `.JavaScript(…)`; `erlang.zig`, `beam_asm.zig`, `commonJS.zig` dispatch no builtin by
       the names `print` / `println` / `debug` — a grep gate in `zig build test` over `modules/compiler-core/src/codegen`
