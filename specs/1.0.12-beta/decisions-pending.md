@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**119 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **610**.
+number, which is **611**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -803,20 +803,6 @@ before every other part of this page; each holds one row, or nothing built.
   (c) Keep the landed splice: the handle is the bare name, resolved in the annotated module; a type is `type<T>`'s value where the checker admits one.
 - **Recommendation.** (a): the only reading in which no executor binds another declaration by accident and nothing is defined by what a name happens to resolve to; (b) is a later widening with its own typing to decide (an instance method's `self`), (c) is the silent misbinding measured above. Cells: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, each `refused` at the annotation.
 - **Blocks.** B-137's "a handle inside an executor is its declaration at run time, typed" box, for the kinds other than `fn` and `val`; 165 s10's markers on types (`#[component]`, `#[page]` on a type); 165 s10's registrations, built reading a type's `decl` as the type's name spliced in (`decl.make()`, `decl.Tx.make()`, `decl.bind(prefix)`) — that reading changes with the answer.
-
-#### b138-a · `Implementation`'s botopink-body cell: named `body:` (`fn` is reserved) and typed `?unknown`, on which variants? (decisions 575 (6), 590, 594 (1); 144 B-138)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
-- **Measured.** 575 (6)'s enum — `Erlang(template, inline = false, result = false) | Node(template, result = false) | Typescript(template, result = false) | Wasm(template | op | std | wasi, host, needs, result)` — lists no body cell, while the same sentence keeps the `fn:` table check "over the value" and 594 (1) / 585 (l) name `fn:` a botopink body. `fn` is a reserved word and no field name (590). The landed `libs/std/src/external.bp` writes `body: ?unknown = null` on `Erlang`, `Node` and `Wasm` (none on `Typescript`) and makes `template` `?string = null`: 22 `.Erlang(body: …)`, 8 `.Node(body: …)`, 87 `.Wasm(body: …)` in std and the cells. Consequence: the constructor admits `.Erlang()` (no code), `body: "x"`, `body: 1`, `body: true`; `comptime/infer.zig` `checkSourceCells` refuses each after the constructor — "a source's shape is the constructor's" no longer holds for this cell.
-- **Options.**
-  (a) As landed: `body: ?unknown` on `Erlang`, `Node`, `Wasm`; `template` optional; the identifier check the compiler's, at the argument.
-  ```bp
-  #[@external(.Erlang(body: reverseBody), .Wasm(body: reverseBody))]
-  declare fn backwards(xs: i32[]) -> i32[];
-  ```
-  (b) `body:` the one name, on `Erlang`, `Node` and `Wasm` alone; 575 (6)'s enum text amended to list it; `template` stays optional only because `body` exists; `.Typescript` takes none; a `body:` that is not a bare identifier naming a private bodied `fn` of the module with the declaration's types, and a source naming neither `template` nor a cell, are refused at the argument — the two checks the constructor cannot state, written in the reference as the cell's own rule beside `op:` / `std:` / `wasi:`.
-  (c) No body cell: a botopink algorithm is a bodied `fn`, never a `declare fn`; the 117 sites are rewritten as bodied functions (the behavior members among them bodiless signatures with host cells only).
-- **Recommendation.** (b). The cell exists by the maintainer's own words (575 (6)'s `fn:` check, 594 (1), 585 (l)); `fn` cannot be the name (590); one name on the three variants that run code, none on the one that emits typings; (c) loses the per-target split (`body:` on wasm beside an `.Erlang` template) 594 depends on.
-- **Blocks.** 144 B-138's reference text (`conformance/docs.md` § `declare fn`), 165 s10's ~1740 migrated sites.
 
 #### b138-b · A behavior's `default fn` with a body and cells: `implement-with-body`, or the body the fallback? (decisions 575 (6), 585 (h); 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

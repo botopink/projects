@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**119 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **610**.
+número livre, que é **611**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -803,20 +803,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (c) Manter o splice pousado: o handle é o nome nu, resolvido no módulo anotado; um type é o valor de `type<T>` onde o checker admite um.
 - **Recomendação.** (a): a única leitura em que nenhum executor liga outra declaração por acidente e nada é definido pelo que um nome por acaso resolve; (b) é um alargamento posterior com sua própria tipagem a decidir (o `self` de um método de instância), (c) é a ligação errada silenciosa medida acima. Células: `compile_executor_handle_on_type`, `_on_behavior`, `_on_field`, `_on_method`, cada uma `refused` na anotação.
 - **Bloqueia.** A caixa do B-137 "a handle inside an executor is its declaration at run time, typed", para os tipos de declaração além de `fn` e `val`; os marcadores do 165 s10 em types (`#[component]`, `#[page]` num type); os registros do 165 s10, construídos lendo o `decl` de um tipo como o nome do tipo emendado (`decl.make()`, `decl.Tx.make()`, `decl.bind(prefix)`) — essa leitura muda com a resposta.
-
-#### b138-a · A célula de corpo botopink de `Implementation`: chamada `body:` (`fn` é reservada) e tipada `?unknown`, em quais variantes? (decisões 575 (6), 590, 594 (1); 144 B-138)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Medido.** O enum da 575 (6) — `Erlang(template, inline = false, result = false) | Node(template, result = false) | Typescript(template, result = false) | Wasm(template | op | std | wasi, host, needs, result)` — não lista célula de corpo, enquanto a mesma frase mantém a checagem de tabela `fn:` "sobre o valor" e a 594 (1) / 585 (l) chamam `fn:` de corpo botopink. `fn` é palavra reservada e não é nome de campo (590). O `libs/std/src/external.bp` pousado escreve `body: ?unknown = null` em `Erlang`, `Node` e `Wasm` (nenhum em `Typescript`) e torna `template` `?string = null`: 22 `.Erlang(body: …)`, 8 `.Node(body: …)`, 87 `.Wasm(body: …)` no std e nas células. Consequência: o construtor admite `.Erlang()` (sem código), `body: "x"`, `body: 1`, `body: true`; o `checkSourceCells` de `comptime/infer.zig` recusa cada um depois do construtor — "a forma de uma fonte é a do construtor" deixa de valer para esta célula.
-- **Opções.**
-  (a) Como pousado: `body: ?unknown` em `Erlang`, `Node`, `Wasm`; `template` opcional; a checagem de identificador é do compilador, no argumento.
-  ```bp
-  #[@external(.Erlang(body: reverseBody), .Wasm(body: reverseBody))]
-  declare fn backwards(xs: i32[]) -> i32[];
-  ```
-  (b) `body:` o único nome, só em `Erlang`, `Node` e `Wasm`; o texto do enum da 575 (6) emendado para listá-lo; `template` fica opcional só porque `body` existe; `.Typescript` não recebe nenhum; um `body:` que não é um identificador simples nomeando uma `fn` privada com corpo do módulo com os tipos da declaração, e uma fonte que não nomeia nem `template` nem uma célula, são recusados no argumento — as duas checagens que o construtor não consegue enunciar, escritas na referência como a regra própria da célula ao lado de `op:` / `std:` / `wasi:`.
-  (c) Sem célula de corpo: um algoritmo botopink é uma `fn` com corpo, nunca uma `declare fn`; os 117 locais são reescritos como funções com corpo (os membros de behavior entre eles assinaturas sem corpo só com células de host).
-- **Recomendação.** (b). A célula existe pelas próprias palavras do mantenedor (a checagem `fn:` da 575 (6), 594 (1), 585 (l)); `fn` não pode ser o nome (590); um nome nas três variantes que rodam código, nenhum na que emite tipagens; (c) perde a divisão por alvo (`body:` no wasm ao lado de um template `.Erlang`) de que a 594 depende.
-- **Bloqueia.** O texto de referência do 144 B-138 (`conformance/docs.md` § `declare fn`), os ~1740 locais migrados do 165 s10.
 
 #### b138-b · Uma `default fn` de behavior com corpo e células: `implement-with-body`, ou o corpo é o fallback? (decisões 575 (6), 585 (h); 144 B-138)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**

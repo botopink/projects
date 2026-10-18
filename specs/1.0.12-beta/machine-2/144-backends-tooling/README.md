@@ -2673,8 +2673,14 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
       formatter prints an annotation whose arguments end in a trailing comma one per line — cell
       `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
-- [ ] (box 4) `print`, `println`, `debug` bound by their cells on erlang, beam and commonJS: `builtins.d.bp`'s three
-      `declare fn` carry `.Erlang(…)` / `.Node(…)`; `erlang.zig`, `beam_asm.zig`, `commonJS.zig` dispatch no builtin by
+- [ ] decision 610: `body:` on `Erlang`, `Node`, `Wasm` alone, `template` optional only beside it; the refusals
+      `external-body-not-a-fn` (not a bare identifier naming a private bodied `fn` with the declaration's types),
+      `external-source-empty` (neither `template` nor a cell), `external-all-bodies` (every source a `body:` — write the
+      bodied `fn`), each at its argument or the annotation; `conformance/docs.md` § `declare fn` writes the cell's rule
+      beside `op:` / `std:` / `wasi:`'s; the 117 `body:` sites re-read for `external-all-bodies`; cells
+      `external_body_not_a_fn`, `external_source_empty`, `external_all_bodies`
+- [ ] (box 4) `print` bound by its cell on erlang, beam and commonJS, as `io/terminal.bp`'s declaration (606; `println` and
+      `debug` are removed there): its `declare fn` carries `.Erlang(…)` / `.Node(…)`; `erlang.zig`, `beam_asm.zig`, `commonJS.zig` dispatch no builtin by
       the names `print` / `println` / `debug` — a grep gate in `zig build test` over `modules/compiler-core/src/codegen`
       (decision 67, like the lib-agnostic gate) and cell `print_bound_by_cells` (four targets; wasm's row red until 164
       s3 lands `.Wasm(std: "print")`)
