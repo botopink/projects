@@ -38,10 +38,12 @@
 # `$XDG_RUNTIME_DIR/botopink-gate-pool`, else `/tmp/botopink-gate-pool-<uid>` —
 # holding one `lease.<id>` file per running gate (its owner pid, its child pid,
 # the jobs it holds, its name, start time and log) and one `wait.<id>` per gate
-# that waits. The capacity is the machine's jobs: one per CPU bounded by
-# `MemAvailable / 768 MiB`, then counted as ~2 runnable threads a job (the
-# `botopink` child and its `erl` / `node`, measured in 144 B-29 step G), so
-# `capacity = max(1, jobs / 2)`. A gate is admitted when at least one job is
+# that waits. The capacity is the machine's jobs, the tighter of two bounds
+# read on every pass (decision 674): the CPUs, a job counted as ~2 runnable
+# threads (the `botopink` child and its `erl` / `node`, measured in 144 B-29
+# step G), and the memory, one job per 768 MiB of `MemAvailable` — so
+# `capacity = max(1, min(cpus / 2, MemAvailable / 768 MiB))`; the CPU half is
+# never applied to the memory bound. A gate is admitted when at least one job is
 # free: it takes `min(share, free)` jobs, `share = max(1, capacity / gates of
 # this run)`, and gives them back when it ends; a lease whose owner and child
 # are both dead is reaped. The path is fixed, not a flag or a variable a commit
@@ -237,18 +239,18 @@ poolDir() {
 }
 pool="$(poolDir)"
 
-# poolCapacity — the machine's jobs, a job counted as ~2 runnable threads.
+# poolCapacity — the machine's jobs: min(cpus / 2, MemAvailable / 768 MiB), at least 1 (decision 674).
+# A job is ~2 runnable threads, so the CPU bound is halved; the memory bound already counts whole jobs
+# and is never halved. Read on every pass, so the capacity follows the memory as it frees and fills.
 poolCapacity() {
     local cpus avail_kb by_mem jobs
     cpus="$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 4)"
-    jobs="$cpus"
+    jobs=$(( cpus / 2 ))
     avail_kb="$(awk '/^MemAvailable:/ { print $2 }' /proc/meminfo 2>/dev/null || true)"
     if [ -n "$avail_kb" ]; then
         by_mem=$(( avail_kb / (768 * 1024) ))
-        [ "$by_mem" -ge 1 ] || by_mem=1
         [ "$by_mem" -lt "$jobs" ] && jobs="$by_mem"
     fi
-    jobs=$(( jobs / 2 ))
     [ "$jobs" -ge 1 ] || jobs=1
     echo "$jobs"
 }
