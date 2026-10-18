@@ -1839,7 +1839,7 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 
 - [ ] the adapter names `.GateNew` / `.GateOpen` / `.GateAwait`, and std's test-only cells (`monoMillis`, `hostTarget`, the
       counters) left unbound on wasm until `botopink test` runs wasm (335 (3)) · question B-25-a
-- [ ] decision 623: `fetch(req: Request) -> Task<Result<Response, HttpError>>`, `Request(method, url, headers = [], body = null)`,
+- [x] decision 623: `fetch(req: Request) -> Task<Result<Response, HttpError>>`, `Request(method, url, headers = [], body = null)`,
       `HttpError { NotAllowedOnHost, Network(message), Timeout }`; `fetch(url)` removed in the same commit, std's and `http`'s
       call sites migrated; cells `http_fetch_request`, `http_fetch_url_removed`
 - [x] log's two markers — superseded by fs-a: `io.fs` binds `wasi:filesystem` on wasm, log calls it; 156's markers removed
