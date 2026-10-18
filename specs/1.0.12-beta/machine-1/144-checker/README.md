@@ -2513,39 +2513,40 @@ rule 9)
 The first step of the builtins group: a build-time body talks to the compiler through one keyword, and a parameter's
 modifier says how its argument arrives. Every later step of the group writes its std bodies against this.
 
-- [ ] the keyword `compiler` (lexer, parser): in a body that runs at build — a decorator, a template, a function called
+- [x] the keyword `compiler` (lexer, parser): in a body that runs at build — a decorator, a template, a function called
       at build, a `comptime` block — the `Compiler` of that point, the annotated declaration in a decorator, the call
       site elsewhere; a `Build` resource (376 (1)); `compiler-at-run-time` in a run-time-only body; never a parameter
-- [ ] `libs/std/src/compiler.bp`: the behavior `Compiler` with the members 575 (3) lists but `compile`, `implement`,
+- [x] `libs/std/src/compiler.bp`: the behavior `Compiler` with the members 575 (3) lists but `compile`, `implement`,
       `setBuiltin`, `embed`, `record`, `fields`, `optional`, `required` (B-137 … B-140's); a unit test holds the
       compiler's table of members to the file; `comptime.zig`'s `decl_reflection_src` mirror, `Decl<T>` and `Declared<T>` go (576 (7)); `addMember` keeps only 370 (2)'s typed form (`decorator-member-not-one-fn` goes)
-- [ ] `comptime x: T` holds the value (364 (4) reverted); `expr x: T` the tree, opaque; a decorator's first `expr` the
+- [x] `comptime x: T` holds the value (364 (4) reverted); `expr x: T` the tree, opaque; a decorator's first `expr` the
       annotated declaration, checked against the parameter's type (280 (2)); `-> expr T` a template's return, spliced
       at the call; an `expr` argument to an `expr` parameter hands its tree on; `@Expr<T>`, `.value`, `@expr` go
-- [ ] the tree rule: run-time code (resolved where written, 384), `expr` (spliced), `comptime` (parameters and the
+- [x] the tree rule: run-time code (resolved where written, 384), `expr` (spliced), `comptime` (parameters and the
       body's `val`s, literals); `expr-captures-build`; `expr-call-outside-expr`
-- [ ] `type<T>` parsed in a type position and bound by a type argument; `type T` goes at its seven sites;
+- [x] `type<T>` parsed in a type position and bound by a type argument; `type T` goes at its seven sites;
       `@typeInfo(city)` with a value refused; `type(` / `type {` unchanged
-- [ ] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
-- [ ] decision 576: `Expr<E>`, `@Expr`, `Decl`, `@Decl` removed whole; the `Expr` members and the template model (`parts`, `source`, `context`, `lookup`, `bindings`, `build`, `note`, `fail` with a span, `tagDecl`, `annotate`, a declaration handle's reads) as `compiler.*`; `@ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`; `Span`, `Part`, `Source`, `ExprContext`, `CustomNode` in `compiler.bp`; the codemod's rewrites (576 (6)); the cells of 275, 302, 415, 426 unchanged but for the spelling
-- [ ] decision 576 (8)–(12): the other declaration reads as `compiler.<r>(d)`; `compiler.addMeta` / `wrapWith`; a decorator is a function whose first parameter is `expr`; the string `setMeta(key, value)` and its readers removed, std's and `conformance/`'s sites on typed meta records by hand; a meta field written `@Expr<T>` written `T`
-- [ ] decision 579: `compiler` not a keyword — `#[builtin] pub default declare val compiler: Compiler;`, the default of `compiler.bp`; `import {compiler} from "std";` outside std, `import {compiler};` inside; the rules read off the binding; `compiler-escapes`; the codemod adds the imports
-- [ ] decision 579's rest: `import {compiler};` is std's `compiler` only when the importing package is std — another package's own module named `compiler` is that module (resolved where the package is known, not by spelling); std's `compiler.bp` left out of a program's run-time output (no run-time code); a local named `compiler` in a module that imports it shadows the import, as any binding does
-- [ ] decision 578: no `-> expr`; a template is marked by its `expr q: string` first parameter (after an `expr self` receiver for a template method) and returns `T`, `anyvalue` or `anytype`; the bare `type` renamed `anytype`; `compiler.build -> anyvalue`, `compiler.buildType -> anytype`; `anyvalue-outside-template`; the codemod's respellings
-- [ ] decision 577: the template text `` @`…` `` (lexer: multi-line, raw, `` \` `` its one escape); a template takes it alone and is called only as `` name @`…` `` or `` #[name @`…`] ``; any other call `expr-call-outside-expr`; any other template signature `template-signature`; `Part` / `compiler.parts` removed; the codemod's rewrite, the rest by hand
-- [ ] decision 576 (7), (15): `compiler.catalogue` answers declaration handles read at build through `compiler.*` (comptime_expand_boot, typeinfo_all_duplicate_at_entry, template_reads_program_catalogue's `named=` line restored); the hooks model's `fn` / `callee` / `context` handles — `Declared<T>` and the run-time `@TypeInfo.all` go in B-137
-- [ ] decision 576 (13): `compiler.bp`'s types imported, no prelude names; the codemod adds the imports
-- [ ] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
+- [x] the parameter modifier `syntax` goes (the maintainer, 2026-10-17): the keyword, `ParamModifier.syntax`, the post-colon `syntax` of a parameter and the `FnType` form kept only for it; `expr` holds its meaning; no `.bp` writes it; `syntax` is an ordinary name after it
+- [x] decision 576: `Expr<E>`, `@Expr`, `Decl`, `@Decl` removed whole; the `Expr` members and the template model (`parts`, `source`, `context`, `lookup`, `bindings`, `build`, `note`, `fail` with a span, `tagDecl`, `annotate`, a declaration handle's reads) as `compiler.*`; `@ExprCustom<T>` → `-> expr T` with `compiler.custom(ast)`; `Span`, `Part`, `Source`, `ExprContext`, `CustomNode` in `compiler.bp`; the codemod's rewrites (576 (6)); the cells of 275, 302, 415, 426 unchanged but for the spelling
+- [x] decision 576 (8)–(12): the other declaration reads as `compiler.<r>(d)`; `compiler.addMeta` / `wrapWith`; a decorator is a function whose first parameter is `expr`; the string `setMeta(key, value)` and its readers removed, std's and `conformance/`'s sites on typed meta records by hand; a meta field written `@Expr<T>` written `T`
+- [x] decision 579: `compiler` not a keyword — `#[builtin] pub default declare val compiler: Compiler;`, the default of `compiler.bp`; `import {compiler} from "std";` outside std, `import {compiler};` inside; the rules read off the binding; `compiler-escapes`; the codemod adds the imports
+- [x] decision 579's rest: `import {compiler};` is std's `compiler` only when the importing package is std — another package's own module named `compiler` is that module (resolved where the package is known, not by spelling); std's `compiler.bp` left out of a program's run-time output (no run-time code); a local named `compiler` in a module that imports it shadows the import, as any binding does
+- [x] decision 578: no `-> expr`; a template is marked by its `expr q: string` first parameter (after an `expr self` receiver for a template method) and returns `T`, `anyvalue` or `anytype`; the bare `type` renamed `anytype`; `compiler.build -> anyvalue`, `compiler.buildType -> anytype`; `anyvalue-outside-template`; the codemod's respellings
+- [x] decision 577: the template text `` @`…` `` (lexer: multi-line, raw, `` \` `` its one escape); a template takes it alone and is called only as `` name @`…` `` or `` #[name @`…`] ``; any other call `expr-call-outside-expr`; any other template signature `template-signature`; `Part` / `compiler.parts` removed; the codemod's rewrite, the rest by hand
+- [x] decision 576 (7), (15): `compiler.catalogue` answers declaration handles read at build through `compiler.*` (comptime_expand_boot, typeinfo_all_duplicate_at_entry, template_reads_program_catalogue's `named=` line restored); the hooks model's `fn` / `callee` / `context` handles — `Declared<T>` and the run-time `@TypeInfo.all` go in B-137
+- [x] decision 576 (13): `compiler.bp`'s types imported, no prelude names; the codemod adds the imports
+- [x] the codemod (`scripts/codemod/`): `comptime x: @Expr<T>` → `comptime x: T` where the body reads only `.value`
       (the read dropped), `expr x: T` where it hands `x` on or reads its syntax (`.text()` → `compiler.text(x)`,
       `.fail(m)` → `compiler.fail(m, at: x)`); `@expr(v)` → `v` with `-> expr T`; `comptime decl: @Decl` →
       `expr decl: unknown`, `decl.name` → `compiler.name(decl)!`, `decl.fail(m)` → `compiler.fail(m, at: decl)`,
       `decl.setMeta` / `addMember` / `addType` / `wrapWith` → `compiler.*`; run over std and `conformance/` here, over
       the libraries by 165 s10 (482 parameters, 605 `.value` reads, 29 `@expr`, 7 `type T` measured on 2026-10-16)
-- [ ] cells: a decorator with the three parameter kinds, read at build and spliced; `-> expr` template; a `type<T>`
+- [x] cells: a decorator with the three parameter kinds, read at build and spliced; `-> expr` template; a `type<T>`
       parameter; the three refusals; every `decorator_*` / `template_*` / `comptime_*` cell's answer unchanged but for
       the spellings the codemod rewrites, each stated
 - [ ] `conformance/docs.md` § Decorators, § Templates, § Builtins rewritten to the new spelling; the compiler's
-      `AGENTS.md` files
+      `AGENTS.md` files — left: the old spelling (`@Expr<T>`, `@Decl`, `-> expr`, `syntax`) in `conformance/AGENTS.md`,
+      `libs/std/AGENTS.md`, the compiler's `AGENTS.md` files and std's comments (`types.bp`, `testing/mocks.bp`)
 
 Oracle: `zig build test`; the cells; `scripts/gate.sh libs` on the main checkout once 165 s10 lands.
 
