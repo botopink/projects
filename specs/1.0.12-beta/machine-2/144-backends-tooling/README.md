@@ -2887,8 +2887,11 @@ Found by B-137's cell `init_executor_handle_not_module_name` (613). `Entry(name:
 function, where the module also declares `pub fn make()`, stores the module's `make` on wasm: `e.make()` prints
 `module make`, commonJS, erlang and beam `users made`. `val f: fn() -> string = Users.make;` is right on wasm.
 
-- [ ] `Users.make` as a constructor argument is the type's method on wasm; the cell `init_executor_handle_not_module_name`
-      (four targets, red on the parent on wasm) and a plain-program cell beside it
+- [x] `Users.make` as a constructor argument is the type's method on wasm; the cell `init_executor_handle_not_module_name`
+      (four targets, red on the parent on wasm) and a plain-program cell beside it — built as: the defect was the call
+      `e.make()` through a function-typed record field, lowered to the module's `fn make` before the field was tried;
+      the lowering now calls the field's value when the receiver's record has a field of that name; cells
+      `init_executor_handle_not_module_name` (restored) and `static_method_as_record_field_argument`
 
 ### B-151 — wasm: a namespace import of a std module links every member's hosts, used or not
 
