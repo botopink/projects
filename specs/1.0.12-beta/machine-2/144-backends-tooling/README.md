@@ -2816,10 +2816,19 @@ the call, against 105. It falls back for `@Result` items (decision 122's sugar),
 `for` / `.next()` / `toArray` / `take` / `drop` / `map` / `filter`, and `g.toArray()` printed directly. `@Stream` is eager
 on wasm too.
 
-- [ ] a generator's body one step per item in a linear-memory module, or the module never falls back for it (164 s2's
+- [x] a generator's body one step per item in a linear-memory module, or the module never falls back for it (164 s2's
       WasmGC whole); a cell per fallback cause with a print before and after the first `yield`, red on wasm today,
       green on commonJS, erlang and beam
-- [ ] `@Stream` on wasm one step per item, the same cell shape
+- [x] `@Stream` on wasm one step per item, the same cell shape
+      — built as "the module never falls back": `@Result` items, a `defer` in the body (`$__gen_close`), an untyped
+      item, `forEach` / `some` / `every` / `reduce` on the handle, `g.toArray()` printed, `@Stream` / `stream loop`; cells
+      `generator_result_items_lazy`, `generator_defer_lazy`, `generator_item_untyped_lazy`, `generator_walk_lazy`,
+      `generator_to_array_printed`, `stream_body_lazy`; a `yield :l` naming an enclosing scope is refused by the checker
+      (`yield-label-unbound`), so no program reaches that fallback
+- [ ] a `return` or `break :outer` out of a `for` over a generator closes it (its pending `defer`s run) on wasm, as leaving
+      by the loop's end or a plain `break` does; checked against commonJS, erlang and beam, a cell for each exit
+- [ ] `find` and `flatMap` on a generator handle keep a module in linear memory on wasm; stepped in place as the other
+      methods (the method set is decision 596's)
 
 ### B-143 — commonJS: `push` mutates the array every binding holds, not the `var` it was called on (decisions 447 (2), 448 (2), 547)
 

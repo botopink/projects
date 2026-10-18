@@ -46,7 +46,7 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [ ] 144 B-140 — `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.Field<T>(name, type, annotations)`, `compiler.buildType` / `fields` / `optional` / `required` · B-139 — machine 1
 - [ ] 144 B-148 — the primitive widths are types, a behavior a contract with no cell: `pub type i32 implement Signed`, the cells on the types, the six empty behaviors and the four backends' chains gone (617); a behavior's statics written `fn`, no `default` (628) · after B-139, before B-140 — machine 2
 - [ ] 144 B-149 — no code from text (625): the `Node` records in `compiler.bp`, `compiler.ast(node) -> anyvalue`, `compiler.build` removed, `buildType(name, fields)` and `buildTypeInline(fields)` (629); the std bodies (`Type.*`, `mocks.bp`) and the 113 template cells · after B-137's tail — machine 2; then 165 s11 (rakun-bpp's and rakun-style's generators) — machine 1
-- [ ] 144 B-150 — wasm: a type's method as a record-constructor argument resolves to the module's same-named `fn` (`init_executor_handle_not_module_name`) · after B-142 — machine 2
+- [ ] 144 B-150 — wasm: a type's method as a record-constructor argument resolves to the module's same-named `fn` (`init_executor_handle_not_module_name`) · now (B-142 landed) — machine 2
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
@@ -114,7 +114,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
 - [x] 144 B-128 — a generator runs one step per item (105): erlang, beam (a process per generator) and wasm in a GC module (a resumable state machine over 392's `@Task` frames); `generator_body_lazy`, `generator_handle_stateful`, `generator_captured_var_shared` green on four targets; a linear-memory module is B-142
-- [ ] 144 B-142 — wasm: a generator in a linear-memory module (and `@Stream`) runs its whole body at the call, against 105 · the builtins group — machine 2
+- [ ] 144 B-142 — wasm: a generator and `@Stream` run one step per item (105) · landed: no generator falls back to linear memory, six cells; left: `return` / `break :outer` closing a generator, `find` / `flatMap` stepped in place — machine 2
 - [x] 144 B-143 — commonJS: `push` and `pop` on a `var` rebind it, as erlang and beam do (447 (2), 448 (2), 547); cells `array_push_rebinds_var`, `array_pop_rebinds_var`, `compile_executor_module_val_order` widened — machine 2
 - [ ] 144 B-129 — the gate's job budget bounded by each stage's measured peak, test-web counted (landed); left: the hook measured alone, MemAvailable ≥ 3 GB · nothing
 - [ ] 144 B-130 — std: `json`, `regex`, `process` answer their own error enums (486); `io.process` / `io.terminal`'s raw cells mapped from `HostError` · 164 s3's per-call wasm refusal
