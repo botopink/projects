@@ -721,6 +721,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): 599 keeps the field a build-time value, the refusal says so where the program meets it, and the build-time read stays.
 - **Blocks.** B-140's first box (the cell is red until answered).
 
+#### 577-a · How an error in template-built code finds its place in the template text: by the word it copies, or by the hole leaves the sub-language records (decisions 577, 578; 144 B-136)
+- **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a)** now, **(b)** as a later step.
+- **Measured.** A sub-language parses its own `${…}` holes from `compiler.text(q)` and builds code with `compiler.build(text)` (577). The built text keeps no link to the template's source, so the compiler must map an error in it back. query records hole leaves spanning the whole `${missing}`, which never appears in the built code. rakun-style records no leaves at all. As built in `infer.zig` `parseCodeTextAt` (`copiedAt`), every identifier, number or string the built code copies from the template text is located at its occurrence there. It matches whole words, scans forward, and never looks inside a leaf's span. Names the template's own module declares keep their old location (`dsl_hygiene`). The four library refusal cells and the cells `template_hole_error_at_column`, `_on_later_line` and `_far_in_built_code` hold it.
+- **Options.**
+  (a) The word-copy rule as built: no work for a sub-language. A word that appears twice in the text is located at the first occurrence after the previous match.
+  (b) A sub-language records each hole leaf spanning the hole's expression (not `${…}`), and only leaves are located. Tokens outside a leaf get the template literal's location.
+  (c) Both: leaves when recorded, the word-copy rule otherwise.
+- **Recommendation.** (a) now, because it is green on every library and cell. Then (c) as a later step, so that a sub-language that records leaves is exact even where a word repeats.
+- **Blocks.** Nothing (built as (a)).
+
 #### 165-c · 605 (1)'s registration reads `compiler` inside the executor, which 575 (4) refuses (decisions 575 (4), 605; front 165 s10)
 - **Proposed (opus, 2026-10-17; built as (a), awaiting the maintainer):** **(a).**
 - **Measured.** 605 and 165 s10's box write a registration as `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Inside an executor, `compiler` is a build value, and 575 (4) refuses capturing it (`expr-captures-build`, cell `compile_executor_captures_build`). Cell `compile_executor_before_main` shows the accepted form: the build value read before the executor.

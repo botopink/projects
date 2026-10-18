@@ -721,6 +721,16 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a 599 mantém o campo um valor de build, a recusa diz isso onde o programa o encontra, e a leitura no build fica.
 - **Bloqueia.** A primeira caixa do B-140 (a cell fica vermelha até a resposta).
 
+#### 577-a · Como um erro no código construído por um template encontra o seu lugar no texto do template: pela palavra que copia, ou pelas folhas de buraco que a sub-linguagem grava (decisões 577, 578; 144 B-136)
+- **Proposta (opus, 2026-10-18; construída como (a), aguardando o mantenedor):** **(a)** agora, **(b)** como passo posterior.
+- **Medido.** Uma sub-linguagem analisa os seus próprios buracos `${…}` a partir de `compiler.text(q)` e constrói código com `compiler.build(text)` (577). O texto construído não guarda ligação com a fonte do template, então o compilador precisa mapear um erro nele de volta. O query grava folhas de buraco que cobrem o `${missing}` inteiro, que nunca aparece no código construído. O rakun-style não grava folha nenhuma. Como construído em `infer.zig` `parseCodeTextAt` (`copiedAt`), todo identificador, número ou string que o código construído copia do texto do template é localizado na sua ocorrência ali. Casa palavras inteiras, varre para frente, e nunca olha dentro do trecho de uma folha. Nomes que o próprio módulo do template declara mantêm a sua localização antiga (`dsl_hygiene`). As quatro cells de recusa das bibliotecas e as cells `template_hole_error_at_column`, `_on_later_line` e `_far_in_built_code` seguram isso.
+- **Opções.**
+  (a) A regra da palavra copiada como construída: nenhum trabalho para uma sub-linguagem. Uma palavra que aparece duas vezes no texto é localizada na primeira ocorrência depois do casamento anterior.
+  (b) Uma sub-linguagem grava cada folha de buraco cobrindo a expressão do buraco (não `${…}`), e só folhas são localizadas. Tokens fora de uma folha recebem a localização do literal do template.
+  (c) As duas: folhas quando gravadas, a regra da palavra copiada senão.
+- **Recomendação.** (a) agora, porque está verde em toda biblioteca e cell. Depois (c) como passo posterior, para que uma sub-linguagem que grava folhas seja exata mesmo onde uma palavra se repete.
+- **Bloqueia.** Nada (construída como (a)).
+
 #### 165-c · O registro da 605 (1) lê `compiler` dentro do executor, o que a 575 (4) recusa (decisões 575 (4), 605; frente 165 s10)
 - **Proposta (opus, 2026-10-17; construída como (a), aguardando o mantenedor):** **(a).**
 - **Medido.** A 605 e a caixa do 165 s10 escrevem um registro como `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Dentro de um executor, `compiler` é um valor de build, e a 575 (4) recusa capturá-lo (`expr-captures-build`, cell `compile_executor_captures_build`). A cell `compile_executor_before_main` mostra a forma aceita: o valor de build lido antes do executor.
