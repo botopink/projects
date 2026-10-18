@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**42 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**36 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **724**.
+number, which is **730**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -368,10 +368,6 @@ before every other part of this page; each holds one row, or nothing built.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
-#### mono-a · One `rakun` repository: a workspace of 17 plug-and-play packages; erika outside as `query` (decisions 326, 338, 391, 398, 433, 512; front 165)
-- **Answered (the maintainer, 2026-10-14; awaiting its number in `decisions-taken.md`):** rakun, erika's consumers, emilia, styled, jhonstart, onze and dbcontext become one repository, `botopink/rakun`, a botopink workspace (512): one directory per package under `modules/`, the package named by its directory, each with its own `botopink.json`, `src/`, tests and `AGENTS.md`, the cells under `conformance/<package>/`, one version and tag, one gate, hook and CI. The packages, by layer (each depending on lower layers only, a cycle refused): `rakun` (core) · `rakun-data` (dbcontext + rakun-data) · `rakun-restclient` (rakun-client) · `rakun-style` (styled) · `rakun-bpp` (jhonstart, -html, -link, -forms, -test, -dom-test) · `rakun-stylesheet` (emilia, jhonstart-emilia) · `rakun-service` (rakun-web, rakun-actuator) · `rakun-scheduling` · `rakun-session` · `rakun-cache` · `rakun-security` · `rakun-websocket` · `rakun-metrics` · `rakun-messaging` · `rakun-mail` · `rakun-app` · `rakun-ssr` (onze and its eight). erika stays a repository of its own, renamed `query` (a pure typed-query DSL; front 145 continues as `query`); `css`, `actions`, `routing`, `validation`, `snap`, `markdown`, `http`, `log`, `json`, `yaml` stay external. The `rakun-starter-*` go; each `*-test` becomes its package's `testing/` module. **Plug-and-play:** adding a package to `botopink.json` is all a program does — a package declares its contribution at its root (`#[rakun.module] pub fn … -> Module`), `rakun.boot()` discovers every module of the program's dependencies through the catalogue, orders them by layer and starts them with their defaults and the program's typed overrides (`#[rakun.config]`); everything resolves at build (a thing contributed twice, a required package absent: build errors naming them), no run-time discovery. Needs 144 B-86: `@TypeInfo.all` reaching a dependency's declarations (its catalogue exported with its analysis, level B storing it). History kept by `git subtree add`; the six repositories archived; the six fronts' open steps refiled under 150 (front 165 s8). Amends 326 (the libraries as repositories), 338, 391, 398 (dbcontext as a repository of its own), 433 (one front per repository: rakun's is 150, with lanes by layer).
-- **Context.** Raised by the maintainer, 2026-10-14: seven repositories for one web platform, 40 thin packages and starters to combine them; names (erika, emilia, jhonstart, onze) saying nothing of the role.
-
 #### B-86-a · The lib-agnostic gate's `query`, and the catalogue's reach across packages (144 B-86, front 165 s4)
 - **Proposed (opus, 2026-10-14; awaiting the maintainer):** (1) the gate refuses `rakun` in any case anywhere in `compiler-core/src`, and `query` only as a package — the import source `"query"` or the handle `import query`; (2) `jhonstart` leaves the gate's list, as the box says; (3) a dependency's catalogue entry has `module` = `<package>/<module>` (`plugin/root`), and a transitive dependency's declarations are listed too — built so, pinned by `modules/typeinfo_all_dependency_declarations`.
 - **Measured.** `grep -riIE 'rakun|query' modules/compiler-core/src` matches about 111 lines: `query` is the catalogue's own word (`Query`, "a template body's query"). `@TypeInfo.all` already listed every module of the build, the dependencies included, and level B's journal already stores `declared` and `meta`: the new cell is green on the parent, on every target, cold and from level B. The reference says "every module of the build", while decision 242 lets a program import only its direct dependencies. Order and collisions follow the existing rule (module path, then declaration order; the key is module and name).
@@ -443,89 +439,6 @@ before every other part of this page; each holds one row, or nothing built.
 
 `00-gate` has no open question: 114's steps wait on no decision.
 
-#### 130-s8-a · One record type both set and added on a declaration; `meta(T)` over added values (298)
-- **Answered (the maintainer, 2026-10-12; awaiting its number in `decisions-taken.md`):** **One read, always a list: `meta(T) -> T[]`.** `@typeInfo(X).meta(T)` and a catalogue entry's `d.meta(T)` answer every value of type `T` recorded on the declaration, in recording order — `[]` when none, one element for a type set once (`@typeInfo(Home).meta(Route)` is `[Route("/", "GET")]`), several for a repeated one. `metaAll`, the `?T` answer of `meta` and the read refusals `typeinfo-meta-several` / `typeinfo-meta-repeated` go. The writing side keeps its two verbs: `setMeta(v)` records a type at most once on a declaration (a second `setMeta`, or an `addMeta` beside it, is `decorator-meta-twice` at the annotation that recorded it) and `addMeta(v)` records one that repeats.
-- **Measured.** Built: a type is held once (`decl.setMeta(v)`) or repeats (`decl.addMeta(v)`) on a
-  declaration, never both — a second `setMeta` of a type, or an `addMeta` beside a `setMeta` of it, is
-  `decorator-meta-twice` at the annotation that recorded it (`reject/meta_twice`). `@typeInfo(X).meta(T)`
-  answers `null` or the one value, and over several is `typeinfo-meta-several` at the read
-  (`reject/meta_several`); `metaAll(T)` answers a set-once value as a one-element array. 298 names
-  `setMeta` "one value per type" and `addMeta` "what repeats", not the two together. On a catalogue
-  entry `d.meta(T)` answers the first value (the read is run-time code over any entry).
-- **Options.** (a) As built: `decl.setMeta(Entity(…)); decl.addMeta(Entity(…));` is `decorator-meta-twice`
-  at the second; `meta(Index)` over two `Index` is `typeinfo-meta-several`. (b) A type recorded with
-  `addMeta` is read only with `metaAll` — `meta(Index)` refused even over one `Index`
-  (`typeinfo-meta-repeated`). (c) The two mix: `setMeta` holds one value among the added ones, and
-  `meta(T)` answers the set one.
-  (a) example:
-  ```bp
-  decl.setMeta(Entity(table: "a"));
-  decl.addMeta(Entity(table: "b"));            // decorator-meta-twice
-  @typeInfo(City).meta(Index)                  // typeinfo-meta-several with two Index
-  ```
-  (b) example:
-  ```bp
-  @typeInfo(City).meta(Index)                  // typeinfo-meta-repeated, even with one Index
-  ```
-  (c) example:
-  ```bp
-  decl.setMeta(Entity(table: "a")); decl.addMeta(Entity(table: "b"));   // meta(Entity) == "a"
-  ```
-- **Recommendation.** (a): a key with two meanings at once is refused where it is written; (b) if a
-  reader must not depend on how many decorators added a type.
-- **Blocks.** Nothing — built as (a).
-
-#### 130-s8-c · A typed meta read of a declaration a `.hooks` reader of this module annotates (298, 372)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b′), provisional until 144 B-55: a step 4 in every module.** A typed meta read `@typeInfo(X).meta(T)` is typed where it stands (`T[]`, 130-s8-a) and answers the whole meta. In another module the import of `X` guarantees it: the resolver finishes `X`'s module, its `.hooks` readers (372) included, before its importer. In `X`'s own module the read is a pending value filled in a step 4, after the module's `.hooks` readers — s23-i's root step, now every module's. Only a read whose value is needed at build before that step (a `comptime`, a same-module decorator's argument, a template expansion) is refused, located, naming the decorator and asking for the read from a module that imports `X`. Replaces `typeinfo-meta-hooks-pending`. If B-55's whole-package analysis is adopted, this becomes its general on-demand rule. **Under B-55-a (e)** (2026-10-12): the step 4 is per block of modules importing each other.
-- **Measured.** Built: decision 372 runs a decorator that reads `.hooks` after the module's bodies, and
-  answers a string meta read of its declaration in the module afterwards (`answerDeferredMetaReads`). A
-  typed read is an expression typed where it stands (its constructors, `@Expr` fields), so it is refused
-  in that module before the reader ran: `typeinfo-meta-hooks-pending` at the read; another module reads
-  it after the whole module ran.
-- **Options.** (a) As built: `@typeInfo(Page).meta(Route)` in `Page`'s module, `#[route]` reading
-  `.hooks`, is `typeinfo-meta-hooks-pending`. (b) Deferred like the string read: typed as `?Route` at the
-  read, the value written and typed when the reader ran — a type error in an `@Expr` field then located
-  in the second phase.
-  (a) example:
-  ```bp
-  // #[route] reads .hooks
-  @typeInfo(Page).meta(Route)   // typeinfo-meta-hooks-pending in Page's module
-  ```
-  (b) example:
-  ```bp
-  @typeInfo(Page).meta(Route)   // answered after #[route]
-  ```
-- **Recommendation.** (a).
-- **Blocks.** Nothing — built as (a); `05-jhonstart/26`'s `#[page]` reads its meta from the entry point.
-
-#### s23-j · What 375's mark counts as "cannot follow", and a host `@Component`
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **A component is never asynchronous because of its children.** A component is a function answering its tree (an array of nodes, 388); composing another component — a value received included — only puts its lambda in the tree. 375's `async` mark counts the component's own body only: `await`, `async { }`, an asynchronous hook, a host call answering `@Task` / `@Component` (items 2–5 as built). A marked component answers a Promise of its tree (a state machine on wasm, 140-e (d)); every other answers its tree directly. **The root is always asynchronous:** a `#[page]`'s render (and `renderToString`) walks the tree and awaits only the marked lambdas. The transitive mark (`subtreeAsync`: a component using, directly or not, a marked one; a component received as a value counted from the argument at each use, an unknown value counted asynchronous) is computed at build as an optimisation only, readable by decorators: false, a `#[page]` renders without streaming and a `Suspense` emits its child directly, with no fallback; without it the renderer finds out while descending, with the same answer. Item 1 as built (a call through a function value or a method answering `@Component` marks the node) goes. Amends 504 (140-e): its renderer reads this build-time `subtreeAsync` where it is known, and finds out while descending only for an unknown value.
-- **Measured.** Built and landed (`infer.zig` `noteAsyncCall`, `finishHookNode`,
-  `markHookAsync`): (1) a call of a function value or a method makes the node asynchronous only when the call's
-  type resolves to `@Component<R>` or stays an open type variable — `xs.length()`, a record constructor and a
-  method answering `string` do not (s23-d's, answered by 389: "a `@Component` called through a function value or a method");
-  (2) a `use` of a host hook and a call of a host function answering `@Component` count as a host answering
-  `@Task` (`Component<R> extends Task`) — `run/decl_hooks_direct`'s `Page` (`use session()`, `declare fn
-  session() -> @Component<string>`) is `async`; (3) a call of a botopink function answering `@Task` with no
-  written `await` does not count (`val t = loadComments();` keeps a Task value); (4) an `await` or `async { … }`
-  written inside a lambda in the body counts for the node (the node holds its lambdas, 277); (5) a target with
-  no published node (a declaration the session did not publish) is asynchronous.
-- **Options.** (a) As built. (b) Any call of a function value or a method makes the node asynchronous, whatever
-  it answers:
-  ```bp
-  fn Card(xs: string[]) -> @Component<Element> { val n = xs.length(); return Element(text: n.toString()); }
-  // (a): Card sync, `function Card(map, xs)`; (b): Card async — every component reading a method is async
-  ```
-  (c) A host answering `@Component` is synchronous (only a host answering `@Task` is named):
-  ```bp
-  declare fn session() -> @Component<string>;        // #[@External.JavaScript("""Promise.resolve("alice")""")]
-  fn Page() -> @Component<Element> { val u = use session(); … }
-  // (c): Page sync, `const u = session()` — a Promise where a string is read
-  ```
-- **Recommendation.** (a): a mark that is never false where commonJS needs an `await`, and true no wider than
-  the types say.
-- **Blocks.** Nothing — built as (a).
-
 #### s23-c · What a reached declaration's `Declared` holds in a decorator body
 - **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(b), and the meta read typed** — in a decorator body a reached declaration's `value` (`h.hook.value`, `c.callee.value`, `n.function.value`) is refused at the read, located (`decl-hooks-value: a reached function is no value at build`), as a template body's catalogue `value` is (`typeinfo-all-template-value`); its meta is read typed — `h.hook.meta(Route)` → `Route[]` (298, 130-s8-a), answered at build when `Route` is data and refused naming the run-time field otherwise (415 (3), 380) — never the `<decorator>.<key>` string list. Refuse over accept (67): a `null` typed as the function hides that nothing is there, and 364 (3) already says a function has no value at build; strings carrying a decorator's facts are 216 (2)'s legacy, which `builtins.d.bp` itself marks as going. Viable: the template-body refusal in `infer.zig` (guarded by `env.inTemplateFn`) widened to a decorator body, one id in `diagnostics.zig`; `hooks.zig` `declaredTerm` builds the term (it writes `value` as `undefined` and the string `meta`, and writes no `typedMeta` key today, so a direct `typedMeta` read likely fails at run time — a 144 row); the typed read follows `meta_read_at_build`'s rule for data. Changes: `Declared.meta: DeclaredMeta[]` leaves with the string meta; the comment on `Declared` in `builtins.d.bp`; one refusal cell.
 - **Measured.** `HookUse.hook`, `HookCall.callee` and `HookNode.function` are `Declared<unknown>`. Built: `value` is
@@ -537,34 +450,6 @@ before every other part of this page; each holds one row, or nothing built.
   (a). (c) (b), and `meta` holds only the entries of the decorator reading the list (`path`), as a catalogue entry
   holds `d`'s.
 - **Recommendation.** (b): refuse > accept; a `null` that type-checks as the function hides that nothing is there.
-- **Blocks.** Nothing — built as (a).
-
-#### s23-f · A type argument's `TypeInfo` in a `HookUse`
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(b), typed.** A `TypeInfo` carries every field's annotations and the type's methods, as `decl.fields` / `decl.methods` give them (`t.fields[0].annotations` lists `#[validated]`); the build session publishes each module's type declarations, so no empty list means "not carried". A field's, a parameter's and a return's type stops being `typeName: string` / `returnType: string` and is a `TypeInfo<unknown>`, with `kind: TypeKind` (`Record`, `Enum`, `Primitive`, `Array`, `Optional`, `Tuple`, `Fn`, `Task` …) and `args: TypeInfo<unknown>[]` (`Array<string>` → `[string]`, `?i32` → `[i32]`), all declared in std (`builtins.d.bp`, mirrored in `comptime.zig`'s `type_info_src`): `Field(name, type, annotations)`, `Param(name, type)`, `Method(name, params, returnType: ?TypeInfo<unknown>, annotations)`. An annotation's arguments stay read through the typed meta (s29-b).
-- **Measured.** Built: `typeArgs` gives the type's name, its declaring module (`""` for a primitive or std's), and a
-  record's fields as `Field(name, typeName, annotations: [])` — `params<main.BlogParams(slug: string, id: i32)>`;
-  `methods` is `[]` and a field's annotations are not carried (the checker of an importing module holds the type's
-  shape, not its declaration). 293 reads the field names and types.
-- **Options.** (a) As built. (b) Every field's annotations and the type's methods, as `decl.fields` / `decl.methods`
-  give them — `t.fields[0].annotations` lists `#[validated]` — the session publishing each module's type
-  declarations.
-- **Recommendation.** (b): the record is `TypeInfo`'s, and an empty list that means "not carried" is a lie.
-- **Blocks.** Nothing for 293.
-
-#### s23-i · A catalogue of a `.hooks` reader read in the reader's own module (372)
-- **Answered (the maintainer, 2026-10-11; awaiting its number in `decisions-taken.md`):** **(d), a fourth option: the catalogue is read only in the package's root.** (1) `@TypeInfo.all` is read only in the package's root (`main.bp` for a binary, `root.bp` for a library); in any other module it is refused, located, naming the root (``@TypeInfo.all` is read only in the package's root (src/main.bp) — move it there`). (2) No module of the package imports from its root — refused, located (`src/pages/home.bp imports from the package's root (src/main.bp) — the root imports the package, never the reverse`) — so the resolver analyses the root after every module its `mod` tree declares. (3) In the root, catalogues are answered after its own `.hooks` readers ran (a step 4 after 372's three), so a declaration decorated in the root itself carries its meta too. No catalogue is answered before what it lists: every entry carries its whole meta. Replaces `typeinfo-all-hooks-reader`. A framework receives the catalogue from the application's root as an argument (`jhonstart.serve(@TypeInfo.all(with: page))`), never reads it itself. **Every package with sources has a root** (the maintainer, 2026-10-12): a package whose `botopink.json` has sources declares `src/root.bp` (a library) or `src/main.bp` (a binary), and the resolver follows the `mod` tree from it; the deprecated blind scan goes — a package with sources and no root is refused, located, naming the missing file. A manifest with no sources (a workspace's `"workspaces"`, a fixture's dependency manifest) needs no root. `onze/examples/scaffold` moves its `root.bp` to `src/root.bp` or its manifest names where its root is — front 150's choice (the onze section, 150 s59 … s71); `json`, `yaml` and `dbcontext` are born with `src/root.bp`. Measured on every library's `feat`: every other package with sources already has one. **`root.bp` declares the tree, `main.bp` is the entry** (the maintainer, 2026-10-12; amends this answer's root rule): `mod` / `pub mod` are declared only in `src/root.bp` and in a folder's `mod.bp` — never in `src/main.bp` nor in any other module (refused, located: `declare the module tree in src/root.bp`). `src/root.bp` is not mandatory: a package with no module but its entry (a one-file program) has only `src/main.bp`; a package with modules has `src/root.bp`; a library has `src/root.bp` and no `main.bp`. `src/main.bp` holds `pub fn main()`, is declared by no `mod`, imports the package as a consumer, is imported by no module, and is analysed after the whole tree and `root.bp`. No module of the tree imports `root.bp`. `@TypeInfo.all` is read in `root.bp` or `main.bp` and refused, located, in any other module. The prelude (116-a) is reached from `root.bp`. **`src/lib.bp`, as Rust's `lib.rs`** (the maintainer, 2026-10-12; amends the two rules above): the package's root is named `src/lib.bp` — `root.bp` is renamed everywhere (std's, every library's, the resolver's, the docs' — by the step that lands it, by hand or a one-off script); `botopink migrate` is removed (its command, `cli/migrate.zig`, its tests and docs; 144 B-56) — and `src/main.bp` may declare `mod` / `pub mod` when the package has no `lib.bp`, as Rust's `main.rs`: a package with only `main.bp` has its tree there; with `lib.bp`, `lib.bp` holds the tree and `main.bp` declares no `mod` (refused, located: `declare the module tree in src/lib.bp`) and uses the package as a consumer. Every rule above that names the root reads `lib.bp`, or `main.bp` when there is no `lib.bp` (the catalogue, 116-a's prelude, no module of the tree importing it). Whole-package analysis allowing two modules to import each other is front 144 B-55's study; until it lands, no import cycle between modules. **Superseded by B-55-a (e)** (the maintainer, 2026-10-12): a file is a module, with no `lib.bp` and no `mod`; the catalogue is read in any module; what stands here is the mandatory entry `src/main.bp` for an executable.
-- **Measured.** 372 runs a `.hooks` reader after the module's bodies. `@TypeInfo.all(with: graph)` written in the
-  module of `#[graph] pub fn Page` is answered when the module is re-analysed, from the meta set so far: the parent
-  binary printed `Page 1` (`d.meta.length`), and with the readers moved after the bodies the answer would print
-  `Page 0` — the meta silently missing. Built: refused, `typeinfo-all-hooks-reader` at `graph` in `with:`
-  (`reject/typeinfo_all_hooks_reader`). A catalogue in another module (an entry point — `@TypeInfo.all` readers are
-  analysed after every other module) carries the reader's meta; `@typeInfo(Page).meta.graph.count` in the same module
-  is answered after the reader ran.
-- **Options.** (a) As built: the same-module query refused at the decorator's name. (b) The answer's meta of a
-  same-module reader filled after the reader ran, as a `@typeInfo(X).meta` read is — `@TypeInfo.all(with: graph)`
-  prints `Page 1` in `Page`'s module. (c) A `.hooks` reader's meta never appears in a catalogue entry (`meta: []`
-  everywhere), read only through `@typeInfo(X).meta`.
-- **Recommendation.** (a) until a front needs the same-module catalogue; (b) is the complete answer.
 - **Blocks.** Nothing — built as (a).
 
 #### 14s8-c · A hole known at build whose value raises there

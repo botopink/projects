@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**42 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**36 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **724**.
+número livre, que é **730**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -368,10 +368,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
-#### mono-a · Um repositório `rakun`: um workspace de 17 pacotes plug-and-play; erika fora como `query` (decisões 326, 338, 391, 398, 433, 512; frente 165)
-- **Respondida (o mantenedor, 2026-10-14; aguardando seu número em `decisions-taken.md`):** rakun, os consumidores do erika, emilia, styled, jhonstart, onze e dbcontext viram um repositório, `botopink/rakun`, um workspace do botopink (512): um diretório por pacote sob `modules/`, o pacote nomeado pelo seu diretório, cada um com o próprio `botopink.json`, `src/`, testes e `AGENTS.md`, as células sob `conformance/<package>/`, uma versão e tag, um gate, hook e CI. Os pacotes, por camada (cada um dependendo só de camadas abaixo, um ciclo recusado): `rakun` (núcleo) · `rakun-data` (dbcontext + rakun-data) · `rakun-restclient` (rakun-client) · `rakun-style` (styled) · `rakun-bpp` (jhonstart, -html, -link, -forms, -test, -dom-test) · `rakun-stylesheet` (emilia, jhonstart-emilia) · `rakun-service` (rakun-web, rakun-actuator) · `rakun-scheduling` · `rakun-session` · `rakun-cache` · `rakun-security` · `rakun-websocket` · `rakun-metrics` · `rakun-messaging` · `rakun-mail` · `rakun-app` · `rakun-ssr` (onze e seus oito). O erika continua um repositório próprio, renomeado `query` (uma DSL pura de consultas tipadas; a frente 145 continua como `query`); `css`, `actions`, `routing`, `validation`, `snap`, `markdown`, `http`, `log`, `json`, `yaml` continuam externos. Os `rakun-starter-*` saem; cada `*-test` vira o módulo `testing/` do seu pacote. **Plug-and-play:** adicionar um pacote ao `botopink.json` é tudo o que um programa faz — um pacote declara sua contribuição na raiz (`#[rakun.module] pub fn … -> Module`), o `rakun.boot()` descobre todo módulo das dependências do programa pelo catálogo, ordena por camada e os inicia com seus defaults e os overrides tipados do programa (`#[rakun.config]`); tudo resolve no build (uma coisa contribuída duas vezes, um pacote exigido ausente: erros de build que os nomeiam), nenhuma descoberta em runtime. Precisa do 144 B-86: `@TypeInfo.all` alcançando as declarações de uma dependência (seu catálogo exportado com a análise, o nível B o guardando). História preservada por `git subtree add`; os seis repositórios arquivados; os passos abertos das seis frentes refilados sob a 150 (frente 165 s8). Emenda a 326 (as bibliotecas como repositórios), 338, 391, 398 (dbcontext como repositório próprio), 433 (uma frente por repositório: a do rakun é a 150, com lanes por camada).
-- **Contexto.** Levantada pelo mantenedor, 2026-10-14: sete repositórios para uma plataforma web, 40 pacotes finos e starters para combiná-los; nomes (erika, emilia, jhonstart, onze) que nada dizem do papel.
-
 #### B-86-a · O `query` do gate lib-agnóstico, e o alcance do catálogo entre pacotes (144 B-86, frente 165 s4)
 - **Proposta (opus, 2026-10-14; aguardando o mantenedor):** (1) o gate recusa `rakun` em qualquer caixa em qualquer lugar de `compiler-core/src`, e `query` só como pacote — a origem de import `"query"` ou o handle `import query`; (2) `jhonstart` sai da lista do gate, como a caixa diz; (3) a entrada do catálogo de uma dependência tem `module` = `<package>/<module>` (`plugin/root`), e as declarações de uma dependência transitiva também são listadas — construído assim, fixado por `modules/typeinfo_all_dependency_declarations`.
 - **Medido.** `grep -riIE 'rakun|query' modules/compiler-core/src` casa cerca de 111 linhas: `query` é a palavra do próprio catálogo (`Query`, "a template body's query"). `@TypeInfo.all` já listava todo módulo do build, as dependências inclusas, e o journal do nível B já guarda `declared` e `meta`: a nova cell é verde no pai, em todo alvo, a frio e a partir do nível B. A referência diz "every module of the build", enquanto a decisão 242 deixa um programa importar só suas dependências diretas. Ordem e colisões seguem a regra existente (caminho do módulo, depois ordem de declaração; a chave é módulo e nome).
@@ -443,89 +439,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 `00-gate` não tem pergunta aberta: os passos da 114 não esperam nenhuma decisão.
 
-#### 130-s8-a · Um tipo de record ao mesmo tempo fixado e acrescentado numa declaração; `meta(T)` sobre valores acrescentados (298)
-- **Respondida (o mantenedor, 2026-10-12; aguardando seu número em `decisions-taken.md`):** **Uma leitura, sempre uma lista: `meta(T) -> T[]`.** `@typeInfo(X).meta(T)` e o `d.meta(T)` de uma entrada de catálogo respondem todo valor do tipo `T` gravado na declaração, na ordem de gravação — `[]` quando nenhum, um elemento para um tipo setado uma vez (`@typeInfo(Home).meta(Route)` é `[Route("/", "GET")]`), vários para um repetido. `metaAll`, a resposta `?T` de `meta` e as recusas de leitura `typeinfo-meta-several` / `typeinfo-meta-repeated` saem. O lado de gravação mantém seus dois verbos: `setMeta(v)` grava um tipo no máximo uma vez numa declaração (um segundo `setMeta`, ou um `addMeta` ao lado, é `decorator-meta-twice` na anotação que o gravou) e `addMeta(v)` grava um que se repete.
-- **Medido.** Construído: um tipo é mantido uma vez (`decl.setMeta(v)`) ou se repete (`decl.addMeta(v)`) numa
-  declaração, nunca os dois — um segundo `setMeta` de um tipo, ou um `addMeta` ao lado de um `setMeta` dele, é
-  `decorator-meta-twice` na anotação que o registrou (`reject/meta_twice`). `@typeInfo(X).meta(T)`
-  responde `null` ou o único valor, e sobre vários é `typeinfo-meta-several` na leitura
-  (`reject/meta_several`); `metaAll(T)` responde um valor fixado uma vez como um array de um elemento. A 298 nomeia
-  `setMeta` "um valor por tipo" e `addMeta` "o que se repete", não os dois juntos. Numa entrada de
-  catálogo `d.meta(T)` responde o primeiro valor (a leitura é código de execução sobre qualquer entrada).
-- **Opções.** (a) Como construído: `decl.setMeta(Entity(…)); decl.addMeta(Entity(…));` é `decorator-meta-twice`
-  no segundo; `meta(Index)` sobre dois `Index` é `typeinfo-meta-several`. (b) Um tipo registrado com
-  `addMeta` é lido só com `metaAll` — `meta(Index)` recusado mesmo sobre um único `Index`
-  (`typeinfo-meta-repeated`). (c) Os dois se misturam: `setMeta` mantém um valor entre os acrescentados, e
-  `meta(T)` responde o fixado.
-  Exemplo de (a):
-  ```bp
-  decl.setMeta(Entity(table: "a"));
-  decl.addMeta(Entity(table: "b"));            // decorator-meta-twice
-  @typeInfo(City).meta(Index)                  // typeinfo-meta-several with two Index
-  ```
-  Exemplo de (b):
-  ```bp
-  @typeInfo(City).meta(Index)                  // typeinfo-meta-repeated, even with one Index
-  ```
-  Exemplo de (c):
-  ```bp
-  decl.setMeta(Entity(table: "a")); decl.addMeta(Entity(table: "b"));   // meta(Entity) == "a"
-  ```
-- **Recomendação.** (a): uma chave com dois significados ao mesmo tempo é recusada onde é escrita; (b) se um
-  leitor não deve depender de quantos decorators acrescentaram um tipo.
-- **Bloqueia.** Nada — construído como (a).
-
-#### 130-s8-c · Uma leitura de meta tipado de uma declaração que um leitor de `.hooks` deste módulo anota (298, 372)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b′), provisória até o 144 B-55: um passo 4 em todo módulo.** Uma leitura de meta tipada `@typeInfo(X).meta(T)` é tipada onde está (`T[]`, 130-s8-a) e responde a meta inteira. Em outro módulo o import de `X` garante isso: o resolver termina o módulo de `X`, inclusive seus leitores de `.hooks` (372), antes de quem o importa. No próprio módulo de `X` a leitura é um valor pendente preenchido num passo 4, depois dos leitores de `.hooks` do módulo — o passo da raiz da s23-i, agora de todo módulo. Só uma leitura cujo valor é necessário no build antes desse passo (um `comptime`, o argumento de um decorator do mesmo módulo, a expansão de um template) é recusada, localizada, nomeando o decorator e pedindo a leitura a partir de um módulo que importa `X`. Substitui `typeinfo-meta-hooks-pending`. Se a análise do pacote inteiro do B-55 for adotada, isto vira sua regra geral sob demanda. **Sob a B-55-a (e)** (2026-10-12): o passo 4 é por bloco de módulos que se importam.
-- **Medido.** Construído: a decisão 372 roda um decorator que lê `.hooks` depois dos corpos do módulo, e
-  responde depois uma leitura de meta de string de sua declaração no módulo (`answerDeferredMetaReads`). Uma
-  leitura tipada é uma expressão tipada onde está (seus construtores, campos `@Expr`), então é recusada
-  nesse módulo antes de o leitor rodar: `typeinfo-meta-hooks-pending` na leitura; outro módulo a lê
-  depois de o módulo inteiro rodar.
-- **Opções.** (a) Como construído: `@typeInfo(Page).meta(Route)` no módulo da `Page`, com `#[route]` lendo
-  `.hooks`, é `typeinfo-meta-hooks-pending`. (b) Adiada como a leitura de string: tipada como `?Route` na
-  leitura, o valor escrito e tipado quando o leitor rodou — um erro de tipo num campo `@Expr` então localizado
-  na segunda fase.
-  Exemplo de (a):
-  ```bp
-  // #[route] reads .hooks
-  @typeInfo(Page).meta(Route)   // typeinfo-meta-hooks-pending in Page's module
-  ```
-  Exemplo de (b):
-  ```bp
-  @typeInfo(Page).meta(Route)   // answered after #[route]
-  ```
-- **Recomendação.** (a).
-- **Bloqueia.** Nada — construído como (a); o `#[page]` da `05-jhonstart/26` lê seu meta a partir do ponto de entrada.
-
-#### s23-j · O que a marca da 375 conta como "não consegue seguir", e um `@Component` de host
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **Um componente nunca é assíncrono por causa dos seus filhos.** Um componente é uma função que responde sua árvore (um array de nós, 388); compor outro componente — inclusive um valor recebido — só põe sua lambda na árvore. A marca `async` da 375 conta só o próprio corpo do componente: `await`, `async { }`, um hook assíncrono, uma chamada ao host que responde `@Task` / `@Component` (itens 2–5 como construídos). Um componente marcado responde uma Promise da sua árvore (uma máquina de estados no wasm, 140-e (d)); todo outro responde sua árvore direto. **A raiz é sempre assíncrona:** o render de um `#[page]` (e `renderToString`) percorre a árvore e faz await só nas lambdas marcadas. A marca transitiva (`subtreeAsync`: um componente que usa, direta ou indiretamente, um marcado; um componente recebido como valor contado a partir do argumento em cada uso, um valor desconhecido contado assíncrono) é calculada no build só como otimização, legível por decorators: falsa, um `#[page]` renderiza sem streaming e um `Suspense` emite seu filho direto, sem fallback; sem ela o renderer descobre ao descer, com a mesma resposta. O item 1 como construído (uma chamada por valor de função ou método que responde `@Component` marca o nó) sai. Amenda a 504 (140-e): seu renderer lê essa `subtreeAsync` de build onde ela é conhecida, e descobre ao descer só para um valor desconhecido.
-- **Medido.** Construído e pousado (`infer.zig` `noteAsyncCall`, `finishHookNode`,
-  `markHookAsync`): (1) uma chamada de um valor de função ou de um método torna o nó assíncrono só quando o
-  tipo da chamada resolve para `@Component<R>` ou permanece uma variável de tipo aberta — `xs.length()`, um construtor de record e um
-  método que responde `string` não tornam (da s23-d, respondida pela 389: "um `@Component` chamado por um valor de função ou um método");
-  (2) um `use` de um hook de host e uma chamada de uma função de host que responde `@Component` contam como um host que responde
-  `@Task` (`Component<R> extends Task`) — a `Page` de `run/decl_hooks_direct` (`use session()`, `declare fn
-  session() -> @Component<string>`) é `async`; (3) uma chamada de uma função botopink que responde `@Task` sem
-  `await` escrito não conta (`val t = loadComments();` mantém um valor Task); (4) um `await` ou `async { … }`
-  escrito dentro de um lambda no corpo conta para o nó (o nó contém seus lambdas, 277); (5) um alvo sem
-  nó publicado (uma declaração que a sessão não publicou) é assíncrono.
-- **Opções.** (a) Como construído. (b) Qualquer chamada de um valor de função ou de um método torna o nó assíncrono, seja
-  o que ela responder:
-  ```bp
-  fn Card(xs: string[]) -> @Component<Element> { val n = xs.length(); return Element(text: n.toString()); }
-  // (a): Card sync, `function Card(map, xs)`; (b): Card async — every component reading a method is async
-  ```
-  (c) Um host que responde `@Component` é síncrono (só um host que responde `@Task` é nomeado):
-  ```bp
-  declare fn session() -> @Component<string>;        // #[@External.JavaScript("""Promise.resolve("alice")""")]
-  fn Page() -> @Component<Element> { val u = use session(); … }
-  // (c): Page sync, `const u = session()` — a Promise where a string is read
-  ```
-- **Recomendação.** (a): uma marca que nunca é falsa onde o commonJS precisa de um `await`, e verdadeira não mais ampla do que
-  os tipos dizem.
-- **Bloqueia.** Nada — construído como (a).
-
 #### s23-c · O que o `Declared` de uma declaração alcançada guarda num corpo de decorator
 - **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(b), e a leitura de meta tipada** — num corpo de decorator o `value` de uma declaração alcançada (`h.hook.value`, `c.callee.value`, `n.function.value`) é recusado na leitura, localizado (`decl-hooks-value: a reached function is no value at build`), como o `value` de catálogo de um corpo de template é (`typeinfo-all-template-value`); seu meta é lido tipado — `h.hook.meta(Route)` → `Route[]` (298, 130-s8-a), respondido no build quando `Route` é dado e recusado nomeando o campo de run-time caso contrário (415 (3), 380) — nunca a lista de strings `<decorator>.<key>`. Recusar antes de aceitar (67): um `null` tipado como a função esconde que não há nada ali, e a 364 (3) já diz que uma função não tem valor no build; strings carregando os fatos de um decorator são o legado da 216 (2), que o próprio `builtins.d.bp` marca como de saída. Viável: a recusa de corpo de template em `infer.zig` (guardada por `env.inTemplateFn`) ampliada para um corpo de decorator, um id em `diagnostics.zig`; `hooks.zig` `declaredTerm` constrói o termo (escreve `value` como `undefined` e o `meta` de string, e não escreve a chave `typedMeta` hoje, então uma leitura direta de `typedMeta` provavelmente falha em run time — uma linha 144); a leitura tipada segue a regra de `meta_read_at_build` para dados. Mudanças: `Declared.meta: DeclaredMeta[]` sai com o meta de string; o comentário sobre `Declared` em `builtins.d.bp`; uma célula de recusa.
 - **Medido.** `HookUse.hook`, `HookCall.callee` e `HookNode.function` são `Declared<unknown>`. Construído: `value` é
@@ -537,33 +450,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (a). (c) (b), e `meta` guarda só as entradas do decorator que lê a lista (`path`), como uma entrada de catálogo
   guarda as de `d`.
 - **Recomendação.** (b): recusar > aceitar; um `null` que passa na checagem de tipos como a função esconde que não há nada ali.
-- **Bloqueia.** Nada — construído como (a).
-
-#### s23-f · O `TypeInfo` de um argumento de tipo num `HookUse`
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(b), tipada.** Um `TypeInfo` traz as annotations de cada campo e os métodos do tipo, como `decl.fields` / `decl.methods` os dão (`t.fields[0].annotations` lista `#[validated]`); a sessão de build publica as declarações de tipo de cada módulo, então nenhuma lista vazia significa "não carregado". O tipo de um campo, de um parâmetro e de um retorno deixa de ser `typeName: string` / `returnType: string` e é um `TypeInfo<unknown>`, com `kind: TypeKind` (`Record`, `Enum`, `Primitive`, `Array`, `Optional`, `Tuple`, `Fn`, `Task` …) e `args: TypeInfo<unknown>[]` (`Array<string>` → `[string]`, `?i32` → `[i32]`), todos declarados no std (`builtins.d.bp`, espelhados no `type_info_src` do `comptime.zig`): `Field(name, type, annotations)`, `Param(name, type)`, `Method(name, params, returnType: ?TypeInfo<unknown>, annotations)`. Os argumentos de uma annotation continuam lidos pela meta tipada (s29-b).
-- **Medido.** Construído: `typeArgs` dá o nome do tipo, seu módulo declarante (`""` para um primitivo ou do std), e os
-  campos de um record como `Field(name, typeName, annotations: [])` — `params<main.BlogParams(slug: string, id: i32)>`;
-  `methods` é `[]` e as anotações de um campo não são carregadas (o checker de um módulo importador guarda a forma
-  do tipo, não sua declaração). A 293 lê os nomes e tipos dos campos.
-- **Opções.** (a) Como construído. (b) As anotações de cada campo e os métodos do tipo, como `decl.fields` / `decl.methods`
-  os dão — `t.fields[0].annotations` lista `#[validated]` — a sessão publicando as declarações de tipo de cada módulo.
-- **Recomendação.** (b): o record é do `TypeInfo`, e uma lista vazia que significa "não carregado" é uma mentira.
-- **Bloqueia.** Nada para a 293.
-
-#### s23-i · Um catálogo de um leitor de `.hooks` lido no próprio módulo do leitor (372)
-- **Respondida (o mantenedor, 2026-10-11; aguardando seu número em `decisions-taken.md`):** **(d), uma quarta opção: o catálogo é lido só na raiz do pacote.** (1) `@TypeInfo.all` é lido só na raiz do pacote (`main.bp` num binário, `root.bp` numa biblioteca); em qualquer outro módulo é recusado, localizado, nomeando a raiz (``@TypeInfo.all` is read only in the package's root (src/main.bp) — move it there`). (2) Nenhum módulo do pacote importa da sua raiz — recusado, localizado (`src/pages/home.bp imports from the package's root (src/main.bp) — the root imports the package, never the reverse`) — então o resolver analisa a raiz depois de todo módulo que sua árvore de `mod` declara. (3) Na raiz, os catálogos são respondidos depois que os seus próprios leitores de `.hooks` rodaram (um passo 4 depois dos três da 372), então uma declaração decorada na própria raiz também traz sua meta. Nenhum catálogo é respondido antes do que ele lista: toda entrada traz sua meta inteira. Substitui `typeinfo-all-hooks-reader`. Um framework recebe o catálogo da raiz da aplicação como argumento (`jhonstart.serve(@TypeInfo.all(with: page))`), nunca o lê sozinho. **Todo pacote com fontes tem raiz** (o mantenedor, 2026-10-12): um pacote cujo `botopink.json` tem fontes declara `src/root.bp` (uma biblioteca) ou `src/main.bp` (um binário), e o resolver segue a árvore de `mod` a partir dela; o blind scan deprecated sai — um pacote com fontes e sem raiz é recusado, localizado, nomeando o arquivo que falta. Um manifesto sem fontes (o `"workspaces"` de um workspace, o manifesto de dependência de uma fixture) não precisa de raiz. `onze/examples/scaffold` move seu `root.bp` para `src/root.bp` ou seu manifesto nomeia onde fica sua raiz — escolha da frente 150 (a seção do onze, 150 s59 … s71); `json`, `yaml` e `dbcontext` nascem com `src/root.bp`. Medido no `feat` de cada biblioteca: todo outro pacote com fontes já tem uma. **`root.bp` declara a árvore, `main.bp` é a entrada** (o mantenedor, 2026-10-12; amenda a regra da raiz desta resposta): `mod` / `pub mod` são declarados só em `src/root.bp` e no `mod.bp` de uma pasta — nunca em `src/main.bp` nem em outro módulo (recusado, localizado: `declare the module tree in src/root.bp`). `src/root.bp` não é obrigatório: um pacote sem módulo além da sua entrada (um programa de um arquivo) tem só `src/main.bp`; um pacote com módulos tem `src/root.bp`; uma biblioteca tem `src/root.bp` e nenhum `main.bp`. `src/main.bp` contém `pub fn main()`, não é declarado por nenhum `mod`, importa o pacote como um consumidor, não é importado por nenhum módulo, e é analisado depois de toda a árvore e do `root.bp`. Nenhum módulo da árvore importa o `root.bp`. `@TypeInfo.all` é lido no `root.bp` ou no `main.bp` e recusado, localizado, em qualquer outro módulo. O prelude (116-a) é alcançado a partir do `root.bp`. **`src/lib.bp`, como o `lib.rs` do Rust** (o mantenedor, 2026-10-12; amenda as duas regras acima): a raiz do pacote se chama `src/lib.bp` — `root.bp` é renomeado em todo lugar (o do std, o de cada biblioteca, o do resolver, o da documentação — pelo passo que o entrega, à mão ou por um script avulso); `botopink migrate` é removido (o comando, `cli/migrate.zig`, seus testes e docs; 144 B-56) — e `src/main.bp` pode declarar `mod` / `pub mod` quando o pacote não tem `lib.bp`, como o `main.rs` do Rust: um pacote só com `main.bp` tem sua árvore ali; com `lib.bp`, o `lib.bp` guarda a árvore e o `main.bp` não declara `mod` (recusado, localizado: `declare the module tree in src/lib.bp`) e usa o pacote como um consumidor. Toda regra acima que nomeia a raiz lê `lib.bp`, ou `main.bp` quando não há `lib.bp` (o catálogo, o prelude da 116-a, nenhum módulo da árvore a importar). A análise do pacote inteiro permitindo que dois módulos se importem mutuamente é o estudo do B-55 da frente 144; até ele entrar, nenhum ciclo de import entre módulos. **Substituída pela B-55-a (e)** (o mantenedor, 2026-10-12): um arquivo é um módulo, sem `lib.bp` e sem `mod`; o catálogo é lido em qualquer módulo; o que fica aqui é a entrada `src/main.bp` de um executável.
-- **Medido.** A 372 roda um leitor de `.hooks` depois dos corpos do módulo. `@TypeInfo.all(with: graph)` escrito no
-  módulo de `#[graph] pub fn Page` é respondido quando o módulo é re-analisado, a partir do meta definido até então: o binário
-  pai imprimia `Page 1` (`d.meta.length`), e com os leitores movidos para depois dos corpos a resposta imprimiria
-  `Page 0` — o meta silenciosamente ausente. Construído: recusado, `typeinfo-all-hooks-reader` em `graph` em `with:`
-  (`reject/typeinfo_all_hooks_reader`). Um catálogo em outro módulo (um ponto de entrada — os leitores de `@TypeInfo.all` são
-  analisados depois de todos os outros módulos) carrega o meta do leitor; `@typeInfo(Page).meta.graph.count` no mesmo módulo
-  é respondido depois de o leitor rodar.
-- **Opções.** (a) Como construído: a consulta no mesmo módulo recusada no nome do decorator. (b) O meta da resposta de um leitor
-  do mesmo módulo preenchido depois de o leitor rodar, como uma leitura de `@typeInfo(X).meta` é — `@TypeInfo.all(with: graph)`
-  imprime `Page 1` no módulo da `Page`. (c) O meta de um leitor de `.hooks` nunca aparece numa entrada de catálogo (`meta: []`
-  em todo lugar), lido só por `@typeInfo(X).meta`.
-- **Recomendação.** (a) até uma frente precisar do catálogo no mesmo módulo; (b) é a resposta completa.
 - **Bloqueia.** Nada — construído como (a).
 
 #### 14s8-c · Um buraco conhecido no build cujo valor lança lá

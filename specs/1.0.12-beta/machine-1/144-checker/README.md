@@ -552,7 +552,7 @@ phases (questions s23-g – s23-i).
 - [x] `run/decl_hooks_function_value` — `use f()` with `f` a parameter → `HookUse(hook: null)`
 - [x] `HookUse` carries the `use`'s explicit type arguments (`typeArgs: TypeInfo<unknown>[]` — `use
       params<BlogParams>()` → `[BlogParams]`, its fields with their types), so `#[page]` checks them (293);
-      `run/decl_hooks_type_args` (a field's annotations and the methods: s23-f)
+      `run/decl_hooks_type_args` (a field's annotations and the methods: decision 726)
 - [x] across modules — `modules/decl_hooks_imported`: another module's nodes as it published them, a hook through
       an alias with its own annotations
 - [x] `DeclAnnotation` gains `decorator: Decorator` — the declaration's identity, an alias and a namespace resolved
@@ -571,7 +571,7 @@ phases (questions s23-g – s23-i).
       asynchronous when any node in it is; published with the module's nodes; `builtins.d.bp` declares the
       field — `run/decl_hooks_async` (a page over a synchronous `Card` and an awaiting `Comments`: `Card`
       `false`, `Comments` and the page `true`), `modules/decl_hooks_async_imported` — landed: `Builder.is_async` / `dynamicCalls`, `noteAsyncCall`, `markHookAsync` before the
-      `.hooks` readers; the reading of "cannot follow" and of a host `@Component` is `s23-j`
+      `.hooks` readers; the reading of "cannot follow" and of a host `Component` is decision 725
 - [x] a decorator reading `.hooks` runs after the module's bodies (372, provisional): the decorators that
       read no `.hooks` first, then the bodies, then the `.hooks` readers, which may only `setMeta` /
       `fail` — `run/decl_hooks_reads_member` (`#[graph] fn Page() { return
@@ -2411,7 +2411,7 @@ located `dependency loop`. In order:
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-71
 
-- [ ] per block: headers, bodies, every decorator over them, then every `@typeInfo(X).meta(T)` (`T[]`, 130-s8-a) and
+- [ ] per block: headers, bodies, every decorator over them, then every `compiler.typeInfo(X).meta(T)` (`?T`; `metaAll` the list, 727) and
       `@TypeInfo.all` of the block filled — 130-s8-c's step 4, per block
 - [ ] `@TypeInfo.all` read in any module; a `comptime` needing a meta, a catalogue or a value of its own block before
       its decorators ran refused, located, as a `dependency loop`
