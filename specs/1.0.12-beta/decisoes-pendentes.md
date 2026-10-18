@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**108 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **646**.
+número livre, que é **647**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -916,20 +916,11 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 ## Frente 166 — células de decisão (o mantenedor, 2026-10-18)
 
-#### 166-a · O nome de pacote de uma célula de decisão em `conformance/modules/decisions-taken/<N>/` (decisões 511, 512; frente 166)
-- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** Um nome de pacote começa com letra minúscula (um átomo erlang) e a 511 faz o nome de uma célula ser o do seu diretório; `<N>` é um número.
-- **Opções.**
-  (a) Manter o diretório `<N>` (a chave do ledger, o caminho que o mantenedor escreveu) e emendar a 511 com uma derivação: um diretório numérico nomeia o pacote `decision<N>`, escrito e checado no `cell check` (uma caixa de compilador do s4).
-  (b) Nomear o diretório `decision<N>`; nenhuma mudança no compilador.
-- **Recomendação.** (a): o número é o que todo leitor e o check 7 procuram.
-- **Bloqueia.** O scaffold do 166 s1.
-
 #### 166-b · Como os exemplos da fase 1 ficam fora do gate até a virada (decisões 67, 265, 464 (3), 475 (6); frente 166)
 - **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
 - **Medido.** O `cell check` toma todo diretório com um `src/` como célula, e uma célula sem snapshot é vermelha por desenho; a 67 proíbe lista de exceções.
 - **Opções.**
-  (a) A fase 1 escreve `decisions-taken/<N>/main.bp` (sem `src/`, sem manifesto): nada é célula até o `promote` mover para `src/main.bp` e escrever o `botopink.json`.
+  (a) A fase 1 escreve `decisions-taken/<slug>/main.bp` (sem `src/`, sem manifesto): nada é célula até o `promote` mover para `src/main.bp` e escrever o `botopink.json`.
   (b) A forma completa de célula desde o primeiro commit, cada resposta aceita no mesmo lote — asserida de imediato.
   (c) Um veredito `pending` do `cell check` para célula sem `snapshot/` — emenda 464 (3) e 475 (6), deixa uma célula existir sem asserção.
 - **Recomendação.** (a): os dois momentos do mantenedor, sem flag, sem lista, nada que o gate encontre e pule.

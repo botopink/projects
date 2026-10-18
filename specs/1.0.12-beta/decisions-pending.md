@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**108 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **646**.
+number, which is **647**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -916,20 +916,11 @@ before every other part of this page; each holds one row, or nothing built.
 
 ## Front 166 — decision cells (the maintainer, 2026-10-18)
 
-#### 166-a · The package name of a decision cell under `conformance/modules/decisions-taken/<N>/` (decisions 511, 512; front 166)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** A package name starts with a lowercase letter (an erlang atom) and 511 makes a cell's name its directory's; `<N>` is a number.
-- **Options.**
-  (a) Keep the directory `<N>` (the ledger's key, the path the maintainer wrote) and amend 511 with one derivation: a numeric directory names the package `decision<N>`, written and checked in `cell check` (an s4 compiler box).
-  (b) Name the directory `decision<N>`; no compiler change.
-- **Recommendation.** (a): the number is what every reader and check 7 look for.
-- **Blocks.** 166 s1's scaffold.
-
 #### 166-b · How phase 1's examples stay out of the gate until the flip (decisions 67, 265, 464 (3), 475 (6); front 166)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
 - **Measured.** `cell check` takes every directory with a `src/` as a cell, and a cell with no snapshot is red by design; 67 forbids a skip list.
 - **Options.**
-  (a) Phase 1 writes `decisions-taken/<N>/main.bp` (no `src/`, no manifest): nothing is a cell until `promote` moves it to `src/main.bp` and writes `botopink.json`.
+  (a) Phase 1 writes `decisions-taken/<slug>/main.bp` (no `src/`, no manifest): nothing is a cell until `promote` moves it to `src/main.bp` and writes `botopink.json`.
   (b) The full cell shape from the first commit, each answer accepted in the same batch — asserted at once.
   (c) A `cell check` verdict `pending` for a cell with no `snapshot/` — amends 464 (3) and 475 (6), lets a cell exist unasserted.
 - **Recommendation.** (a): the maintainer's two moments, no flag, no list, nothing the gate finds and skips.
