@@ -48,8 +48,8 @@ About **625 cells**. The process estimate is the id column's tags plus `decision
 
 **Repository:** meta (full worktree) · **Model:** sonnet · **After:** nothing — `scripts/**` and the workflow are disjoint from the group (machine-2 README rule 1).
 
-- [ ] `scripts/decision-cells.py` with `scaffold`, `compile`, `promote`, `check`, as § Mechanism; the row classification (one-liner, `process`, code-bearing) read from the generated ledger only, never guessed; `--check` exit 1 with one line per reason; a test per reason (`scripts/decision-cells-test.py`, the shape of `land-check-test.py`)
-- [ ] check 7 in `scripts/gate.sh check` and `hook-integrity.yml`; `AGENTS.md` § CI, § Layout; the meta `scripts/gate.sh check` green on the tree as it is (no directory exists yet)
+- [x] `scripts/decision-cells.py` with `scaffold`, `compile`, `promote`, `check`, as § Mechanism; the row classification (one-liner, `process`, code-bearing) read from the generated ledger only, never guessed; `--check` exit 1 with one line per reason; a test per reason (`scripts/decision-cells-test.py`, the shape of `land-check-test.py`)
+- [x] check 7 in `scripts/gate.sh check` and `hook-integrity.yml`; `AGENTS.md` § CI, § Layout; the meta `scripts/gate.sh check` green on the tree as it is (no directory exists yet)
 
 ### s2 — the ledger's `Cell` column: the slugs and the `process` tags (meta, the coordinator; decision 647)
 

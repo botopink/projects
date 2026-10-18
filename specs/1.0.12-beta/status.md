@@ -287,7 +287,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 166 decision-cells (medium)
 
-- [ ] 166 s1–s2 — `scripts/decision-cells.py` (scaffold · compile · promote · check) and meta CI check 7; the ledger's `Cell` column (the slugs, 647) and `process` tags — ready now (meta files only) · s3 per repository after the group's codemods over it; s4 (the flip to `botopink cell check`) after the group's end · questions 166-a … 166-d
+- [ ] 166 s1–s2 — landed: `scripts/decision-cells.py` (scaffold · compile · promote · check) and meta CI check 7; left: the ledger's `Cell` column (the slugs, 647) and `process` tags (s2, meta files only) · s3 per repository after the group's codemods over it; s4 (the flip to `botopink cell check`) after the group's end · questions 166-a … 166-d
 
 ## L4 — later
 
