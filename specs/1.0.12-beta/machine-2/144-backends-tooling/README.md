@@ -2615,17 +2615,18 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       executor from a library's decorator; `compiler-output-outside-decorator`
       (`compile_executor_before_main`, `compile_init_order_modules`, `compile_executor_from_library`,
       `compile_output_outside_decorator`)
-- [ ] decision 616: the modifier `expr` renamed `syntax` at every site (std, the cells; `-> syntax T`; the refusal codes;
+- [x] decision 616: the modifier `expr` renamed `syntax` at every site (std, the cells; `-> syntax T`; the refusal codes;
       `parser/syntax_params.zig`, `comptime/syntax_param.zig`); `compiler.bp` written with every member's arrival as 616 lists
       them (`syntax` for a tree, `comptime` for a build value), `compiler_surface.zig`'s table a mirror and its unit test
       checking name and arrival; the libraries' sites in their fronts
-- [ ] decision 615: `compiler.compile` renamed `compiler.init` at every site (std, the cells, `conformance/docs.md`, the
+- [x] decision 615: `compiler.compile` renamed `compiler.init` at every site (std, the cells, `conformance/docs.md`, the
       AGENTS.md); the cells `compile_executor_*` → `init_executor_*`, `compile_init_order_modules` → `init_order_modules`,
       `compile_output_outside_decorator` → `init_output_outside_decorator`; rakun's and query's sites in 165 s10
-- [ ] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `syntax-captures-build`
-      withdrawn — `compile_executor_captures_build` rewritten as `compile_executor_reads_compiler` (`out home`); a
+- [x] decision 614: a `compiler.*` call inside an executor evaluated at build and spliced as its answer, `syntax-captures-build`
+      withdrawn — `compile_executor_captures_build` rewritten as `init_executor_reads_compiler` (`out home`); a
       `compiler.*` argument that is a run-time value of the executor refused, `compiler-arg-at-run-time`
-      (`compile_executor_compiler_arg_at_run_time`)
+      (`init_executor_compiler_arg_at_run_time`); `addMember` / `wrapWith` trees keep the refusal (question b137-c);
+      612's `compiler.name` a `string`, `syntax-has-no-name` (cell `compiler_name_of_lambda`; question b137-d)
 - [x] an executor is checked against `fn()` as any argument is (decision 409): a lambda whose tail answers a value is
       refused at the tail with 409's refusal, a named executor (or an `syntax` handed on) of type `fn() -> X` at the
       argument; the executor's statements render as written (no tail erasure); reject cells `compile_executor_answers`
@@ -2635,12 +2636,12 @@ The step is closed as superseded: its built boxes (the measurement, `heap.zig`, 
       after its annotated declaration (decision 580); cell `compile_executor_module_val_order`
       (`["second", "first", "later", "own"]`); a handle inside an executor is its declaration at run time, typed (581 (2)),
       cells `compile_executor_handle_typed`, `compile_executor_handle_mistyped`
-- [ ] decision 613: `decl` inside an executor is the annotated declaration spliced as code and bound to it, on every kind —
+- [x] decision 613: `decl` inside an executor is the annotated declaration spliced as code and bound to it, on every kind —
       a type `Users` (`decl.make()`), a method `Users.make`, a behavior, a field `Config.db` —, the checker's ordinary rules
       on the result (`Users` where a value is expected refused with the checker's text at the annotation); never the bare
-      name resolved in the module; cells `compile_executor_handle_on_type`, `_on_method`, `_on_type_as_value`,
-      `_handle_not_module_name`
-- [ ] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
+      name resolved in the module; cells `init_executor_handle_on_type`, `_on_method`, `_on_type_as_value`;
+      `_handle_not_module_name` with B-150 (its wasm answer)
+- [x] `compiler.catalogue` renamed `compiler.find` (581 (3)), every site, docs and AGENTS included — after B-136's final
       package (its catalogue cells)
 - [ ] moved into B-139 by decision 605: `@emit`, `@code` and `@expr` removed with `builtins.d.bp` (`unknown-builtin`), the emit
       splice paths of `commonJS.zig` / `erlang.zig` deleted, the 32 `emit` cells, the 3 `conformance/test/` suites and
@@ -2858,6 +2859,17 @@ Found by machine 1's 165 s10 gate: query's cell `generic_loader_binding`
 commonJS runs it.
 
 - [ ] the chain answers the array on erlang and beam as on commonJS; a botopink-lang cell holding the shape, red on the parent
+
+### B-150 — wasm: a type's method handed as a record-constructor argument resolves to the module's same-named `fn`
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro) · **After:** B-142 (both edit the wasm backend)
+
+Found by B-137's cell `init_executor_handle_not_module_name` (613). `Entry(name: "make", make: Users.make)` inside a
+function, where the module also declares `pub fn make()`, stores the module's `make` on wasm: `e.make()` prints
+`module make`, commonJS, erlang and beam `users made`. `val f: fn() -> string = Users.make;` is right on wasm.
+
+- [ ] `Users.make` as a constructor argument is the type's method on wasm; the cell `init_executor_handle_not_module_name`
+      (four targets, red on the parent on wasm) and a plain-program cell beside it
 
 ### B-147 — erlang / beam defects found by 165 s5
 
