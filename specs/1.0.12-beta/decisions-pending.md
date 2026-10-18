@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **607**.
+number, which is **608**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -806,7 +806,7 @@ before every other part of this page; each holds one row, or nothing built.
 
 #### b139-a · Which std module declares `builtin`, and the cycles among `compiler.bp`, `external.bp` and `reflection.bp` (decisions 575 (2), (6), 576 (13); 144 B-139)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**
-- **Decision 606 (2026-10-18).** `builtin` is no decorator, `external` is `compiler.external` and `TypeInfo` is `Type.Info` in `types.bp`: `external.bp` and its cycle are gone and `Compiler` names `SourceLocation` and `Asset` alone. The question is `SourceLocation`'s module, and whether `reflection.bp` exists at all; the recommendation stays (a): `compiler.bp` declares it, no `reflection.bp`.
+- **Decision 606 (2026-10-18).** `builtin` is no decorator, `external` is `compiler.external` and `TypeInfo` is `Type.Info` in `types.bp`: `external.bp` and its cycle are gone and `Compiler` names `SourceLocation` and `Link` alone (607: `Asset` is std's `asset.bp`, importing `compiler` and `io.fs`). The question is `SourceLocation`'s module, and whether `reflection.bp` exists at all; the recommendation stays (a): `compiler.bp` declares it, no `reflection.bp`.
 - **Measured.** `libs/std/src/compiler.bp` names `SourceLocation` (`val src: SourceLocation`), `Implementation`, `DeclKind`, `HookNode` and `TypeInfo`; `external.bp` declares `Implementation`, `WasmNeed`, `WasmHost`, `WasiAdapter` and `external`, importing nothing; `builtins.d.bp`'s `DeclAnnotation(decorator: Decorator)` names the behavior `Decorator`. 575 (2) places `src` and `typeInfo` in `reflection.bp` and `Compiler` in `compiler.bp`; 576 (13) places `DeclKind` and the handle records (`HookNode`, `Field`, `Method`, `Param`, `DeclAnnotation`) in `compiler.bp`; B-139's README places `SourceLocation`, `TypeInfo`, `DeclKind` and `Field` in `reflection.bp`. Read together: `compiler.bp` → `reflection.bp` (`SourceLocation`, `TypeInfo`) → `compiler.bp` (`DeclKind`, `Field`, `Decorator`); and `compiler.bp` → `external.bp` (`Implementation`) → `compiler.bp` (`#[builtin]` on `external` names the decorator `builtin`). `primitives.bp` writes `#[external(…)]` and is inferred before every std module (`comptime.zig` `registerStdlib`, `registerExternalPrelude`), so the module declaring `builtin` and the one declaring `Implementation` must both be inferred before it; `stdModuleOrder` orders the std modules by their imports and admits no cycle.
 - **Options.**
   (a) `compiler.bp` self-contained and first: `builtin`, `Compiler`, `Implementation` with its three enums, `SourceLocation`, `TypeInfo<T>`, `DeclKind`, `Decorator`, `Annotation` and the handle records; `external.bp` keeps `external` alone and imports `compiler.Implementation`; `reflection.bp` keeps `src`, `typeInfo` (and `Declared*` until B-137 box 0) and imports its types. Order: `compiler` → `external` → `primitives` → the rest.

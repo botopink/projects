@@ -2707,7 +2707,7 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       `primitives.bp` with their bodies — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
       two functions stay, imported, inside std too: `print` in `io/terminal.bp`, `panic` in `failure.bp`; `println`, `todo`,
       `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `Type.Info<T>`, the record in `types.bp`),
-      `embed` (`Asset` in `compiler.bp`) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
+      `embed` (the link only: `Link` in `compiler.bp`, `Asset(link)` in `asset.bp` importing `compiler` and `io.fs`, `open()` the `File`, when by the `comptime` at the read, 607) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
       `external.bp` gone) are members of `compiler`, written under `comptime` in a run-time body; every std decorator
       written `#[name]` — `#[compiler.external(…)]`, an annotation `#[compiler.m(…)]` calling `m` on the annotated
       declaration —, `use`, `future`, `generator`, `resultGenerator`, `Stage`, `BeamMemory` imported — a keyword collision
@@ -2716,12 +2716,13 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       are parsed as std's (`registerStdlib` over the modules, `stdlibFnDecls` from them so `expandTrailingDefaults` finds `todo` /
       `panic`); the drift tests of `comptime/builtins.zig`, `effect_chain.zig`, `infer_decls.zig` read the modules or die; the
       codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
-      `panic(…)`, `@typeInfo` / `@embed` → `comptime compiler.typeInfo` / `comptime compiler.embed`, `@TypeInfo` →
+      `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
       `Type.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
 - [ ] the modules: `result.bp` (`Result` with its five bodies; the backends' inline lowering and the `methods` rows go),
       `reflection.bp` only if b139-a keeps it (`SourceLocation`, `Declared`, `DeclKind`, `Field` until B-140; `src` / `typeInfo` are `compiler`'s, 606),
-      `Asset` in `compiler.bp` (`File.ofBytes` in `io/fs.bp`; `openAsset`, `Asset.open()`, `embed-text-not-utf8`,
-      `embed-text-not-at-build` go), `print` in `io/terminal.bp`, `panic` in `failure.bp` (606), the effect
+      `asset.bp` (`Asset(link: Link)` with `open()` over `io.fs`, 607; `Asset.bytes` / `size` / `hash` / `text()`, `File.ofBytes`'s
+      embedded copy, `openAsset`, `embed-text-not-utf8`, `embed-text-not-at-build`, `embed-open-needs-fs` go; the `embed_*` /
+      `fs_asset_*` cells rewritten or removed), `print` in `io/terminal.bp`, `panic` in `failure.bp` (606), the effect
       wrappers and the ambient behaviors in the modules that own them — each declaration's reference prose moved to
       `conformance/docs.md` § Builtins
 - [ ] removed: `module` (the cell `builtin_module_not_lowered` goes), `trap`, `field`, `TypeOf`, `makeRecord`,
@@ -2731,8 +2732,8 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       cell `docs.md` and comment naming `builtins.d.bp`; `scripts/decisions-split.py` untouched
 - [ ] cells: `builtin_twice`, `setbuiltin_outside_std`, a builtin reached as `@name` from a program and bare inside
       std, `embed` on four targets with `text()` at run time (a non-UTF-8 asset an `FsError`), `Result`'s methods on
-      four targets, `print` by cell on four targets, `#[compiler.external(…)]` on a `declare fn`, `comptime compiler.embed`
-      and `comptime compiler.typeInfo` in a run-time body
+      four targets, `print` by cell on four targets, `#[compiler.external(…)]` on a `declare fn`, `comptime Asset(compiler.embed(…))`
+      read at build and at run time, `comptime compiler.typeInfo` in a run-time body
 
 Open: questions b139-a (`SourceLocation`'s module after 606, whether `reflection.bp` exists), b139-b (`Result`'s
 shape); b139-c answered by decision 606 (`print` in `io/terminal.bp`), b139-d answered by decision 605 (`emit` / `code` / `expr` removed here, after 165 s10). The file kind (box 1) and
