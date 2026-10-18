@@ -67,6 +67,7 @@
 - [ ] a row whose example cannot be written because the compiler or the library departs from it: the example written as the decision says, the departure a row (`language-gaps.md` for a library, a 144 / 164 row for botopink-lang) named in the report — never an example bent to what compiles
 - [ ] the root `conformance/docs.md` gains one row naming `modules/decisions-taken/` (the ledger's index; 462 / 548); rakun's root manifest and `conformance/docs.md` the same (its tree stays grouped by package; the decision cells are the ledger's, not a package's feature)
 - [ ] check 7 (i) green on every batch; `AGENTS.md` of `conformance/` names the subtree
+- [ ] `decision-cells.py compile` keeps each failing draft's error: the first diagnostic line per target printed under its `FAIL` line, the whole output with `--verbose`; a test in `decision-cells-test.py` (the maintainer, 2026-10-18: today a thread reruns each draft by hand to read the error)
 
 ### s4 — the flip: the cells run
 

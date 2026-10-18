@@ -2910,6 +2910,20 @@ function, where the module also declares `pub fn make()`, stores the module's `m
 - [ ] a namespace import links only the members the program reaches, on wasm as on the other targets; cell
       `terminal_namespace_import_print` (`terminal.print("x")` alone, four targets), red on wasm on the parent
 
+### B-155 — wasm defects found by 166 s3's drafts
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (each a measured repro) · **After:** B-139 (the drafts' spelling)
+
+Each box is a library's decision-cell draft that builds on commonJS, erlang and beam and fails on wasm only.
+
+- [ ] comptime on wasm: css's own `parse` run inside a `comptime` block fails with `the comptime block's module did
+      not compile: the wat runtime does not take variable Context used before it is bound` (css's
+      `libraries_run_at_build_on_wasm-594` draft, 594); a botopink-lang cell with a library function binding a
+      local after a closure that reads it, run at build, red on wasm on the parent
+- [ ] `?.` on wasm: `x?.name` where the receiver's type comes from a field of an optional record is refused with
+      `the wasm backend cannot place ?.name: the receiver's type is not known here` (actions'
+      `optional_typescript_operators-330` draft, 330); a cell of the shape, four targets, red on wasm on the parent
+
 ### B-147 — erlang / beam defects found by 165 s5
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured; repros in rakun's `AGENTS.md`)
