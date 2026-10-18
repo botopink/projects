@@ -779,6 +779,16 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para o código que um decorator escreve, qualquer que seja a forma que o carrega.
 - **Bloqueia.** Nada hoje (construída como (b) com nomes qualificados).
 
+#### 150-s34-a · `Sheet.add` sobre um `Styleable` cujo `toStyled()` responde `Component<Styled>`: um `add` assíncrono, ou uma função comum desembrulhando um componente (decisões 280, 432; frente 150 s34)
+- **Proposta (coordenador, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** O 150 s34 faz `Sheet.add(layerName, item: Styleable)` receber o `Styled` que `item.toStyled()` responde. `toStyled()` retorna `Component<Styled>`, e `await` numa função comum é recusado (`await-without-async`: precisa de um retorno `Task` / `Stream` / `Component`; `layers.bp` do rakun-stylesheet). Então `add` não consegue desembrulhar o item sem virar assíncrono ele mesmo. Os testes e as cells encadeiam `Sheet.add(…).add(…)`.
+- **Opções.**
+  (a) `toStyled()` responde `Styled` (um valor estilizado é dado, não um componente renderizado); `add` continua uma função comum e mantém o seu encadeamento.
+  (b) `add` retorna `Component<Sheet>` e quem o chama faz `await` a cada passo, o que quebra `.add().add()`.
+  (c) Uma função comum pode desembrulhar um `Component<T>` sabidamente já resolvido: uma mudança no compilador, uma linha do 144.
+- **Recomendação.** (a): nada em montar uma folha de estilos é assíncrono, e o encadeamento fica. A medir antes: cada corpo de `toStyled()`, conferindo se algum faz `await`.
+- **Bloqueia.** O 150 s34, e o marcador "a method's behavior-typed parameter" em `layers.bp`.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

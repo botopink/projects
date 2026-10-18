@@ -779,6 +779,16 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for code a decorator writes, whatever form carries it.
 - **Blocks.** Nothing today (built as (b) with qualified names).
 
+#### 150-s34-a · `Sheet.add` over a `Styleable` whose `toStyled()` answers `Component<Styled>`: an async `add`, or a plain function unwrapping a component (decisions 280, 432; front 150 s34)
+- **Proposed (coordinator, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** 150 s34 makes `Sheet.add(layerName, item: Styleable)` take the `Styled` that `item.toStyled()` answers. `toStyled()` returns `Component<Styled>`, and `await` in a plain function is refused (`await-without-async`: it needs a `Task` / `Stream` / `Component` return; rakun-stylesheet's `layers.bp`). So `add` cannot unwrap the item unless it becomes async itself. The tests and cells chain `Sheet.add(…).add(…)`.
+- **Options.**
+  (a) `toStyled()` answers `Styled` (a styled value is data, not a rendered component); `add` stays a plain function and keeps its chain.
+  (b) `add` returns `Component<Sheet>` and its callers `await` each step, which breaks `.add().add()`.
+  (c) A plain function may unwrap a `Component<T>` known to be already resolved: a compiler change, a 144 row.
+- **Recommendation.** (a): nothing about building a stylesheet is asynchronous, and the chain stays. To be measured first: each `toStyled()` body, checking whether any of them awaits.
+- **Blocks.** 150 s34, and the marker "a method's behavior-typed parameter" in `layers.bp`.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
