@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**106 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **631**.
+number, which is **632**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -654,16 +654,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) `defaultValue` holds the text as written, but the derived record's text omits it.
 - **Recommendation.** (a): one rule for a field wherever it is read.
 - **Blocks.** Nothing (built as (a) unless answered).
-
-#### b140-e · A meta record holding a `compiler.Field<T>`, read at run time, once 599 removes the run-time field (decisions 298, 308, 575 (4), 599 (1), 606 (3); 144 B-140)
-- **Proposed (fable, 2026-10-18, re-read against 606–609; awaiting the maintainer):** **(a).**
-- **Measured.** Cell `meta_field_tuple_and_field_key` (298) records `Sort<Book>(by: .pages, keys: [.pages])` through `compiler.setMeta`, and `main` reads it at run time. Under 606 (3) the read is written `val o = comptime compiler.typeInfo(Book).meta(Sort);` (B-139's codemod). A `comptime` expression's value is spliced into the run-time body as a literal (575 (4)), and a `compiler.Field<T>` has no run-time form (599 (1)). So the failure is the splice of `Sort(by: .pages, …)`: the `unbound variable 'pages'` at a synthetic location (`src/main.bp:1000002:31`) once B-140's first box removes the run-time key. 606 (3) also gives (b) a precedent in the same record: `compiler.Field<T>.type: anytype` is a build-time value lowered as its name (575 (7)).
-- **Options.**
-  (a) Refused at the `comptime` expression whose value holds a `compiler.Field<T>`. The error is located at the `comptime`, with code `field-key-at-run-time`, and names the record's field (`Sort.by`) and 599. The decorator's build-time read stays. The cell splits: the tuple half runs, and the field half becomes a refusal cell.
-  (b) The field lowers to its name, as its own `type` member does: `o?.by` is `"pages"`, and `Sort`'s run-time shape is `by: string`, `keys: string[]`.
-  (c) `compiler.setMeta` refuses a record with a `compiler.Field<T>` field.
-- **Recommendation.** (a): it refuses where the build value meets run time, a point 606 (3) now spells (`comptime`). (b) is cheapest, but it gives one record two shapes.
-- **Blocks.** B-140's first box (the cell is red on its branch).
 
 #### 577-a · How an error in template-built code finds its place in the template text: by the word it copies, or by the hole leaves the sub-language records (decisions 577, 578; 144 B-136)
 - **Proposed (opus, 2026-10-18; built as (a), awaiting the maintainer):** **(a)** now, **(b)** as a later step.

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**107 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**106 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **631**.
+número livre, que é **632**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -654,16 +654,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) `defaultValue` guarda o texto como escrito, mas o texto do record derivado o omite.
 - **Recomendação.** (a): uma regra para um campo onde quer que seja lido.
 - **Bloqueia.** Nada (construído como (a) se não respondida).
-
-#### b140-e · Um meta record que guarda um `compiler.Field<T>`, lido em runtime, quando a 599 remove o campo de runtime (decisões 298, 308, 575 (4), 599 (1), 606 (3); 144 B-140)
-- **Proposta (fable, 2026-10-18, relida contra 606–609; aguardando o mantenedor):** **(a).**
-- **Medido.** A cell `meta_field_tuple_and_field_key` (298) grava `Sort<Book>(by: .pages, keys: [.pages])` por `compiler.setMeta`, e `main` o lê em runtime. Pela 606 (3) a leitura se escreve `val o = comptime compiler.typeInfo(Book).meta(Sort);` (codemod do B-139). O valor de uma expressão `comptime` é emendado no corpo de runtime como literal (575 (4)), e um `compiler.Field<T>` não tem forma de runtime (599 (1)). Então a falha é a emenda de `Sort(by: .pages, …)`: o `unbound variable 'pages'` num local sintético (`src/main.bp:1000002:31`) quando a primeira caixa do B-140 remove a chave de runtime. A 606 (3) também dá à (b) um precedente no mesmo record: `compiler.Field<T>.type: anytype` é um valor de build reduzido ao seu nome (575 (7)).
-- **Opções.**
-  (a) Recusado na expressão `comptime` cujo valor guarda um `compiler.Field<T>`. O erro é localizado no `comptime`, com o código `field-key-at-run-time`, e nomeia o campo do record (`Sort.by`) e a 599. A leitura no build do decorator fica. A cell se divide: a metade da tupla roda, e a metade do campo vira uma cell de recusa.
-  (b) O campo é reduzido ao seu nome, como o seu próprio membro `type`: `o?.by` é `"pages"`, e a forma de runtime de `Sort` é `by: string`, `keys: string[]`.
-  (c) `compiler.setMeta` recusa um record com um campo `compiler.Field<T>`.
-- **Recomendação.** (a): recusa onde o valor de build encontra o runtime, um ponto que a 606 (3) agora escreve (`comptime`). A (b) é mais barata, mas dá duas formas a um record.
-- **Bloqueia.** A primeira caixa do B-140 (a cell está vermelha na sua branch).
 
 #### 577-a · Como um erro no código construído por um template encontra o seu lugar no texto do template: pela palavra que copia, ou pelas folhas de buraco que a sub-linguagem grava (decisões 577, 578; 144 B-136)
 - **Proposta (opus, 2026-10-18; construída como (a), aguardando o mantenedor):** **(a)** agora, **(b)** como passo posterior.
