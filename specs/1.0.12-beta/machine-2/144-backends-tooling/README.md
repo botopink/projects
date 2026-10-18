@@ -2793,3 +2793,15 @@ The three boxes above are committed on their branch and land after B-136 (both c
 commonJS codegen snapshots now read `x = x.concat([v])`).
 
 Oracle: the two cells on commonJS, erlang, beam and wasm.
+
+### B-144 — erlang / beam: a chained call on a namespace member dispatches on the wrong receiver
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
+
+Found by machine 1's 165 s10 gate: query's cell `generic_loader_binding`
+(`query/conformance/modules/generic_loader_binding`, `botopink run --target erlang`) crashes
+`{bp_unsupported_method,<<"join">>,1,{query@query@@Query,[4,16,36]}}`: in
+`query.of(…).where(…).select(…).toArray()`, `toArray()` hands back the `Query` record and `join` is called on it.
+commonJS runs it.
+
+- [ ] the chain answers the array on erlang and beam as on commonJS; a botopink-lang cell holding the shape, red on the parent
