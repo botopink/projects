@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**118 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**117 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **611**.
+número livre, que é **612**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -746,15 +746,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) Um membro tipado alcança o seu dono só por um receptor de instância (`self: Self`). Um membro estático que precisa do dono fica um membro string.
 - **Recomendação.** (b): não torna nenhum handle um valor de runtime (a recomendação da b137-b se mantém), e também responde o `-> Self` da 165-e.
 - **Bloqueia.** A remoção do `addMember` string do B-140 para o `check` e o `http` do rakun; 165-e.
-
-#### 165-c · O registro da 605 (1) lê `compiler` dentro do executor, o que a 575 (4) recusa (decisões 575 (4), 605; frente 165 s10)
-- **Proposta (opus, 2026-10-17; construída como (a), aguardando o mantenedor):** **(a).**
-- **Medido.** A 605 e a caixa do 165 s10 escrevem um registro como `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Dentro de um executor, `compiler` é um valor de build, e a 575 (4) recusa capturá-lo (`expr-captures-build`, cell `compile_executor_captures_build`). A cell `compile_executor_before_main` mostra a forma aceita: o valor de build lido antes do executor.
-- **Opções.**
-  (a) O nome é lido no corpo do decorator e o executor captura a string: `val declName = compiler.name(decl)!; compiler.compile({ -> rkRegisterX(declName, decl); });`. O texto da 605 e a caixa são corrigidos para essa forma.
-  (b) `compiler.name(decl)` é permitido dentro de um executor como exceção à 575 (4).
-- **Recomendação.** (a): é a regra que as cells já seguram, e só a redação do exemplo muda.
-- **Bloqueia.** Nada (construída como (a)).
 
 #### 165-d · Código calculado no build, sem `@emit`: como um decorator escreve um membro cujo corpo ele calcula (decisões 576 (14), 577, 578, 605; frente 165 s10, 144 B-140)
 - **Proposta (opus, 2026-10-17; construída como (c) por ora, aguardando o mantenedor):** **(a).**

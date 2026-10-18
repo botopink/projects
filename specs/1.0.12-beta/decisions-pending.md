@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**118 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**117 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **611**.
+number, which is **612**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -746,15 +746,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) A typed member reaches its owner only through an instance receiver (`self: Self`). A static member that needs the owner stays a string member.
 - **Recommendation.** (b): it makes no handle a run-time value (b137-b's recommendation stands), and it also answers 165-e's `-> Self`.
 - **Blocks.** B-140's string-`addMember` removal for rakun's `check` and `http`; 165-e.
-
-#### 165-c · 605 (1)'s registration reads `compiler` inside the executor, which 575 (4) refuses (decisions 575 (4), 605; front 165 s10)
-- **Proposed (opus, 2026-10-17; built as (a), awaiting the maintainer):** **(a).**
-- **Measured.** 605 and 165 s10's box write a registration as `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`. Inside an executor, `compiler` is a build value, and 575 (4) refuses capturing it (`expr-captures-build`, cell `compile_executor_captures_build`). Cell `compile_executor_before_main` shows the accepted form: the build value read before the executor.
-- **Options.**
-  (a) The name is read in the decorator body and the executor captures the string: `val declName = compiler.name(decl)!; compiler.compile({ -> rkRegisterX(declName, decl); });`. 605's text and the box are corrected to that form.
-  (b) `compiler.name(decl)` is allowed inside an executor as an exception to 575 (4).
-- **Recommendation.** (a): it is the rule the cells already hold, and only the example's wording changes.
-- **Blocks.** Nothing (built as (a)).
 
 #### 165-d · Code computed at build, with `@emit` gone: how a decorator writes a member whose body it computes (decisions 576 (14), 577, 578, 605; front 165 s10, 144 B-140)
 - **Proposed (opus, 2026-10-17; built as (c) for now, awaiting the maintainer):** **(a).**
