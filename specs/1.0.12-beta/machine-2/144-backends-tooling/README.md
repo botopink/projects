@@ -2772,6 +2772,11 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…)` /
       `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
       `compiler.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
+      — landed so far (the first part): the prelude's names bare; `print` and `panic` imported from `io.terminal` / `failure`;
+      `@print`, `@panic`, `@todo`, `@typeInfo`, `@src`, `#[@external` and `@Result<…>` refused; `compiler.typeInfo` under
+      `comptime`; `#[compiler.external]`; `scripts/codemod/prelude_names.py` run over the cells, std, the fixtures and the
+      Zig test sources (the libraries' runs are their fronts'). Left: the types into `primitives.bp`, `Annotation`/`Decorator`,
+      `#[stage(…)]` / `#[beamMemory(…)]`, `embed` / `Asset`, the `registerBuiltins` / embeds / mirrors removal
 - [ ] decisions 624, 630: `Field<T>` and `Info<T>` declared in `compiler.bp` — `compiler.Field<T>` / `compiler.Info<T>`, the 27
       std and cell files respelled in the codemod commit —; `types.bp` kept, `Type`'s five utilities as statics (628) importing
       `compiler`; `import {types.Type}` unchanged
