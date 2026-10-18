@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**97 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**95 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **664**.
+número livre, que é **665**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -521,23 +521,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Trava.** A linha dos adaptadores do 144 B-25.
 
-#### 564-a · O `value` de uma entrada tipada do catálogo pode ser lido fora de uma expansão 562? (decisão 564; 144 B-19 passo 7)
-- **Proposta (opus, 2026-10-16; construída como (b), aguardando o mantenedor):** (a): toda leitura do `value` de uma entrada `Declared<B>` fora de uma expansão recusada.
-- **Contexto.** A decisão 564 faz `@TypeInfo.all(with: d)` responder `Declared<B>[]` e permite chamar as funções de `B` sobre o `value` de uma entrada só dentro de uma expansão 562. Fora dela, uma entrada de tipo não tem valor de tempo de execução: o catálogo a escreve como `null` tipado `B`.
-- **Medido.** Só a chamada direta `d.value.start()` é recusada fora de uma expansão; ligá-la antes (`val v = d.value; v.start()`) passa na checagem de tipos e chega a `null` em tempo de execução.
-- **Opções.**
-  (a) ★ Toda leitura do `value` de uma entrada tipada fora de uma expansão é recusada, localizada.
-  ```bp
-  for (mods) { d -> val v = d.value; }   // refused: an entry's `value` is read only inside an expansion
-  ```
-  (b) Como construído: só a chamada sobre `value` é recusada, como a 564 a enuncia.
-  ```bp
-  for (mods) { d -> d.value.start(); }        // refused
-  for (mods) { d -> val v = d.value; v.start(); }   // accepted; null at run time
-  ```
-- **Recomendação.** (a): a leitura mais estrita; (b) aceita na checagem de tipos um programa que falha em tempo de execução.
-- **Bloqueia.** Nada.
-
 #### 564-b · Um catálogo sobre decorators que nomeiam behaviors diferentes (decisão 564; 144 B-19 passo 7)
 - **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (a): respondido `Declared<unknown>[]`, sem precisar de `member:`.
 - **Contexto.** Decisão 564: uma consulta sobre vários decorators responde os behaviors que eles compartilham, `unknown` quando nenhum. Antes da 564 uma consulta cujos decorators não davam forma comum precisava de `member:` (`typeinfo-all-needs-member`), e o `member:` está saindo.
@@ -635,15 +618,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### b137-f · A 551 é substituída pela 581 (1) quando nenhum default `comptime` é uma consulta ao catálogo, e o seu "o catálogo passado explicitamente sobrepõe" sobrevive? (decisões 551, 576 (7), 581 (1); 144 B-137)
-- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** A 551 deixa um default `comptime` ler o catálogo de run time e o preenche no chamador; quando `@TypeInfo.all` sai, um registro lido em `main` o substitui (576 (7)), e `compiler.find` responde handles legíveis só em tempo de build. Células `typeinfo_all_default_at_caller`, `_default_override`, `_default_outside_root`, `comptime_expand_boot`.
-- **Opções.**
-  (a) A 551 é `Replaced by 581 (1)`: `default_at_caller` e `comptime_expand_boot` viram células de registro (`boot()` uma função comum sobre o registro), `default_outside_root` sai, `default_override` mantém só sua metade do `0` para `#[other]`.
-  (b) A 551 fica para um default de build: um default `comptime` pode chamar `compiler.find`, o argumento explícito ainda o sobrepondo.
-- **Recomendação.** (a): uma forma de reunir as declarações, o registro.
-- **Bloqueia.** O pacote final do B-137 (quatro células).
 
 #### b137-g · O que recusa `compiler.find(with: 42)` ou `compiler.find(with: someFn)` agora que `with` é tipado `unknown`? (decisão 581 (3); 144 B-137)
 - **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**

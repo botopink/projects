@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**97 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**95 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **664**.
+number, which is **665**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -521,23 +521,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** 144 B-25's adapter row.
 
-#### 564-a · May a typed catalogue entry's `value` be read outside a 562 expansion? (decision 564; 144 B-19 step 7)
-- **Proposed (opus, 2026-10-16; built as (b), awaiting the maintainer):** (a): any read of a `Declared<B>` entry's `value` outside an expansion refused.
-- **Context.** Decision 564 makes `@TypeInfo.all(with: d)` answer `Declared<B>[]` and allows calling `B`'s functions on an entry's `value` only inside a 562 expansion. Outside one, a type entry has no run-time value: the catalogue writes it as `null` typed `B`.
-- **Measured.** Only the direct call `d.value.start()` is refused outside an expansion; binding it first (`val v = d.value; v.start()`) type-checks and reaches `null` at run time.
-- **Options.**
-  (a) ★ Every read of a typed entry's `value` outside an expansion is refused, located.
-  ```bp
-  for (mods) { d -> val v = d.value; }   // refused: an entry's `value` is read only inside an expansion
-  ```
-  (b) As built: only the call on `value` is refused, as 564 words it.
-  ```bp
-  for (mods) { d -> d.value.start(); }        // refused
-  for (mods) { d -> val v = d.value; v.start(); }   // accepted; null at run time
-  ```
-- **Recommendation.** (a): the strictest reading; (b) type-checks a program that fails at run time.
-- **Blocks.** Nothing.
-
 #### 564-b · A catalogue over decorators naming different behaviors (decision 564; 144 B-19 step 7)
 - **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (a): answered `Declared<unknown>[]`, no `member:` needed.
 - **Context.** Decision 564: a query over several decorators answers the behaviors they share, `unknown` when none. Before 564 a query whose decorators gave no common shape needed `member:` (`typeinfo-all-needs-member`), and `member:` is going.
@@ -635,15 +618,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b137-f · Is 551 replaced by 581 (1) once no `comptime` default is a catalogue query, and does its "the catalogue passed explicitly overrides" survive? (decisions 551, 576 (7), 581 (1); 144 B-137)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 551 lets a `comptime` default read the run-time catalogue and fills it at the caller; once `@TypeInfo.all` goes, a registry read in `main` replaces it (576 (7)), and `compiler.find` answers handles readable at build only. Cells `typeinfo_all_default_at_caller`, `_default_override`, `_default_outside_root`, `comptime_expand_boot`.
-- **Options.**
-  (a) 551 is `Replaced by 581 (1)`: `default_at_caller` and `comptime_expand_boot` become registry cells (`boot()` a plain function over the registry), `default_outside_root` goes, `default_override` keeps only its `0` for `#[other]` half.
-  (b) 551 stays for a build-time default: a `comptime` default may call `compiler.find`, the explicit argument still overriding it.
-- **Recommendation.** (a): one way to gather the declarations, the registry.
-- **Blocks.** B-137's final package (four cells).
 
 #### b137-g · What refuses `compiler.find(with: 42)` or `compiler.find(with: someFn)` now that `with` is typed `unknown`? (decisions 581 (3); 144 B-137)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
