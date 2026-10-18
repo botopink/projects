@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**107 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**106 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **649**.
+number, which is **650**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -915,16 +915,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Blocks.** Nothing; the names move in s5's second box or s7.
 
 ## Front 166 — decision cells (the maintainer, 2026-10-18)
-
-#### 166-b · How phase 1's examples stay out of the gate until the flip (decisions 67, 265, 464 (3), 475 (6); front 166)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** `cell check` takes every directory with a `src/` as a cell, and a cell with no snapshot is red by design; 67 forbids a skip list.
-- **Options.**
-  (a) Phase 1 writes `decisions-taken/<slug>-<N>/main.bp` (no `src/`, no manifest): nothing is a cell until `promote` moves it to `src/main.bp` and writes `botopink.json`.
-  (b) The full cell shape from the first commit, each answer accepted in the same batch — asserted at once.
-  (c) A `cell check` verdict `pending` for a cell with no `snapshot/` — amends 464 (3) and 475 (6), lets a cell exist unasserted.
-- **Recommendation.** (a): the maintainer's two moments, no flag, no list, nothing the gate finds and skips.
-- **Blocks.** 166 s1's scaffold and `promote`.
 
 #### 166-c · One include form for a `docs.md`: `{<path>}` or `<!-- example: … -->` (decision 461 (2); front 166)
 - **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
