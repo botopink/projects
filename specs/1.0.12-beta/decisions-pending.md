@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**121 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**122 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -766,6 +766,13 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
+
+#### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
+- **Proposed (sonnet, 2026-10-17; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `String.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
+- **Measured.** `modules/std-wasm/wat/bytes.wat`: `bytes.at` compares the index unsigned against `array.len` and answers `-1` past it (a negative index included), the body of `text.byteAt` (P1-a) over the same `$str` layout (`Bytes` is an `i8` array, 164 s2, 346); `String.charCodeAt` answers `-1` out of range on the four targets (`primitives.bp`: Erlang `_ -> -1`, Node `?? -1`, `text.zig`). `bytes.ofWords` writes each word with `array.set $str`: an `i8` slot keeps the low eight bits, so `256 + 33` is the byte `33`. No botopink operation builds a `Bytes` from words (`behavior Bytes`: `fromUtf8`, `toUtf8`, `length`, `concat`, `slice`), so no target has an answer to compare, and 585 (k) names the three leaves without their answers. The codecs they are written for (`base64DecodeBytes`, `hexDecodeBytes`) produce words in `0..255` and read indices in `0..length-1`: through them neither answer is observable; any `std:` cell of `libs/std` (445) reaches the leaves. The unit test `wat: front 164 s3 ---- the Bytes leaves answer in a GC module` (`codegen/tests/wat.zig`) fixes `bytesOfWords([104, 105, 256 + 33])` as three bytes, `bytesAt(b, 2)` as `33`, `bytesAt(b, 3)` and `bytesAt(b, -1)` as `-1`. Without the check, `array.get_u` traps outside `0..length-1` (a `crash:` abort).
+- **Options.** (a) As built. (b) Both trap: `bytes.at` is the bare `array.get_u` (a trap outside `0..length-1`, a negative index read unsigned included) and `bytes.ofWords` is `unreachable` at the first word outside `0..255`; the `.bp` codecs keep their own bounds; the unit test's three lines replaced. (c) `bytes.at` as `text.byteAt` (`-1`: one answer for one read over one layout), `bytes.ofWords` trapping.
+- **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
+- **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
 
 #### b137-b · Inside an executor, what the handle is for a type, a behavior, a field or a method — or whether those kinds are refused (decisions 581 (2), 575 (4); 144 B-137)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**

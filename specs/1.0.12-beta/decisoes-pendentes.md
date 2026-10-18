@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**121 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**122 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -766,6 +766,13 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
+- **Proposta (sonnet, 2026-10-17; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `String.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
+- **Medido.** `modules/std-wasm/wat/bytes.wat`: `bytes.at` compara o índice sem sinal com `array.len` e responde `-1` além dele (um índice negativo incluído), o corpo de `text.byteAt` (P1-a) sobre o mesmo layout `$str` (`Bytes` é um array de `i8`, 164 s2, 346); `String.charCodeAt` responde `-1` fora do intervalo nos quatro alvos (`primitives.bp`: Erlang `_ -> -1`, Node `?? -1`, `text.zig`). `bytes.ofWords` escreve cada palavra com `array.set $str`: uma célula `i8` guarda os oito bits baixos, logo `256 + 33` é o byte `33`. Nenhuma operação de botopink constrói um `Bytes` a partir de palavras (`behavior Bytes`: `fromUtf8`, `toUtf8`, `length`, `concat`, `slice`), logo nenhum alvo tem uma resposta para comparar, e a 585 (k) nomeia as três folhas sem as suas respostas. Os codecs para que foram escritas (`base64DecodeBytes`, `hexDecodeBytes`) produzem palavras em `0..255` e leem índices em `0..length-1`: por eles nenhuma das respostas é observável; qualquer célula `std:` de `libs/std` (445) alcança as folhas. O teste unitário `wat: front 164 s3 ---- the Bytes leaves answer in a GC module` (`codegen/tests/wat.zig`) fixa `bytesOfWords([104, 105, 256 + 33])` como três bytes, `bytesAt(b, 2)` como `33`, `bytesAt(b, 3)` e `bytesAt(b, -1)` como `-1`. Sem a verificação, `array.get_u` dá trap fora de `0..length-1` (um abort `crash:`).
+- **Opções.** (a) Como construído. (b) Ambas dão trap: `bytes.at` é o `array.get_u` nu (um trap fora de `0..length-1`, um índice negativo lido sem sinal incluído) e `bytes.ofWords` é `unreachable` na primeira palavra fora de `0..255`; os codecs `.bp` guardam os seus próprios limites; as três linhas do teste unitário substituídas. (c) `bytes.at` como `text.byteAt` (`-1`: uma resposta para uma leitura sobre um layout), `bytes.ofWords` dando trap.
+- **Recomendação.** (b) — uma folha não responde nada fora do seu domínio e nenhuma palavra é truncada em silêncio; o `-1` de `text.byteAt` fica o do P1-a até o mantenedor estender a resposta a ele.
+- **Bloqueia.** Nada construído espera; a metade `.bp` do P2-d (depois do B-139 e do s2 P5) lê a resposta antes de ser escrita.
 
 #### b137-b · Dentro de um executor, o que é o handle para um type, um behavior, um campo ou um método — ou se esses tipos de declaração são recusados (decisões 581 (2), 575 (4); 144 B-137)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**
