@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**105 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**104 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **651**.
+número livre, que é **652**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -913,17 +913,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   ```
 - **Recomendação.** (a): um pacote é hoje a unidade de um conjunto de alvos; três linhas nomeadas mantêm a regra do 165 (todo pacote um nome `rakun-*`, uma linha cada) sem feature nova da linguagem.
 - **Trava.** Nada; os nomes mudam na segunda caixa do s5 ou no s7.
-
-## Frente 166 — células de decisão (o mantenedor, 2026-10-18)
-
-#### 166-d · Quem commita em `conformance/modules/decisions-taken/**` num repositório de biblioteca (decisão 433; regra 1 do fronts.md; frente 166)
-- **Proposta (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
-- **Medido.** A 433 e a regra 1 só deixam a própria frente de um repositório editá-lo; a maioria das bibliotecas não tem frente aberta enquanto a 166 escreve.
-- **Opções.**
-  (a) Uma exceção à 433 e à regra 1 para essa única subárvore em todo repositório: as threads da 166 commitam ali diretamente, uma thread por repositório, a do botopink-lang num worktree `--lang`.
-  (b) A frente de cada repositório ganha a caixa e escreve as suas; a 166 fica com o script e o check.
-- **Recomendação.** (a): uma forma, um script, uma regra de pouso.
-- **Bloqueia.** 166 s3.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 

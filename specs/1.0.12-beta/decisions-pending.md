@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**105 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**104 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **651**.
+number, which is **652**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -913,17 +913,6 @@ before every other part of this page; each holds one row, or nothing built.
   ```
 - **Recommendation.** (a): a package is the unit of a target set today; three named rows keep 165's rule (every package a `rakun-*` name, one row each) without a new language feature.
 - **Blocks.** Nothing; the names move in s5's second box or s7.
-
-## Front 166 — decision cells (the maintainer, 2026-10-18)
-
-#### 166-d · Who commits under `conformance/modules/decisions-taken/**` in a library repository (decision 433; fronts.md rule 1; front 166)
-- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
-- **Measured.** 433 and rule 1 let only a repository's own front edit it; most libraries have no front open while 166 writes.
-- **Options.**
-  (a) A carve-out of 433 and rule 1 for that one subtree in every repository: 166's threads commit there directly, one thread per repository, botopink-lang's in a `--lang` worktree.
-  (b) Each repository's front gains the box and writes its own; 166 keeps the script and the check.
-- **Recommendation.** (a): one shape, one script, one landing rule.
-- **Blocks.** 166 s3.
 
 ## Part 1 — What blocks tracks 00–03
 

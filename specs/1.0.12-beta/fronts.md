@@ -19,7 +19,7 @@ milestone (three when the console is closed).
 
 ## Rules for a front
 
-1. **Only fronts 144 and 164 touch `repository/botopink-lang`** (433, amended 2026-10-14: 164 wasm-gc owns the wasm target, the comptime runtime, std-wasm, beam-to-wasm and compiler-web; 144 the rest — a 144 step that reaches 164's files waits on 164 s2). A library or medium front that meets a
+1. **Only fronts 144 and 164 touch `repository/botopink-lang`** (433, amended 2026-10-14: 164 wasm-gc owns the wasm target, the comptime runtime, std-wasm, beam-to-wasm and compiler-web; 144 the rest — a 144 step that reaches 164's files waits on 164 s2). A library or medium front that meets a The one carve-out (decision 651): `conformance/modules/decisions-taken/**` of every repository is front 166's, one thread per repository, nothing outside the subtree.
    compiler, std or toolchain gap files a row in [`language-gaps.md`](language-gaps.md) and pauses on the
    144 step that fixes it (rule 9); it never edits `modules/**`, `libs/std/**` or the toolchain's scripts.
 2. **A shared member's `botopink.json` and `src/root.bp` belong to the lowest-numbered step** that owns
