@@ -181,7 +181,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `rakun-cli/src/plugins.bp`; jhonstart's `routes.bp`): a `val __rk*` registration →
       `compiler.compile({ -> rkRegisterX(compiler.name(decl)!, decl); })`; the generated functions beside a type
       (`__rkBind_` / `__rkCheck_` / `__rkAutoGated_` / `__rkNew_` / `http…`) → static members by typed `addMember`
-      (`Name.bind(prefix)`, `Name.check()`, `Name.gated()`, `Name.new()`, `Name.http()`); the generated types `<Name>Tx` /
+      (`Name.bindProperties(prefix)` — not `bind`, validation's `#[validated]` owns it (327) —, `Name.check()`, `Name.gated()`, `Name.new()`, `Name.http()`); the generated types `<Name>Tx` /
       `Http…` → a template text `` @`…` `` answering the type, handed to `addType`; rakun-bpp's `<Name>Params(route)` →
       a run-time helper `pageParams(route)` over the schema `#[page]` registers through `compile`; rakun-stylesheet's
       `@expr(safe)` → `safe`, the template's return typed (decision 605 — every site has its replacement; no gap row)
