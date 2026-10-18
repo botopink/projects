@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **619**.
+number, which is **620**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -803,7 +803,7 @@ before every other part of this page; each holds one row, or nothing built.
 
 #### b138-d · A flag of `Implementation` written positionally: the constructor's fill, or the label required? (decisions 67, 575 (6); front 20 F9; 144 B-138)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
-- **Decision 618 (2026-10-18).** `Typescript` is folded into `JavaScript(types:)`, so the silently accepted `.Typescript("…", true)` is gone; what is left of the question is `.Erlang("…", f)` read as `body: f` — a positional argument that is not the template. (b) refuses it, naming the label (`write body: f`).
+- **Decision 618 (2026-10-18).** `Typescript` is removed from `Implementation` (618, 619), so the silently accepted `.Typescript("…", true)` is gone; what is left of the question is `.Erlang("…", f)` read as `body: f` — a positional argument that is not the template. (b) refuses it, naming the label (`write body: f`).
 - **Measured.** A positional argument fills the variant's next field (`parser/implementations.zig` `variant_fields`): `.JavaScript("…", true)` and `.Erlang("…", true)` fill `body:` and are refused ("writes a second cell, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` reads `f` as a body, and `.Typescript("…", true)` fills `result: true` and is accepted silently — the unlabelled switch front 20 F9's cell was written to refuse. No `.Typescript(` cell exists. `inline:`, `result:`, `host:`, `needs:` are written by label at every one of the 426 std and cell sites.
 - **Options.**
   (a) As landed: the constructor's positional order is the language; `.Typescript("…", true)` is `result: true`.

@@ -2688,10 +2688,12 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `decoratorArgNotKnownAt` treats a variant constructor as known — cell `decorator_arg_variant_constructor`; the
       formatter prints an annotation whose arguments end in a trailing comma one per line — cell
       `format_annotation_trailing_comma` (a `botopink format` round-trip cell beside `primitives.bp`'s own layout)
-- [ ] decision 618: `Implementation.Node` renamed `JavaScript`, `Typescript` folded into its `types: ?string` (the `.d.ts`
-      text, read by the `.d.ts` backend alone); `.Node(` → `.JavaScript(` at every std and cell site (654 in all with the
-      libraries', theirs in their fronts); `external_variants`, `translateExternalCells`, the readers; the enum in
-      `conformance/docs.md` § `declare fn`
+- [ ] decisions 618, 619: `Implementation.Node` renamed `JavaScript`; the `Typescript` variant removed (0 sites; the
+      `.typescript` row of `parser/implementations.zig` and every reader); `.Node(` → `.JavaScript(` at every std and cell
+      site (654 in all with the libraries', theirs in their fronts); `external_variants`, `translateExternalCells`, the
+      readers; the enum in `conformance/docs.md` § `declare fn`; `"typings": true` in `botopink.json` switches the `.d.ts`
+      emission and `botopink build --typescript` goes (`main.zig`, `compiler-cli/AGENTS.md`, `scripts/tsc-check.sh`,
+      `dts_compiler_types.zig` on the manifest key)
 - [ ] decision 617: `implement-with-body` on every bodied declaration, a behavior's `default fn` included — the exemption
       `ImplDecl.isDefault` goes, `implement_with_body` gains the behavior case; `primitives.bp`'s bodies-with-cells are
       B-146's to redistribute, so this box lands with B-146

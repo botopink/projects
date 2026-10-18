@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **619**.
+número livre, que é **620**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -803,7 +803,7 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 #### b138-d · Uma flag de `Implementation` escrita posicionalmente: o preenchimento do construtor, ou o rótulo exigido? (decisões 67, 575 (6); frente 20 F9; 144 B-138)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Decisão 618 (2026-10-18).** `Typescript` foi dobrado em `JavaScript(types:)`, então o `.Typescript("…", true)` aceito em silêncio não existe mais; o que resta da pergunta é `.Erlang("…", f)` lido como `body: f` — um argumento posicional que não é o template. (b) o recusa, nomeando o rótulo (`write body: f`).
+- **Decisão 618 (2026-10-18).** `Typescript` saiu de `Implementation` (618, 619), então o `.Typescript("…", true)` aceito em silêncio não existe mais; o que resta da pergunta é `.Erlang("…", f)` lido como `body: f` — um argumento posicional que não é o template. (b) o recusa, nomeando o rótulo (`write body: f`).
 - **Medido.** Um argumento posicional preenche o próximo campo da variante (`parser/implementations.zig` `variant_fields`): `.JavaScript("…", true)` e `.Erlang("…", true)` preenchem `body:` e são recusados ("escreve uma segunda célula, `body:`" — `conformance/modules/external_flag_bare_bool_refused`), `.Erlang("…", f)` lê `f` como corpo, e `.Typescript("…", true)` preenche `result: true` e é aceito em silêncio — a chave sem rótulo que a célula da frente 20 F9 foi escrita para recusar. Não existe célula `.Typescript(`. `inline:`, `result:`, `host:`, `needs:` são escritos por rótulo em cada um dos 426 locais do std e das células.
 - **Opções.**
   (a) Como pousado: a ordem posicional do construtor é a linguagem; `.Typescript("…", true)` é `result: true`.
