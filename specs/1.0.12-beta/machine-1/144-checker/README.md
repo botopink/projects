@@ -2563,8 +2563,9 @@ Found by decision 582's build: a bare `#[name]` whose `name` resolves to no deco
 namespace (`#[check]` where `check` is a module) — is dropped without a word and the program builds; `unknown-annotation`
 covers only the `#[@Family]` forms.
 
-- [ ] such an annotation is refused at the annotation, located, naming what `name` is (nothing, a namespace, a value);
+- [x] such an annotation is refused at the annotation, located, naming what `name` is (nothing, a namespace, a value);
       a refusal cell per kind, red on the parent; no library site measured to rely on the silence (each found, listed)
+- [ ] `#[m.missing]` through a `pub mod` namespace is refused too: a `pub mod` publishes no export list to the checker today, so only an imported module's missing segment is refused (`annotation_dotted_missing_in_import`)
 
 ### B-146 — three checker defects found by 165 s5
 
