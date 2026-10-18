@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**90 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**89 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **670**.
+number, which is **671**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -536,15 +536,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
 - **Blocks.** Nothing.
-
-#### b140-c · In B-140, may a library declare its own `-> anytype` type builder, or only std's five functions? (decisions 578, 599 (3); 144 B-140)
-- **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**
-- **Measured.** 578 makes `compiler.buildType` the one way a type is built; 599 (3) names std's `Type` functions. Today a derived `val` is found by the std `Type` binder only; the twelve `derived_type_*` cells all call std's.
-- **Options.**
-  (a) Any module-level `val` whose initializer calls a function declared `-> anytype` (std's or a library's) is evaluated at build and becomes a type; the callee resolved through the import graph.
-  (b) std's `Type` functions only in B-140; the general form a later step with its own cells.
-- **Recommendation.** (b): the twelve cells are B-140's oracle; (a) adds a resolution path no cell holds.
-- **Blocks.** Nothing in B-140 if (b); (a) adds a piece.
 
 #### b140-d · What `compiler.text(f.defaultValue!)` answers for a default that does not travel (an imported record's non-closed default) (decisions 598, s28-a; 144 B-140)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(a).**

@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**90 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**89 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **670**.
+número livre, que é **671**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -536,15 +536,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
-
-#### b140-c · No B-140, uma biblioteca pode declarar seu próprio construtor de tipo `-> anytype`, ou só as cinco funções da std? (decisões 578, 599 (3); 144 B-140)
-- **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**
-- **Medido.** A 578 faz de `compiler.buildType` a única forma de construir um tipo; a 599 (3) nomeia as funções `Type` da std. Hoje um `val` derivado é encontrado só pelo binder `Type` da std; as doze cells `derived_type_*` chamam todas as da std.
-- **Opções.**
-  (a) Todo `val` de nível de módulo cujo inicializador chama uma função declarada `-> anytype` (da std ou de uma biblioteca) é avaliado no build e vira um tipo; a função chamada resolvida pelo grafo de imports.
-  (b) Só as funções `Type` da std no B-140; a forma geral num passo posterior com suas próprias cells.
-- **Recomendação.** (b): as doze cells são o oráculo do B-140; (a) acrescenta um caminho de resolução que nenhuma cell segura.
-- **Bloqueia.** Nada no B-140 se (b); (a) acrescenta uma peça.
 
 #### b140-d · O que `compiler.text(f.defaultValue!)` responde para um default que não viaja (o default não fechado de um record importado) (decisões 598, s28-a; 144 B-140)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(a).**

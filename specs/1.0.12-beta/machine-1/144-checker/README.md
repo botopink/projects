@@ -2590,6 +2590,7 @@ Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are m
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
 
 - [ ] decision 669: the names in a built type's fields and implements resolve in the module that calls `buildType` / `buildTypeInline` (the decorator's), as every tree a decorator writes; an annotation argument in the annotation's module (206); `compiler.lookup` the one way to the caller's names — cells `built_type_names_decorator_module`, `built_type_host_name_unbound`; rakun's qualified names dropped in 165 s11
+- [ ] decision 670: any `-> anytype` function builds a type, std's five the first of them — the callee resolved through the import graph, no std list in the checker; `anytype-outside-type-val`; cells `derived_type_library_builder`, `derived_type_program_builder`, `anytype_outside_type_val`
 - [ ] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `compiler.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
 - [ ] `compiler.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
       lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `compiler.Field<unknown>` (308)
