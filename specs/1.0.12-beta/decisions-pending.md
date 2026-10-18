@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**96 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**100 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -647,6 +647,42 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
+
+#### b137-e · The refusal codes `typeinfo-all-imported`, `-private`, `-hooks-reader`, `-arguments` once `@TypeInfo.all` goes: renamed `find-*`, or kept? (decisions 581 (3), 606; 144 B-137)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** The catalogue's completeness refusals (216 (4), 372) stay when the catalogue is read by `compiler.find` at build; their codes name the `@TypeInfo.all` spelling that 606 removes.
+- **Options.**
+  (a) Renamed `find-imported`, `find-private`, `find-hooks-reader`, `find-arguments`, after the one spelling (581 (3)).
+  (b) Kept as written, the code a name in the record only.
+- **Recommendation.** (a): a code names what a program writes.
+- **Blocks.** B-137's final package (its nine rewritten refusal cells).
+
+#### b137-f · Is 551 replaced by 581 (1) once no `comptime` default is a catalogue query, and does its "the catalogue passed explicitly overrides" survive? (decisions 551, 576 (7), 581 (1); 144 B-137)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** 551 lets a `comptime` default read the run-time catalogue and fills it at the caller; once `@TypeInfo.all` goes, a registry read in `main` replaces it (576 (7)), and `compiler.find` answers handles readable at build only. Cells `typeinfo_all_default_at_caller`, `_default_override`, `_default_outside_root`, `comptime_expand_boot`.
+- **Options.**
+  (a) 551 is `Replaced by 581 (1)`: `default_at_caller` and `comptime_expand_boot` become registry cells (`boot()` a plain function over the registry), `default_outside_root` goes, `default_override` keeps only its `0` for `#[other]` half.
+  (b) 551 stays for a build-time default: a `comptime` default may call `compiler.find`, the explicit argument still overriding it.
+- **Recommendation.** (a): one way to gather the declarations, the registry.
+- **Blocks.** B-137's final package (four cells).
+
+#### b137-g · What refuses `compiler.find(with: 42)` or `compiler.find(with: someFn)` now that `with` is typed `unknown`? (decisions 581 (3); 144 B-137)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** `typeinfo_all_with_number` and `_with_ordinary_fn` are refused today by the checker's type mismatch on `@TypeInfo.all`'s parameter. `find(self, with: unknown, member: ?string = null)` admits any value, so no checker text refuses them.
+- **Options.**
+  (a) `find-with-not-a-decorator` at the argument, raised by `find` itself: `with` must name a decorator (or a behavior).
+  (b) The two cells go: `find` over a value that names no decorator answers `[]`.
+- **Recommendation.** (a): a typo should not answer an empty catalogue.
+- **Blocks.** B-137's final package (two cells).
+
+#### b137-h · `decl_member_owner`: `compiler.owner(d)` answers a handle, not `Declared<unknown>` — a comment edit, or does the cell's answer change? (decisions 576 (3), (7); 144 B-137)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** The cell's comment names `Declared<unknown>` for the owner's answer; with `Declared*` gone the owner is a declaration handle (576 (3)); the cell prints the owner's name only.
+- **Options.**
+  (a) A comment edit; the printed answer is unchanged.
+  (b) The answer changes with the handle's shape, re-recorded.
+- **Recommendation.** (a).
+- **Blocks.** Nothing (built as (a) unless answered).
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

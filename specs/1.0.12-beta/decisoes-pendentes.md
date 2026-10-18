@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**96 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**100 perguntas e 5 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -647,6 +647,42 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### b137-e · Os códigos de recusa `typeinfo-all-imported`, `-private`, `-hooks-reader`, `-arguments` quando `@TypeInfo.all` sai: renomeados `find-*`, ou mantidos? (decisões 581 (3), 606; 144 B-137)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** As recusas de completude do catálogo (216 (4), 372) ficam quando o catálogo é lido por `compiler.find` em tempo de build; seus códigos nomeiam a grafia `@TypeInfo.all` que a 606 remove.
+- **Opções.**
+  (a) Renomeados `find-imported`, `find-private`, `find-hooks-reader`, `find-arguments`, pela grafia única (581 (3)).
+  (b) Mantidos como escritos, o código um nome só no registro.
+- **Recomendação.** (a): um código nomeia o que um programa escreve.
+- **Bloqueia.** O pacote final do B-137 (suas nove células de recusa reescritas).
+
+#### b137-f · A 551 é substituída pela 581 (1) quando nenhum default `comptime` é uma consulta ao catálogo, e o seu "o catálogo passado explicitamente sobrepõe" sobrevive? (decisões 551, 576 (7), 581 (1); 144 B-137)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** A 551 deixa um default `comptime` ler o catálogo de run time e o preenche no chamador; quando `@TypeInfo.all` sai, um registro lido em `main` o substitui (576 (7)), e `compiler.find` responde handles legíveis só em tempo de build. Células `typeinfo_all_default_at_caller`, `_default_override`, `_default_outside_root`, `comptime_expand_boot`.
+- **Opções.**
+  (a) A 551 é `Replaced by 581 (1)`: `default_at_caller` e `comptime_expand_boot` viram células de registro (`boot()` uma função comum sobre o registro), `default_outside_root` sai, `default_override` mantém só sua metade do `0` para `#[other]`.
+  (b) A 551 fica para um default de build: um default `comptime` pode chamar `compiler.find`, o argumento explícito ainda o sobrepondo.
+- **Recomendação.** (a): uma forma de reunir as declarações, o registro.
+- **Bloqueia.** O pacote final do B-137 (quatro células).
+
+#### b137-g · O que recusa `compiler.find(with: 42)` ou `compiler.find(with: someFn)` agora que `with` é tipado `unknown`? (decisão 581 (3); 144 B-137)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** `typeinfo_all_with_number` e `_with_ordinary_fn` são recusados hoje pelo erro de tipo do checker no parâmetro de `@TypeInfo.all`. `find(self, with: unknown, member: ?string = null)` admite qualquer valor, então nenhum texto do checker os recusa.
+- **Opções.**
+  (a) `find-with-not-a-decorator` no argumento, levantado pelo próprio `find`: `with` deve nomear um decorador (ou um behavior).
+  (b) As duas células saem: `find` sobre um valor que não nomeia decorador responde `[]`.
+- **Recomendação.** (a): um erro de digitação não deveria responder um catálogo vazio.
+- **Bloqueia.** O pacote final do B-137 (duas células).
+
+#### b137-h · `decl_member_owner`: `compiler.owner(d)` responde um handle, não `Declared<unknown>` — uma edição de comentário, ou a resposta da célula muda? (decisões 576 (3), (7); 144 B-137)
+- **Proposto (fable, 2026-10-18; aguardando o mantenedor):** **(a).**
+- **Medido.** O comentário da célula nomeia `Declared<unknown>` para a resposta do dono; com `Declared*` fora, o dono é um handle de declaração (576 (3)); a célula imprime só o nome do dono.
+- **Opções.**
+  (a) Uma edição de comentário; a resposta impressa não muda.
+  (b) A resposta muda com a forma do handle, regravada.
+- **Recomendação.** (a).
+- **Bloqueia.** Nada (construído como (a) a menos que respondido).
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
