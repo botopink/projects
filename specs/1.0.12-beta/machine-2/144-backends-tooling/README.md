@@ -2884,6 +2884,17 @@ function, where the module also declares `pub fn make()`, stores the module's `m
 - [ ] `Users.make` as a constructor argument is the type's method on wasm; the cell `init_executor_handle_not_module_name`
       (four targets, red on the parent on wasm) and a plain-program cell beside it
 
+### B-151 — wasm: a namespace import of a std module links every member's hosts, used or not
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro) · **After:** B-139's compiler half
+
+606 (2) writes `import {io.terminal} from "std"; terminal.print(…)`; on wasm that import is refused, because
+`io/terminal.bp` pulls in the hosts of stdin's members, which the program never calls. `print` imported by name works.
+`std_io_terminal_not_a_tty` lists three targets for that reason.
+
+- [ ] a namespace import links only the members the program reaches, on wasm as on the other targets; cell
+      `terminal_namespace_import_print` (`terminal.print("x")` alone, four targets), red on wasm on the parent
+
 ### B-147 — erlang / beam defects found by 165 s5
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured; repros in rakun's `AGENTS.md`)

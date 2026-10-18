@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**100 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**101 questions and 5 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -683,6 +683,15 @@ before every other part of this page; each holds one row, or nothing built.
   (b) The answer changes with the handle's shape, re-recorded.
 - **Recommendation.** (a).
 - **Blocks.** Nothing (built as (a) unless answered).
+
+#### b139-j · `Annotation` and `Decorator`: prelude names, or `compiler.bp`'s? (decisions 606 (1), 608; 144 B-139)
+- **Proposed (fable, 2026-10-18; awaiting the maintainer):** **(a).**
+- **Measured.** Every decorator and tag writes `implement Decorator` / `implement Annotation` bare today. 606 (1) and B-139's box 2 list both in `primitives.bp`, the prelude; 608 lists both in `compiler.bp`, beside `DeclKind` and the handle records. The behavior `Compiler` names neither directly (`DeclAnnotation`, and `Decorator` only through `find`'s `with:`). Both still sit in `builtins.d.bp`, so nothing is red yet.
+- **Options.**
+  (a) Prelude: `type Log implement Decorator`, no import; 608 amended in the two names.
+  (b) `compiler.bp`: `import {compiler.Decorator} from "std"` in every decorator cell (~200 sites).
+- **Recommendation.** (a): no import for what every decorator writes.
+- **Blocks.** B-139's modules box (the module each goes to) and the codemod's import line.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
