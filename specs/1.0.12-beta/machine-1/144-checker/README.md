@@ -406,10 +406,10 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Landed
       when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
       `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
       (`reject/decorator_decl_pattern_{mismatch,return}`)
-- [ ] `Field<T>` — `Type.Field<T>` in std's `types.bp` (decision 308), not `builtins.d.bp` — (`name`, the
+- [ ] `Field<T>` — `Type.Field<T>` in std's `compiler.bp`'s `Type` (624) (decision 308), not `builtins.d.bp` — (`name`, the
       field's type); `.name` resolved against the expected `T`, a missing field refused at it; variadic
       `..fields: Type.Field<T>[]` (267); `decl.fields` hands out `Type.Field<unknown>` — built but the
-      last clause (`decl.fields` is still `builtins.d.bp`'s `Field`, the same shape; `types.bp` gives it
+      last clause (`decl.fields` is still `builtins.d.bp`'s `Field`, the same shape; `compiler.bp`'s `Type` (624) gives it
       to `134` step 2)
 - [x] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error;
       `reject/decorator_variant_case`, `reject/decorator_field_key_case`)
@@ -465,7 +465,7 @@ second is deleted; `Type`'s namespace-type spelling (329), `Type.Field<T>` and `
 - [x] the rest declared under 330: `?T` declares no method (its surface is `01-checker` step 31's operators) — the
       `?T` rows (`map`, `flatMap`, `unwrapOr`) leave `infer.zig` `inferResultOptionMethod`; the `result` namespace
       (`inferResultNamespaceCall`) is deleted, not declared; the prose in `builtins.d.bp` goes
-- [x] std's `types.bp` spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
+- [x] std's `compiler.bp`'s `Type` (624) spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
       refused, a `self` function in its body refused
 - [ ] `Type` also declares the associated type `Field<T>` inside its body (308, 330), `keys` answering it —
       declared (`pub type Field<T>(name, typeName, annotations)`, `run/std_type_field_associated`);
@@ -2573,7 +2573,7 @@ covers only the `#[@Family]` forms.
 - [ ] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
 - [ ] in a generic body, `v is fn() -> T` makes the caller's `T` `unknown`, and `v is T` always answers false — cells red on the parent, or a refusal where the test cannot be decided
 
-### B-140 — `types.bp` in botopink: `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
+### B-140 — `Type` in botopink, inside `compiler.bp` (624): `compiler.buildType`, `fields`, `optional`, `required` (decision 575 (5), (7); 578)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-139
 
@@ -2583,7 +2583,7 @@ covers only the `#[@Family]` forms.
 - [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by
       the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
-      `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`
+      `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `compiler.bp`'s `Type` (624)
 - [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `Type.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
 - [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)

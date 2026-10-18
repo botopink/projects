@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**112 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**111 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **624**.
+number, which is **625**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -651,22 +651,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) No spread from a derived type's source: a spread source is the record's own type only; 359 (2) and 600 amended, three `record_spread_*` cells change.
 - **Recommendation.** (a): std states the lineage, the compiler reads a value, and 599 (3) holds (no std name known to the compiler).
 - **Blocks.** B-140's derived-type piece (`types.bp`'s five bodies).
-
-#### b140-b · Which std module declares `Type.Field<T>` and `Type.Info<T>` once `compiler.bp` is self-contained and first (decisions 575 (3), 598, 599, 606 (3), 608; 144 B-139, B-140)
-- **Proposed (fable, 2026-10-18, re-read against 606–609; awaiting the maintainer):** **(a).**
-- **Measured.** 608 puts `DeclAnnotation`, `Decorator`, `Annotation`, `Method`, `Param`, `HookNode` and `DeclKind` in `compiler.bp`, with no `reflection.bp`. That rules out the earlier (a) and (b), but the cycle remains through the records 606 (3) keeps in `types.bp`.
-  - `types.bp` → `compiler.bp`: `Type.Field<T>.annotations: DeclAnnotation[]` and `Type.Info<T>.methods: Method[]`, plus the five bodies over `compiler.fields` / `compiler.buildType` (599 (3)).
-  - `compiler.bp` → `types.bp`: `Compiler.fields(d) -> Type.Field<unknown>[]`, `Compiler.typeInfo<T>(comptime t: type<T>) -> Type.Info<T>` (606 (3)), and the handle record `HookUse.typeArgs` (`TypeInfo<unknown>[]` today).
-  - Each std module is inferred seeing only the exports of the modules before it (`comptime.zig` ~4180), and `stdModuleOrder` admits no cycle. So `compiler.bp`, first, cannot name `types.bp`'s records.
-  - Today the cycle is hidden by prelude names (`decl_reflection_src`), which B-139 dissolves. B-139 meets it first, with `Type.Info<T>`.
-  - No library spells `Type.Field` or `TypeInfo<`; std and the cells do (27 files).
-- **Options.**
-  (a) Both records are declared in `compiler.bp` (`Field<T>(name, type: anytype, annotations: DeclAnnotation[], defaultValue: ?anyvalue)`, `Info<T>(…)`). `types.bp` names them as `Type`'s associated aliases (`pub type Field<T> = compiler.Field<T>; pub type Info<T> = compiler.Info<T>;`), so programs keep writing `Type.Field<T>` / `Type.Info<T>`. 606 (3)'s "declared in `types.bp`" reads "named in `types.bp`". To measure: the parser accepting a generic alias in a type body.
-  (b) The records stay in `types.bp`, and a declare pass registers every std module's types before any signature is inferred, admitting a cycle for signatures only. This amends 608's "admitting no cycle".
-  (c) `Compiler.fields` / `typeInfo` / `HookUse.typeArgs` are typed `unknown` in `compiler.bp`, with the surface table typing them. 608 refuses this as two spellings.
-  (d) `Type` moves whole into `compiler.bp` and `types.bp` goes; every `import {types.Type}` changes.
-- **Recommendation.** (a): the records are the compiler's answers and live beside the behavior that gives them. The spelling programs write does not change, and 608 holds as written.
-- **Blocks.** B-139's modules box (`Type.Info<T>` with `compiler.bp` first) and B-140's piece 1.
 
 #### b140-c · In B-140, may a library declare its own `-> anytype` type builder, or only std's five functions? (decisions 578, 599 (3); 144 B-140)
 - **Proposed (fable, 2026-10-17; awaiting the maintainer):** **(b).**

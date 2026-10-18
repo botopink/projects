@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**112 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**111 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **624**.
+número livre, que é **625**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -651,22 +651,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) Nenhum spread a partir da fonte de um tipo derivado: a fonte de um spread é só o próprio tipo do record; 359 (2) e 600 emendadas, três cells `record_spread_*` mudam.
 - **Recomendação.** (a): a std declara a linhagem, o compilador lê um valor, e a 599 (3) se mantém (nenhum nome da std conhecido pelo compilador).
 - **Bloqueia.** A peça de tipos derivados do B-140 (os cinco corpos do `types.bp`).
-
-#### b140-b · Qual módulo da std declara `Type.Field<T>` e `Type.Info<T>` quando `compiler.bp` é autocontido e o primeiro (decisões 575 (3), 598, 599, 606 (3), 608; 144 B-139, B-140)
-- **Proposta (fable, 2026-10-18, relida contra 606–609; aguardando o mantenedor):** **(a).**
-- **Medido.** A 608 põe `DeclAnnotation`, `Decorator`, `Annotation`, `Method`, `Param`, `HookNode` e `DeclKind` em `compiler.bp`, sem `reflection.bp`. Isso descarta as antigas (a) e (b), mas o ciclo continua pelos records que a 606 (3) mantém em `types.bp`.
-  - `types.bp` → `compiler.bp`: `Type.Field<T>.annotations: DeclAnnotation[]` e `Type.Info<T>.methods: Method[]`, mais os cinco corpos sobre `compiler.fields` / `compiler.buildType` (599 (3)).
-  - `compiler.bp` → `types.bp`: `Compiler.fields(d) -> Type.Field<unknown>[]`, `Compiler.typeInfo<T>(comptime t: type<T>) -> Type.Info<T>` (606 (3)), e o record de handle `HookUse.typeArgs` (`TypeInfo<unknown>[]` hoje).
-  - Cada módulo da std é inferido vendo só as exportações dos módulos antes dele (`comptime.zig` ~4180), e `stdModuleOrder` não admite ciclo. Então `compiler.bp`, o primeiro, não pode nomear os records de `types.bp`.
-  - Hoje o ciclo fica escondido por nomes do prelude (`decl_reflection_src`), que o B-139 dissolve. O B-139 o encontra primeiro, com `Type.Info<T>`.
-  - Nenhuma biblioteca escreve `Type.Field` ou `TypeInfo<`; a std e as cells escrevem (27 arquivos).
-- **Opções.**
-  (a) Os dois records são declarados em `compiler.bp` (`Field<T>(name, type: anytype, annotations: DeclAnnotation[], defaultValue: ?anyvalue)`, `Info<T>(…)`). `types.bp` os nomeia como aliases associados de `Type` (`pub type Field<T> = compiler.Field<T>; pub type Info<T> = compiler.Info<T>;`), então os programas continuam escrevendo `Type.Field<T>` / `Type.Info<T>`. O "declared in `types.bp`" da 606 (3) passa a ler "named in `types.bp`". A medir: o parser aceitar um alias genérico num corpo de tipo.
-  (b) Os records ficam em `types.bp`, e uma passada de declaração registra os tipos de todo módulo da std antes de qualquer assinatura ser inferida, admitindo um ciclo só para assinaturas. Isso emenda o "admitting no cycle" da 608.
-  (c) `Compiler.fields` / `typeInfo` / `HookUse.typeArgs` são tipados `unknown` em `compiler.bp`, com a tabela da superfície tipando-os. A 608 recusa isso como duas grafias.
-  (d) `Type` vai inteiro para `compiler.bp` e `types.bp` sai; todo `import {types.Type}` muda.
-- **Recomendação.** (a): os records são as respostas do compilador e ficam ao lado do behavior que as dá. A grafia que os programas escrevem não muda, e a 608 se mantém como escrita.
-- **Bloqueia.** A caixa de módulos do B-139 (`Type.Info<T>` com `compiler.bp` primeiro) e a peça 1 do B-140.
 
 #### b140-c · No B-140, uma biblioteca pode declarar seu próprio construtor de tipo `-> anytype`, ou só as cinco funções da std? (decisões 578, 599 (3); 144 B-140)
 - **Proposta (fable, 2026-10-17; aguardando o mantenedor):** **(b).**

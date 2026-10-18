@@ -2719,7 +2719,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       `modules/compiler-cli/tests/cell/departs`, `scripts/test-libs.sh`, `cli/{libs,test_cmd}.zig` still write
       `#[@External.X(…)]` — rewritten, with the fixtures `cell/narrowed`, `closure_invariant/hosted`,
       `cell-workspace/group/excluded_target_literal_entry`; `cli_contract.sh`, `test_tooling.sh`, `closure_invariant.sh` green
-- [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `types.bp` from `declare-without-implementation` deleted
+- [ ] the exemptions `Env.declarationFile` (`.d.bp`) and std `compiler.bp`'s `Type` (624) from `declare-without-implementation` deleted
       when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption goes by decision 604 (a marker is `fn x(syntax decl: unknown) {}`; cells `declare_without_implementation_decorator`, `decorator_marker_empty_body`)
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
@@ -2735,13 +2735,13 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       discovery.zig`), `format-staged.sh`, the codemod scripts' extension lists, `cli_contract.sh`; a file still ending
       in `.d.bp` is a module named `x.d`; the cells `local_dependency` (`shapes.bp`) and `files_one_module_twice` (one
       file listed twice; its snapshot and `docs.md` stated)
-      — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `types.bp`) until the
+      — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `compiler.bp`'s `Type` (624)) until the
       modules dissolve; `builtins.d.bp` / `builtins_fns.d.bp` are std modules `builtins.d` / `builtins_fns.d` until then
 - [ ] no `#[builtin]`, no `@name` (606): the types and behaviors `builtins.d.bp` declares (`Result`, `Task`, `Component`, `Renderable`,
       `Iterator`, `Stream`, `Future`, `Use`, `Display`, `Closeable`, `Index`, `Slice`, `Annotation`, `Decorator`) move into
       `primitives.bp` with their bodies — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
       two functions stay, imported, inside std too: `print` in `io/terminal.bp`, `panic` in `failure.bp`; `println`, `todo`,
-      `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `Type.Info<T>`, the record in `types.bp`),
+      `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `Type.Info<T>`, the record in `compiler.bp`'s `Type` (624)),
       `embed` (the link only: `Link` in `compiler.bp`, `Asset(link)` in `asset.bp` importing `compiler` and `io.fs`, `open()` the `File`, when by the `comptime` at the read, 607) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
       `external.bp` gone) are members of `compiler`, written under `comptime` in a run-time body; every std decorator
       written `#[name]` — `#[compiler.external(…)]`, an annotation `#[compiler.m(…)]` calling `m` on the annotated
@@ -2753,6 +2753,8 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       codemod over every cell and every library — `@name` → `name` + the import, `@println` / `@todo` → `print(…, "\n")` /
       `panic(…)`, `@typeInfo` → `comptime compiler.typeInfo`, `@embed(p)` → `comptime Asset(compiler.embed(p))` with its reads over `File`, `@TypeInfo` →
       `Type.Info`, `#[@external` → `#[compiler.external`, `#[@name` → `#[name` —, one commit per repository, after 165 s10's
+- [ ] decision 624: `Type` (`Field<T>`, `Info<T>`, the five utilities) declared inside `compiler.bp`; `types.bp` goes;
+      `import {types.Type}` → `import {compiler.Type}` in the 55 cell files, in the codemod commit
 - [ ] the modules: `Result` in `primitives.bp` with its five bodies, 118's shape kept per target, keyed to that declaration
       (609; the backends' inline lowering and the `methods` rows go; no `result.bp`); `compiler.bp` self-contained and first
       (608: `SourceLocation`, `Link`, `Implementation`, `DeclKind`, `Decorator`, `Annotation`, the handle records; no
