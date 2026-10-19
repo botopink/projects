@@ -24,6 +24,12 @@ step's README; what still waits on the maintainer is listed at the end and is **
 
 6. **Conformance is this machine's whole, until the maintainer says otherwise (decision 768, 2026-10-19):** the suites' runs, the pipeline's reds (fixed or filed), the cells' reference and spelling, 166's cells in every repository, B-157. The compiler worktrees parked on 2026-10-19 (B-149 P1b, rakun's gap 2, 595, 584, 759's rename) stay parked until he reopens them; the slots go to conformance.
 
+## Under 768 — the conformance queue (decisions 768, 769, the maintainer, 2026-10-19)
+
+This machine runs conformance alone, in this order: (1) the suite's reds on `feat`, read from the pipeline and reproduced cell by cell — a stale cell fixed by the subject file and `specs/retired.md`, a defect named with its row; (2) 166 s3's drafts in the nine libraries (fixed to the subject file) and botopink-lang's by B-157's mapping; (3) B-157 P1 ✓ and P2 ✓ (`plan` / `verify`, nothing moved) → `plan` clean after the record's slugs (landed) → the opus pass over the ambiguity list (765 (2)) → **P3 (the moves) after machine 1 lands B-116 (ii), B-139's rest and B-148** → P4's `draft/main.bp` stubs (one per unproved row, none left) → 166 s4's flip per repository → s5; (4) every repository's decision cells; (5) the examples of `conformance/docs.md` and the cells' `docs.md` in the spelling in force (row 16 ✓, kept so); (6) 163 s9's measurements (the gate's time with the cells) at the end.
+
+**The compiler items of § The group and § After the group pass to machine 1 while 768 holds** (769): push each parked worktree as its branch `front/<name>` (B-149 P1b, rakun's gap 2, 595, 584, B-137's 759 rename) and name the branch in the chat; machine 1 continues from it. Nothing of them is built here until the maintainer reopens them.
+
 ## The folder
 
 | Path | What |

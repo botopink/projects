@@ -23,6 +23,27 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 
 6. **Conformance is machine 2's whole, until the maintainer says otherwise (decision 768, 2026-10-19):** this machine writes the cells its own steps call for inside its landings and runs what its change reaches (458, 459, 465), opens no conformance thread, runs no suite-wide pass, fixes no red outside its change; a red it meets is named to machine 2 through the chat (747).
 
+## Under 768 — machine 1 runs everything that is not conformance (decision 769, the maintainer, 2026-10-19)
+
+**Rule:** when a front's next step is its Conformance step (459, 465, 477–480 — 165 s7, 144's Conformance steps, each library front's last step), this machine **skips it and moves to the step after it**; the Conformance step is machine 2's. A red this machine meets is named to machine 2 through the chat (747); nothing of `conformance/**` is run suite-wide here.
+
+**Machine 2's parked compiler items join this queue, in this order** (machine 2 pushes each parked worktree as `front/<name>` and names the branch in the chat; continue from it):
+
+| # | Item | Fixed by | Model | Oracle |
+|---|---|---|---|---|
+| 1 | **rakun's gap 2** — commonJS emits (or links) std's `io/terminal` for a consumer program (`Cannot find module './std/io/terminal.js'`; `examples/rakun-stylesheet/emilia-modifiers`) | 606, 609 | sonnet | the example runs; a cell |
+| 2 | **B-139's rest** — `#[stage(.Any)]` (663; `math.bp`'s 22 `@Stage.Any` lines), std's ambient `src/` files as modules (677 needs it), 714's `wrapWith` removal | 606–609, 624, 663, 714 | opus | the cells; 677's thread lands after it |
+| 3 | **B-137's pieces** (parked: 718 / 643 / 716 review fixes, 759's rename `decorator-member-local-not-literal`) | 643, 716, 718, 759 | opus | the cells named in machine 2's README |
+| 4 | **B-148** (617, 628, 738): the primitive widths as types, `Pair` / `Function` gone, `functions.bp` | 617, 628, 641, 738 | opus | the 87 cells on the types |
+| 5 | **B-149 P1b–P4** (637, 638, 751–753, 765's format landed): `code.bp`, the template cells over `code`, `compiler.build` removed, `buildType` | 625, 637, 644, 751–753 | sonnet; opus for P1b | the cells |
+| 6 | **B-116 (ii) + P2–P4** — the types codemod (`@Task` → `Async` …, 553 (6), 570) and the marker codemod; **frees B-157 P3** | 553, 570, 584 | sonnet | every cell |
+| 7 | **595** (the `try { … } catch …` region) and **584** (the marker inside the lambda's brace) | 584, 595 | opus | the cells |
+| 8 | **758's backend half** (a `type<T>` value at run time and the `is` helper on four targets) and **767's B-57 half** (`botopink build` materialises the dependencies' cached `.beam`) | 758, 767, 509 | sonnet | `type_token_run_time_value`, `build_materialises_dependency_beams` |
+| 9 | **601**, **596**'s runtime half, the backend defect rows (B-115, B-120, B-122's boxes, B-155, B-147), **597**, **B-130** | the rows | sonnet | the cells |
+| 10 | **164 s3 P2's `.bp` halves**, **164 s2's rest** | 585, 164's README | sonnet / opus | 164's oracles |
+
+This machine's own queue (§ The group, § After the group) runs beside it, ordered by what unblocks most: 660 + 676 + 677 and B-17's context box (held for rakun's commit), rakun's codemod commit and 165 s5 / s10 / s11 (after items 1–2), B-154's boxes, 150, the library fronts.
+
 ## The folder
 
 | Path | What |
