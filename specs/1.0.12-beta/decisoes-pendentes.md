@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**36 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**36 perguntas e 13 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **731**.
+número livre, que é **732**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -1046,6 +1046,41 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 ---
 
 ## Parte 3 — Escolhas de implementação das trilhas 04–09
+
+#### ctr-y · Decisão 411 contra 575 (4): um argumento `comptime` de tipo função testado contra `null`
+- **Regras.** A 411 recusava `rule.value == null` em `comptime rule: @Expr<?fn(v: T) -> bool> = null` (`expr-value-of-function`) e distinguia o corpo por `decl.kind`. A 575 (4) fez de um parâmetro `comptime` um valor conhecido no build e removeu `.value`; o `check` da 406 mantém `comptime rule: ?fn(v: T) -> bool = null` (731 (11)). Nenhuma linha diz se o teste é legal agora.
+- **Opções.** (a) `rule == null` é um teste comum de um valor de build, como qualquer `?T` é testado; (b) um argumento `comptime` de tipo função não admite teste, o corpo distinguido por `compiler.kind(decl)` como a 411 fazia.
+- **Recomendação.** (a) — uma regra para `?T`, o tipo função sem exceção.
+
+#### ctr-z · Decisão 403 contra 718: `compiler.src()` num decorator
+- **Regras.** 403: o handle de um decorator não carrega localização de fonte, então a saída de um decorator nunca depende de onde o arquivo está; uma rota chega ao `#[page]` como argumento (282, 285). 718 com 575 (3): `compiler.src()` escrito num corpo de decorator responde a localização da declaração anotada.
+- **Opções.** (a) a 403 sobrevive só como "nenhuma rota vem da localização de um arquivo" — `compiler.src()` num decorator é legal, uma localização que uma saída pode carregar (um diagnóstico, um snapshot); (b) `compiler.src()` é recusado num corpo de decorator, localizado, pelo bem da saída.
+- **Recomendação.** (a).
+
+#### ctr-aa · Decisão 529 (1) contra 593 (2): as props de um componente, parâmetros comuns ou um record
+- **Regras.** 529 (1), (2) (2026-10-14): um componente pode receber suas props como parâmetros comuns — `component fn Card(title: string, featured: bool = false) -> Component<Element>`, uma tag passando cada atributo como o argumento rotulado — ou como um parâmetro record `..props: R`; um `.bpp` desdobra para `(..props: Props)`. 593 (2) emendada (2026-10-12, o número maior): um componente, `fn` ou tipo, recebe suas props como um parâmetro record, nunca uma lista; mais de um parâmetro, ou um que não seja record, recusado, localizado. A regra da 730 lê 593; as datas leem 529.
+- **Opções.** (a) 529: as duas formas; (b) 593 (2): só um parâmetro record.
+- **Recomendação.** (a) — a decisão mais tardia no tempo.
+
+#### ctr-ab · Decisão 553 (2) contra 606 (1) e 623: `Async<T>` ou `Task<T>`
+- **Regras.** A 553 (2) renomeou `@Task` para `Async<T>` (o marcador `async`, o tipo de retorno escrito inteiro). A 606 (1) lista `Task` entre os tipos do prelude e escreve `fn load() -> Task<User>`; a 623 escreve `fetch(req) -> Task<Result<Response, HttpError>>`.
+- **Opções.** (a) `Async<T>` — 606 e 623 repetiram o nome velho de passagem; (b) `Task<T>` — as linhas mais tardias.
+- **Recomendação.** (a) — o rename foi deliberado e nomeia o marcador.
+
+#### ctr-ac · Decisão 297 contra 575 (5): o parâmetro `comptime` valor-ou-tipo do cardume
+- **Regras.** 297: um parâmetro `comptime` pode aceitar um valor ou um tipo, o corpo distinguindo com `source is type`; os hooks do cardume recebem um valor `Atom<T>` ou um tipo nomeando seu atom implícito (`comptime source: Atom<T> | type T`). 575 (5): `comptime t: type<T>` é o tipo do tipo e `type T` é substituído nos seus sites; nada reafirma a 297.
+- **Opções.** (a) `comptime source: Atom<T> | type<T>`, o corpo testando `source is type<T>`; (b) duas funções, uma por forma.
+- **Recomendação.** (a).
+
+#### ctr-ad · Decisão 677 contra 592 (2): o `"entry"` de uma biblioteca
+- **Regras.** 677: o `"entry"` de um pacote nomeia só onde `main` começa, e é `root.bp` para uma biblioteca. 592 (2): todo arquivo é um módulo e uma biblioteca não tem entry.
+- **Opções.** (a) uma biblioteca não tem `"entry"` — a chave é só de um executável, recusada no manifesto de uma biblioteca; (b) o `"entry": "root.bp"` de uma biblioteca como a 677 escreve.
+- **Recomendação.** (a).
+
+#### ctr-ae · Decisão 617 (1) contra 641: `Pair<A, B>` e `Function` sob a regra do minúsculo
+- **Regras.** A 617 (1) declara `Pair<A, B>` e `Function` como tipos do prelude. A 641: todo tipo primitivo é minúsculo (`bytes`, `array<T>`), "uma regra, sem exceção".
+- **Opções.** (a) `pair<A, B>` e `function`, pela 641; (b) os dois nomes da 617 ficam como a exceção.
+- **Recomendação.** (a).
 
 ### 04-rakun (21)
 
