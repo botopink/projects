@@ -3028,3 +3028,27 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
 - [ ] after it, 165 s11 (machine 1): rakun-bpp's `html.bp` and rakun-style over `code` / `compiler.ast`
 
 Oracle: the template cells on four targets; `test-libs`; the cold gate.
+
+### B-157 — fewer conformance modules, nothing tested lost (decision 760)
+
+The maintainer (2026-10-19): `conformance/modules` (1,650 cells, 79 `test/` suites, 801 reference links) is consolidated into fewer
+modules without losing what is tested. Machine 2 (tooling, lane C). Order: **after B-116 (ii), B-139's rest and B-148 have landed**
+— their codemods rewrite the same cell files; the plan may be written before.
+
+- [ ] **Plan** (`fable`, `Plan` agent, 742): the grouping (by cell prefix, which follows `decisions-taken.md`'s subjects: `decorator_*`
+      108, `external_*` 70, `template_*` 62, `comptime_*` 56, `std_*` 48, `import_*` 46, `case_*` 46, …); the module format that lets
+      a refusal, an abort or a narrowed-`"targets"` cell keep its own compilation unit and snapshot inside a module holding several
+      (`cases`); what `botopink cell check`, `cell new`, the runner and `cell_snap.zig` must learn; how `conformance/docs.md`'s 801
+      links and the cells' `docs.md` paragraphs move; the generated old → new mapping; the proof that nothing is lost (counts of
+      assertions, snapshots, departures equal before and after; the suite green before and after with identical expected texts);
+      the pieces in landable order with each piece's oracle. The plan's open points are filed as questions; the format it proposes
+      is recorded as a decision (the coordinator's) before the pieces build.
+- [ ] **Piece 1** — `botopink cell check` reads the new module format (compiler-cli, `cell_snap.zig`); the old single-program cell
+      still accepted; cells for the format itself.
+- [ ] **Piece 2** — the consolidation script: moves the cells by the plan's grouping, writes the mapping, rewrites every reference,
+      regenerates nothing by hand; run once per prefix group, each group's gate green, landed per group.
+- [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
+      botopink-lang's) § conformance updated in the same commit.
+- Constraint: `conformance/modules/decisions-taken/<slug>-<N>/` (front 166) is untouched — one directory per decision is check 7's
+  contract (647).
+
