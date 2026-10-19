@@ -15,7 +15,7 @@ marker). Left: a tail of code and spec items, three fronts by the member each ed
 | JH-26-6 | late-signal handler twice: `registerSignal` in `render.mjs:199` (`globals().signal`, `replaceState` at `:213`) and `handleSignal` in `client_app.bp:219` | core | 26 step 2 |
 | JH-30-4 | 26 lines naming rakun in the core's `src/` (`grep -rni rakun modules/jhonstart/src`): `router.bp:59,103,164,313,373,375,404`, `server.bp:23,34,49,50,115,116,187,307`, `streaming.bp:18`, `metadata.bp:12,34,35`, `client.bp:87`, `src/AGENTS.md:44,45,62`, sidecars `sidecars/jhonstart_server.erl:17,26` and `sidecars/jhonstart_router.erl:20` | core | 26 step 1 |
 | JH-30-8a | a boundary resolving before the shell is written produces no hole and no fill — untested | core | 26 step 3 |
-| JH-30-8b | sibling server components gathered by the render's own `__jhEachCompleted` (`streaming.bp:136,810,834`), not std `async.runAll`; no erlang timing test; no regression for an already-started `@Task` | core | 26 step 3 |
+| JH-30-8b | sibling server components gathered by the render's own `__jhEachCompleted` (`streaming.bp:136,810,834`), not std `async.runAll`; no erlang timing test; no regression for an already-started `Async` | core | 26 step 3 |
 | JH-31-digest | `digestOf(message)` (`error_boundary.bp:77`) is `contentHash` (8 hex), on no log line. Decisions 194, 195: `digestOf` deleted; the boundary digests and logs through bundled `log` (landed) | core | 26 step 4 |
 | JH-stage | dynamic mark written at run time (`markDynamic`: `router.bp:186,198,276`, `server.bp:87,254`, `streaming.bp:52,703`). Decision 186: stage is compile-time — `#[serverOnly]` / `#[clientOnly]` on the hooks, validated in `#[page]` / `#[client]` | core | 26 step 8 |
 | JH-29-doc | `docs.md:371,393` say "front 23" for the payload envelope (jhonstart 30's since decision 117); 29-a's starter-table row; `islandAttr` wording | `docs.md` | 26 step 5 |
@@ -23,7 +23,7 @@ marker). Left: a tail of code and spec items, three fronts by the member each ed
 | PK-2 | the eight example members have no `README.md` | `examples/*/` | 26 step 6 |
 | JH-SNAP | module-level snapshot layer (390) | every member's `test/` | `20-snap` step 3 |
 | JH-27-3b | `reconcile(current, target)` has no driver: a shared layout's islands re-hydrate on every transition; route-kind flag unread | `jhonstart-link` | 27 step 1 |
-| JH-27-4 | `use linkStatus()` inside a `fn … -> @Component<Element>` untested | `jhonstart-link` | 27 step 2 |
+| JH-27-4 | `use linkStatus()` inside a `component fn … -> Component<Element>` untested | `jhonstart-link` | 27 step 2 |
 | JH-67-dom | five DOM-side forms boxes (1.0.10's 3a, 3b, 4, 5): `fieldError` after `__jhFormState`, `ok: false` envelope re-rendering in place, `pending` / `actionId` for two forms at once, optimistic commit and roll-back, `push` after the envelope | `jhonstart-forms` | 67 steps 1–3 |
 | JH-49-4.6 | `__bp_action` / `X-Bp-Action` as literals — onze's defaults, spelled by neither library (decision 114): `jhonstart-forms/test/form_test.bp` (18 lines), `examples/forms/src/like.bp:23`, `examples/forms/src/main.bp:14`, `examples/forms/test/forms_test.bp:16,21,30,36`, four recorded `.snap` files under `examples/forms/test/__snapshots__/forms/` | `jhonstart-forms`, `examples/forms` | 67 step 4 |
 

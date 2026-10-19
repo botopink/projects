@@ -8,7 +8,7 @@
 // The boundary is built in the fence and placed with a hole: `Suspense(posts)`
 // is an expression that answers an `Element`, and an `Element` in a hole is
 // spliced as it is. The boundary's child is a THUNK (`{ -> PostList() }`), not a
-// started task — `@Task` is eager on the BEAM, so a boundary holding a started
+// started task — an `Async` is eager on the BEAM, so a boundary holding a started
 // task would hold a result computed before the shell was written, and nothing
 // would stream. Building the record runs nothing.
 //

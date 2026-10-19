@@ -33,7 +33,7 @@ import {cookies, pairValue, response} from "rakun-bpp";
 import {clientProps, deferred, serverDefer} from "rakun-bpp";
 import {serveIslands, renderIsland, seal, unseal} from "rakun-app";
 import {rkTestRequest, rkTestRequestAuthed} from "rakun-web";
-import {collections.Dict, json.Json} from "std";
+import {collections.Dict, json.Json, compiler} from "std";
 
 // ── src/components/avatar.bp ────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ import {collections.Dict, json.Json} from "std";
 #[clientProps]
 pub type AvatarProps(size: i32)
 
-fn avatarFor(session: string) -> @Task<string> {
+async fn avatarFor(session: string) -> Async<string> {
     return "/avatars/" + session + ".png";
 }
 
@@ -50,7 +50,7 @@ fn avatarFor(session: string) -> @Task<string> {
 // can render it. Inside, the request is the ISLAND's request: its cookies, its
 // headers — and `Referer` is the page that asked.
 #[deferred]
-pub fn Avatar(props: AvatarProps) -> @Component<Element> {
+pub component fn Avatar(props: AvatarProps) -> Component<Element> {
     val jar = use cookies();
     val session = pairValue(jar, "session");
     val src = await avatarFor(session);
@@ -71,7 +71,7 @@ pub fn GenericAvatar(size: i32) -> Element {
 // so `#[page]` prerenders it at comptime.
 
 #[page("product/[id]")]
-pub fn Page(route: PageContext) -> @Component<Element> {
+pub component fn Page(route: PageContext) -> Component<Element> {
     val id = PageParams(route).id;
     return html """
       <h1>Product {id}</h1>
@@ -92,7 +92,7 @@ test "the page renders the fallback and a placeholder, not the component" {
 }
 
 test "the page reads nothing from the request, so it stays prerendered" {
-    assert @typeInfo(Page).meta(PageMeta)?.kind == .S;   // recorded by #[page] from the hooks (277)
+    assert comptime compiler.typeInfo(Page).meta(PageMeta)?.kind == .S;   // recorded by #[page] from the hooks (277)
 }
 
 test "the props in the URL are sealed, not readable and not editable" {

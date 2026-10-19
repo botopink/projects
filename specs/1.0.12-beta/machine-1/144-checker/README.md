@@ -77,7 +77,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | prefixed strings on `@External.Wasm` (481) | `external_wasm_prefixed_{fn,op,wasi,std}_refused` |
 | the formatter prints `label: value`; the LSP rename; no prefixed string in `libs/**` | no cell: `format/tests/declarations.zig`, `language-server/src/tests/rename.zig`, the `build.zig` scan |
 
-- [ ] `"std:…"` on `@External.Node` / `Erlang`: host code (as built) or refused like the other prefixes · question B-02-c
+- [ ] `"std:…"` on `.JavaScript` / `.Erlang`: host code (as built) or refused like the other prefixes · question B-02-c
 
 ### B-10 — 430: the compiler gaps a library works around today
 
@@ -87,7 +87,7 @@ Decision 430: a gap a library front works around opens here, ahead of the steps 
 workaround; the workaround is removed in the fix's landing (a consumer commit) and its `language-gaps.md` row
 and Marker index row go (meta CI check 5). Groups by the library that carries the markers:
 
-- **G1 validation** — `Decl.variants` carries a variant's name and not its payload; a static member is not a
+- **G1 validation** — `compiler.variants(d)` carries a variant's name and not its payload; a static member is not a
   value on erlang; a comptime decorator parameter takes no default; a decorator body whose lambda holds many
   locals overflows the comptime stack; a record spread inside a member a decorator adds loses its spread on
   commonJS; `Decorator` is an unknown type in a package's module; a decorator argument is a raw lexeme;
@@ -99,9 +99,9 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
   template body reaches cannot name an enum variant nor build a private record; a decorator body cannot call a
   host function (closes with B-00c); a library's template function cannot read the program's catalogue (B-19,
   130 s10); an imported enum's variant written bare (erlang).
-- **G3 jhonstart** — a decorator cannot read whether a `@Component<R>` return's `R` implements `@Renderable`;
+- **G3 jhonstart** — a decorator cannot read whether a `Component<R>` return's `R` implements `Renderable`;
   a tag annotation cannot be called by the template function (B-15); template-built code cannot build an inline
-  props type; a type alias of `@Component` in a return and `@ExprCustom<View>` (re-measured after 388).
+  props type; a type alias of `Component` in a return and a template answering `-> View` (re-measured after 388).
 - **G5 onze** — a field marker cannot be read by the library that takes the type.
 
 - [x] G1, first: two test modules declaring one type name stay two types under `botopink test --target erlang`
@@ -113,7 +113,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       — built: a static member as a value (`associated_fn_as_value`), the spread in an added member and the many
       locals (pins `decorator_member_record_update`, `decorator_lambda_many_locals`), a `Decorator` parameter taking
       a decorator's name (`decorator_argument_decorator_name`); validation's four markers and their rows gone. Left:
-- [ ] `Decl.variants`' entries carry a variant's payload fields and annotations · question B-10-b
+- [ ] `compiler.variants(d)`'s entries carry a variant's payload fields and annotations · question B-10-b
 - [ ] `Field` reflects a field's default · question B-10-a
 - [ ] `clock.formatIso8601` one text on erlang and commonJS (497) · question B-10-c
 - [ ] `Decorator` an unknown type in a package's module: validation's last marker of it rewritten over
@@ -134,11 +134,11 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       function (B-00c), a library template reading the program's catalogue (B-19)
 - [ ] G3: the same for jhonstart's markers (after B-15 and 388) — built: template-built code builds an inline props
       type (`template_builds_inline_props`; jhonstart's two html test markers and the row gone). Left:
-- [ ] a decorator reads whether a `@Component<R>` return's `R` implements `@Renderable` · question B-10-f
-- [ ] `html` declared `-> @ExprCustom<View>` (`View = @Component<Element>`): every expansion fails `expected
+- [ ] a decorator reads whether a `Component<R>` return's `R` implements `Renderable` · question B-10-f
+- [ ] `html` declared `-> View` (`View = Component<Element>`, its tree through `compiler.custom`): every expansion fails `expected
       Component, got Element` · question B-10-g
 - [ ] G5: the same for onze-content's marker — no compiler change: decision 306 makes it a type decorator over
-      `decl.fields` (121 step 10), handed to 150 s70
+      `compiler.fields(decl)` (121 step 10), handed to 150 s70
 
 **Impacted tests:** a `run/` or `reject/` cell per row; the libraries' suites. **Model:** opus for checker rows,
 sonnet for a backend row with its repro. **Consumer commits:** validation, styled, emilia, jhonstart, onze.
@@ -320,14 +320,14 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | other type, optional, a derived partial, `required` (B-14-c as built), a partial | `record_spread_other_type`, `record_spread_optional`, `record_spread_derived_partial`, `record_spread_required`, `record_spread_partial` |
 | a missing field, a label twice, a positional argument, a plain call | `record_spread_missing_field`, `record_spread_label_twice`, `record_spread_positional_argument`, `call_spread` |
 
-### B-15 — 302: a tag is a `@Decl`
+### B-15 — 302: a tag is a declaration handle
 
 **Repository:** botopink-lang, with consumer commits in jhonstart (rule 10) — a full worktree; a library half that its own front holds is handed over as a row
 
 **Impacted tests:** `run/tag_decl_meta`. **Model:** opus. **Consumer commits:** jhonstart (`html.bp`'s marker
 goes); unblocks jhonstart's 118 s4–s5 residue and 119.
 
-#### Step 9 — a tag is a `@Decl` (decision 302) (was `130-decorator-outputs` s9)
+#### Step 9 — a tag is a declaration handle (decision 302) (was `130-decorator-outputs` s9)
 
 A template function hands each annotated tag to its annotations as a `@Decl` and reads back what
 they recorded — the same function shape as a declaration's decorator, named by no library (113, 198).
@@ -343,7 +343,7 @@ they recorded — the same function shape as a declaration's decorator, named by
       runs the annotation written at a span of the template's text · decision 636
 - [ ] `Decorator.same` inside a template body: a looked-up name's `Binding` carries no `Decorator` (meta read by
       type works, 302) · question B-15-b
-- [ ] `d.meta(T)` on a decorator's own `@Decl` parameter is refused, so an annotation cannot read what an earlier
+- [ ] `compiler.meta<T>(d)` on a decorator's own declaration handle (`syntax d: unknown`) is refused, so an annotation cannot read what an earlier
       one recorded on the same tag · question B-15-c
 - [ ] `template.mapSpanToLoc` places a span of a one-line `"""…"""` literal two columns early (the capture has
       `multiline=false`) — found by B-15
@@ -388,7 +388,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 **Model:** opus. **Consumer commits:** rakun-data (`orm/entity.bp` to `compiler.Field<unknown>`); unblocks validation
 125's residue, jhonstart 26 s13 (362), 118.
 
-#### Step 24 — typed comptime decorator arguments, `@Decl<T>`, `Field<T>` (decision 280) (was `01-checker` s24)
+#### Step 24 — typed comptime decorator arguments, `syntax decl: T`, `Field<T>` (decision 280) (was `01-checker` s24)
 
 The cases are [`examples/decorator-arguments-280.md`](01-checker/examples/decorator-arguments-280.md) — each
 example a `run/` cell, its "não compila" lines `reject/` cells. Landed
@@ -403,7 +403,7 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Landed
       an enum variant, a record, an array (`[1, 2]` has length 2); a value not known at comptime
       (`env("X")`) refused at the argument (`decorator-arg-not-comptime`) — built but for the
       function and the `type`, which the body still receives as their name: 364 replaces the box
-      with step 35 (every argument an `@Expr<T>`)
+      with step 35 (every argument a `syntax x: T`)
 - [x] `@Decl<T>` in `builtins.d.bp`; `T` bound from the annotated declaration (type, field, function)
       when the signature uses it, through a pattern too (`@Decl<fn(e: E) -> unknown>`); `@Decl` =
       `@Decl<unknown>`; a declaration not matching the pattern refused at the annotation
@@ -586,9 +586,9 @@ phases (questions s23-g – s23-i).
 #### Step 36 — every function's stage: `Build`, `Run`, `Any` (decision 376) (was `01-checker` s36)
 
 ```bp
-fn padAll(n: i32) -> StyledProperty { return styledProperty "padding: --spacing(${n});"; }   // Any
+fn padAll(n: i32) -> StyledProperty { return styledProperty @`padding: --spacing(${n});`; }   // Any
 fn agora() -> i64 { return clock.nowMs(); }                                                    // Run
-fn campos(comptime t: type) -> string[] { return @typeInfo(t).fields.map({ f -> f.name }); }   // Build
+fn campos(comptime t: anytype) -> string[] { return compiler.typeInfo(t).fields.map({ f -> f.name }); }   // Build
 fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + agora().toString(); }   // Run
 ```
 
@@ -604,10 +604,10 @@ fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + a
       closes
 - [ ] std declares `Any` on its pure host primitives (`string`, `math`), every other host binding `Run`
 
-- [ ] a run-in-build body calling a host function that has a build form (`std:`, `@External.Wasm` `fn:`): `Any`, or
+- [ ] a run-in-build body calling a host function that has a build form (`std:`, `.Wasm(body: …)`): `Any`, or
       376 as written (`decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded` change) · decision 633
 - [ ] the spelling `#[@Stage.Any]`, `pub type Stage { Build, Run, Any }` in `builtins.d.bp` · question B-17-b
-- [ ] the `Build` resource is a read of a comptime `@Decl` / `@Expr` parameter; `@typeInfo(NamedType)` a build constant · decision 634
+- [ ] the `Build` resource is a read of a `syntax` parameter (a declaration handle or a captured tree); `compiler.typeInfo(NamedType)` a build constant · decision 634
 - [x] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
       function and reading the clock is build-and-run · decision 720 (a): only what is written at the call counts, a `syntax` argument of any origin
       type-checked once; a Run function reached through a value while the build executes is `run-in-build` at that call, located — cell `run_in_build_through_value`
@@ -631,7 +631,7 @@ no `comptime` provides — question `14s8-e`.
       `run/hole_any_call_at_build`, `reject/hole_any_call_raises`
 - [ ] every expression with build inputs and `Any` functions computed at build wherever it is written (380):
       a body's `val raio = ESPACO * 2 + 4;` emitted as `12`; no step or time budget — a raise an error at the
-      expression (`reject/fold_raises_at_build`); `@panic` / `throw` computed only under a written `comptime`
+      expression (`reject/fold_raises_at_build`); `panic` / `throw` computed only under a written `comptime`
       (`run/fold_keeps_dead_panic`)
       — built and measured, not landed: it moves ~26 snapshots, breaks `component_call_*` and `context_sheet_registers`, and the comptime runtime answers some primitives wrongly (`1000.toI64()` raises `integer_overflow`) — after that row, questions B-17-e, B-17-f
 
@@ -644,7 +644,7 @@ function Card(map, titulo) { … }                       // HookNode.async == fa
 async function Post(map) { … Card(map, "x") … await Comments(map) … }
 ```
 
-- [ ] a `@Component` function or hook whose node is synchronous emits `function` (a method, a lambda and a
+- [ ] a `component fn` or hook whose node is synchronous emits `function` (a method, a lambda and a
       `default fn` alike); an asynchronous one `async function`; a call of a synchronous one emits no
       `await`, written or not; a call the checker cannot follow keeps the `await` — landed for a top-level function (`Emitter.fnShape`, `SyncMarks` from `OkData.sync_fns` /
       `sync_calls`, `useHookExpr`, the `.await_` arm); a method, a lambda and a `default fn` have no node and stay
@@ -660,20 +660,21 @@ async function Post(map) { … Card(map, "x") … await Comments(map) … }
 **Gate:** standard (fronts.md § Gate) + every re-recorded RUN LOG verified under `node` against
 decision 8 §7 · `zig build test-libs` commonJS cells at baseline (jhonstart, emilia, onze, erika)
 
-#### Step 6 — contexts: `@Component<R>`, `use provide` / `use context` (decision 354, replaces 269) (was `134-builtins-declared` s6)
+#### Step 6 — contexts: `Component<R>`, `use provide` / `use context` (decision 354, replaces 269) (was `134-builtins-declared` s6)
 
 ```bp
 import {context.createContext} from "std";
 
 pub val themeContext = comptime createContext(Theme(mode: .Light));   // declares Theme's default (378, 379)
 
-fn App() -> @Component<Element> {
-    use provide(createContext(Theme(mode: .Dark)));   // for everything App renders below it
+component fn App() -> Component<Element> {
+    val dark = comptime createContext(Theme(mode: .Dark));
+    use provide(dark);                                 // for everything App renders below it
     return <Page />;
 }
 
-fn Button() -> @Component<Element> {
-    val theme = use context(Theme);                    // the nearest Theme above, else the default
+component fn Button() -> Component<Element> {
+    val theme = use context(themeContext);             // the nearest Theme above, else the default
     …
 }
 ```
@@ -1058,7 +1059,7 @@ calls the checker answers, so the two coexist).
       value)` gone (`Declared.meta` / `TypeInfo<T>.meta` the typed reads only)
 - [ ] a meta field of a record type, a `compiler.Field<T>` (364 (2)'s data family) or a tuple: refused
       today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
-      reader's scope (an `@Expr<T>` field carries such a value as written)
+      reader's scope (a field filled from a `syntax` carries such a value as written)
       — tuple and `compiler.Field<T>` fields rebuilt where read, a generic meta record keyed by its parameter
       (`meta_field_tuple_and_field_key`); left: record-typed fields (the nested record aliased into the reader, as 385)
 - [x] an `@Expr<T>` meta field read in another module resolves its names where the annotation wrote them
@@ -1228,7 +1229,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
       (`find(0)?.str().length()`); TypeScript continues the chain for both — one rule — found by B-20's Conformance step
       — it continues the chain, as a method does (`optional_chain_field_after_call`); `a?.b.c` too
 
-### B-21 — 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value
+### B-21 — 364, 408, 409: `syntax` hygiene, the typed function expression, the tail value
 
 **Repository:** botopink-lang (`--lang`)
 
@@ -1460,7 +1461,7 @@ Each re-measured at the step that takes it; a holding row traps or is refused by
       B-14; one cell on the four targets
 - [x] a `case` arm with a catch-all binder over a record value is lowered wrongly on commonJS and wasm — found by
       B-14; re-measured with its cell
-- [ ] a value of an enum section (`val t = Token.Color.White; @print(t)`): commonJS, erlang and beam print
+- [ ] a value of an enum section (`val t = Token.Color.White; terminal.print(t)`): commonJS, erlang and beam print
       `Token.Color(_inner: __Token__Color.White)`, wasm an address · decision 601: the leaf's whole path, `Token.Color.White`, on four targets
 - [x] an imported enum's variant with a payload prints as a number on wasm (`@print(AMode.Slow(2))` printed
       `8764`, `AMode` from another module) — found by B-23
@@ -1690,7 +1691,7 @@ function i64add(a, b) {
       `Integer`'s `default fn`s (`isEven`, `clamp`) throw a `TypeError` on a `BigInt` (97 step 13):
       `==` stays `===`, a `Dict` / `Set` keyed by `i64` keys by value — one cell each across the 2^53 edge
 - [ ] conversions explicit and exact (no `toF64()` / `toI32()` is declared anywhere yet — std surface first):
-      widening `i32 → i64` is free (already canonical); `@print` and string interpolation print the digits
+      widening `i32 → i64` is free (already canonical); `print` and string interpolation print the digits
       (no `n`)
 - [x] a Node host template taking or answering one of the four types sees `number | bigint` (canonical);
       the emitted `.d.ts` types them `number | bigint`; `scripts/tsc-check.sh` green
@@ -1743,7 +1744,7 @@ and beam, 2 on wasm.
       `scale`; `add`, `sub`, `mul` exact; `div(b, scale:, rounding:)` with `Rounding { Up, Down, Ceiling,
       Floor, HalfUp, HalfDown, HalfEven, Unnecessary }` (Java's `RoundingMode`; `Unnecessary` aborts when
       rounding is needed); `compare`; `==` by numeric value (`1.0 == 1.00`); `toString()` plain with its
-      scale (`"1.00"`, never `1E+2`); `parse(text) -> @Result<Decimal, string>`
+      scale (`"1.00"`, never `1E+2`); `parse(text) -> Result<Decimal, string>`
 - [ ] `Json`: `Num(value: f64)` replaced by `Int(value: i64)`, `BigInt(value: bigint)`, `Dec(value: Decimal)`,
       chosen by the numeral; readers `num() -> ?f64`, `i64() -> ?i64`, `bigint() -> ?bigint`,
       `decimal() -> ?Decimal`, `isNumber()`, `isIntegral()` (exact or `null`, never coerced); `encode` writes
@@ -1828,7 +1829,7 @@ Waits on `02/97` step 17 (`io/http`'s and `async`'s wasm bindings).
 
 #### Step 17 — `io/http` and `async` bound to the `wasi` host (decision 334; after `01-compiler/140` steps 1–4) (was `97-std-dedupe` s17)
 
-- [ ] `io/http`'s `fetch` binds `@External.Wasm(host: .Wasi, wasi: .HttpOutgoing)` and the `browser` host's JS `fetch`;
+- [ ] `io/http`'s `fetch` binds `#[compiler.external(.Wasm(host: .Wasi, wasi: .HttpOutgoing))]` and the `browser` host's JS `fetch`;
       the request and response mapped by each adapter; on `browser` a forbidden header or a `Set-Cookie` read answers
       `HttpError.NotAllowedOnHost(…)` naming it (335 (1)); `run/std_io_http_on_every_target` against a local double
 - [x] `async`'s twelve cells bind on `wasi` (`delay` on the monotonic clock, `race` / `raceOf` on pollables, the
@@ -1941,7 +1942,7 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
 - [ ] the style section unfolds to `use <style> """<the section>""";` after the header's
       statements, before `return html """…""";`, with `import <style> from "<bpp.style>";` binding
       no name the header can reach — § Mechanism's `Props(title)` example unfolds as spelled there
-      — built; its success cell waits on the `@ExprCustom<@Component<T>>` gap (question B-10-g)
+      — built; its success cell waits on the gap of a template answering `-> Component<T>` (question B-10-g)
 - [ ] fixture style package (not `jhonstart-styled`) whose default function answers something
       trivial (the section's length): a `.bpp` with a style section compiles onto it unchanged —
       the toolchain knows no library for the style section either
@@ -2070,13 +2071,13 @@ then, named as stubs in the report). E3's three checker rows landed in 01
 24-a (effect codes), 24-b (`@Task`'s `map` / `then`), 24-c (prefixed loop's label), 24-g
 (`std/async`'s shape) confirmed or reversed; 24-h answered (decision 179, replaced by 432).
 
-- [ ] the four ids in `../../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`; 24-b → 432, the failing task;
+- [ ] the four ids in `../../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `Result`; 24-b → 432, the failing task;
       `throws: true` and `attempt` are `01-checker` step 42 and `02/97` step 18)
 
-#### Step 3 — the cost of a `@Result` per item (was `24-effects-by-return` s3)
+#### Step 3 — the cost of a `Result` per item (was `24-effects-by-return` s3)
 
-`@Iterator<@Result<T, E>>` of 10⁵ items consumed by `for` with `try r`, on erlang and wasm, vs the
-same loop over `@Iterator<T>`; if the `Ok` wrap weighs, the backend specialises the `Ok` `yield` — a
+`Iter<Result<T, E>>` of 10⁵ items consumed by `for` with `try r`, on erlang and wasm, vs the
+same loop over `Iter<T>`; if the `Ok` wrap weighs, the backend specialises the `Ok` `yield` — a
 row for 02 and 05, not edited here.
 
 - [ ] the two ratios in this README with the program and the machine; a row filed in 02 / 05 if either exceeds 1.5×

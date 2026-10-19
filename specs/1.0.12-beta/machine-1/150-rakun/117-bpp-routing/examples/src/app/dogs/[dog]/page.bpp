@@ -34,7 +34,7 @@ pub type DogInfo(breed: string)
 
 // `export function getStaticPaths()` — each row binds `[dog]` and carries the
 // page's data, Astro's `props`.
-pub fn staticPaths() -> @Task<Array<StaticPath>> {
+pub async fn staticPaths() -> Async<StaticPath[]> {
     return [
         staticPath([#("dog", "clifford")], try encodeDogInfo(DogInfo(breed: "red")) catch Json.Null),
         staticPath([#("dog", "rover")], try encodeDogInfo(DogInfo(breed: "mix")) catch Json.Null),

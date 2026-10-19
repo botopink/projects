@@ -24,6 +24,7 @@ import {managed, provides, qualifier, primary, scope} from "rakun";
 import {postConstruct, preDestroy, eventListener, exitCode} from "rakun";
 import {rkRegisterBean, rkRegisterLifecycle, rkRegisterListener} from "rakun";
 import {context} from "rakun";
+import {io.terminal} from "std";
 
 // ---- two beans of one type, told apart by qualifier (server) ----
 
@@ -66,12 +67,12 @@ pub type OrderCache(
     #[postConstruct]
     pub fn warm(self: Self) {
         val n = self.repo.ids().length;
-        @print("order cache warmed with ${n} entries at " + self.clock.stamp());
+        terminal.print("order cache warmed with ${n} entries at " + self.clock.stamp());
     }
 
     #[preDestroy]
     pub fn close(self: Self) {
-        @print("order cache released");
+        terminal.print("order cache released");
     }
 
     pub fn size(self: Self) -> i32 {
@@ -86,12 +87,12 @@ pub type OrderCache(
 pub type AuditListener {
     #[eventListener("ApplicationReady")]
     pub fn onReady(self: Self, ev: Event) {
-        @print("ready at ${ev.timestampMillis}");
+        terminal.print("ready at ${ev.timestampMillis}");
     }
 
     #[eventListener("OrderPlaced")]
     pub fn onOrderPlaced(self: Self, ev: Event) {
-        @print("order placed: " + ev.payload);
+        terminal.print("order placed: " + ev.payload);
     }
 }
 

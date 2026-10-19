@@ -3,17 +3,17 @@
 // The `/blog/[slug]` page, as a server component.
 //
 // Everything in this file runs on the BEAM, once, while the request is in
-// flight. `PostPage` returns `View` (= `@Component<Element>`,
-// decisions 128, 276; `@Component ⊃ @Task`, so a component awaits) and takes no
+// flight. `PostPage` returns `View` (= `Component<Element>`,
+// decisions 128, 276; `Component ⊃ Async`, so a component awaits) and takes no
 // parameter (293); the two loaders return
-// `@Task<T>` and are awaited at statement level, one after the other, and the tree is
+// `Async<T>` and are awaited at statement level, one after the other, and the tree is
 // built synchronously from what they returned. Nothing here ships to the
 // browser — front 30's render serializes the markup, and the only thing the
 // client receives is HTML.
 //
 // The two awaits are sequential on purpose: the comments cannot be loaded until
 // the post's id is known. Sequential is also what they would be anyway — on the
-// erlang backend `@Task<T>` is EAGER (decision 120), so two tasks do not
+// erlang backend `Async<T>` is EAGER (decision 120), so two tasks do not
 // overlap just by being tasks. When two loaders ARE
 // independent, the parallel form is front 02's spawn-and-gather over UNSTARTED
 // tasks (`[{ -> loadPost(s) }, { -> loadSidebar() }]`), not a map over tasks.
@@ -29,7 +29,7 @@
 import { Element, View, div, h1, p, ul, li, span, text, renderToString } from "rakun-bpp";
 import { params } from "rakun-bpp";             // front 26 step 11 (decision 293)
 import { article, section, h2 } from "rakun-bpp";  // front 94
-import { escape } from "std";
+import { escape, compiler } from "std";
 
 pub type Post(id: string, title: string, body: string)
 
@@ -42,16 +42,16 @@ pub type BlogParams(slug: string)
 // The data source. On the BEAM a repository call is a host cell; front 08
 // delivers the real one. The rows come back `|`-delimited, which keeps the
 // example honest about what crosses an erlang boundary: strings.
-#[@external(.Erlang("blog_repo:post_by_slug($0)"))]
+#[compiler.external(.Erlang("blog_repo:post_by_slug($0)"))]
 declare fn postRow(slug: string) -> string;
 
-#[@external(.Erlang("blog_repo:comments_for($0)"))]
+#[compiler.external(.Erlang("blog_repo:comments_for($0)"))]
 declare fn commentRows(postId: string) -> string;
 
-// A loader: a `@Task<T>` return and a body that does the decoding. The return
+// A loader: an `Async<T>` return and a body that does the decoding. The return
 // is the whole declaration of the effect (decision 118). The loader cannot fail,
-// so it is a plain `@Task<T>` and the page awaits it without a `try`.
-fn loadPost(slug: string) -> @Task<Post> {
+// so it is a plain `Async<T>` and the page awaits it without a `try`.
+async fn loadPost(slug: string) -> Async<Post> {
     val parts = postRow(slug).split("|");
     return Post(
         id: parts.at(0).unwrapOr(""),
@@ -60,7 +60,7 @@ fn loadPost(slug: string) -> @Task<Post> {
     );
 }
 
-fn loadComments(postId: string) -> @Task<Array<Comment>> {
+async fn loadComments(postId: string) -> Async<Array<Comment>> {
     val rows = commentRows(postId).split("\n").filter({ r -> r != "" });
     return rows.map({ r -> decodeComment(r) });
 }

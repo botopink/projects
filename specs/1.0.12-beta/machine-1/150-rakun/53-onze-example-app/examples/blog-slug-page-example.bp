@@ -47,7 +47,7 @@ fn bodyTokens() -> Token[] {
 
 // front 60 — called once, at build time. Each row binds every dynamic segment
 // of the pattern; a row that misses one fails the build.
-pub fn blogStaticParams() -> @Task<StaticParams[]> {
+pub async fn blogStaticParams() -> Async<StaticParams[]> {
     return listPosts().map({ post ->
         StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
     });
@@ -57,11 +57,11 @@ val _postParams = registerStaticParams("blog/[slug]", blogStaticParams);
 
 // front 22 — the segment reaches the page through `route.params`, a `Dict`, so
 // it is read with `lookup(...).unwrapOr(...)` and never with `get`.
-// front 28 — a server component: `fn … -> @Component<Element>` (decision 117).
+// front 28 — a server component: `component fn … -> Component<Element>` (decision 117).
 // the seeded posts prerendered and regenerated hourly; a slug that appears
 // later is rendered on demand — everything in `#[page]` (290), no segment config
 #[page("blog/[slug]", revalidate: hours(1), dynamicParams: true)]
-pub fn blogPostPage(route: PageContext) -> @Component<Element> {
+pub component fn blogPostPage(route: PageContext) -> Component<Element> {
     val slug = route.params.lookup("slug").unwrapOr("");
     val found = findPost(slug);
 
@@ -91,7 +91,7 @@ pub fn blogPostPage(route: PageContext) -> @Component<Element> {
 // front 32's own `mergeMetadata`. It reads the same params the page reads, and
 // front 62's request-scoped memoization is what stops the post being loaded
 // twice per request.
-pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata> {
+pub async fn generateMetadata(params: Array<#(string, string)>) -> Async<Metadata> {
     val slug = pairValue(params, "slug");
     val found = findPost(slug);
     val post = found.first().unwrapOr(missingPost(slug));

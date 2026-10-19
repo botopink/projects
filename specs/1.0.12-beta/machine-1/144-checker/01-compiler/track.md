@@ -16,7 +16,7 @@ cut by file ownership so fronts run in parallel.
 
 | Front | Priority | State | What | Depends on |
 |---|---|---|---|---|
-| [`01-checker/`](../01-checker/context.md) | high | partial: steps 1–9, 11, 12, 14–17, 19, 20, 25, 26 done, 18 built with one box open; 6 (box 3), 13, 21–24, 27–30 and rows open | the checker and parser rows; the hooks in `@Decl` (277); numeric suffixes (247), type application and `comptime <expr>` (255, built), `comptime` at compile time (266), the prelude scope (270), the `@block` tail and `$stringify` refusals; the template annotation `#[f "…"]` (311); a decorator wrapping its function, `decl.wrapWith` (316) | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
+| [`01-checker/`](../01-checker/context.md) | high | partial: steps 1–9, 11, 12, 14–17, 19, 20, 25, 26 done, 18 built with one box open; 6 (box 3), 13, 21–24, 27–30 and rows open | the checker and parser rows; the hooks in a declaration handle (277); numeric suffixes (247), type application and `comptime <expr>` (255, built), `comptime` at compile time (266), the prelude scope (270), the `@block` tail and `$stringify` refusals; the template annotation `#[f "…"]` (311); a decorator wrapping its function, `decl.wrapWith` (316) | 04 step 6 · 16 step 8 · 05 (step 13) · `08-bpp/116` (the prelude list) |
 | [`02-erlang/`](../../../machine-2/144-backends-tooling/02-erlang/context.md) | high | partial: steps 1–3, 5, 6, 8–13 done; 4, 7, 14, 15 open | `run/array_unique`, C-07's `run/` cells, one `math` (263), overflow aborts (264) | 05 · 01 (`@block`) · the std track (263) |
 | [`03-beam/`](../../../machine-2/144-backends-tooling/03-beam/context.md) | high | partial: steps 1–9 done; 1 (box 3), 2 (box 1) open | 01 step 13's and 02 step 7's cells on beam; 263, 264 in assembly | 01 · 02 · 05 · the std track |
 | [`04-js/`](../../../machine-2/144-backends-tooling/04-js/context.md) | medium | partial: steps 1–5, 7, 8 and C-37 done; 6, 9, 10 open | the `@block` tail IIFE, `$stringify` (239), `throw` in a `case` arm, overflow aborts (264) | 01 |
@@ -32,9 +32,9 @@ cut by file ownership so fronts run in parallel.
 | [`26-cli-tooling/`](../../../machine-2/144-backends-tooling/26-cli-tooling/context.md) | high | partial: steps 1–5, 7, 8 done (2 box 3 measured, rakun's row); 6, 9 open | only a direct dependency importable (242), warnings in `build`/`test`, the LSP's import check | 98 step 4 · 23 |
 | [`129-import-without-from/`](../129-import-without-from/context.md) | high | partial | `from` names a package (206, done); the shorthand goes, `mod` binds its namespace (337) | — |
 | [`130-decorator-outputs/`](../130-decorator-outputs/context.md) | high | partial: steps 1–4 done; 5 (38 of 119 sites), 6 open | the library sites, `@emit` removed | 01 step 20 (256's registry) · the library tracks |
-| [`134-builtins-declared/`](../134-builtins-declared/context.md) | high | partial: steps 1, 3 on feat; 2 partial | the type functions, the `result` namespace, the `@Result`/`?T` methods, `@is` | 134-a…d |
+| [`134-builtins-declared/`](../134-builtins-declared/context.md) | high | partial: steps 1, 3 on feat; 2 partial | the type functions, the `result` namespace, the `Result`/`?T` methods, `@is` refused | 134-a…d |
 | [`139-bigint/`](../139-bigint/context.md) | medium | steps 1–5 landed | `bigint`, an integer of any size with the integer operators and the `n` suffix, one value on the four targets (332) | 04-js step 9 · 05-wasm step 8 |
-| [`140-wasm-host/`](../140-wasm-host/context.md) | high | not started | a wasm build binds to its runtime: `wasi` (wasmtime, WASI preview 2: `wasi:http`, clocks, pollables) first, `browser` (JS imports, JSPI) after; `@External.Wasm(host: …)`; `@Task` on `wasi` (334) | 05-wasm s5 · front 18 · 98 (the manifest key) |
+| [`140-wasm-host/`](../140-wasm-host/context.md) | high | not started | a wasm build binds to its runtime: `wasi` (wasmtime, WASI preview 2: `wasi:http`, clocks, pollables) first, `browser` (JS imports, JSPI) after; `.Wasm(host: …)`; `Async<T>` on `wasi` (334) | 05-wasm s5 · front 18 · 98 (the manifest key) |
 
 ## Ownership
 
@@ -67,7 +67,7 @@ choices to confirm (23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-b … lg2-u**
 (`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281; `lg2-a` by 346 → 01 step 32,
 `lg2-e` by 347, `lg2-j`/`lg2-o`/`lg2-w` by 343/342/341 → 14 step 6, `lg2-v` by 344 → 26 step 6): none
-opens a front until answered, each then a step — `lg2-l` maybe de facto (`@panic` / `@todo`
+opens a front until answered, each then a step — `lg2-l` maybe de facto (`panic`
 `noreturn`, a branch ending in one narrows): maintainer confirms, row closes.
 
 Every recommendation: most restrictive behaviour, nothing configurable bypasses it (decision 67).

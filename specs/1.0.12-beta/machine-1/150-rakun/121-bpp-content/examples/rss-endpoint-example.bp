@@ -30,7 +30,7 @@ import {content.blog};
 // contradicts it; pending the maintainer (117 step 4).
 
 #[getRoute("rss.xml")]
-pub fn feed(req: Request) -> @Task<HandlerResponse> {
+pub async fn feed(req: Request) -> Async<HandlerResponse> {
     val posts = await getCollection(blog());
     val items = posts.map({ post ->
         RssItem(

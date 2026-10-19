@@ -66,7 +66,7 @@ fn pendingStyle() -> Element {
 // The progress bar: a `#[client]` island, the only place `use linkStatus()` is
 // read. It renders in the browser only; the server writes its placeholder.
 #[client]
-pub fn NavProgress() -> @Component<Element> {
+pub component fn NavProgress() -> Component<Element> {
     val s = use linkStatus();
     val state = if (s.pending) "busy" else "idle";
     return div([], attrs: [#("class", "nav-progress"), #("data-state", state)]);

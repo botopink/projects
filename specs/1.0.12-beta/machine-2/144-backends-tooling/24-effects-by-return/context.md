@@ -20,7 +20,7 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/` unless a
 ## Goal
 
 Every effects-guide fence compiles as one program under `check-docs.sh`; 24-a/b/c/g confirmed by
-number; cost of a `@Result` per iterator item measured.
+number; cost of a `Result` per iterator item measured.
 
 ## Decisions
 
@@ -32,4 +32,4 @@ number; cost of a `@Result` per iterator item measured.
 ## Notes
 
 - Components have no propagation: a page decides what an error shows — the helper is jhonstart's.
-- A `@Task<@Result<T, E>>`'s Promise rejects with `E` and resolves with `T`; JS callers catch the rejection (decision 432, replacing 179).
+- An `Async<Result<T, E>>`'s Promise rejects with `E` and resolves with `T`; JS callers catch the rejection (decision 432, replacing 179).

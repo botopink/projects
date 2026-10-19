@@ -32,7 +32,7 @@ fn astronauts() -> Array<Astronaut> {
 }
 
 // `return paginate(astronautPages, { pageSize: 2 });`
-pub fn staticPaths() -> @Task<Array<StaticPath>> {
+pub async fn staticPaths() -> Async<StaticPath[]> {
     return paginate(astronauts(), 2, "/astronauts", schemaOfAstronaut());
 }
 

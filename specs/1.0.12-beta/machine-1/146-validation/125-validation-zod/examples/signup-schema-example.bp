@@ -33,20 +33,20 @@ pub type Signup(
 // What the decorator adds to `Signup`, written out. Nothing below this comment
 // is typed by the application:
 //
-//   pub fn parse(input: Json) -> @Result<Signup, ValidationReport>
-//   pub fn parseAt(input: Json, at: string) -> @Result<Signup, ValidationReport>
-//   pub fn decode(text: string) -> @Result<Signup, ValidationReport>
-//   pub fn bind(pairs: Array<#(string, string)>) -> @Result<Signup, ValidationReport>
-//   pub fn encode(v: Signup) -> @Result<Json, ValidationReport>
+//   pub fn parse(input: Json) -> Result<Signup, ValidationReport>
+//   pub fn parseAt(input: Json, at: string) -> Result<Signup, ValidationReport>
+//   pub fn decode(text: string) -> Result<Signup, ValidationReport>
+//   pub fn bind(pairs: Array<#(string, string)>) -> Result<Signup, ValidationReport>
+//   pub fn encode(v: Signup) -> Result<Json, ValidationReport>
 //   pub fn jsonSchema() -> string
 
 // `.parse` — in a function that can fail, `try` hands the report up.
-pub fn register(body: string) -> @Result<string, ValidationReport> {
+pub fn register(body: string) -> Result<string, ValidationReport> {
     val signup = try Signup.decode(body);
     return "welcome, " + signup.username;
 }
 
-// `.safeParse` — the `@Result` itself, read on the spot.
+// `.safeParse` — the `Result` itself, read on the spot.
 pub fn describe(body: string) -> string {
     return case Signup.decode(body) {
         Ok(signup) -> signup.username + " has " + signup.xp.toString() + " xp";
@@ -54,7 +54,7 @@ pub fn describe(body: string) -> string {
     };
 }
 
-fn located(r: @Result<Signup, ValidationReport>) -> string {
+fn located(r: Result<Signup, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
         Error(report) -> report.violations

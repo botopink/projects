@@ -38,22 +38,22 @@ import {rkAppRegisterHandler} from "rakun";
 import {fakeGet, fakePost} from "rakun-test";
 
 // The app's own data layer — front 08 in a real application.
-fn allPosts() -> @Task<string[]> {
+async fn allPosts() -> Async<string[]> {
     return ["{\"id\":\"1\",\"title\":\"Hello\"}", "{\"id\":\"2\",\"title\":\"BEAM\"}"];
 }
 
-fn onePost(id: string) -> @Task<string> {
+async fn onePost(id: string) -> Async<string> {
     return "{\"id\":\"" + id + "\",\"title\":\"Hello\"}";
 }
 
-fn insertPost(payload: string) -> @Task<string> {
+async fn insertPost(payload: string) -> Async<string> {
     return "{\"id\":\"3\"}";
 }
 
 // ---- app/api/posts/route.bp — GET ---------------------------------------------
 
 #[getRoute("api/posts")]
-pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
+pub async fn listPosts(req: Request) -> Async<HandlerResponse> {
     val posts = await allPosts();
     val body = "[" + posts.join(",") + "]";
     return HandlerResponse.json(body);
@@ -62,12 +62,12 @@ pub fn listPosts(req: Request) -> @Task<HandlerResponse> {
 // ---- app/api/posts/route.bp — POST --------------------------------------------
 //
 // `bodyJson` VALIDATES and returns the raw text: `std/json` is
-// `string -> @Result<string, string>` with no structured walker, so there is
+// `string -> Result<string, string>` with no structured walker, so there is
 // nothing to walk. An application that needs fields hands the text to its own
 // decoder. Saying so here is cheaper than a reader discovering it.
 
 #[postRoute("api/posts")]
-pub fn createPost(req: Request) -> @Task<HandlerResponse> {
+pub async fn createPost(req: Request) -> Async<HandlerResponse> {
     val contentType = req.header("content-type");
     val isMultipart = contentType.startsWith("multipart/form-data");
     if (isMultipart) {
@@ -90,7 +90,7 @@ pub fn createPost(req: Request) -> @Task<HandlerResponse> {
 // as it does for a page. There is no second path parser.
 
 #[getRoute("api/posts/[id]")]
-pub fn showPost(req: Request) -> @Task<HandlerResponse> {
+pub async fn showPost(req: Request) -> Async<HandlerResponse> {
     val id = req.param("id");
     val empty = id == "";
     if (empty) {
@@ -106,13 +106,13 @@ pub fn showPost(req: Request) -> @Task<HandlerResponse> {
 // are unstarted: front 30's flush primitive spawns one BEAM process per thunk,
 // which is where the concurrency comes from.
 
-fn exportRow(n: i32) -> @Task<string> {
+async fn exportRow(n: i32) -> Async<string> {
     return "row " + n.toString() + "\n";
 }
 
 #[getRoute("api/export")]
-pub fn exportPosts(req: Request) -> @Task<HandlerResponse> {
-    var tasks: Array<fn() -> @Task<string>> = [];
+pub async fn exportPosts(req: Request) -> Async<HandlerResponse> {
+    var tasks: Array<fn() -> Async<string>> = [];
     for (0..3) { n ->
         tasks.push({ -> exportRow(n) });
     };

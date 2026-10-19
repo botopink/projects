@@ -21,8 +21,8 @@
 ////
 //// Every `assert<Subject>(loc, …)` here is a thin wrapper: turn the domain
 //// value into a string, hand it to `snapshots.assertAs(loc, "<subject>", text)`.
-//// `loc` is ALWAYS the caller's `@src()`, taken inside the `test` body — a
-//// `@src()` written here would name this file and this fn, and every
+//// `loc` is ALWAYS the caller's `compiler.src()`, taken inside the `test` body — a
+//// `compiler.src()` written here would name this file and this fn, and every
 //// snapshot would land beside this module instead of beside the test.
 
 import {testing: {asserts, snapshots}} from "std";
@@ -37,7 +37,7 @@ fn sheetOf(tokens: Token[]) -> string {
 
 // The sheet a token list encodes to. Snapshot subject `sheet`; the file lands
 // at `<dir of the test's file>/__snapshots__/<suite>/<slug>.snap`.
-pub fn assertSheet(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
+pub fn assertSheet(loc: SourceLocation, tokens: Token[]) -> Result<void, string> {
     try snapshots.assertAs(loc, "sheet", sheetOf(tokens));
     return;
 }
@@ -45,14 +45,14 @@ pub fn assertSheet(loc: SourceLocation, tokens: Token[]) -> @Result<void, string
 // The whole utility: the content-derived class name and the sheet it names.
 // Subject `utility`. The class is a hash of the sheet (contract 4), so the
 // body is stable across runs.
-pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> @Result<void, string> {
+pub fn assertUtility(loc: SourceLocation, tokens: Token[]) -> Result<void, string> {
     val rule = styleRule(tokens, defaultTheme());
     try snapshots.assertAs(loc, "utility", rule._0 + "\n" + rule._1);
     return;
 }
 
 // Two utilities side by side in one test: the second is named.
-pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) -> @Result<void, string> {
+pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) -> Result<void, string> {
     val rule = styleRule(tokens, defaultTheme());
     try snapshots.assertNamedAs(loc, name, "utility", rule._0 + "\n" + rule._1);
     return;
@@ -62,14 +62,14 @@ pub fn assertUtilityNamed(loc: SourceLocation, name: string, tokens: Token[]) ->
 
 // A token list's sheet must carry a given `property:value` declaration. Not a
 // snapshot: the expected text is in the test, where the value is the point.
-pub fn assertHasDeclaration(tokens: Token[], declaration: string) -> @Result<void, string> {
+pub fn assertHasDeclaration(tokens: Token[], declaration: string) -> Result<void, string> {
     try asserts.contains(sheetOf(tokens), declaration);
     return;
 }
 
 // Two token lists must produce the same class — the "token order is class
 // identity" clause of contract 4, asserted from the outside.
-pub fn assertSameClass(a: Token[], b: Token[]) -> @Result<void, string> {
+pub fn assertSameClass(a: Token[], b: Token[]) -> Result<void, string> {
     try asserts.equals(styleRule(a, defaultTheme())._0, styleRule(b, defaultTheme())._0);
     return;
 }

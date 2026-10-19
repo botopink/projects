@@ -4,7 +4,7 @@
 //
 // Demonstrates: an action whose input is validated and typed before the
 // function runs, from a form and from a scripted call, and whose answer is the
-// same `@Result<T, ActionError>` on both sides (decision 303).
+// same `Result<T, ActionError>` on both sides (decision 303).
 //
 //   export const server = {
 //     newsletter: defineAction({
@@ -60,7 +60,7 @@ pub fn newsletterAction() -> ActionRef<Signup, Subscribed> {
 // a function reads its return type and not its parameters, so it cannot read
 // `input`'s type; the type's name is the decorator's argument.
 #[action("Signup")]
-pub fn newsletter(input: Signup, ctx: ActionContext) -> @Task<@Result<Subscribed, ActionError>> {
+pub async fn newsletter(input: Signup, ctx: ActionContext) -> Async<Result<Subscribed, ActionError>> {
     // `ctx.cookies.has("user-session")`
     if (ctx.cookie("user-session") == "") {
         throw Unauthorized("User must be logged in.");
@@ -75,7 +75,7 @@ pub fn newsletter(input: Signup, ctx: ActionContext) -> @Task<@Result<Subscribed
 
 // `<form method="POST" action={actions.newsletter}>` — works with scripting off.
 // After the post, the page reads the outcome: `Astro.getActionResult(...)`.
-pub fn NewsletterForm() -> @Component<Element> {
+pub component fn NewsletterForm() -> Component<Element> {
     val result = use actionResult(newsletterAction());
     val binding = formAction(newsletterAction());
     return html """
@@ -89,8 +89,8 @@ pub fn NewsletterForm() -> @Component<Element> {
     """;
 }
 
-// `if (error) … else data` — one `@Result`, exhaustive: never both, never neither.
-fn describe(outcome: @Result<Subscribed, ActionError>) -> string {
+// `if (error) … else data` — one `Result`, exhaustive: never both, never neither.
+fn describe(outcome: Result<Subscribed, ActionError>) -> string {
     return case outcome {
         Ok(value) -> "Subscribed " + value.email;
         Error(Input(fields)) -> "Check: " + fields.keys().join(", ");
@@ -134,7 +134,7 @@ test "the framework's own form fields are not unknown keys" {
     assert describe(out) == "Check: coupon";
 }
 
-fn caseName(outcome: @Result<Subscribed, ActionError>) -> string {
+fn caseName(outcome: Result<Subscribed, ActionError>) -> string {
     return case outcome {
         Error(Unauthorized(_)) -> "unauthorized";
         Error(BadRequest(_)) -> "bad-request";

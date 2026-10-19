@@ -3,9 +3,9 @@
 //
 // Server-side file. Nothing here is a reactive type: fire-and-forget is a spawned
 // process, request/response is a process whose return value is framed back, and a
-// stream is a producer process holding a credit counter. `@Task` appears only where
+// stream is a producer process holding a credit counter. `Async` appears only where
 // it is honest — as the requester's return shape — and the concurrency comes from
-// front 02's thunks, because `@Task` lowers eagerly on erlang.
+// front 02's thunks, because `Async` lowers eagerly on erlang.
 //
 // Upstream:
 //   https://docs.spring.io/spring-boot/reference/messaging/rsocket.html
@@ -13,7 +13,7 @@
 
 import {service} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
-import {async} from "std";
+import {async, io.terminal} from "std";
 import {Outcome} from "rakun-messaging";
 import {messageMapping, StreamHandle, Requester, rsocketRequester, requestResponse, fireAndForget, routeTag, parseRouteTag, grantCredit} from "rakun-rsocket";
 
@@ -31,7 +31,7 @@ type UserEndpoint {
         if (name == "") {
             return Outcome.Reject(reason: "empty principal");
         };
-        @print("seen ${name}");
+        terminal.print("seen ${name}");
         return Outcome.Done;
     }
 
@@ -57,7 +57,7 @@ type UserEndpoint {
     }
 }
 
-pub fn fetchUser(requester: Requester, id: string) -> @Task<string> {
+pub async fn fetchUser(requester: Requester, id: string) -> Async<string> {
     return await requestResponse(requester, "user.byId", id);
 }
 
@@ -65,8 +65,8 @@ pub fn fetchUser(requester: Requester, id: string) -> @Task<string> {
 // sequential round trips. LANGUAGE GAP: `await` is not allowed inside a closure, which
 // is exactly why the thunk form works — each thunk returns the future and the gather
 // awaits. Nearest valid form below: front 02's thunk array, one process per thunk.
-pub fn fetchBoth(requester: Requester) -> @Task<string> {
-    val thunks: Array<fn() -> @Task<string>> = [
+pub async fn fetchBoth(requester: Requester) -> Async<string> {
+    val thunks: Array<fn() -> Async<string>> = [
         { -> fetchUser(requester, "ana") },
         { -> fetchUser(requester, "bob") },
     ];

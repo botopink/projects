@@ -53,7 +53,7 @@ fn card(title: string, author: string) -> Element {
     ], attrs: [#("style", frame)]);
 }
 
-pub fn image(ctx: RouteContext) -> @Task<ImageResponse> {
+pub async fn image(ctx: RouteContext) -> Async<ImageResponse> {
     val slug = ctx.params.param("slug");
     val post = await loadPost(slug);
     return imageResponse(card(post._0, post._1), size);
@@ -61,7 +61,7 @@ pub fn image(ctx: RouteContext) -> @Task<ImageResponse> {
 
 // Stand-in for the app's own loader — a real one reaches a database through
 // front 08. Kept here so the example is a file that compiles.
-fn loadPost(slug: string) -> @Task<#(string, string)> {
+async fn loadPost(slug: string) -> Async<#(string, string)> {
     return #("Hydration is a contract, not a hope", "ana");
 }
 

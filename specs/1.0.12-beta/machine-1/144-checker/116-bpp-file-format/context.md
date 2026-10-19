@@ -107,8 +107,8 @@ pub default fn (props: Props) -> View {
 - `import {components.PostCard};` binds it without alias; another file name needs one
   (`import {components.post_card as PostCard};`). No case conversion; the importer's name is the file's,
   so a file name that is no identifier needs an alias at the importer (289). `R` (decision 275) is the `R` of the default function's declared
-  `@ExprCustom<R>` — the toolchain reads it from the signature and names no library; for jhonstart
-  it is `View` (= `@Component<Element>`, decision 276 as amended by 354), whether or not the header uses `use` / `await`.
+  `-> R` (a template answering its tree through `compiler.custom`) — the toolchain reads it from the signature and names no library; for jhonstart
+  it is `View` (= `Component<Element>`, decision 276 as amended by 354), whether or not the header uses `use` / `await`.
 - Declarations (`import`, `type`, `pub`) module-level; statements (`val`, `use`) body ahead of
   `return` (may read `props`, call a hook). Attributes = `Props` fields (192); children via
   `children` (193). Header imports in the language's form (`import {components.card};`,
@@ -170,7 +170,7 @@ an object (or any non-string): error at the key, naming the string form. `"bpp"`
 non-dependency: error at the value. `#[bpp.html]` missing or twice, another role twice: error at the
 key, naming the declarations. A role declaration that is not `pub`, and a declaration beside a
 prelude module's imports and marker: error at that declaration. `#[bpp.html]` / `#[bpp.style]` on
-anything but a function answering `@ExprCustom<R>`, a prelude role on anything but a `val`: std's
+anything but a template function answering `-> R`, a prelude role on anything but a `val`: std's
 decorator refuses it at the annotation. A style section in a project whose package marks no
 `#[bpp.style]`: error at its `--- style ---` line. `X.bp` + `X.bpp` in one directory: error naming
 both.

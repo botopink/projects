@@ -28,18 +28,18 @@ import {redirect, notFound, rewrite} from "rakun-bpp";                      // A
 import {response, recordedStatus, recordedHeaders} from "rakun-bpp";                       // Astro.response
 import {site, absoluteUrl} from "rakun-bpp";                               // Astro.site; no isPrerendered (291)
 import {captureSignals} from "rakun-bpp";
-import {collections.Dict, json.Json} from "std";
+import {collections.Dict, json.Json, compiler} from "std";
 
 type Product(id: string, name: string, available: bool)
 
-fn findProduct(id: string) -> @Task<?Product> {
+async fn findProduct(id: string) -> Async<?Product> {
     if (id == "7") return Product(id: "7", name: "Lamp", available: true);
     if (id == "8") return Product(id: "8", name: "Desk", available: false);
     return null;
 }
 
 #[page("product/[id]")]
-pub fn Page(route: PageContext) -> @Component<Element> {
+pub component fn Page(route: PageContext) -> Component<Element> {
     // Astro.params
     val id = PageParams(route).id;
 
@@ -106,7 +106,7 @@ test "a rewrite names the route to render under this URL" {
 
 test "reading the request or writing the response makes the page dynamic" {
     // the kind `#[page]` records at comptime from the hooks (277), not a run-time mark
-    assert @typeInfo(Page).meta(PageMeta)?.kind == .D;
+    assert comptime compiler.typeInfo(Page).meta(PageMeta)?.kind == .D;
 }
 
 // What is refused, and when:

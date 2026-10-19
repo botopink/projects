@@ -3,7 +3,7 @@
 // Demonstrates: async selectors, Loadable and the concurrency helpers.
 //
 //   Recoil                                   cardume
-//   selector({get: async ({get}) => …})      selector({ get -> await … })   → Selector<@Task<T>>
+//   selector({get: async ({get}) => …})      selector({ get -> await … })   → Selector<Async<T>>
 //   useRecoilValue(asyncSel)                 use atomValue(s)  — suspends to the nearest Suspense boundary
 //   useRecoilValueLoadable(s)                use loadable(s)   → Loadable<T>: Loading | Value(v) | Failed(m)
 //   useRecoilStateLoadable(a)                use loadable(a) + use atomSetter(a)
@@ -102,8 +102,8 @@ pub fn Page() -> View {
     """;
 }
 
-fn fetchUser(id: i32) -> @Task<User> { return User(id: id, name: "Ana"); }
-fn fetchPosts(id: i32) -> @Task<Post[]> { return [Post(id: 1, title: "Hello")]; }
+async fn fetchUser(id: i32) -> Async<User> { return User(id: id, name: "Ana"); }
+async fn fetchPosts(id: i32) -> Async<Post[]> { return [Post(id: 1, title: "Hello")]; }
 
 test "the server pass renders the Suspense fallback before the user answers" {
     val markup = renderToString(await Page());
@@ -112,7 +112,7 @@ test "the server pass renders the Suspense fallback before the user answers" {
 
 // What does not compile:
 //
-//   val u = use atomValue(currentUser); u.name    inside a body that is no @Component
+//   val u = use atomValue(currentUser); u.name    inside a body that is no `component fn`
 //     error: `use` outside a hook context (128)
 //
 //   waitForAll()

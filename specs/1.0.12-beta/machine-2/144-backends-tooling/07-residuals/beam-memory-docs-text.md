@@ -35,35 +35,35 @@ decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/desi
 > pub fn main() { bump(); bump(); terminal.print(hits); }
 > ```
 >
-> On the BEAM the annotation `#[@BeamMemory.<member>]` widens where a module `var` lives beyond the
-> process (§ `@BeamMemory`). Off the BEAM the annotation is refused where it is written —
-> ``error: `#[@BeamMemory]` has no meaning on the commonJS backend`` — because a target with one
+> On the BEAM the annotation `#[beamMemory(.<member>)]` widens where a module `var` lives beyond the
+> process (§ `beamMemory`). Off the BEAM the annotation is refused where it is written —
+> ``error: `#[beamMemory]` has no meaning on the commonJS backend`` — because a target with one
 > execution context has no BEAM storage to name; a `var` there is one value for the whole program.
 > A hand-written `import { beam } from "std"` — the host primitives themselves — is
 > `std-unsupported-on-target` there for the same reason (decisions 43, 167).
 
-### A new `### @BeamMemory — where a module var lives on the BEAM`, the validation half
+### A new `### beamMemory — where a module var lives on the BEAM`, the validation half
 
-> `#[@BeamMemory.<member>]` above a module `var` names its memory on erlang and beam. The member
+> `#[beamMemory(.<member>)]` above a module `var` names its memory on erlang and beam. The member
 > is one of `ProcessDict` (the default, which a bare `var` already means — writing it out loud
 > records the choice where it is read), `Ets` or `PersistentTerm`. The only argument is
 > `keyed: true | false`, default `false`, and it is a `Dict`-only argument: an `i32` has no key and
 > neither has a list, which stores its whole value. Every part is checked at `botopink check`:
 >
 > ```botopink
-> #[@BeamMemory.ProcessDict]        var explicit: i32 = 0;   // the default, said out loud
-> #[@BeamMemory.Ets]                var hits: i32 = 0;
-> #[@BeamMemory.PersistentTerm]     var buildVersion: i32 = 101;
-> #[@BeamMemory.Ets(keyed: true)]  var counts: Dict<string, i32> = Dict.empty();
+> #[beamMemory(.ProcessDict)]        var explicit: i32 = 0;   // the default, said out loud
+> #[beamMemory(.Ets)]                var hits: i32 = 0;
+> #[beamMemory(.PersistentTerm)]     var buildVersion: i32 = 101;
+> #[beamMemory(.Ets, keyed: true)]  var counts: Dict<string, i32> = Dict.empty();
 >
-> // #[@BeamMemory.Etz] var x: i32 = 0;
-> //   error: unknown member `Etz` in `@BeamMemory` — expected `ProcessDict`, `Ets` or `PersistentTerm`
+> // #[beamMemory(.Etz)] var x: i32 = 0;
+> //   error: unknown member `Etz` in `beamMemory` — expected `ProcessDict`, `Ets` or `PersistentTerm`
 > // #[@BeamMemory.Ets(keyd: true)] var x: i32 = 0;
 > //   error: unknown argument `keyd` — expected `keyed`
-> // #[@BeamMemory.Ets(keyed: true)] var n: i32 = 0;
+> // #[beamMemory(.Ets, keyed: true)] var n: i32 = 0;
 > //   error: `keyed` needs a keyed container — an `i32` has no key
-> // #[@BeamMemory.Ets] val x: i32 = 0;
-> //   error: `#[@BeamMemory.Ets]` needs a `var` — `x` is a `val`
+> // #[beamMemory(.Ets)] val x: i32 = 0;
+> //   error: `#[beamMemory(.Ets)]` needs a `var` — `x` is a `val`
 > ```
 >
 > The annotation takes the plain form only: `#[…] val add = fn …` and the other `val` shorthands
@@ -71,7 +71,7 @@ decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/desi
 
 ---
 
-## Part 2 — the three modes (`docs.md` § `@BeamMemory`)
+## Part 2 — the three modes (`docs.md` § `beamMemory`)
 
 Second paragraph carries decision 42: `keyed` unwritten on a `Dict` is **not** a warning; behaviour
 and cost stated here, where the default is documented, nowhere else.
@@ -101,7 +101,7 @@ and cost stated here, where the default is documented, nowhere else.
 
 > **`PersistentTerm`** — one value per node, written **once, at load**, read everywhere for the
 > cost of a function call. A write after load is a compile-time error with the hint
-> `#[@BeamMemory.Ets(keyed: true)]`: at run time a `persistent_term:put` scans every process heap
+> `#[beamMemory(.Ets, keyed: true)]`: at run time a `persistent_term:put` scans every process heap
 > (measured, 810 ns against 17 ns for a read), and the module's load hook **re-runs on every hot
 > code reload**, so a run-time write would be erased by the next reload anyway. It is the mode
 > for a routes table, a scanned-component list, configuration read at bootstrap — anything the

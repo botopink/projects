@@ -4,8 +4,8 @@
 // The shell — header, heading, and a skeleton where the list will go — flushes
 // immediately; the list arrives as a second chunk.
 //
-// The boundary's child is a THUNK (`fn() -> @Component<Element>`), not a started task.
-// That is not a style choice: `@Task` is eager on the BEAM
+// The boundary's child is a THUNK (`fn() -> Component<Element>`), not a started task.
+// That is not a style choice: `Async` is eager on the BEAM
 // (std `async`'s header), so a boundary holding a started task would hold a
 // result that had already been computed before the shell was written, and
 // nothing would stream. The render (`renderStream`) spawns the thunk and hands
@@ -26,19 +26,19 @@ import { Element, div, h1, ul, li, span, text, renderToString } from "rakun-bpp"
 import { Boundary, Suspense, holeId } from "rakun-bpp";
 import { Chunk, resolve, fillHtml, shellHtml } from "rakun-bpp";
 import { header, section } from "rakun-bpp";
-import { escape } from "std";
+import { escape, compiler } from "std";
 
 // `header` and `section` come from front 94 (jhonstart-element-surface). `escape` is front 01's.
 
 pub type Post(slug: string, title: string)
 
-// The slow half: a server component, `fn … -> @Component<Element>`
+// The slow half: a server component, `component fn … -> Component<Element>`
 // (decision 104), which is the thunk type `Boundary.child` takes. Nothing about
 // it knows it is inside a boundary.
-#[@external(.Erlang("blog_repo:recent_posts($0)"))]
+#[compiler.external(.Erlang("blog_repo:recent_posts($0)"))]
 declare fn recentPostRows() -> string;
 
-fn PostList() -> @Component<Element> {
+component fn PostList() -> Component<Element> {
     val rows = recentPostRows().split("\n").filter({ r -> r != "" });
     val posts = rows.map({ r -> decodePost(r) });
     return ul(posts.map({ p -> postRow(p) }), attrs: [#("class", "posts")]);
@@ -118,7 +118,7 @@ test "resolving a boundary renders its child, not its fallback" {
     assert c.html == "<div class=\"done\">ready</div>";
 }
 
-fn readyChild() -> @Component<Element> {
+component fn readyChild() -> Component<Element> {
     return div([text("ready", attrs: [])], attrs: [#("class", "done")]);
 }
 

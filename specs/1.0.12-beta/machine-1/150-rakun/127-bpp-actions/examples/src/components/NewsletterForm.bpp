@@ -2,7 +2,7 @@
 //
 // Demonstrates: an action's form in a `.bpp` component. The form posts to the
 // action with scripting off; after the post, the component reads the outcome —
-// a `@Result<Subscribed, ActionError>` (decision 303), matched exhaustively.
+// a `Result<Subscribed, ActionError>` (decision 303), matched exhaustively.
 //
 //   ---
 //   const result = Astro.getActionResult(actions.newsletter);
@@ -32,8 +32,8 @@ import {formAction, formAttrs, actionResult} from "rakun-bpp";
 import {outcome: {ActionError}} from "actions";
 import {actions.newsletter_api.newsletterAction, actions.newsletter_api.Subscribed};
 
-// `if (error) … else data` — one `@Result`, exhaustive: never both, never neither.
-fn describe(outcome: @Result<Subscribed, ActionError>) -> string {
+// `if (error) … else data` — one `Result`, exhaustive: never both, never neither.
+fn describe(outcome: Result<Subscribed, ActionError>) -> string {
     return case outcome {
         Ok(value) -> "Subscribed " + value.email;
         Error(Input(fields)) -> "Check: " + fields.keys().join(", ");

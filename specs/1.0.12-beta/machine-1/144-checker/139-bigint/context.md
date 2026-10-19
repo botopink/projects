@@ -33,6 +33,6 @@ while (i < 100) {
     x = x * big;
     i += 1;
 }
-@print(x);                        // 2^101, the same digits on the four targets
+terminal.print(x);                // 2^101, the same digits on the four targets
 val n: i64 = x.toI64();           // aborts: `toI64: 2535301200456458802993406410752 does not fit i64`
 ```

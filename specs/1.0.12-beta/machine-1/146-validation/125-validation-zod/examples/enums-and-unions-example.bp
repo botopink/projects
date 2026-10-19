@@ -58,7 +58,7 @@ pub type Reply {
     Failed(value: ReplyFailed),
 }
 
-fn located(r: @Result<Catch, ValidationReport>) -> string {
+fn located(r: Result<Catch, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
         Error(report) -> report.violations

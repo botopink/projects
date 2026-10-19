@@ -3,8 +3,8 @@
 //
 // Demonstrates: the three boundary conventions and the one rule that makes them
 // compose — a boundary must let front 63's signals through instead of swallowing
-// them. A 404 travels the same `@Result` channel as a real failure: in a
-// `-> @Result` function `throw e` builds the `Error(e)` value, not a raise (118,
+// them. A 404 travels the same `Result` channel as a real failure: in a
+// `-> Result` function `throw e` builds the `Error(e)` value, not a raise (118,
 // 303), and the boundary reads it. A boundary that caught everything
 // would turn every missing post into "something went wrong" and every redirect
 // into a fallback page.
@@ -70,7 +70,7 @@ pub fn NotFound() -> Element {
 
 // ── the page this wraps ─────────────────────────────────────────────────────
 
-fn postPanel(slug: string) -> @Result<Element, string> {
+fn postPanel(slug: string) -> Result<Element, string> {
     val found = findPost(slug);
     if (found.isEmpty()) {
         throw notFound();
@@ -87,15 +87,15 @@ pub fn postBoundary(slug: string) -> ErrorBoundary {
 
 // ── stubs, so both outcomes are reachable without a filesystem ─────────────
 
-fn signallingPanel() -> @Result<Element, string> {
+fn signallingPanel() -> Result<Element, string> {
     throw "nav:not-found";
 }
 
-fn failingPanel() -> @Result<Element, string> {
+fn failingPanel() -> Result<Element, string> {
     throw "the content directory is unreadable";
 }
 
-fn boundaryOver(child: fn() -> @Result<Element, string>) -> ErrorBoundary {
+fn boundaryOver(child: fn() -> Result<Element, string>) -> ErrorBoundary {
     return catchError("blog.slug.page", errorFallback, child);
 }
 

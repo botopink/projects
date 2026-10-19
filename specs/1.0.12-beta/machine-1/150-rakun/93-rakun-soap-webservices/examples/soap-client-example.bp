@@ -60,7 +60,7 @@ fn conversionResponseFromXml(xml: string) -> ConversionResponse {
 
 // --- end generated ---
 
-pub fn convert(client: WsClient, req: ConversionRequest) -> @Result<ConversionResponse, SoapFault> {
+pub fn convert(client: WsClient, req: ConversionRequest) -> Result<ConversionResponse, SoapFault> {
     // A `minOccurs="0"` element is `?T`, passed as null.
     val body = conversionRequestToXml(req);
     val answer = try wsCall(client, "urn:rates/Convert", body) catch "";

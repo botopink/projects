@@ -49,7 +49,7 @@ pub type Payment(
     #[hash("sha256")] receipt: string,
 )
 
-fn codesOf(r: @Result<Customer, ValidationReport>) -> string {
+fn codesOf(r: Result<Customer, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
         Error(report) -> report.violations
@@ -58,7 +58,7 @@ fn codesOf(r: @Result<Customer, ValidationReport>) -> string {
     };
 }
 
-fn payCodes(r: @Result<Payment, ValidationReport>) -> string {
+fn payCodes(r: Result<Payment, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
         Error(report) -> report.violations

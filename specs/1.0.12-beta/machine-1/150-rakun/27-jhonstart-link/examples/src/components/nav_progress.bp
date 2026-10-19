@@ -10,7 +10,7 @@ import {Element, client, div} from "rakun-bpp";
 import {linkStatus} from "rakun-bpp";
 
 #[client]
-pub fn NavProgress() -> @Component<Element> {
+pub component fn NavProgress() -> Component<Element> {
     val s = use linkStatus();
     val state = if (s.pending) "busy" else "idle";
     return div([], attrs: [#("class", "nav-progress"), #("data-state", state)]);

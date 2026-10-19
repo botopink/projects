@@ -2,7 +2,7 @@
 //
 // Server-side file. The Pulsar binary protocol itself is not in this file and cannot
 // be: with no byte type and no bitwise operators, the frame codec lives entirely in an
-// `#[@external(.Erlang(…))]` module and botopink holds the façade. What is left here — topic
+// `#[compiler.external(.Erlang(…))]` module and botopink holds the façade. What is left here — topic
 // names, cursors, subscription types, the outcome contract — is the part an application
 // author touches, and all of it is assertable without a broker.
 //
@@ -14,6 +14,7 @@ import {service} from "rakun";
 import {rkScan, rkSingleton, rkEnter, rkDone} from "rakun";
 import {Delivery, Outcome} from "rakun-messaging";
 import {TopicName, parseTopic, renderTopic, pulsarSend, pulsarListener, pulsarReader, startCursor, subscriptionType} from "rakun-messaging";
+import {io.terminal} from "std";
 
 // `Delivery` and `Outcome` come from fronts 15 and 86.
 
@@ -45,7 +46,7 @@ type InvoiceListener {
 type InvoiceBacklog {
     #[pulsarReader("persistent://acme/billing/invoices", "earliest")]
     pub fn replay(self: Self, delivery: Delivery) -> i32 {
-        @print("replayed ${delivery.body}");
+        terminal.print("replayed ${delivery.body}");
         return 0;
     }
 }

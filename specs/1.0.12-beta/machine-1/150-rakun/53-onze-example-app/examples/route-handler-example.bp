@@ -66,7 +66,7 @@ fn postJson(p: Post) -> string {
 // front 12 — the same `"posts"`-tagged read the blog list uses, so a mutation
 // invalidates the page and the API together rather than one of them.
 #[getRoute("api/posts")]
-pub fn listPostsHandler(req: Request) -> @Task<HandlerResponse> {
+pub async fn listPostsHandler(req: Request) -> Async<HandlerResponse> {
     val rows = listPosts().map({ p -> postJson(p) });
     return HandlerResponse.json("[" + rows.join(",") + "]");
 }
@@ -74,11 +74,11 @@ pub fn listPostsHandler(req: Request) -> @Task<HandlerResponse> {
 // ── app/api/posts/route.bp — POST ───────────────────────────────────────────
 //
 // `bodyJson` VALIDATES and returns the raw text: `std/json` is
-// `string -> @Result<string, string>` with no structured walker, so there is
+// `string -> Result<string, string>` with no structured walker, so there is
 // nothing to walk. This app hands the text to its own decoder — which here means
 // it refuses anything but the two form fields it can read.
 #[postRoute("api/posts")]
-pub fn createPostHandler(req: Request) -> @Task<HandlerResponse> {
+pub async fn createPostHandler(req: Request) -> Async<HandlerResponse> {
     val authorization = req.header("authorization");
     if (authorization == "") {
         return HandlerResponse.withStatus(401, "");
@@ -114,7 +114,7 @@ pub fn createPostHandler(req: Request) -> @Task<HandlerResponse> {
 // ── app/api/posts/[slug]/route.bp — a dynamic segment ───────────────────────
 
 #[getRoute("api/posts/[slug]")]
-pub fn showPostHandler(req: Request) -> @Task<HandlerResponse> {
+pub async fn showPostHandler(req: Request) -> Async<HandlerResponse> {
     val slug = req.param("slug");
     val found = findPost(slug);
     if (found.isEmpty()) {

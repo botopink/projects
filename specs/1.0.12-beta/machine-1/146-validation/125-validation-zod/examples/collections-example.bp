@@ -47,7 +47,7 @@ pub type Ranks(
     widths: Dict<Key, i32>,
 )
 
-fn located(r: @Result<Sheet, ValidationReport>) -> string {
+fn located(r: Result<Sheet, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
         Error(report) -> report.violations

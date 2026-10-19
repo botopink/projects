@@ -38,7 +38,7 @@ import {collections.Dict, json, json.Json} from "std";
 pub val partial = true;
 
 #[page("partials/clicked")]
-pub fn clicked(route: PageContext) -> @Component<Element> {
+pub component fn clicked(route: PageContext) -> Component<Element> {
     return html """<li>I'm a partial!</li>""";
 }
 
@@ -50,7 +50,7 @@ pub fn clicked(route: PageContext) -> @Component<Element> {
 // A feed that must be a static file is a page-kind file, prerendered by 202.
 
 #[getRoute("builtwith.json")]
-pub fn builtWith(req: Request) -> @Task<HandlerResponse> {
+pub async fn builtWith(req: Request) -> Async<HandlerResponse> {
     return HandlerResponse.json(json.object([
         #("name", json.quote("onze")),
         #("url", json.quote("https://botopink.dev/")),

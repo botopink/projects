@@ -39,12 +39,12 @@ fn astronauts() -> Array<Astronaut> {
 
 // Two per page → /astronauts/1 and /astronauts/2. The base path is the
 // directory's own; `paginate` fills the `page` segment.
-pub fn staticPaths() -> @Task<Array<StaticPath>> {
+pub async fn staticPaths() -> Async<Array<StaticPath>> {
     return paginate(astronauts(), 2, "/astronauts", schemaOfAstronaut());
 }
 
 #[page("astronauts/[page]")]
-pub fn Page(route: PageContext) -> @Component<Element> {
+pub component fn Page(route: PageContext) -> Component<Element> {
     val current = try pageOf(route, schemaOfAstronaut()) catch Page.empty();
     return html """
       <h1>Page {current.currentPage.toString()} of {current.lastPage.toString()}</h1>

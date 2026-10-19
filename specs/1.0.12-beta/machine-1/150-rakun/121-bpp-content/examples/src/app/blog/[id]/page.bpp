@@ -34,7 +34,7 @@ import {StaticPath, staticPath} from "rakun-ssr";
 import {content.blog, content.authors, content.BlogPost};
 import {json.Json, io.clock} from "std";
 
-pub fn staticPaths() -> @Task<Array<StaticPath>> {
+pub async fn staticPaths() -> Async<StaticPath[]> {
     val posts = await getCollection(blog());
     return posts.map({ post -> staticPath([#("id", post.id)], Json.Null) });
 }

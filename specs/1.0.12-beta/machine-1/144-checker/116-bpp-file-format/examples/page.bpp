@@ -23,7 +23,7 @@ import {layouts.BaseLayout};
 import {components.PostCard};
 import {lib.db.findPost, lib.db.listPosts, lib.db.missingPost};
 
-pub fn staticPaths() -> @Task<Array<StaticPath>> {
+pub async fn staticPaths() -> Async<StaticPath[]> {
     return listPosts().map({ post -> staticPath([#("slug", post.slug)]) });
 }
 

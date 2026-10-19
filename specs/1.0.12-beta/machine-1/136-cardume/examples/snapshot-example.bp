@@ -60,7 +60,7 @@ pub fn Editor() -> View {
     return html """<input value={d.value} #[onInput({ e -> d.set(e.value) })] /> <UndoBar /> <SaveButton />""";
 }
 
-fn postDraft(text: string) -> @Task<#()> { return #(); }
+async fn postDraft(text: string) -> Async<#()> { return #(); }
 
 test "the server pass renders the empty draft" {
     val markup = renderToString(await Editor());

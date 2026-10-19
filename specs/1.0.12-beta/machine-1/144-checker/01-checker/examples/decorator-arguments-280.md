@@ -75,7 +75,7 @@ pub type Check<T>(message: string, rule: fn(v: T) -> bool, at: ?compiler.Field<T
 pub fn validated<T>(syntax decl: T) {
     compiler.addMember("validate", fn(self: T) -> Violation[] {
         var out: Violation[] = [];
-        for (comptime @typeInfo(T).metaAll(Check)) { c ->
+        for (comptime compiler.typeInfo(T).metaAll(Check)) { c ->
             if (!c.rule(self))
                 out = out.append(Violation(field: c.at?.name ?? "", code: c.code, message: c.message));
         }
@@ -233,7 +233,7 @@ concordar com eles.
 pub fn page<P, D>(
     syntax decl: fn(route: PageContext<P, D>) -> View,
     comptime seg: string,                                  // a URL pública: continua string
-    comptime paths: ?fn() -> @Task<#(P, D)[]> = null,      // as páginas pré-renderizadas
+    comptime paths: ?fn() -> Async<#(P, D)[]> = null,      // as páginas pré-renderizadas
     comptime head: ?fn(p: P, d: D) -> Head = null,
 ) {
     compiler.setMeta(PageMeta(seg: seg));
@@ -250,7 +250,7 @@ pub fn Page(route: PageContext<BlogParams, Post>) -> View {
     return html """<article><h1>{route.data.title}</h1>{route.data.body}</article>""";
 }
 
-fn allPosts() -> @Task<#(BlogParams, Post)[]> {
+async fn allPosts() -> Async<#(BlogParams, Post)[]> {
     return (await db.posts()).map({ p -> #(BlogParams(slug: p.slug), p) });
 }
 
@@ -259,7 +259,7 @@ fn postHead(p: BlogParams, d: Post) -> Head { return Head(title: d.title); }
 
 ### O que não compila
 ```bp
-#[page("blog/[slug]", paths: allUsers)]   // ❌ esperado fn() -> @Task<#(BlogParams, Post)[]>, recebido fn() -> @Task<User[]>
+#[page("blog/[slug]", paths: allUsers)]   // ❌ esperado fn() -> Async<#(BlogParams, Post)[]>, recebido fn() -> Async<User[]>
 #[page("blog/[slug]", head: postHead)]
 pub fn Page(route: PageContext<BlogParams, Post>) -> string   // ❌ #[page] espera uma função que devolve View
 pub fn staticPaths() -> …                 // não é mais lido: o papel vai no decorator (282)
@@ -400,7 +400,7 @@ bind(root, 0, "click", like);
 | `entity("cities")`, `column("state_name")` | nomes do banco |
 | `page("blog/[slug]")` | URL pública |
 | `Cache<Product[]>("products")` | nome do cache no Redis/ETS |
-| `#[@external(.Erlang("string:slice($0, 0, 1)"))]` | código do host (a string sem rótulo); `fn: tanBody` é referência à função botopink (305) |
+| `#[compiler.external(.Erlang("string:slice($0, 0, 1)"))]` | código do host (a string sem rótulo); `body: tanBody` é referência à função botopink (305) |
 | `config("rakun.data")` | caminho no arquivo de configuração |
 | `message: "As senhas não batem"` | texto para o usuário |
 

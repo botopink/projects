@@ -62,7 +62,7 @@ pub type Profile(
     #[fallback(42)] lucky: i32,
 )
 
-fn dogCodes(r: @Result<StrictDog, ValidationReport>) -> string {
+fn dogCodes(r: Result<StrictDog, ValidationReport>) -> string {
     return case r {
         Ok(_) -> "";
         Error(report) -> report.violations

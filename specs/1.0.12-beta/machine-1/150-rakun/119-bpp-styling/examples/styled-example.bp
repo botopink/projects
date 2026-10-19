@@ -6,7 +6,7 @@
 // values go in `${…}` holes, so the braces stay CSS's; Tailwind v4's CSS syntax
 // works where it is CSS (`--spacing()`, `--theme()`, `@variant`); `@apply` is a
 // hole of a `StyledPropertyView`. Both answer components in the language's
-// model (`@Component<…>`), so a test reads one after `await`. One computed at
+// model (`Component<…>`), so a test reads one after `await`. One computed at
 // render registers in the render's sheet through `use context(StyledSheet)`
 // (decisions 352, 354, 379), so it runs below a provider. It knows no `.bpp` and no
 // jhonstart.
@@ -43,15 +43,15 @@ fn code() -> StyledView {
 
 // The render's root: whoever renders provides `StyledContext` — jhonstart's
 // render, emilia's `flush()` (decision 354 (7)). This one keeps nothing.
-fn Render(view: fn() -> StyledView) -> @Component<Styled> {
+component fn Render(view: fn() -> StyledView) -> Component<Styled> {
     use provide(createContext(StyledSheet(layer: "components", add: dropped)));
     val out = await view();
     return out;
 }
 
-fn RenderProperty(
+component fn RenderProperty(
     view: fn() -> StyledPropertyView,
-) -> @Component<StyledProperty> {
+) -> Component<StyledProperty> {
     use provide(createContext(StyledSheet(layer: "components", add: dropped)));
     val out = await view();
     return out;

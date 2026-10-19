@@ -41,7 +41,7 @@ fn bodyTokens() -> Token[] {
 }
 
 
-pub fn blogStaticParams() -> @Task<StaticParams[]> {
+pub async fn blogStaticParams() -> Async<StaticParams[]> {
     return listPosts().map({ post ->
         StaticParams(bindings: [ParamBinding(name: "slug", value: post.slug)]);
     });
@@ -50,7 +50,7 @@ pub fn blogStaticParams() -> @Task<StaticParams[]> {
 pub val staticParams = registerStaticParams("blog/[slug]", blogStaticParams);
 
 // front 32 — the head for this route, merged over the root layout's.
-pub fn generateMetadata(params: Array<#(string, string)>) -> @Task<Metadata> {
+pub async fn generateMetadata(params: #(string, string)[]) -> Async<Metadata> {
     val slug = pairValue(params, "slug");
     return postMetadata(findPost(slug).first().unwrapOr(missingPost(slug)));
 }

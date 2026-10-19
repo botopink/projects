@@ -38,7 +38,7 @@ pub type DogInfo(breed: string)
 
 // `getStaticPaths()`. Each row binds every dynamic segment of the directory and
 // may carry data for the page — Astro's `props`.
-pub fn staticPaths() -> @Task<Array<StaticPath>> {
+pub async fn staticPaths() -> Async<Array<StaticPath>> {
     return [
         staticPath([#("dog", "clifford")], try encodeDogInfo(DogInfo(breed: "red")) catch Json.Null),
         staticPath([#("dog", "rover")], try encodeDogInfo(DogInfo(breed: "mix")) catch Json.Null),
@@ -46,7 +46,7 @@ pub fn staticPaths() -> @Task<Array<StaticPath>> {
 }
 
 #[page("dogs/[dog]")]
-pub fn Page(route: PageContext) -> @Component<Element> {
+pub component fn Page(route: PageContext) -> Component<Element> {
     // `Astro.params` — the accessor `#[page]` emits from the bracket segments.
     val dog = PageParams(route).dog;
     // `Astro.props` — the row's data, decoded with the type's own schema.
