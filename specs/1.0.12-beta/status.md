@@ -48,8 +48,8 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [ ] 144 B-149 — no code from text (625): the `Node` records in `compiler.bp`, `compiler.ast(node) -> anyvalue`, `compiler.build` removed, `buildType(name, fields)` and `buildTypeInline(fields)` (629); the std bodies (`Type.*`, `mocks.bp`) and the 113 template cells · after B-137's tail — machine 2; then 165 s11 (rakun-bpp's and rakun-style's generators) — machine 1
 - [x] 144 B-145 (part) — `#[name]` naming no decorator refused `annotation-not-a-decorator` (`annotation_not_decorator_{unbound,namespace,value}`), dotted paths through a namespace resolved (`annotation_dotted_through_mod`, `_through_import`, `_missing_in_import`); left: a missing segment through a `pub mod`
 - [x] 144 B-150 — wasm: a type's method as a record-constructor argument resolves to the module's same-named `fn` (`init_executor_handle_not_module_name`) — landed
-- [ ] 144 B-151 — wasm: a namespace import of a std module (`import {io.terminal}`) links every member's hosts · after B-139's compiler half — machine 2
-- [ ] 144 B-155 — backend defects found by 166 s3's drafts: wasm comptime `Context used before it is bound` (css 594), wasm `?.name` receiver type unknown (actions 330), a module-qualified comptime call (markdown, http 594), erlang `?.` method on a `Dict` field (routing 330) · running — machine 2
+- [x] 144 B-151 — wasm: a namespace import of a std module (`import {io.terminal}`) links only what the program reaches — landed
+- [ ] 144 B-155 — backend defects found by 166 s3's drafts: wasm comptime `Context used before it is bound` (css 594), wasm `?.name` receiver type unknown (actions 330), a module-qualified comptime call (markdown, http 594), erlang `?.` method on a `Dict` field (routing 330) · the comptime and erlang boxes landed; the two wasm boxes not reproduced alone; two new boxes (wasm `?.at`, beam `?.` over a lambda parameter) — machine 2
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
