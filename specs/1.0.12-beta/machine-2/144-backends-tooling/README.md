@@ -3090,6 +3090,9 @@ being the one that stands.
       — `apply [--group|--all] [--commit]` landed too (code only, no cell moved): one commit per prefix group, largest first, the
       decision modules in commits of 100 rows, `"*"` dropped last; glob mentions (`modules/index_*`) and the Zig `cells_dir` joins in
       `comptime/tests/located_errors.zig` are edited by hand in P3
+      — the ambiguity pass done (765 (2)): `conformance/modules/consolidate-homes.txt`, 69 lines, read by `plan` and `apply`; with
+      the record's `Cell` column complete, `plan` runs clean: 242 rows with a case, 219 needing a draft, 158 cells where `plan`'s
+      default home was right; the `decorator_wrap*` cells stay under 714 until B-139 removes them
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
