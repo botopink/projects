@@ -2576,9 +2576,9 @@ covers only the `#[@Family]` forms.
 
 - [x] a decorator body that reads `compiler.catalogue(with: …)` (`compiler.find` after B-137's package) makes every importer of its module fail `typeinfo-all-imported`; only a template body is exempt, yet 551 says a catalogue read in a dependency answers for that dependency alone — a cell red on the parent
 - [x] `#[m(lifecycle: .Manual)]`: the dot shorthand in an annotation argument whose parameter is an enum is refused as a type mismatch (`Lifecycle.Manual` passes) — a cell red on the parent
-- [ ] decision 667: `v is T` with `T` a type parameter refused at the test, `is-type-parameter`, naming the parameter and the way out; `v is t` with `comptime t: type<T>` the concrete test in the specialised copy (417) — cells `is_type_parameter_refused`, `is_comptime_type_parameter` on four targets; and the sibling defect: in a generic body `v is fn() -> T` makes the caller's `T` `unknown` — a cell red on the parent
-- [ ] an imported generic function called with an explicit type argument (`resolve<Box>(…)`) is refused "`resolve` takes no type arguments, 1 given" — found by B-146; a cell red on the parent
-- [ ] a decorator argument's enum value read at build by its bare type name: with a second same-named enum anywhere in the program (another dependency or the annotating module), `#[kit.m(lifecycle: .Manual)]` checks and the decorator body runs with the wrong variant (`Eager`) — `decoratorArgValue` re-reads the argument as source and `blockEval.typesReached` resolves types by name; the value must carry the parameter's type identity (module + name, 603) — a cell with two `Lifecycle` enums red on the parent
+- [ ] decision 667: `v is T` with `T` a type parameter refused at the test · built, held on question 667-a (a test passed at run time in place of the copy), `is-type-parameter`, naming the parameter and the way out; `v is t` with `comptime t: type<T>` the concrete test in the specialised copy (417) — cells `is_type_parameter_refused`, `is_comptime_type_parameter` on four targets; and the sibling defect: in a generic body `v is fn() -> T` makes the caller's `T` `unknown` — a cell red on the parent
+- [x] an imported generic function called with an explicit type argument (`resolve<Box>(…)`) is refused "`resolve` takes no type arguments, 1 given" — found by B-146; a cell red on the parent
+- [x] a decorator argument's enum value read at build by its bare type name: with a second same-named enum anywhere in the program (another dependency or the annotating module), `#[kit.m(lifecycle: .Manual)]` checks and the decorator body runs with the wrong variant (`Eager`) — `decoratorArgValue` re-reads the argument as source and `blockEval.typesReached` resolves types by name; the value must carry the parameter's type identity (module + name, 603) — a cell with two `Lifecycle` enums red on the parent
 
 ### B-152 — a type parameter is bound by a parameter, never by the return type alone (decision 668)
 
@@ -2630,6 +2630,9 @@ Front 166's decision cells are written as drafts before they compile; the first 
 - [ ] a refusal naming two generic types prints each with its arguments: `template-build-outside-bound` for `Component<Other>`
       against `-> Component<Styled>` prints both as `Component` (`typeLabelAlloc` drops the arguments); the snapshot of
       `template_build_outside_bound_component` rewritten with the two full types (found by B-153)
+- [ ] a `case` whose arms cover a variant through its nested payloads is exhaustive: `case j { Run(Fast) -> …; Run(Slow) -> …; Stop -> … }`
+      is reported missing `Run` (`checkCaseExhaustiveness` counts no nested payload); cell `case_exhaustive_nested_variants`, red on the
+      parent (found by B-154)
 
 Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its defect as a box here (checker) or as a 164 row (comptime on wasm, machine 2).
 
