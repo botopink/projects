@@ -2552,6 +2552,9 @@ covers only the `#[@Family]` forms.
 - [x] std's 13 sites (668's list) migrated: a `comptime t: type<T>` where the caller names the type, `Self<Array<E>>` where the receiver carries it, `unknown` where no type is meant; `conformance/docs.md` § Generics states the rule
 - [x] botopink-lang's 11 cell sites migrated, each stated; the libraries' 41 sites listed by file for 165 s10 (rakun, its cells), 145 (query) and 146 (validation) — the gap rows filed, the migrations theirs
 
+- [ ] a body copied per type argument into the calling module (757) reaches the std functions it uses without the caller importing them (`print` in a copied body today needs the caller's import); cell `comptime_type_token_copy_uses_std`
+- [ ] a caller's type method that hands its `comptime t: type<T>` on to an imported function gets that function's copy too; cell `comptime_type_token_handed_on_from_method`
+
 Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are migrated.
 
 ### B-153 — a template answering `Component<X>` refused as built outside its bound

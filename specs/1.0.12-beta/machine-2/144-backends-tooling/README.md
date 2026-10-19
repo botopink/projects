@@ -2986,6 +2986,7 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] wasm: `fn mapAll<T, R>(items: T[], f: fn(T) -> R) -> R[]` answers wrong values when `R` is `string` or `bool` (prints `496,504` and `[0, 1]`); found by B-152
 - [ ] erlang: a `Source(file, line, col)` built at run time fails to compile, `function '__Source'/3 undefined` — the prelude alias of `__Source` is not constructible on erlang; found by front 160
 - [ ] wasm: `val f = cfg.scoper; if (f != null) { print(f("x")); }` with `scoper: ?fn(string) -> string` prints a pointer (`304`) — a call through a function value narrowed from an optional; `cfg.scoper?.("x")` is right; found by B-154
+- [ ] wasm: a `?T` or `T` value a generic function returns arrives boxed as a scalar (`__box_i32`), so a field read on it answers garbage (`firstOf<T>(xs: T[], keep) -> ?T` over records prints 296 for 7); found by the 757 / 758 defects
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 
