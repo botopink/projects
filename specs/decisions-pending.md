@@ -270,7 +270,7 @@ group), answered before every other part of this page; in the order of the steps
   pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // refused: expr-value-of-type
   ```
 - **Recommendation.** (a): the decision's own reading, and the only one where `t` behaves as every other `comptime` argument.
-- **Blocks.** 667's landing (B-146's third box); B-146's other two boxes land without it.
+- **Blocks.** 667's landing (B-146's third box) and B-152 (668): std's `async.failed(comptime t: type<T>, …)` and the cell `type_parameter_bound_by_token` need the token to reach run time, and it reaches none today (erlang leaves `I32` unbound, wasm refuses, commonJS and beam abort); B-146's other two boxes land without it.
 
 #### 723-a · What `use memo` is: the run-time way a component makes its own context (decision 723; 144 B-17)
 - **Proposed (opus, 2026-10-19; not built):** (a).
@@ -319,6 +319,22 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): 416 stands as written and 731 keeps it; (b) only if the maintainer wants no program-wide lookup anywhere.
 - **Blocks.** Nothing.
+
+#### 668-a · `compiler.meta<M>(d)` names `M` by the return alone — the call respelled `compiler.meta(d, M)`? (decisions 668, 298, 576 (3); 144 B-152)
+- **Proposed (opus, 2026-10-19; built as (b)):** (a).
+- **Context.** 298 / 576 (3) spell the read `compiler.meta<M>(d) -> ?M` and `compiler.metaAll<M>(d) -> M[]`: `M` occurs only in the return type, which 668 refuses.
+- **Measured.** As built, the declarations take `comptime m: type<M>` (668's form) and the parser keeps accepting `compiler.meta<M>(d)`, rewriting it to the token internally.
+- **Options.**
+  (a) ★ The call is written as the declaration reads: `compiler.meta(d, M)`; `compiler.meta<M>(d)` refused as any explicit type argument that binds nothing.
+  ```bp
+  val e = compiler.meta(decl, Entity);   // ?Entity
+  ```
+  (b) The explicit-type-argument spelling stays, lowered to the token (built).
+  ```bp
+  val e = compiler.meta<Entity>(decl);   // ?Entity
+  ```
+- **Recommendation.** (a): one rule for every function, `compiler` included; (b) keeps a spelling no user function may have.
+- **Blocks.** Nothing (B-152 is held on 667-a).
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 

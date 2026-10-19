@@ -270,7 +270,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // refused: expr-value-of-type
   ```
 - **Recomendação.** (a): a leitura da própria decisão, e a única em que `t` se comporta como todo outro argumento `comptime`.
-- **Bloqueia.** O pouso da 667 (terceira caixa do B-146); as outras duas caixas do B-146 pousam sem ela.
+- **Bloqueia.** O pouso da 667 (terceira caixa do B-146) e o B-152 (668): o `async.failed(comptime t: type<T>, …)` da std e a célula `type_parameter_bound_by_token` precisam que o token chegue ao tempo de execução, e hoje ele não chega a nenhum (erlang deixa `I32` não ligado, wasm recusa, commonJS e beam abortam); as outras duas caixas do B-146 pousam sem ela.
 
 #### 723-a · O que é `use memo`: o jeito em tempo de execução de um componente fazer o próprio contexto (decisão 723; 144 B-17)
 - **Proposto (opus, 2026-10-19; não construído):** (a).
@@ -319,6 +319,22 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): a 416 vale como escrita e a 731 a mantém; (b) só se o maintainer não quiser busca de programa inteiro em lugar nenhum.
 - **Bloqueia.** Nada.
+
+#### 668-a · `compiler.meta<M>(d)` nomeia `M` só pelo retorno — a chamada reescrita `compiler.meta(d, M)`? (decisões 668, 298, 576 (3); 144 B-152)
+- **Proposto (opus, 2026-10-19; construído como (b)):** (a).
+- **Contexto.** 298 / 576 (3) escrevem a leitura `compiler.meta<M>(d) -> ?M` e `compiler.metaAll<M>(d) -> M[]`: `M` aparece só no tipo de retorno, o que a 668 recusa.
+- **Medido.** Como construído, as declarações tomam `comptime m: type<M>` (a forma da 668) e o parser continua aceitando `compiler.meta<M>(d)`, reescrevendo para o token internamente.
+- **Opções.**
+  (a) ★ A chamada é escrita como a declaração lê: `compiler.meta(d, M)`; `compiler.meta<M>(d)` recusado como todo argumento de tipo explícito que não liga nada.
+  ```bp
+  val e = compiler.meta(decl, Entity);   // ?Entity
+  ```
+  (b) A grafia com argumento de tipo explícito continua, rebaixada para o token (construído).
+  ```bp
+  val e = compiler.meta<Entity>(decl);   // ?Entity
+  ```
+- **Recomendação.** (a): uma regra para toda função, `compiler` incluído; (b) mantém uma grafia que nenhuma função de usuário pode ter.
+- **Bloqueia.** Nada (o B-152 está retido na 667-a).
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
