@@ -3052,7 +3052,7 @@ top-level modules:
 
 | Repository | Cells (outside `decisions-taken/`) | Modules after | Code-bearing ledger rows | 166 s3 drafts |
 |---|---|---|---|---|
-| botopink-lang | 1,660 | 348 — 192 decision modules with cases, 156 by first `_` prefix — plus 285 draft-only decision directories | 512 | none yet (P4) |
+| botopink-lang | 1,660 | 348 — 192 decision modules with cases, 156 by first `_` prefix — plus 285 draft-only decision directories | 512 | P3 landed: 155 top-level entries (1,678 cells as cases, 231 decision directories with cases, 184 with a draft); `verify --base` equal on every measure; cell check 1,676 passing, the two `fs_asset` reds on base and after |
 | rakun | 135, already `conformance/<package>/<feature>/` (548) | 36 package/feature groups; `consolidate-cells.py` does not read that layout | — | s3 not opened |
 | query | 3 | 3 prefix modules (no cell cites a decision) | 31 | s3 not opened |
 | validation | none (no `conformance/`) | — | — | s3 not opened |
@@ -3099,9 +3099,12 @@ being the one that stands.
       — the moves landed in one commit (the user's decision; 773 runs them before the codemods): `conformance/modules` from
       1,664 top-level entries to 155 (154 modules of cases, `decisions-taken` among them), 1,678 cells before and after, `verify`
       equal on every measure, the full `cell check` 1,676 / 2 on both trees (the two `fs_asset_*`); the drafts of the ten rows that
-      gained a cell meanwhile (660, 668, 669, 676, 722, 723, 735, 757, 758, 759) removed, their docs linking the cases
+      gained a cell meanwhile (660, 668, 669, 676, 722, 723, 735, 757, 758, 759) removed, their docs linking the cases; a cell a later
+      landing writes flat (machine 1, under 769) is homed by 166, never by its writer
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
+      — `conformance/docs.md`, `conformance/AGENTS.md` and the meta's `AGENTS.md` done; left: botopink-lang's root `AGENTS.md` still says
+      `modules/<cell>/` (its § Layout row, the `<!-- example: modules/<cell> -->` line and `botopink cell new`'s path).
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
   directory grows cases (761). botopink-lang's 166 s3 is this mapping, not 509 new drafts; rows 1–143 get their `Cell` slug or
   `process` tag first (166 s2, the coordinator).

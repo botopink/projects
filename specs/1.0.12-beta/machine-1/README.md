@@ -36,7 +36,7 @@ listed at the end and is **not** opened. The sister queue is [`../machine-2/READ
 | 3 | **B-137's pieces** (parked: 718 / 643 / 716 review fixes, 759's rename `decorator-member-local-not-literal`) | 643, 716, 718, 759 | opus | the cells named in machine 2's README |
 | 4 | **B-148** (617, 628, 738): the primitive widths as types, `Pair` / `Function` gone, `functions.bp` | 617, 628, 641, 738 | opus | the 87 cells on the types |
 | 5 | **B-149 P1b–P4** (637, 638, 751–753, 765's format landed): `code.bp`, the template cells over `code`, `compiler.build` removed, `buildType` | 625, 637, 644, 751–753 | sonnet; opus for P1b | the cells |
-| 6 | **B-116 (ii) + P2–P4** — the types codemod (`@Task` → `Async` …, 553 (6), 570) and the marker codemod; **frees B-157 P3** | 553, 570, 584 | sonnet | every cell |
+| 6 | **B-116 (ii) + P2–P4** — the types codemod (`@Task` → `Async` …, 553 (6), 570) and the marker codemod; B-157 P3 landed first (773): rebase onto it, the codemods by glob `conformance/modules/**/src/*.bp` | 553, 570, 584 | sonnet | every cell |
 | 7 | **595** (the `try { … } catch …` region) and **584** (the marker inside the lambda's brace) | 584, 595 | opus | the cells |
 | 8 | **758's backend half** (a `type<T>` value at run time and the `is` helper on four targets) and **767's B-57 half** (`botopink build` materialises the dependencies' cached `.beam`) | 758, 767, 509 | sonnet | `type_token_run_time_value`, `build_materialises_dependency_beams` |
 | 9 | **601**, **596**'s runtime half, the backend defect rows (B-115, B-120, B-122's boxes, B-155, B-147), **597**, **B-130** | the rows | sonnet | the cells |
