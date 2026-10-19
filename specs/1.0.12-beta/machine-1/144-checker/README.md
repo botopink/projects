@@ -90,15 +90,16 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - **G1 validation** — `compiler.variants(d)` carries a variant's name and not its payload; a static member is not a
   value on erlang; a comptime decorator parameter takes no default; a decorator body whose lambda holds many
   locals overflows the comptime stack; a record spread inside a member a decorator adds loses its spread on
-  commonJS; `Decorator` is an unknown type in a package's module; a decorator argument is a raw lexeme;
+  commonJS; a decorator argument is a raw lexeme;
   `Field` reflects no default; two test modules declaring one type name share it on erlang; std's
   `clock.formatIso8601` answers differently on erlang and commonJS (`decision 497`); the package module namespace
   in type and value position (the box below).
 - **G2 styled / emilia** — a method's behavior-typed parameter refuses an implementer; a wrapper's type alias
   cannot implement a behavior; a template function cannot read another expansion's value; a function a
   template body reaches cannot name an enum variant nor build a private record; a decorator body cannot call a
-  host function (closes with B-00c); a library's template function cannot read the program's catalogue (B-19,
-  130 s10); an imported enum's variant written bare (erlang).
+  host function (closes with B-00c); a library's template function cannot read the program's catalogue (by design
+  since 665: the application's `#[theme]` is read from the registry its `compiler.init` executor writes, styled's half
+  in 150); an imported enum's variant written bare (erlang).
 - **G3 jhonstart** — a decorator cannot read whether a `Component<R>` return's `R` implements `Renderable`;
   a tag annotation cannot be called by the template function (B-15); template-built code cannot build an inline
   props type; a type alias of `Component` in a return and a template answering `-> View` (re-measured after 388).
@@ -116,8 +117,6 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [ ] `compiler.variants(d)`'s entries carry a variant's payload fields and annotations · question B-10-b
 - [ ] `Field` reflects a field's default · question B-10-a
 - [ ] `clock.formatIso8601` one text on erlang and commonJS (497) · question B-10-c
-- [ ] `Decorator` an unknown type in a package's module: validation's last marker of it rewritten over
-      `decorator_argument_decorator_name`'s rule, or the row re-measured
 - [ ] handed to 146 (their compiler halves built): the comptime parameter default and the raw lexeme (125 s12, s7),
       `#[each("email")]` → `#[each(email)]` (125 s8)
 - [ ] G2: the same for styled's and emilia's markers — built: a method's behavior-typed parameter takes an
@@ -127,11 +126,10 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [x] an imported enum's variant by dot-shorthand, the enum not imported (reached through a signature): unbound
       `Mode` on commonJS and erlang (beam and wasm right) — the backends import a type the module reaches only
       through a signature
-- [ ] a wrapper's type alias implementing a behavior (`StyledView implement Styleable` over `@Component<Styled>`) ·
-      question B-10-e
 - [ ] handed to 150 s34: styled's `Sheet.add` half (an API change; `toStyled()` answers a component)
 - [ ] waits elsewhere: a template reading another expansion's value (119's design), a decorator body calling a host
-      function (B-00c), a library template reading the program's catalogue (B-19)
+      function (B-00c); a library template reading the program's catalogue is overtaken by 665 (the registry read at run
+      time, styled's half in 150)
 - [ ] G3: the same for jhonstart's markers (after B-15 and 388) — built: template-built code builds an inline props
       type (`template_builds_inline_props`; jhonstart's two html test markers and the row gone). Left:
 - [ ] a decorator reads whether a `Component<R>` return's `R` implements `Renderable` · question B-10-f
@@ -222,9 +220,9 @@ pub fn posts() -> string { return loadPosts(); }
       its marker (rakun 15's `publish-reliability-example.bp`) is rewritten — example 5 runs in the
       `@Expr` form above (a value argument is `@Expr`, 370; the wrapper a lambda); the marker's rewrite is
       150's (`#[retryable(policy)]` on `issue` over `decl.wrapWith`), its row there
-- [ ] the wrapper is a lambda written at the call (`decorator-wrap-not-lambda`), or any value of the call
-      type · question B-11-a
-- [ ] a generic function or owner is refused (`decorator-wrap-generic`) · question B-11-b
+
+Nothing open here: the wrapper's two questions are overtaken by 714 — `compiler.wrapWith` is removed, behaviour
+around a function is a proxy type the decorator builds or a function written around the call.
 
 #### B-11 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -232,9 +230,6 @@ pub fn posts() -> string { return loadPosts(); }
 
 After the group's other steps have landed on `feat`; it holds back no front that builds on them (479).
 
-- [ ] `feat`'s GitHub pipeline green after the group landed (477): `scripts/gate.sh` with conformance, every cell of
-      `tests/language` (`conformance/` once B-29 step H lands) on every target it declares; a red reproduced locally,
-      fixed at once (430), pushed again; no cell edited to match the compiler
 - [x] for each red, the cheap test the hook already runs that would have caught it, red on the breaking commit and
       green on the fix (478) — or the report says why none can
 - [x] the group's changes analysed together against the cells (a table here); the cells they call for written in
@@ -245,7 +240,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
       the group's base, green or each red named
       — the suite green on `feat` locally but for three `std_decorator_*` wasm cells (B-27's, a B-22 row); four cells
       added; no `test` run green since the base (cancelled by the next push, or red at format-check on others' cells).
-      Box 1 closes on the next completed green `test` run.
+
+Nothing open here: the pipeline box is overtaken by 714 — `wrapWith` is removed and its cells go with B-139's codemod.
 
 | B-11 change | Cells |
 |---|---|
@@ -339,10 +335,9 @@ they recorded — the same function shape as a declaration's decorator, named by
 - [x] on a tag `addMember`, `addType` refused at the call; `setMeta` of one type twice refused at the second
 - [x] `run/tag_decl_meta` — an annotation recording `ClassName(names: ["a"])` on a `<div>` read back by the
       template function; the same annotation function also accepted on a declaration
-- [ ] the template side's spelling: `q.tagDecl(kind, name, attrs)` builds the handle, `q.annotate(decl, at: Span)`
-      runs the annotation written at a span of the template's text · decision 636
-- [ ] `Decorator.same` inside a template body: a looked-up name's `Binding` carries no `Decorator` (meta read by
-      type works, 302) · question B-15-b
+- [ ] the template side's spelling moves to `compiler` (636, as overtaken by 576 (2) and 616): `compiler.tagDecl(kind:
+      DeclKind, name: string, syntax attrs: unknown)` builds the handle, `compiler.annotate(syntax d: unknown, at: Span)`
+      runs the annotation written at a span of the template's text — neither on a capture nor in a `template` namespace
 - [ ] `compiler.meta<T>(d)` on a decorator's own declaration handle (`syntax d: unknown`) is refused, so an annotation cannot read what an earlier
       one recorded on the same tag · question B-15-c
 - [ ] `template.mapSpanToLoc` places a span of a one-line `"""…"""` literal two columns early (the capture has
@@ -410,9 +405,8 @@ example a `run/` cell, its "não compila" lines `reject/` cells. Landed
       (`reject/decorator_decl_pattern_{mismatch,return}`)
 - [ ] `Field<T>` — `compiler.Field<T>` in std's `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) (decision 308), not `builtins.d.bp` — (`name`, the
       field's type); `.name` resolved against the expected `T`, a missing field refused at it; variadic
-      `..fields: compiler.Field<T>[]` (267); `decl.fields` hands out `compiler.Field<unknown>` — built but the
-      last clause (`decl.fields` is still `builtins.d.bp`'s `Field`, the same shape; `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) gives it
-      to `134` step 2)
+      `..fields: compiler.Field<T>[]` (267); `compiler.fields(d)` hands out `compiler.Field<unknown>` (576 (8)) — built
+      but the last clause, which is B-140's (the record `compiler.Field<T>` in `compiler.bp`, 598, 624, 630)
 - [x] `.Name` case-exact for fields and variants (`.custom` against `Custom` is the missing-name error;
       `reject/decorator_variant_case`, `reject/decorator_field_key_case`)
 - [ ] the seven examples green on every target where they run; each "não compila" line a `reject/`
@@ -455,8 +449,7 @@ it answers; `tryResolveTypeManipulationCall` and its bare names are gone. Questi
 - [x] a `compiler.Field<T>` at run time: stored, passed, compared; `case key { .title -> … }` exhaustive over
       `T`'s fields (a field added to `T` makes a `case` without it an error); `key.name`, `Key.of(text) ->
       ?Key`, `Key.all()` in declaration order — `run/field_key_runtime` on the four targets
-- [ ] `decl.fields` as `compiler.Field<unknown>` (134 s2's box) — not part of this mechanism (the reflection
-      record is `comptime.zig`'s `__Decl__Field`): left to 134 s2
+- [ ] `compiler.fields(d)` handing out `compiler.Field<unknown>` (576 (8)) — not part of this mechanism: B-140's box
 
 #### Step 2 — declare the rest — part (was `134-builtins-declared` s2 boxes 1, 2, 3, 6)
 
@@ -469,14 +462,11 @@ second is deleted; `Type`'s namespace-type spelling (329), `compiler.Field<T>` a
       (`inferResultNamespaceCall`) is deleted, not declared; the prose in `builtins.d.bp` goes
 - [x] std's `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) spells `pub type Type { … }` — a namespace type, no field list and no value (329): `Type()`
       refused, a `self` function in its body refused
-- [ ] `Type` also declares the associated type `Field<T>` inside its body (308, 330), `keys` answering it —
-      declared (`pub type Field<T>(name, typeName, annotations)`, `run/std_type_field_associated`);
-      `builtins.d.bp`'s `Field` record leaves, `Decl.fields` typed `compiler.Field<unknown>[]` — open: the record
-      `decl.fields` hands out is the compiler's `__Decl__Field` (`comptime.zig` `decl_reflection_src`, aliased
-      `Field` and drift-checked against `builtins.d.bp`'s `Field`), so std's hoisted `Type__Field` has to become
-      that record, and rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) moves to `compiler.Field<unknown>`; `pick` /
-      `omit` are declared (Done); the spelling of a `type` answer is fixed here with `01-checker` step 28; builtins' `Field` leaves in this step, no alias kept: validation's `decorators.bp` (`Array<Field>`) and
-      rakun-data's `orm/entity.bp` migrate to `compiler.Field<unknown>` as its consumer commits (rule 10)
+- [ ] the field record is `compiler.Field<T>` in `compiler.bp` (624, 630) — not an associated type of `Type`, no
+      `.d.bp` record (575 (1); `decl_reflection_src` went with `Decl<T>`, 576 (7)), no run-time key (599): the record
+      `compiler.fields(d)` hands out (576 (8)) is B-140's box; validation's `decorators.bp` (`Array<Field>`) and
+      rakun-data's `orm/entity.bp` (`fn marked(f: Field, …)`) migrate to `compiler.Field<unknown>` as its consumer
+      commits (rule 10)
 - [x] a field key at run time — removed by decision 599 (no use outside the compiler's cells): `Type.keys`, `Field.of`, `Field.all`, the five `field_key_*` / `type_keys_*` cells and `docs.md`'s paragraph go in B-140; the build-time `.field` argument (280 example 6) stays
 - [x] the four bare names (`partial`, `pick`, `omit`, `mergeRecords`) leave `tryResolveTypeManipulationCall`
       when `01-checker` step 28 keys its resolver on `Type`
@@ -604,10 +594,6 @@ fn cabecalho() -> string { val n = comptime campos(Post); return n.join(",") + a
       closes
 - [ ] std declares `Any` on its pure host primitives (`string`, `math`), every other host binding `Run`
 
-- [ ] a run-in-build body calling a host function that has a build form (`std:`, `.Wasm(body: …)`): `Any`, or
-      376 as written (`decorator_host_cells`, `comptime_std_host_function`, `comptime_random_seeded` change) · decision 633
-- [ ] the spelling `#[@Stage.Any]`, `pub type Stage { Build, Run, Any }` in `builtins.d.bp` · question B-17-b
-- [ ] the `Build` resource is a read of a `syntax` parameter (a declaration handle or a captured tree); `compiler.typeInfo(NamedType)` a build constant · decision 634
 - [x] a stage follows declarations only (a method, a function value add nothing); a run body calling a comptime-`@Expr`
       function and reading the clock is build-and-run · decision 720 (a): only what is written at the call counts, a `syntax` argument of any origin
       type-checked once; a Run function reached through a value while the build executes is `run-in-build` at that call, located — cell `run_in_build_through_value`
@@ -911,8 +897,6 @@ val nomes = erika "select name from cities";      // nomes: Array<string>
 
 - [ ] a template method found only by a name in the call site's scope (as built), or reached through the receiver's type
       with no import (`self.db.query`, 145's example) · question B-18-a
-- [ ] the surface B-18 chose: `q.note` appended as `— note: …`; `bindings()` answers `Decl[]`, `Binding.ref()` gone;
-      `@Decl.module` on every handle · question B-18-b
 
 #### B-18 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -968,37 +952,14 @@ commit after the owning rakun step), jhonstart (`#[page]`, `#[client]`), validat
 
 #### Step 5 — migrate the remaining sites (was `130-decorator-outputs` s5)
 
-Decision 318 shrinks rakun's list before it migrates: `#[service]`, `#[managed]`, the core's `#[repository]`,
-`#[restController]`, `#[configuration]` / `#[bean]`, the four transport listeners and `#[httpExchange]` are
-deleted by the owning rakun fronts (04 step 8, 13 step 6, 15 step 8), not migrated; only their
-replacements are written here in 216's forms.
-
-Member names are the library's (decision 174's note). Remaining `@emit(` at feat — a closed list
-(373: no front writes a new site, the count only shrinks): rakun 67 lines, jhonstart 1 (`#[page]`'s
-`<X>Params`), validation 1. Rakun rows target post-128 paths
-(`04-rakun/README.md` § Order, decision 339): no 130 rakun commit while `04-rakun/128` is open; after it, each a consumer commit under
-decision 188, never in a wave with the rakun front owning the file.
-
-| File | Sites | Generated today | New form | Written against |
-|---|---|---|---|---|
-| rakun `rakun/src/{decorators,autoconfig,config,context}.bp`, `rakun-web/src/convention.bp`, `rakun-data/src/sql/transactional.bp`, `rakun-security/src/method_security.bp` | ~29 | member `T.make()` (`rkSingleton`) on each stereotype; a `#[bean]` method emits `val __rkBeanM_<T>_<m> = rkRegisterBean("<return type>", …)` (`rakun/src/decorators.bp:333-385`); `<T>Tx` proxy + `val __rkTx_<T> = rkRegisterBean(…)` (`transactional.bp:81-82`), `<T>Sec` proxy + `pub fn __rkMake_<T>Sec()` (`method_security.bp:141-142`) | member `T.make()`; the registry built at comptime from `@TypeInfo.all(with: …)`, never keyed by a name string (281, 256; `ctr-q` closed) | 234 (`T.make()`, by-type injection), 254 (catalogue answers `Declared<unknown>[]`; `rkResolve<T>` narrows with `is fn() -> T`), 256 (registry built at comptime at the entry point), 281 (amends 234/256 where they key by a type's name, and `member: "make"`) |
-| same files + `lifecycle.bp`, `conditions.bp`, `rakun-data` `entity.bp` / `query.bp` | ~27 | `val __rkScan_<T>`, `__rkBean_`, `__rkLc_`, `__rkEv_`, `__rkImp_`, `__rkExit_`, `__rkAutoQ_`, `__rkCat_`, `__rkChk_`, `__rkEnable_`, `__rkEntityReg_`, `__rkQueryReg_` (load-time registration) | `@TypeInfo.all(with: …)` read at comptime (member by reference, step 7) | 235, 234, 254, 281 |
-| `rakun-web/src/convention.bp`, `rakun-app/src/{route_handler,actions}.bp`, `rakun-websocket`, `rakun-scheduling`, `rakun-messaging`, `rakun-cli`, `rakun/src/actuator_api/**` (today `rakun-actuator-api`, moved by 128 step 1), `rakun/src/decorators.bp` routes | ~25 | `val __rkFilter_`/`__rkConverter_`/`__rkCustomizer_`/`__rkCors_`/`__rkAdvice_`/`__rkMiddleware_`/`__rkHandler_<VERB>_`/`__rkRoute_`/`__rkWs_`/`__rkSched_`/`__rkJob_`/`__rkCli_`/`__rkEp_`… | meta (`order`, `media`, `path`, `verb`) + `@TypeInfo.all` at the entry point | 235; 236 for `#[middleware]`'s gate; 234 |
-| `rakun-client/src/exchange.bp` | 2 | `pub type Http<T>` + `pub fn http<T>()` | `T.Http` + a factory member | held: behavior member called from another module fails (below) |
-| jhonstart `routes.bp` | 1 | `pub fn <X>Params(route)` (the four registrations are done) | none — the page takes no parameter and reads `use params<P>()`, checked by `#[page]` over `Decl.hooks` | 293 (amends 236's `paramsOf`); held: `05-jhonstart/26` step 11 after `01-checker` step 23, and the segment walk inside it is `03-bundled-libs/102` step 3's while 102 is open |
-| validation `#[schema]` (`libs/validation/src/decorators.bp`) — `#[validated]` after 306 | 5 | `pub fn parse<T>At`, `parse<T>`, `decode<T>`, `schemaOf<T>` + helpers | members `T.parseAt/parse/decode` (no `schema` — `Schema<T>` is private, 306) | nothing — next; `decode` passes `parse<T>At` as a value (unbound variable on erlang, below), so wrap it in a lambda |
-
-- [ ] each library's hook green on this compiler; `grep -rn '@emit(' --include=*.bp repository/` — validation's sites migrated (private members, `T.parseAt` passed as a value); left: jhonstart's 1 (after B-17, `05-jhonstart/26` s11), rakun's 67 (after 318's deletions in 150: 04 s8, 13 s6, 15 s8)
-      answers only `tests/language` cells about `@emit` itself
+Nothing open here: the migration is overtaken by 605 — every `@emit` site became a registration in a `compiler.init`
+executor, a typed `addMember` or a template text handed to `addType` (rakun's and jhonstart's in 165 s10, validation's
+here), and no catalogue is read at build (665).
 
 #### Step 6 — remove module-level `@emit` (was `130-decorator-outputs` s6)
 
-`@emit` a named error everywhere (message lists the four places); `tests/language` `@emit` cells
-become `reject/` cells; `docs.md`'s "Decided, not yet implemented" row leaves; `language-gaps.md`
-closes **An emitted `pub val` is visible to other emitted code only** (T15) and **No comptime
-reflection over the project** (declaration half; the `@project()` manifest half is not 216's).
-
-- [ ] the refusal and the cells; the two `language-gaps.md` rows closed
+Nothing open here: the removal is overtaken by 605 — `@emit`, `@code` and `@expr` leave with `builtins.d.bp` in B-139
+(machine 2), its `emit` cells rewritten over `compiler.init` or removed there.
 
 #### Rows found during the migration (open, not 216's places) (was `130-decorator-outputs` rows)
 
@@ -1029,8 +990,9 @@ reflection over the project** (declaration half; the `@project()` manifest half 
 - [x] the call emitted direct inside an expansion (`UsersModule.make().start()`) — withdrawn by decision 581 (a registry is
       written by the decorator's executor; no expanded `boot`); 564-a closed by 664, 564-b and 564-c by 665 (no catalogue
       at build)
-- [ ] `member:` removed with its string (256, 281), refused naming decision 564 — after front 165 s5 has migrated
-      rakun's sites (a library is never edited from here, 433)
+
+Nothing open here: `member:` is overtaken by 665 — `compiler.find` leaves `compiler.bp` with `member:` in B-137 (564 →
+576 (1), 665).
 
 #### Step 8 — typed meta, keyed by its type (decision 298) (was `130-decorator-outputs` s8)
 
@@ -1054,9 +1016,6 @@ calls the checker answers, so the two coexist).
       rule))` built in the reading program with each expression spliced where it was written —
       `run/meta_expr_field` (the reader calls `rule` and evaluates `message` at run time, on the four
       targets)
-- [ ] the std and library sites migrated (rakun's `#[entity]` and the stereotypes, jhonstart's `#[page]`
-      and `#[client]`), then `setMeta(key, value)`, `.meta.<decorator>.<key>` and `DeclaredMeta(key,
-      value)` gone (`Declared.meta` / `TypeInfo<T>.meta` the typed reads only)
 - [ ] a meta field of a record type, a `compiler.Field<T>` (364 (2)'s data family) or a tuple: refused
       today (`decorator-meta-field-type`); rebuilding one where the meta is read needs its names in the
       reader's scope (a field filled from a `syntax` carries such a value as written)
@@ -1098,16 +1057,14 @@ if (themes.length > 1) css.fail("styled: two #[theme] declarations: …");
 - [x] `@TypeInfo.all` in a template function's body answers for the calling program, after every
       module's decorators; the reader is exempt from `typeinfo-all-imported` (256's entry-point
       rule unchanged for every other reader)
-- [ ] a `Declared`'s `value` readable at build: a `val` with a `comptime` initializer lifted into the
-      template's module as a literal (356), refused at the read otherwise
-      (`typeinfo-all-template-value`); a comptime `extendTheme(…)` holding `ThemeValue.Rem(…)`
-      evaluates (row 133)
-      — strings, numbers, `bool`, `null` and arrays / tuples of them read at build (`template_reads_val_build_value`,
-      `template_val_value_not_comptime`); left: record and variant values (row 133, the template-body gap of `language-gaps.md`)
 - [x] the importer of a reader module that breaks the rule gets `typeinfo-all-imported` at the
       import, not `unbound variable '<template>'` at the use (row 134's diagnostic half)
 - [x] `run/template_reads_program_catalogue` (one and two built as `modules/template_reads_program_catalogue`, `modules/template_catalogue_two_themes`; none still answers an empty catalogue — 358's refusal open) — a package's template function counting the importing
       application's `#[theme]` declarations: none (refused, 358), one, two (refused at the second, naming both)
+
+Nothing open here: a `Declared`'s `value` read at build is overtaken by 665 — no catalogue is read at build; the
+`#[theme]` decorator's `compiler.init` executor registers its theme, a second refused at init, and a template emits code
+reading that registry at run time (353 → 665, 576 (7)).
 
 **Gate:** standard (fronts.md § Gate) + std on commonJS and erlang; each library's hook
 
@@ -2221,9 +2178,9 @@ unit and computes its strongly connected components (the package graph, 512's me
 acyclic); each declaration is `unresolved → in progress → done`, a `fn` or type done after its header (signature,
 plain decorators' members), a `val` without annotation demanded whole, a meta demanded by running its `.hooks`
 readers over the bodies it reads; `in progress` met again is a located `dependency loop`. 130-s8-c's step 4 becomes
-the general rule; the catalogue demands every listed declaration (353's second compile goes); 14s8-d's option (b)
-falls out. What stays refused: a value cycle, a `comptime` depending on itself, a decorator reaching what it
-annotates, a `.hooks` reader adding a member, a build-time catalogue listing its own reader.
+the general rule (353's second compile goes; no catalogue is read at build, 665); 14s8-d's option (b) falls out. What
+stays refused: a value cycle, a `comptime` depending on itself, a decorator reaching what it annotates, a `.hooks`
+reader adding a member.
 
 **Does it solve what opened it:** 130-s8-c yes (a header-only prototype printed `none` for the module analysed
 first — meta must be demanded); s23-i partly (the root rule stays or is relaxed, option (b′)); 372's order yes, its
@@ -2365,9 +2322,9 @@ second compile: every `.bp` under `src/` is a module named by its path; `mod` / 
 leave the language; `src/main.bp` is an executable's entry; `src/comptime/` is the build layer, analysed first,
 importing only std, dependencies and itself, the one place (with std and dependencies) that declares a decorator or a
 template; the program's modules import each other freely, a cycle forming a block (headers before bodies, a
-module-level `val` a ref at run time); per block the decorators run over the bodies, then meta and catalogues are
-filled; `@TypeInfo.all` is read in any module; `src/internal/` is private to its package; the only order refusal is a
-located `dependency loop`. In order:
+module-level `val` a ref at run time); per block the decorators run over the bodies, then their meta is filled (no
+catalogue is read at build, 665); `src/internal/` is private to its package; the only order refusal is a located
+`dependency loop`. In order:
 
 ### B-69 — a file is a module: `mod` / `pub mod` and the root file removed (B-55-a (e) (1), (2), (8))
 
@@ -2415,14 +2372,13 @@ located `dependency loop`. In order:
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-71
 
-- [ ] per block: headers, bodies, every decorator over them, then every `compiler.typeInfo(X).meta(T)` (`?T`; `metaAll` the list, 727) and
-      `@TypeInfo.all` of the block filled — 130-s8-c's step 4, per block
-- [ ] `@TypeInfo.all` read in any module; a `comptime` needing a meta, a catalogue or a value of its own block before
-      its decorators ran refused, located, as a `dependency loop`
+- [ ] per block: headers, bodies, every decorator over them, then every `compiler.typeInfo(X).meta(T)` (`?T`; `metaAll` the
+      list, 727) of the block filled — 130-s8-c's step 4, per block (592 (5))
+- [ ] a `comptime` needing a meta or a value of its own block before its decorators ran refused, located, as a
+      `dependency loop` (592 (5), (6), 728)
 - [ ] 419's and 14s8-d's refusals and 353's second compile removed; `typeinfo-meta-hooks-pending` and
       `typeinfo-all-hooks-reader` gone
-- [ ] cells: `home.bp` ↔ `blog.bp` each reading the other's `Route`; a catalogue in a page module; the comptime loop
-      refused
+- [ ] cells: `home.bp` ↔ `blog.bp` each reading the other's `Route`; the comptime loop refused
 - [ ] B-60's `.botopinkbuild/analysis/` keys its entries by block (headers, bodies, decorators' meta of a block)
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
@@ -2515,7 +2471,9 @@ inside the code a template builds (`e.build("… @TypeInfo.all …")`) answers e
 - [x] `d.value` in an expanded body — withdrawn by decision 581: 576 (7) removed `Declared<T>` and `.value`; a handle inside
       an executor is its declaration at run time, typed (B-137's cell `compile_executor_handle_typed`)
 
-Open: B-99-c — a dependency's own root is refused, as built. B-99-e — where a caller's argument that breaks an expanded generic body is located (built at the argument).
+Nothing open here: the caller's catalogue is overtaken by 664 and 665 — a framework's `boot` is a plain function over the
+run-time registry, `pub fn boot(modules: Module[] = registry.modules()) -> App`; B-99-c is closed by 694 (no catalogue
+default), B-99-e by 695 (the caller's argument, as built).
 
 ### B-136 — the keyword `compiler`, `comptime` / `syntax` on a parameter, `type<T>` (decision 575 (3), (4), (5); 576; 577; 578)
 
@@ -2649,7 +2607,7 @@ Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its
 - [ ] decision 671: a field's default travels into every derived type and resolves where it was written (669), `defaultValue` always the default as written; `isClosedDefault` and the non-closed refusal removed, the target exporting what a default reaches; cells `derived_type_default_travels`, `derived_type_default_module_val`, `derived_type_default_across_packages`, `imported_field_default_not_derived` rewritten
 - [ ] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `compiler.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
 - [ ] `compiler.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
-      lowered as its name on every target; `typeInfo(T).fields` and the catalogue hand out `compiler.Field<unknown>` (308)
+      lowered as its name on every target; `typeInfo(T).fields` and `compiler.fields(d)` hand out `compiler.Field<unknown>` (308, 576 (8))
 - [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by
       the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two

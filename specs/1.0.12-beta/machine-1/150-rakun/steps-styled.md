@@ -67,10 +67,11 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
       that writes a class on a tag measured to pass through one of the two; `StyledContext` declared
       `comptime createContext(StyledSheet.missing())`, read `use context(StyledSheet)` (378, 379), `missing().add` panicking with
       the provider's text
-- [ ] the theme mechanism (300) in `styled`: `#[theme]` found at comptime, two refused, none a
-      compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read it; a cleared breakpoint refused
-      at compile time · row 134 (a library's template function cannot read the program's catalogue),
-      built by `01-compiler/130` step 10 (353)
+- [ ] the theme mechanism (300) in `styled`: `#[theme]`'s `compiler.init` executor registers the application's theme,
+      a second refused at init before `main` (665), the literals reading the registered theme at run time (353 → 665);
+      none a compile error at the first literal naming the fix (358); `--theme(--breakpoint-md)` and `@variant md` read
+      it; a cleared breakpoint refused at compile time · row 134 (a library's template function cannot read the
+      program's catalogue)
 - [x] `grep -rn "bpp\|jhonstart\|emilia" repository/css repository/rakun/modules/rakun-style` empty — the shared
       hook text names emilia (`119-a`)
 

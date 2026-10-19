@@ -42,7 +42,7 @@ boot cell without an upgrade cell is not a skip.
 ## Notes
 
 - `examples/release-manifest-example.bp` keeps its marker (**No comptime reflection over the
-  project**) until step 4: `lg2-k` answered by 216 (4), `@TypeInfo.all` (253) on feat, but it
+  project**): `lg2-k` answered by 216 (4), but no catalogue is read at build (665) and the run-time registry
   answers declarations, not a package's module list or manifest.
 - The toolchain row "a built erlang program cannot load its `.erl` sidecars" is this front's to
   close for a release; its `botopink run` half is 73's re-measure.

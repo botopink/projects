@@ -133,7 +133,7 @@ pub val code = styled """
   (120, 128), accepted (338).
 - `styledProperty`'s literal holds declarations only: a `{`, `&` or `@` is an error at the character.
 - **The theme mechanism is `styled`'s**: 300's `Theme`, `entry`, `clear`, `clearNs`, `clearAll`,
-  `extendTheme`, the app's one `#[theme]` (`@TypeInfo.all(with: theme)`) and the cleared-breakpoint
+  `extendTheme`, the app's one `#[theme]` (registered by its `compiler.init` executor, a second refused at init, 665) and the cleared-breakpoint
   refusal (`@variant 2xl` with `2xl` cleared is a compile error). emilia supplies the values:
   `#[theme] pub val appTheme = comptime extendTheme(defaultTheme(), [entry(.Breakpoint, "md", Rem(52.0))]);`.
 

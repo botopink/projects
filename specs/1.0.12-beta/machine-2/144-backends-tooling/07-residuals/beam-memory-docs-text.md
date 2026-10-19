@@ -1,8 +1,9 @@
-# The `docs.md` text for `@BeamMemory` — supplied by front 17, placed by front 07 (step 6)
+# The `docs.md` text for `#[beamMemory]` — supplied by front 17, placed by front 07 (step 6)
 
-Front 17's text for `docs.md` (17 writes none). Both parts true on feat (17 step 1: `keyed: true`,
-decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/design.md` §4, §6 and
-`run/beam_memory_ets_keyed`; none a promise. Quoted blocks are the text to place, verbatim.
+Front 17's text for `docs.md` (17 writes none), rewritten to decision 547 (the module `var` one value for the whole
+program; `keyed: true`, the per-process placement and `ProcessDict` removed; the annotation accepted off the BEAM, with
+no effect) and spelt `#[beamMemory(…)]` (663). The `PersistentTerm` figures are 1.0.10's `17-beam-memory/design.md` §6;
+none a promise. Quoted blocks are the text to place, verbatim.
 
 ---
 
@@ -21,9 +22,9 @@ decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/desi
 
 ### Replacing `### var — mutable binding` (today a two-line fence)
 
-> A `var` may be reassigned. Inside a `fn` it is a local; at module level it is **one value per
-> execution context** — the whole program on commonJS and wasm, the **process** on erlang and
-> beam. Two writes through a `fn` and one read print `2`:
+> A `var` may be reassigned. Inside a `fn` it is a local; at module level it is **one value for the whole program**,
+> on every target — on erlang and beam a one-row ETS table, on commonJS a variable, on wasm a permanent root. Two
+> writes through a `fn` and one read print `2`:
 >
 > ```botopink
 > import {io.terminal} from "std";
@@ -35,33 +36,25 @@ decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/desi
 > pub fn main() { bump(); bump(); terminal.print(hits); }
 > ```
 >
-> On the BEAM the annotation `#[beamMemory(.<member>)]` widens where a module `var` lives beyond the
-> process (§ `beamMemory`). Off the BEAM the annotation is refused where it is written —
-> ``error: `#[beamMemory]` has no meaning on the commonJS backend`` — because a target with one
-> execution context has no BEAM storage to name; a `var` there is one value for the whole program.
-> A hand-written `import { beam } from "std"` — the host primitives themselves — is
-> `std-unsupported-on-target` there for the same reason (decisions 43, 167).
+> Its data is immutable: a `Dict` is changed by writing the new one back, `counts = counts.insert(k, v)`. A
+> reassignment that reads the `var` it writes (`hits = hits + 1`) is atomic on the BEAM, so two processes writing at
+> once lose nothing and the answer is commonJS's and wasm's; a plain `x = v` is one write. A module `var` whose type
+> holds an `Async` is refused where it is declared, on every target. The annotation `#[beamMemory(.<member>)]` picks
+> how the BEAM holds a module `var` (§ `beamMemory`); off the BEAM it is accepted and has no effect — the `var` means
+> the same on every target (decision 547).
 
-### A new `### beamMemory — where a module var lives on the BEAM`, the validation half
+### A new `### beamMemory — how the BEAM holds a module var`, the validation half
 
-> `#[beamMemory(.<member>)]` above a module `var` names its memory on erlang and beam. The member
-> is one of `ProcessDict` (the default, which a bare `var` already means — writing it out loud
-> records the choice where it is read), `Ets` or `PersistentTerm`. The only argument is
-> `keyed: true | false`, default `false`, and it is a `Dict`-only argument: an `i32` has no key and
-> neither has a list, which stores its whole value. Every part is checked at `botopink check`:
+> `#[beamMemory(.<member>)]` above a module `var` names how erlang and beam hold it. The member is one of two, a closed
+> enum: `Ets` (the default, which a bare `var` already means) or `PersistentTerm`; any other value is refused at the
+> annotation. Every part is checked at `botopink check`:
 >
 > ```botopink
-> #[beamMemory(.ProcessDict)]        var explicit: i32 = 0;   // the default, said out loud
-> #[beamMemory(.Ets)]                var hits: i32 = 0;
+> #[beamMemory(.Ets)]                var hits: i32 = 0;   // the default, said out loud
 > #[beamMemory(.PersistentTerm)]     var buildVersion: i32 = 101;
-> #[beamMemory(.Ets, keyed: true)]  var counts: Dict<string, i32> = Dict.empty();
 >
 > // #[beamMemory(.Etz)] var x: i32 = 0;
-> //   error: unknown member `Etz` in `beamMemory` — expected `ProcessDict`, `Ets` or `PersistentTerm`
-> // #[@BeamMemory.Ets(keyd: true)] var x: i32 = 0;
-> //   error: unknown argument `keyd` — expected `keyed`
-> // #[beamMemory(.Ets, keyed: true)] var n: i32 = 0;
-> //   error: `keyed` needs a keyed container — an `i32` has no key
+> //   error: unknown member `Etz` in `beamMemory` — expected `Ets` or `PersistentTerm`
 > // #[beamMemory(.Ets)] val x: i32 = 0;
 > //   error: `#[beamMemory(.Ets)]` needs a `var` — `x` is a `val`
 > ```
@@ -71,42 +64,19 @@ decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/desi
 
 ---
 
-## Part 2 — the three modes (`docs.md` § `beamMemory`)
+## Part 2 — the two members (`docs.md` § `beamMemory`)
 
-Second paragraph carries decision 42: `keyed` unwritten on a `Dict` is **not** a warning; behaviour
-and cost stated here, where the default is documented, nowhere else.
+> **`Ets`** — the default: one value for the whole program in a one-row ETS table. The program's runtime creates every
+> module `var`'s table at boot, in a process that lives as long as the program, and runs the initializers once; a table
+> never belongs to the first process that touches the `var`, so it never dies with it. A reassignment that reads the
+> `var` it writes is read, computed and written back against the value read (`ets:select_replace`), retried when another
+> process wrote in between, so no write is lost; a plain `x = v` is one insert. **`Ets` is cache and counting memory,
+> not where the truth lives** — a balance, an order, a paid session belong in a supervised process or a database.
 
-> **`ProcessDict`** — one value per BEAM process, in the process dictionary: no setup, no owner,
-> erased when the process ends. It is what a bare `var` means, and the spelling exists so that a
-> file whose other bindings are `Ets` can say "per-process, on purpose" where it is read. A request
-> handler that counts under `ProcessDict` counts its own requests only.
+> **`PersistentTerm`** — for a `var` written rarely and read much: a read costs a function call, and a write scans
+> every process heap (measured, 810 ns against 17 ns for a read) — the cost is the writer's to weigh; nothing refuses
+> the write. It is the member for a routes table, a scanned-component list, configuration read at bootstrap. Store a
+> handler by **name**, not as a function value: a `fun` belongs to the module version that created it and dies with
+> it on reload.
 
-> **`Ets`** — one value per node, in a named public ETS table the module owns through a registered
-> owner process, so the table survives the process that first touched it and is re-created and
-> re-seeded from the declaration if the owner dies. `hits += 1` and `hits = hits + 1` on an `i32`
-> or `i64` are one atomic `ets:update_counter`; any other read-modify-write — `hits = hits * 2 + 1`,
-> or `+=` on an `f64`, `bool` or `string` — is refused, because two processes running it would
-> lose one of the two writes. The initialiser must be a literal or a `comptime` expression: it is
-> re-run at a moment nobody chose. **`Ets` is cache and counting memory, not where the truth
-> lives** — a balance, an order, a paid session belong in a supervised process or a database.
-> Under **`keyed: false`** (the default) a `Dict` is stored as **one** value: a write copies the
-> whole dict, and two processes writing *different* keys at the same time lose one of the writes —
-> measured, 20 000 writes each to two keys finished at `19 996` and `20 000`. Under
-> **`keyed: true`** each key is its own row: the seed is `Dict.empty()` or
-> `Dict.ofEntries([#("a", 1)])` of literals, a row is read as `counts.at(k)` and written as
-> `counts = counts.insert(k, v)`, and nothing else names the var — measured, two processes writing
-> 20 000 times each to their own key finish at `20000` and `20000`; at 10 keys a write is 5×
-> cheaper, at 10 000 keys 5 000×. Choose `keyed: true` whenever more than one process writes;
-> keep the default when the dict is replaced whole.
-
-> **`PersistentTerm`** — one value per node, written **once, at load**, read everywhere for the
-> cost of a function call. A write after load is a compile-time error with the hint
-> `#[beamMemory(.Ets, keyed: true)]`: at run time a `persistent_term:put` scans every process heap
-> (measured, 810 ns against 17 ns for a read), and the module's load hook **re-runs on every hot
-> code reload**, so a run-time write would be erased by the next reload anyway. It is the mode
-> for a routes table, a scanned-component list, configuration read at bootstrap — anything the
-> decorators emit at load and nothing changes afterwards. Store a handler by **name**, not as a
-> function value: a `fun` belongs to the module version that created it and dies with it on
-> reload.
-
-The `keyed: true` sentence names `Dict.bump` (decision 340) beside `at` and `insert`; if `17-c` widens the keyed surface, it follows.
+`Dict.bump(key, by)` (decision 340) is a plain `Dict` method, `insert(key, (at(key) ?? 0) + by)`, under any member (547).

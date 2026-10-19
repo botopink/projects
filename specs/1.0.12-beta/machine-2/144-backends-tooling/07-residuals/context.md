@@ -32,7 +32,7 @@ Report citations (`codegen-features.md:85`) = lines in the 1.0.1-beta review rep
 ## Goal
 
 Every snapshot proves its test's claim (1.0.1-beta review's open rows re-derived, closed); no
-comment/document teaches a retired form; `docs.md` has the `@BeamMemory` text; erika migrated and
+comment/document teaches a retired form; `docs.md` has the `#[beamMemory]` text (547); erika migrated and
 reformatted; submodule pointers bumped in one sweep.
 
 ## Mechanism

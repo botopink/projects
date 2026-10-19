@@ -93,8 +93,8 @@ pub fn blog() -> Collection<BlogPost> {
 
 Steps 8 and 10 replace this form (282, 306): the collection is said on its `#[validated]` type —
 `#[validated] #[collection(glob("content/blog", "**/*.md"))] pub type BlogPost(…)`, or
-`collection(BlogPost)` —, never with a `Schema<T>` value, and the build gathers collections with
-`@TypeInfo.all(with: collection)` instead of reading `collections()` by name.
+`collection(BlogPost)` —, never with a `Schema<T>` value, and each `#[collection]` registers its type through its
+`compiler.init` executor, the program reading the registry at run time (665), instead of reading `collections()` by name.
 
 `Entry<T>(id, collection, data: T, body: string, filePath: string)`; id = path under the loader's
 base, no extension, slugged; frontmatter `slug` overrides. `getCollection(c)`,

@@ -156,8 +156,8 @@ Every fallback digest changes from 8 hex to 16.
       "front 23" payload mentions (`:397,784,991,1096`) likewise
 - [ ] `docs.md` § The front-68 contract (`:1091`) has the starter-table row: the per-route loaders
       `registerRouteStarters(pattern, load)` over `globals.starters` (29-a, reduced); no per-name
-      `registerStarter` — 281 builds the starter table at comptime (`@TypeInfo.all(with: client)`,
-      `08-bpp/120` step 6, `07-onze/53` step 7); the `islandAttr(ordinal)` row reads
+      `registerStarter` — each `#[client]` registers its starter through its `compiler.init` executor, the table the
+      run-time registry (281, 665; `08-bpp/120` step 6, `07-onze/53` step 7); the `islandAttr(ordinal)` row reads
       "exported here; onze's entry imports it"; `07-onze/50` cites the section
 - [ ] `docs.md` § Error boundaries documents the digest scheme and the `log` sink
 
@@ -479,7 +479,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 - [ ] `examples/hydration-directives-example.bp` passes
 - [ ] `#[clientVisible]` on an element fails at the annotation (its first parameter is `syntax decl`); on
-      a component without `#[client]` fails at the annotation, checked by `Decorator.same` (371); an unseen
+      a component without `#[client]` fails at the annotation, checked by `compiler.same(a, b)` (666); an unseen
       island fails the build in the bundler's island check (`entry.bp`) with its name — never a
       mount that starts nothing
 - [ ] two `Hydrate` annotations on one tag fail at the second
@@ -514,11 +514,12 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 #### Step 6 — references, not strings (decision 281) (was `120-bpp-islands` s6)
 
 - [ ] `Island(component: "LikeButton", props: [#("likes", "3")])` → the function and its typed
-      `#[clientProps]` record; the starter table built at comptime (`@TypeInfo.all(with: client)`);
+      `#[clientProps]` record; the starter table the run-time registry each `#[client]`'s `compiler.init` executor writes (665);
       `mountIslandWhen("Carousel", …)` in `hydration-directives-example.bp` likewise
 - [ ] the `<Component>Props` encoder reached as a member (`LikeButtonProps.encode`, 216), not by name
-- [ ] `#[deferred]`'s registration (`"Avatar"` → renderer at module load) → the comptime catalogue
-      (`@TypeInfo.all(with: deferred)`); the URL keeps the component's name as the wire id
+- [ ] `#[deferred]`'s registration (`"Avatar"` → renderer at module load) → `#[deferred]`'s `compiler.init` executor
+      registering the component by its handle, the registry read at run time (665); the URL keeps the component's name
+      as the wire id
 
 #### Step 7 — route parameters and page data are hooks (decision 293) (was `120-bpp-islands` s7)
 

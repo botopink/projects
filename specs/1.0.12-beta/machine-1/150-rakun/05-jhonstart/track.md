@@ -82,7 +82,7 @@ Confirmations kept from 1.0.10 ([`../../../../decisions-pending.md`](../../../..
 |---|---|---|
 | 26-a | every router cell is dual-target | — |
 | 27-a → 363 | a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending` | 27 |
-| 29-a | reduced (open, `decisions-pending.md`): the island starter table is `globals.starters`, filled per route by `registerRouteStarters(pattern, load)`; the per-name `registerStarter` goes — 281 builds the table at comptime (`@TypeInfo.all(with: client)`, `08-bpp/120` step 6, `07-onze/53` step 7) | 26 step 5's starter-table row |
+| 29-a | reduced (open, `decisions-pending.md`): the island starter table is `globals.starters`, filled per route by `registerRouteStarters(pattern, load)`; the per-name `registerStarter` goes — each `#[client]` registers its starter through its `compiler.init` executor, the table the run-time registry (281, 665; `08-bpp/120` step 6, `07-onze/53` step 7) | 26 step 5's starter-table row |
 | 30-b … 30-g | `RenderPlugin` as a record of async functions; `render` / `App` in `streaming.bp`, `compose` taking the page as a thunk (a page is `fn() -> View`, no `route` parameter — 293); `Suspense(b)` registers its `Boundary(id, fallback, child)` with the render (`child` the unstarted thunk); `UiSegment`; `app(…, lang:)`; the browser half in `jhonstart-dom-test` | — |
 | 31-a | `notFound()` / `redirect(url)` raise through one host cell | — |
 

@@ -21,7 +21,7 @@ cut by file ownership so fronts run in parallel.
 | [`03-beam/`](../../../machine-2/144-backends-tooling/03-beam/context.md) | high | partial: steps 1–9 done; 1 (box 3), 2 (box 1) open | 01 step 13's and 02 step 7's cells on beam; 263, 264 in assembly | 01 · 02 · 05 · the std track |
 | [`04-js/`](../../../machine-2/144-backends-tooling/04-js/context.md) | medium | partial: steps 1–5, 7, 8 and C-37 done; 6, 9, 10 open | the `@block` tail IIFE, `$stringify` (239), `throw` in a `case` arm, overflow aborts (264) | 01 |
 | [`05-wasm/`](../../../machine-2/144-backends-tooling/05-wasm/context.md) | high | partial: steps 1–4 done (two cells wait on 02), step 8 done; step 5 under way (heap growth, `fromCodepoint`, `pow`, astral `contentHash`, one `math`, `encoding` / `querystring` cells done; `unicode` on `02/97` step 16 (333), `json` on `02/97` step 15 (336)) | the rest of std on wasm: heap growth (261), `String.fromCodepoint` (262), `pow` (259), `contentHash` (260), one `math` (263) | 02 · the std track · 18 |
-| [`07-residuals/`](../../../machine-2/144-backends-tooling/07-residuals/context.md) | low | partial: steps 3, 5–7, 12, 13 done; 1, 2, 4, 8–11 open | the 1.0.1-beta snapshot review (C-22); comments and documents (C-23, C-18, the `@BeamMemory` text); erika's migration and the pointers' sweep; the per-cell compile row | 02–05 · 01 · 16 · C-14 |
+| [`07-residuals/`](../../../machine-2/144-backends-tooling/07-residuals/context.md) | low | partial: steps 3, 5–7, 12, 13 done; 1, 2, 4, 8–11 open | the 1.0.1-beta snapshot review (C-22); comments and documents (C-23, C-18, the `#[beamMemory]` text, 547); erika's migration and the pointers' sweep; the per-cell compile row | 02–05 · 01 · 16 · C-14 |
 | [`12-language-tests/`](../../../machine-2/144-backends-tooling/12-language-tests/context.md) | medium | partial: steps 1 (box 1), 2 (box 2), 3, 4 on feat; 1 (box 2), 2 (box 1) open | the two missing area cells, `--cold` on the pre-existing tool set | 01/04 · 02/05 · `00-gate/114` |
 | [`14-comptime-on-beam/`](../../../machine-2/144-backends-tooling/14-comptime-on-beam/context.md) | medium | partial: steps 1 (fixture half), 3, 4, 7 and decision 237 done; 2, 6 open | the N=200 budget, a decorator body with `\u{…}` | 18 · 01 |
 | [`16-formatter/`](../../../machine-2/144-backends-tooling/16-formatter/context.md) | medium | not started | C-13 step 3 (the `;` refused), the siblings' reformat, the one-line trailing lambda (165), the trailing comma alone decides (166, 243, 345), the lambda annotation's printer arm, annotations printed as written (286) | the library tracks' migrations · 01's parser rows |
@@ -63,7 +63,7 @@ Fronts share no source file or snapshot directory except by named, sequenced car
 Open ids waited on — statements in [`../decisions-pending.md`](../../../../decisions-pending.md); 1.0.10
 choices to confirm (23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 [1.0.10's](../../../../decisions-pending.md); front in parentheses:
-**17-c** ([`17-beam-memory`](../../../machine-2/144-backends-tooling/17-beam-memory/context.md) § Decisions) · **C-14** (07 step 9) · **23-b, std-c** (23) · **24-a, 24-b,
+**C-14** (07 step 9) · **23-b, std-c** (23) · **24-a, 24-b,
 24-c, 24-g** (24) · **01c-a, 01c-b** (01) · **0405-b** (04) · **lg2-b … lg2-u**
 (`lg2-k` answered by 216, `lg2-f`/`lg2-i` by 280, `lg2-g` by 281; `lg2-a` by 346 → 01 step 32,
 `lg2-e` by 347, `lg2-j`/`lg2-o`/`lg2-w` by 343/342/341 → 14 step 6, `lg2-v` by 344 → 26 step 6): none

@@ -250,9 +250,8 @@ The limits table of `wat/AGENTS.md` still carries the one-page row.
       its `.wasm.expect` once `02/97` step 15 (336) lands (`encoding`, `querystring`, `unicode` done)
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3 (the limits table's
       one-page row is gone)
-- [ ] the bindings this step adds written in 305's form — `.Wasm(fn: name)`, `op: "…"`,
-      `wasi: .Adapter` — never the prefixed string: the parser refuses `fn: name` until `01-checker`
-      step 27, so `unicode`'s two new bindings are prefixed strings that step migrates
+- [ ] the bindings this step adds written in 305's labelled form — `.Wasm(body: name)` (610: `body:` the one name of
+      the botopink-body cell), `op: "…"`, `wasi: .Adapter` — never the prefixed string
 
 #### Step 11 — std on wasm, group 3 (decision 230) (was `97-std-dedupe` s11)
 
@@ -1862,7 +1861,10 @@ covers only `Asset` and `SourceLocation`: read through the value's tag, it regre
 at run time (`@Decl`). The general fix needs the emitter to know which imported records are tagged tuples.
 
 - [x] a `Declared`'s field read anywhere answers the field on beam; a cell on every target
-- [ ] rakun's `conformance/rakun/boot_modules` green on beam (a 150 consumer row)
+
+Nothing open here: the consumer row is overtaken by 576 (7) and 665 — `Declared<T>` and `@TypeInfo.all` are gone, and
+rakun's `boot` reads the run-time registry its decorators' `compiler.init` executors write, so no dependency reads a
+`Declared`'s field.
 
 ### B-93 — commonJS: a positional pattern lowered against another package's same-named variant
 

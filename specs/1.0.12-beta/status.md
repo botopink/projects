@@ -139,7 +139,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-126 — std: an `FsError` carries its own text, `message()` (563); snap and rakun-ssr write `e.message()`
 - [ ] 144 B-116 — the body markers (553): (i) `iter` / `async` / `async iter` / `component` before `fn` and a lambda's brace, (ii) the `@` types renamed and declared in std, (iii) an iterator's `R`, a failure ending an iteration, `Component<Result<R, E>>` — (i) P1 landed (parse, check, lower; nothing refused yet); left (i) P2–P4 (570: the codemod also marks keyword-less `@Task` / `@Component` bodies; P4 refuses an unmarked body returning the bare value) · nothing
 - [x] 144 B-108 — `scripts/tsc-check.sh` red on botopink-lang's own cells (a `.d.ts` naming `Declared`; the `conformance/test/` project suites) — `feat`'s pipeline green again
-- [ ] 144 B-97 — beam: a `Declared`'s field read in a dependency answers the whole record · nothing
 - [ ] 144 B-93 — commonJS: a positional pattern lowered against another package's same-named variant (`Text(value)` → `$0`) · nothing
 - [ ] 144 B-89 — beam: emilia's module refused by the BEAM assembler (`test_heap`, an implementation limit); every emilia cell red on beam (79) · nothing
 - [ ] 114 s3 — botopink-lang `test.yml` green on GitHub on `feat` · the `libs` job was red on `94a9c3ef` on Node 20 (`fs.globSync`, five `std·commonJS` `fs.glob` tests, needs Node 22) — fixed in botopink-lang `6d95d8fc` (both Node installs at 22); the box stays open until a green run is read
@@ -158,7 +157,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 05-wasm row — `val t = Token.Color.White; terminal.print(t)` prints an address on wasm and `Token.Color(_inner: __Token__Color.White)` on the other three (the binder over a field-read subject, a `?f64` field holding `null`, a local `?Place`, `R(q: .Here)` landed with 144 B-22) · decision 601 (`Token.Color.White`, cell `enum_section_value_print`)
 - [ ] 04-js · 05-wasm row — a record or an array in a template hole: commonJS writes `Target.Top,Target.Bottom` for `"${[A, B]}"`, wasm an address, erlang and beam `print`'s text · question B-53-a
 - [ ] 02-erlang · 04-js row — a leading-dot variant (written, or a field default) of an enum the consumer does not import (`Anchor(href: "/y", target: .Bottom)` with only `Anchor` imported): commonJS `ReferenceError: Target is not defined`, erlang `variable 'Target' is unbound`; beam and wasm right — the import closure · batch 17 (module identity, every backend's import closure)
-- [ ] 05-wasm row — `ds.map({ d -> d.meta.map({ m -> m.value }) })` over a `Declared<B>[]` parameter is refused "the wasm backend cannot place `.value`"; over `Declared<unknown>[]`, or with a `for` loop, it compiles (found by decision 564's build) · none
 - [x] 144 B-28 (524) — `botopink format` applied by every repository's commit hook (botopink-lang's and the 17 libraries' shared one, one text), never a gate check; C-13 is formatting; emilia, jhonstart, onze reformatted; each library's hook runs its gate with `--jobs 2`, the runner's per-job estimate 1664 MiB; the libraries' `test.yml` run a push to `feat` in a group of its own commit (528)
 - [ ] 05-wasm row — onze's blog on wasm: the compiler gaps fixed and `Component` lowered (B-25); what is left is declared — std `json.parse` / `stringify` (05-wasm s5, 97 s15), `io/fs` and `process.exit` with no wasm binding (97 s11, 140), jhonstart's host-state runtime (~238 externals with Node / Erlang cells only), emilia's `raisedBy`, onze's `digitsToI32` and `refusedImagesCell` — and the design gap `x is Element[]` (no array value carries a descriptor on wasm); the rest cascades · the libraries' wasm bindings (their fronts); 97 s15; a design for the array test
 - [ ] 26 row — compiler-cli's test binary reported red under `zig build test` twice and was never captured (12 concurrent runs green; its `kit-x` line is a passing test's expected stderr, `transitive failure` the build summary's wording): the failing test's name is read the next time it reds · none
@@ -179,10 +177,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 14 s6 342 — `@embed` landed (519); left: a file outside `src/` in B-60's key, `compiler.embed` in a decorator or template body (the wasm comptime runtime reads no file) · B-60
 - [ ] 17 s2 — the `#[beamMemory]` text and the migration handed over · 07 s6 · the rakun track
 - [ ] 26 s9 — a dependency's sidecars and imports answer as its own build does · none
-- [ ] 130 s5 — the remaining decorator sites (38 of 119 done, plus `#[schema]`'s 5) · rakun's DI on 01 s20 · rakun sites under the 130↔128 rule (decision 339) · rakun-client's on the behavior-member gap (ctr-q closed: the table built at comptime, 281, 256)
-- [ ] 130 s10 rest — `value` read at build (353); a decorator on a `val` runs and the `val` is catalogued, its build value lifted (356) · row 133 → 119 s1 box 5 · 34 s3 · 119 s4
-- [ ] 130 s6 — module-level `@emit` removed · 130 s5 · `#[schema]`'s free functions → members of the type (306; `T.parse(…)`, 327)
-- [ ] 134 s2 — `Decl.fields` as `compiler.Field<unknown>`, `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `compiler.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)
+- [ ] 134 s2 — `compiler.fields(d)` handing out `compiler.Field<unknown>` (576 (8); the record is 144 B-140's), `examples/types.bp` · 01-checker s28 (`Type` a namespace type, `compiler.Field<T>` declared, `Type.pick` / `omit` declared with the variadic; `result` deleted and `?T` methodless — done)
 - [ ] 01-checker s31 — `?T` by `??`, `?.`, `?.[]`, `?.()`, `x!` (330); the migration script before the refusals
 - [ ] 134 s6 — contexts (354), rules of hooks (357): landed — `Component<R>` / `Renderable`, std `context`, `use` refused outside a render tree, `use-not-top-level`, the codemod and the libraries migrated; the hidden map runs on erlang, beam, commonJS, and 388's lambda over a `RenderScope` replaces it (landed, with 26 s14); `Decl.hooks` landed with `01-checker` s23 (277); left: the rest of the lowerings · 02–05, 18
 - [ ] 07-residuals s8 — the lib-agnostic gate names every library: the test-file comments reworded; the other owners' comments, then the `-w` pattern · 02 and the other owners landed (s3, s5–s7, s12, s13 done)
@@ -230,7 +225,6 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] decision 361 (std's module `bpp`: `#[bpp.html]`, `#[bpp.htmlPrelude]`, `#[bpp.style]`, `#[bpp.stylePrelude]`; `jhonstart-styled` merged into the core; `"bpp": "jhonstart"`) — 116 s1 (the std module, the manifest, the roles) · 119 s2–5 (in the core) · 26 · onze · 124
 - [ ] decision 362 (26 rewrites the native builders into props form in place, with the 78 hand-written callers; no second builder per tag) — 26 s13 · after 26 s0, 01-checker s28 and the props-filling lowering
 - [ ] decision 363 (a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending`) — 27 s1–3 · 26 (island cells) · 120 · 126
-- [ ] decision 364 (every `comptime` parameter is `comptime x: @Expr<T>` — decorators, annotations, templates, functions, builtins: passed on to outputs, `.value` read at build for data, a function or a type never run at build) — 01-checker s35 (built; 384, a library member's names resolved where written, on feat, botopink-lang `9bfbed18`) · 130 · 125 s7 · 281's ten fronts · the codemod over std, builtins, jhonstart, rakun, validation (done; cardume when it exists)
 - [ ] decision 365 (a deferred `after()` failure through the core's logger is 17's step 4, not 128's) — rakun 17 s4 · after 128
 - [ ] decisions 388, 389, 414 (a `Component` at run time is a lambda over an opaque `RenderScope`, the render library runs it — replaces 354 (8), 374, 387; a component named as a value is a reached node, a value the checker cannot follow an edge with `callee: null`; boundaries and fills are nodes the renderer runs with the scope) — 134 s6 measurement and box 4b, 01-checker s23's 389 box and `05-jhonstart/26` step 14 landed as one change set (botopink-lang and jhonstart; erlang, beam, commonJS green, wasm refused at the first component — 354-wasm; jhonstart 208 / 0 on both rows); left: the other lowerings and wasm · 02–05, 18 · 119 s2–3
 - [ ] decision 375 (`HookNode.async`; commonJS emits a synchronous component as a plain `function`) — 01-checker s23 and 04-js s12 (top-level functions): landed; `s23-j` is decision 725, `04s12-a` 593
@@ -281,7 +275,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 150 rakun
 
-- [ ] 150 s29 — `decl.wrapWith` in rakun (144 B-11, 316): the publish-retry example as `#[retryable(policy)]`, its marker and the gap row gone; the 318 wrappers build on it · nothing
+- [ ] 150 s29 — rakun's wrappers without `wrapWith` (144 B-11; 316 overtaken by 714): the publish-retry example as a function around the call (`retry(policy, { -> issue() })`), its marker and the gap row gone; the 318 wrappers as proxy types or functions around the call · nothing
 - [x] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340) — no site, the registry's counters are the sidecar's own Erlang; `tryQuery`'s stale comment removed (B-13, 304)
 - [ ] 150 s34 — `Sheet.add` over what `toStyled()` answers, a component (144 B-10 G2) · nothing
 - [ ] 27 s2 box 2 — `use linkStatus()` outside `#[client]` refused · 26 s8 (`#[clientOnly]`, `src/stage.bp`) on 01-checker s23 (`Decl.hooks`)
@@ -370,7 +364,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 - [ ] decision 320 (string index: codepoints on every target; erlang leaves `string:length/1`; commonJS native when no surrogate pair) — 97 s14 boxes 2–3 (04-js s10, 02-erlang s15 done)
 - [ ] decision 319 (`i64` is 64-bit on every target; commonJS a number below 2^53, a `BigInt` above; literal refused past the type's range everywhere; 176, 264 amended) — 04-js s9's rest · 01-checker s18 and its literal rows · 97 s13
 - [ ] decision 318 (one decorator per role, rakun's names: `#[component]`, `#[repository]` on a behavior, `#[provides]`, `#[httpClient]`, `#[listen(dest)]`, `#[controller]`, wrappers; closes 130-c, erk-c) — 130 s5 · rakun 04 s8 · 08 s7 · 12 s6 · 13 s6 · 15 s8 · 19 s7 · 79 s4 · 91 s2 · 93 s4
-- [ ] decisions 315, 316 (no module annotation; a decorator wraps its function, `decl.wrapWith`, typed) — 01-checker s30 · rakun 12 s5 · 15's example
+- [ ] decisions 315, 714 (no module annotation; no decorator wraps its function — a proxy type or a function around the call, 316 overtaken by 714) — rakun 12 s5 · 15's example
 
 ## L5 — blocked on a decision
 
@@ -423,6 +417,12 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 165 s8 — 148/149/153/154/162's open steps refiled under 150 (s32 … s71); the six former submodules removed, `repository/query` in, every pointer at its `feat`; § Layout, CI check 4 (12 library repositories), `gate.sh`, `decisions-split.py` and the marker index name the workspace; the five former GitHub repositories archived
 
 ### 144 botopink-lang
+- [x] 144 B-97 — a `Declared`'s field read anywhere answers the field on beam (its cell); the rakun consumer row closed by decisions 576 (7) and 665: no `Declared` exists, rakun's `boot` reads the run-time registry
+- [x] 05-wasm row (`.value` over a `Declared<B>[]` parameter refused on wasm) — closed by decision 576 (7): `Declared<T>` and `.value` are gone
+- [x] 130 s5 — closed by decision 605: every remaining `@emit` site became a `compiler.init` registration, a typed `addMember` or an `addType` (165 s10; validation's under 144 B-19); no table is built at comptime (665)
+- [x] 130 s6 — closed by decision 605: `@emit` leaves with `builtins.d.bp` in 144 B-139
+- [x] 130 s10 rest — closed by decision 665: no `value` is read at build and nothing is catalogued; a `#[theme]` registers itself through its `compiler.init` executor (353 → 665)
+- [x] decision 364 — closed by decision 575 (4): a `comptime` parameter is `comptime x: T` (the value) or `syntax x: T` (the tree); B-136's codemod rewrote every site
 - [x] 144 B-99 (rest) — closed by decision 581: no `d.value`, no expanded `boot` (576 (7)); a handle inside an executor is its declaration at run time, typed (B-137's cell)
 
 - [x] 144 B-123 — a `//` comment between the statements of a `case` arm block parses (both arm block forms read through the shared block body), the formatter keeps it (`case_arm_block_comment`); B-125 found

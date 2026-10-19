@@ -183,9 +183,9 @@ workspace's whole `conformance/` once they have landed.
 #### Step 4 — Context (R06-1 … R06-7) (was `04-rakun-erlang-runtime` s4)
 
 - [ ] `context_test.bp`: `ctx.beanNames()` equals `rkScannedNames()` filtered to `#[component]` types (318), order-insensitive, on `fixtures/tree`
-- [ ] two unqualified `#[provides]` of one type fail the build at the entry point's bean table, naming both functions (343; `fixtures/phmissing` gains the case)
+- [ ] two unqualified `#[provides]` of one type refused at init, before `main`, by the registering executor, naming both functions (665, 343 as amended; `fixtures/phmissing` gains the case)
 - [ ] `#[postConstruct]` runs after construction, before `eagerInit` returns — a hook recording the eager pass's state
-- [ ] `#[scope("request")]` on a constructor-injected factory refused at compile time naming the injection site — where the entry point builds the bean table, which sees both declarations (343, 347: a method's `@Decl` has no `owner`)
+- [ ] `#[scope("request")]` on a constructor-injected factory refused at boot naming the injection site — the run-time registry sees both declarations, each registered by its own `compiler.init` executor (665)
 - [ ] with defaults every registered bean constructed before `Rakun.run` returns; a missing required config key (`#[value]` today, a `#[config]` field after step 7 — 299) fails inside `Rakun.run` (a recording constructor)
 - [ ] `scopes_test.bp` / `context_test.bp`: clean stop exits `0`; failed boot exits non-zero, a distinct code per failure kind (the table 19's `bootAndExit` consumes)
 - [ ] `rakun.d.bp` leaves `botopink.json`'s `files` and the tree; `fixtures/imports` (a consumer naming `Context` in a signature) still compiles — the concrete type carries `resolve` / `has`
@@ -245,7 +245,7 @@ A bean, an event or a condition is named by its type or its function, never its 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` green in `modules/rakun`;
 `botopink format --check` clean there; `modules/README.md` updated.
 
-### 150 s2 — the rows handed in: the action secret, `codepointIndex`, the `Json` copies, the `@BeamMemory` migration
+### 150 s2 — the rows handed in: the action secret, `codepointIndex`, the `Json` copies, the `#[beamMemory]` migration
 
 **Repository:** `rakun` (`--repo rakun`) · **Model:** sonnet
 
@@ -355,7 +355,8 @@ the drivers, the container and the transactions. Today a repository is a `type` 
       refused at the argument (the injection rule `#[query]` kept by shape)
 - [ ] `#[query]`, the `<m>Sql()` members, `rkRegisterQuery` / `rkRegisteredQueries`, rakun-data's `#[entity]`
       mapping and repository code deleted (moved to `dbcontext`, 143 step 3); the statement inventory
-      (`/actuator/sql`, 11) read from `dbcontext`'s query meta through `@TypeInfo.all` (253)
+      (`/actuator/sql`, 11) read at run time from the registry `#[query]`'s `compiler.init` executor writes, each
+      entry carrying its query meta (665, 680)
 - [ ] `examples/city-entity-example.bp`, `examples/audit-and-revisions-example.bp` rewritten to
       `#[repository]`; their `// LANGUAGE GAP` markers for the bodyless-method row go, and the row
       with them (`language-gaps.md`)
@@ -494,10 +495,9 @@ sidecar and fixtures only.
 
 #### Step 4 — the release manifest's marker against `@TypeInfo.all` (decisions 216, 253) (was `81-rakun-packaging-release` s4)
 
-- [ ] `examples/release-manifest-example.bp` re-measured: if `@TypeInfo.all` builds the application
-      list, marker, its Marker-index row and the `language-gaps.md` row go together
-      (`scripts/language-gap-markers.sh` exits 0); else the row narrowed to what is missing (a
-      package's module list or manifest), marker stays
+Nothing open here: the re-measure is overtaken by 665 — no catalogue is read at build, and the run-time registry
+answers declarations, not a package's module list or manifest; the marker and the row **No comptime reflection over
+the project** stay until something reflects the project.
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cli` (`test/release/` in the run).
@@ -648,28 +648,27 @@ that wanted it.
 
 #### Step 4 — references, not strings (decision 281) (was `12-rakun-cache` s4)
 
-- [ ] `#[cacheable(products)]` takes a `Cache<T>` value whose `T` is the function's return (280
-      example 5); the cache's own name (`Cache<Product[]>("products")`) stays a string
+- [ ] `#[cacheable(products)]` on a method takes a `Cache<T>` value whose `T` is the method's return (280), read by
+      the proxy type the decorator builds (714); the cache's own name (`Cache<Product[]>("products")`) stays a string
 
 #### Step 5 — the cache chosen per function: `#[useCache]` (decisions 315, 316; after `01-checker` step 30) (was `12-rakun-cache` s5)
 
-- [ ] `#[useCache]` (`src/cache.bp`): a function decorator wrapping the function through
-      `decl.wrapWith` (316) — the cache key from the function and its arguments, the policy from the
-      decorator's typed arguments (`ttl:`, `tags:`, `scope:`; 280), never a string naming code (281)
-- [ ] `#[useCache] pub fn posts() -> string { … }` caches on ETS and on the Redis double; two
-      `#[useCache]` functions of one module keep separate entries; a wrong return type for the policy
-      is an error at the decorator
+- [ ] the cache chosen per function is a function written around the call (714; `compiler.wrapWith` is gone):
+      `cached(policy, { -> loadPosts() })` in `src/cache.bp` — the cache key from the call site and its arguments, the
+      policy a typed value (`ttl:`, `tags:`, `scope:`), never a string naming code (281)
+- [ ] `pub fn posts() -> string { return cached(policy, { -> loadPosts() }); }` caches on ETS and on the Redis double;
+      two such functions of one module keep separate entries; a policy whose type does not match the call's return is
+      a type error at the call
 - [ ] the module-level form stays (315): `val cached = cacheWith(cachePolicy(…))`; the member README
       shows both and says there is no module annotation
 - [ ] the two `// LANGUAGE GAP` markers (`src/cache.bp:540`, `test/granularity_test.bp`) rewritten to
-      cite 315/316; their marker-index rows and the row "No module-level annotation" deleted in the
+      cite 315/714; their marker-index rows and the row "No module-level annotation" deleted in the
       same commit (`language-gaps.md`)
-- [ ] 280 example 5's `#[cacheable(products)]` (step 4) wraps through the same mechanism
 
 #### Step 6 — the cache decorators as wrappers (decision 318 (7)) (was `12-rakun-cache` s6)
 
-- [ ] `#[cached]` / `#[cacheable]` / the evict marks rewritten as wrappers on the method (316), not a
-      generated `<Behavior>.Cached(inner: …)` twin; one cell per verb
+Nothing open here: the method wrappers are overtaken by 714 — behaviour around a type's methods is the proxy type the
+decorator builds and the caller names (`OrderService.Tx`'s shape), so the generated `<Behavior>.Cached(inner: …)` twin stays.
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `modules/rakun-cache` and `modules/rakun-session`; `grep -rn RAKUN_TEST_ modules/rakun-session modules/rakun-cache` empty.
@@ -953,7 +952,7 @@ Blast radius: none outside `rakun-messaging`; `rakun-starter-messaging` unchange
 - [ ] `#[messageMapping("r")]` on a method registers in 15's registry; on a `val` fails at build with a located message (`build_test.bp` over a scratch project)
 - [ ] a connection the transport closes mid-request fails that request with an error, caller process alive; a second request on a new connection succeeds
 - [ ] `codec_test.bp` asserts each of the twelve frame types against its checked-in vector
-- [ ] R92-5: two handlers claiming the same route refused at compile time where the entry point builds the route table (`@TypeInfo.all`, 343), naming both declarations, and ticked
+- [ ] R92-5: two handlers claiming the same route refused at init, before `main`, by the registering executor, naming both declarations (665, 343 as amended), and ticked
 
 R92-6 (`rakun routes` lists rsocket routes) is 88's.
 
@@ -997,7 +996,7 @@ under (b) the core gains the extension point, `rakun-websocket` one registration
 
 #### Step 4 — R88-5 (was `88-rakun-cli` s4)
 
-- [ ] R88-5 ("two commands claiming the same name fail at comptime, naming both declarations"): refused where the entry point builds the command table with `@TypeInfo.all(with: command)` (343); `command_decorator_test.bp`'s load-time refusal becomes that compile refusal, and the box ticks
+- [ ] R88-5 ("two commands claiming the same name fail, naming both declarations"): refused at init, before `main`, by `#[command]`'s registering executor (665, 343 as amended) — `command_decorator_test.bp`'s load-time refusal is that refusal, naming both; the box ticks
 
 #### Step 5 — configuration as a typed record (decision 299) (was `88-rakun-cli` s5)
 
@@ -1249,18 +1248,18 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
       `Result` on erlang goes — it is (144 B-13; decision 304's dependency met); rakun 08 s6, 09 s6, 65 s4 no longer
       wait on it
 
-### 150 s29 — `decl.wrapWith` in rakun (144 B-11; decision 316)
+### 150 s29 — rakun's wrappers without `wrapWith` (144 B-11; decisions 316, 714)
 
 **Repository:** rakun (`--repo rakun`) and the meta specs · **Model:** sonnet
 
-- [ ] rakun 15's `examples/publish-reliability-example.bp` (this front's `15-rakun-messaging/`): `issue`'s retry is
-      `#[retryable(policy)]` on `issue`, the decorator `decl.wrapWith({ call -> publishWithRetry(…, { -> call.run() }) })`
-      with the policy an `@Expr` argument (370); its `LANGUAGE GAP` marker and the Marker index row go, and
-      `language-gaps.md`'s row "A decorator cannot rewrite or wrap the body it annotates" with them
-- [ ] rakun 12 s5 and the 318 wrappers (04 s8, 08 s7, 12 s6, 13 s6, 15 s8, 19 s7, 79 s4, 91 s2, 93 s4) build on
-      `wrapWith`: a function- or method-level `#[useCache]` / `#[cached]` as `decl.wrapWith({ call -> cacheThrough(policy,
-      call.args, { -> call.run() }) })`, every value an `@Expr` parameter; rakun-cache's two markers (`cache.bp`,
-      `granularity_test.bp`) are the module-level-annotation gap's, not 316's, and stay
+- [ ] rakun 15's `examples/publish-reliability-example.bp` (this front's `15-rakun-messaging/`): `issue`'s retry is a
+      function written around the call, `retry(policy, { -> issue() })` (714: `compiler.wrapWith` is gone); its
+      `LANGUAGE GAP` marker and the Marker index row go, and `language-gaps.md`'s row "A decorator cannot rewrite or
+      wrap the body it annotates" with them
+- [ ] rakun 12 s5 and the 318 wrappers (04 s8, 08 s7, 12 s6, 13 s6, 15 s8, 19 s7, 79 s4, 91 s2, 93 s4) written per 714:
+      behaviour around a type's methods a proxy type the decorator builds and the caller names (`OrderService.Tx`),
+      around one function a function written around the call (`cached(policy, { -> … })`); rakun-cache's two markers
+      (`cache.bp`, `granularity_test.bp`) are the module-level-annotation gap's, not 316's, and stay
 
 ### 150 s30 — two `#[query]` methods of one name in one module build (144 B-81)
 

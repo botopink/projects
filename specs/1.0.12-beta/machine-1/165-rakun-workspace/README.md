@@ -50,9 +50,10 @@ front 145 continues as `query`), `css`, `actions`, `routing`, `validation`, `sna
 at its root, `#[rakun.module] pub fn service() -> Module`, and `rakun.boot()` in the program's `main` discovers every
 module of the program's dependencies through the registry each `#[rakun.module]` executor writes (`registry.modules()`, 664, 665), orders them by the
 declared layers and starts them; a module carries its defaults and reads the program's overrides from a
-`#[rakun.config]` record (a typed config: a wrong field is a build error). Everything resolves at build: two packages
-contributing one thing (two HTTP servers) is a build error naming both; a package another requires and the program
-lacks is a build error naming it; removing the dependency removes the module; no run-time discovery, no reflection.
+`#[rakun.config]` record (a typed config: a wrong field is a build error). The registry is written before `main` and
+read at run time, nothing reads the set of modules at build (665): two packages contributing one thing (two HTTP
+servers) is the registering executor's refusal at init, before `main`, naming both; a package another requires and the
+program lacks is a boot failure naming it (234); removing the dependency removes the module.
 
 ## Steps
 

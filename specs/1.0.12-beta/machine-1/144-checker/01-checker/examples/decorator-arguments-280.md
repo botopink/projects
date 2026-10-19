@@ -3,8 +3,8 @@
 Aprovados pelo mantenedor em 04/10 como os casos de uso da decisão 280; são os alvos do passo 24 do
 `01-checker` (cada exemplo vira uma célula `run/` e as suas recusas, células `reject/`). Partes
 ilustrativas, que não são da 280: a emissão por função (`compiler.addMember("validate", fn…)`) não é
-decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`compiler.setMeta(Table(…))`) é da 298; `compiler.wrapWith` (exemplo 5) é da 316 (`01-checker` passo 30);
-o catálogo de 216 (4) é `compiler.find(with: …)` (576 (7)), que lê as declarações marcadas. Em cada decorator `compiler` vem de `import {compiler} from "std";` (579), omitido nos trechos.
+decidida (a `nat-c` fechou em 293–300 sem ela); o meta tipado (`compiler.setMeta(Table(…))`) é da 298; o exemplo 5 saiu com `compiler.wrapWith` (714);
+o catálogo de 216 (4) saiu (665): cada decorator registra a sua declaração com `compiler.init` e o programa lê o registro em runtime. Em cada decorator `compiler` vem de `import {compiler} from "std";` (579), omitido nos trechos.
 
 Cada exemplo mostra quatro partes:
 
@@ -61,7 +61,7 @@ pub fn check<T>(
         // só vale no módulo que declara o tipo validado (67)
         if (compiler.params(decl)[0].module != compiler.moduleOf(decl))
             compiler.fail("a regra precisa estar no módulo que declara `${compiler.params(decl)[0].typeName}`", at: decl);
-        // sem mais nada: o validate do tipo encontra a regra por `compiler.find(with: check)`
+        // sem catálogo no build (665): a regra na função chega ao validate do tipo pelo registro que um executor `compiler.init` escreve
         return;
     }
     // forma no tipo: grava a regra; o único `validate` é do #[validated] (404)
@@ -269,37 +269,10 @@ pub fn staticPaths() -> …                 // não é mais lido: o papel vai no
 
 ## 5. Cache — o tipo devolvido amarrado ao cache (rakun)
 
-### A lib
-```bp
-// rakun/src/cache.bp
-pub type Cache<T>(name: string)              // `name` é o nome no Redis/ETS: continua string
-
-pub fn cacheable<A, T>(
-    syntax decl: fn(a: A) -> T,
-    syntax cache: Cache<T>,                     // o T do cache tem que ser o T devolvido; um valor é `syntax` (575 (4))
-) {
-    // embrulhar a função (316): o wrapper é um lambda escrito na chamada, `call.run()` roda o corpo original
-    compiler.wrapWith({ call -> cachedCall(cache, { -> call.run() }) });
-}
-```
-
-### O uso
-```bp
-import {Cache, cacheable} from "rakun";
-
-val products = Cache<Product[]>("products");
-
-#[cacheable(products)]
-fn byCategory(c: string) -> Product[] { return db.query(…); }
-```
-
-### O que não compila
-```bp
-val users = Cache<User[]>("users");
-#[cacheable(users)] fn byCategory(c: string) -> Product[]   // ❌ esperado Cache<Product[]>, recebido Cache<User[]>
-#[cacheable("products")]                                     // ❌ esperado Cache<…>, recebido string
-compiler.wrapWith(cachedCall(cache))                              // ❌ `decorator-wrap-not-lambda`: o wrapper é um lambda (pergunta B-11-a)
-```
+Retirado pela decisão 714: `compiler.wrapWith` saiu — um decorator nunca muda o que uma chamada faz sem que quem chama
+veja. Em volta de uma função, o programa escreve a função em volta da chamada (`cached(products, { -> db.query(…) })`,
+o `T` do cache amarrado ao `T` devolvido pela assinatura de `cached`); em volta dos métodos de um tipo, o decorator
+constrói um tipo proxy que quem chama nomeia (`OrderService.Tx`).
 
 ---
 

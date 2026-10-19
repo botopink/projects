@@ -123,8 +123,8 @@ closed). Today `client.bp` reaches `<Component>Props` by name — step 6. Step 0
 <Avatar #[serverDefer(fallback: <GenericAvatar size={48} />)] size={48} />
 ```
 
-1. Component marked `#[deferred]` enters a catalogue built at comptime (`@TypeInfo.all(with:
-   deferred)`, 281; step 6) — not a `"Avatar" → renderer` registration at module load (today's
+1. Component marked `#[deferred]` registers itself by its handle through its `compiler.init` executor, the
+   registry read at run time (281, 665; step 6) — not a `"Avatar" → renderer` string registration (today's
    shape, `#[page]`'s `jhPage`, `routes.bp:221-229`); props are a `#[clientProps]` record; the URL
    keeps the component's name as the wire id.
 2. Page render writes the annotation's `fallback` (287) in `<div data-jh-d="<id>" data-jh-src="<url>">`, **does not

@@ -18,6 +18,11 @@ Paths relative to `repository/botopink-lang/modules/compiler-core/src/`.
 
 ## Goal
 
+Overtaken by 547: `keyed: true`, the per-process placement and the off-BEAM refusal are removed — a module `var` is one
+value for the whole program on every target, `#[beamMemory(.Ets)]` (the default) or `#[beamMemory(.PersistentTerm)]`
+only picks how the BEAM holds it, accepted with no effect elsewhere; `Dict.bump` is a plain `Dict` method. What follows
+is the front's goal and mechanism as they were.
+
 `#[@BeamMemory.Ets(keyed: true)] var counts: Dict<K, V>` = one ETS row per key on erlang and beam
 (concurrent writers of different keys lose nothing); per-key increment by `Dict.bump` (340); refused off the
 BEAM (decision 167); documented in `docs.md`.
@@ -39,12 +44,8 @@ BEAM (decision 167); documented in `docs.md`.
 
 Measured / options / blocks in [`../../decisions-pending.md`](../../../../decisions-pending.md).
 
-Answered: 17-b → decision 340 (`Dict.bump`, `ets:update_counter` under `keyed: true`).
-
-### 17-c. What else names a `keyed: true` var
-
-Recommendation (a): the built forms only — `at`, `insert` and 340's `bump`. Blocks nothing — built
-surface stands until widened.
+Answered: 17-b → decision 340 (`Dict.bump`, a plain `Dict` method since 547); 17-c → decision 547 (none of the three:
+`keyed: true` removed).
 
 **Gate:** standard (fronts.md § Gate) + per-mode cells (`run/beam_memory_{process_dict,ets,persistent_term}`)
 green on erlang and beam, a new cell's `.out` what `erl` printed · `scripts/beam_export_audit.sh` green
@@ -53,4 +54,4 @@ green on erlang and beam, a new cell's `.out` what `erl` printed · `scripts/bea
 
 - Decisions 38–43 hold: `val` immutable, registered owner, `+=` integer-only under `Ets`, misspelled
   annotation an error, `keyed` unwritten on a `Dict` no warning, two layers.
-- No library writes `#[@BeamMemory]` or `keyed: true` yet (the rakun migration will).
+- No library writes `#[beamMemory(…)]` yet (the rakun migration will; `keyed: true` is gone, 547).

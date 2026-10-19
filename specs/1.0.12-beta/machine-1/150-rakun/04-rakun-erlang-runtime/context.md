@@ -34,8 +34,8 @@ logging `after()` failures through the core's logger and exposing headers and ra
   refused in both cells. No failure seam: after 128 the logger is the core's (decision 187);
   `after()` logs through it.
 - **`#[provides]` duplicates (R06-2).** Each decorator invocation is independent (343): the
-  duplicate is refused at compile time where the entry point builds the bean table with
-  `@TypeInfo.all(with: provides)` (256), naming both functions — "fail the build" as written.
+  duplicate is the registering executor's refusal at init, before `main`, naming both functions (665, 343 as
+  amended) — no bean table is built at build.
 - **Eager by default (R06-5).** `eagerInitIn` constructs every non-`lazy` singleton; `#[value]` read
   at construction today (the `#[config]` record of step 7 replaces it, 299), so a missing key already
   fails in the pass — the open box asserts `Rakun.run` does not return.

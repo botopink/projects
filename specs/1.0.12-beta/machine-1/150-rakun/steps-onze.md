@@ -458,8 +458,9 @@ Per decision 202 (no `prerender` export).
 #### Step 8 — a role in the decorator, not in an export's name (decision 282) (was `121-bpp-content` s8)
 
 - [ ] `pub fn collections()` found in `src/content.bp` by its name → each collection declared by a
-      decorator (`#[collection(glob("content/blog", "**/*.md"))]`), gathered with
-      `@TypeInfo.all(with: collection)`; the schema's own shape is decision 306 (step 10)
+      decorator (`#[collection(glob("content/blog", "**/*.md"))]`), each registering its type through its
+      `compiler.init` executor, the program reading the registry at run time (665); the schema's own shape is decision
+      306 (step 10)
 
 #### Step 9 — route parameters and page data are hooks (decision 293) (was `121-bpp-content` s9)
 

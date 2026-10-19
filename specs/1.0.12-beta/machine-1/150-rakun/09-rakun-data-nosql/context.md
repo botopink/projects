@@ -67,7 +67,7 @@ answer a count. Under decision 304 every method answers `Result<…, StoreError>
   follows `#[query]`'s post-130 shape (decision 216): writes a member of the
   annotated repository type answering the template verbatim (as `#[query]` writes
   `<Repo>.<m>Sql()`), registers it in 08's statement inventory as `#[query]` does (load-time
-  registration today, the boot's `@TypeInfo.all` catalogue once 130 lands);
+  registration today, the registry its `compiler.init` executor writes, read at run time, 665);
   `bind(template, params)` escapes for the target dialect.
 - Pooling reuses 08's `rakun_pool_sup`; ETS and Mnesia bypass it and say so when a pool size is
   configured. Each configured arm registers a `#[healthIndicator]` through the core's
