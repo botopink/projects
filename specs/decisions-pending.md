@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**39 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**36 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **739**.
+number, which is **755**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -276,27 +276,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b149-g · Confirm B-149 P1's surface as built: `Call(callee:)`, `Node` a union alias, the vocabulary, the argument checked in the reply (decision 625; 144 B-149)
-- **Proposed (opus, 2026-10-18; reviewed by fable; awaiting the maintainer; built as (a)):** **(a) as built:** `Call(callee: …, args: …)` — 625 (2)'s sample writes `Call(fn: …)`, which cannot parse (`fn` is reserved, and a field and a label need an identifier); `pub type Node = Name | Lit | Member | Call | Arg | List | Tuple | Binary | Unary | If | Lambda | Syntax;`, a closed union; no `Record` / `Field` / `Case` (the parser has no such kind; a construction is a `Call` with `Arg`s); `compiler.ast`'s argument is checked in the reply, not unified with `Node`.
-- **Measured.** 625 (2) binds the vocabulary to "measured off the parser's `ast.Expr`"; its listed `Record`, `Field`, `Case` have no parser kind. A behavior `Node` would leave the set open (any record could implement it), and the reply tells kinds apart by their field sets.
-- **Options.** (a) As built. (b) Another field name for the callee (`function`, `target`). (c) `Node` a behavior the records implement.
-- **Recommendation.** (a).
-- **Blocks.** Nothing built; 625 (2)'s sample text.
-
-#### b149-j · Where a type error inside a tree `compiler.ast` builds is reported (decisions 625, 691; 144 B-149)
-- **Proposed (opus, 2026-10-18; reviewed by fable; awaiting the maintainer):** **(a): at the `ast` call**, as an ill-formed tree is — the error located at the caller's call, the message naming the library's `file:line:col` of the `ast` call and the node. A `Syntax(e)` splice keeps the caller's own location.
-- **Measured.** 691 leaves "what a node's location is" to this step. As built, every library node sits at the caller's first captured location, one column per node — a column no text has, the complaint 625 raised against `build`.
-- **Options.** (a) At the `ast` call. (b) The caller's template text by 691's word-copy rule (there is no word to copy). (c) A location per node (the tree carries none).
-- **Recommendation.** (a).
-- **Blocks.** Where `ast_ill_formed_refused`-like type errors point; nothing else built.
-
-#### b149-m · The `Node` vocabulary P1b's `code` needs for 644's mock member: a typed function and type positions (decisions 625, 637, 644; 144 B-149 P1b)
-- **Proposed (fable review, 2026-10-18; awaiting the maintainer):** **(a): `Node` grows a `Fn(params, ret, body)` node and a family of type nodes**, measured off 644's mock member (`` code `fn(self: Self, ${params}) -> ${ret} { return … }` ``) and html.bp's emitted forms (plain `Call`s, already covered).
-- **Measured.** `Lambda(params: string[], body: Node)` carries no parameter type, no return type and no statement body, so `code` cannot build 644's member as a tree.
-- **Options.** (a) Grow `Node` as above. (b) `code` keeps a raw-text escape for those forms — against 625 (no code from text).
-- **Recommendation.** (a).
-- **Blocks.** B-149 P1b (`code.bp`) and P4 (`mocks.bp`).
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
@@ -1067,6 +1046,16 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 - **Recommendation.** Amend 337 to its (1) `shorthand-import` refusal and its (4) migration; (2) and (3) "Overtaken by 592 (1)".
 - **Blocks.** The decision cells of 337 in every repository it binds (166 s3).
 ---
+
+#### ctr-af · Decision 105 against 553 (3): the spelling of a collection loop
+- **Rules.** 105 (2026-09-24) wrote the collection loop as a trailing lambda, `for (xs) { x -> … }`. 553 (3) (2026-10-15) consumes an iterator with `for x in try xs` / `for await x in try xs`, and the subject file's loops sentence (105) omits the spelling.
+- **Options.** (a) `for x in xs` (`for await x in xs`; `try` where the layer is a `Result`), 553 (3)'s form, 105's trailing-lambda spelling gone; (b) 105's `for (xs) { x -> … }` stays as a second spelling.
+- **Recommendation.** (a) — one spelling, the later decision's.
+
+#### ctr-ag · Decision 54 against 602: a `?T` matched by a binder arm
+- **Rules.** 54 (2026-09-18): a `?T` is matched by `null` and a binder, `case x { null { … } v { … } }`. 602 (2026-10-17) with B-22: a name alone is never a pattern — `case-bare-name-arm`, in every arm shape.
+- **Options.** (a) 602 whole: the non-null arm is `_` (or a typed pattern), the value read narrowed as `x!`; 54's binder arm gone; (b) 54's binder arm stays as the one exception, for `?T` alone.
+- **Recommendation.** (a) — one rule for every arm.
 
 ## Part 3 — Implementation choices of tracks 04–09
 
