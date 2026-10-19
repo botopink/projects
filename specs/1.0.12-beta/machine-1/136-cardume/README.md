@@ -70,7 +70,7 @@ key anywhere.
 | `<RecoilRoot initializeState>` | optional `<AtomRoot initialize={seed}>`; without it the page's islands share one store |
 | atom effects | `atom(default, effects: [...])` — which ship: `atm-d` |
 
-**An atom by its declaration or by its type** (297). Every hook takes `comptime source: Atom<T> | type T`:
+**An atom by its declaration or by its type** (297). Every hook takes `comptime source: Atom<T> | type<T>`:
 
 ```bp
 pub val currentUser = atom<?User>(null);
@@ -160,7 +160,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 - [ ] `repository/cardume` on GitHub, `feat` pushed, the submodule `repository/cardume` added here;
       the scaffold's model (`Atom`, `Selector`, `Getter`, `AtomFamily`, `Loadable`, `Tx`) compiled and its
       three tests green on both targets
-- [ ] every hook takes `comptime source: Atom<T> | type T` (297, `01-checker` step 26): the type form is
+- [ ] every hook takes `comptime source: Atom<T> | type<T>` (297, respelled by 736; `01-checker` step 26): the type form is
       the type's implicit atom per store, `?T` unless `#[atom(default: …)]` on the type; `atomState<T>(a)`
       checked against `a`
 - [ ] `atom<T>(default: T) -> Atom<T>`; `atomValue`, `atomState`, `atomSetter`, `atomReset`, each

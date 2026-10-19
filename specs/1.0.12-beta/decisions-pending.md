@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**36 questions and 13 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**36 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **732**.
+number, which is **737**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -1047,35 +1047,10 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 
 ## Part 3 — Implementation choices of tracks 04–09
 
-#### ctr-y · Decision 411 against 575 (4): a function-typed `comptime` argument tested against `null`
-- **Rules.** 411 refused `rule.value == null` on `comptime rule: @Expr<?fn(v: T) -> bool> = null` (`expr-value-of-function`) and told the body apart by `decl.kind`. 575 (4) made a `comptime` parameter a value known at build and removed `.value`; 406's `check` keeps `comptime rule: ?fn(v: T) -> bool = null` (731 (11)). No row says whether the test is legal now.
-- **Options.** (a) `rule == null` is an ordinary test of a build value, as any `?T` is tested; (b) a function-typed `comptime` argument admits no test, the body told apart by `compiler.kind(decl)` as 411 did.
-- **Recommendation.** (a) — one rule for `?T`, the function type no exception.
-
-#### ctr-z · Decision 403 against 718: `compiler.src()` in a decorator
-- **Rules.** 403: a decorator's handle carries no source location, so a decorator's output never depends on where its file sits; a route reaches `#[page]` as an argument (282, 285). 718 with 575 (3): `compiler.src()` written in a decorator body answers the annotated declaration's location.
-- **Options.** (a) 403 survives as "no route from a file's location" only — `compiler.src()` in a decorator is legal, a location an output may carry (a diagnostic, a snapshot); (b) `compiler.src()` is refused in a decorator body, located, for the output's sake.
-- **Recommendation.** (a).
-
 #### ctr-aa · Decision 529 (1) against 593 (2): a component's props, plain parameters or one record
 - **Rules.** 529 (1), (2) (2026-10-14): a component may take its props as ordinary parameters — `component fn Card(title: string, featured: bool = false) -> Component<Element>`, a tag passing each attribute as the labelled argument — or as one record parameter `..props: R`; a `.bpp` unfolds to `(..props: Props)`. 593 (2) as amended (2026-10-12, the higher number): a component, `fn` or type, takes its props as one record parameter, never a list; more than one parameter, or one that is not a record, refused, located. 730's rule reads 593; the dates read 529.
 - **Options.** (a) 529: both forms; (b) 593 (2): one record parameter only.
 - **Recommendation.** (a) — the later decision in time.
-
-#### ctr-ab · Decision 553 (2) against 606 (1) and 623: `Async<T>` or `Task<T>`
-- **Rules.** 553 (2) renamed `@Task` to `Async<T>` (the marker `async`, the return type written whole). 606 (1) lists `Task` among the prelude types and writes `fn load() -> Task<User>`; 623 writes `fetch(req) -> Task<Result<Response, HttpError>>`.
-- **Options.** (a) `Async<T>` — 606 and 623 repeated the old name in passing; (b) `Task<T>` — the later rows.
-- **Recommendation.** (a) — the rename was deliberate and names the marker.
-
-#### ctr-ac · Decision 297 against 575 (5): cardume's value-or-type `comptime` parameter
-- **Rules.** 297: a `comptime` parameter may accept a value or a type, the body telling them apart with `source is type`; cardume's hooks take an `Atom<T>` value or a type naming its implicit atom (`comptime source: Atom<T> | type T`). 575 (5): `comptime t: type<T>` is the type's type and `type T` is replaced at its sites; nothing restates 297.
-- **Options.** (a) `comptime source: Atom<T> | type<T>`, the body testing `source is type<T>`; (b) two functions, one per form.
-- **Recommendation.** (a).
-
-#### ctr-ad · Decision 677 against 592 (2): a library's `"entry"`
-- **Rules.** 677: a package's `"entry"` names only where `main` starts, and is `root.bp` for a library. 592 (2): every file is a module and a library has no entry.
-- **Options.** (a) a library has no `"entry"` — the key is an executable's alone, refused in a library's manifest; (b) a library's `"entry": "root.bp"` as 677 writes.
-- **Recommendation.** (a).
 
 #### ctr-ae · Decision 617 (1) against 641: `Pair<A, B>` and `Function` under the lowercase rule
 - **Rules.** 617 (1) declares `Pair<A, B>` and `Function` as types of the prelude. 641: every primitive type is lowercase (`bytes`, `array<T>`), "one rule, no exception".

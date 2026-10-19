@@ -776,6 +776,9 @@ fn Button() -> @Component<Element> {
       — the value's behavior method first (`context_behavior_method_find`)
 - [x] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
       — `fun f/A` in the comptime module (`comptime_function_value_argument`)
+- [ ] `compiler.src()` in a decorator body answers the annotated declaration's location (718) — legal, never a route · decision 734 (a); cell `decorator_compiler_src_is_declaration_location`
+- [ ] an optional function-typed `comptime` argument tested with `rule == null` as any `?T`; 411's `expr-value-of-function` gone · decision 735 (a); cell `comptime_optional_fn_tested_against_null` replaces `no_null_test_of_optional_fn_expr`
+- [ ] `type<T>` in a `comptime` parameter's union, `source is type<T>` in the body (`comptime source: Atom<T> | type<T>`) · decision 736 (a); cell `comptime_value_or_type_union`
 - [ ] a raise other than an arithmetic error while folding is a build error at the expression, the target's message (380 (2)) · decision 721 (a); after the runtime-exactness line above; cells `fold_raise_is_build_error` (index, conversion, missing key, a `panic` inside an `Any` function), `fold_dead_branch_panic_stays` (380 (3))
 - [ ] what "Any" is foldable for 380 (no raise, print, module `var`, function-value call or declared type's method) · question B-17-f
 - [ ] a context is read through a context value the reader imports, `use context(themeContext)` — never a bare type name —, matched to the provider by the context's type, the handle's default when none (decisions 722, 723); `use provide(ctx)` alone, a body making its own with `comptime createContext(…)` or `use memo({ -> createContext(…) })`; `use context(<Type>)` refused at the argument, naming the form; the 51 sites of std, the cells and rakun rewritten (rakun's in 165 s10); cells `context_read_by_value`, `context_provide_made_in_body`
