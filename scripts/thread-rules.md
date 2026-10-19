@@ -30,6 +30,12 @@ what is the task's own: the step, its boxes, its worktree, its model.
 ## Gate and tests
 
 - The hook runs `scripts/gate.sh --no-conformance`; conformance is `feat`'s pipeline's (470, 477).
+- **Under 768 / 769 (until the maintainer says otherwise): conformance is machine 2's.** A machine-1 thread runs only the
+  cells its change reaches (its new cells and the ones whose code it touches, by name), never `cell check` over the whole
+  `conformance/modules`, and skips a front's Conformance step. A red met outside the change is listed under Outside for
+  machine 2, never fixed. A new cell goes where 765 homes it: `conformance/modules/decisions-taken/<slug>-<N>/cases/<cell>/`
+  for the decision it proves, else `conformance/modules/<prefix>/cases/<cell>/`; once B-157's moves land, `git rebase
+  origin/feat` follows the renames.
 - No `gate.sh --cold` inside a `--repo` / `--lang` worktree (meta `AGENTS.md` § Worktrees, 4b).
 - **Every heavy command runs under the machine's pool** (the pool is the machine's, so any checkout of the
   meta repository serves — the main one for a `--repo` / `--lang` task):
