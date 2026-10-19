@@ -2966,6 +2966,7 @@ Each box is a library's decision-cell draft that builds on the other targets and
 
 Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`, `Integer extends Number`, `Signed`, `Float` are contracts, and the widths are empty behaviors (`behavior I32 extends Signed {}`, `I64`, `U32`, `U64`, `F32`, `F64`); `infer.zig` maps `i32` to `I32`, and each backend writes the chain `I32 → Signed → Integer → Number` by hand (`erlang.zig` `prim_iface_chain`, `commonJS.zig` `numeric`, `wat.zig` `prelude_names`, `beam_asm.zig`). Twenty members carry a body and cells on one declaration (`default fn isEven` with `.JavaScript(…)`), the body the fallback of the targets without a cell.
 
+- [ ] decision 738 (c): `Pair<A, B>` and `Function` leave `primitives.bp` — `Pair.*` deleted (three cells and `query.bp` respelled to `#(a, b)` / `p._0`), `identity` / `compose` / `flip` / `constant` to std's `functions.bp` with their test; cell `prelude_has_no_pair_or_function`
 - [ ] decision 639: a module declaring `i32` / `i64` / `u32` / `u64` / `f32` / `f64` / `bool` / `string` / `bigint` refused at the name,
       `primitive-type-redeclared` (a literal's type is not shadowed; every other prelude name shadows as 606 (1)); cell
       `primitive_type_redeclared`

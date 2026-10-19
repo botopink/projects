@@ -1,6 +1,6 @@
 # Decisions the maintainer owes — 1.0.12-beta
 
-**36 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**36 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -23,7 +23,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **737**.
+number, which is **739**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -1046,16 +1046,6 @@ Listed for the maintainer, not closed here; each keeps its own entry and id.
 ---
 
 ## Part 3 — Implementation choices of tracks 04–09
-
-#### ctr-aa · Decision 529 (1) against 593 (2): a component's props, plain parameters or one record
-- **Rules.** 529 (1), (2) (2026-10-14): a component may take its props as ordinary parameters — `component fn Card(title: string, featured: bool = false) -> Component<Element>`, a tag passing each attribute as the labelled argument — or as one record parameter `..props: R`; a `.bpp` unfolds to `(..props: Props)`. 593 (2) as amended (2026-10-12, the higher number): a component, `fn` or type, takes its props as one record parameter, never a list; more than one parameter, or one that is not a record, refused, located. 730's rule reads 593; the dates read 529.
-- **Options.** (a) 529: both forms; (b) 593 (2): one record parameter only.
-- **Recommendation.** (a) — the later decision in time.
-
-#### ctr-ae · Decision 617 (1) against 641: `Pair<A, B>` and `Function` under the lowercase rule
-- **Rules.** 617 (1) declares `Pair<A, B>` and `Function` as types of the prelude. 641: every primitive type is lowercase (`bytes`, `array<T>`), "one rule, no exception".
-- **Options.** (a) `pair<A, B>` and `function`, by 641; (b) 617's two names stay as the exception.
-- **Recommendation.** (a).
 
 ### 04-rakun (21)
 

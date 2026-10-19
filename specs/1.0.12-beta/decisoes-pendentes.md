@@ -1,6 +1,6 @@
 # Decisões pendentes — 1.0.12-beta
 
-**36 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**36 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -23,7 +23,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **737**.
+número livre, que é **739**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -1046,16 +1046,6 @@ Listadas para o mantenedor, não fechadas aqui; cada uma mantém sua própria en
 ---
 
 ## Parte 3 — Escolhas de implementação das trilhas 04–09
-
-#### ctr-aa · Decisão 529 (1) contra 593 (2): as props de um componente, parâmetros comuns ou um record
-- **Regras.** 529 (1), (2) (2026-10-14): um componente pode receber suas props como parâmetros comuns — `component fn Card(title: string, featured: bool = false) -> Component<Element>`, uma tag passando cada atributo como o argumento rotulado — ou como um parâmetro record `..props: R`; um `.bpp` desdobra para `(..props: Props)`. 593 (2) emendada (2026-10-12, o número maior): um componente, `fn` ou tipo, recebe suas props como um parâmetro record, nunca uma lista; mais de um parâmetro, ou um que não seja record, recusado, localizado. A regra da 730 lê 593; as datas leem 529.
-- **Opções.** (a) 529: as duas formas; (b) 593 (2): só um parâmetro record.
-- **Recomendação.** (a) — a decisão mais tardia no tempo.
-
-#### ctr-ae · Decisão 617 (1) contra 641: `Pair<A, B>` e `Function` sob a regra do minúsculo
-- **Regras.** A 617 (1) declara `Pair<A, B>` e `Function` como tipos do prelude. A 641: todo tipo primitivo é minúsculo (`bytes`, `array<T>`), "uma regra, sem exceção".
-- **Opções.** (a) `pair<A, B>` e `function`, pela 641; (b) os dois nomes da 617 ficam como a exceção.
-- **Recomendação.** (a).
 
 ### 04-rakun (21)
 
