@@ -2207,9 +2207,9 @@ write `process.Signal.Term`.
 Found by B-27 step 6: on beam a program's own `fn run(…)` is refused "`run` has no #[@External.<Target>] for the beam
 backend", and a program's `fn size(…)` answers `null`; commonJS and erlang call the user's function.
 
-- [ ] (staged, cell `user_fn_named_like_std`; the cause: `externalDeclFor` answered the std host declaration before
+- [x] (staged, cell `user_fn_named_like_std`; the cause: `externalDeclFor` answered the std host declaration before
       the program's own fn; `size` answering `null` did not reproduce) — landing once the hook is green (165 s10)
-- [ ] a user function named like a std binding (`run`, `size`) is the user's on beam — a cell on every target, red on
+- [x] a user function named like a std binding (`run`, `size`) is the user's on beam — a cell on every target, red on
       beam today
 
 ### B-122 — beam: `.toString()` on a tuple is `unresolved_method`
@@ -2219,8 +2219,9 @@ backend", and a program's `fn size(…)` answers `null`; commonJS and erlang cal
 Found by B-27 step 6: `#(1, 2).toString()` aborts on beam with `unresolved_method`; commonJS and erlang print the
 tuple.
 
-- [ ] a tuple's `toString()` on beam answers the text `print` writes (`#(1, 2)`, `tuple_print`'s answer) — cell
+- [x] a tuple's `toString()` on beam answers the text `print` writes (`#(1, 2)`, `tuple_print`'s answer) — cell
       `tuple_to_string`, red on beam on the parent; staged, landing once the hook is green (165 s10)
+      — built (beam); the cell `tuple_to_string` lands with the commonJS and wasm boxes below, red there today
 - [ ] commonJS: a tuple's `toString()` answers `#(1, 2)`, not JavaScript's `Array.toString` (`1,2`) — the same cell
 - [ ] wasm: a tuple's `toString()` resolves (today `cannot resolve the call toString/0`) — the same cell
 
@@ -2231,7 +2232,7 @@ tuple.
 Found by B-27 step 6: a `#[compiler.external(.Erlang("""…"""))]` template matching `<<_/binary>>` or `<<"lit", X/binary>>`
 compiles on erlang and is refused on beam; std's templates were rewritten without such patterns.
 
-- [ ] beam accepts the binary patterns an Erlang host template writes — `X/binary` and a literal prefix already did; a
+- [x] beam accepts the binary patterns an Erlang host template writes — `X/binary` and a literal prefix already did; a
       sized `X:N/binary`, `little` and `signed` whole-byte integers, and a literal prefix followed by an integer field
       (beam answered `0` where erlang answers `121`) — cell `host_template_binary_patterns`, red on beam on the parent;
       staged, landing once the hook is green (165 s10)
