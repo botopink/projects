@@ -2627,6 +2627,33 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 
 Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package as one program) is a later decision (780 (4)).
 
+### B-162 — a component call is its lambda; `use` resolves a component; `Renderable<T>` (decision 791)
+
+**Repository:** botopink-lang (`--lang`), then rakun for `NodeChildren` (165) · **Model:** opus (a semantic rule over every backend) · **After:** nothing
+
+Decision 791: a call of a component only makes its lambda, in a component body too; a component is rendered by the tree (a
+node's child, run from its `render()`) or resolved by `use c`, only inside a component body; `await` only over a call answering
+`Async<T>`, in an `async` or a component body; std's `Renderable` takes the tree's node, `Renderable<T>`.
+
+- [ ] the call: `inferComponentCall` (`comptime/infer.zig`) stops typing a component call `R` and awaiting it in a component
+      body; `val x: Component<Prop> = mk(2);` in a body written `-> Component<string>` accepted on every target (the 661-a
+      repro, red on the parent); `context_lower.zig`'s and `env.zig`'s comments that cite the rendering rewritten — unblocks 150 s34
+- [ ] `use c` over a component in a component body runs it with the body's children scope and answers its `R`; a `use` of a
+      component outside a component body refused as a hook's is (553, 722); 410's rules of hooks for both; cells, the refusal one
+      located
+- [ ] `await c` over a `Component<R>` refused at the `await`, located, `await-component`, naming `use c` or `c` as a child; the
+      sites that awaited a component (std, the cells, jhonstart's `val tree = await view(props)`) measured and rewritten with
+      `use` or as children, the libraries' listed for their fronts
+- [ ] 553's cells: `component_call_renders` with its children typed as a node or a component, `component_call_awaited` rewritten
+      with `use`; the cell `component_resolved_by_use_or_tree` (791)
+- [ ] `Renderable<T>` in `primitives.bp` — the marker or a `render()` member as 791-a answers; a `Component<R>` a component when
+      `R` implements `Renderable<T>` for some `T`; the codemod of the `implement Renderable` sites once 791-c fixes the `T` of
+      the sites that are not `Element`
+- [ ] rakun-bpp's `NodeChildren = Renderable<Element> | Component<Element>` and `Element`'s children, as 791-b answers (165's
+      commit in rakun; the compiler-known `Children` retired here if 791-b (a))
+
+Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
+
 ### B-156 — a function with a `syntax` expression parameter is expanded at its call (decision 719)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** B-146

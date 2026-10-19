@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**27 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**29 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **779**.
+number, which is **792**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -381,27 +381,51 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): a `Node` is already code by type, so the hole needs no second spelling.
 - **Blocks.** B-149 P4 (`mock` over `code`).
 
-#### 661-a · Inside a component body, a call of a `Component<R>` with a `Renderable` `R`: the lambda, or `R` rendered? (decisions 388, 504, 553, 661; 150 s34)
+#### 791-a · Is std's `Renderable<T>` a marker, or does it carry a `render()`? (decisions 791 (5), 593; 144 B-162)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** 661 removes rakun-style's aliases `StyledView` / `StyledPropertyView`, so `padAll`, `hover` and their siblings write `-> Component<StyledProperty>`. 553 (2) and 118 rule 1 make a body written `-> Component<R>` a component body, and an alias activates nothing — so these bodies become component bodies. The checker's `inferComponentCall` (`comptime/infer.zig`) renders, in a component body, every call typed `Component<R>` with a `Renderable` `R`: the call is typed `R` and awaited. It cites 104, 118 and 128, all overtaken. The rule in force says the opposite: "calling it only makes the lambda" (388 (1), 504; 661).
-- **Measured.** `fn mk(n: i32) -> Component<Prop>`, `type Prop(d: string) implement Renderable`; in a body written `-> Component<string>`, `val x: Component<Prop> = mk(2);` is refused `type mismatch: expected Component, got Prop` on erlang and commonJS. The holes `styled @`…${padAll(n)}…`` (`splice({ -> padAll(n) })` into `views: Component<StyledProperty>[]`) are refused the same way, so 150 s34 cannot land. Two cells assert the rendering: `body_marker_whole_return_type-553/cells/component_call_renders` (`div([text("title"), Counter()])`, `Counter()` an `Element`) and `component_call_awaited`.
+- **Context.** 791 gives `Renderable` the tree's node as a parameter and starts a component's render at its `render()` (593). Today `Renderable` is a marker (`pub behavior Renderable {}`, `primitives.bp`); `Element` is a leaf of the tree.
 - **Options.**
-  (a) ★ The lambda, as 388 / 504 / 661 state: a call of a component only makes its lambda; rendering is the caller's `await` or the markup's. The two 553 cells are rewritten (`await Counter()`), and rakun-bpp's `div([Counter()])` sites are measured.
+  (a) ★ A marker: `pub behavior Renderable<T> {}`; the `render()` that starts a render is the component's (593), a node writes nothing.
   ```bp
-  val x: Component<Prop> = mk(2);   // accepted — the lambda
-  div([text("title"), await Counter()])
+  pub behavior Renderable<T> {}
+  type Element(…) implement Renderable<Element>
+  type Menu(items: string[]) implement Component<Element> {
+      fn render(self: Self) -> Component<Element> { … }   // the render starts here
+  }
   ```
-  (b) `R`, rendered, as the checker does now; s34 writes its holes another way and the rule text is amended to say so.
+  (b) A contract with the member: every `Renderable` type writes its `render`; the leaf `Element` needs one native to the render library.
   ```bp
-  val x: Prop = mk(2);   // rendered in a component body
+  pub behavior Renderable<T> { fn render(self: Self) -> Component<T>; }
   ```
-  (c) Rendered only where no `Component<R>` is expected at the call — no decision fixes it; both 553 cells and s34 pass.
+- **Recommendation.** (a): a node is data the renderer reads; the `render()` that runs is a component's, as 593 already states.
+- **Blocks.** B-162's `Renderable<T>` box.
+
+#### 791-b · rakun-bpp's children: one `NodeChildren` per child in a list, or the coercions of today's `Children`? (decision 791 (2); 144 B-162, 165)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** 791 fixes `NodeChildren = Renderable<Element> | Component<Element>`. Today `Element`'s `children: Children` is a type the compiler knows (`rakun-bpp/src/node.bp`), coercing a list, a single child and a string.
+- **Options.**
+  (a) ★ A `NodeChildren` is one child, `children: NodeChildren[]` the list; the compiler-known `Children` and its coercions retire.
   ```bp
-  val x: Component<Prop> = mk(2);   // the lambda (expected)
-  div([Counter()])                  // rendered (an Element expected)
+  pub type NodeChildren = Renderable<Element> | Component<Element>;
+  pub type Element(tag: string, value: string, children: NodeChildren[], attrs: …) implement Renderable<Element>
   ```
-- **Recommendation.** (a): it is the rule already written three times; (c) keeps a context-dependent meaning of a call.
-- **Blocks.** 150 s34 (rakun-style's aliases, 661).
+  (b) `NodeChildren[]` keeping the coercions: a single child or a string also accepted where the list is expected.
+  (c) Generic in std: `NodeChildren<T> = Renderable<T> | Component<T>`, rakun-bpp writing `NodeChildren<Element>`.
+- **Recommendation.** (a): one spelling, no coercion the compiler must know (67).
+- **Blocks.** B-162's `NodeChildren` box and 165's rakun-bpp sites.
+
+#### 791-c · The `T` of the `Renderable` types that are not `Element` (decision 791 (5); 144 B-162, 150, 165)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** Besides `Element`, rakun implements `Renderable` in `Styled` and `StyledProperty` (rakun-style, `styled.bp`), rendered by `Sheet.render(self: Self) -> Component<string>` (661), and in the type of `rakun/src/request_context.bp:107`.
+- **Options.**
+  (a) ★ The owner's tree: each declares the tree it enters — `Styled implement Renderable<Sheet>` —, so a `Styled` cannot be a `div`'s child; the codemod measures each site and a site with no clear tree becomes a question.
+  ```bp
+  pub type Styled(className: string, rules: string) implement Styleable, Renderable<Sheet> { … }
+  ```
+  (b) `Renderable<Element>` for all: a `Styled` may be an `Element`'s child.
+  (c) `Renderable<string>` for what renders text (CSS, HTML).
+- **Recommendation.** (a): the parameter exists to keep trees apart; (b) gives it away.
+- **Blocks.** B-162's codemod of the `implement Renderable` sites.
 
 #### 641-a · Once `String` and `Array` dissolve, how does a program add members to `string` / `array<T>`? (decisions 641, 617, 628; 144 B-148)
 - **Proposed (opus, 2026-10-19; box held, nothing built):** (c).

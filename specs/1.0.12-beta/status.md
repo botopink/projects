@@ -302,7 +302,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 - [ ] 150 s29 — rakun's wrappers without `wrapWith` (144 B-11; 316 overtaken by 714): the publish-retry example as a function around the call (`retry(policy, { -> issue() })`), its marker and the gap row gone; the 318 wrappers as proxy types or functions around the call · nothing
 - [x] 150 s28 — two consumer rows from 144: `rakun_runtime.erl`'s keyed counters to `counts.bump(k, n)` (B-26, 340) — no site, the registry's counters are the sidecar's own Erlang; `tryQuery`'s stale comment removed (B-13, 304)
-- [ ] 150 s34 — `Sheet.add` over what `toStyled()` answers, a component (144 B-10 G2) · nothing
+- [ ] 150 s34 — `Sheet.add` over what `toStyled()` answers, a component (144 B-10 G2) · 144 B-162's call box (791)
 - [ ] 27 s2 box 2 — `use linkStatus()` outside `#[client]` refused · 26 s8 (`#[clientOnly]`, `src/stage.bp`) on 01-checker s23 (`Decl.hooks`)
 - [ ] 143 (398) — `dbcontext`, botopink's JPA over erika: s0 done (`botopink/dbcontext` scaffolded, a submodule); s1 entities and `DbContext` over a `Driver`, s2 `#[repository]` / `#[query "…"]` / `#[nativeQuery]`, s3 rakun-data over it · 137 s2 · 01-checker s29 · s3 after 128
 

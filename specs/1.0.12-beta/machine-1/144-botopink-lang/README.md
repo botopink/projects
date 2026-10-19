@@ -397,6 +397,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-153 | [1](../144-checker/README.md) | a template declared `-> Component<X>` whose built code is a `Component<X>` is refused `template-build-outside-bound` (the bound compared with the unwrapped `X`); found by 150 s34 (661 removes the alias that hid it) |
 | B-154 | [1](../144-checker/README.md) | checker defects found by front 166's drafts: a function value does not widen to `?fn(…)` (330; css's drafts, 166 s3); one box per defect a draft measures |
 | B-157 | [2](../../machine-2/144-backends-tooling/README.md) | fewer conformance modules, nothing tested lost (decision 760): a fable plan, then the pieces after the group's codemods |
+| B-162 | [1](../144-checker/README.md) | a component call is its lambda in a component body too; `use c` resolves a component only in a component body; `await` over a component refused `await-component`; `Renderable<T>`; rakun-bpp's `NodeChildren` (decision 791) — the call box unblocks 150 s34 |
 | B-156 | [1](../144-checker/README.md) | a function with a `syntax` expression parameter is expanded at its call, as a template is (decision 719): `snap.matches(render(page))` reads the call's location through `compiler.source`; three cells |
 | B-109 | [2](../../machine-2/144-backends-tooling/README.md) | beam: a `continue :label` under an in-frame loop inside a fun-walked loop, and two labels continued from one loop |
 | B-110 | [2](../../machine-2/144-backends-tooling/README.md) | an unknown generic type name is accepted unchecked (`Bogus<i32, i32>`) |
