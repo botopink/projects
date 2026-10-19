@@ -47,6 +47,14 @@ what is the task's own: the step, its boxes, its worktree, its model.
 - Wait on a PID (`wait`, `kill -0 <pid>`) or a file, never on `pgrep -f <pattern>`: the waiting shell holds the pattern
   in its own command line, so it matches itself and never ends. Before the report, kill every loop and background
   job you started — none outlives the thread.
+- **Every wait has a deadline and an owner.** A polling loop runs under `timeout` (`timeout 2h bash -c 'until …; do
+  sleep 30; done'`), never bare; it waits only on a PID or a file of a command this thread started, and the file
+  is one that command is sure to write at its end (an `exit` line the script echoes), never another thread's
+  output or a task-output file of the harness. One wait per command: a wait that timed out is killed before a new
+  one is started, never left beside it.
+- **Your scratch files are your own.** The session's scratch directory is shared by every thread: write yours under
+  a subdirectory named after your task (`<scratch>/<task>/build.log`, `cells.txt`, …), never a bare common name
+  (`cells.txt`, `t.log`) another thread may write or wait on.
 - `zig build test` prints `error[reserved-word-as-name]` at `libs/std/src/path.bp:5` (`reservedProbe`): that is
   `comptime/tests/located_errors.zig` building the diagnostic on purpose, not a failure — read the exit status.
 
