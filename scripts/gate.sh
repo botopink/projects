@@ -241,6 +241,15 @@ poolDir() {
 }
 pool="$(poolDir)"
 
+# The machine's name (decisions 768, 769): one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else
+# `$HOME/.config/botopink/machine`), holding `machine-1` or `machine-2`; empty when the file is absent. On `machine-1`
+# every gate runs `--no-conformance` and `exec` refuses a whole-suite `cell check` — conformance is machine 2's.
+machineName() {
+    local f="${XDG_CONFIG_HOME:-$HOME/.config}/botopink/machine"
+    [ -f "$f" ] && tr -d '[:space:]' < "$f" || true
+}
+machine="$(machineName)"
+
 # poolMemAvailableMiB — the machine's MemAvailable, in MiB (empty when /proc/meminfo is unreadable).
 poolMemAvailableMiB() {
     awk '/^MemAvailable:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null || true
@@ -562,6 +571,13 @@ cmdExec() {
         esac
     done
     [ -n "$name" ] && [ "$#" -gt 0 ] || { echo "usage: scripts/gate.sh exec [--jobs <N>] <name> -- <command>…" >&2; return 1; }
+    if [ "$machine" = "machine-1" ]; then
+        local joined=" $* "
+        case "$joined" in
+            *" cell check conformance "*|*" cell check conformance/ "*|*" cell check conformance/modules "*|*" cell check conformance/modules/ "*|*" cell check "*"/conformance "*|*" cell check "*"/conformance/ "*|*" cell check "*"/conformance/modules "*|*" cell check "*"/conformance/modules/ "*)
+                echo -e "${RED}✗ gate: a whole-suite cell check is machine 2's (decisions 768, 769) — run the cells your change reaches, by path${NC}" >&2; return 1 ;;
+        esac
+    fi
     [ -n "$want" ] || { want=$(( $(poolCapacity) / 4 )); [ "$want" -ge 1 ] || want=1; }
     id="$$.exec"
     grant="$(poolAcquire "$id" "$name" "$want" "")"
@@ -588,6 +604,10 @@ parseExtra() { # sets targets[] and extra[] from "$@"
             *) targets+=("$a") ;;
         esac
     done
+    if [ "$machine" = "machine-1" ]; then
+        local has=0; for a in ${extra[@]+"${extra[@]}"}; do [ "$a" = "--no-conformance" ] && has=1; done
+        [ "$has" -eq 1 ] || { extra+=("--no-conformance"); echo "gate: machine-1 — --no-conformance added (decisions 768, 769: conformance is machine 2's)"; }
+    fi
 }
 
 cmd="${1:-check}"

@@ -85,6 +85,11 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   `.tasks/<name>` worktree; its **own** repositories are the checkouts on its branch `front/<name>`, the
   others (symlinks of a `--repo` / `--lang` task, checkouts left on the pointer) are linked siblings and
   are not gated by it.
+- **The machine's name** (decisions 768, 769) is one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else
+  `$HOME/.config/botopink/machine`), holding `machine-1` or `machine-2`. On `machine-1`, `run` / `tasks` / `libs` add
+  `--no-conformance` by themselves and `exec` refuses a whole-suite `cell check` (`conformance/`, `conformance/modules`) —
+  conformance is machine 2's until the maintainer says otherwise; a cell reached by a change is still checked by its path.
+  A machine with no file behaves as before.
 - **The pool** is one directory at a fixed per-machine path, `$XDG_RUNTIME_DIR/botopink-gate-pool` (else
   `/tmp/botopink-gate-pool-<uid>`); not a flag or a variable (decision 67). The machine's jobs are the tighter of
   two bounds, read on every pass (decision 674): the CPUs, a job counted as ~2 runnable threads, and the
