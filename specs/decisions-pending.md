@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**31 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**30 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **766**.
+number, which is **768**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -41,7 +41,6 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
 Open and blocking nothing (front 165): **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name).
@@ -973,30 +972,6 @@ No general rule (283): each case below is its own question, (a) the language's o
 ### 06-emilia
 
 ### 07-onze
-
-#### 50-b · What `onze dev` does on a change
-- **Proposed (fable, 2026-10-12; awaiting the maintainer):** **(a): `onze dev` is `build` then `start`, looped over a file watcher — one code path, the bytes `start` serves** — a change rebuilds and restarts the node (1–3 s per edit); island state is lost either way (Fast Refresh a non-goal). (b)'s hot load and (c)'s fallback add a second path whose equivalence with `start` nothing proves (67); (b) returns when (a) measures too slow on the blog. Viable: `onze-cli/src/start.bp` (`erl -noshell -pa … -eval …`), `onze-bundler/src/rebuild.bp` (the invalidation, kept for the client half); `onze dev` returns 2 today (`main.bp`) and no watcher exists — the watcher is std's `fs` on commonJS / erlang with 506's `io.process.spawn` / `forwardSignals` for the child; 50 step 2 builds it. Changes: 50 step 6's "reloads the changed modules" becomes a restart; 53 step 6.
-- **Not viable (fable, 2026-10-12):** (b) and (c) — the hot-load path is not written, and nothing proves its equivalence with the bytes `start` serves.
-- **Context.** `onze dev` is the development command of onze's server rendering (onze is now the package `rakun-ssr`, mono-a): while the app runs, it should pick up what the user just edited. Today it returns 2 and does nothing; `onze build` compiles the server to BEAM and `onze start` runs it. The choice is whether a change restarts the server from a fresh build or loads the changed modules into the running one, and it has to be made before 50 step 2 builds the watcher (decisions 67, 140, 506).
-- **Measured.** `onze build` compiles the server to BEAM (`server/beam/`), `onze start` runs `erl -noshell -pa <outDir>/server/beam -eval …` (50-a); `onze-bundler/src/rebuild.bp` computes invalidated modules; the BEAM can `code:load_file/1`; UI registry and route table fill at module load (decision 140): a reloaded page re-registers, a new route file needs `onze_routes.bp` regenerated and the table rebuilt.
-- **Options.**
-  (a) Restart the node on every change (`build` + `start` looped over a file watcher — same bytes as `start`, 1–3 s per edit).
-  ```text
-  $ onze dev
-  # src/app/page.bp saved → build, then start again: the node restarts (1–3 s) and serves what `onze start` would
-  ```
-  (b) Hot-load changed modules; regenerate and reload `onze_routes` when the app tree changes.
-  ```text
-  # src/app/page.bp saved → each invalidated module reloaded with code:load_file/1 in the running node
-  # a new route file → onze_routes.bp regenerated, the route table rebuilt
-  ```
-  (c) (b), falling back to (a) when a convention file changed.
-  ```text
-  # page.bp saved → hot-loaded as (b); a convention file saved → restarted as (a)
-  ```
-  Browser island state lost either way (Fast Refresh a non-goal, `07-onze/reference-holes.md` § 29).
-- **Recommendation.** (a): one code path, the same bytes `start` serves; (b) later, if (a) measures too slow on the blog.
-- **Blocks.** 50 step 2; 53 step 6.
 
 #### 49-g · `isString` — onze's own, or std's `Json`
 - **Proposed (fable, 2026-10-12; respelled 2026-10-18; awaiting the maintainer):** **(b), in `json`: `Json.isString()` beside `isObject`; rakun-ssr deletes its own** — one reader per question, in the library that owns `Json` (396: the `json` library takes std's `json.bp` whole, std knows nothing of JSON; until 151 s1 lands the type is still std's, so the method is written in std's `json.bp` under 97 and travels with the move). (c) is a diagnostic text as a type test, never. Viable: `libs/std/src/json.bp` (`isObject`'s `case` is the shape), then rakun-ssr's `config.bp` `isString` and `types.bp`'s import go (then `onze/modules/onze/src/`). Changes: a one-line follow-up in rakun-ssr after the `json` line lands.

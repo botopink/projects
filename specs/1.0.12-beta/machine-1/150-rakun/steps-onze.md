@@ -4,7 +4,7 @@ Front 162 was refiled under 150 rakun by 165 s8: its open steps are 150 s59 … 
 package `rakun-ssr` (`rakun/modules/rakun-ssr/`, 165's table); its context folders moved into `machine-1/150-rakun/`. A step
 here edits `rakun/modules/rakun-ssr/` (and what its text names), in lane "app / ssr" of `fronts.md` § Ownership; a done step stays in `status.md` Done.
 
-**Depends on:** every other library front (53 needs them); 144 B-17 (293), B-19 (281), B-27 (116); 146 (306); 150 s13 / s1 / s16; 150 s36 / s37 / s38; pending std-d, 50-b, 52-a, 49-e, 49-g, nat-f2
+**Depends on:** every other library front (53 needs them); 144 B-17 (293), B-19 (281), B-27 (116); 146 (306); 150 s13 / s1 / s16; 150 s36 / s37 / s38; pending std-d, 52-a, 49-e, 49-g, nat-f2
 **Order:** 49 → 50 → 51 → 71 s1–s2 → 117 → 121 → 122 → 124 s1–s4 → 53 → 71 s5 → 124 s5. Consumer commits it receives: B-02, B-08 (158), B-20, 142 (json, yaml, markdown).
 
 ## Alias table
@@ -170,7 +170,11 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
 
 **Repository:** rakun (`--repo rakun`) · **Model:** sonnet
 
-#### Step 2 — `onze dev` (50-b (a)) (was `50-onze-cli` s2)
+#### Step 2 — `rakun-ssr dev` (decision 766 (a), only (a)) (was `50-onze-cli` s2)
+
+- [ ] decision 766: `dev` = `build` then `start` over a watcher of `fs` mtimes (`src/`, `public/`, `rakun-ssr.json`, `botopink.json`), the child spawned with `forwardSignals` (506); no hot-load path on any target; the acceptance script proves `dev` and `start` answer alike; the plan that measured (b) on every target is [`07-onze/dev-loop-hot-load-plan.md`](07-onze/dev-loop-hot-load-plan.md)
+- [ ] decision 767: `compileBeam` runs `erlc` only over the `.erl` with no `.beam` beside them once `botopink build` materialises the dependencies' cached `.beam` (machine 2's B-57 half; cell `build_materialises_dependency_beams`)
+- [ ] 50-g: `serverMainSource`'s generated `onze_main.bp` still writes `jhRegisterRoutes(@TypeInfo.all(with: page), …)` and `onze_routes.routeModules()` — rewritten to 665's registry read; `onze_routes` keeps only the generated file-convention route table (403, 285), its import role gone (660, 677)
 
 - [ ] `onze dev` on `examples/scaffold` serves `/`, prints `http://localhost:3000` (`dev_test.bp`,
       real socket like `start_test.bp`)

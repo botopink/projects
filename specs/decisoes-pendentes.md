@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**31 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**30 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **766**.
+número livre, que é **768**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -41,7 +41,6 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 
 | # | Pergunta | O que decide | Trava | Recomendação |
 |---|---|---|---|---|
-| 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
 Abertas e sem travar nada (frente 165): **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga).
@@ -973,30 +972,6 @@ Nenhuma regra geral (283): cada caso abaixo é sua própria pergunta, (a) o da p
 ### 06-emilia
 
 ### 07-onze
-
-#### 50-b · O que `onze dev` faz numa mudança
-- **Proposta (fable, 2026-10-12; aguardando o mantenedor):** **(a): `onze dev` é `build` e depois `start`, em loop sobre um observador de arquivos — um caminho de código, os bytes que o `start` serve** — uma mudança reconstrói e reinicia o nó (1–3 s por edição); o estado das ilhas se perde de qualquer modo (Fast Refresh não é meta). O hot load de (b) e o fallback de (c) acrescentam um segundo caminho cuja equivalência com o `start` nada prova (67); (b) volta quando (a) medir lento demais no blog. Viável: `onze-cli/src/start.bp` (`erl -noshell -pa … -eval …`), `onze-bundler/src/rebuild.bp` (a invalidação, mantida para a metade do cliente); `onze dev` responde 2 hoje (`main.bp`) e nenhum observador existe — o observador é o `fs` do std em commonJS / erlang com o `io.process.spawn` / `forwardSignals` da 506 para o filho; o passo 2 da 50 o constrói. Mudanças: o "recarrega os módulos mudados" do passo 6 da 50 vira um reinício; o passo 6 da 53.
-- **Não viável (fable, 2026-10-12):** (b) e (c) — o caminho de hot load não está escrito, e nada prova sua equivalência com os bytes que o `start` serve.
-- **Contexto.** `onze dev` é o comando de desenvolvimento da renderização no servidor do onze (o onze agora é o pacote `rakun-ssr`, mono-a): enquanto o app roda, ele deveria pegar o que o usuário acabou de editar. Hoje ele responde 2 e não faz nada; `onze build` compila o servidor para BEAM e `onze start` o roda. A escolha é se uma mudança reinicia o servidor a partir de um build novo ou carrega os módulos mudados no que está rodando, e ela precisa ser feita antes que o passo 2 da 50 construa o observador (decisões 67, 140, 506).
-- **Medido.** `onze build` compila o servidor para BEAM (`server/beam/`), `onze start` roda `erl -noshell -pa <outDir>/server/beam -eval …` (50-a); `onze-bundler/src/rebuild.bp` calcula os módulos invalidados; o BEAM pode fazer `code:load_file/1`; o registro de UI e a tabela de rotas se preenchem no carregamento do módulo (decisão 140): uma página recarregada se re-registra, um novo arquivo de rota precisa de `onze_routes.bp` regenerado e da tabela reconstruída.
-- **Opções.**
-  (a) Reiniciar o nó a cada mudança (`build` + `start` em loop sobre um observador de arquivos — os mesmos bytes de `start`, 1–3 s por edição).
-  ```text
-  $ onze dev
-  # src/app/page.bp saved → build, then start again: the node restarts (1–3 s) and serves what `onze start` would
-  ```
-  (b) Carregar a quente os módulos alterados; regenerar e recarregar `onze_routes` quando a árvore do app mudar.
-  ```text
-  # src/app/page.bp saved → each invalidated module reloaded with code:load_file/1 in the running node
-  # a new route file → onze_routes.bp regenerated, the route table rebuilt
-  ```
-  (c) (b), recaindo em (a) quando um arquivo de convenção mudou.
-  ```text
-  # page.bp saved → hot-loaded as (b); a convention file saved → restarted as (a)
-  ```
-  Estado de ilha do navegador perdido de qualquer jeito (Fast Refresh um não-objetivo, `07-onze/reference-holes.md` § 29).
-- **Recomendação.** (a): um caminho de código, os mesmos bytes que `start` serve; (b) depois, se (a) medir lento demais no blog.
-- **Bloqueia.** 50 passo 2; 53 passo 6.
 
 #### 49-g · `isString` — do próprio onze, ou o `Json` do std
 - **Proposta (fable, 2026-10-12; regrafada em 2026-10-18; aguardando o mantenedor):** **(b), no `json`: `Json.isString()` ao lado de `isObject`; o rakun-ssr apaga o seu** — um leitor por pergunta, na biblioteca dona do `Json` (396: a biblioteca `json` toma o `json.bp` do std inteiro, o std não sabe nada de JSON; até o 151 s1 pousar o tipo ainda é do std, então o método é escrito no `json.bp` do std sob a 97 e viaja com a mudança). (c) é um texto de diagnóstico como teste de tipo, nunca. Viável: `libs/std/src/json.bp` (o `case` de `isObject` é a forma), depois o `isString` do `config.bp` do rakun-ssr e o import de `types.bp` vão embora (então `onze/modules/onze/src/`). Mudanças: uma continuação de uma linha no rakun-ssr depois que a linha do `json` pousar.
