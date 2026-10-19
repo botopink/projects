@@ -2221,9 +2221,9 @@ tuple.
 
 - [x] a tuple's `toString()` on beam answers the text `print` writes (`#(1, 2)`, `tuple_print`'s answer) — cell
       `tuple_to_string`, red on beam on the parent; staged, landing once the hook is green (165 s10)
-      — built (beam); the cell `tuple_to_string` lands with the commonJS and wasm boxes below, red there today
-- [ ] commonJS: a tuple's `toString()` answers `#(1, 2)`, not JavaScript's `Array.toString` (`1,2`) — the same cell
-- [ ] wasm: a tuple's `toString()` resolves (today `cannot resolve the call toString/0`) — the same cell
+      — built (beam); the cell `tuple_to_string` landed with the commonJS and wasm boxes below
+- [x] commonJS: a tuple's `toString()` answers `#(1, 2)`, not JavaScript's `Array.toString` (`1,2`) — the same cell
+- [x] wasm: a tuple's `toString()` resolves (today `cannot resolve the call toString/0`) — the same cell
 
 ### B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused
 
