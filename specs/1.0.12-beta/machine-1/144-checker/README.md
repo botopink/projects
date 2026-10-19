@@ -2567,6 +2567,21 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 - [x] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
 
+### B-159 — a top-level `comptime { … }` block (decision 788)
+
+**Machine:** 2 (the `compiler.load` chain, 785) · **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing
+
+Decision 788: a module may hold top-level `comptime { … }` blocks — build bodies run once per build in the order written; a
+function whose every parameter is `comptime` is called there and expanded at the call (139), no `comptime fn` form.
+
+- [ ] the parser takes `comptime { … }` at module level; the checker types it as a build body (`compiler.*`, `val`s known at build,
+      calls expanded at build, `print`), a run-time effect `run-in-build`; it declares nothing outside itself
+- [ ] the blocks run in the order written, the modules in their build order; each `compiler.init` registered there runs at program
+      start in that order (632)
+- [ ] a `print` reached there is written to stdout as the build phase's output (789 (2) — the CLI's own messages to stderr)
+- [ ] cell `module_comptime_block` (788): two blocks, an expanded `fn f(comptime n: string) -> void` called from each, their
+      build prints and their init bodies' run prints in order, on every target
+
 ### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782, 783)
 
 **Machine:** 2 (decision 785 — machine 1 does not open it) · **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing
@@ -2595,11 +2610,15 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
-- [ ] 786: `load` answers `Result<Module, Refused>` — `Module(name, path, source: ?string, target, dependencies: Module[])` (a
-      dependency a `Module` of its own: import name, resolved directory, the manifest's spec as `path <p>` / `git <url> <ref>` /
-      `version <v>`, its own `dependencies` — the resolution as a tree), `Refused(module: Module, diagnostics: Diagnostic[])`; `compiler.bp`, the
-      surface table and its test, the handler, the three `compiler_load_*` cells' readers (`catch { r -> … r.diagnostics … }`)
-      and cell `compiler_load_answers_module` (786: `path`, `target` and the dependency tree printed — a path and a git dependency, one with a dependency of its own)
+- [ ] 786: `load` answers `Result<Module, Refused>` — `Module(name, path, target)`, `Refused(module: Module, diagnostics:
+      Diagnostic[])`; `compiler.bp`, the surface table and its test, the handler, the three `compiler_load_*` cells' readers
+      (`catch { r -> … r.diagnostics … }`) and cell `compiler_load_answers_module` (786: `name`, `path` and `target` printed, and a
+      refused file's `r.module.path`)
+- [ ] 787: `Module.run()` — `fn run(self) -> Result<void, Failure>` on the `Ok` side (`Error` when the loaded `main` crashes); a
+      loaded package whose `run` a `compiler.init` body calls is compiled into the program as a package of its own (its `mod` tree,
+      its own dependencies) and its `main` called at that point; one no `run` reaches stays out; `run` outside an init body and a
+      loaded file with no `main` refused, located; cell `compiler_load_module_run` (787: the init body's prints around the loaded
+      `main`'s, and a crashing `main` answered `Error`, on every target) · after the 786 box; a design step — a `fable` plan first
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)

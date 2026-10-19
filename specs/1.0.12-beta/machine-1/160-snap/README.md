@@ -41,8 +41,9 @@ consumer commits only: 144 B-08 (17 sites), B-20, B-28.
       `matchesRefused` until B-156's module-qualified call; front 166's `snap_matches_refused-784/` draft beside it
 
 - [ ] 786: `matchesRefused(syntax loaded: Result<Module, Refused>)` — `Ok(m)` fails naming `m.path` (the `written` argument and
-      `loadedPath` go); `Error(r)` writes `loaded: <path>` and one `dependency: <names> <source>` per dependency of the tree, depth first, names joined by `/`, in the header
-      after `subject:`, the body unchanged; the cell's two `.snap` re-recorded, their bodies byte-identical · after B-158's 786 box
+      `loadedPath` go); `Error(r)` writes `loaded: <path>` in the header after `subject:`, the body unchanged; the cell's two
+      `.snap` re-recorded, their bodies byte-identical, its loaded files back under `src/cases/` · after B-158's 786 box; the
+      library's, for tests — the conformance suite records printed output instead (789 (5))
 
 ### 160 Conformance — the front's last step (decision 465)
 

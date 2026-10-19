@@ -3049,6 +3049,33 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
 
 Oracle: the template cells on four targets; `test-libs`; the cold gate.
 
+### B-160 — `cell check` records the build phase (decision 789)
+
+**Machine:** 2 · **Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-159's print box
+
+- [ ] `botopink build` / `run` write the program's build prints to stdout and the CLI's own messages (`Compiling …`, a refusal's
+      rendering) to stderr; the CLI tests that read today's mixed output follow
+- [ ] `cell_snap.zig`: the `build <text>` record (a bare `build` an empty line), its place in the order — the package's refusal
+      records, `build`, `out` / `no-final-newline`, `abort`, `stderr` —, parse, canonical spelling and round-trip tests
+- [ ] `cell check` captures the build phase's stdout as `build` records before the run's; one answer for every target (a target
+      whose build lines differ reported as a defect, never a departure)
+- [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
+      lines then the `out` lines, on every target
+
+### B-161 — `cell check` as a botopink program (decision 790)
+
+**Machine:** 2 · **Repository:** botopink-lang (`--lang`; std's `io/process` with it) · **Model:** opus (a design step: a `fable`
+plan first) · **After:** B-160
+
+- [ ] `botopink build --json`: a package refusal as records (`Diagnostic`'s fields), the program's build prints apart
+- [ ] `io.process`: `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
+      whose output comes back as an `Async<Exit>`, so N packages run at once within the pool's jobs
+- [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, per target of its manifest runs
+      `botopink build` then `botopink run`, builds the records (475 (2) with 789's `build`), applies the departures under
+      `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's
+- [ ] both run over the whole suite until every snapshot agrees byte for byte; then `botopink cell check` leaves the CLI and
+      `scripts/gate.sh`, the CI and the fronts' Conformance step call the program; the AGENTS files and the meta `AGENTS.md` follow
+
 ### B-157 — fewer conformance modules, nothing tested lost (decision 760)
 
 The maintainer (2026-10-19): `conformance/modules` (1,650 cells, 79 `test/` suites, 801 reference links) is consolidated into fewer
@@ -3122,11 +3149,14 @@ being the one that stands.
       `check-docs.sh`, `tsc-check.sh`, `run.sh`, C-21 (`located_errors.zig`), the workspace glob and meta check 7 read the
       layout; every cited case path rewritten. Left: the cells that fail to pack only because they are red today are packed
       once green (`pack-cells.py` reads `cases/`; a module's `cells/` is not re-packed yet).
-- [ ] **Piece 5 — one package per module (decisions 781, 784), after `machine-1/144` B-158 (780) and `machine-1/160`'s `matchesRefused`**: `pack-cells.py` folds `run/` and
-      `refused/` into `<module>/src/main.bp` + `src/cases/`, each refused case a test of the package run by `botopink test`,
-      `snap.matchesRefused(comptime compiler.load(…))` (784, after `machine-1/160`'s box), `snap` a `git` dependency; a case moves only
-      when its `snap` body equals the old `.snap`'s records byte for byte; `refused/` and its per-case `.snap` retired from `cell check`; folded only when the package's `main.snap` equals the old answers so projected on every target;
-      C-21 walks the loaded cases; check-docs, check 7, run.sh, tsc-check and the docs follow; the suite timed again.
+- [ ] **Piece 5 — one package per module (decisions 781, 789, 790), after B-161 (the `cell check` program), B-160, B-159 and
+      `machine-1/144` B-158's 786 and 787 boxes**: `pack-cells.py` folds `run/` and `refused/` into `<module>/src/main.bp` +
+      `src/cases/<case>/mod.bp` (a running case's `runCase()` its `main`); `main.bp` is 789 (4)'s — `runCase(comptime name)` printing
+      `== <name> comptime`, loading the case with `try comptime compiler.load(…) catch { r -> … }`, its `compiler.init` printing
+      `== <name>` and the refusals or the run (`try mod.run() catch { f -> print("abort …") }`), a top-level `comptime { runCase(…); … }`;
+      the program of B-161 records the package's `main.snap` — no `snap` dependency, no per-case `.snap`; a case moves only when its
+      lines after `== <case>` equal the old `.snap`'s records byte for byte; C-21 walks the loaded cases; check-docs, check 7,
+      run.sh, tsc-check and the docs follow; the suite timed again.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
   directory grows cases (761). botopink-lang's 166 s3 is this mapping, not 509 new drafts; rows 1–143 get their `Cell` slug or
   `process` tag first (166 s2, the coordinator).
