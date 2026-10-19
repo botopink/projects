@@ -2738,6 +2738,9 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       — landed on the three backends with the grep gate (`wat.zig` allow-listed until 164 s3), `print` / `println` /
       `debug` still declared in `builtins.d.bp`; left: the declaration's move to `io/terminal.bp` (B-139 box 2) and the
       cell `print_bound_by_cells`
+      — B-151 prunes a namespace import whose every use became the print / panic call node (`std_calls.expand`); the subject
+      file says no backend intercepts `print` (§ host-functions (1)), so this box removes that call node and B-151's cell
+      `terminal_namespace_import_print` must stay green through linking only the members the program reaches
 - [ ] `print` on wasm by `.Wasm(std: "print" | "println" | "debug")`: a row of 164 s3 (this step's header: the wasm half
       after 164 s3, never beside), `print_bound_by_cells`'s wasm answer its oracle
 - [x] the codemod's misses: `modules/compiler-cli/tests/{cli_contract,test_tooling,closure_invariant}.sh`, the fixture
