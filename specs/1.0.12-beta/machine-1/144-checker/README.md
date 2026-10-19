@@ -2590,8 +2590,8 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       the refusals handled by `try … catch` and propagated by `try`), front 166's shape: a refused
       file's `code`, `message`, `line`, `column`, `label` printed from `try comptime compiler.load(…) catch { ds -> … }` (783); a file that compiles answers `Ok`; the
       refusals on every target · green on erlang, commonJS and wasm; the three answer cells red on beam (the `try … catch` defect below)
-- [ ] beam refuses `try f() catch { e -> … };` over a `Result<void, E>` (`get_tuple_element` `bad_type`), with or without
-      `compiler.load`; the three answer cells green on beam
+- [x] beam refuses `try f() catch { e -> … };` over a `Result<void, E>` (`get_tuple_element` `bad_type`), with or without
+      `compiler.load`; the three answer cells green on beam · fixed (`beam_try_catch_result_void`)
 - [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
