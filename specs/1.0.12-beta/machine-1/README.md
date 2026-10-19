@@ -99,4 +99,4 @@ Every report to the maintainer and every reply is a file of `repository/conversa
 ## Blocked on the maintainer — not opened
 
 In the order the maintainer answers them (the queue of 2026-10-17):
-B-10-b … g, B-02-c, B-27-g2 / g4, 564-d, 165-a, 548-a / b, B-86-a, 661-a (150 s34 waits on it), 641-a (B-148's 641 box waits on it). A thread that reaches one of these stops at it and reports.
+B-10-b … g, B-02-c, B-27-g2 / g4, 564-d, 165-a, 548-a / b, B-86-a, 661-a (150 s34 waits on it), 641-a (B-148's 641 box waits on it), 617-a (B-148's override box). A thread that reaches one of these stops at it and reports.

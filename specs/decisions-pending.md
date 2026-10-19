@@ -429,6 +429,28 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (c): the case still says contract, and it is what the `extend` refusal already tells the user to write.
 - **Blocks.** B-148's 641 box (the dissolution and the codemod: `Array<` 2,231, `Bytes` 144, `String.` 113, `BigInt` 37 sites) and the `String` / `Array` / `Bool` / `BigInt` / `Bytes` half of `external-on-behavior`.
 
+#### 617-a · The override check: what a type's own member must match of its contract's, with what code, over which members? (decisions 617, 628; 144 B-148)
+- **Proposed (opus, 2026-10-19; box held, nothing built):** (a).
+- **Context.** B-148's box: "a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature". No decision names the code, the members it covers or what counts as the same signature.
+- **Measured.** Nothing checks an implementor against its behavior today: a type writing `fn label(self: Self, extra: i32) -> i32` for a behavior's `fn label(self: Self) -> string` is accepted silently, whether the member is a `default fn` or a required one.
+- **Options.**
+  (a) ★ Every implementor, every member (required and `default fn`): the same parameter count, each parameter's type and the return type equal with `Self` read as the implementing type; labels, parameter names and defaults free; refused at the member, located, naming both signatures — `implement-signature-differs`.
+  ```bp
+  behavior Labelled { fn label(self: Self) -> string; }
+  Tag implement Labelled { fn label(self: Self, extra: i32) -> i32 { … } }   // implement-signature-differs
+  ```
+  (b) The same check on overridden `default fn` only — a required member stays checked by whatever reads it.
+  ```bp
+  behavior Labelled { default fn label(self: Self) -> string { return "?"; } }
+  Tag implement Labelled { fn label(self: Self) -> i32 { … } }   // refused; a required member unchecked
+  ```
+  (c) The primitive widths only (B-148's own scope), the rest later.
+  ```bp
+  pub type i32 implement Signed { fn abs(self: Self) -> i64 { … } }   // refused; user types unchecked
+  ```
+- **Recommendation.** (a): one rule for every contract; a silent mismatch is the strictest thing to refuse (67).
+- **Blocks.** B-148's override box.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

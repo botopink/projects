@@ -429,6 +429,28 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (c): a caixa continua dizendo contrato, e é o que a recusa do `extend` já manda o usuário escrever.
 - **Bloqueia.** A caixa da 641 do B-148 (a dissolução e o codemod: `Array<` 2.231, `Bytes` 144, `String.` 113, `BigInt` 37 sites) e a metade `String` / `Array` / `Bool` / `BigInt` / `Bytes` do `external-on-behavior`.
 
+#### 617-a · A verificação de override: o que o membro próprio de um tipo precisa casar com o do contrato, com que código, sobre quais membros? (decisões 617, 628; 144 B-148)
+- **Proposto (opus, 2026-10-19; caixa retida, nada construído):** (a).
+- **Contexto.** A caixa do B-148: "a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature". Nenhuma decisão nomeia o código, os membros que ela cobre ou o que conta como a mesma assinatura.
+- **Medido.** Nada verifica um implementador contra o seu behavior hoje: um tipo que escreve `fn label(self: Self, extra: i32) -> i32` para o `fn label(self: Self) -> string` de um behavior é aceito em silêncio, seja o membro um `default fn` ou um obrigatório.
+- **Opções.**
+  (a) ★ Todo implementador, todo membro (obrigatório e `default fn`): a mesma quantidade de parâmetros, o tipo de cada parâmetro e o tipo de retorno iguais com `Self` lido como o tipo que implementa; rótulos, nomes de parâmetro e defaults livres; recusado no membro, localizado, nomeando as duas assinaturas — `implement-signature-differs`.
+  ```bp
+  behavior Labelled { fn label(self: Self) -> string; }
+  Tag implement Labelled { fn label(self: Self, extra: i32) -> i32 { … } }   // implement-signature-differs
+  ```
+  (b) A mesma verificação só nos `default fn` sobrescritos — um membro obrigatório continua verificado por quem o lê.
+  ```bp
+  behavior Labelled { default fn label(self: Self) -> string { return "?"; } }
+  Tag implement Labelled { fn label(self: Self) -> i32 { … } }   // refused; a required member unchecked
+  ```
+  (c) Só as larguras primitivas (o escopo do próprio B-148), o resto depois.
+  ```bp
+  pub type i32 implement Signed { fn abs(self: Self) -> i64 { … } }   // refused; user types unchecked
+  ```
+- **Recomendação.** (a): uma regra para todo contrato; um descasamento silencioso é o que há de mais estrito a recusar (67).
+- **Bloqueia.** A caixa de override do B-148.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
