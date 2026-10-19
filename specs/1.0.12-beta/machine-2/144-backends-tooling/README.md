@@ -2399,7 +2399,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       type and lowered through the block forms, `marker-type-mismatch`, `marker-without-arrow`,
       `marker-lambda-without-expected-type`, `marker-on-declaration`, `component-lambda-not-lowered` (B-116-a … g and
       B-116-i built as recommended, B-116-a decided by 570, B-116-b by 571, B-116-c by 572, B-116-d by 573, B-116-e by 574; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
-      of today's forms refused yet. P2 landed: `scripts/codemod/body_markers.py` over the cells, `conformance/test` and std. Left: P3 one landing per library — each also marking
+      of today's forms refused yet. P2 landed: `scripts/codemod/body_markers.py` over the cells, `conformance/test` and std. P3 landed (rakun, query, markdown: both codemods, the `-> Async<T>` bodies returning a bare value marked `async`; rakun's gate 170 → 47 red items, no new one). Left: (P3 was) one landing per library — each also marking
       every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
       keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare
       value refused as a type mismatch, the hint naming the marker and `Async.resolve` (570)
@@ -3018,6 +3018,7 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
 - [ ] every cell of `tests/language` green on four targets before and after — the answers of the primitives do not change, only where their code is written; `conformance/docs.md` § Primitives rewritten (the widths as types, the contracts, where host code lives); `libs/std/AGENTS.md`
 - [ ] cells: `primitive_width_is_a_type` (`i32` in a type position and `implement Signed` read), `external_on_behavior` refused, `primitive_default_fn_overridden` (a width's own cell beside the contract's body, four targets), `implement_with_body` with the behavior case
 
+- [ ] commonJS: when rakun-bpp's whole package compiles, the modules load in an order that breaks `instanceof` of a class from a circular import (`Right-hand side of 'instanceof' is not an object`, `error_boundary_test`'s four tests, node's circular-export warnings); a cell with two modules importing each other, red on commonJS
 Oracle: the whole suite on four targets; `test-libs`; the cold gate.
 
 ### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
