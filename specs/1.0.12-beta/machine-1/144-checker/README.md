@@ -2595,11 +2595,11 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
-- [ ] 786: `load` answers `Result<Module, Refused>` — `Module(path, target, dependencies: Dependency[])`, `Dependency(name, source,
-      root)` (every dependency the loaded package resolved, transitive, flat, in resolution order; `source` the manifest's spec as
-      `path <p>` / `git <url> <ref>` / `version <v>`), `Refused(module: Module, diagnostics: Diagnostic[])`; `compiler.bp`, the
+- [ ] 786: `load` answers `Result<Module, Refused>` — `Module(name, path, source: ?string, target, dependencies: Module[])` (a
+      dependency a `Module` of its own: import name, resolved directory, the manifest's spec as `path <p>` / `git <url> <ref>` /
+      `version <v>`, its own `dependencies` — the resolution as a tree), `Refused(module: Module, diagnostics: Diagnostic[])`; `compiler.bp`, the
       surface table and its test, the handler, the three `compiler_load_*` cells' readers (`catch { r -> … r.diagnostics … }`)
-      and cell `compiler_load_answers_module` (786: `path`, `target` and the dependencies printed, a path and a git dependency)
+      and cell `compiler_load_answers_module` (786: `path`, `target` and the dependency tree printed — a path and a git dependency, one with a dependency of its own)
 - [ ] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does: today a test package
       whose loaded cases sit under `src/` reports each as a failed module, so snap's `snap_matches_refused` keeps them in
       `cases/` and B-157 piece 5's `src/cases/<case>/main.bp` (784 (3)) waits on it

@@ -699,6 +699,6 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 160 snap
 
-- [ ] 786 — `compiler.load` answers `Result<Module, Refused>`, the `Module` carrying its path, target and every resolved dependency: B-158's 786 box, then 160's (`loaded:` / `dependency:` header lines), then B-157 piece 5 · machine 2
+- [ ] 786 — `compiler.load` answers `Result<Module, Refused>`, the `Module` carrying its path, target and its dependencies as `Module`s (the resolution tree): B-158's 786 box, then 160's (`loaded:` / `dependency:` header lines), then B-157 piece 5 · machine 2
 - [x] 160 `matchesRefused` (784, machine 2 by 785) — a loaded file's refusals recorded under subject `refused`, one block per `Diagnostic`, through the engine's path rule, format and `.new` flow; a file that compiles fails the test naming it; cell `snap_matches_refused` (`conformance/test/`) and its 166 draft · left: B-157 piece 5 (781, 784), after B-158's `botopink test` row
 - [x] 135 s0 (391) — the `snap` library: scaffolded and a submodule (`repository/snap`), `botopink.json`, the engine and std's four `.snap` moved in, std's `String.normalizeNewlines` / `trimTrailingNewlines` / `firstDifferingLine` and `fs.mkdirRecursive` (402), jhonstart and onze importing from `snap`, `contracts.md` § 7 — landed (botopink-lang `11bde540`, snap `30ee7f5`, jhonstart `d47fffc`, onze `b6b0e0d`; every `.snap` byte-identical); the old import keeps the plain unknown-module error, the pointer documentation (407) · none; 135 s1–5 write through it
