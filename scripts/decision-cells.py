@@ -65,6 +65,7 @@ def include_line(path):
 
 
 INCLUDE = re.compile(r"\[[^\]]*\]\(([^()\s]+\.bp)\)")  # a relative link to a `.bp` file
+LINK = re.compile(r"\[[^\]]*\]\(([^()\s]+)\)")  # any Markdown link
 PLACEHOLDER = re.compile(r"^\{[^{}\s]+\}$")
 
 
@@ -280,9 +281,11 @@ def cmd_compile(root, args):
               file=sys.stderr)
         return 1
     d = cells_dir(root, repo)
+    # a draft (<dir>/draft/main.bp) or each case of a cases directory (<dir>/cases/<case>/src/main.bp, decision 765)
     mains = sorted(p for p in d.glob("*/draft/main.bp")) if d.is_dir() else []
+    mains += sorted(p for p in d.glob("*/cases/*/src/main.bp")) if d.is_dir() else []
     if not mains:
-        print(f"{repo}: no draft/main.bp to compile")
+        print(f"{repo}: no draft/main.bp or cases/*/src/main.bp to compile")
         return 0
     scratch = repo_dir / ".botopinkbuild" / "tmp" / "decision-cells"
     shutil.rmtree(scratch, ignore_errors=True)
@@ -299,7 +302,10 @@ def cmd_compile(root, args):
                 dep["path"] = str((wm.parent / dep["path"]).resolve())
     (scratch / "botopink.json").write_text(json.dumps(ws, indent=2) + "\n")
     for m in mains:
-        c = scratch / package_name(m.parent.parent.name)
+        if m.parent.name == "src":  # cases/<case>/src/main.bp
+            c = scratch / package_name(f"{m.parent.parent.parent.parent.name}-{m.parent.parent.name}")
+        else:
+            c = scratch / package_name(m.parent.parent.name)
         c.mkdir(parents=True)
         shutil.copytree(m.parent, c / "src")  # the whole draft/: main.bp and any <other>.bp
         (c / "botopink.json").write_text(json.dumps({"name": c.name}) + "\n")
@@ -349,18 +355,22 @@ def cmd_promote(root, args):
     n = 0
     for m in sorted(d.iterdir()) if d.is_dir() else []:
         main = m / phase1_main(False)
-        if not main.is_file() or (m / "src").exists():
+        if not main.is_file() or (m / "src").exists() or (m / "cases").exists():
             continue
-        main.parent.rename(m / "src")  # draft/ -> src/, every file of it
-        (m / "botopink.json").write_text(json.dumps({"name": package_name(m.name)}) + "\n")
+        # decision 765: draft/ -> cases/example/src/, a full cell of its own
+        case = m / "cases" / "example"
+        case.mkdir(parents=True)
+        main.parent.rename(case / "src")  # every file of the draft
+        (case / "botopink.json").write_text(json.dumps({"name": package_name(f"{m.name}-example")}) + "\n")
+        (case / "snapshot").mkdir()
         docs = m / "docs.md"
         if docs.exists():
             # every [draft/<file>](draft/<file>) link
-            docs.write_text(re.sub(r"\[draft/([^\]]*)\]\(draft/", r"[src/\1](src/", docs.read_text()))
+            docs.write_text(re.sub(r"\[draft/([^\]]*)\]\(draft/", r"[cases/example/src/\1](cases/example/src/", docs.read_text()))
         n += 1
     wm = workspace_manifest(root, repo)
     if n and wm:
-        add_workspace_glob(wm, "decisions-taken/*")
+        add_workspace_glob(wm, "decisions-taken/*/cases/*")
     print(f"promote {repo}: {n} cells")
     return 0
 
@@ -432,17 +442,44 @@ def check_repo(root, repo):
     return out
 
 
+def check_cases(root, repo, m, n, red):
+    """Decision 765: `cases/<case>/` each a full cell: botopink.json, src/main.bp, snapshot/."""
+    found = sorted(c for c in (m / "cases").iterdir() if c.is_dir())
+    if not found:
+        red(n, "cases/ holds no case")
+    for c in found:
+        for need, ok in (("botopink.json", (c / "botopink.json").is_file()), ("src/main.bp", (c / "src/main.bp").is_file()),
+                         ("snapshot/", (c / "snapshot").is_dir())):
+            if not ok:
+                red(n, f"case {c.name} has no {need} (decision 765)")
+        if (c / "botopink.json").is_file():
+            try:
+                targets = json.loads((c / "botopink.json").read_text()).get("targets")
+            except ValueError:
+                red(n, f"case {c.name} botopink.json is not JSON")
+                targets = None
+            extra = [t for t in targets or [] if t not in workspace_targets(root, repo)]
+            if extra:
+                red(n, f"case {c.name} botopink.json targets {extra} are not the workspace's")
+
+
 def check_cell(root, repo, m, row, red):
     n = row.num
     draft, src = (m / phase1_main(False)).is_file(), (m / phase1_main(True)).is_file()
+    cases = (m / "cases").is_dir()
+    if cases and (draft or src):
+        red(n, f"holds both cases/ and {phase1_main(draft is False)} (decision 765: a draft or cases, not both)")
+        return
     if draft and src:
         red(n, f"holds both {phase1_main(False)} and {phase1_main(True)} (decision 649: one or the other)")
         return
-    if not draft and not src:
-        red(n, f"holds neither {phase1_main(False)} nor {phase1_main(True)} (decision 649)")
+    if not draft and not src and not cases:
+        red(n, f"holds neither {phase1_main(False)} nor {phase1_main(True)} nor cases/ (decisions 649, 765)")
         return
     promoted = src
     program = m / phase1_main(promoted)
+    if cases:
+        check_cases(root, repo, m, n, red)
     docs = m / "docs.md"
     if not docs.is_file():
         red(n, "no docs.md")
@@ -458,8 +495,14 @@ def check_cell(root, repo, m, row, red):
         for inc in includes:
             if not (m / inc).is_file():
                 red(n, f"docs.md links {inc}, which does not exist")
+        for tgt in sorted({t for ln in lines for t in LINK.findall(ln)} - set(includes)):  # decision 765: every link resolves
+            path = tgt.split("#")[0]
+            if path and not re.match(r"[a-z][a-z0-9+.-]*:", path) and not (m / path).exists():
+                red(n, f"docs.md links {tgt}, which does not exist")
         if any(ln.lstrip().startswith("```") for ln in lines):
             red(n, "docs.md contains a fenced code block (code lives in the included file)")
+    if cases:
+        return
     if program.is_file():
         first = program.read_text().split("\n")[0]
         if first != f"//// {row.title}":

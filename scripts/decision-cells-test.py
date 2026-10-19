@@ -239,12 +239,68 @@ class Cells(unittest.TestCase):
     def test_promote(self):
         self.run_cmd("scaffold", "snap")
         self.assertEqual(self.run_cmd("promote", "snap")[0], 0)
-        self.assertTrue((self.d / "code_rule_ten-10/src/main.bp").is_file())
-        self.assertFalse((self.d / "code_rule_ten-10/draft").exists())
-        self.assertEqual(json.loads((self.d / "code_rule_ten-10/botopink.json").read_text()), {"name": "code_rule_ten-10"})
-        self.assertIn("[src/main.bp](src/main.bp)", (self.d / "code_rule_ten-10/docs.md").read_text())
-        self.assertIn('"decisions-taken/*"', (self.repo / "conformance/modules/botopink.json").read_text())
+        c = self.d / "code_rule_ten-10"
+        self.assertTrue((c / "cases/example/src/main.bp").is_file())
+        self.assertFalse((c / "draft").exists() or (c / "src").exists())
+        self.assertEqual(json.loads((c / "cases/example/botopink.json").read_text()), {"name": "code_rule_ten-10-example"})
+        self.assertIn("[cases/example/src/main.bp](cases/example/src/main.bp)", (c / "docs.md").read_text())
+        self.assertIn('"decisions-taken/*/cases/*"', (self.repo / "conformance/modules/botopink.json").read_text())
         self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
+
+    def cases(self, n, title, names=("a",)):
+        c = self.d / f"{S[n]}-{n}"
+        c.mkdir(parents=True)
+        links = ""
+        for nm in names:
+            k = c / "cases" / nm
+            (k / "src").mkdir(parents=True)
+            (k / "snapshot").mkdir()
+            (k / "botopink.json").write_text(json.dumps({"name": f"{c.name}-{nm}"}))
+            (k / "src/main.bp").write_text(f"//// {nm}\npub fn main() -> void {{}}\n")
+            links += f"[cases/{nm}/src/main.bp](cases/{nm}/src/main.bp)\n"
+        (c / "docs.md").write_text(f"# {title}\n\n{links}")
+        return c
+
+    def test_green_cases(self):
+        self.cases(10, T10, ("a", "b"))
+        self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
+
+    def test_cases_and_draft(self):
+        c = self.cases(10, T10)
+        (c / "draft").mkdir()
+        (c / "draft/main.bp").write_text(f"//// {T10}\n")
+        self.assertRed("decision 10: holds both cases/ and draft/main.bp")
+
+    def test_cases_malformed(self):
+        c = self.cases(10, T10)
+        import shutil
+        shutil.rmtree(c / "cases/a/snapshot")
+        self.assertRed("decision 10: case a has no snapshot/")
+        (c / "cases/a/snapshot").mkdir()
+        (c / "cases/a/botopink.json").unlink()
+        self.assertRed("case a has no botopink.json")
+
+    def test_cases_empty(self):
+        c = self.cases(10, T10, ())
+        (c / "cases").mkdir()
+        self.assertRed("decision 10: cases/ holds no case")
+
+    def test_cases_targets(self):
+        c = self.cases(10, T10)
+        (c / "cases/a/botopink.json").write_text('{"name": "x", "targets": ["wasm"]}')
+        self.assertRed("case a botopink.json targets ['wasm'] are not the workspace's")
+
+    def test_every_link_resolves(self):
+        c = self.cell(10, T10)
+        (c / "docs.md").write_text(f"# {T10}\n\n[draft/main.bp](draft/main.bp)\n[more](notes.md)\n[web](https://x.y/z)\n")
+        self.assertRed("docs.md links notes.md, which does not exist")
+
+    def test_compile_builds_cases(self):
+        self.cases(10, T10)
+        self.fake_compiler()
+        code, out = self.run_cmd("compile", "snap")
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("no draft", out)
 
 
 if __name__ == "__main__":
