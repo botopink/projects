@@ -2948,6 +2948,8 @@ Each box is a library's decision-cell draft that builds on the other targets and
       found hunting the boxes above; a cell of the shape, red on wasm on the parent
 - [ ] beam: `val f = { h -> h?.entry?.name ?? "none" }; f(o.holder)` over a lambda parameter typed `?Holder` answers `none`
       where commonJS, erlang and wasm answer `a`; found hunting the boxes above; a cell of the shape, red on beam on the parent
+- [ ] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
+      print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
 
 ### B-147 — erlang / beam defects found by 165 s5
 
@@ -2990,9 +2992,19 @@ Oracle: the whole suite on four targets; `test-libs`; the cold gate.
 
 Today a template's body answers code as a string — `compiler.build(code)` after concatenating botopink source (113 sites: the template cells; rakun-bpp's `html.bp` generator, 1,400 lines) — and `Type.pick` / `omit` / `partial` / `required` / `merge` write a record's text for `compiler.buildType(text)` (23 sites). Decision 625: code enters the compiler written (a `syntax` parameter, a template text) or as the typed AST, never as a string.
 
-- [ ] the `Node` records in `compiler.bp`, one per kind the parser's `ast.Expr` has that a template may answer (`Call`, `Name`, `Lit`, `List`, `Arg`, `Lambda`, `Record`, `Field`, `If`, `Case`, …) — the vocabulary measured off the parser and written in `conformance/docs.md` § `compiler.ast`; a kind no template needs is not exposed
-- [ ] `fn ast(self: Self, comptime node: Node) -> anyvalue`: the tree checked and lowered where the call stands (426 (1)); an ill-formed tree (an `Arg` outside a `Call`, a `Name` nothing binds) refused at the `ast` call naming the node
+- [x] the `Node` records in `compiler.bp`, one per kind the parser's `ast.Expr` has that a template may answer (`Call`, `Name`, `Lit`, `List`, `Arg`, `Lambda`, `Record`, `Field`, `If`, `Case`, …) — the vocabulary measured off the parser and written in `conformance/docs.md` § `compiler.ast`; a kind no template needs is not exposed
+      — built as: `Name`, `Lit`, `Member(target, member)`, `Call(callee, args)` (`fn` is reserved; b149-g), `Arg`, `List`, `Tuple`,
+      `Binary`, `Unary`, `If`, `Lambda`, `Syntax(e)`; `Node` a union alias of the records; no `Record` / `Field` / `Case` (the
+      parser has no such kind); question b149-g (confirm as built)
+- [x] `fn ast(self: Self, comptime node: Node) -> anyvalue`: the tree checked and lowered where the call stands (426 (1)); an ill-formed tree (an `Arg` outside a `Call`, a `Name` nothing binds) refused at the `ast` call naming the node
+      — built as: the argument checked in the reply, not unified with `Node` (b149-g); a type error inside a built tree located
+      per question b149-j; cells `template_answers_ast`, `ast_ill_formed_refused`, `ast_syntax_node_typed_at_splice`
+- [ ] a library's private function reached through the hygiene alias keeps its parameter names: `double(n: 3)` in built code
+      is `label-on-function-value` today (found by P1); a cell, red on the parent
 - [ ] **P1b, `code.bp`** (637, 625 (4)): the std module whose template `code` turns code written with `${…}` holes into the AST, a hole a build value (a literal) or a `syntax` value (spliced as written); `compiler.holes(syntax t: string) -> unknown[]`, the caller's holes as `syntax` values; `Syntax(e)` the node `code` emits for a `syntax` hole (638), the 8 receiver-by-text cells over `code`; the 11 hole cells and every template cell rewritten over `code` in P2 — no `Hole(index)` node
+      — the hole's kind read by its arrival (637, 638: a `syntax` value is `Syntax`, a build value `Lit`), so `compiler.bp`
+      gains `compiler.isSyntax(v: unknown) -> bool` (a build read, 576 (2)); a cell line where a `Lit` holding a `syntax`
+      value is refused ("write `Syntax(e)`"); the vocabulary 644's mock member needs, question b149-m
 - [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; the 14
       `decorator_add_type*` cells written `compiler.addType("Columns", type(id: string))` (640 (2)); `compiler.ast` admitted in a
       decorator body with a cell (640 (3)); the builders' surface, `mocks.bp` and `build_type_from_fields` are this step's, `Type`'s

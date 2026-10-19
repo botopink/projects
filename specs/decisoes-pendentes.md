@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**36 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**39 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -276,6 +276,27 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### b149-g · Confirmar a superfície do B-149 P1 como construída: `Call(callee:)`, `Node` um alias de união, o vocabulário, o argumento checado na resposta (decisão 625; 144 B-149)
+- **Proposto (opus, 2026-10-18; revisado por fable; aguardando o mantenedor; construído como (a)):** **(a) como construído:** `Call(callee: …, args: …)` — o exemplo da 625 (2) escreve `Call(fn: …)`, que não faz parse (`fn` é reservada, e um campo e um rótulo pedem um identificador); `pub type Node = Name | Lit | Member | Call | Arg | List | Tuple | Binary | Unary | If | Lambda | Syntax;`, uma união fechada; sem `Record` / `Field` / `Case` (o parser não tem esse tipo de nó; uma construção é um `Call` com `Arg`s); o argumento de `compiler.ast` é checado na resposta, não unificado com `Node`.
+- **Medido.** A 625 (2) amarra o vocabulário a "medido a partir do `ast.Expr` do parser"; os `Record`, `Field`, `Case` que ela lista não têm tipo de nó no parser. Um behavior `Node` deixaria o conjunto aberto (qualquer record poderia implementá-lo), e a resposta distingue os tipos pelos seus conjuntos de campos.
+- **Opções.** (a) Como construído. (b) Outro nome de campo para o chamado (`function`, `target`). (c) `Node` um behavior que os records implementam.
+- **Recomendação.** (a).
+- **Bloqueia.** Nada construído; o texto do exemplo da 625 (2).
+
+#### b149-j · Onde um erro de tipo dentro de uma árvore que `compiler.ast` constrói é reportado (decisões 625, 691; 144 B-149)
+- **Proposto (opus, 2026-10-18; revisado por fable; aguardando o mantenedor):** **(a): na chamada de `ast`**, como uma árvore malformada é — o erro localizado na chamada do chamador, a mensagem nomeando o `file:line:col` da biblioteca da chamada de `ast` e o nó. Uma inserção `Syntax(e)` mantém a localização do próprio chamador.
+- **Medido.** A 691 deixa "qual é a localização de um nó" para este passo. Como construído, todo nó da biblioteca fica na primeira localização capturada do chamador, uma coluna por nó — uma coluna que nenhum texto tem, a queixa que a 625 levantou contra `build`.
+- **Opções.** (a) Na chamada de `ast`. (b) O texto do template do chamador pela regra de cópia de palavra da 691 (não há palavra para copiar). (c) Uma localização por nó (a árvore não carrega nenhuma).
+- **Recomendação.** (a).
+- **Bloqueia.** Para onde erros de tipo como os de `ast_ill_formed_refused` apontam; nada mais construído.
+
+#### b149-m · O vocabulário de `Node` de que o `code` do P1b precisa para o membro mock da 644: uma função tipada e posições de tipo (decisões 625, 637, 644; 144 B-149 P1b)
+- **Proposto (revisão fable, 2026-10-18; aguardando o mantenedor):** **(a): `Node` ganha um nó `Fn(params, ret, body)` e uma família de nós de tipo**, medidos a partir do membro mock da 644 (`` code `fn(self: Self, ${params}) -> ${ret} { return … }` ``) e das formas que o html.bp emite (`Call`s simples, já cobertos).
+- **Medido.** `Lambda(params: string[], body: Node)` não carrega tipo de parâmetro, tipo de retorno nem corpo de instruções, então `code` não consegue construir o membro da 644 como uma árvore.
+- **Opções.** (a) `Node` cresce como acima. (b) `code` mantém uma saída de texto cru para essas formas — contra a 625 (nada de código a partir de texto).
+- **Recomendação.** (a).
+- **Bloqueia.** B-149 P1b (`code.bp`) e P4 (`mocks.bp`).
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
