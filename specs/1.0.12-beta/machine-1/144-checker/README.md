@@ -1196,9 +1196,11 @@ and its siblings. **Model:** opus. **Consumer commits:** none.
 
 #### Decision 583 — every function typed where it is written
 
-- [ ] a lambda nothing types refused `lambda-untyped`, located, the hint naming the typed form and the `val` annotation;
+- [x] a lambda nothing types refused `lambda-untyped`, located, the hint naming the typed form and the `val` annotation;
       328's inference from later calls removed with its tests; the 69 cells migrated (the inference cells become refusal
       cells); one migration commit per library (rakun 16, query 13, std 5 sites), by hand; `docs.md` § Lambdas
+      — built as: `lambda-untyped` also for a module-level `val` and a parameterless lambda; 328's inference code stays, an
+      immediately called fn expression and an argument of a free type parameter still reach it; rakun's and query's sites migrated, std's five not recorded as done
 
 #### Step 37 — the typed function expression in every position (decision 408) (was `01-checker` s37)
 
@@ -2600,7 +2602,8 @@ Decision 719 generalises the template (578): a function whose parameter is `synt
 - [x] a decorator's `syntax decl` is untouched (576, 716); a template method's `syntax self: R` receiver is untouched (578 (1))
 - [x] cells `syntax_fn_expanded_at_call` (snap's shape: `matches(syntax value: unknown) -> anyvalue` splicing `compiler.source(value)` into a run-time call, the file and line printed at the test's line), `syntax_fn_text_of_expression` (`assert(a == b)` printing `a == b`), `syntax_fn_string_param_needs_template_text` (reject), four targets; `conformance/docs.md` § Templates renamed to cover both forms · `compiler.source`'s file is the module path as built, question 719-b
 - [ ] `compiler.source(value).file` is the file relative to the package root (`src/main.bp`), never the module path; `builtins.d.bp`'s comment corrected · decision 756 (a); cell `syntax_fn_source_file_is_path` (`src/main.bp:32`)
-- [ ] snap's `matches` rewritten in this shape by front 160's step (machine 1, after this lands); front 166's snap drafts promote on it (s4)
+- [x] snap's `matches` rewritten in this shape by front 160's step (landed); front 166's snap drafts promote on it (s4)
+- [ ] a `syntax` function called through its module — `snap.matches(x)` after `import {snap} from "snap"` — is not expanded and is refused "expected Expr, got string"; a call through the module's qualified name expands as the bare call does; a cell, red on the parent (found by front 160; snap's README and AGENTS still show that form)
 
 Oracle: the cells; `zig build test`.
 
@@ -2634,7 +2637,7 @@ Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its
 - [ ] decision 669: the names in a built type's fields and implements resolve in the module that calls `buildType` / `buildTypeInline` (the decorator's), as every tree a decorator writes; an annotation argument in the annotation's module (206); `compiler.lookup` the one way to the caller's names — cells `built_type_names_decorator_module`, `built_type_host_name_unbound`; rakun's qualified names dropped in 165 s11
 - [ ] decision 670: any `-> anytype` function builds a type, std's five the first of them — the callee resolved through the import graph, no std list in the checker; `anytype-outside-type-val`; cells `derived_type_library_builder`, `derived_type_program_builder`, `anytype_outside_type_val`
 - [ ] decision 671: a field's default travels into every derived type and resolves where it was written (669), `defaultValue` always the default as written; `isClosedDefault` and the non-closed refusal removed, the target exporting what a default reaches; cells `derived_type_default_travels`, `derived_type_default_module_val`, `derived_type_default_across_packages`, `imported_field_default_not_derived` rewritten
-- [ ] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `compiler.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
+- [x] the run-time field key removed (decision 599): `Type.keys`, `Field.of` / `all`, the run-time `compiler.Field<T>` value, five cells, `docs.md`'s paragraph; `partial` / `required` / `merge` / `pick` / `omit` stay, written over `compiler.fields` + `compiler.buildType` (599 (3))
 - [ ] `compiler.Field<T>(name: string, type: type, annotations: DeclAnnotation[], defaultValue: ?anyvalue)` (decision 598: the default as written, `null` when none; cells `typeinfo_field_default_value`, `typeinfo_field_default_none`) — `typeName` goes; a `type` value is
       lowered as its name on every target; `typeInfo(T).fields` and `compiler.fields(d)` hand out `compiler.Field<unknown>` (308, 576 (8))
 - [ ] `compiler.fields`, `compiler.optional` / `required` (a field, its source kept), `compiler.buildType` over the record's text (307's naming by
@@ -2642,6 +2645,7 @@ Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
       `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)
 - [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `compiler.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
+- [x] decision 631: a `Field<T>` crossing to run time is `Field(Owner, "name")` and the owner compares by identity; cells `meta_field_tuple_and_field_key`, `meta_field_build_member_at_run_time`, `meta_field_compared_by_owner` (599's own cell module removed: all five of its cases were the removed cells)
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
 - [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
 - [ ] a unit test holds `conformance/docs.md` § Prelude to the names `primitives.bp` declares and each imported std function's row to its module's declaration (606): a row per name, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed

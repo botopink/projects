@@ -2410,7 +2410,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       (the component-fn path, captures carried) on commonJS, erlang, beam and wasm; `component-lambda-not-lowered`
       deleted; cells: one bound to a typed `val`, one passed to a typed parameter, rendered, one answer everywhere — `component_lambda_typed_val`,
       `component_lambda_typed_param`; lowered through `lowerComponentBody` (question B-116-k)
-- [ ] (i) decision 584: a lambda's marker inside the brace, before the parameters (`{ async x -> … }`, `{ iter -> … }`,
+- [x] (i) decision 584: a lambda's marker inside the brace, before the parameters (`{ async x -> … }`, `{ iter -> … }`,
       `{ async iter x -> … }`, `{ component -> … }`), `async {` always the block, the trailing form admitted; a marked
       lambda's body a function body (`return v` the `R`, a top-level `continue` and `break v` refused), `docs.md`'s
       `iter loop` equivalence dropped; `async fn f()` with no return type refused `marker-type-mismatch`; the formatter
@@ -2981,12 +2981,19 @@ Each box is a library's decision-cell draft that builds on the other targets and
       — not reproduced in botopink-lang alone (a module-level registry, a `for` lambda loop, `find(...)?.name ?? "none"`:
       right on four targets); waits on a rakun-side repro
 - [ ] wasm: a generic function returning `T` from `e is fn() -> T` then `e()` prints garbage (`276`) — the type parameter's slot not monomorphised; found by B-146
+      — not reproduced (the program is refused "cannot box this value as `unknown`"); waits on a repro
 - [x] erlang: `await e.view()` where `view` is a record field holding a component lambda is emitted as a method call (`function view/1 undefined`) — found by 150 s34
-- [ ] wasm: a generic method answering `?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
-- [ ] wasm: `fn mapAll<T, R>(items: T[], f: fn(T) -> R) -> R[]` answers wrong values when `R` is `string` or `bool` (prints `496,504` and `[0, 1]`); found by B-152
-- [ ] erlang: a `Source(file, line, col)` built at run time fails to compile, `function '__Source'/3 undefined` — the prelude alias of `__Source` is not constructible on erlang; found by front 160
-- [ ] wasm: `val f = cfg.scoper; if (f != null) { print(f("x")); }` with `scoper: ?fn(string) -> string` prints a pointer (`304`) — a call through a function value narrowed from an optional; `cfg.scoper?.("x")` is right; found by B-154
-- [ ] wasm: a `?T` or `T` value a generic function returns arrives boxed as a scalar (`__box_i32`), so a field read on it answers garbage (`firstOf<T>(xs: T[], keep) -> ?T` over records prints 296 for 7); found by the 757 / 758 defects
+- [ ] wasm: a generic method answering `-> ?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
+- [x] wasm: `fn mapAll<T, R>(items: T[], f: fn(T) -> R) -> R[]` answers wrong values when `R` is `string` or `bool` (prints `496,504` and `[0, 1]`); found by B-152
+      — built as: the generic `R[]` of string and bool read right; cell `generic_fn_result_array_string_bool`
+- [x] erlang: a `Source(file, line, col)` built at run time fails to compile, `function '__Source'/3 undefined` — the prelude alias of `__Source` is not constructible on erlang; found by front 160
+      — built as: `Source(file, line, col)` constructed at run time on every target; cell `run_time_source_constructed`
+- [x] wasm: `val f = cfg.scoper; if (f != null) { print(f("x")); }` with `scoper: ?fn(string) -> string` prints a pointer (`304`) — a call through a function value narrowed from an optional; `cfg.scoper?.("x")` is right; found by B-154
+      — built as: a call through a function value narrowed from an optional; cell `optional_fn_field_narrowed_call`
+- [x] wasm: a `?T` or `T` value a generic function returns arrives boxed as a scalar (`__box_i32`), so a field read on it answers garbage (`firstOf<T>(xs: T[], keep) -> ?T` over records prints 296 for 7); found by the 757 / 758 defects
+      — built as: cell `generic_answer_record_field_read`
+- [ ] an `i32[]` printed as a pointer on wasm — not reproduced; waits on a repro
+- [ ] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 
@@ -2994,18 +3001,19 @@ Each box is a library's decision-cell draft that builds on the other targets and
 
 Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`, `Integer extends Number`, `Signed`, `Float` are contracts, and the widths are empty behaviors (`behavior I32 extends Signed {}`, `I64`, `U32`, `U64`, `F32`, `F64`); `infer.zig` maps `i32` to `I32`, and each backend writes the chain `I32 → Signed → Integer → Number` by hand (`erlang.zig` `prim_iface_chain`, `commonJS.zig` `numeric`, `wat.zig` `prelude_names`, `beam_asm.zig`). Twenty members carry a body and cells on one declaration (`default fn isEven` with `.JavaScript(…)`), the body the fallback of the targets without a cell.
 
-- [ ] decision 738 (c): `Pair<A, B>` and `Function` leave `primitives.bp` — `Pair.*` deleted (three cells and `query.bp` respelled to `#(a, b)` / `p._0`), `identity` / `compose` / `flip` / `constant` to std's `functions.bp` with their test; cell `prelude_has_no_pair_or_function`
-- [ ] decision 639: a module declaring `i32` / `i64` / `u32` / `u64` / `f32` / `f64` / `bool` / `string` / `bigint` refused at the name,
+- [x] decision 738 (c): `Pair<A, B>` and `Function` leave `primitives.bp` — `Pair.*` deleted (three cells and `query.bp` respelled to `#(a, b)` / `p._0`), `identity` / `compose` / `flip` / `constant` to std's `functions.bp` with their test; cell `prelude_has_no_pair_or_function`
+- [x] decision 639: a module declaring `i32` / `i64` / `u32` / `u64` / `f32` / `f64` / `bool` / `string` / `bigint` refused at the name,
       `primitive-type-redeclared` (a literal's type is not shadowed; every other prelude name shadows as 606 (1)); cell
       `primitive_type_redeclared`
-- [ ] `pub type i32 implement Signed { … }` and its siblings declared in `primitives.bp` (`bool`, `string`, `Bytes`, `BigInt`, `Array<T>`, `Pair<A, B>`, `Function` as 617 (1) applies); the six empty behaviors go; `infer.zig`'s width table and the four backends' chains replaced by a read of the `implement` clauses — one resolution, from the text
+- [x] `pub type i32 implement Signed { … }` and its siblings declared in `primitives.bp` (`bool`, `string`, `Bytes`, `BigInt`, `Array<T>`, `Pair<A, B>`, `Function` as 617 (1) applies); the six empty behaviors go; `infer.zig`'s width table and the four backends' chains replaced by a read of the `implement` clauses — one resolution, from the text
+- [x] decision 496: `abs` per width — the `i32` and `i64` minimum abort, wasm's `i64` `abs` works; cells `abs_aborts_on_overflow`, `abs_aborts_on_i32_overflow`
 - [ ] decision 641: the primitive types lowercase (`bool`, `string`, `bigint`, `bytes`, `array<T>`), `String` / `Bool` / `BigInt` / `Bytes` /
       `Array` dissolved into them, their statics on the type with their cells (`string.fromCodepoint`, `array.range`, `bytes.fromUtf8`);
       the 2,500 sites respelled by codemod (std and the cells here, the libraries in their fronts); cells `primitive_static_on_type`,
       `primitive_contract_dissolved`
 - [ ] every behavior of the file holds signatures and `default fn` bodies only — no `#[compiler.external(…)]` on a behavior member (refused there, `external-on-behavior`, at the annotation); the 87 cells move to `declare fn` members of the types, `Self` concrete; a member one target runs in botopink and another in the host uses 610's `.Wasm(body: f)` on the type
 - [ ] a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature
-- [ ] decision 628 (window: 640 (4) — rakun's and query's one-line commits land with it, machine 1 told the hash): a behavior's member without `self` is a static written `fn` (with a body, the behavior's own; without, provided by each implementor); `default` on it refused `default-on-static`; the 56 `default fn` without `self` (std 10, the cells 44) drop `default` by codemod, the libraries' in their fronts; `conformance/docs.md`'s "associated `default fn`" rewritten
+- [x] decision 628 (window: 640 (4) — rakun's and query's one-line commits land with it, machine 1 told the hash): a behavior's member without `self` is a static written `fn` (with a body, the behavior's own; without, provided by each implementor); `default` on it refused `default-on-static`; the 56 `default fn` without `self` (std 10, the cells 44) drop `default` by codemod, the libraries' in their fronts; `conformance/docs.md`'s "associated `default fn`" rewritten
 - [ ] `implement-with-body` on a behavior's `default fn` (617 (4)): the B-138 box above lands here
 - [ ] every cell of `tests/language` green on four targets before and after — the answers of the primitives do not change, only where their code is written; `conformance/docs.md` § Primitives rewritten (the widths as types, the contracts, where host code lives); `libs/std/AGENTS.md`
 - [ ] cells: `primitive_width_is_a_type` (`i32` in a type position and `implement Signed` read), `external_on_behavior` refused, `primitive_default_fn_overridden` (a width's own cell beside the contract's body, four targets), `implement_with_body` with the behavior case

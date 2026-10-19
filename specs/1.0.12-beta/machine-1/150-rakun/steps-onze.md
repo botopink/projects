@@ -173,7 +173,7 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
 #### Step 2 — `rakun-ssr dev` (decision 766 (a), only (a)) (was `50-onze-cli` s2)
 
 - [ ] decision 766: `dev` = `build` then `start` over a watcher of `fs` mtimes (`src/`, `public/`, `rakun-ssr.json`, `botopink.json`), the child spawned with `forwardSignals` (506); no hot-load path on any target; the acceptance script proves `dev` and `start` answer alike; the plan that measured (b) on every target is [`07-onze/dev-loop-hot-load-plan.md`](07-onze/dev-loop-hot-load-plan.md)
-- [ ] decision 767: `compileBeam` runs `erlc` only over the `.erl` with no `.beam` beside them once `botopink build` materialises the dependencies' cached `.beam` (machine 2's B-57 half; cell `build_materialises_dependency_beams`)
+- [x] decision 767: `compileBeam` runs `erlc` only over the `.erl` with no `.beam` beside them once `botopink build` materialises the dependencies' cached `.beam` (B-57's half landed: `build --target erlang` materialises them, section `build_materialises_dependency_beams` of `compiler-cli/tests/code_cache.sh`)
 - [ ] 50-g: `serverMainSource`'s generated `onze_main.bp` still writes `jhRegisterRoutes(@TypeInfo.all(with: page), …)` and `onze_routes.routeModules()` — rewritten to 665's registry read; `onze_routes` keeps only the generated file-convention route table (403, 285), its import role gone (660, 677)
 
 - [ ] `onze dev` on `examples/scaffold` serves `/`, prints `http://localhost:3000` (`dev_test.bp`,
