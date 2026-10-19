@@ -69,6 +69,8 @@
       program (tooling, test machinery, superseded ones such as 390, 438, 447, 448, 449, 454, 510, 511, 522, 536, 542, 549, 558), the
       ones needing a dependency or a manifest key in phase 1 (275, 284, 514) and two library-runtime rows (220, 377) are listed for the
       maintainer; the moves are B-157 P3's
+- [ ] decision 775: a draft may carry `draft/botopink.json` and `draft/deps/<pkg>/`, linked from its `docs.md`; `compile` reads them, `promote` merges the manifest into the case's; cell `decision_cell_draft_manifest`
+- [ ] decision 776: the no-program rows tagged (`process` / `Overtaken by` / `Replaced by`); 220 and 377 bind rakun; check 7 asks no directory of them
 - [ ] `scaffold <repo>` committed alone (haiku; the hook), then the writing in batches of about forty rows, one commit per batch: each `docs.md` as § Mechanism (prose, the proving cells, `{main.bp}`), each `main.bp` the one real example in the spelling in force, `compile <repo>` green on the batch, `botopink format` applied to each file
 - [ ] a row whose example cannot be written because the compiler or the library departs from it: the example written as the decision says, the departure a row (`language-gaps.md` for a library, a 144 / 164 row for botopink-lang) named in the report — never an example bent to what compiles
 - [ ] the root `conformance/docs.md` gains one row naming `modules/decisions-taken/` (the ledger's index; 462 / 548); rakun's root manifest and `conformance/docs.md` the same (its tree stays grouped by package; the decision cells are the ledger's, not a package's feature)

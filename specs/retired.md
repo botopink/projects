@@ -92,6 +92,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | The string `addMember(name, source)` | the typed `compiler.addMember<F>(name, syntax member: F)` | 575 (3), 576 (14) | |
 | The string `addType(name, source)` | `compiler.addType(name, compiler.buildType(…))` or a template text answering a type | 640 (2), 605 (2) | |
 | `#[@Host]`; delegate forms | `#[compiler.external(…)]` | 575 (6) | |
+| `#[stage(…)]`, `#[beamMemory(…)]` written bare | `#[compiler.stage(…)]`, `#[compiler.beamMemory(…)]` — members of `compiler`, as `external` | 774, 606 (4), 663 | 2026-10-19 |
 
 ## `syntax`, `comptime`, templates and code
 

@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**32 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**27 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **773**.
+number, which is **779**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -300,41 +300,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### 166-e · Which std module owns `stage`, `memo` and `beamMemory`? (decisions 663, 681, 755, 547; 166 s3)
-- **Proposed (the coordinator, 2026-10-19; awaiting the maintainer):** **(a) the subject file names one module each**, and the drafts import from it. The drafts guess today: `compiler.stage` (681), std's `hooks` for `memo` (755), `beam.beamMemory` (710, 547).
-- **Measured.** § compiler-module (5) says `#[stage(…)]` and `#[beamMemory(…)]` come "from the modules that own them" (663), and § contexts-and-components (2) names `memo<T>(make)` as std's, but no sentence names those modules.
-- **Options.** (a) Name the modules in the subject file. (b) Leave it to B-139's rest, which builds them.
-- **Recommendation.** (a) — three drafts' imports depend on it.
-- **Blocks.** The imports of the drafts 681, 710 and 755.
-
-#### 166-f · A decision whose example needs a manifest key or a dependency, in phase 1 (decisions 649, 765; 166 s3, s4)
-- **Proposed (the coordinator, 2026-10-19; awaiting the maintainer):** **(a) `draft/botopink.json` (and `draft/deps/<pkg>/` when a dependency is needed) is the draft's manifest, linked from its `docs.md`; `compile` reads it, and `promote` merges it into the case's `botopink.json` instead of overwriting it.**
-- **Measured.** A phase-1 draft is `draft/main.bp` only (649). Rows about the manifest (344, 453, 512, 676, 703, 709, 733), a `.bpp` (199, 200, 270, 278, 284, 360, 589) or a dependency (142, 194, 234, 275, 295, 306, 321, 336, 400, 414, 514) cannot show their rule: `compile` ignores a draft's manifest, and `promote` would overwrite it. 733's example is a library, yet the draft must be `main.bp`, which 592 (2) says a library has none of.
-- **Options.** (a) As proposed (a `decision-cells.py` change, 166's). (b) Those rows wait for s4 and are written as cells directly.
-- **Recommendation.** (a).
-- **Blocks.** About 25 drafts' meaning; s4's `promote`.
-
-#### 166-g · Rows that are no program: a `process` tag or a one-liner? (decisions 647, 730; 166 s3)
-- **Proposed (the coordinator, 2026-10-19; awaiting the maintainer):** **(a) tag each in the record**: `process` for 163, 390, 438, 510, 511, 536, 549, 558 (tooling, test machinery, a manifest name, a `.wat` leaf); `Overtaken by 544` / `550` / `560` for 447, 448, 449, 454, 522, 542 (retired.md already says so); `Replaced by 642` for 413. Then check 7 stops asking for their directories.
-- **Measured.** The draft threads met these rows and wrote no program, since none can show them. 220 and 377 are library runtime with no botopink-lang surface: their Binds should name rakun.
-- **Options.** (a) As proposed. (b) Keep them code-bearing, and the drafts exercise whatever is observable.
-- **Recommendation.** (a).
-- **Blocks.** Check 7's completeness for botopink-lang.
-
-#### 721-a · 721's example: an out-of-bounds index at build (decisions 721, 63; 166 s3)
-- **Proposed (the coordinator, 2026-10-19; awaiting the maintainer):** **(a) 721's list of raises loses "an index out of bounds"**: `xs[3]` answers `?T` (63, `null`) and raises nothing, so no fold can raise there; the raises that remain are a failed conversion, a missing key, and a `panic` inside an `Any` function.
-- **Measured.** The draft for 721 cannot show an out-of-bounds raise: `[1, 2, 3][3]` is `null` by § prelude-and-primitives (3).
-- **Options.** (a) As proposed. (b) An index that raises exists elsewhere (name it).
-- **Recommendation.** (a).
-- **Blocks.** The 721 draft's example.
-
-#### 396-a · json's `unquote`, `array`, `object` (decision 396; 151 json)
-- **Proposed (the coordinator, 2026-10-19; awaiting the maintainer; json's reference written as (a)):** **(a) `unquote(s)` reads a JSON string literal back to its text, the inverse of `quote`; `array(items: string[])` and `object(members: #(string, string)[])` join texts that are already JSON values, no escaping of the parts.**
-- **Measured.** json has no `src/` yet; only 396 (1)'s names and actions' use back the reading.
-- **Options.** (a) As proposed. (b) Another meaning.
-- **Recommendation.** (a).
-- **Blocks.** json's conformance reference only.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
