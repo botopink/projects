@@ -228,6 +228,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `~/.cache/botopink-lsp`; any cache in `$HOME` or `$XDG_CACHE_HOME` | `.botopinkbuild/cache/` (`lsp/` for the server) | 225, 233 | |
 | The windows CI row | — (removed) until the snapshot capture normalises CRLF and path separators | 158 | |
 | `gate.sh --cold` inside a `--repo` / `--lang` worktree | the commit hook's warm gate; a cold gate runs in the main checkout's `repository/botopink-lang` | meta `AGENTS.md` § Worktrees (4b) | |
+| One full cell per case, `<module>/cases/<case>/` (765) | `<module>/run/` and `<module>/refused/`, two packages of cases, and `<module>/cells/<case>/` for a case that cannot share one; `scripts/pack-cells.py` | 765, 779 | 2026-10-19; `cell new` still writes a 765 case, which `pack-cells.py apply` packs |
 | A scratch location named in a spec (`.tasks/<name>` paths, `` `/tmp/` ``, a task branch, a worktree by name) | what remains and what blocks it | 484, `scripts/scratch-refs.py` | |
 
 ## Decision rows replaced, reversed or overtaken

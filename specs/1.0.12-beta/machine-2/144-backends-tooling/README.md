@@ -3106,6 +3106,14 @@ being the one that stands.
       botopink-lang's) § conformance updated in the same commit.
       — `conformance/docs.md`, `conformance/AGENTS.md` and the meta's `AGENTS.md` done; left: botopink-lang's root `AGENTS.md` still says
       `modules/<cell>/` (its § Layout row, the `<!-- example: modules/<cell> -->` line and `botopink cell new`'s path).
+- [x] **Piece 4 — the packages (decision 779)**: each module's 765 `cases/` packed by `scripts/pack-cells.py apply` into
+      `run/` (the printing cases, one program, entry `runCase`), `refused/` (the refused cases, one build, one `.snap` per case)
+      and `cells/<case>/` (the rest, unchanged); a case packs only when its package's `cell check` equals its old answers on
+      every target. 1,667 cases before and after: 969 in 228 packages, 698 cells. The whole `cell check conformance/modules`
+      on one machine, same compiler: 7 min 48 s wall / 70 min CPU as 1,686 cells, 1 min 29 s / 10 min 13 s as 936 units.
+      `check-docs.sh`, `tsc-check.sh`, `run.sh`, C-21 (`located_errors.zig`), the workspace glob and meta check 7 read the
+      layout; every cited case path rewritten. Left: the cells that fail to pack only because they are red today are packed
+      once green (`pack-cells.py` reads `cases/`; a module's `cells/` is not re-packed yet).
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
   directory grows cases (761). botopink-lang's 166 s3 is this mapping, not 509 new drafts; rows 1–143 get their `Cell` slug or
   `process` tag first (166 s2, the coordinator).

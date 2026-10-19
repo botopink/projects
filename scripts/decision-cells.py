@@ -284,6 +284,7 @@ def cmd_compile(root, args):
     # a draft (<dir>/draft/main.bp) or each case of a cases directory (<dir>/cases/<case>/src/main.bp, decision 765)
     mains = sorted(p for p in d.glob("*/draft/main.bp")) if d.is_dir() else []
     mains += sorted(p for p in d.glob("*/cases/*/src/main.bp")) if d.is_dir() else []
+    mains += sorted(p for p in d.glob("*/cells/*/src/main.bp")) if d.is_dir() else []
     if not mains:
         print(f"{repo}: no draft/main.bp or cases/*/src/main.bp to compile")
         return 0
@@ -355,10 +356,10 @@ def cmd_promote(root, args):
     n = 0
     for m in sorted(d.iterdir()) if d.is_dir() else []:
         main = m / phase1_main(False)
-        if not main.is_file() or (m / "src").exists() or (m / "cases").exists():
+        if not main.is_file() or any((m / x).exists() for x in ("src", "cases", "run", "refused", "cells")):
             continue
-        # decision 765: draft/ -> cases/example/src/, a full cell of its own
-        case = m / "cases" / "example"
+        # decisions 765, 779: draft/ -> cells/example/src/, a full cell of its own
+        case = m / "cells" / "example"
         case.mkdir(parents=True)
         main.parent.rename(case / "src")  # every file of the draft
         (case / "botopink.json").write_text(json.dumps({"name": package_name(f"{m.name}-example")}) + "\n")
@@ -366,11 +367,11 @@ def cmd_promote(root, args):
         docs = m / "docs.md"
         if docs.exists():
             # every [draft/<file>](draft/<file>) link
-            docs.write_text(re.sub(r"\[draft/([^\]]*)\]\(draft/", r"[cases/example/src/\1](cases/example/src/", docs.read_text()))
+            docs.write_text(re.sub(r"\[draft/([^\]]*)\]\(draft/", r"[cells/example/src/\1](cells/example/src/", docs.read_text()))
         n += 1
     wm = workspace_manifest(root, repo)
     if n and wm:
-        add_workspace_glob(wm, "decisions-taken/*/cases/*")
+        add_workspace_glob(wm, "decisions-taken/*/cells/*")
     print(f"promote {repo}: {n} cells")
     return 0
 
@@ -442,11 +443,11 @@ def check_repo(root, repo):
     return out
 
 
-def check_cases(root, repo, m, n, red):
-    """Decision 765: `cases/<case>/` each a full cell: botopink.json, src/main.bp, snapshot/."""
-    found = sorted(c for c in (m / "cases").iterdir() if c.is_dir())
+def check_cases(root, repo, m, n, red, where="cases"):
+    """Decision 765: `cases/<case>/` (779: `cells/<case>/`) each a full cell: botopink.json, src/main.bp, snapshot/."""
+    found = sorted(c for c in (m / where).iterdir() if c.is_dir())
     if not found:
-        red(n, "cases/ holds no case")
+        red(n, f"{where}/ holds no case")
     for c in found:
         for need, ok in (("botopink.json", (c / "botopink.json").is_file()), ("src/main.bp", (c / "src/main.bp").is_file()),
                          ("snapshot/", (c / "snapshot").is_dir())):
@@ -463,10 +464,33 @@ def check_cases(root, repo, m, n, red):
                 red(n, f"case {c.name} botopink.json targets {extra} are not the workspace's")
 
 
+def check_packages(root, repo, m, n, red):
+    """Decision 779: `run/` and `refused/` are packages of cases — botopink.json, src/main.bp,
+    src/cases/mod.bp, snapshot/, each `src/cases/<case>/` holding mod.bp —, and `cells/<case>/`
+    each a full cell."""
+    for kind in ("run", "refused"):
+        p = m / kind
+        if not p.is_dir():
+            continue
+        for need in ("botopink.json", "src/main.bp", "src/cases/mod.bp", "snapshot"):
+            if not (p / need).exists():
+                red(n, f"{kind}/ has no {need} (decision 779)")
+        cases_dir = p / "src" / "cases"
+        found = sorted(c for c in cases_dir.iterdir() if c.is_dir()) if cases_dir.is_dir() else []
+        if not found:
+            red(n, f"{kind}/ holds no case (decision 779)")
+        for c in found:
+            if not (c / "mod.bp").is_file():
+                red(n, f"{kind}/ case {c.name} has no mod.bp (decision 779)")
+    if (m / "cells").is_dir():
+        check_cases(root, repo, m, n, red, "cells")
+
+
 def check_cell(root, repo, m, row, red):
     n = row.num
     draft, src = (m / phase1_main(False)).is_file(), (m / phase1_main(True)).is_file()
-    cases = (m / "cases").is_dir()
+    packed = any((m / x).is_dir() for x in ("run", "refused", "cells"))
+    cases = (m / "cases").is_dir() or packed
     if cases and (draft or src):
         red(n, f"holds both cases/ and {phase1_main(draft is False)} (decision 765: a draft or cases, not both)")
         return
@@ -474,12 +498,14 @@ def check_cell(root, repo, m, row, red):
         red(n, f"holds both {phase1_main(False)} and {phase1_main(True)} (decision 649: one or the other)")
         return
     if not draft and not src and not cases:
-        red(n, f"holds neither {phase1_main(False)} nor {phase1_main(True)} nor cases/ (decisions 649, 765)")
+        red(n, f"holds neither {phase1_main(False)} nor {phase1_main(True)} nor cases (decisions 649, 765, 779)")
         return
     promoted = src
     program = m / phase1_main(promoted)
-    if cases:
+    if (m / "cases").is_dir():
         check_cases(root, repo, m, n, red)
+    if packed:
+        check_packages(root, repo, m, n, red)
     docs = m / "docs.md"
     if not docs.is_file():
         red(n, "no docs.md")

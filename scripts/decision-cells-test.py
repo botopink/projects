@@ -240,11 +240,11 @@ class Cells(unittest.TestCase):
         self.run_cmd("scaffold", "snap")
         self.assertEqual(self.run_cmd("promote", "snap")[0], 0)
         c = self.d / "code_rule_ten-10"
-        self.assertTrue((c / "cases/example/src/main.bp").is_file())
+        self.assertTrue((c / "cells/example/src/main.bp").is_file())
         self.assertFalse((c / "draft").exists() or (c / "src").exists())
-        self.assertEqual(json.loads((c / "cases/example/botopink.json").read_text()), {"name": "code_rule_ten-10-example"})
-        self.assertIn("[cases/example/src/main.bp](cases/example/src/main.bp)", (c / "docs.md").read_text())
-        self.assertIn('"decisions-taken/*/cases/*"', (self.repo / "conformance/modules/botopink.json").read_text())
+        self.assertEqual(json.loads((c / "cells/example/botopink.json").read_text()), {"name": "code_rule_ten-10-example"})
+        self.assertIn("[cells/example/src/main.bp](cells/example/src/main.bp)", (c / "docs.md").read_text())
+        self.assertIn('"decisions-taken/*/cells/*"', (self.repo / "conformance/modules/botopink.json").read_text())
         self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
 
     def cases(self, n, title, names=("a",)):
@@ -260,6 +260,34 @@ class Cells(unittest.TestCase):
             links += f"[cases/{nm}/src/main.bp](cases/{nm}/src/main.bp)\n"
         (c / "docs.md").write_text(f"# {title}\n\n{links}")
         return c
+
+    def packed(self, n, title, run=("a", "b")):
+        c = self.d / f"{S[n]}-{n}"
+        p = c / "run"
+        (p / "src/cases").mkdir(parents=True)
+        (p / "snapshot").mkdir()
+        (p / "botopink.json").write_text(json.dumps({"name": f"{c.name}-run"}))
+        (p / "src/main.bp").write_text("mod cases;\n")
+        (p / "src/cases/mod.bp").write_text("".join(f"pub mod {nm};\n" for nm in run))
+        links = ""
+        for nm in run:
+            (p / "src/cases" / nm).mkdir()
+            (p / "src/cases" / nm / "mod.bp").write_text("pub fn run() {}\n")
+            links += f"[run/src/cases/{nm}/mod.bp](run/src/cases/{nm}/mod.bp)\n"
+        (c / "docs.md").write_text(f"# {title}\n\n{links}")
+        return c
+
+    def test_green_packed(self):
+        self.packed(10, T10)
+        self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
+
+    def test_packed_malformed(self):
+        c = self.packed(10, T10)
+        (c / "run/src/cases/a/mod.bp").unlink()
+        self.assertRed("decision 10: run/ case a has no mod.bp (decision 779)")
+        (c / "run/src/cases/a/mod.bp").write_text("pub fn run() {}\n")
+        (c / "run/src/cases/mod.bp").unlink()
+        self.assertRed("run/ has no src/cases/mod.bp")
 
     def test_green_cases(self):
         self.cases(10, T10, ("a", "b"))
