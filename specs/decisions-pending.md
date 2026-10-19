@@ -349,6 +349,38 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
 - **Blocks.** The 704 / 547 draft's promotion; nothing else.
 
+#### 149-a · The template cells that build the caller's raw text as code, once `compiler.build` goes (decisions 625, 719, 752; 144 B-149 P2)
+- **Proposed (opus, 2026-10-19; P2 held):** (a).
+- **Context.** 625: no code from text — `code @`…`` and `compiler.ast(node)` build code, `compiler.build(text)` goes in P3. Some template cells build the caller's own text: `compiler.build(compiler.text(q))` in 429 `template_built_code_diagnostic_located`, 691 `template_hole_error_at_column`, 577's refused package, `template/run`, 515 `local_dependency`.
+- **Measured.** With P1b's `code` in std, these are the only `compiler.build` users left beside the B-156 `syntax_fn_*` cells; neither `code` nor `compiler.ast` turns raw text into code.
+- **Options.**
+  (a) ★ Rewritten: the caller's code arrives as a `syntax` expression (719) and is spliced as `Syntax(e)`; 429's "located by expansion" is kept by 752's location rule for spliced syntax.
+  ```bp
+  pub fn checked(syntax q: unknown) -> anyvalue { return code @`assert(${q})`; }
+  ```
+  (b) Retired with `compiler.build`: each cell removed, its rule covered by the `code` cells.
+  ```bp
+  // template_built_code_diagnostic_located removed
+  ```
+- **Recommendation.** (a): what those cells prove (a built call located at the caller) survives 625 through `syntax`.
+- **Blocks.** B-149 P2 – P4 (`compiler.build` removed, `buildType`).
+
+#### 149-b · A hole that holds a `Node` inside `code @`…``: spliced as the node? (decisions 637, 638, 644; 144 B-149 P4)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** 637 / 638: in `code @`…`` a `syntax` hole becomes `Syntax(e)` and any other hole `Lit(v)`. P4's `mock` member builds parameter lists and types from the declaration (`${params(m)}`, `${ret(m)}`), which are `Node` values.
+- **Measured.** As built, a `Node` in a hole is a `Lit` — the record printed, not the code it describes.
+- **Options.**
+  (a) ★ A hole whose value is a `Node` (or `Node[]` in a list position) is spliced as that node; any other value is a `Lit`.
+  ```bp
+  return code @`fn ${name}(${params(m)}) -> ${ret(m)} { … }`;
+  ```
+  (b) Only `syntax` holes splice code; a `Node` is spliced by `compiler.ast(node)` written in the hole.
+  ```bp
+  return code @`fn ${name}(${compiler.ast(params(m))}) -> ${compiler.ast(ret(m))} { … }`;
+  ```
+- **Recommendation.** (a): a `Node` is already code by type, so the hole needs no second spelling.
+- **Blocks.** B-149 P4 (`mock` over `code`).
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

@@ -349,6 +349,38 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
 - **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
 
+#### 149-a · As células de template que constroem o texto cru de quem chama como código, quando `compiler.build` sair (decisões 625, 719, 752; 144 B-149 P2)
+- **Proposto (opus, 2026-10-19; P2 retido):** (a).
+- **Contexto.** 625: nada de código a partir de texto — `code @`…`` e `compiler.ast(node)` constroem código, `compiler.build(text)` sai no P3. Algumas células de template constroem o próprio texto de quem chama: `compiler.build(compiler.text(q))` em 429 `template_built_code_diagnostic_located`, 691 `template_hole_error_at_column`, o pacote refused da 577, `template/run`, 515 `local_dependency`.
+- **Medido.** Com o `code` do P1b na std, esses são os únicos usuários de `compiler.build` além das células `syntax_fn_*` do B-156; nem `code` nem `compiler.ast` transformam texto cru em código.
+- **Opções.**
+  (a) ★ Reescritas: o código de quem chama chega como uma expressão `syntax` (719) e é inserido como `Syntax(e)`; o "localizado pela expansão" da 429 fica pela regra de localização da 752 para syntax inserida.
+  ```bp
+  pub fn checked(syntax q: unknown) -> anyvalue { return code @`assert(${q})`; }
+  ```
+  (b) Aposentadas com `compiler.build`: cada célula removida, sua regra coberta pelas células de `code`.
+  ```bp
+  // template_built_code_diagnostic_located removed
+  ```
+- **Recomendação.** (a): o que essas células provam (uma chamada construída localizada em quem chama) sobrevive à 625 por `syntax`.
+- **Bloqueia.** B-149 P2 – P4 (`compiler.build` removido, `buildType`).
+
+#### 149-b · Um buraco que guarda um `Node` dentro de `code @`…``: inserido como o nó? (decisões 637, 638, 644; 144 B-149 P4)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** 637 / 638: em `code @`…`` um buraco `syntax` vira `Syntax(e)` e qualquer outro buraco `Lit(v)`. O membro `mock` do P4 constrói listas de parâmetros e tipos a partir da declaração (`${params(m)}`, `${ret(m)}`), que são valores `Node`.
+- **Medido.** Como construído, um `Node` num buraco é um `Lit` — o registro impresso, não o código que ele descreve.
+- **Opções.**
+  (a) ★ Um buraco cujo valor é um `Node` (ou `Node[]` numa posição de lista) é inserido como esse nó; qualquer outro valor é um `Lit`.
+  ```bp
+  return code @`fn ${name}(${params(m)}) -> ${ret(m)} { … }`;
+  ```
+  (b) Só buracos `syntax` inserem código; um `Node` é inserido por `compiler.ast(node)` escrito no buraco.
+  ```bp
+  return code @`fn ${name}(${compiler.ast(params(m))}) -> ${compiler.ast(ret(m))} { … }`;
+  ```
+- **Recomendação.** (a): um `Node` já é código pelo tipo, então o buraco não precisa de uma segunda grafia.
+- **Bloqueia.** B-149 P4 (`mock` sobre `code`).
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
