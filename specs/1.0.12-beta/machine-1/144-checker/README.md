@@ -2600,9 +2600,9 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       `version <v>`, its own `dependencies` — the resolution as a tree), `Refused(module: Module, diagnostics: Diagnostic[])`; `compiler.bp`, the
       surface table and its test, the handler, the three `compiler_load_*` cells' readers (`catch { r -> … r.diagnostics … }`)
       and cell `compiler_load_answers_module` (786: `path`, `target` and the dependency tree printed — a path and a git dependency, one with a dependency of its own)
-- [ ] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does: today a test package
-      whose loaded cases sit under `src/` reports each as a failed module, so snap's `snap_matches_refused` keeps them in
-      `cases/` and B-157 piece 5's `src/cases/<case>/main.bp` (784 (3)) waits on it
+- [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
+      — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
+      unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)
 - [ ] an aliased imported type in the signature of a function declared after its caller is refused `type mismatch: expected
       <Alias>, got <Type>`; a cell, red on the parent (the loaded module's helper is placed first to avoid it)
 
