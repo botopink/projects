@@ -3115,8 +3115,8 @@ being the one that stands.
       layout; every cited case path rewritten. Left: the cells that fail to pack only because they are red today are packed
       once green (`pack-cells.py` reads `cases/`; a module's `cells/` is not re-packed yet).
 - [ ] **Piece 5 — one package per module (decision 781), after `machine-1/144` B-158 (780)**: `pack-cells.py` folds `run/` and
-      `refused/` into `<module>/src/main.bp` + `src/cases/`, each refused case loaded by `comptime compiler.load(…)` and printed as
-      its old refusal records; folded only when the package's `main.snap` equals the old answers so projected on every target;
+      `refused/` into `<module>/src/main.bp` + `src/cases/`, each refused case loaded by `comptime compiler.load(…)`, its `Error` (782)
+      printed in a `catch` handler as its old refusal records, an `Ok` red; folded only when the package's `main.snap` equals the old answers so projected on every target;
       C-21 walks the loaded cases; check-docs, check 7, run.sh, tsc-check and the docs follow; the suite timed again.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
   directory grows cases (761). botopink-lang's 166 s3 is this mapping, not 509 new drafts; rows 1–143 get their `Cell` slug or

@@ -2565,12 +2565,13 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 - [x] a template's built code of type `Component<X>` is inside an answer `Component<X>`; the bound compares the declared answer with the built code's type as written — a cell red on the parent, and a refusal cell for a real mismatch (`Component<Y>`)
 
-### B-158 — `compiler.load(path)` answers a file's refusals at build (decision 780)
+### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing
 
-Decision 780: `load(comptime path: string) -> Diagnostic[]`, a `Build` member of `Compiler`, compiles a file of the package at
-build as the entry of a package of its own and answers its refusals as data; no `compiler.snapshot`.
+Decisions 780, 782: `load(comptime path: string) -> Result<void, Diagnostic[]>`, a `Build` member of `Compiler`, compiles a file
+of the package at build as the entry of a package of its own and answers `Ok` when it compiles, `Error` its refusals (never
+empty), read with `catch` / `try` — never through `attempt`; no `compiler.snapshot`.
 
 - [ ] `compiler.bp`: `Diagnostic(code, message, file, line, column, label: ?string)` and `load` in `Compiler`; its row in
       `parser/compiler_surface.zig`'s table, held by `comptime/tests/compiler_members.zig` (616)
@@ -2580,8 +2581,9 @@ build as the entry of a package of its own and answers its refusals as data; no 
       CLI's reporter — and guarded against re-entering std's one-time initialisation (`comptime.zig`'s init-once caches)
 - [ ] the loaded file is its own package's entry for the build's target: its `mod` tree beside it, the caller's manifest, never the
       caller's module graph; a path outside the package, absolute or missing is refused at the argument, located
-- [ ] cell `compiler_load_answers_diagnostics` (front 166's shape): a refused file's `code`, `message`, `line`, `column` printed; a
-      file that compiles answers `[]`; the refusals on every target
+- [ ] cells `compiler_load_answers_diagnostics` (780) and `compiler_load_answers_result` (782), front 166's shape: a refused
+      file's `code`, `message`, `line`, `column`, `label` printed from `catch { ds -> … }`; a file that compiles answers `Ok`; the
+      refusals on every target
 
 Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package as one program) is a later decision (780 (4)).
 
