@@ -742,11 +742,11 @@ component fn Button() -> Component<Element> {
 
 - [x] the comptime runtime's primitives answer as the targets do (`1000.toI64()` raises `integer_overflow` at build) —
       found by B-17
-      — `toI64`'s bounds were the cause (`comptime_primitives_at_build`); math's `op:`-only functions no longer fold (question
-      B-17-h); `@Result` methods refused at build
+      — `toI64`'s bounds were the cause (`comptime_primitives_at_build`); math's `op:`-only functions no longer fold (decision
+      764); `@Result` methods refused at build
 - [ ] emilia: four beam cells fail with OTP's "implementation limit"; rakun: two workspace cells red — older than B-17,
       found by its library gate run
-- [ ] math's `op:`-only functions given `std:` cells so they run at build · question B-17-h
+- [ ] math's `op:`-only functions (`sqrt`, `floor`, `abs`, `trunc`, `minF`, `maxF`) given a `std:` cell each in std-wasm beside their opcode so they fold at build · decision 764 (a); cell `comptime_math_folds`; the six exports are machine 2's (164)
 - [ ] `Context<T>(contextValue)` and a context lowered to its plain value at run time · question B-17-i
 - [ ] contexts keyed by the type's declared name, so two same-named types of two packages share one key · decision 635
 - [x] `@Result` methods (`unwrapOr` …) refused at build by the comptime runtime — found by B-17

@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**39 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**38 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **764**.
+number, which is **765**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -146,28 +146,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a).
 - **Blocks.** 144 B-10 G3's `View` row.
-
-#### B-17-h · math's `op:`-only host functions at build: given `std:` cells? (decisions 452, 481; 144 B-17)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): yes — one `std:` binding cell per function in std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), so the comptime runtime answers them and they fold (380); an opcode has no host form at build otherwise. Since 610 a third way exists beside `std:` and run-time-only: a botopink body, `.Wasm(body: f)`, which 594 (1) and 633 name a build form as `std:` is; a `Wasm` cell holds one of `op` / `std` / `body`, so (a) and (b) alike take the opcode off the wasm target.
-- **Measured.** They are refused at build (452) and no longer treated as foldable; 633 confirms the rule — a wasm form (`std:` or `body:`) is callable at build, an `op:` alone is not.
-- **Options.**
-  (a) A `std:` cell each.
-  ```bp
-  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(std: "math.sqrt"))] pub declare fn sqrt(x: f64) -> f64;
-  val r = "${math.sqrt(16.0)}";   // computed at build by std-wasm's export
-  ```
-  (b) A botopink body each (610).
-  ```bp
-  fn sqrtBody(x: f64) -> f64 { … }
-  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(body: sqrtBody))] pub declare fn sqrt(x: f64) -> f64;
-  val r = "${math.sqrt(16.0)}";   // computed at build by the body
-  ```
-  (c) Run time only.
-  ```bp
-  val r = "${math.sqrt(16.0)}";   // computed at run time
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-17's row.
 
 #### B-27-e · On erlang, `not-found.bpp` and `not_found.bp` become the same module name (decisions 561, 109; 144 B-27)
 - **Proposed (opus, 2026-10-15; awaiting the maintainer):** (a): the erlang module atom is quoted from the file's name as written, so the two never meet.

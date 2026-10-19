@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**39 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**38 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **764**.
+número livre, que é **765**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -146,28 +146,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a).
 - **Trava.** A linha do `View` do 144 B-10 G3.
-
-#### B-17-h · As funções host só-`op:` do math no build: ganham cells `std:`? (decisões 452, 481; 144 B-17)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): sim — uma cell de binding `std:` por função no std-wasm** (`floor`, `abs`, `trunc`, `sqrt`, `minF`, `maxF`), para o runtime de comptime as responder e elas dobrarem (380); um opcode não tem forma de host no build de outro jeito. Desde a 610 existe um terceiro caminho ao lado de `std:` e de só-runtime: um corpo botopink, `.Wasm(body: f)`, que a 594 (1) e a 633 nomeiam forma de build como `std:` é; uma cell `Wasm` guarda um só de `op` / `std` / `body`, então (a) e (b) igualmente tiram o opcode do target wasm.
-- **Medido.** São recusadas no build (452) e não são mais tratadas como dobráveis; a 633 confirma a regra — uma forma wasm (`std:` ou `body:`) é chamável no build, um `op:` sozinho não.
-- **Opções.**
-  (a) Uma cell `std:` cada.
-  ```bp
-  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(std: "math.sqrt"))] pub declare fn sqrt(x: f64) -> f64;
-  val r = "${math.sqrt(16.0)}";   // computed at build by std-wasm's export
-  ```
-  (b) Um corpo botopink cada (610).
-  ```bp
-  fn sqrtBody(x: f64) -> f64 { … }
-  #[compiler.external(.Erlang("…"), .JavaScript("…"), .Wasm(body: sqrtBody))] pub declare fn sqrt(x: f64) -> f64;
-  val r = "${math.sqrt(16.0)}";   // computed at build by the body
-  ```
-  (c) Só em runtime.
-  ```bp
-  val r = "${math.sqrt(16.0)}";   // computed at run time
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-17.
 
 #### B-27-e · No erlang, `not-found.bpp` e `not_found.bp` viram o mesmo nome de módulo (decisões 561, 109; 144 B-27)
 - **Proposta (opus, 2026-10-15; aguardando o mantenedor):** (a): o átomo do módulo erlang é escrito entre aspas a partir do nome do arquivo como escrito, então os dois nunca se encontram.
