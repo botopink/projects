@@ -3040,7 +3040,8 @@ modules without losing what is tested. Machine 2 (tooling, lane C). Order: **aft
       a refusal, an abort or a narrowed-`"targets"` cell keep its own compilation unit and snapshot inside a module holding several
       (`cases`); what `botopink cell check`, `cell new`, the runner and `cell_snap.zig` must learn; how `conformance/docs.md`'s 801
       links and the cells' `docs.md` paragraphs move; the generated old → new mapping; the proof that nothing is lost (counts of
-      assertions, snapshots, departures equal before and after; the suite green before and after with identical expected texts);
+      assertions, snapshots, departures equal before and after; the suite green before and after with identical expected texts;
+      every code-bearing row of botopink-lang — 509 today — listed with its cell, mapped or drafted, none left without one);
       the pieces in landable order with each piece's oracle. The plan's open points are filed as questions; the format it proposes
       is recorded as a decision (the coordinator's) before the pieces build.
 - [ ] **Piece 1** — `botopink cell check` reads the new module format (compiler-cli, `cell_snap.zig`); the old single-program cell
