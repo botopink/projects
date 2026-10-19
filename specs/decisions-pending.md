@@ -525,6 +525,22 @@ before every other part of this page; each holds one row, or nothing built.
 - **Recommendation.** (a): one place for a library's helpers whatever its layout (67).
 - **Blocks.** item 16 (the docs.md text).
 
+#### docs-d · `$self` as a template marker: documented (164) or refused (`template-self-marker`)? (decisions 164, 239; 166 s3)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** 164 reads "the documented markers are `$self`, `$N`, `$args`", and `specs/retired.md`'s `$stringify` row names `$self`, `$N`, `$args` as its replacement. The compiler refuses `$self` with `template-self-marker` ("`$self` is not a template marker", caret "use `$0`"; on a method `$0` is `self`), from front 12 step 3d, and std's `external.bp` says the same.
+- **Measured.** 164's draft (`stringify_marker_refused_in_templates-164`) uses only `$0`, `$1` and `$args`; no cell writes `$self`.
+- **Options.**
+  (a) ★ The positional markers are in force: 164's sentence and retired.md's row read `$N`, `$args` (on a method `$0` is `self`); `template-self-marker` stays.
+  ```bp
+  #[compiler.external(.JavaScript("$0.length"))] fn size(self: Self) -> i32;
+  ```
+  (b) `$self` is a marker again beside `$N`: `template-self-marker` removed, a cell for it.
+  ```bp
+  #[compiler.external(.JavaScript("$self.length"))] fn size(self: Self) -> i32;
+  ```
+- **Recommendation.** (a): the compiler, std and every cell already agree on the positional form; only the two texts lag.
+- **Blocks.** nothing (the draft is written in the positional form).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 #### B-86-a · The lib-agnostic gate's `query`, and the catalogue's reach across packages (144 B-86, front 165 s4)
