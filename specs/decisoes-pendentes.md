@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**27 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**32 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -300,6 +300,41 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### 166-e · Qual módulo da std tem `stage`, `memo` e `beamMemory`? (decisões 663, 681, 755, 547; 166 s3)
+- **Proposto (o coordenador, 2026-10-19; aguardando o mantenedor):** **(a) o arquivo de assuntos nomeia um módulo para cada**, e os drafts importam dele. Os drafts adivinham hoje: `compiler.stage` (681), o `hooks` da std para `memo` (755), `beam.beamMemory` (710, 547).
+- **Medido.** O § compiler-module (5) diz que `#[stage(…)]` e `#[beamMemory(…)]` vêm "dos módulos que os possuem" (663), e o § contexts-and-components (2) nomeia `memo<T>(make)` como da std, mas nenhuma frase nomeia esses módulos.
+- **Opções.** (a) Nomear os módulos no arquivo de assuntos. (b) Deixar para o resto do B-139, que os constrói.
+- **Recomendação.** (a) — os imports de três drafts dependem disso.
+- **Bloqueia.** Os imports dos drafts 681, 710 e 755.
+
+#### 166-f · Uma decisão cujo exemplo precisa de uma chave de manifesto ou de uma dependência, na fase 1 (decisões 649, 765; 166 s3, s4)
+- **Proposto (o coordenador, 2026-10-19; aguardando o mantenedor):** **(a) `draft/botopink.json` (e `draft/deps/<pkg>/` quando uma dependência é necessária) é o manifesto do draft, ligado a partir do seu `docs.md`; `compile` o lê, e `promote` o junta ao `botopink.json` do caso em vez de sobrescrevê-lo.**
+- **Medido.** Um draft da fase 1 é só `draft/main.bp` (649). Linhas sobre o manifesto (344, 453, 512, 676, 703, 709, 733), um `.bpp` (199, 200, 270, 278, 284, 360, 589) ou uma dependência (142, 194, 234, 275, 295, 306, 321, 336, 400, 414, 514) não conseguem mostrar a regra: `compile` ignora o manifesto de um draft, e `promote` o sobrescreveria. O exemplo da 733 é uma biblioteca, mas o draft precisa ser `main.bp`, que a 592 (2) diz que uma biblioteca não tem.
+- **Opções.** (a) Como proposto (uma mudança no `decision-cells.py`, da 166). (b) Essas linhas esperam a s4 e são escritas direto como células.
+- **Recomendação.** (a).
+- **Bloqueia.** O sentido de cerca de 25 drafts; o `promote` da s4.
+
+#### 166-g · Linhas que não são programa: uma marca `process` ou uma marca de linha substituída? (decisões 647, 730; 166 s3)
+- **Proposto (o coordenador, 2026-10-19; aguardando o mantenedor):** **(a) marcar cada uma no registro**: `process` para 163, 390, 438, 510, 511, 536, 549, 558 (ferramentas, maquinaria de teste, um nome de manifesto, uma folha `.wat`); `Overtaken by 544` / `550` / `560` para 447, 448, 449, 454, 522, 542 (a retired.md já diz isso); `Replaced by 642` para 413. Então o check 7 deixa de pedir os diretórios delas.
+- **Medido.** As threads de drafts encontraram essas linhas e não escreveram programa, porque nenhum programa as mostra. 220 e 377 são runtime de biblioteca sem superfície no botopink-lang: o Binds delas deveria nomear o rakun.
+- **Opções.** (a) Como proposto. (b) Mantê-las com código, e os drafts exercitam o que for observável.
+- **Recomendação.** (a).
+- **Bloqueia.** A completude do check 7 para o botopink-lang.
+
+#### 721-a · O exemplo da 721: um índice fora dos limites no build (decisões 721, 63; 166 s3)
+- **Proposto (o coordenador, 2026-10-19; aguardando o mantenedor):** **(a) a lista de raises da 721 perde "um índice fora dos limites"**: `xs[3]` responde `?T` (63, `null`) e não levanta nada, então nenhuma dobra pode levantar ali; os raises que ficam são uma conversão que falha, uma chave ausente e um `panic` dentro de uma função `Any`.
+- **Medido.** O draft da 721 não consegue mostrar um raise de índice fora dos limites: `[1, 2, 3][3]` é `null` pelo § prelude-and-primitives (3).
+- **Opções.** (a) Como proposto. (b) Um índice que levanta existe em outro lugar (nomeá-lo).
+- **Recomendação.** (a).
+- **Bloqueia.** O exemplo do draft da 721.
+
+#### 396-a · `unquote`, `array`, `object` do json (decisão 396; 151 json)
+- **Proposto (o coordenador, 2026-10-19; aguardando o mantenedor; a referência do json escrita como (a)):** **(a) `unquote(s)` lê um literal de string JSON de volta para o seu texto, o inverso de `quote`; `array(items: string[])` e `object(members: #(string, string)[])` juntam textos que já são valores JSON, sem escapar as partes.**
+- **Medido.** O json ainda não tem `src/`; só os nomes da 396 (1) e o uso do actions sustentam a leitura.
+- **Opções.** (a) Como proposto. (b) Outro sentido.
+- **Recomendação.** (a).
+- **Bloqueia.** Só a referência de conformance do json.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
