@@ -354,7 +354,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 #### 719-b · `compiler.source(value).file`: o caminho do módulo ou o arquivo? (decisões 719, 718; 144 B-156)
 - **Proposto (opus, 2026-10-19; construído como (b)):** (a).
-- **Contexto.** 719: `compiler.source(value)` é o `Source(file, line, col)` da chamada; o snap escreve o arquivo e a linha do teste em toda chamada. `builtins.d.bp` diz "module path (\"\" for main)".
+- **Contexto.** 719: `compiler.source(value)` é o `Source(file, line, col)` da chamada; o snap escreve o arquivo e a linha do teste em toda chamada. `builtins.d.bp` diz "module path ("" for main)".
 - **Medido.** Como construído, `file` é o caminho do módulo: a célula `syntax_fn_expanded_at_call` imprime `main:32`, não `src/main.bp:32`.
 - **Opções.**
   (a) ★ O arquivo, relativo à raiz do pacote, como os diagnósticos o imprimem.

@@ -354,7 +354,7 @@ group), answered before every other part of this page; in the order of the steps
 
 #### 719-b · `compiler.source(value).file`: the module path or the file? (decisions 719, 718; 144 B-156)
 - **Proposed (opus, 2026-10-19; built as (b)):** (a).
-- **Context.** 719: `compiler.source(value)` is the call's `Source(file, line, col)`; snap writes the test's file and line into every call. `builtins.d.bp` says "module path (\"\" for main)".
+- **Context.** 719: `compiler.source(value)` is the call's `Source(file, line, col)`; snap writes the test's file and line into every call. `builtins.d.bp` says "module path ("" for main)".
 - **Measured.** As built, `file` is the module path: the cell `syntax_fn_expanded_at_call` prints `main:32`, not `src/main.bp:32`.
 - **Options.**
   (a) ★ The file, relative to the package root, as diagnostics print it.
