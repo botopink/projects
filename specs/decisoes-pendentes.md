@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**35 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**34 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **757**.
+número livre, que é **758**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -254,23 +254,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
 - **Bloqueia.** Nada.
-
-#### 667-a · Como `v is t` chega ao tipo concreto: uma cópia especializada, ou o teste passado em tempo de execução (decisão 667; 144 B-146)
-- **Proposto (sonnet, 2026-10-18; construído como (b), retido do pouso):** (a) como a 667 a enuncia.
-- **Contexto.** 667: o parâmetro `comptime t: type<T>` é a especialização da função (417), então `e is t` é `e is Users` na cópia em que `get(Users)` compila.
-- **Medido.** A thread não construiu cópia. A chamada passa a função de teste `{ v -> v is Users }` em tempo de execução e o corpo a chama. `is_type_parameter_refused` e `is_comptime_type_parameter` respondem igual nos quatro alvos. Uma diferença visível: repassar `t` a outra chamada (`r.count(t)`) é recusado `expr-value-of-type`, onde uma cópia especializada conheceria `t` no build e aceitaria (417).
-- **Opções.**
-  (a) ★ Uma cópia por argumento de tipo, como a 667 enuncia: `t` é conhecido no build dentro da cópia, e repassá-lo é um argumento `comptime` conhecido no build.
-  ```bp
-  pub fn count<T>(self: Registry, comptime t: type<T>) -> i32 { … }
-  pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // accepted
-  ```
-  (b) O teste passado em tempo de execução (construído): sem cópias, as mesmas respostas, e `t` não pode ser repassado.
-  ```bp
-  pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // refused: expr-value-of-type
-  ```
-- **Recomendação.** (a): a leitura da própria decisão, e a única em que `t` se comporta como todo outro argumento `comptime`.
-- **Bloqueia.** O pouso da 667 (terceira caixa do B-146) e o B-152 (668): o `async.failed(comptime t: type<T>, …)` da std e a célula `type_parameter_bound_by_token` precisam que o token chegue ao tempo de execução, e hoje ele não chega a nenhum (erlang deixa `I32` não ligado, wasm recusa, commonJS e beam abortam); as outras duas caixas do B-146 pousam sem ela.
 
 #### 723-b · Uma leitura de contexto pode nomear um parâmetro ou um local de tipo `Context<T>`? (decisões 722, 723; 144 B-17)
 - **Proposto (opus, 2026-10-19; construído como (a)):** (a).

@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**35 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**34 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **757**.
+number, which is **758**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -254,23 +254,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
 - **Blocks.** Nothing.
-
-#### 667-a · How `v is t` reaches the concrete type: a specialised copy, or the test passed at run time (decision 667; 144 B-146)
-- **Proposed (sonnet, 2026-10-18; built as (b), held back from landing):** (a) as 667 states it.
-- **Context.** 667: the `comptime t: type<T>` parameter is the function's specialisation (417), so `e is t` is `e is Users` in the copy `get(Users)` compiles to.
-- **Measured.** The thread built no copy. The call passes the test function `{ v -> v is Users }` at run time and the body calls it. `is_type_parameter_refused` and `is_comptime_type_parameter` answer the same on the four targets. One visible difference: passing `t` on to another call (`r.count(t)`) is refused `expr-value-of-type`, where a specialised copy would know `t` at build and accept it (417).
-- **Options.**
-  (a) ★ A copy per type argument, as 667 states: `t` is known at build inside the copy, and handing it on is a `comptime` argument known at build.
-  ```bp
-  pub fn count<T>(self: Registry, comptime t: type<T>) -> i32 { … }
-  pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // accepted
-  ```
-  (b) The test passed at run time (built): no copies, the same answers, and `t` cannot be handed on.
-  ```bp
-  pub fn get<T>(self: Registry, comptime t: type<T>) -> ?T { if (self.count(t) == 0) { return null; } … }   // refused: expr-value-of-type
-  ```
-- **Recommendation.** (a): the decision's own reading, and the only one where `t` behaves as every other `comptime` argument.
-- **Blocks.** 667's landing (B-146's third box) and B-152 (668): std's `async.failed(comptime t: type<T>, …)` and the cell `type_parameter_bound_by_token` need the token to reach run time, and it reaches none today (erlang leaves `I32` unbound, wasm refuses, commonJS and beam abort); B-146's other two boxes land without it.
 
 #### 723-b · May a context read name a parameter or a local of type `Context<T>`? (decisions 722, 723; 144 B-17)
 - **Proposed (opus, 2026-10-19; built as (a)):** (a).
