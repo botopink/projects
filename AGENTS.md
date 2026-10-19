@@ -78,7 +78,9 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   [--jobs <N>]`, running the shared `scripts/git-hooks/lib/runner-standalone.sh` — the stages, then
   `botopink cell check conformance/` when the repository has that directory. The commit hook runs it with
   `--staged --no-conformance` (470); CI on a push to `feat` and a front's Conformance step run it whole.
-  `--jobs` is the total of its cell pools (default the machine's); it keeps no pool and no lock.
+  `--jobs` is the total of its cell pools (default the machine's); it keeps no pool and no lock. On a machine whose
+  fixed per-machine file (`~/.config/botopink/machine`) reads `machine-1` it adds `--no-conformance` itself and says so
+  (decisions 768, 769).
 - **A `<target>`** is a repository of the checkout (`repository/<name>/` with a `scripts/gate.sh`), or
   `task:<name>` (a bare name that is no repository also resolves to a task). Tasks are found by
   `git worktree list` of the meta repository and of every submodule of the main checkout: a task is a
@@ -114,6 +116,9 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   only their executions queue. `--jobs` at or above the capacity waits for an empty pool and holds all of
   it: a `git commit` in botopink-lang runs so (`exec --jobs 10 <name> -- git commit …`), its hook's gate
   sizing itself to the machine.
+  On `machine-1` `exec` refuses, before taking a job, a command whose text — its arguments, a `bash -c` string, the
+  non-comment lines of a script file it names — runs a whole-suite `cell check` or a library's `scripts/gate.sh`
+  without `--no-conformance` (decisions 768, 769).
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
   for a task; the report names each one. Specs never name them.
 - It runs and reports; landing stays the coordinator's.
