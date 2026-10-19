@@ -2569,7 +2569,7 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 ### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782, 783)
 
-**Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing
+**Machine:** 2 (decision 785 — machine 1 does not open it) · **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing
 
 Decisions 780, 782: `load(comptime path: string) -> Result<void, Diagnostic[]>`, a `Build` member of `Compiler`, compiles a file
 of the package at build as the entry of a package of its own and answers `Ok` when it compiles, `Error` its refusals (never

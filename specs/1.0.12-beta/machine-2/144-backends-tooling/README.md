@@ -3122,9 +3122,10 @@ being the one that stands.
       `check-docs.sh`, `tsc-check.sh`, `run.sh`, C-21 (`located_errors.zig`), the workspace glob and meta check 7 read the
       layout; every cited case path rewritten. Left: the cells that fail to pack only because they are red today are packed
       once green (`pack-cells.py` reads `cases/`; a module's `cells/` is not re-packed yet).
-- [ ] **Piece 5 — one package per module (decision 781), after `machine-1/144` B-158 (780)**: `pack-cells.py` folds `run/` and
-      `refused/` into `<module>/src/main.bp` + `src/cases/`, each refused case loaded by `comptime compiler.load(…)`, its `Error` (782)
-      printed in a `try … catch` handler (783) as its old refusal records, an `Ok` red; folded only when the package's `main.snap` equals the old answers so projected on every target;
+- [ ] **Piece 5 — one package per module (decisions 781, 784), after `machine-1/144` B-158 (780) and `machine-1/160`'s `matchesRefused`**: `pack-cells.py` folds `run/` and
+      `refused/` into `<module>/src/main.bp` + `src/cases/`, each refused case a test of the package run by `botopink test`,
+      `snap.matchesRefused(comptime compiler.load(…))` (784, after `machine-1/160`'s box), `snap` a `git` dependency; a case moves only
+      when its `snap` body equals the old `.snap`'s records byte for byte; `refused/` and its per-case `.snap` retired from `cell check`; folded only when the package's `main.snap` equals the old answers so projected on every target;
       C-21 walks the loaded cases; check-docs, check 7, run.sh, tsc-check and the docs follow; the suite timed again.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
   directory grows cases (761). botopink-lang's 166 s3 is this mapping, not 509 new drafts; rows 1–143 get their `Cell` slug or

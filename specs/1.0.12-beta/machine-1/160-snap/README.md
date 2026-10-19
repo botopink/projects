@@ -22,6 +22,17 @@ consumer commits only: 144 B-08 (17 sites), B-20, B-28.
       — built as: `matches` over `code @`…`` and `compiler.source`, the snapshot named by the running test (772); the four `assert*` names kept and delegating to the engine; `botopink.json` regained `"files": ["snap.bp"]` (its loss left every `import … from "snap"` unbound in rakun); cell `conformance/test/snapshot_named_by_running_test`; rakun-bpp's `src/testing/assert_*.bp`, rakun-ssr's `src/testing/core.bp` and 18 test files and five rakun-bpp examples still call `assertAs` and the like
 - [ ] snap's README and AGENTS written with the module-qualified call `snap.matches(x)` — which 144 B-156's last box makes work; the place of a library's test-driven cell (`conformance/test/<cell>/`, which `cell check` does not run) is a question for the coordinator
 
+### 160 — `matchesRefused`: a loaded file's refusals as a snapshot (decision 784)
+
+**Machine:** 2 (decision 785 — machine 1 does not open it) · **Repository:** snap (`--repo snap`) · **Model:** sonnet · **After:** `machine-1/144` B-158 (`compiler.load`, 780, 782, 783)
+
+- [ ] `pub fn matchesRefused(syntax loaded: Result<void, Diagnostic[]>) -> anyvalue`, 719's shape like `matches`, over a run-time
+      `matchesRefusedAt`: on `Error(ds)` the body is one block per `Diagnostic` — `refused <message>`, `at <file>:<line>:<column>`,
+      `label <text>` when there is one —, subject `refused`, through the path rule, `botopink-snap 1` and the `.new` flow; on `Ok` the
+      test fails naming the file that compiled
+- [ ] cell `snap_matches_refused` (784): a refused file recorded, a `.new` on a changed refusal, a file that compiles failing the test;
+      README and AGENTS name the call
+
 ### 160 Conformance — the front's last step (decision 465)
 
 **Repository:** snap (`--repo snap`) · **Model:** opus
