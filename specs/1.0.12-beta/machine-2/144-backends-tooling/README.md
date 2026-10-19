@@ -2960,6 +2960,10 @@ Each box is a library's decision-cell draft that builds on the other targets and
       where commonJS, erlang and wasm answer `a`; found hunting the boxes above; a cell of the shape, red on beam on the parent
 - [ ] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
+- [ ] wasm: importing `io.process` is refused again — `conformance/test/std_process_import.bp` answers "`rawOnSignal` has no
+      implementation for the wasm backend" at `std/io/process.bp:180` and at the import, against 518 (4) / 652 (3) (an unreached
+      function stops nothing); green at botopink-lang 916a688c5, regressed since (suspects: B-151's `std_calls.expand` pruning, B-155's
+      namespace aliases, `wat.zig` `checkHostBindings` / `emitModules`); found by machine 2's conformance pass — machine 1's under 769
 
 ### B-147 — erlang / beam defects found by 165 s5
 
@@ -3083,6 +3087,9 @@ being the one that stands.
       — `plan` / `verify` landed (`scripts/consolidate-cells.py`, no cell moved): `verify --base` the identity on the unchanged
       tree; `plan` refuses while a code-bearing row has no slug (108 today: rows 1–143's and 11 later), `--allow-unslugged`
       homing their cells outside; `apply` and the opus pass over the ambiguity list wait on the slugs and on 760's codemods
+      — `apply [--group|--all] [--commit]` landed too (code only, no cell moved): one commit per prefix group, largest first, the
+      decision modules in commits of 100 rows, `"*"` dropped last; glob mentions (`modules/index_*`) and the Zig `cells_dir` joins in
+      `comptime/tests/located_errors.zig` are edited by hand in P3
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
