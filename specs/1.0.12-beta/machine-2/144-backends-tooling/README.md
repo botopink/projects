@@ -2399,7 +2399,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       type and lowered through the block forms, `marker-type-mismatch`, `marker-without-arrow`,
       `marker-lambda-without-expected-type`, `marker-on-declaration`, `component-lambda-not-lowered` (B-116-a … g and
       B-116-i built as recommended, B-116-a decided by 570, B-116-b by 571, B-116-c by 572, B-116-d by 573, B-116-e by 574; cells `marker_*`); a body's tail `await e` / `try e` is its value (537); nothing
-      of today's forms refused yet. Left: P2 the codemod over botopink-lang, P3 one landing per library — each also marking
+      of today's forms refused yet. P2 landed: `scripts/codemod/body_markers.py` over the cells, `conformance/test` and std. Left: P3 one landing per library — each also marking
       every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
       keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare
       value refused as a type mismatch, the hint naming the marker and `Async.resolve` (570)
@@ -2415,9 +2415,9 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       lambda's body a function body (`return v` the `R`, a top-level `continue` and `break v` refused), `docs.md`'s
       `iter loop` equivalence dropped; `async fn f()` with no return type refused `marker-type-mismatch`; the formatter
       migrates the 7 `marker_*` cells; 574's example rewritten
-- [ ] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
+- [x] (ii) the types: `@Iterator` → `Iter`, `@Task` → `Async`, `@Stream` → `AsyncIter`, `@Component` → `Component`,
       `@Result` → `Result`, declared in std's `.bp`; `Async.resolve(v: T) -> Async<T>` (570); `comptime/effect_chain.zig` reduced to what the markers need; a
-      codemod over botopink-lang and every library; every cell the same
+      codemod over botopink-lang and every library; every cell the same · landed in botopink-lang (std, cells, `conformance/test`, `Async.resolve` spliced through the template expansions); the libraries' sites (rakun 201, query 2, markdown 1, by file) go with P3; left: a cell for `Async.resolve` on four targets, the compiler messages' `@Iter` / `@Component` names respelled (retired.md)
 - [ ] (iii) what is new: an iterator's `R` (`return v`; `next()` answering `Step.Item(T)` / `Step.Done(R)`), a failure in
       `R` ending the iteration (`for x in try xs`), `Component<Result<R, E>>` the one component that throws — on
       commonJS, erlang and beam, wasm through 164; `io.fs`'s `lines()` / `chunks()` answering
