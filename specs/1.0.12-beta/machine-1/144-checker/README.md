@@ -2574,13 +2574,23 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 Decision 788: a module may hold top-level `comptime { … }` blocks — build bodies run once per build in the order written; a
 function whose every parameter is `comptime` is called there and expanded at the call (139), no `comptime fn` form.
 
-- [ ] the parser takes `comptime { … }` at module level; the checker types it as a build body (`compiler.*`, `val`s known at build,
+- [x] the parser takes `comptime { … }` at module level; the checker types it as a build body (`compiler.*`, `val`s known at build,
       calls expanded at build, `print`), a run-time effect `run-in-build`; it declares nothing outside itself
-- [ ] the blocks run in the order written, the modules in their build order; each `compiler.init` registered there runs at program
+- [x] the blocks run in the order written, the modules in their build order; each `compiler.init` registered there runs at program
       start in that order (632)
-- [ ] a `print` reached there is written to stdout as the build phase's output (789 (2) — the CLI's own messages to stderr)
-- [ ] cell `module_comptime_block` (788): two blocks, an expanded `fn f(comptime n: string) -> void` called from each, their
+- [x] a `print` reached there is written to stdout as the build phase's output (789 (2) — the CLI's own messages to stderr)
+- [x] cell `module_comptime_block` (788): two blocks, an expanded `fn f(comptime n: string) -> void` called from each, their
       build prints and their init bodies' run prints in order, on every target
+      — built as: the block rewritten by the parser into a decorator with an anchor `val`, so it runs on the decorator build-body
+      machinery and `compiler.init` is that decorator's executor; a private function whose every parameter is `comptime` and that
+      writes `compiler.init` expanded at each call and left out of the program; `setMeta` / `addMeta` / `addMember` / `addType` /
+      `implement` in a block refused `compiler-output-outside-decorator`; a build body's `print` (it never worked before) goes to
+      stdout as the build's output, kept by the level-B cache and replayed on a cached build, the CLI's own messages on stderr; the
+      build lines asserted in `comptime/tests/comptime_blocks.zig` until B-160 records them
+- [ ] a refusal inside a block names it as `comptime`, not the decorator it is rewritten into (`__bp_comptime_<k>`)
+- [ ] a `comptime { print(…) }` inside a function body compiles and its print is dropped — 788 does not reach it; recorded as build
+      output or refused, per the answer to question 788-a (e)
+- [ ] the language server on an expanded private function (hover, go-to), which leaves the parsed program
 
 ### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782, 783)
 
