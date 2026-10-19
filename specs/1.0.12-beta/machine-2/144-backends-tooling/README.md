@@ -3051,6 +3051,7 @@ modules without losing what is tested. Machine 2 (tooling, lane C). Order: **aft
       workspace glob; the grouping by the row naming the cell, else the `////` header's decision, else the cell's first `_` prefix;
       `consolidate-cells.py` `plan` / `apply --group` / `verify` (counts, record kinds, a content hash multiset); the pieces as below,
       after a decision on the format; questions b157-a … b157-g, b157-a first
+- [x] the plan's seven points answered as decision 765 (a each): cases `<module>/cases/<case>/`, each a full cell; home under the highest-numbered row; `modules/<prefix>/cases/<cell>/` for cells proving no decision; markers' paths rewritten only; names kept; a stub per unproved row (P4); one commit per prefix group
 - [ ] **Piece 1** — `botopink cell check` reads the new module format (compiler-cli, `cell_snap.zig`); the old single-program cell
       still accepted; cells for the format itself.
 - [ ] **Piece 2** — the consolidation script: moves the cells by the plan's grouping, writes the mapping, rewrites every reference,

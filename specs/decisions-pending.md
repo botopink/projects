@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**38 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**31 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **765**.
+number, which is **766**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -335,55 +335,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b157-a · The consolidated module's format (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a) — nothing a reader of 464 / 475 / 512 sees changes; the format is recorded as a decision before P1 builds**
-- **Measured.** Measured: `cell check` takes any directory holding `src/` as a cell and copies it alone into a scratch workspace; `workspaces` globs admit only `*`, `<dir>/*` or a literal, so a two-level `*/cases/*` glob is the one tooling change (a) needs.
-- **Options.** (a) each case a full cell as today under `<module>/cases/<case>/`, the `.snap` format untouched; (b) manifest-less cases inheriting the module's manifest (amends 475 (1)); (c) `src/<case>.bp` in one package with `snapshot/output/<case>/`.
-- **Recommendation.** (a).
-- **Blocks.** B-157 P1 and everything after it.
-
-#### b157-b · A cell citing several code-bearing rows, none of which names it (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a), with one opus pass over the generated ambiguity list only**
-- **Measured.** Measured: 1,083 cells link to at least one row and 259 to more than one; row 8 attracts 51 cells, rows 280 / 575 / 330 / 127 at least 25 each.
-- **Options.** (a) home it under the highest-numbered row in force, the others linked as "proved also by"; (b) the lowest (its origin); (c) an opus read per cell.
-- **Recommendation.** (a).
-- **Blocks.** B-157 P2's mapping.
-
-#### b157-c · Where the cells proving no decision go (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a) — one shape everywhere**
-- **Measured.** About 60 prefixes (`decorator`, `external`, `template`, …).
-- **Options.** (a) `modules/<prefix>/cases/<cell>/`, one module per first `_` segment (760 (1)'s subjects); (b) flat, as today; (c) subjects from `conformance/docs.md`'s headings.
-- **Recommendation.** (a).
-- **Blocks.** B-157 P2 / P3.
-
-#### b157-d · The 817 `<!-- example: … -->` markers of `conformance/docs.md` (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a), as 650 orders**
-- **Measured.** A missed path reds `test-docs`, the oracle.
-- **Options.** (a) rewrite the path only, the marker-to-link form staying 166 s4's (650); (b) turn them into links now.
-- **Recommendation.** (a).
-- **Blocks.** B-157 P3.
-
-#### b157-e · A moved cell's name (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a) — the move is pure, 512 (1)'s member-name uniqueness holds, and prose mentions keep resolving**
-- **Measured.** —
-- **Options.** (a) the old cell name unchanged as the case's name; (b) the prefix dropped under its decision directory.
-- **Recommendation.** (a).
-- **Blocks.** B-157 P3.
-
-#### b157-f · The code-bearing rows no cell proves (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a) — 761's "mapped, or a draft" holds at B-157's end**
-- **Measured.** Measured: 254 of botopink-lang's 510 code-bearing rows get a case; 256 need a draft.
-- **Options.** (a) B-157 scaffolds a `draft/main.bp` stub per such row (P4, about 256), the writing staying 166 s3's; (b) left wholly to 166 s3.
-- **Recommendation.** (a).
-- **Blocks.** B-157's last box.
-
-#### b157-g · The landing unit (decisions 760, 761; 144 B-157)
-- **Proposed (fable plan, 2026-10-19; awaiting the maintainer):** **(a) — each group's step gate and `verify` are the oracle, and machine 1's new cells move with the refreshed mapping**
-- **Measured.** —
-- **Options.** (a) one commit per prefix group, largest first, the tree mixed between landings, the mapping refreshed before each; (b) one commit.
-- **Recommendation.** (a).
-- **Blocks.** B-157 P3.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
