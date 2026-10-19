@@ -309,6 +309,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 166 decision-cells (medium)
 
 - [x] 166 s1–s2 — `scripts/decision-cells.py` (scaffold · compile · promote · check; phase 1 `draft/main.bp`, the Markdown-link include, 649, 650) and meta CI check 7; the ledger's `Cell` column (434 slugs, 647) and the `process` tags (48 rows) · s3 per repository after the group's codemods over it; s4 (the flip to `botopink cell check`) after the group's end · 166-a … 166-d answered (646–651)
+- [ ] 166 s3 — the drafts of the rows no cell proves: landed in http (732), json (778), log (763), snap (756), rakun (220, 377, 770) and botopink-lang (174, 440, 503, 774, 777, 780; B-157 P4); botopink-lang's 23 flat cells homed into their decision modules (765, 779) · left: the remaining unproved rows, vscode-extension's
 
 ## L4 — later
 
