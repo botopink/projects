@@ -2575,18 +2575,28 @@ Decisions 780, 782: `load(comptime path: string) -> Result<void, Diagnostic[]>`,
 of the package at build as the entry of a package of its own and answers `Ok` when it compiles, `Error` its refusals (never
 empty), read with `try … catch` / `try` (783) — never through `attempt`; no `compiler.snapshot`.
 
-- [ ] `compiler.bp`: `Diagnostic(code, message, file, line, column, label: ?string)` and `load` in `Compiler`; its row in
+- [x] `compiler.bp`: `Diagnostic(code, message, file, line, column, label: ?string)` and `load` in `Compiler`; its row in
       `parser/compiler_surface.zig`'s table, held by `comptime/tests/compiler_members.zig` (616)
-- [ ] the handler beside `inferEmbedBuiltin` (`comptime/infer.zig`): `embed`'s path rules and reader, `load-no-reader` on a
-      build with no reader, the file registered as a build input (519)
-- [ ] the nested compile (`comptimeMod.compile`, as `comptime/tests/located_errors.zig` runs it) captured — never through the
+- [x] the handler beside `inferEmbedBuiltin` (`comptime/infer.zig`): `embed`'s path rules and reader, `load-no-reader` on a
+      build with no reader; a path refused at the argument as `load-path-absolute`, `load-path-outside-package`,
+      `load-file-missing`, a file that loads itself `load-cycle` (codes no decision names — chosen with the build)
+- [ ] the loaded file registered as a build input (519): level B's key covers files under a library's `src/`, a loaded file
+      outside `src/` is not in it
+- [x] the nested compile (`comptimeMod.compile`, as `comptime/tests/located_errors.zig` runs it) captured — never through the
       CLI's reporter — and guarded against re-entering std's one-time initialisation (`comptime.zig`'s init-once caches)
-- [ ] the loaded file is its own package's entry for the build's target: its `mod` tree beside it, the caller's manifest, never the
+- [x] the loaded file is its own package's entry for the build's target: its `mod` tree beside it, the caller's manifest, never the
       caller's module graph; a path outside the package, absolute or missing is refused at the argument, located
-- [ ] cells `compiler_load_answers_diagnostics` (780), `compiler_load_answers_result` (782) and `compiler_load_try_catch` (783,
+- [x] cells `compiler_load_answers_diagnostics` (780), `compiler_load_answers_result` (782) and `compiler_load_try_catch` (783,
       the refusals handled by `try … catch` and propagated by `try`), front 166's shape: a refused
       file's `code`, `message`, `line`, `column`, `label` printed from `try comptime compiler.load(…) catch { ds -> … }` (783); a file that compiles answers `Ok`; the
-      refusals on every target
+      refusals on every target · green on erlang, commonJS and wasm; the three answer cells red on beam (the `try … catch` defect below)
+- [ ] beam refuses `try f() catch { e -> … };` over a `Result<void, E>` (`get_tuple_element` `bad_type`), with or without
+      `compiler.load`; the three answer cells green on beam
+- [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
+      and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
+      catch …` with no `try`)
+- [ ] an aliased imported type in the signature of a function declared after its caller is refused `type mismatch: expected
+      <Alias>, got <Type>`; a cell, red on the parent (the loaded module's helper is placed first to avoid it)
 
 Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package as one program) is a later decision (780 (4)).
 
