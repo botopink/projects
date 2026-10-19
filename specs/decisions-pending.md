@@ -403,6 +403,32 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): it is the rule already written three times; (c) keeps a context-dependent meaning of a call.
 - **Blocks.** 150 s34 (rakun-style's aliases, 661).
 
+#### 641-a · Once `String` and `Array` dissolve, how does a program add members to `string` / `array<T>`? (decisions 641, 617, 628; 144 B-148)
+- **Proposed (opus, 2026-10-19; box held, nothing built):** (c).
+- **Context.** 641: every primitive type is lowercase and holds its own methods; `String`, `Bool`, `BigInt`, `Bytes` and `Array` dissolve. A 1.0.11 checker step, which no numbered decision records, lets a program's `behavior String { default fn … }` / `behavior Array<T> { … }` extend std's behavior. Its cells are green today: `program/run` cases `program_primitive_behavior_extends_std` and `program_array_behavior_default`, `program/cells/program_primitive_behavior_redeclares_std` (`behavior-member-redeclared`), and `conformance/test/program_primitive_behavior_extends_std.bp`.
+- **Measured.** After 641 std registers no `String` / `Array`, so a program's `behavior String` is an empty behavior of its own and `"a+b".tailShout()` is refused. The other forms are refused on today's compiler: `StringExtras extend string { … }` ("`extend string` adds methods without a contract — use `implement <Behavior> for string`"), and `behavior Shout { default fn tailShout(self: Self) … }` + `StringShout implement Shout for string {}` (`unknown-primitive-method`). No library uses the feature; `behavior Number`'s half is unaffected.
+- **Options.**
+  (a) A program's lowercase `behavior string { … }` extends the type's members — against 641's "the case says type or contract".
+  ```bp
+  behavior string { default fn tailShout(self: Self) -> string { return self + "!"; } }
+  ```
+  (b) `extend` legal on a primitive; the cells respelled; `behavior-member-redeclared` moves onto `extend`.
+  ```bp
+  StringExtras extend string { fn tailShout(self: Self) -> string { return self + "!"; } }
+  ```
+  (c) ★ A program contract implemented for the primitive works — the refusal's own advice; the cells respelled to it.
+  ```bp
+  behavior Shout { default fn tailShout(self: Self) -> string { return self + "!"; } }
+  StringShout implement Shout for string {}
+  "a+b".tailShout()
+  ```
+  (d) No member added to a primitive without a contract and no implementation either: the four sites keep their `Number` half or are removed.
+  ```bp
+  // program_primitive_behavior_extends_std keeps only `behavior Number`
+  ```
+- **Recommendation.** (c): the case still says contract, and it is what the `extend` refusal already tells the user to write.
+- **Blocks.** B-148's 641 box (the dissolution and the codemod: `Array<` 2,231, `Bytes` 144, `String.` 113, `BigInt` 37 sites) and the `String` / `Array` / `Bool` / `BigInt` / `Bytes` half of `external-on-behavior`.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
