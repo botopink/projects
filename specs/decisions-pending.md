@@ -331,6 +331,22 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): defined by the language on every target, no render tree assumed; (b) belongs to a client runtime and can be layered on it.
 - **Blocks.** 755's build (`memo_computed_once_per_instance`) and 723's run-time provide (`context_provide_made_at_run_time`).
 
+#### 676-a · What targets a package with no `"targets"` holds when 676 checks its dependencies (decision 676; 165 s5)
+- **Proposed (opus, 2026-10-19; built as (b), held from landing):** (a).
+- **Context.** 676: a dependency's `"targets"` hold every target of the package that declares it, `dependency-target-missing`. As built, a package with no `"targets"` counts as all four targets.
+- **Measured.** On rakun's gate: every cell and test that declares no `"targets"` counts as commonJS, erlang, beam and wasm, so rakun (erlang) is refused for beam and wasm in 135 of 135 cells; declaring `beam` in rakun moves the refusal to its own dependencies — css (99), validation (29), routing (5), actions (5) declare no `beam`. 660, B-17's context box and rakun's commit wait on 676's split from them.
+- **Options.**
+  (a) ★ A package with no `"targets"` takes the intersection of its dependencies' targets (and its workspace's, when it is a member); 676 refuses only a package that **declares** a target a dependency lacks.
+  ```json
+  { "name": "container_scopes", "dependencies": { "rakun": "…" } }   // targets: rakun's — erlang
+  ```
+  (b) No `"targets"` is all four (built): every such package or cell writes its targets, or adds them to its dependencies.
+  ```json
+  { "name": "container_scopes", "targets": ["erlang"], "dependencies": { "rakun": "…" } }
+  ```
+- **Recommendation.** (a): a target set is stated once, where a host binding decides it, and flows to what uses it; (b) makes 135 rakun cells and four libraries restate it.
+- **Blocks.** 676's landing (660 and B-17's context box land without it).
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

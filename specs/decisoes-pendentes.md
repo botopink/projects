@@ -331,6 +331,22 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): definida pela linguagem em todo alvo, sem supor uma árvore de renderização; (b) pertence a um runtime de cliente e pode ser posta por cima dela.
 - **Bloqueia.** O build da 755 (`memo_computed_once_per_instance`) e o provide em tempo de execução da 723 (`context_provide_made_at_run_time`).
 
+#### 676-a · Que alvos um pacote sem `"targets"` tem quando a 676 checa suas dependências (decisão 676; 165 s5)
+- **Proposto (opus, 2026-10-19; construído como (b), retido do pouso):** (a).
+- **Contexto.** 676: os `"targets"` de uma dependência contêm todo alvo do pacote que a declara, `dependency-target-missing`. Como construído, um pacote sem `"targets"` conta como os quatro alvos.
+- **Medido.** No gate do rakun: toda célula e teste que não declara `"targets"` conta como commonJS, erlang, beam e wasm, então o rakun (erlang) é recusado para beam e wasm em 135 de 135 células; declarar `beam` no rakun move a recusa para as próprias dependências dele — css (99), validation (29), routing (5), actions (5) não declaram `beam`. A 660, a caixa de contexto do B-17 e o commit do rakun esperam a separação da 676.
+- **Opções.**
+  (a) ★ Um pacote sem `"targets"` toma a interseção dos alvos das suas dependências (e os do seu workspace, quando é membro); a 676 recusa só um pacote que **declara** um alvo que falta a uma dependência.
+  ```json
+  { "name": "container_scopes", "dependencies": { "rakun": "…" } }   // targets: rakun's — erlang
+  ```
+  (b) Sem `"targets"` são os quatro (construído): todo pacote ou célula assim escreve seus alvos, ou os acrescenta às suas dependências.
+  ```json
+  { "name": "container_scopes", "targets": ["erlang"], "dependencies": { "rakun": "…" } }
+  ```
+- **Recomendação.** (a): um conjunto de alvos é dito uma vez, onde um binding de host o decide, e flui para o que o usa; (b) faz 135 células do rakun e quatro bibliotecas o repetirem.
+- **Bloqueia.** O pouso da 676 (a 660 e a caixa de contexto do B-17 pousam sem ela).
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
