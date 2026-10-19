@@ -2584,18 +2584,18 @@ Oracle: the cells; `zig build test`.
 
 Front 166's decision cells are written as drafts before they compile; the first ones that do are the oracle. css's drafts (166 s3) measured:
 
-- [ ] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent; markdown's 330 draft meets the same (166 s3, markdown)
+- [x] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent; markdown's 330 draft meets the same (166 s3, markdown)
 - [x] in a nested pattern a bare nullary variant binds a variable instead of matching the variant: `Error(NotAllowedOnHost)` and `Error(Timeout)` as `case` arms over a `Result<T, HttpError>` — erlang warns `variable 'NotAllowedOnHost' is unused`, commonJS takes the first arm for every error; at the top of a `case` the bare variant matches (std's `Method.verb`); a bare name inside a pattern that resolves to a nullary variant of the matched type is that variant (154's rule for expression position, applied to patterns), a binder only when no variant has the name; cell `nested_pattern_nullary_variant` (four targets), red on the parent (166 s3, http's 623 draft)
-- [ ] a dotted variant with a payload in an annotation argument is refused: `#[load(.Lazy(afterMs: 5))]` against a parameter typed by
+- [x] a dotted variant with a payload in an annotation argument is refused: `#[load(.Lazy(afterMs: 5))]` against a parameter typed by
       the decorator's enum says nothing tells which type declares `.Lazy` — the parameter's declared type tells it, as for a nullary
       `.Eager` (587, 603); cell `annotation_argument_dot_variant_payload`, red on the parent (found by B-146)
-- [ ] a dotted variant passed to a function another module declares is `unbound variable`: `phase.describe(.Slow)` with
+- [x] a dotted variant passed to a function another module declares is `unbound variable`: `phase.describe(.Slow)` with
       `pub fn describe(p: Phase) -> string` in `phase` — the parameter's declared type resolves it (587); cell
       `dot_variant_argument_imported_fn` (four targets), red on the parent (found by B-146)
-- [ ] a refusal naming two generic types prints each with its arguments: `template-build-outside-bound` for `Component<Other>`
+- [x] a refusal naming two generic types prints each with its arguments: `template-build-outside-bound` for `Component<Other>`
       against `-> Component<Styled>` prints both as `Component` (`typeLabelAlloc` drops the arguments); the snapshot of
       `template_build_outside_bound_component` rewritten with the two full types (found by B-153)
-- [ ] a `case` whose arms cover a variant through its nested payloads is exhaustive: `case j { Run(Fast) -> …; Run(Slow) -> …; Stop -> … }`
+- [x] a `case` whose arms cover a variant through its nested payloads is exhaustive: `case j { Run(Fast) -> …; Run(Slow) -> …; Stop -> … }`
       is reported missing `Run` (`checkCaseExhaustiveness` counts no nested payload); cell `case_exhaustive_nested_variants`, red on the
       parent (found by B-154)
 

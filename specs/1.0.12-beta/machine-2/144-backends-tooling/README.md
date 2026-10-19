@@ -2978,6 +2978,7 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] wasm: a generic method answering `?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
 - [ ] wasm: `fn mapAll<T, R>(items: T[], f: fn(T) -> R) -> R[]` answers wrong values when `R` is `string` or `bool` (prints `496,504` and `[0, 1]`); found by B-152
 - [ ] erlang: a `Source(file, line, col)` built at run time fails to compile, `function '__Source'/3 undefined` — the prelude alias of `__Source` is not constructible on erlang; found by front 160
+- [ ] wasm: `val f = cfg.scoper; if (f != null) { print(f("x")); }` with `scoper: ?fn(string) -> string` prints a pointer (`304`) — a call through a function value narrowed from an optional; `cfg.scoper?.("x")` is right; found by B-154
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 
