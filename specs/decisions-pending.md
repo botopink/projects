@@ -272,6 +272,54 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): the decision's own reading, and the only one where `t` behaves as every other `comptime` argument.
 - **Blocks.** 667's landing (B-146's third box); B-146's other two boxes land without it.
 
+#### 723-a · What `use memo` is: the run-time way a component makes its own context (decision 723; 144 B-17)
+- **Proposed (opus, 2026-10-19; not built):** (a).
+- **Context.** 723 names `val c = use memo({ -> createContext(Theme(…)) });` as the run-time way a component makes a context to provide. std has no `memo`, and no decision says what it keeps or when it recomputes.
+- **Measured.** `use memo` is unbound on every target; the build-time form `comptime createContext(…)` works (cell `context_provide_made_in_body`).
+- **Options.**
+  (a) ★ `memo<T>(make: fn() -> T) -> Component<T>` in std's hooks: computed on the component's first render, kept for that component instance, never recomputed (no dependency list).
+  ```bp
+  component fn Page(dark: bool) -> Component<Element> { val c = use memo({ -> createContext(Theme(dark: dark)) }); use provide(c); … }
+  ```
+  (b) `memo` with a dependency list, recomputed when one changes.
+  ```bp
+  val c = use memo([dark], { -> createContext(Theme(dark: dark)) });
+  ```
+- **Recommendation.** (a): the one form 723 writes; a dependency list is a later decision if a program needs it.
+- **Blocks.** The run-time half of 723's provide (cell `context_provide_made_at_run_time`); nothing else.
+
+#### 723-b · May a context read name a parameter or a local of type `Context<T>`? (decisions 722, 723; 144 B-17)
+- **Proposed (opus, 2026-10-19; built as (a)):** (a).
+- **Context.** 722 / 723: a context is read through a context value the reader imports; the handle supplies the type and the default.
+- **Measured.** As built, `use context(ctx)` with `ctx` a parameter, a local or an expression is refused at the argument, `context-not-declared` (example `context_read_of_parameter` in `conformance/docs.md`).
+- **Options.**
+  (a) ★ Refused: the argument names a module-level context declaration, local or imported (built).
+  ```bp
+  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // refused: context-not-declared
+  ```
+  (b) Accepted: any value of type `Context<T>`; its type and its default come from the value.
+  ```bp
+  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // accepted
+  ```
+- **Recommendation.** (a): the strictest reading, and the read stays resolvable at build from the text.
+- **Blocks.** Nothing.
+
+#### 723-c · `inject`'s defaults and the one-default-per-type check, now that a context is read by its handle (decisions 416, 722, 723, 379 (1))
+- **Proposed (opus, 2026-10-19; built as (a)):** (a).
+- **Context.** 722 drops 379 (1)'s catalogue: a read finds its default through the handle it names. 416's `use inject(Deps)` still takes each field's default as "that type's declared default", which needs the declarations found by type; 379 (1)'s `context-declared-twice` (one default per type) is what makes that lookup single.
+- **Measured.** As built, `inject` and `context-declared-twice` are unchanged and still read the program's context declarations by type.
+- **Options.**
+  (a) ★ Keep both: `inject` resolves a field's default among the declarations the program holds, and two declarations over one type are refused (built).
+  ```bp
+  pub val a = comptime createContext(Theme(…)); pub val b = comptime createContext(Theme(…));   // refused: context-declared-twice
+  ```
+  (b) `inject` loses the declared-default step (nearest provided, else the field's own default, else an error); two declarations over one type allowed.
+  ```bp
+  type Deps(theme: Theme = Theme.default())   // the field's default when none is provided
+  ```
+- **Recommendation.** (a): 416 stands as written and 731 keeps it; (b) only if the maintainer wants no program-wide lookup anywhere.
+- **Blocks.** Nothing.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

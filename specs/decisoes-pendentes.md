@@ -272,6 +272,54 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a leitura da própria decisão, e a única em que `t` se comporta como todo outro argumento `comptime`.
 - **Bloqueia.** O pouso da 667 (terceira caixa do B-146); as outras duas caixas do B-146 pousam sem ela.
 
+#### 723-a · O que é `use memo`: o jeito em tempo de execução de um componente fazer o próprio contexto (decisão 723; 144 B-17)
+- **Proposto (opus, 2026-10-19; não construído):** (a).
+- **Contexto.** A 723 nomeia `val c = use memo({ -> createContext(Theme(…)) });` como o jeito em tempo de execução de um componente fazer um contexto para prover. A std não tem `memo`, e nenhuma decisão diz o que ele guarda ou quando recalcula.
+- **Medido.** `use memo` não está ligado em nenhum alvo; a forma de build `comptime createContext(…)` funciona (célula `context_provide_made_in_body`).
+- **Opções.**
+  (a) ★ `memo<T>(make: fn() -> T) -> Component<T>` nos hooks da std: calculado na primeira renderização do componente, guardado para aquela instância do componente, nunca recalculado (sem lista de dependências).
+  ```bp
+  component fn Page(dark: bool) -> Component<Element> { val c = use memo({ -> createContext(Theme(dark: dark)) }); use provide(c); … }
+  ```
+  (b) `memo` com uma lista de dependências, recalculado quando uma muda.
+  ```bp
+  val c = use memo([dark], { -> createContext(Theme(dark: dark)) });
+  ```
+- **Recomendação.** (a): a única forma que a 723 escreve; uma lista de dependências é uma decisão posterior se um programa precisar.
+- **Bloqueia.** A metade em tempo de execução do provide da 723 (célula `context_provide_made_at_run_time`); nada mais.
+
+#### 723-b · Uma leitura de contexto pode nomear um parâmetro ou um local de tipo `Context<T>`? (decisões 722, 723; 144 B-17)
+- **Proposto (opus, 2026-10-19; construído como (a)):** (a).
+- **Contexto.** 722 / 723: um contexto é lido por um valor de contexto que o leitor importa; o handle fornece o tipo e o default.
+- **Medido.** Como construído, `use context(ctx)` com `ctx` um parâmetro, um local ou uma expressão é recusado no argumento, `context-not-declared` (exemplo `context_read_of_parameter` em `conformance/docs.md`).
+- **Opções.**
+  (a) ★ Recusado: o argumento nomeia uma declaração de contexto de nível de módulo, local ou importada (construído).
+  ```bp
+  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // refused: context-not-declared
+  ```
+  (b) Aceito: qualquer valor de tipo `Context<T>`; seu tipo e seu default vêm do valor.
+  ```bp
+  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // accepted
+  ```
+- **Recomendação.** (a): a leitura mais restritiva, e a leitura continua resolvível no build a partir do texto.
+- **Bloqueia.** Nada.
+
+#### 723-c · Os defaults do `inject` e a checagem de um default por tipo, agora que um contexto é lido pelo seu handle (decisões 416, 722, 723, 379 (1))
+- **Proposto (opus, 2026-10-19; construído como (a)):** (a).
+- **Contexto.** A 722 retira o catálogo da 379 (1): uma leitura acha seu default pelo handle que nomeia. O `use inject(Deps)` da 416 ainda toma o default de cada campo como "o default declarado daquele tipo", o que exige achar as declarações por tipo; o `context-declared-twice` da 379 (1) (um default por tipo) é o que torna essa busca única.
+- **Medido.** Como construído, `inject` e `context-declared-twice` não mudaram e ainda leem as declarações de contexto do programa por tipo.
+- **Opções.**
+  (a) ★ Manter os dois: `inject` resolve o default de um campo entre as declarações que o programa tem, e duas declarações sobre um tipo são recusadas (construído).
+  ```bp
+  pub val a = comptime createContext(Theme(…)); pub val b = comptime createContext(Theme(…));   // refused: context-declared-twice
+  ```
+  (b) `inject` perde o passo do default declarado (o mais próximo provido, senão o default do próprio campo, senão um erro); duas declarações sobre um tipo permitidas.
+  ```bp
+  type Deps(theme: Theme = Theme.default())   // the field's default when none is provided
+  ```
+- **Recomendação.** (a): a 416 vale como escrita e a 731 a mantém; (b) só se o maintainer não quiser busca de programa inteiro em lugar nenhum.
+- **Bloqueia.** Nada.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
