@@ -2955,11 +2955,16 @@ Each box is a library's decision-cell draft that builds on the other targets and
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured; repros in rakun's `AGENTS.md`)
 
-- [ ] erlang: `m.make().run(s)` (a method call on a value a static call answers) emits `run/2 undefined`
-- [ ] erlang: `await f().make()` in a component body never runs the component (binding it to a typed `val` first works)
+- [x] erlang: `m.make().run(s)` (a method call on a value a static call answers) emits `run/2 undefined`
+      — built as: one defect under boxes 1, 2 and 5 — a call of a function-typed record field answers the field's declared
+      return type (non-generic records), so `.run(scope)` and `await` read a component; cells `method_on_static_result`,
+      `component_await_call_chain`, `component_field_lambda_awaited` (four targets; commonJS and wasm were wrong too)
+- [x] erlang: `await f().make()` in a component body never runs the component (binding it to a typed `val` first works)
 - [ ] beam: a `for` lambda loop loses a module (rakun loops by index), and `registry.find("store")?.name ?? "none"` answers `none` where the entry exists
+      — not reproduced in botopink-lang alone (a module-level registry, a `for` lambda loop, `find(...)?.name ?? "none"`:
+      right on four targets); waits on a rakun-side repro
 - [ ] wasm: a generic function returning `T` from `e is fn() -> T` then `e()` prints garbage (`276`) — the type parameter's slot not monomorphised; found by B-146
-- [ ] erlang: `await e.view()` where `view` is a record field holding a component lambda is emitted as a method call (`function view/1 undefined`) — found by 150 s34
+- [x] erlang: `await e.view()` where `view` is a record field holding a component lambda is emitted as a method call (`function view/1 undefined`) — found by 150 s34
 - [ ] wasm: a generic method answering `?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
