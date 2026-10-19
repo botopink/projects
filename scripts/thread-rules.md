@@ -63,6 +63,9 @@ what is the task's own: the step, its boxes, its worktree, its model.
 - **Your scratch files are your own.** The session's scratch directory is shared by every thread: write yours under
   a subdirectory named after your task (`<scratch>/<task>/build.log`, `cells.txt`, …), never a bare common name
   (`cells.txt`, `t.log`) another thread may write or wait on.
+- **The scratch directory is small** (a tmpfs under a user quota; a full one fails every command of every thread):
+  logs and short results only. A binary, a copied compiler, a scratch project or a build output goes under your
+  worktree (`.tasks/<name>/`), never under the scratch directory; delete your scratch subdirectory before the report.
 - `zig build test` prints `error[reserved-word-as-name]` at `libs/std/src/path.bp:5` (`reservedProbe`): that is
   `comptime/tests/located_errors.zig` building the diagnostic on purpose, not a failure — read the exit status.
 
