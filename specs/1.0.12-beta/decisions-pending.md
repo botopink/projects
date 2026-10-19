@@ -4,7 +4,7 @@
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
-- An answer goes into [`decisions-taken.md`](decisions-taken.md) under the next free number (kept
+- An answer goes into [`decisions-taken-steps.md`](decisions-taken-steps.md) under the next free number (kept
   there only); a lettered id is never renumbered or reused.
 - Every recommendation is the most restrictive reading, no configuration bypassing it (decision 67).
 - A front meeting a question it cannot answer from the code adds it here: id · title · Measured
@@ -22,8 +22,8 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 - **Part 3** — the implementation choices of tracks 04–09.
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
-(meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken.md` holds the answers and the next free
-number, which is **730**.
+(meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
+number, which is **731**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 

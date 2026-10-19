@@ -194,7 +194,7 @@ check5() {
     bash scripts/language-gap-markers.sh
 }
 
-# 6. each repository's decisions-taken.md is what scripts/decisions-split.py writes (decision 482).
+# 6. each repository's decisions-taken.md is what scripts/decisions-split.py writes from the milestone's decisions-taken-steps.md (decisions 482, 730).
 check6() {
     [ -f scripts/decisions-split.py ] || { echo "  ✗ scripts/decisions-split.py is missing (163 s10)"; return 1; }
     python3 scripts/decisions-split.py --check

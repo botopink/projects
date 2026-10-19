@@ -310,5 +310,5 @@ Every line is a command and the output it must print; nothing is read from a spe
 6. `scripts/language-gap-markers.sh`: every `// LANGUAGE GAP:` marker names a row of
    `language-gaps.md` (the closed milestones' spec trees excluded).
 7. `gate.sh --cold` within `budget_cold` (450 s, decision 265).
-8. `status.md` lists no open line; every open decision id is answered in `decisions-taken.md` or
+8. `status.md` lists no open line; every open decision id is answered in `decisions-taken-steps.md` or
    still listed in `decisions-pending.md` with the step it blocks.

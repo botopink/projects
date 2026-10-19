@@ -4,7 +4,7 @@
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
-- Uma resposta vai para [`decisions-taken.md`](decisions-taken.md) sob o próximo número livre (mantido
+- Uma resposta vai para [`decisions-taken-steps.md`](decisions-taken-steps.md) sob o próximo número livre (mantido
   só lá); um id com letra nunca é renumerado nem reutilizado.
 - Toda recomendação é a leitura mais restritiva, sem configuração que a contorne (decisão 67).
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
@@ -22,8 +22,8 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 - **Parte 3** — as escolhas de implementação das trilhas 04–09.
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
-(`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken.md` guarda as respostas e o próximo
-número livre, que é **730**.
+(`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
+número livre, que é **731**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 

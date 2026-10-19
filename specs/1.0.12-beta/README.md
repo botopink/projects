@@ -78,7 +78,8 @@ goal, mechanism, topic files and examples sit beside those steps, in a subdirect
 | [`status.md`](status.md) | The only status: five lanes of open lines — finish what is on `feat` (the conformance order first), the libraries' critical path, ready now, later, blocked on a decision — each by tier and front, and Done |
 | [`fronts.md`](fronts.md) | The rules for a front, ownership by repository, the conflict rules, the execution order, and § Gate (the standard landing every README cites) |
 | [`decisoes-pendentes.md`](decisoes-pendentes.md) | The pending decisions in Portuguese, ordered by what each unblocks, with an example per option — the page the maintainer answers on; `decisions-pending.md` stays the source |
-| [`decisions-taken.md`](decisions-taken.md) | The numbered decisions in force (the next free number lives only there) |
+| [`decisions-taken.md`](decisions-taken.md) | The rules in force, one text per subject, each sentence citing its row of the steps (decision 730) |
+| [`decisions-taken-steps.md`](decisions-taken-steps.md) | The record: one numbered row per decision, append-only (the next free number lives only there) |
 | [`decisions-pending.md`](decisions-pending.md) | The open questions, the contradictions (`ctr-*`), the 1.0.10 choices awaiting confirmation |
 | [`language-gaps.md`](language-gaps.md) | Every compiler gap a library front meets, with its nearest form, owner and the Marker index |
 | [`contracts.md`](contracts.md) | The cross-library contracts |
