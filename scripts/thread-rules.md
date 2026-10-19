@@ -32,7 +32,9 @@ what is the task's own: the step, its boxes, its worktree, its model.
 - The hook runs `scripts/gate.sh --no-conformance`; conformance is `feat`'s pipeline's (470, 477).
 - **Under 768 / 769 (until the maintainer says otherwise): conformance is machine 2's.** A machine-1 thread runs only the
   cells its change reaches (its new cells and the ones whose code it touches, by name), never `cell check` over the whole
-  `conformance/modules`, and skips a front's Conformance step. A red met outside the change is listed under Outside for
+  `conformance/modules`, and skips a front's Conformance step. Concretely: a library's gate is always
+  `scripts/gate.sh --no-conformance` (never bare, never `--cold`); `botopink cell check` takes one cell's path at a
+  time (`conformance/modules/<…>/<cell>`), never a directory of cells or a library's `conformance/`. A red met outside the change is listed under Outside for
   machine 2, never fixed. A new cell goes where 765 homes it: `conformance/modules/decisions-taken/<slug>-<N>/cases/<cell>/`
   for the decision it proves, else `conformance/modules/<prefix>/cases/<cell>/`; once B-157's moves land, `git rebase
   origin/feat` follows the renames.
