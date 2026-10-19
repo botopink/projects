@@ -2607,7 +2607,7 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       refusals on every target · green on erlang, commonJS and wasm; the three answer cells red on beam (the `try … catch` defect below)
 - [x] beam refuses `try f() catch { e -> … };` over a `Result<void, E>` (`get_tuple_element` `bad_type`), with or without
       `compiler.load`; the three answer cells green on beam · fixed (`beam_try_catch_result_void`)
-- [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
+- [x] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
 - [ ] 786: `load` answers `Result<Module, Refused>` — `Module(name, path, target)`, `Refused(module: Module, diagnostics:
@@ -2622,7 +2622,7 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)
-- [ ] an aliased imported type in the signature of a function declared after its caller is refused `type mismatch: expected
+- [x] an aliased imported type in the signature of a function declared after its caller is refused `type mismatch: expected
       <Alias>, got <Type>`; a cell, red on the parent (the loaded module's helper is placed first to avoid it)
 
 Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package as one program) is a later decision (780 (4)).
@@ -2667,7 +2667,7 @@ Decision 719 generalises the template (578): a function whose parameter is `synt
 - [x] cells `syntax_fn_expanded_at_call` (snap's shape: `matches(syntax value: unknown) -> anyvalue` splicing `compiler.source(value)` into a run-time call, the file and line printed at the test's line), `syntax_fn_text_of_expression` (`assert(a == b)` printing `a == b`), `syntax_fn_string_param_needs_template_text` (reject), four targets; `conformance/docs.md` § Templates renamed to cover both forms · `compiler.source`'s file is the module path as built, question 719-b
 - [ ] `compiler.source(value).file` is the file relative to the package root (`src/main.bp`), never the module path; `builtins.d.bp`'s comment corrected · decision 756 (a); cell `syntax_fn_source_file_is_path` (`src/main.bp:32`)
 - [x] snap's `matches` rewritten in this shape by front 160's step (landed); front 166's snap drafts promote on it (s4)
-- [ ] a `syntax` function called through its module — `snap.matches(x)` after `import {snap} from "snap"` — is not expanded and is refused "expected Expr, got string"; a call through the module's qualified name expands as the bare call does; a cell, red on the parent (found by front 160; snap's README and AGENTS still show that form)
+- [x] a `syntax` function called through its module — `snap.matches(x)` after `import {snap} from "snap"` — is not expanded and is refused "expected Expr, got string"; a call through the module's qualified name expands as the bare call does; a cell, red on the parent (found by front 160; snap's README and AGENTS still show that form)
 
 Oracle: the cells; `zig build test`.
 
