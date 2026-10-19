@@ -290,8 +290,8 @@ poolLock() {
 }
 poolUnlock() { rm -rf "$pool/lock"; }
 
-# leaseField <file> <key>
-leaseField() { sed -n "s/^$2=//p" "$1" | head -1; }
+# leaseField <file> <key> — empty when the file is gone (a reader without the lock, `status`, may race a release).
+leaseField() { sed -n "s/^$2=//p" "$1" 2>/dev/null | head -1; }
 
 # poolReap — drop the leases and waits whose owner and child are dead (under the lock).
 poolReap() {
@@ -304,10 +304,12 @@ poolReap() {
 
 # poolUsed — the jobs the live leases hold (under the lock, after poolReap).
 poolUsed() {
-    local f n=0
+    local f j n=0
     for f in "$pool"/lease.*; do
         [ -e "$f" ] || continue
-        n=$(( n + $(leaseField "$f" jobs) ))
+        [ -z "$POOL_SCAN_DELAY" ] || sleep "$POOL_SCAN_DELAY"
+        j="$(leaseField "$f" jobs)"
+        n=$(( n + ${j:-0} ))
     done
     echo "$n"
 }
@@ -315,6 +317,8 @@ poolUsed() {
 # Test knobs (scripts/gate-test.sh): the capacity and the stagger, read from the environment. The pool path is
 # `poolDir`'s, which a test points at a private directory through XDG_RUNTIME_DIR.
 POOL_STAGGER="${BOTOPINK_POOL_STAGGER:-60}"
+# A pause between finding a lease and reading it, so a test can release one mid-scan (163: the release race).
+POOL_SCAN_DELAY="${BOTOPINK_POOL_SCAN_DELAY:-}"
 # The memory the pool always leaves free (decision 674): a job is admitted only out of what lies above
 # this margin, so the machine keeps room for the editor, the sessions and a build's peak. Not a flag.
 POOL_MEMORY_MARGIN_MIB=2048
@@ -323,15 +327,17 @@ POOL_MEMORY_MARGIN_MIB=2048
 # another waits at all). With `small`, only an older waiter that asks for less than the capacity counts: the older
 # full-pool waiters are the ones a small gate may pass.
 poolOlderWaiter() {
-    local me="$pool/wait.$1" mine f t cap
+    local me="$pool/wait.$1" mine f t w cap
     [ "${2:-}" != small ] || cap="$(poolCapacity)"
     mine="$(leaseField "$me" start 2>/dev/null)"
     [ -n "$mine" ] || mine="$(date +%s)"
     for f in "$pool"/wait.*; do
         [ -e "$f" ] && [ "$f" != "$me" ] || continue
         alive "$(leaseField "$f" owner)" || continue
-        if [ "${2:-}" = small ] && [ "$(leaseField "$f" want)" -ge "$cap" ]; then continue; fi
+        w="$(leaseField "$f" want)"
+        if [ "${2:-}" = small ] && [ "${w:-0}" -ge "$cap" ]; then continue; fi
         t="$(leaseField "$f" start)"
+        [ -n "$t" ] || continue
         if [ "$t" -lt "$mine" ] || { [ "$t" -eq "$mine" ] && [ ! -e "$me" ]; } || { [ "$t" -eq "$mine" ] && [[ "$f" < "$me" ]]; }; then
             return 0
         fi
@@ -411,8 +417,16 @@ poolSetChild() {
     poolUnlock
 }
 
+# poolRelease <id> — under the lock, so no pass of another gate reads a lease that vanishes mid-scan (the lock
+# taken only when this shell does not already hold it: the EXIT trap may fire inside poolAcquire).
 poolRelease() {
+    if [ "$(cat "$pool/lock/pid" 2>/dev/null)" = "$BASHPID" ]; then
+        rm -f "$pool/lease.$1" "$pool/wait.$1"
+        return 0
+    fi
+    poolLock
     rm -f "$pool/lease.$1" "$pool/wait.$1"
+    poolUnlock
 }
 
 # ── finding the repositories and the tasks ───────────────────────────────────

@@ -27,4 +27,13 @@ lt "$(t start C)" "$(t start A)" || fail "C did not pass A"
 lt "$(t end R)" "$(t start A)" || fail "A started before the pool drained"
 lt "$(t end C)" "$(t start A)" || fail "A started before C ended"
 lt "$(t end A)" "$(t start B)" || fail "B started before A ended"
+
+# A lease released while another gate scans the pool (163, the release race): R ends during W's scan, which pauses
+# between finding R's lease and reading it; the release waits for the lock, so the scan never reads a vanished lease.
+err="$tmp/race-err"; : >"$err"
+BOTOPINK_POOL_SCAN_DELAY=2 "$here/gate.sh" exec --jobs 1 R2 -- sleep 1 2>>"$err" &
+sleep 0.3
+BOTOPINK_POOL_SCAN_DELAY=2 "$here/gate.sh" exec --jobs 3 W2 -- true 2>>"$err" &
+wait
+[ ! -s "$err" ] || { cat "$err" >&2; fail "a scan read a lease released mid-scan"; }
 echo "ok: gate-test"

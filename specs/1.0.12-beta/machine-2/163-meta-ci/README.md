@@ -234,3 +234,16 @@ idle, because the older full-pool waiter cannot start and the small gate may not
       because a running full-pool gate leaves no job to take. The test-only overrides are `BOTOPINK_POOL_CAPACITY` and
       `BOTOPINK_POOL_STAGGER`; the pool path stays fixed (67)
 - [x] decision 717 records the rule; the overrides stay, the test's alone
+
+### 163 s14 — a lease released while another gate scans the pool
+
+**Repository:** the meta repository (`scripts/gate.sh`) · **Model:** sonnet · **Found by:** the maintainer, 2026-10-19 (an
+`exec` that printed `sed: cannot read …/lease.<id>.exec` and `n +  : arithmetic syntax error` while four gates waited)
+
+`poolUsed` tested a lease's file and then read its `jobs`, under the lock; `poolRelease` removed the file without it. A
+release between the test and the read left the field empty, the sum broke, and that pass counted the jobs wrong.
+
+- [x] `poolRelease` takes the lock (not when its own shell already holds it); a field read from a vanished file is empty,
+      and `poolUsed` / `poolOlderWaiter` count an empty field as 0 or skip the file
+- [x] a case in `scripts/gate-test.sh`: a lease released while another gate's scan pauses between finding it and reading
+      it (the test-only `BOTOPINK_POOL_SCAN_DELAY`), red on the parent with the errors above, green after
