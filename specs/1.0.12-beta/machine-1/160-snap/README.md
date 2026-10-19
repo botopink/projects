@@ -16,9 +16,9 @@ consumer commits only: 144 B-08 (17 sites), B-20, B-28.
 
 ### 160 — the caller's location (decisions 718, 719)
 
-**Repository:** snap · **Model:** sonnet · **After:** 144 B-156
+**Repository:** snap · **Model:** sonnet · **After:** 144 B-156 (landed), B-149 P1b (the `code` template: the body writes `code @`…``, never `compiler.build` over text, 625), B-137's `compiler.src()` (718), question 160-b (the test's name), and the erlang `Source` constructor (machine 2, B-147)
 
-- [ ] every snapshot function that names or places a snapshot is written in 719's shape — `pub fn matches(syntax value: unknown) -> anyvalue { val at = compiler.source(value); return code @`snap.matchesAt(${value}, ${at})`; }` over a run-time `matchesAt(value: unknown, at: Source) -> void` — so the test writes `snap.matches(render(page));` and the snapshot carries the test's file and line; the reference and the engine's own tests updated; front 166's snap cells promote on it (s4)
+- [ ] every snapshot function that names or places a snapshot is written in 719's shape — `pub fn matches(syntax value: unknown) -> anyvalue { val at = compiler.source(value); return code @`snap.matchesAt(${value}, ${at})`; }` over a run-time `matchesAt(value: unknown, at: Source) -> void` — so the test writes `snap.matches(render(page));` and the snapshot carries the test's file and line; the reference and the engine's own tests updated; front 166's snap cells promote on it (s4); the four public names (`assertText`, `assertAs`, `assertNamed`, `assertNamedAs`) and their consumers (rakun-bpp, …) migrate in the same landing, or the package root keeps them until the consumers move
 
 ### 160 Conformance — the front's last step (decision 465)
 

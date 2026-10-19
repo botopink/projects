@@ -368,6 +368,22 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): o que a 719 nomeia e o que a localização de um snapshot precisa; o caminho do módulo é assunto de `compiler.name`.
 - **Bloqueia.** O `matches` da frente 160 (a localização do snapshot); nada mais.
 
+#### 160-b · De onde uma chamada de snapshot posicionada pelo local de quem chama tira o nome do teste (decisões 718, 719; frente 160)
+- **Proposto (sonnet, 2026-10-19; construído em lugar nenhum):** (a).
+- **Contexto.** O snap nomeia um arquivo de snapshot pela suíte e pelo teste (`<suite>/<test>.snap.md`). Sob a 719 `snap.matches(value)` carrega `compiler.source(value)` — `Source(file, line, col)` — e nada mais; o nome do teste não está nele.
+- **Medido.** Um rascunho que monta o caminho só a partir de `Source` tem nome de teste vazio, e o motor o recusa ("test name needs a suite").
+- **Opções.**
+  (a) ★ O executor de testes define o nome do teste em execução onde o `matchesAt` de tempo de execução o lê (um valor de tempo de execução do harness de testes, como a suíte já é), o local só posicionando o snapshot dentro do arquivo.
+  ```bp
+  test "renders the card" { snap.matches(render(card)); }   // card_test/renders the card.snap.md, at line 12
+  ```
+  (b) O snapshot é nomeado só pelo seu local: `<file>/<line>.snap.md`.
+  ```bp
+  test "renders the card" { snap.matches(render(card)); }   // card_test/12.snap.md
+  ```
+- **Recomendação.** (a): um snapshot mantém o nome quando uma linha acima dele se move; (b) renomeia todo snapshot abaixo de uma edição.
+- **Bloqueia.** O passo de local da frente 160.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

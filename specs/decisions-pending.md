@@ -368,6 +368,22 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): what 719 names and what a snapshot's location needs; the module path is `compiler.name`'s business.
 - **Blocks.** Front 160's `matches` (the snapshot's location); nothing else.
 
+#### 160-b · Where a snapshot call placed by its caller's location gets the test's name (decisions 718, 719; front 160)
+- **Proposed (sonnet, 2026-10-19; built nowhere):** (a).
+- **Context.** snap names a snapshot file by the suite and the test (`<suite>/<test>.snap.md`). Under 719 `snap.matches(value)` carries `compiler.source(value)` — `Source(file, line, col)` — and nothing else; the test's name is not in it.
+- **Measured.** A draft that builds the path from `Source` alone has an empty test name, and the engine refuses it ("test name needs a suite").
+- **Options.**
+  (a) ★ The test runner sets the running test's name where the run-time `matchesAt` reads it (a run-time value of the test harness, as the suite already is), the location only placing the snapshot inside the file.
+  ```bp
+  test "renders the card" { snap.matches(render(card)); }   // card_test/renders the card.snap.md, at line 12
+  ```
+  (b) The snapshot is named by its location alone: `<file>/<line>.snap.md`.
+  ```bp
+  test "renders the card" { snap.matches(render(card)); }   // card_test/12.snap.md
+  ```
+- **Recommendation.** (a): a snapshot keeps its name when a line above it moves; (b) renames every snapshot below an edit.
+- **Blocks.** Front 160's location step.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
