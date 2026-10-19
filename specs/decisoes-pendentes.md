@@ -477,6 +477,54 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Recomendação.** (a).
 - **Bloqueia.** Nada construído; duas células de recusa uma vez respondida.
 
+#### docs-a · O que `marker-without-arrow` cobre quando o marcador fica dentro da chave (decisões 553 (1), 573, 584 (1); item 16)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** A 573 mantém `marker-without-arrow`; a 584 (1) escreve o marcador de um lambda dentro da chave (`{ iter -> … }`) e retira da 553 (1) "o `->` distingue o lambda do bloco" e "uma função chamada `iter` / `async` / `component` com um lambda final escreve os parênteses". A referência ainda diz "`iter`, `async iter` ou `component` antes de uma chave sem `->` é `marker-without-arrow` — uma função chamada `iter`, `async` ou `component` chamada com um lambda final escreve seus parênteses", a distinção que a 584 removeu.
+- **Medido.** A célula `marker_without_arrow` (o pacote refused da 553) recusa `iter { yield 1; … }` no marcador, com o label "no block form: write `iter loop { … }`, or `iter { -> … }`" nomeando a grafia que o retired.md lista sob a 584 (1). Se `iter { -> … }`, o lambda antigo escrito com sua seta, é recusado, e sob qual código, nenhuma decisão afirma.
+- **Opções.**
+  (a) ★ `marker-without-arrow` cobre todo marcador escrito antes de uma chave que não abre forma de bloco — `iter {`, `async iter {`, `component {`, com ou sem `->` (`async {` continua o bloco, `iter loop {` o laço) —, seu label nomeando `{ iter -> … }` e `iter loop { … }`; o código mantém seu nome (573).
+  ```bp
+  val xs = iter { -> yield 1; };   // error[marker-without-arrow]: write `{ iter -> … }`
+  ```
+  (b) O código sai com a distinção que fazia: um marcador antes de uma chave é uma chamada de uma função desse nome com um lambda final (a 584 retirou a regra dos parênteses), recusada como qualquer nome não ligado quando nenhum está no escopo; o "continuam" da 573 emendado.
+  ```bp
+  val xs = iter { -> yield 1; };   // error: unbound name `iter`
+  ```
+- **Recomendação.** (a): a grafia antiga é recusada onde é escrita, nomeando a nova, como a 573 faz para uma palavra-chave sem seu marcador; (b) responde à forma aposentada com uma mensagem sem relação.
+- **Bloqueia.** item 16 (o texto dos docs.md).
+
+#### docs-b · `std-decorator-leaf-import` quando `mock` é uma função (decisões 386, 644, 669; item 16)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** O § Mocks afirma uma regra para os decoradores de todo módulo da std: eles vêm com o import do namespace — `import {testing.mocks}` faz `#[mocks.mock]` — e um import de folha (`import {testing.mocks.mock}`) é `std-decorator-leaf-import`, porque "o código que ele adiciona não teria handle para nomear o runtime". A 644 fez de `mock` uma função da std (`val g = mock(Greeter);`), nenhum decorador; a 669 resolve o código que um decorador escreve no módulo do decorador, então ele não precisa de handle; a 386 lê `#[ns.d]` como `#[d]` importado por nome.
+- **Medido.** A recusa está construída para os decoradores de todo módulo da std (`infer.zig` `registerStdImportDecorators`, `markStdImports`); sua única célula, `std/cells/std_decorator_leaf_import`, importa `testing.mocks.mock` e é recusada no import, seu comentário nomeando `#[mocks.mock]`, o decorador que a 644 removeu. Nenhuma decisão afirma a recusa, e nenhuma a aposenta; o retired.md lista só o `#[mock]` da std (644). Os outros decoradores da std (`bpp.html`, `bpp.style`, …) são escritos pelo seu namespace.
+- **Opções.**
+  (a) ★ A recusa sai: um decorador da std importado por nome é anotado por esse nome, como o de uma biblioteca (386, 669); o § Mocks perde o parágrafo, e a célula vira uma célula run que importa um decorador da std como folha, ou é removida.
+  ```bp
+  import {bpp.html} from "std";   // compiles; the decorator is `#[html]`
+  ```
+  (b) A recusa fica para todo decorador da std: o parágrafo sai do § Mocks com outro decorador da std como exemplo, e a célula é reescrita sobre ele.
+  ```bp
+  import {bpp.html} from "std";   // error[std-decorator-leaf-import]
+  ```
+- **Recomendação.** (a): sua razão saiu com a 669, e a 386 já faz de uma anotação por namespace e de um import por nome uma coisa só.
+- **Bloqueia.** item 16 (o texto dos docs.md).
+
+#### docs-c · O "cada `*-test` vira o módulo `testing/` do seu pacote" da 724 alcança toda biblioteca? (decisões 75, 390, 724; item 16)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** O § Examples and `-test` members da referência (75, 390) diz "Toda biblioteca é um workspace com um núcleo, um membro `-test` e seus exemplos como membros", um membro `-test` expondo pelo menos um helper `assert<Subject>`, e `scripts/check-packaging.sh` verificando um helper por membro `-test`. A 724, a linha do rakun, escreve "os `rakun-starter-*` saem; cada `*-test` vira o módulo `testing/` do seu pacote"; o "o `botopink.json` guarda-chuva de uma biblioteca é um workspace" da 75 está de pé no decisions-taken.
+- **Medido.** Os pacotes do rakun têm `src/testing/` (`rakun`, `rakun-bpp`, `rakun-ssr`, `rakun-stylesheet`); `query` é um workspace com um membro `query-test`; `actions`, `css`, `http`, `json`, `log`, `markdown`, `routing`, `snap`, `validation` e `yaml` são um pacote cada, sem membro `-test` e sem membro de exemplo.
+- **Opções.**
+  (a) ★ A regra da 724 alcança toda biblioteca: os helpers de teste de uma biblioteca são o módulo `testing/` do seu pacote, nenhum membro `-test`; o mínimo da 390 (4) diz "um `assert<Subject>` por módulo `testing/`"; a regra do `check-packaging.sh` é reescrita; `query-test` se funde em `query`.
+  ```bp
+  import {testing.assertQuery} from "query";
+  ```
+  (b) Só do rakun: o parágrafo é delimitado — uma biblioteca workspace fora do rakun mantém seu membro `-test` (`query`), os pacotes do rakun seu módulo `testing/`, uma biblioteca de um pacote nenhum dos dois.
+  ```bp
+  import {assertQuery} from "query-test";
+  ```
+- **Recomendação.** (a): um lugar para os helpers de uma biblioteca qualquer que seja seu layout (67).
+- **Bloqueia.** item 16 (o texto dos docs.md).
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 #### B-86-a · O `query` do gate lib-agnóstico, e o alcance do catálogo entre pacotes (144 B-86, frente 165 s4)

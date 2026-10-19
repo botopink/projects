@@ -477,6 +477,54 @@ before every other part of this page; each holds one row, or nothing built.
 - **Recommendation.** (a).
 - **Blocks.** Nothing built; two refusal cells once answered.
 
+#### docs-a · What `marker-without-arrow` covers once the marker is inside the brace (decisions 553 (1), 573, 584 (1); item 16)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** 573 keeps `marker-without-arrow`; 584 (1) writes a lambda's marker inside the brace (`{ iter -> … }`) and drops 553 (1)'s "the `->` distinguishes the lambda from the block" and "a function named `iter` / `async` / `component` with a trailing lambda writes the parentheses". The reference still reads "`iter`, `async iter` or `component` before a brace without `->` is `marker-without-arrow` — a function named `iter`, `async` or `component` called with a trailing lambda writes its parentheses", the distinction 584 removed.
+- **Measured.** The cell `marker_without_arrow` (553's refused package) refuses `iter { yield 1; … }` at the marker, its label "no block form: write `iter loop { … }`, or `iter { -> … }`" naming the spelling retired.md lists under 584 (1). Whether `iter { -> … }`, the old lambda written with its arrow, is refused, and under which code, no decision states.
+- **Options.**
+  (a) ★ `marker-without-arrow` covers every marker written before a brace that opens no block form — `iter {`, `async iter {`, `component {`, with or without `->` (`async {` stays the block, `iter loop {` the loop) —, its label naming `{ iter -> … }` and `iter loop { … }`; the code keeps its name (573).
+  ```bp
+  val xs = iter { -> yield 1; };   // error[marker-without-arrow]: write `{ iter -> … }`
+  ```
+  (b) The code goes with the distinction it drew: a marker before a brace is a call of a function of that name with a trailing lambda (584 dropped the parentheses rule), refused as any unbound name when none is in scope; 573's "stay" amended.
+  ```bp
+  val xs = iter { -> yield 1; };   // error: unbound name `iter`
+  ```
+- **Recommendation.** (a): the old spelling is refused where it is written, naming the new one, as 573 does for a keyword without its marker; (b) answers the retired form with an unrelated message.
+- **Blocks.** item 16 (the docs.md text).
+
+#### docs-b · `std-decorator-leaf-import` once `mock` is a function (decisions 386, 644, 669; item 16)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** § Mocks states a rule for every std module's decorators: they come with the namespace import — `import {testing.mocks}` makes `#[mocks.mock]` — and a leaf import (`import {testing.mocks.mock}`) is `std-decorator-leaf-import`, because "the code it adds would have no handle to name the runtime by". 644 made `mock` a std function (`val g = mock(Greeter);`), no decorator; 669 resolves the code a decorator writes in the decorator's module, so it needs no handle; 386 reads `#[ns.d]` as `#[d]` imported by name.
+- **Measured.** The refusal is built for every std module's decorators (`infer.zig` `registerStdImportDecorators`, `markStdImports`); its one cell, `std/cells/std_decorator_leaf_import`, imports `testing.mocks.mock` and is refused at the import, its comment naming `#[mocks.mock]`, the decorator 644 removed. No decision states the refusal, and none retires it; retired.md lists std's `#[mock]` only (644). std's other decorators (`bpp.html`, `bpp.style`, …) are written through their namespace.
+- **Options.**
+  (a) ★ The refusal goes: a std decorator imported by name is annotated by that name, as a library's is (386, 669); § Mocks loses the paragraph, and the cell becomes a run cell importing a std decorator as a leaf, or is removed.
+  ```bp
+  import {bpp.html} from "std";   // compiles; the decorator is `#[html]`
+  ```
+  (b) The refusal stays for every std decorator: the paragraph moves out of § Mocks with another std decorator as its example, and the cell is rewritten over it.
+  ```bp
+  import {bpp.html} from "std";   // error[std-decorator-leaf-import]
+  ```
+- **Recommendation.** (a): its reason went with 669, and 386 already makes a namespace annotation and a name import one thing.
+- **Blocks.** item 16 (the docs.md text).
+
+#### docs-c · Does 724's "each `*-test` becomes its package's `testing/` module" reach every library? (decisions 75, 390, 724; item 16)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** The reference's § Examples and `-test` members (75, 390) reads "Every library is a workspace with a core, a `-test` member and its examples as members", a `-test` member exposing at least one `assert<Subject>` helper, and `scripts/check-packaging.sh` checking a helper per `-test` member. 724, rakun's row, writes "the `rakun-starter-*` go; each `*-test` becomes its package's `testing/` module"; 75's "a library's umbrella `botopink.json` is a workspace" stands in decisions-taken.
+- **Measured.** rakun's packages hold `src/testing/` (`rakun`, `rakun-bpp`, `rakun-ssr`, `rakun-stylesheet`); `query` is a workspace with a `query-test` member; `actions`, `css`, `http`, `json`, `log`, `markdown`, `routing`, `snap`, `validation` and `yaml` are one package each, with no `-test` member and no example member.
+- **Options.**
+  (a) ★ 724's rule reaches every library: a library's test helpers are its package's `testing/` module, no `-test` member; 390 (4)'s minimum reads "one `assert<Subject>` per `testing/` module"; `check-packaging.sh`'s rule is respelled; `query-test` folds into `query`.
+  ```bp
+  import {testing.assertQuery} from "query";
+  ```
+  (b) rakun's alone: the paragraph is scoped — a workspace library outside rakun keeps its `-test` member (`query`), rakun's packages their `testing/` module, a one-package library neither.
+  ```bp
+  import {assertQuery} from "query-test";
+  ```
+- **Recommendation.** (a): one place for a library's helpers whatever its layout (67).
+- **Blocks.** item 16 (the docs.md text).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 #### B-86-a · The lib-agnostic gate's `query`, and the catalogue's reach across packages (144 B-86, front 165 s4)
