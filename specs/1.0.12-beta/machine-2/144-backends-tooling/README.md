@@ -3039,6 +3039,25 @@ The maintainer (2026-10-19): `conformance/modules` (1,650 cells, 79 `test/` suit
 modules without losing what is tested. Machine 2 (tooling, lane C). Order: **after B-116 (ii), B-139's rest and B-148 have landed**
 — their codemods rewrite the same cell files; the plan may be written before.
 
+**Measured by `plan` (2026-10-19, decision 765's format; rows without a slug homed outside).** The count of cells does not
+change — each case stays a full cell, and `verify` holds the counts equal before and after; what falls is the number of
+top-level modules:
+
+| Repository | Cells (outside `decisions-taken/`) | Modules after | Code-bearing ledger rows | 166 s3 drafts |
+|---|---|---|---|---|
+| botopink-lang | 1,660 | 348 — 192 decision modules with cases, 156 by first `_` prefix — plus 285 draft-only decision directories | 512 | none yet (P4) |
+| rakun | 135, already `conformance/<package>/<feature>/` (548) | 36 package/feature groups; `consolidate-cells.py` does not read that layout | — | s3 not opened |
+| query | 3 | 3 prefix modules (no cell cites a decision) | 31 | s3 not opened |
+| validation | none (no `conformance/`) | — | — | s3 not opened |
+| actions · css · http · json · log · markdown · routing · snap · yaml | none | — | 5 · 4 · 15 · 6 · 10 · 5 · 15 · 8 · 5 | 5 · 4 · 13 · 6 · 9 · 5 · 15 · 5 · 5 |
+
+231 of botopink-lang's outside cells are there only because their row has no slug (108 rows: 73 of rows 1–143, and 35 later),
+so the prefix modules shrink once the rows are slugged; 156 prefix modules is more than the plan's ~60, the first `_` segment
+being finer than a subject — the opus pass may merge them. `consolidate-cells.py` and `decision-cells.py` count code-bearing
+rows differently (http, log, snap: the drafts are fewer than the rows) — aligned before P4, `decision-cells.py` (CI check 7)
+being the one that stands.
+
+
 - [x] **Plan** (`fable`, `Plan` agent, 742): the home is front 166's tree, `modules/decisions-taken/<slug>-<N>/` — each decision's directory holds the cells that prove it as its cases, an existing cell moving under the decision its `Cell` column names, a cell proving no decision staying outside by subject (761); the grouping of those (by cell prefix, which follows `decisions-taken.md`'s subjects: `decorator_*`
       108, `external_*` 70, `template_*` 62, `comptime_*` 56, `std_*` 48, `import_*` 46, `case_*` 46, …); the module format that lets
       a refusal, an abort or a narrowed-`"targets"` cell keep its own compilation unit and snapshot inside a module holding several
