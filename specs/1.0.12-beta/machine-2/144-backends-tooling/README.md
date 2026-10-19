@@ -2960,6 +2960,9 @@ Each box is a library's decision-cell draft that builds on the other targets and
       where commonJS, erlang and wasm answer `a`; found hunting the boxes above; a cell of the shape, red on beam on the parent
 - [ ] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
+- [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
+      it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
+      machine 1's under 769
 - [ ] wasm: importing `io.process` is refused again — `conformance/test/std_process_import.bp` answers "`rawOnSignal` has no
       implementation for the wasm backend" at `std/io/process.bp:180` and at the import, against 518 (4) / 652 (3) (an unreached
       function stops nothing); green at botopink-lang 916a688c5, regressed since (suspects: B-151's `std_calls.expand` pruning, B-155's
