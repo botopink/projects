@@ -178,7 +178,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] 01-checker s18 — numeric literal suffixes (247): built on feat (`49455602`); left: the two `language-gaps.md` literal halves, a cold gate · the `l` literal rule on every target (319)
 - [ ] 01-checker s24 — typed comptime decorator arguments, `syntax decl: T`, `Field<T>` (`compiler.Field<T>`, 308) and `.name` (280; cases in `01-checker/examples/decorator-arguments-280.md`) · then 125 s7, the `nat-*` rewrites
 - [ ] 01-checker s22 — the `.bpp` prelude scope (270) · 116 hands the prelude list
-- [ ] 01-checker rows — the comptime body's file, a package's module namespace, two aliased same-named types (310), `compiler.external`'s `.Wasm` cells read on every target · none
+- [x] 01-checker rows — the comptime body's file (`decorator_raise_names_body_file`, `template_raise_names_body_file`), a package's module namespace (`package_module_namespace`), two aliased same-named types (310's `run` package), `compiler.external`'s `.Wasm` cells read on every target (238's `refused` package) — all four already fixed on feat, re-measured
 - [ ] 04-js s9 rest — `Json`'s exact `i64` (332: 139, then 97 s15) · the explicit conversions (97 s13's std surface)
 - [ ] 04-js s10 row — string reads cost +24 % against the 10 % target (`js/AGENTS.md`) · none
 - [ ] 05-wasm s5 — the rest of std on wasm: heap growth, `pow`, astral `contentHash`, `encoding` / `querystring` family cells, the `wat/AGENTS.md` limits row done; left: `json` on wasm and its cell · 97 s15 (336)
@@ -329,7 +329,6 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 - [ ] 144 B-140 — decision 599 (1) landed: the run-time field key removed, 599's own cell module with it; decision 631's `Field(Owner, "name")` run-time form (`meta_field_tuple_and_field_key`, `meta_field_build_member_at_run_time`, `meta_field_compared_by_owner`); a record constructor whose field is a run-time `type<T>` takes a type written positionally; left: the derived types written over `compiler.fields` + `compiler.buildType`, 669–671, `compiler.Field<T>` · B-139
 - [ ] 144 row — decision 596: the eleven iterator helpers declared on `Iter<T, R>` and given by every target (`flatMap` missing on erlang and beam today; wasm the set in GC); cells `iter_helpers_*`, `iter_flat_map_generator` · with B-116 (ii); machine 2
 - [x] 144 row — decision 595: the `try { … } catch …` region — landed with 584, no old spelling left, no library sites
-- [ ] 144 row — decision 582: the callable namespace (`import {a.b}` always the namespace, the module's default as its value), `namespace-not-a-value`, `module-item-collision`, `expandImports` removed · after B-140 (§ Machines rule 9); beside B-69
 - [x] 144 row — decision 583: `lambda-untyped` landed, also for a module-level `val` and a parameterless lambda; 328's inference code stays (an immediately called fn expression and an argument of a free type parameter still reach it); rakun's and query's sites migrated; std has no `lambda-untyped` left (its tests on four targets)
 - [x] 144 B-116 (i) — decision 584: the marker inside the lambda's brace, landed with 595; no old spelling left, no library sites · P2's codemod and the rest of B-116 stay open
 
