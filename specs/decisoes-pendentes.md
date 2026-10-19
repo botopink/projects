@@ -336,6 +336,38 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para toda função, `compiler` incluído; (b) mantém uma grafia que nenhuma função de usuário pode ter.
 - **Bloqueia.** Nada (o B-152 está retido na 667-a).
 
+#### 719-a · Uma função com parâmetro de expressão `syntax` pode responder `-> T`, código de tipo `T`? (decisões 719, 578 (2); 144 B-156)
+- **Proposto (opus, 2026-10-19; construído como (b)):** (a).
+- **Contexto.** A 719 manda a forma nova para os retornos da 578 (2): "um tipo, `anyvalue` ou `anytype`" — um template que responde `-> Component<Styled>` retorna código daquele tipo (célula `template_answer_component` do B-153). A caixa do B-156 diz que um retorno de tempo de execução (`-> void`, `-> i32`) é recusado na declaração.
+- **Medido.** Como construído, só `-> anyvalue` e `-> anytype` são aceitos; `-> i32` e nenhum retorno são recusados `template-signature`, nomeando esses dois (célula `syntax_fn_run_time_return`).
+- **Opções.**
+  (a) ★ Como a 578 (2): todo tipo `T` é aceito e significa código de tipo `T`, checado onde é inserido; só `-> void` e nenhum retorno são recusados.
+  ```bp
+  pub fn twice(syntax e: i32) -> i32 { return code @`${e} + ${e}`; }   // accepted: code of type i32
+  ```
+  (b) Só `anyvalue` / `anytype` (construído): `-> i32` recusado como retorno de tempo de execução.
+  ```bp
+  pub fn twice(syntax e: i32) -> i32 { … }   // refused: template-signature
+  ```
+- **Recomendação.** (a): uma regra para o template e esta forma, como a 719 diz; o exemplo `-> i32` da caixa é anterior à leitura.
+- **Bloqueia.** Nada; (a) afrouxa uma recusa.
+
+#### 719-b · `compiler.source(value).file`: o caminho do módulo ou o arquivo? (decisões 719, 718; 144 B-156)
+- **Proposto (opus, 2026-10-19; construído como (b)):** (a).
+- **Contexto.** 719: `compiler.source(value)` é o `Source(file, line, col)` da chamada; o snap escreve o arquivo e a linha do teste em toda chamada. `builtins.d.bp` diz "module path (\"\" for main)".
+- **Medido.** Como construído, `file` é o caminho do módulo: a célula `syntax_fn_expanded_at_call` imprime `main:32`, não `src/main.bp:32`.
+- **Opções.**
+  (a) ★ O arquivo, relativo à raiz do pacote, como os diagnósticos o imprimem.
+  ```bp
+  val at = compiler.source(value);   // at.file == "src/main.bp"
+  ```
+  (b) O caminho do módulo (construído).
+  ```bp
+  val at = compiler.source(value);   // at.file == "main"
+  ```
+- **Recomendação.** (a): o que a 719 nomeia e o que a localização de um snapshot precisa; o caminho do módulo é assunto de `compiler.name`.
+- **Bloqueia.** O `matches` da frente 160 (a localização do snapshot); nada mais.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

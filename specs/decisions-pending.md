@@ -336,6 +336,38 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for every function, `compiler` included; (b) keeps a spelling no user function may have.
 - **Blocks.** Nothing (B-152 is held on 667-a).
 
+#### 719-a · May a function with a `syntax` expression parameter answer `-> T`, code of type `T`? (decisions 719, 578 (2); 144 B-156)
+- **Proposed (opus, 2026-10-19; built as (b)):** (a).
+- **Context.** 719 sends the new form to 578 (2)'s returns: "a type, `anyvalue` or `anytype`" — a template answering `-> Component<Styled>` returns code of that type (B-153's cell `template_answer_component`). B-156's box says a run-time return (`-> void`, `-> i32`) is refused at the declaration.
+- **Measured.** As built, only `-> anyvalue` and `-> anytype` are accepted; `-> i32` and no return are refused `template-signature`, naming those two (cell `syntax_fn_run_time_return`).
+- **Options.**
+  (a) ★ As 578 (2): any type `T` is accepted and means code of type `T`, checked where it is spliced; only `-> void` and no return are refused.
+  ```bp
+  pub fn twice(syntax e: i32) -> i32 { return code @`${e} + ${e}`; }   // accepted: code of type i32
+  ```
+  (b) Only `anyvalue` / `anytype` (built): `-> i32` refused as a run-time return.
+  ```bp
+  pub fn twice(syntax e: i32) -> i32 { … }   // refused: template-signature
+  ```
+- **Recommendation.** (a): one rule for the template and this form, as 719 says; the box's `-> i32` example predates the reading.
+- **Blocks.** Nothing; (a) loosens a refusal.
+
+#### 719-b · `compiler.source(value).file`: the module path or the file? (decisions 719, 718; 144 B-156)
+- **Proposed (opus, 2026-10-19; built as (b)):** (a).
+- **Context.** 719: `compiler.source(value)` is the call's `Source(file, line, col)`; snap writes the test's file and line into every call. `builtins.d.bp` says "module path (\"\" for main)".
+- **Measured.** As built, `file` is the module path: the cell `syntax_fn_expanded_at_call` prints `main:32`, not `src/main.bp:32`.
+- **Options.**
+  (a) ★ The file, relative to the package root, as diagnostics print it.
+  ```bp
+  val at = compiler.source(value);   // at.file == "src/main.bp"
+  ```
+  (b) The module path (built).
+  ```bp
+  val at = compiler.source(value);   // at.file == "main"
+  ```
+- **Recommendation.** (a): what 719 names and what a snapshot's location needs; the module path is `compiler.name`'s business.
+- **Blocks.** Front 160's `matches` (the snapshot's location); nothing else.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
