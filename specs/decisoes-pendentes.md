@@ -296,6 +296,27 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para o template e esta forma, como a 719 diz; o exemplo `-> i32` da caixa é anterior à leitura.
 - **Bloqueia.** Nada; (a) afrouxa uma recusa.
 
+#### 716-a · Um decorator que chama membros que ele mesmo acrescenta no seu `syntax decl`: como `decl` é tipado? (decisões 716, 626 (2); 165 s11)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** 716 (1): o tipo declarado do parâmetro `syntax decl` é o contrato; um `decl` tipado por um behavior exige que o tipo anotado o implemente. A 626 (2) e o `decisions-taken.md` dizem que a checagem é estrutural. Os executores do rakun chamam membros que o próprio decorator acrescenta (`rkRoutes`, `rkBeans`, `make`, `check`, `entityMeta`, `Tx`, …) em `decl` dentro de `compiler.init`.
+- **Medido.** 166 sites no rakun (`rakun/decorators.bp:251`, `config.bp:2067`, `rakun-data orm/entity.bp:334`, …) são recusados "cannot call a method on an `unknown` value", e todo módulo do rakun cai em cascata por eles. Tipado por um behavior, toda anotação é recusada a menos que seu tipo escreva `implement` (cerca de 700 sites: `#[service]` 121, `#[managed]` 80, `#[scheduler]` 42, …), e um behavior não descreve um membro acrescentado só às vezes (`check` só sob `#[validated]`). `<T>(syntax decl: T)` checa por anotação e falha "`Users` has no associated fn `rkRoutes`".
+- **Opções.**
+  (a) ★ Estrutural, como a 626 (2) diz: um `decl` tipado por um behavior é aceito quando o tipo anotado tem os membros, contando os que seus decorators acrescentam; nenhum `implement` escrito.
+  ```bp
+  pub fn controller(syntax decl: RkRoutes) -> void { compiler.addMember(decl, …rkRoutes…); compiler.init({ -> register(decl.rkRoutes()) }); }
+  #[controller] pub type Users() {}   // accepted: rkRoutes is added by the decorator
+  ```
+  (b) O tipo escreve `implement` (716 (1) como escrita): todo tipo anotado nomeia cada behavior que seus decorators precisam.
+  ```bp
+  #[controller] pub type Users() implement RkRoutes {}
+  ```
+  (c) Nenhum dos dois: os membros `rk*` saem com o registro do 165 s11 só por `compiler.init` (o executor recebe o que precisa como valores), e `decl` guarda só o que o tipo declara.
+  ```bp
+  pub fn controller(syntax decl: unknown) -> void { compiler.init({ -> registerRoutes(routesOf(decl)) }); }
+  ```
+- **Recomendação.** (a) agora, (c) conforme o s11 avança: (a) é o texto que a 626 (2) já traz e destrava o rakun sem 700 edições; (c) é para onde a 625–627 levam.
+- **Bloqueia.** O rakun compilar na `feat` (todo módulo), e portanto 165 s5 / s10 / s11 e todo gate do rakun.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
