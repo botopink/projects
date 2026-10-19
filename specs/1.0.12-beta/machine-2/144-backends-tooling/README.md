@@ -3082,7 +3082,7 @@ being the one that stands.
       every link resolving), `promote` writes `cases/example/`, `compile` builds each case; the legacy `draft/` and `src/` forms
       stay accepted; a case's header is not checked against the row's (a moved cell keeps its own); botopink-lang half landed: the
       `*/cases/*` globs, `cell new` / `cell check` over a module of cases, check-docs / run.sh / tsc-check, cell `cell_cases_directory`
-- [ ] **Piece 2** — the consolidation script: moves the cells by the plan's grouping, writes the mapping, rewrites every reference,
+- [x] **Piece 2** — the consolidation script: moves the cells by the plan's grouping, writes the mapping, rewrites every reference,
       regenerates nothing by hand; run once per prefix group, each group's gate green, landed per group.
       — `plan` / `verify` landed (`scripts/consolidate-cells.py`, no cell moved): `verify --base` the identity on the unchanged
       tree; `plan` refuses while a code-bearing row has no slug (108 today: rows 1–143's and 11 later), `--allow-unslugged`
@@ -3093,6 +3093,10 @@ being the one that stands.
       — the ambiguity pass done (765 (2)): `conformance/modules/consolidate-homes.txt`, 69 lines, read by `plan` and `apply`; with
       the record's `Cell` column complete, `plan` runs clean: 242 rows with a case, 219 needing a draft, 158 cells where `plan`'s
       default home was right; the `decorator_wrap*` cells stay under 714 until B-139 removes them
+      — the moves landed in one commit (the user's decision; 773 runs them before the codemods): `conformance/modules` from
+      1,664 top-level entries to 155 (154 modules of cases, `decisions-taken` among them), 1,678 cells before and after, `verify`
+      equal on every measure, the full `cell check` 1,676 / 2 on both trees (the two `fs_asset_*`); the drafts of the ten rows that
+      gained a cell meanwhile (660, 668, 669, 676, 722, 723, 735, 757, 758, 759) removed, their docs linking the cases
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
