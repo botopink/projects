@@ -26,12 +26,19 @@ consumer commits only: 144 B-08 (17 sites), B-20, B-28.
 
 **Machine:** 2 (decision 785 — machine 1 does not open it) · **Repository:** snap (`--repo snap`) · **Model:** sonnet · **After:** `machine-1/144` B-158 (`compiler.load`, 780, 782, 783)
 
-- [ ] `pub fn matchesRefused(syntax loaded: Result<void, Diagnostic[]>) -> anyvalue`, 719's shape like `matches`, over a run-time
+- [x] `pub fn matchesRefused(syntax loaded: Result<void, Diagnostic[]>) -> anyvalue`, 719's shape like `matches`, over a run-time
       `matchesRefusedAt`: on `Error(ds)` the body is one block per `Diagnostic` — `refused <message>`, `at <file>:<line>:<column>`,
       `label <text>` when there is one —, subject `refused`, through the path rule, `botopink-snap 1` and the `.new` flow; on `Ok` the
       test fails naming the file that compiled
-- [ ] cell `snap_matches_refused` (784): a refused file recorded, a `.new` on a changed refusal, a file that compiles failing the test;
+      — built as: `matchesRefusedAt(loaded, written, at)` — `written` the load call as the test wrote it (`compiler.text`),
+      the path in the Ok failure being its first string literal, since `Result<void, Diagnostic[]>` carries none; one blank line
+      between blocks; the run-time body reads the `Result` with `case`, beam's `try … catch` over it being B-158's open row
+- [x] cell `snap_matches_refused` (784): a refused file recorded, a `.new` on a changed refusal, a file that compiles failing the test;
       README and AGENTS name the call
+      — built as: `conformance/test/snap_matches_refused/` (a parse error with its label, a type mismatch; the `.new` on a changed
+      refusal and the compiled file's failure proved by running — the test runner has no expected-failure form), the loaded files
+      under `cases/` until `botopink test` leaves them out of `src/` (B-158's open row), the test calling the bare imported
+      `matchesRefused` until B-156's module-qualified call; front 166's `snap_matches_refused-784/` draft beside it
 
 ### 160 Conformance — the front's last step (decision 465)
 

@@ -2595,6 +2595,9 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
+- [ ] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does: today a test package
+      whose loaded cases sit under `src/` reports each as a failed module, so snap's `snap_matches_refused` keeps them in
+      `cases/` and B-157 piece 5's `src/cases/<case>/main.bp` (784 (3)) waits on it
 - [ ] an aliased imported type in the signature of a function declared after its caller is refused `type mismatch: expected
       <Alias>, got <Type>`; a cell, red on the parent (the loaded module's helper is placed first to avoid it)
 
