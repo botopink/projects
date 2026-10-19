@@ -763,6 +763,7 @@ component fn Button() -> Component<Element> {
       — the value's behavior method first (`context_behavior_method_find`)
 - [x] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
       — `fun f/A` in the comptime module (`comptime_function_value_argument`)
+- [ ] `use memo({ -> createContext(…) })`: std's `memo<T>(make: fn() -> T) -> Component<T>`, computed on the first render, kept per instance, never recomputed · decision 755 (a); cell `context_provide_made_at_run_time`
 - [ ] `compiler.src()` in a decorator body answers the annotated declaration's location (718) — legal, never a route · decision 734 (a); cell `decorator_compiler_src_is_declaration_location`
 - [ ] an optional function-typed `comptime` argument tested with `rule == null` as any `?T`; 411's `expr-value-of-function` gone · decision 735 (a); cell `comptime_optional_fn_tested_against_null` replaces `no_null_test_of_optional_fn_expr`
 - [ ] `type<T>` in a `comptime` parameter's union, `source is type<T>` in the body (`comptime source: Atom<T> | type<T>`) · decision 736 (a); cell `comptime_value_or_type_union`
@@ -2571,6 +2572,7 @@ Decision 719 generalises the template (578): a function whose parameter is `synt
 - [x] a function with a `syntax` expression parameter and a run-time return type (`-> void`, `-> i32`) is refused at the declaration, located, naming 578 (2)'s three returns — a build body returns code, never a value · built as only `anyvalue` / `anytype` accepted, question 719-a
 - [x] a decorator's `syntax decl` is untouched (576, 716); a template method's `syntax self: R` receiver is untouched (578 (1))
 - [x] cells `syntax_fn_expanded_at_call` (snap's shape: `matches(syntax value: unknown) -> anyvalue` splicing `compiler.source(value)` into a run-time call, the file and line printed at the test's line), `syntax_fn_text_of_expression` (`assert(a == b)` printing `a == b`), `syntax_fn_string_param_needs_template_text` (reject), four targets; `conformance/docs.md` § Templates renamed to cover both forms · `compiler.source`'s file is the module path as built, question 719-b
+- [ ] `compiler.source(value).file` is the file relative to the package root (`src/main.bp`), never the module path; `builtins.d.bp`'s comment corrected · decision 756 (a); cell `syntax_fn_source_file_is_path` (`src/main.bp:32`)
 - [ ] snap's `matches` rewritten in this shape by front 160's step (machine 1, after this lands); front 166's snap drafts promote on it (s4)
 
 Oracle: the cells; `zig build test`.

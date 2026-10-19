@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**37 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**35 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **755**.
+número livre, que é **757**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -272,22 +272,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a leitura da própria decisão, e a única em que `t` se comporta como todo outro argumento `comptime`.
 - **Bloqueia.** O pouso da 667 (terceira caixa do B-146) e o B-152 (668): o `async.failed(comptime t: type<T>, …)` da std e a célula `type_parameter_bound_by_token` precisam que o token chegue ao tempo de execução, e hoje ele não chega a nenhum (erlang deixa `I32` não ligado, wasm recusa, commonJS e beam abortam); as outras duas caixas do B-146 pousam sem ela.
 
-#### 723-a · O que é `use memo`: o jeito em tempo de execução de um componente fazer o próprio contexto (decisão 723; 144 B-17)
-- **Proposto (opus, 2026-10-19; não construído):** (a).
-- **Contexto.** A 723 nomeia `val c = use memo({ -> createContext(Theme(…)) });` como o jeito em tempo de execução de um componente fazer um contexto para prover. A std não tem `memo`, e nenhuma decisão diz o que ele guarda ou quando recalcula.
-- **Medido.** `use memo` não está ligado em nenhum alvo; a forma de build `comptime createContext(…)` funciona (célula `context_provide_made_in_body`).
-- **Opções.**
-  (a) ★ `memo<T>(make: fn() -> T) -> Component<T>` nos hooks da std: calculado na primeira renderização do componente, guardado para aquela instância do componente, nunca recalculado (sem lista de dependências).
-  ```bp
-  component fn Page(dark: bool) -> Component<Element> { val c = use memo({ -> createContext(Theme(dark: dark)) }); use provide(c); … }
-  ```
-  (b) `memo` com uma lista de dependências, recalculado quando uma muda.
-  ```bp
-  val c = use memo([dark], { -> createContext(Theme(dark: dark)) });
-  ```
-- **Recomendação.** (a): a única forma que a 723 escreve; uma lista de dependências é uma decisão posterior se um programa precisar.
-- **Bloqueia.** A metade em tempo de execução do provide da 723 (célula `context_provide_made_at_run_time`); nada mais.
-
 #### 723-b · Uma leitura de contexto pode nomear um parâmetro ou um local de tipo `Context<T>`? (decisões 722, 723; 144 B-17)
 - **Proposto (opus, 2026-10-19; construído como (a)):** (a).
 - **Contexto.** 722 / 723: um contexto é lido por um valor de contexto que o leitor importa; o handle fornece o tipo e o default.
@@ -351,22 +335,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): uma regra para o template e esta forma, como a 719 diz; o exemplo `-> i32` da caixa é anterior à leitura.
 - **Bloqueia.** Nada; (a) afrouxa uma recusa.
-
-#### 719-b · `compiler.source(value).file`: o caminho do módulo ou o arquivo? (decisões 719, 718; 144 B-156)
-- **Proposto (opus, 2026-10-19; construído como (b)):** (a).
-- **Contexto.** 719: `compiler.source(value)` é o `Source(file, line, col)` da chamada; o snap escreve o arquivo e a linha do teste em toda chamada. `builtins.d.bp` diz "module path ("" for main)".
-- **Medido.** Como construído, `file` é o caminho do módulo: a célula `syntax_fn_expanded_at_call` imprime `main:32`, não `src/main.bp:32`.
-- **Opções.**
-  (a) ★ O arquivo, relativo à raiz do pacote, como os diagnósticos o imprimem.
-  ```bp
-  val at = compiler.source(value);   // at.file == "src/main.bp"
-  ```
-  (b) O caminho do módulo (construído).
-  ```bp
-  val at = compiler.source(value);   // at.file == "main"
-  ```
-- **Recomendação.** (a): o que a 719 nomeia e o que a localização de um snapshot precisa; o caminho do módulo é assunto de `compiler.name`.
-- **Bloqueia.** O `matches` da frente 160 (a localização do snapshot); nada mais.
 
 #### 160-b · De onde uma chamada de snapshot posicionada pelo local de quem chama tira o nome do teste (decisões 718, 719; frente 160)
 - **Proposto (sonnet, 2026-10-19; construído em lugar nenhum):** (a).

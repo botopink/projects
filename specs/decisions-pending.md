@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**37 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**35 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **755**.
+number, which is **757**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -272,22 +272,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): the decision's own reading, and the only one where `t` behaves as every other `comptime` argument.
 - **Blocks.** 667's landing (B-146's third box) and B-152 (668): std's `async.failed(comptime t: type<T>, …)` and the cell `type_parameter_bound_by_token` need the token to reach run time, and it reaches none today (erlang leaves `I32` unbound, wasm refuses, commonJS and beam abort); B-146's other two boxes land without it.
 
-#### 723-a · What `use memo` is: the run-time way a component makes its own context (decision 723; 144 B-17)
-- **Proposed (opus, 2026-10-19; not built):** (a).
-- **Context.** 723 names `val c = use memo({ -> createContext(Theme(…)) });` as the run-time way a component makes a context to provide. std has no `memo`, and no decision says what it keeps or when it recomputes.
-- **Measured.** `use memo` is unbound on every target; the build-time form `comptime createContext(…)` works (cell `context_provide_made_in_body`).
-- **Options.**
-  (a) ★ `memo<T>(make: fn() -> T) -> Component<T>` in std's hooks: computed on the component's first render, kept for that component instance, never recomputed (no dependency list).
-  ```bp
-  component fn Page(dark: bool) -> Component<Element> { val c = use memo({ -> createContext(Theme(dark: dark)) }); use provide(c); … }
-  ```
-  (b) `memo` with a dependency list, recomputed when one changes.
-  ```bp
-  val c = use memo([dark], { -> createContext(Theme(dark: dark)) });
-  ```
-- **Recommendation.** (a): the one form 723 writes; a dependency list is a later decision if a program needs it.
-- **Blocks.** The run-time half of 723's provide (cell `context_provide_made_at_run_time`); nothing else.
-
 #### 723-b · May a context read name a parameter or a local of type `Context<T>`? (decisions 722, 723; 144 B-17)
 - **Proposed (opus, 2026-10-19; built as (a)):** (a).
 - **Context.** 722 / 723: a context is read through a context value the reader imports; the handle supplies the type and the default.
@@ -351,22 +335,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): one rule for the template and this form, as 719 says; the box's `-> i32` example predates the reading.
 - **Blocks.** Nothing; (a) loosens a refusal.
-
-#### 719-b · `compiler.source(value).file`: the module path or the file? (decisions 719, 718; 144 B-156)
-- **Proposed (opus, 2026-10-19; built as (b)):** (a).
-- **Context.** 719: `compiler.source(value)` is the call's `Source(file, line, col)`; snap writes the test's file and line into every call. `builtins.d.bp` says "module path ("" for main)".
-- **Measured.** As built, `file` is the module path: the cell `syntax_fn_expanded_at_call` prints `main:32`, not `src/main.bp:32`.
-- **Options.**
-  (a) ★ The file, relative to the package root, as diagnostics print it.
-  ```bp
-  val at = compiler.source(value);   // at.file == "src/main.bp"
-  ```
-  (b) The module path (built).
-  ```bp
-  val at = compiler.source(value);   // at.file == "main"
-  ```
-- **Recommendation.** (a): what 719 names and what a snapshot's location needs; the module path is `compiler.name`'s business.
-- **Blocks.** Front 160's `matches` (the snapshot's location); nothing else.
 
 #### 160-b · Where a snapshot call placed by its caller's location gets the test's name (decisions 718, 719; front 160)
 - **Proposed (sonnet, 2026-10-19; built nowhere):** (a).

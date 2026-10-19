@@ -14,7 +14,7 @@ commit (decision 188), producer first.
 rakun 150 s24, jhonstart 150 s45, emilia 150 s55, onze 150 s68; the coordination is machine-1/135-snap. It receives
 consumer commits only: 144 B-08 (17 sites), B-20, B-28.
 
-### 160 — the caller's location (decisions 718, 719)
+### 160 — the caller's location (decisions 718, 719, 756: `file` is `src/main.bp`, not the module path)
 
 **Repository:** snap · **Model:** sonnet · **After:** 144 B-156 (landed), B-149 P1b (the `code` template: the body writes `code @`…``, never `compiler.build` over text, 625), B-137's `compiler.src()` (718), question 160-b (the test's name), and the erlang `Source` constructor (machine 2, B-147)
 
