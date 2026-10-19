@@ -352,6 +352,24 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): a snapshot keeps its name when a line above it moves; (b) renames every snapshot below an edit.
 - **Blocks.** Front 160's location step.
 
+#### 755-a · What a component instance is, and where `use memo`'s value lives (decision 755; 144 B-17)
+- **Proposed (sonnet, 2026-10-19; not built):** (a).
+- **Context.** 755: `memo<T>(make: fn() -> T) -> Component<T>` is computed on the component's first render and kept for that component instance. Today a component call `Page()` builds a lambda `{ bpScope__ -> body }` (388); `use h(x)` lowers to `valueOf(await h(x)(bpScope__))`; the render scope is an immutable chain of frames, and no hook keeps state (`conformance/docs.md`: a client runtime supplies hook semantics).
+- **Measured.** A `memo` written in std alone cannot keep anything: its lambda is rebuilt on every run of the body. It needs a per-instance slot the compiler allocates, on every target (erlang and beam have no mutable cell; wasm a heap slot).
+- **Options.**
+  (a) ★ An instance is the value one `Page(…)` call makes; the compiler allocates one slot per `use memo` position in its body when that value is made, the first render fills it, later renders of the same value read it (erlang / beam: a process-dictionary or ETS entry keyed by instance and position; commonJS a closure cell; wasm a heap cell).
+  ```bp
+  val p = Page(dark: true);   // one instance
+  await p; await p;            // make runs once
+  await Page(dark: true);      // a second instance, make runs again
+  ```
+  (b) An instance is a position in the rendered tree (the parent's render and the child's place in it), as a client runtime keys its hooks; on the server every render is a first render.
+  ```bp
+  <Page dark /> <Page dark />   // two positions, two values; a re-render of the same tree keeps both
+  ```
+- **Recommendation.** (a): defined by the language on every target, no render tree assumed; (b) belongs to a client runtime and can be layered on it.
+- **Blocks.** 755's build (`memo_computed_once_per_instance`) and 723's run-time provide (`context_provide_made_at_run_time`).
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

@@ -352,6 +352,24 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): um snapshot mantém o nome quando uma linha acima dele se move; (b) renomeia todo snapshot abaixo de uma edição.
 - **Bloqueia.** O passo de local da frente 160.
 
+#### 755-a · O que é uma instância de componente, e onde vive o valor de `use memo` (decisão 755; 144 B-17)
+- **Proposto (sonnet, 2026-10-19; não construído):** (a).
+- **Contexto.** 755: `memo<T>(make: fn() -> T) -> Component<T>` é calculado na primeira renderização do componente e guardado para aquela instância do componente. Hoje uma chamada de componente `Page()` constrói uma lambda `{ bpScope__ -> body }` (388); `use h(x)` é rebaixado para `valueOf(await h(x)(bpScope__))`; o escopo de renderização é uma cadeia imutável de frames, e nenhum hook guarda estado (`conformance/docs.md`: um runtime de cliente fornece a semântica dos hooks).
+- **Medido.** Um `memo` escrito só na std não consegue guardar nada: sua lambda é reconstruída a cada execução do corpo. Ele precisa de um slot por instância que o compilador aloca, em todo alvo (erlang e beam não têm célula mutável; wasm um slot no heap).
+- **Opções.**
+  (a) ★ Uma instância é o valor que uma chamada `Page(…)` faz; o compilador aloca um slot por posição de `use memo` no seu corpo quando esse valor é feito, a primeira renderização o preenche, renderizações seguintes do mesmo valor o leem (erlang / beam: uma entrada de process dictionary ou ETS indexada por instância e posição; commonJS uma célula de closure; wasm uma célula no heap).
+  ```bp
+  val p = Page(dark: true);   // one instance
+  await p; await p;            // make runs once
+  await Page(dark: true);      // a second instance, make runs again
+  ```
+  (b) Uma instância é uma posição na árvore renderizada (a renderização do pai e o lugar do filho nela), como um runtime de cliente indexa seus hooks; no servidor toda renderização é uma primeira renderização.
+  ```bp
+  <Page dark /> <Page dark />   // two positions, two values; a re-render of the same tree keeps both
+  ```
+- **Recomendação.** (a): definida pela linguagem em todo alvo, sem supor uma árvore de renderização; (b) pertence a um runtime de cliente e pode ser posta por cima dela.
+- **Bloqueia.** O build da 755 (`memo_computed_once_per_instance`) e o provide em tempo de execução da 723 (`context_provide_made_at_run_time`).
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
