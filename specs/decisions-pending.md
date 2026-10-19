@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**34 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**33 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **762**.
+number, which is **763**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -43,7 +43,7 @@ The questions that hold machine 1's steps and front 165 back today, most blockin
 |---|---|---|---|---|
 | 1 | **50-b** — what the dev server (`onze dev`, now rakun-ssr) does on a change (§ Part 2, 07-onze) | whether the dev server restarts from a fresh build on every change or hot-loads the changed modules | 50 step 2; 53 step 6 | (a) `build` then `start` on every change |
 
-Open and blocking nothing (front 165): **165-b** (three package names), **548-a** (every library links its code),
+Open and blocking nothing (front 165): **548-a** (every library links its code),
 **548-b** (the code names that keep a former library's name).
 
 ---
@@ -505,23 +505,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Options.** (a) ★ None until s2: after the rename every package is `rakun-*`, the rows are written then, and the filter goes. (b) A version set outside the core (a workspace-level file the gate reads), every member a row now.
 - **Recommendation.** (a): s2 renames every package to a `rakun-*` name, so the rows need no exception; one version for the workspace (the README) makes the table one row per package at s2.
 - **Blocks.** Nothing before s2; s2 writes the rows.
-
-#### 165-b · Three packages outside 165's table: `onze-server`, `jhonstart-dom-test`, `rakun-cli` (front 165 s2)
-- **Context.** Front 165 joins seven repositories into one `rakun` workspace and gives every package a `rakun-*` name and a row in its table (mono-a). Three packages did not fit: `onze-server` and `jhonstart-dom-test` would join a package built for a different set of targets, and `rakun-cli` has no row. The language sets targets per package, not per module or per dependency, so 165 s2 left them as packages of their own; the question is what they are called and whether the table gains their rows.
-- **Measured.** 165 s2 folded every package of the table but three. `onze-server` needs `rakun` (erlang-only) while `rakun-ssr` builds for commonJS too (its CLI runs on node): folded, 21 commonJS reds (`rkReqLive` has no External for the node backend) — the language has no per-module target or per-target dependency. `jhonstart-dom-test`'s externals are node-only while `rakun-bpp` builds for erlang. `rakun-cli` is in no row of the table. Built: the three stay packages of their own (`onze-server` depending on `rakun-ssr`, `rakun-app`, `rakun-service`; `jhonstart-dom-test` on `rakun-bpp`).
-- **Options.**
-  (a) ★ Three packages named in the table: `rakun-ssr-server` (was `onze-server`), `rakun-bpp-dom-test` (was `jhonstart-dom-test`), `rakun-cli` as it is, each its row with its targets.
-  ```text
-  modules/rakun-ssr-server/     was onze-server, needs rakun (erlang)
-  modules/rakun-bpp-dom-test/   was jhonstart-dom-test, node-only externals
-  modules/rakun-cli/            as it is
-  ```
-  (b) A language feature first — a module's or a dependency's target set — and the three folded into `rakun-ssr`, `rakun-bpp` (a 144 step).
-  ```text
-  onze-server folded into rakun-ssr today: 21 commonJS reds — `rkReqLive` has no External for the node backend
-  ```
-- **Recommendation.** (a): a package is the unit of a target set today; three named rows keep 165's rule (every package a `rakun-*` name, one row each) without a new language feature.
-- **Blocks.** Nothing; the names move in s5's second box or s7.
 
 ## Part 1 — What blocks tracks 00–03
 

@@ -206,6 +206,8 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `rakun-stylesheet`'s run-time entry points (`emilia(tokens)`, `className`, `cls`) | `#[emilia(…)]` on a tag; `comptime className(…)` | 369 | |
 | snap's local `fsText` | `e.message()` | 563 | |
 | rakun's SAML 2.0 ACS | — (retired for the milestone): `saml2/` answers 501 under a `deferred.md` row | 713 | |
+| `onze-server` (a package of its own after 724) | `rakun-ssr-server`, erlang only, a row of 724's table | 762 | 2026-10-19; renamed by 165 s5 |
+| `jhonstart-dom-test` (a package of its own after 724) | `rakun-bpp-dom-test`, commonJS only, a row of 724's table | 762 | 2026-10-19; renamed by 165 s5 |
 
 ## Process and files
 

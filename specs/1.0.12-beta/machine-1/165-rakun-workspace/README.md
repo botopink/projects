@@ -27,7 +27,7 @@ depends on packages of lower layers only (the compiler refuses a cycle); `src/in
 | `rakun-data` | `dbcontext`, `rakun-data` | `rakun`, `query` |
 | `rakun-restclient` | `rakun-client` | `rakun`, `http` |
 | `rakun-style` | `styled` | `css` |
-| `rakun-bpp` | `jhonstart`, `jhonstart-html`, `jhonstart-link`, `jhonstart-forms`, `jhonstart-test`, `jhonstart-dom-test` | `rakun-style`, `actions`, `routing` |
+| `rakun-bpp` | `jhonstart`, `jhonstart-html`, `jhonstart-link`, `jhonstart-forms`, `jhonstart-test` | `rakun-style`, `actions`, `routing` |
 | `rakun-stylesheet` | `emilia`, `emilia-test`, `jhonstart-emilia` | `rakun-bpp` |
 | `rakun-service` | `rakun-web`, `rakun-actuator` | `rakun`, `routing` |
 | `rakun-scheduling` | `rakun-scheduling` | `rakun-service`, `rakun-data` |
@@ -39,7 +39,10 @@ depends on packages of lower layers only (the compiler refuses a cycle); `src/in
 | `rakun-messaging` | `rakun-messaging` | `rakun-service`, `rakun-metrics`, `rakun-restclient`, `rakun-data` |
 | `rakun-mail` | `rakun-mail` | `rakun-service`, `rakun-data` |
 | `rakun-app` | `rakun-app` | `rakun-service`, `rakun-cache`, `actions`, `routing` |
-| `rakun-ssr` | `onze`, `onze-cli`, `onze-server`, `onze-bundler`, `onze-assets`, `onze-content`, `onze-og`, `onze-release`, `onze-test` | `rakun-app`, `rakun-bpp`, `rakun-stylesheet`, `markdown`, `snap` |
+| `rakun-ssr` | `onze`, `onze-cli`, `onze-bundler`, `onze-assets`, `onze-content`, `onze-og`, `onze-release`, `onze-test` | `rakun-app`, `rakun-bpp`, `rakun-stylesheet`, `markdown`, `snap` |
+| `rakun-ssr-server` | `onze-server` (erlang only; decision 762) | `rakun`, `rakun-ssr` |
+| `rakun-bpp-dom-test` | `jhonstart-dom-test` (commonJS only; decision 762) | `rakun-bpp` |
+| `rakun-cli` | `rakun-cli` as it is (decision 762) | as its manifest declares |
 
 Outside, as external dependencies: `query` (erika renamed, a pure typed-query DSL depending on nothing of rakun —
 front 145 continues as `query`), `css`, `actions`, `routing`, `validation`, `snap`, `markdown`, `http`, `log`, `json`,
@@ -89,7 +92,7 @@ program lacks is a boot failure naming it (234); removing the dependency removes
 - [x] `rakun-ssr create` writes workspace dependencies or the `botopink/rakun` git source, never an archived
       repository's; its `--libs` help text says a rakun checkout
 - [x] rakun's gate green; no import of a package that no longer exists (the build refuses one)
-- Open: `onze-server`, `jhonstart-dom-test` and `rakun-cli` stay packages of their own (question 165-b); the five
+- Open: decision 762 (a): `rakun-ssr-server`, `rakun-bpp-dom-test` and `rakun-cli` are rows of the table with their own targets; the two renames land in s5's second box or s7; the five
   `MdNode` patterns of `rakun-ssr/src/content/element.bp` write their labels out until 144 B-93
 
 ### s3 — dbcontext folded into `rakun-data`

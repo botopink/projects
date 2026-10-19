@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**34 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**33 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **762**.
+número livre, que é **763**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -43,7 +43,7 @@ As perguntas que seguram hoje os passos da máquina 1 e a frente 165, as que mai
 |---|---|---|---|---|
 | 1 | **50-b** — o que o servidor de dev (`onze dev`, agora rakun-ssr) faz numa mudança (§ Parte 2, 07-onze) | se o servidor de dev reinicia a partir de um build novo a cada mudança ou carrega a quente os módulos mudados | 50 passo 2; 53 passo 6 | (a) `build` e depois `start` a cada mudança |
 
-Abertas e sem travar nada (frente 165): **165-b** (três nomes de pacote), **548-a** (toda biblioteca linka seu código),
+Abertas e sem travar nada (frente 165): **548-a** (toda biblioteca linka seu código),
 **548-b** (os nomes de código que guardam o nome de uma biblioteca antiga).
 
 ---
@@ -505,23 +505,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Opções.** (a) ★ Nenhuma até o s2: após a renomeação todo pacote é `rakun-*`, as linhas são escritas então, e o filtro sai. (b) Um conjunto de versões fora do núcleo (um arquivo no nível do workspace que o gate lê), todo membro uma linha agora.
 - **Recomendação.** (a): o s2 renomeia todo pacote para um nome `rakun-*`, então as linhas não precisam de exceção; uma versão para o workspace (o README) faz da tabela uma linha por pacote no s2.
 - **Trava.** Nada antes do s2; o s2 escreve as linhas.
-
-#### 165-b · Três pacotes fora da tabela do 165: `onze-server`, `jhonstart-dom-test`, `rakun-cli` (frente 165 s2)
-- **Contexto.** A frente 165 junta sete repositórios num workspace `rakun` e dá a todo pacote um nome `rakun-*` e uma linha na sua tabela (mono-a). Três pacotes não couberam: `onze-server` e `jhonstart-dom-test` se juntariam a um pacote compilado para outro conjunto de alvos, e `rakun-cli` não tem linha. A linguagem define alvos por pacote, não por módulo nem por dependência, então o 165 s2 os deixou como pacotes próprios; a pergunta é como eles se chamam e se a tabela ganha as suas linhas.
-- **Medido.** O 165 s2 dobrou todo pacote da tabela menos três. `onze-server` precisa do `rakun` (só erlang) enquanto `rakun-ssr` compila também para commonJS (seu CLI roda no node): dobrado, 21 vermelhos em commonJS (`rkReqLive` has no External for the node backend) — a linguagem não tem alvo por módulo nem dependência por alvo. Os externals de `jhonstart-dom-test` são só node enquanto `rakun-bpp` compila para erlang. `rakun-cli` não está em nenhuma linha da tabela. Construído: os três ficam pacotes próprios (`onze-server` dependendo de `rakun-ssr`, `rakun-app`, `rakun-service`; `jhonstart-dom-test` de `rakun-bpp`).
-- **Opções.**
-  (a) ★ Três pacotes nomeados na tabela: `rakun-ssr-server` (era `onze-server`), `rakun-bpp-dom-test` (era `jhonstart-dom-test`), `rakun-cli` como está, cada um sua linha com seus alvos.
-  ```text
-  modules/rakun-ssr-server/     was onze-server, needs rakun (erlang)
-  modules/rakun-bpp-dom-test/   was jhonstart-dom-test, node-only externals
-  modules/rakun-cli/            as it is
-  ```
-  (b) Uma feature da linguagem primeiro — o conjunto de alvos de um módulo ou de uma dependência — e os três dobrados em `rakun-ssr`, `rakun-bpp` (um passo do 144).
-  ```text
-  onze-server folded into rakun-ssr today: 21 commonJS reds — `rkReqLive` has no External for the node backend
-  ```
-- **Recomendação.** (a): um pacote é hoje a unidade de um conjunto de alvos; três linhas nomeadas mantêm a regra do 165 (todo pacote um nome `rakun-*`, uma linha cada) sem feature nova da linguagem.
-- **Trava.** Nada; os nomes mudam na segunda caixa do s5 ou no s7.
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
 
