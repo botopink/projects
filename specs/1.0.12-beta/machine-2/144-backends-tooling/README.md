@@ -3019,6 +3019,7 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
 - [ ] cells: `primitive_width_is_a_type` (`i32` in a type position and `implement Signed` read), `external_on_behavior` refused, `primitive_default_fn_overridden` (a width's own cell beside the contract's body, four targets), `implement_with_body` with the behavior case
 
 - [ ] commonJS: when rakun-bpp's whole package compiles, the modules load in an order that breaks `instanceof` of a class from a circular import (`Right-hand side of 'instanceof' is not an object`, `error_boundary_test`'s four tests, node's circular-export warnings); a cell with two modules importing each other, red on commonJS
+- [ ] `indexOf` / `lastIndexOf` / `contains` over records compare by `==`, which is structural on every target (the equality rule): commonJS and wasm answer by identity today (`[P(1, "a")].indexOf(P(1, "a"))` is -1 there, 0 on erlang / beam); a cell on four targets, red on commonJS and wasm
 Oracle: the whole suite on four targets; `test-libs`; the cold gate.
 
 ### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
