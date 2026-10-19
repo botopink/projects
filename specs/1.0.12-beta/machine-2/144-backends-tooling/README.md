@@ -3038,7 +3038,7 @@ The maintainer (2026-10-19): `conformance/modules` (1,650 cells, 79 `test/` suit
 modules without losing what is tested. Machine 2 (tooling, lane C). Order: **after B-116 (ii), B-139's rest and B-148 have landed**
 — their codemods rewrite the same cell files; the plan may be written before.
 
-- [ ] **Plan** (`fable`, `Plan` agent, 742): the home is front 166's tree, `modules/decisions-taken/<slug>-<N>/` — each decision's directory holds the cells that prove it as its cases, an existing cell moving under the decision its `Cell` column names, a cell proving no decision staying outside by subject (761); the grouping of those (by cell prefix, which follows `decisions-taken.md`'s subjects: `decorator_*`
+- [x] **Plan** (`fable`, `Plan` agent, 742): the home is front 166's tree, `modules/decisions-taken/<slug>-<N>/` — each decision's directory holds the cells that prove it as its cases, an existing cell moving under the decision its `Cell` column names, a cell proving no decision staying outside by subject (761); the grouping of those (by cell prefix, which follows `decisions-taken.md`'s subjects: `decorator_*`
       108, `external_*` 70, `template_*` 62, `comptime_*` 56, `std_*` 48, `import_*` 46, `case_*` 46, …); the module format that lets
       a refusal, an abort or a narrowed-`"targets"` cell keep its own compilation unit and snapshot inside a module holding several
       (`cases`); what `botopink cell check`, `cell new`, the runner and `cell_snap.zig` must learn; how `conformance/docs.md`'s 801
@@ -3047,6 +3047,10 @@ modules without losing what is tested. Machine 2 (tooling, lane C). Order: **aft
       every code-bearing row of botopink-lang — 509 today — listed with its cell, mapped or drafted, none left without one);
       the pieces in landable order with each piece's oracle. The plan's open points are filed as questions; the format it proposes
       is recorded as a decision (the coordinator's) before the pieces build.
+      — planned (2026-10-19): each case a full cell under `<module>/cases/<case>/`, the `.snap` format untouched, a two-level
+      workspace glob; the grouping by the row naming the cell, else the `////` header's decision, else the cell's first `_` prefix;
+      `consolidate-cells.py` `plan` / `apply --group` / `verify` (counts, record kinds, a content hash multiset); the pieces as below,
+      after a decision on the format; questions b157-a … b157-g, b157-a first
 - [ ] **Piece 1** — `botopink cell check` reads the new module format (compiler-cli, `cell_snap.zig`); the old single-program cell
       still accepted; cells for the format itself.
 - [ ] **Piece 2** — the consolidation script: moves the cells by the plan's grouping, writes the mapping, rewrites every reference,

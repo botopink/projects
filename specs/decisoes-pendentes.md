@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**32 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**39 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -357,6 +357,55 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### b157-a · O formato do módulo consolidado (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a) — nada do que um leitor da 464 / 475 / 512 vê muda; o formato é registrado como decisão antes de o P1 construir**
+- **Medido.** Medido: `cell check` toma qualquer diretório que tenha `src/` como uma célula e o copia sozinho para um workspace de rascunho; os globs de `workspaces` admitem só `*`, `<dir>/*` ou um literal, então um glob de dois níveis `*/cases/*` é a única mudança de ferramenta de que (a) precisa.
+- **Opções.** (a) cada caso uma célula inteira como hoje, sob `<module>/cases/<case>/`, o formato `.snap` intocado; (b) casos sem manifesto herdando o manifesto do módulo (emenda a 475 (1)); (c) `src/<case>.bp` num só pacote, com `snapshot/output/<case>/`.
+- **Recomendação.** (a).
+- **Bloqueia.** O P1 do B-157 e tudo depois dele.
+
+#### b157-b · Uma célula que cita várias linhas com código, nenhuma das quais a nomeia (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a), com uma passada opus só sobre a lista de ambiguidades gerada**
+- **Medido.** Medido: 1.083 células se ligam a pelo menos uma linha e 259 a mais de uma; a linha 8 atrai 51 células, as linhas 280 / 575 / 330 / 127 pelo menos 25 cada.
+- **Opções.** (a) colocá-la sob a linha em vigor de número mais alto, as outras ligadas como "provada também por"; (b) a de número mais baixo (sua origem); (c) uma leitura opus por célula.
+- **Recomendação.** (a).
+- **Bloqueia.** O mapeamento do P2 do B-157.
+
+#### b157-c · Para onde vão as células que não provam nenhuma decisão (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a) — uma forma em todo lugar**
+- **Medido.** Cerca de 60 prefixos (`decorator`, `external`, `template`, …).
+- **Opções.** (a) `modules/<prefix>/cases/<cell>/`, um módulo por primeiro segmento `_` (os assuntos da 760 (1)); (b) plano, como hoje; (c) assuntos a partir dos títulos de `conformance/docs.md`.
+- **Recomendação.** (a).
+- **Bloqueia.** O P2 / P3 do B-157.
+
+#### b157-d · Os 817 marcadores `<!-- example: … -->` de `conformance/docs.md` (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a), como a 650 ordena**
+- **Medido.** Um caminho esquecido deixa `test-docs` vermelho, o oráculo.
+- **Opções.** (a) reescrever só o caminho, a forma marcador-para-link ficando com a 166 s4 (650); (b) transformá-los em links agora.
+- **Recomendação.** (a).
+- **Bloqueia.** O P3 do B-157.
+
+#### b157-e · O nome de uma célula movida (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a) — a mudança é pura, a unicidade de nome de membro da 512 (1) vale, e as menções em prosa continuam resolvendo**
+- **Medido.** —
+- **Opções.** (a) o nome antigo da célula, sem mudança, como nome do caso; (b) o prefixo tirado sob o diretório da sua decisão.
+- **Recomendação.** (a).
+- **Bloqueia.** O P3 do B-157.
+
+#### b157-f · As linhas com código que nenhuma célula prova (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a) — o "mapeada, ou um draft" da 761 vale ao fim do B-157**
+- **Medido.** Medido: 254 das 510 linhas com código do botopink-lang ganham um caso; 256 precisam de um draft.
+- **Opções.** (a) o B-157 cria um `draft/main.bp` de esboço por linha assim (P4, cerca de 256), a escrita ficando com a 166 s3; (b) deixadas inteiramente para a 166 s3.
+- **Recomendação.** (a).
+- **Bloqueia.** A última caixa do B-157.
+
+#### b157-g · A unidade de pousada (decisões 760, 761; 144 B-157)
+- **Proposto (plano fable, 2026-10-19; aguardando o mantenedor):** **(a) — o gate de passo de cada grupo e o `verify` são o oráculo, e as células novas da máquina 1 se movem com o mapeamento atualizado**
+- **Medido.** —
+- **Opções.** (a) um commit por grupo de prefixo, o maior primeiro, a árvore misturada entre pousadas, o mapeamento atualizado antes de cada uma; (b) um commit.
+- **Recomendação.** (a).
+- **Bloqueia.** O P3 do B-157.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
