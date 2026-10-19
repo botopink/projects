@@ -65,6 +65,10 @@
 
 - [ ] (the coordinator) rows 1–143, folded into the record on 2026-10-19, get their `Cell` slug or `process` tag — 107 have none; `scaffold --list` for botopink-lang clean of "no slug" before its mapping runs (761 (4))
 - [ ] botopink-lang: s3 is B-157's mapping (761), not new drafts — an existing cell moves under the decision its `Cell` column names, a draft only for a decision no cell proves; the libraries' 67 drafts stand. **Nothing is lost** (the maintainer, 2026-10-19): the proof lists every one of botopink-lang's 509 code-bearing rows with its cell — mapped or drafted — and none is left without one; a row the mapping cannot place is a draft, never a skip
+      — the drafts for the rows no cell proves are written (194 `decisions-taken/<slug>-<N>/` directories); the rows that are no
+      program (tooling, test machinery, superseded ones such as 390, 438, 447, 448, 449, 454, 510, 511, 522, 536, 542, 549, 558), the
+      ones needing a dependency or a manifest key in phase 1 (275, 284, 514) and two library-runtime rows (220, 377) are listed for the
+      maintainer; the moves are B-157 P3's
 - [ ] `scaffold <repo>` committed alone (haiku; the hook), then the writing in batches of about forty rows, one commit per batch: each `docs.md` as § Mechanism (prose, the proving cells, `{main.bp}`), each `main.bp` the one real example in the spelling in force, `compile <repo>` green on the batch, `botopink format` applied to each file
 - [ ] a row whose example cannot be written because the compiler or the library departs from it: the example written as the decision says, the departure a row (`language-gaps.md` for a library, a 144 / 164 row for botopink-lang) named in the report — never an example bent to what compiles
 - [ ] the root `conformance/docs.md` gains one row naming `modules/decisions-taken/` (the ledger's index; 462 / 548); rakun's root manifest and `conformance/docs.md` the same (its tree stays grouped by package; the decision cells are the ledger's, not a package's feature)

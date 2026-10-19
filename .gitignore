@@ -24,3 +24,4 @@ format.o
 erl_crash.dump
 tmp
 /.gate-logs/
+__pycache__/
