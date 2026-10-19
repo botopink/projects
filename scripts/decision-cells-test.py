@@ -330,6 +330,83 @@ class Cells(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertNotIn("no draft", out)
 
+    # decision 775: a draft carries its manifest and its dependencies
+
+    def staging_compiler(self):
+        """A compiler that records what compile staged: each package's manifest and its tree, then passes."""
+        b = self.root / "repository/botopink-lang/zig-out/bin/botopink"
+        b.parent.mkdir(parents=True)
+        self.seen = self.root / "seen.txt"
+        b.write_text(f'#!/bin/sh\nfor p in "$3"/*/; do echo "== $p"; cat "$p/botopink.json"; echo "--"; (cd "$p" && find . -type f | sort); done > {self.seen}\n'
+                     'echo "cells: 1 checked - 1 passed, 0 failed"\n')
+        b.chmod(0o755)
+
+    def staged(self, name):
+        text = self.seen.read_text()
+        block = next(b for b in text.split("== ") if f"/{name}/" in b.split("\n")[0])
+        head, _, rest = block.partition("\n")
+        manifest, _, files = rest.partition("--\n")
+        return json.loads(manifest), files.split()
+
+    def test_compile_honours_a_drafts_targets(self):
+        c = self.cell(10, T10)
+        (c / "draft/botopink.json").write_text('{"name": "ignored", "targets": ["erlang"], "bpp": "rakun-bpp"}')
+        self.staging_compiler()
+        code, out = self.run_cmd("compile", "snap")
+        self.assertEqual(code, 0, out)
+        manifest, files = self.staged("code_rule_ten-10")
+        self.assertEqual(manifest, {"name": "code_rule_ten-10", "targets": ["erlang"], "bpp": "rakun-bpp"})
+        self.assertEqual(files, ["./botopink.json", "./src/main.bp"])  # the manifest is the package's, not a source
+
+    def test_compile_without_a_draft_manifest_is_as_before(self):
+        self.cell(10, T10)
+        self.staging_compiler()
+        self.assertEqual(self.run_cmd("compile", "snap")[0], 0)
+        self.assertEqual(self.staged("code_rule_ten-10")[0], {"name": "code_rule_ten-10"})
+
+    def test_compile_resolves_a_draft_dependency(self):
+        c = self.cell(10, T10)
+        (c / "draft/botopink.json").write_text('{"dependencies": {"helper": {"path": "deps/helper"}}}')
+        (c / "draft/deps/helper/src").mkdir(parents=True)
+        (c / "draft/deps/helper/botopink.json").write_text('{"name": "helper"}')
+        (c / "draft/deps/helper/src/main.bp").write_text("pub fn help() -> void {}\n")
+        self.staging_compiler()
+        self.assertEqual(self.run_cmd("compile", "snap")[0], 0)
+        manifest, files = self.staged("code_rule_ten-10")
+        self.assertEqual(manifest["dependencies"], {"helper": {"path": "deps/helper"}})  # relative to the manifest
+        self.assertEqual(files, ["./botopink.json", "./deps/helper/botopink.json", "./deps/helper/src/main.bp", "./src/main.bp"])
+
+    def test_promote_merges_the_manifest_and_moves_deps(self):
+        c = self.cell(10, T10)
+        (c / "draft/botopink.json").write_text(
+            '{"name": "mine", "targets": ["erlang", "wasm"], "bpp": "rakun-bpp", "dependencies": {"helper": {"path": "deps/helper"}}}')
+        (c / "draft/deps/helper").mkdir(parents=True)
+        (c / "draft/deps/helper/botopink.json").write_text('{"name": "helper"}')
+        (c / "docs.md").write_text(f"# {T10}\n\n[draft/main.bp](draft/main.bp)\n[the manifest](draft/botopink.json)\n"
+                                   "[draft/deps/helper/botopink.json](draft/deps/helper/botopink.json)\n")
+        self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))  # phase 1 accepts both
+        self.assertEqual(self.run_cmd("promote", "snap")[0], 0)
+        case = c / "cells/example"
+        self.assertEqual(json.loads((case / "botopink.json").read_text()),
+                         {"name": "code_rule_ten-10-example", "targets": ["erlang"], "bpp": "rakun-bpp",
+                          "dependencies": {"helper": {"path": "deps/helper"}}})
+        self.assertTrue((case / "deps/helper/botopink.json").is_file())
+        self.assertFalse((case / "src/botopink.json").exists() or (case / "src/deps").exists() or (c / "draft").exists())
+        docs = (c / "docs.md").read_text()
+        for link in ("[cells/example/src/main.bp](cells/example/src/main.bp)", "[the manifest](cells/example/botopink.json)",
+                     "[cells/example/deps/helper/botopink.json](cells/example/deps/helper/botopink.json)"):
+            self.assertIn(link, docs)
+        self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
+
+    def test_check_accepts_a_drafts_manifest_and_deps(self):
+        c = self.cell(10, T10)
+        (c / "draft/botopink.json").write_text('{"targets": ["erlang"]}')
+        (c / "draft/deps/helper/src").mkdir(parents=True)
+        (c / "draft/deps/helper/src/main.bp").write_text("pub fn help() -> void {}\n")
+        (c / "docs.md").write_text(f"# {T10}\n\n[draft/main.bp](draft/main.bp)\n[draft/botopink.json](draft/botopink.json)\n"
+                                   "[draft/deps/helper](draft/deps/helper)\n")
+        self.assertEqual(self.run_cmd("check"), (0, "decision-cells: green\n"))
+
 
 if __name__ == "__main__":
     unittest.main()

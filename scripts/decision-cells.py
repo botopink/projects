@@ -11,8 +11,11 @@ the ledger's `Cell` column (decisions 646, 647, 648).
   scripts/decision-cells.py compile [--verbose] <repo>   build every draft/ in a scratch cell with
                                                          `botopink cell check`; red on a refusal, the
                                                          first error per target under each FAIL line
-                                                         (--verbose: the whole report of each)
-  scripts/decision-cells.py promote <repo>               draft/ -> src/ + botopink.json (s4)
+                                                         (--verbose: the whole report of each); a draft's
+                                                         own draft/botopink.json and draft/deps/<pkg>/
+                                                         are its manifest and dependencies (decision 775)
+  scripts/decision-cells.py promote <repo>               draft/ -> src/ + botopink.json (s4); draft/botopink.json
+                                                         is merged into that manifest, draft/deps/ moves to deps/
   scripts/decision-cells.py check                        CI check 7: consistency always, completeness
                                                          for the repositories in COMPLETE_REPOS
 
@@ -308,8 +311,18 @@ def cmd_compile(root, args):
         else:
             c = scratch / package_name(m.parent.parent.name)
         c.mkdir(parents=True)
-        shutil.copytree(m.parent, c / "src")  # the whole draft/: main.bp and any <other>.bp
-        (c / "botopink.json").write_text(json.dumps({"name": c.name}) + "\n")
+        manifest = {"name": c.name}
+        if m.parent.name == "draft":
+            # decision 775: draft/botopink.json is the package's manifest (its "targets" decide which targets run),
+            # draft/deps/<pkg>/ its dependencies, beside the manifest as the promoted cell keeps them
+            shutil.copytree(m.parent, c / "src", ignore=shutil.ignore_patterns("botopink.json", "deps"))
+            if (m.parent / "botopink.json").is_file():
+                manifest = {**json.loads((m.parent / "botopink.json").read_text()), "name": c.name}
+            if (m.parent / "deps").is_dir():
+                shutil.copytree(m.parent / "deps", c / "deps")
+        else:
+            shutil.copytree(m.parent, c / "src")  # the whole draft/: main.bp and any <other>.bp
+        (c / "botopink.json").write_text(json.dumps(manifest, indent=2) + "\n")
     r = subprocess.run([str(binary), "cell", "check", str(scratch.relative_to(repo_dir))],
                        cwd=repo_dir, capture_output=True, text=True)
     out = r.stdout + r.stderr
@@ -362,18 +375,41 @@ def cmd_promote(root, args):
         case = m / "cells" / "example"
         case.mkdir(parents=True)
         main.parent.rename(case / "src")  # every file of the draft
-        (case / "botopink.json").write_text(json.dumps({"name": package_name(f"{m.name}-example")}) + "\n")
+        manifest = {"name": package_name(f"{m.name}-example")}
+        drafted = case / "src" / "botopink.json"
+        if drafted.is_file():  # decision 775: the draft's keys win over the generated defaults, the name stays the cell's
+            manifest = {**json.loads(drafted.read_text()), "name": manifest["name"]}
+            drafted.unlink()
+            if "targets" in manifest:
+                allowed = workspace_targets(root, repo)
+                manifest["targets"] = [t for t in manifest["targets"] if t in allowed]
+                if not manifest["targets"]:
+                    del manifest["targets"]
+        if (case / "src" / "deps").is_dir():
+            (case / "src" / "deps").rename(case / "deps")
+        (case / "botopink.json").write_text(json.dumps(manifest) + "\n")
         (case / "snapshot").mkdir()
         docs = m / "docs.md"
         if docs.exists():
-            # every [draft/<file>](draft/<file>) link
-            docs.write_text(re.sub(r"\[draft/([^\]]*)\]\(draft/", r"[cells/example/src/\1](cells/example/src/", docs.read_text()))
+            docs.write_text(LINK.sub(promoted_link, docs.read_text()))
         n += 1
     wm = workspace_manifest(root, repo)
     if n and wm:
         add_workspace_glob(wm, "decisions-taken/*/cells/*")
     print(f"promote {repo}: {n} cells")
     return 0
+
+
+def promoted_link(k):
+    """Rewrite one Markdown link into draft/: its file lands in src/, except the manifest and deps/ (decision 775),
+    which sit beside src/; a label that spelled the old path spells the new one."""
+    label, target = k.group(0)[1:].split("](", 1)
+    target = target[:-1]
+    if not target.startswith("draft/"):
+        return k.group(0)
+    rest = target[len("draft/"):]
+    new = "cells/example/" + (rest if rest == "botopink.json" or rest.startswith("deps/") else "src/" + rest)
+    return f"[{new if label == target else label}]({new})"
 
 
 def add_workspace_glob(manifest, glob):
