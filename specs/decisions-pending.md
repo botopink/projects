@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**34 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**33 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **759**.
+number, which is **760**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -357,13 +357,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### b137-k · `decorator-member-captures` after 716: keep the code for a non-literal body local, or a new code? (decisions 575 (4), 642, 716; 144 B-137)
-- **Proposed (fable review, 2026-10-19; awaiting the maintainer; built as (a)):** **(b): a new code, `decorator-member-local-not-literal`**, for a body local whose value is no literal (a record, a handle-valued local) read inside a member or an executor. 716 made the handle itself legal, so "captures" now names the case that is allowed.
-- **Measured.** 716 says "`decorator-member-captures` and its `@Decl` text go", and `specs/decisions-taken.md` § decorator-outputs (3) says the code "is gone (642, 716 (3))". As built, only the handle refusal in members was removed; the code stays for a non-literal body local (575 (4): only literals enter a tree), and `conformance/docs.md` still quotes it.
-- **Options.** (a) Keep `decorator-member-captures` for the non-literal local, and amend 716's and the subject's wording. (b) A new code for that case; `decorator-member-captures` is gone, as written.
-- **Recommendation.** (b).
-- **Blocks.** The refusal code's name and the docs sentence; B-137's 716 piece lands with (a) as built until answered.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

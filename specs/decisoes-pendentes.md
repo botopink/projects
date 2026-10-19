@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**34 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**33 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **759**.
+número livre, que é **760**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -357,13 +357,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### b137-k · `decorator-member-captures` depois da 716: manter o código para um local do corpo que não é literal, ou um código novo? (decisões 575 (4), 642, 716; 144 B-137)
-- **Proposto (revisão fable, 2026-10-19; aguardando o mantenedor; construído como (a)):** **(b): um código novo, `decorator-member-local-not-literal`**, para um local do corpo cujo valor não é literal (um record, um local com valor de handle) lido dentro de um membro ou de um executor. A 716 tornou o próprio handle legal, então "captures" agora nomeia o caso que é permitido.
-- **Medido.** A 716 diz "`decorator-member-captures` and its `@Decl` text go", e `specs/decisions-taken.md` § decorator-outputs (3) diz que o código "is gone (642, 716 (3))". Como construído, só a recusa do handle em membros foi removida; o código fica para um local do corpo que não é literal (575 (4): só literais entram numa árvore), e `conformance/docs.md` ainda o cita.
-- **Opções.** (a) Manter `decorator-member-captures` para o local não literal, e emendar o texto da 716 e do assunto. (b) Um código novo para esse caso; `decorator-member-captures` acabou, como escrito.
-- **Recomendação.** (b).
-- **Bloqueia.** O nome do código da recusa e a frase da documentação; a parte 716 do B-137 pousa com (a) como construído até a resposta.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
