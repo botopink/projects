@@ -17,8 +17,8 @@ mirroring), `01-std/05-actions-lib` (the envelope, the `state` grammar, the JSON
 **Does not touch:** `repository/rakun/src/http.bp`, `src/decorators.bp`, `src/bootstrap.bp`
 (frozen), the files owned by 22 · 23 · 25, and every file outside `repository/rakun/` — this front
 builds no element and imports nothing from `jhonstart` (decision 113)
-**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json) ·
-[decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 4 and 5 (an action's `redirect` is rakun's; `OnzeConfig.actionsBodyLimit`)
+**Reference:** [decision 116](../../../decisions-taken-steps.md) ·
+[decision 117](../../../decisions-taken-steps.md) rules 4 and 5 (an action's `redirect` is rakun's; `OnzeConfig.actionsBodyLimit`)
 rule 2 (the action protocol is the bundled library `actions`) · `NEXTJS-DOCS.md § 10. Mutação de Dados`, `§ 27. Diretivas` ·
 <https://nextjs.org/docs/app/getting-started/updating-data> ·
 <https://nextjs.org/docs/app/api-reference/directives/use-server>

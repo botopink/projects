@@ -23,7 +23,7 @@ list (one entry, by `04-routing-lib`'s carve-out)
 the envelope and reads the RPC body with this library; `repository/jhonstart/**` — front 67 reads
 the envelope and writes the RPC body, front 26 sends `refreshValue()`; `repository/onze/**` — onze
 still passes `actionField` / `actionHeader` to both sides (decision 114 item 7)
-**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+**Reference:** [decision 116](../../../decisions-taken-steps.md)
 rule 2 (the library, its modules, no wire name built in) · decision 115 (a bundled library is neutral
 and resolves like `from "std"`) · decision 78 (`parseActionState(envelope)`) · decision 114 item 7
 (the wire names are onze's) · `contracts.md § 3` (the action id and the envelope) · rakun front
@@ -259,7 +259,7 @@ where `04-routing-lib`'s is, in the CLI's and the LSP's suites.
 - **Why a library of its own and not a `routing` module.** The maintainer chose `libs/actions`
   (decision 116 rule 2). Its consumers are a different pair of fronts (24 and 67, not 22 and 26), it
   depends on `routing` and not the reverse, and it changes when the action protocol changes.
-- **Why the JSON readers are std's `json.decode`.** [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 7 and 8: a
+- **Why the JSON readers are std's `json.decode`.** [decision 117](../../../decisions-taken-steps.md) rules 7 and 8: a
   bundled library ships `.bp` files only and keeps target-native code to inline templates, and std's
   structured reader keeps member order and refuses a duplicate key identically on both targets,
   which `JSON.parse` and OTP's `json:decode` do not. If something this library needs cannot be

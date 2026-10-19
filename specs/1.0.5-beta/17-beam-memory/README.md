@@ -1,18 +1,18 @@
 # Front 17 — beam-memory
 
 **Decided 2026-09-18.** Every question this front opened is answered —
-[38 to 44](../decisions-taken.md), plus three the same pass raised and answered: **48** (the
+[38 to 44](../../decisions-taken-steps.md), plus three the same pass raised and answered: **48** (the
 formatter's `var` arm is a named carve-out of `16`, landed here in the same commit as the form),
 **49** (this front opens once [`01-checker`](../01-checker/README.md) has committed its step 4) and
 **50** (this milestone runs steps 0–3b; steps 4–8 become a spec for the milestone after
 [`13`](../13-module-identity/README.md)). **51** answers the one sub-question this design
 raised: `keyed = true` is a **`Dict`-only** argument — a `List<T>` under `Ets` stores its whole value, and
 `keyed` on one is decision 41's "needs a keyed container" error. Nothing of this front is open; the one
-question left from that pass, [52](../decisions-pending.md), belongs to the loop lowering.
+question left from that pass, [52](../../decisions-pending.md), belongs to the loop lowering.
 
 **Priority:** high — and startable the moment decision 49's condition is met. The reason it was not
 startable before is the finding this front rests on.
-A module-level `var` is [decision 28](../decisions-taken.md#28-what-decision-14-left-unassigned)'s
+A module-level `var` is [decision 28](../../decisions-taken-steps.md)'s
 last unlanded half; [`15-language-surface`](../15-language-surface/README.md) measured it and
 deliberately did not implement it ("the grammar is trivial; the semantics are the `@BeamMemory`
 design"). The semantics are here. What the measurement added is that the carrier cannot land alone:
@@ -86,7 +86,7 @@ pub fn main() { bump(); bump(); @print(hits); }
 | erlang | `hits() -> 0.` then `bump() -> Hits = (Hits + 1).` | `main.erl:9:13: variable 'Hits' is unbound` — **the module does not compile** |
 | wasm | `(global $hits i32 (i32.const 0))` then `global.set $hits` | `Invalid input WebAssembly code at offset 168: global is immutable: cannot modify it with 'global.set'` |
 
-It is the shape [decision 37](../decisions-taken.md#37-is-a-record-immutable) found for record fields —
+It is the shape [decision 37](../../decisions-taken-steps.md) found for record fields —
 checker accepts, backends disagree in the worst available way — one level up, and **still open**: the
 rule decision 37 landed covers `p.f = v` only. `val x: i32 = 0; x = 1;` inside a `fn` passes too. The
 only immutability diagnostic in the compiler is `infer.zig:2742`
@@ -110,7 +110,7 @@ registry maintenance** and 135 are host binding that stays:
 
 Of `runtime.bp`'s **16** `@External.Node` declarations, **13** exist only to reach a registry; the
 three that stay (`dispatch`, `dispatchHttp`, `serve`) carry real host behaviour. That is the size of
-[decision 17](../decisions-taken.md#17-rakuns-erlang-story)'s container-and-router half, and this front
+[decision 17](../../decisions-taken-steps.md)'s container-and-router half, and this front
 is what makes it portable instead of ported.
 
 ## Current state
@@ -268,7 +268,7 @@ and run with `erl -noshell`.
 **Acceptance:**
 - [ ] The three broken emissions of [Problem](#problem) reproduce at HEAD, each with its exact
       first diagnostic line and the emitted line that produced it
-- [ ] Questions **38–43** are opened in [`decisions-pending.md`](../decisions-pending.md) in the
+- [ ] Questions **38–43** are opened in [`decisions-pending.md`](../../decisions-pending.md) in the
       Measured / Options / Recommendation / Blocks shape, numbered from 38 as that file requires
 - [ ] The 96-line rakun count and the emilia reading are re-derived at the libraries' current
       submodule pointers, with the function ranges named — not carried from this README
@@ -322,7 +322,7 @@ becomes coherent on two targets while the BEAM questions are still open.
 `#[@TotallyMadeUp.Nonsense(whatever = 42)]` passes `check` today, measured. So the day the carrier
 lands, `#[@BeamMemory.Etz]` and `#[@BeamMemory.Ets(keyd = true)]` compile, run, and leave the `var` in
 the default mode with nothing said. This is the failure mode
-[decision 15](../decisions-taken.md#15-a-lower-case-externalnode-) already named for `#[@external]`
+[decision 15](../../decisions-taken-steps.md) already named for `#[@external]`
 ("passes `check`, binds no host, and says nothing") — and here it is worse, because a misread memory
 annotation does not fail, it **moves where the state lives**, and step 4's measurement shows
 `ProcessDict` and `Ets` are indistinguishable in a single-process test.
@@ -343,7 +343,7 @@ positionally. Nothing in the grammar changes; the validation is a lookup.
 
 **Blocked on question 43**, and on nothing else — it edits no compiler file. `libs/std/**` is
 [`09-ecosystem-residuals`](../09-ecosystem-residuals/README.md)'s under
-[decision 17](../decisions-taken.md#17-rakuns-erlang-story), so this front **specifies** the module
+[decision 17](../../decisions-taken-steps.md), so this front **specifies** the module
 and 09 lands it.
 
 A new `libs/std/src/beam.bp` + `pub mod beam;` in `libs/std/src/root.bp`, built the way
@@ -437,7 +437,7 @@ This front writes no `docs.md`; it supplies the text to [`08-hygiene`](../08-hyg
       20 000 figure) · a `PersistentTerm` var is re-seeded on every code reload
 - [ ] The `keyed`-on-a-`Dict` warning of question 42, **if** the warning channel exists — measured:
       `grep -rn warning src/comptime/*.zig` → 0, which
-      [`decisions-pending.md`](../decisions-pending.md) already records as a defect with no owner. If
+      [`decisions-pending.md`](../../decisions-pending.md) already records as a defect with no owner. If
       it does not exist, the sentence goes to `docs.md` and this box is struck with that reason
 
 ### Step 7 — The language cells
@@ -458,7 +458,7 @@ This front does not edit a library. It writes the migration and hands it over.
       (`runtime.mjs:16-32`, `:33-63`, `:64-79`, `:80-98`, `:107-123` = 96 lines) and the 13 of 16
       `@External.Node` declarations in `runtime.bp` that go with them — handed to
       [`09`](../09-ecosystem-residuals/README.md) and registered against
-      [decision 17](../decisions-taken.md#17-rakuns-erlang-story)
+      [decision 17](../../decisions-taken-steps.md)
 - [ ] **emilia** is the validation case for `ProcessDict`, not an entry of this front:
       `emilia/src/emilia.bp:23-25` (`get` + `lists:keystore` + `put`) and `:27-30` (`erase`) are a
       read-modify-write and a reset over one key, `'__emilia_sheet'`, whose scope is per-process **on
@@ -513,7 +513,7 @@ This front does not edit a library. It writes the migration and hands it over.
 | 39 | **Who creates the ETS table the first time?** `-on_load` runs in a temporary process, so it cannot (measured: `whereis` → `undefined`); `persistent_term` written there survives. With the first caller creating it, 5 requests × 3 increments read `3, 3, 3, 3, 3` and the counter ends at **0**; with a module-emitted registered owner (~15 lines) it ends at **15** | step 4, step 5; 62 of rakun's 96 lines | **emit the registered owner**, and keep the silent re-init as the safety net the maintainer decided on. They do not compete: the guard's `undefined` arm becomes "register an owner" instead of "become the owner" |
 | 40 | **`+=` under `Ets` on a non-integer.** `ets:update_counter` answers `{ok,1}` for `i32`/`i64` and `{error, badarg}` for `f64`, `bool` and binary, so rule 5(b) ("`+=` is atomic, `hits = hits * 2 + 1` is not") is true for integers only | step 4; the `docs.md` text | **refuse `+=` under `Ets` when the type is not an integer**, with 5(b)'s diagnostic. One checker line, and it keeps the promise 5(b) makes; allowing it makes 5(b) a rule the author cannot predict from what they wrote |
 | 41 | **Is a misspelled `@BeamMemory` an error?** `#[@TotallyMadeUp.Nonsense(whatever = 42)]` passes `check` today, silently | step 3 | **yes, in the same commit the annotation is born.** A misread memory annotation does not fail — it moves where the state lives, and question 39's measurement shows `ProcessDict` and `Ets` are indistinguishable in a single-process test |
-| 42 | **A `Dict` under `Ets` with `keyed` unwritten** — the default the maintainer chose is `false`, and measured that is 5 061× slower at 10 000 keys and loses concurrent writes (19 994 of 20 000) | step 6 | **a located warning, not an error** — it keeps the default and takes the sentence out of `docs.md`, where it depends on being read. **Conditional:** `src/comptime/**` has no warning channel (`grep -rn warning` → 0), which [`decisions-pending.md`](../decisions-pending.md) already records as an unowned defect |
+| 42 | **A `Dict` under `Ets` with `keyed` unwritten** — the default the maintainer chose is `false`, and measured that is 5 061× slower at 10 000 keys and loses concurrent writes (19 994 of 20 000) | step 6 | **a located warning, not an error** — it keeps the default and takes the sentence out of `docs.md`, where it depends on being read. **Conditional:** `src/comptime/**` has no warning channel (`grep -rn warning` → 0), which [`decisions-pending.md`](../../decisions-pending.md) already records as an unowned defect |
 
 | 43 | **Where does `@BeamMemory` live — a core builtin, a library annotation function, or two layers?** (the maintainer's question) `libs/std/src/erlang.bp` is already a target-specific std module the erlang emitter parses and derives emission from (`codegen/erlang.zig:184-260`), `env.zig:542` already carries the target into comptime, and the lowercase library spelling already parses. But the decorator handle is read-only (`builtins.d.bp:416`), `DeclKind` has no `Val` (`:424-430`), and the only outcome is `@emit`ted **new** declarations appended to the module (`decorator_eval.zig:57-64`, `comptime.zig:306-344`) | the size of this front, and which half of it is `libs/std` (09, decision 17) rather than core | **(b) two layers.** Layer 1 — the host primitives — is `libs/std/src/beam.bp` with no `.zig` at all; layer 2 — the lowering of a binding's reads and writes — is irreducibly core, because a decorator is additive and cannot rewrite how an existing declaration is emitted. That leaves the compiler knowing three mode names and nothing about ETS, `persistent_term` or the process dictionary. **(c) purely library** is stronger than it looks — a decorator can `@emit` a `declare fn` carrying *both* `@External` arms, so it is portable without seeing the target, and it is implementable today — but it buys `hits()` / `setHits(v)`, not `hits` and `hits += 1`, so decision 28's `var` half stays unbuilt. (b) and (c) are not exclusive: (c) **is** layer 1, so doing it first removes rakun's 96 lines now and leaves the annotation for later |
 
@@ -543,13 +543,13 @@ This front does not edit a library. It writes the migration and hands it over.
 
 | With | Verdict | Why |
 |---|---|---|
-| **01 checker** | **no — carve-out or the front does not open** | `src/comptime/infer.zig` is 01's. This front needs **two diagnostics** beside decision 37's at `:2742`: assignment to a `val`, and the `Ets` initialiser rule. The same shape [`14`](../14-comptime-on-beam/README.md) was granted for two `evaluate(…)` call sites. Separately, step 3's annotation validation is the annotation grammar, which [decision 15](../decisions-taken.md#15-a-lower-case-externalnode-) assigns to 01 — register it there rather than restate it |
+| **01 checker** | **no — carve-out or the front does not open** | `src/comptime/infer.zig` is 01's. This front needs **two diagnostics** beside decision 37's at `:2742`: assignment to a `val`, and the `Ets` initialiser rule. The same shape [`14`](../14-comptime-on-beam/README.md) was granted for two `evaluate(…)` call sites. Separately, step 3's annotation validation is the annotation grammar, which [decision 15](../../decisions-taken-steps.md) assigns to 01 — register it there rather than restate it |
 | **02 erlang · 03 beam** | **no** | Steps 4 and 5 rewrite `topValForms` and the beam equivalent. Both files are additionally [`13`](../13-module-identity/README.md)'s **wholesale** for its halves 2–3, so this front's BEAM half runs **after 13**, beside 02 and 03 rather than against them |
 | **04 js · 05 wasm** | **seq — one function each** | `buildValDecl` (reached from `commonJS.zig:438`) and `emitGlobalVal` (`wat.zig:2104`). Neither front owns the rest of what step 2 touches, and both changes are one field read. Recommended: granted by name, landed in step 2 before 04 and 05 re-record anything of their own |
 | **06 comptime-dedup** | yes | No shared file; this front re-records no `snapshots/comptime/**` cell |
 | **07 review-backlog** | **carve-out** | `src/parser/tests/**` — the new `expectError` cases are this front's, the existing ones stay 07's, named in the commit |
 | **08 hygiene** | **seq — 17 supplies, 08 edits** | `docs.md` is 08's. Step 6 writes the three paragraphs and hands them over. And step 6's warning depends on the warning-channel defect `decisions-pending.md` records as unowned |
-| **09 ecosystem-residuals** | **seq — 17 specifies, 09 lands** | `libs/std/**` and `repository/{emilia,rakun}/**` are 09's. **Step 3b's `libs/std/src/beam.bp` is specified here and written there** — it is the layer-1 half of question 43 and needs no compiler change. Step 8 produces the migration, including the 96 lines and 13 declarations rakun sheds, and registers it against [decision 17](../decisions-taken.md#17-rakuns-erlang-story) rather than doing it |
+| **09 ecosystem-residuals** | **seq — 17 specifies, 09 lands** | `libs/std/**` and `repository/{emilia,rakun}/**` are 09's. **Step 3b's `libs/std/src/beam.bp` is specified here and written there** — it is the layer-1 half of question 43 and needs no compiler change. Step 8 produces the migration, including the 96 lines and 13 declarations rakun sheds, and registers it against [decision 17](../../decisions-taken-steps.md) rather than doing it |
 | **10 cli-residuals** | yes | No shared file |
 | **11 tooling** | **seq, one row** | The language server renders parse diagnostics and hovers a binding. Step 1's `var` and step 3's kinds change both; 11 re-runs `modules/language-server/snapshots/lsp/` (114) afterwards. Nothing for 11 to implement |
 | **12 language-tests** | **seq — 17 specifies, 12 writes** | `tests/language/**` is 12's. Steps 3, 4 and 7 specify the cells; 12 writes them, after its own step 1 re-points `expected-failures.txt` |
@@ -561,5 +561,5 @@ This front does not edit a library. It writes the migration and hands it over.
 **Front-table row (`overview.md`):**
 
 ```markdown
-| [`17-beam-memory`](./17-beam-memory/README.md) | high | Module-level `var` and the `#[@BeamMemory.…]` annotation that gives it storage on the BEAM — [decision 28](./decisions-taken.md#28-what-decision-14-left-unassigned)'s last unlanded half, which [`15-language-surface`](./15-language-surface/README.md) measured and left to the semantics. The carrier cannot land alone: `val hits = 0;` reassigned passes `check` and then throws on node, **does not compile** on erlang and does not validate on wasm, because the only immutability rule in the compiler is decision 37's record-field one. The annotation's spelling already parses on a `fn`; what is missing is a declaration that can carry an annotation and a mutable value. The payoff is measured — **96 of `rakun/src/runtime.mjs`'s 231 lines** and **13 of its 16 `@External.Node` declarations** are registry maintenance that this removes rather than ports — and so is the warning: `-on_load` cannot create an ETS table, so the `Ets` mode as designed degrades into the `ProcessDict` it exists to replace (5 requests × 3 increments → the counter reads **0**), unless the module emits an owner. And the maintainer's own rule cuts the front in half: `libs/std/src/erlang.bp` already proves a target-specific std module can drive emission without a `.zig` recompile, so the host primitives belong in a sibling `std/beam` and only the read/write lowering is irreducibly core — question 43 |
+| [`17-beam-memory`](./17-beam-memory/README.md) | high | Module-level `var` and the `#[@BeamMemory.…]` annotation that gives it storage on the BEAM — [decision 28](../../decisions-taken-steps.md)'s last unlanded half, which [`15-language-surface`](./15-language-surface/README.md) measured and left to the semantics. The carrier cannot land alone: `val hits = 0;` reassigned passes `check` and then throws on node, **does not compile** on erlang and does not validate on wasm, because the only immutability rule in the compiler is decision 37's record-field one. The annotation's spelling already parses on a `fn`; what is missing is a declaration that can carry an annotation and a mutable value. The payoff is measured — **96 of `rakun/src/runtime.mjs`'s 231 lines** and **13 of its 16 `@External.Node` declarations** are registry maintenance that this removes rather than ports — and so is the warning: `-on_load` cannot create an ETS table, so the `Ets` mode as designed degrades into the `ProcessDict` it exists to replace (5 requests × 3 increments → the counter reads **0**), unless the module emits an owner. And the maintainer's own rule cuts the front in half: `libs/std/src/erlang.bp` already proves a target-specific std module can drive emission without a `.zig` recompile, so the host primitives belong in a sibling `std/beam` and only the read/write lowering is irreducibly core — question 43 |
 ```

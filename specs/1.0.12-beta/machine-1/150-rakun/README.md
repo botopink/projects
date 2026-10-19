@@ -316,7 +316,7 @@ Blast radius: none outside the owned files; 13, 92, 93 consume the unchanged reg
 
 - [ ] `orm_test.bp`: a 100-row fetch through a derived finder issues exactly one statement (recorded); the join finder's SQL names exactly the two tables and the join column
 - [ ] R78-2 reworded to the statement-count-and-text assertion; the "100 joined rows on a real arm" half is a `deferred.md` row
-- [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): the type-level generator (`#[repository]` on a behavior, 318) checks each `findBy<Field>` against `@typeInfo(<entity>).meta(Entity)?.columns` (298) and refuses, listing them (347) — re-measured on the post-130 decorators and ticked
+- [ ] R78-1 ("`findByCiudad` is a compile error naming the entity and listing its fields"): the type-level generator (`#[repository]` on a behavior, 318) checks each `findBy<Field>` against `compiler.typeInfo(<entity>).meta(Entity)?.columns` (298) and refuses, listing them (347) — re-measured on the post-130 decorators and ticked
 - [ ] RX-2 (78): decorator-argument default re-measured in `orm_build_test.bp`
 
 #### Step 4 — references, not strings (decision 281) (was `08-rakun-data-sql` s4)
@@ -330,15 +330,15 @@ Blast radius: none outside the owned files; 13, 92, 93 consume the unchanged reg
 
 - [ ] this member's `#[value("…")]` / `rkProp*` reads and group configs become `#[config("<prefix>")]` records (`04` step 7)
 
-#### Step 6 — one API answering `@Result<T, StoreError>` (decision 304; after `01-compiler/02-erlang` step 14) (was `08-rakun-data-sql` s6)
+#### Step 6 — one API answering `Result<T, StoreError>` (decision 304; after `01-compiler/02-erlang` step 14) (was `08-rakun-data-sql` s6)
 
 - [ ] `StoreError` declared in `src/datasource.bp` (already exported; this front edits neither `botopink.json` nor `src/root.bp`): `pub type StoreError { Unavailable(message: string), Timeout(ms: i32), Conflict(message: string), Constraint(name: string, message: string) }` — the draft cases, closed here with 09 (a case added only when a driver failure needs its own handling); exported for 09
-- [ ] `SqlTemplate.query` / `update` / `single` answer `@Result<Rows | i32 | ?Row, StoreError>`; `raising` and the `@panic(o.error)` path go — a driver failure is `throw` of its case, never a raise
+- [ ] `SqlTemplate.query` / `update` / `single` answer `Result<Rows | i32 | ?Row, StoreError>`; `raising` and the `panic(o.error)` path go — a driver failure is `throw` of its case, never a raise
 - [ ] `tryQuery`, `tryUpdate`, `tryQueryOn`, `tryUpdateOn` (`src/sql/template.bp:106-152`), `tryMigrate` (`src/migration/migrate.bp:414`) and every other `try*` twin in the member deleted; their callers use the one API (`case` or `try`)
-- [ ] the ORM repository's generated methods (`save`, `update`, `byId`, derived queries) answer `@Result<…, StoreError>`; an optimistic-lock miss is `Error(Conflict(…))` (`audit-and-revisions-example.bp`'s `repo.tryUpdate(saved)` becomes `repo.update(saved)` matched on `Conflict`)
+- [ ] the ORM repository's generated methods (`save`, `update`, `byId`, derived queries) answer `Result<…, StoreError>`; an optimistic-lock miss is `Error(Conflict(…))` (`audit-and-revisions-example.bp`'s `repo.tryUpdate(saved)` becomes `repo.update(saved)` matched on `Conflict`)
 - [ ] `transaction(work)`: an `Error` the work returns rolls back, as a raise does today — one cell each
-- [ ] `@panic` left only for a programming error: `single()` meeting more than one row keeps its message naming the statement
-- [ ] the method forwarding comment in `template.bp` (a method `-> @Result` lowered as a plain function) gone with 02 step 14
+- [ ] `panic` left only for a programming error: `single()` meeting more than one row keeps its message naming the statement
+- [ ] the method forwarding comment in `template.bp` (a method `-> Result` lowered as a plain function) gone with 02 step 14
 - [ ] the front's examples and `repository/rakun/AGENTS.md` § SQL data access rewritten to `try` / `case`
 
 #### Step 7 — rakun-data over `dbcontext` (decision 398; after `04-rakun/143` steps 1–2) (was `08-rakun-data-sql` s7)
@@ -607,12 +607,12 @@ of their own, named here.
 
 #### Step 6 — `#[httpClient]` (decision 318 (4)) (was `13-rakun-http-clients` s6)
 
-- [ ] `#[httpClient(EchoConfig)] behavior EchoService { #[get("/users/${id}")] fn user(self: Self, id: string) -> @Result<User, HttpError>; }`:
+- [ ] `#[httpClient(EchoConfig)] behavior EchoService { #[get("/users/${id}")] fn user(self: Self, id: string) -> Result<User, HttpError>; }`:
       a generator on the behavior, as `#[repository]` is (313); the group a typed config record (299);
       path holes the method's parameters (311's template form where the spelling needs it)
 - [ ] `#[httpExchange]`, `#[getExchange]` … `#[deleteExchange]` deleted; `exchange_build_test.bp`,
       `exchange_test.bp` and their refusal cells rewritten to the new names
-- [ ] a method answers `@Result<T, HttpError>` with `T` decoded from the body (125's `#[validated]`
+- [ ] a method answers `Result<T, HttpError>` with `T` decoded from the body (125's `#[validated]`
       decoder) — the `string`-only rule of `exchange.bp:47-49` goes with its gap note
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
@@ -730,7 +730,7 @@ file-convention route table (this member's) is generated at build from `routing`
       blogSlugPage), …]`, one entry per app file, by `routing`'s `kindOf(path)`; no `bppKinds` read
 - [ ] a route file whose name is no identifier (`not-found.bpp`) imported with an alias by the
       generated table (289); the import form for such a path segment stated here before landing
-- [ ] a page's `S` / `D` from `@typeInfo(f).hooks` (277) through that call, the same as the decorator
+- [ ] a page's `S` / `D` from `compiler.hooks(f)` (277) through that call, the same as the decorator
       form; `onze build`'s report unchanged (`07-onze/49` step 5)
 
 #### Step 8 — no segment configuration — everything in `#[page]` (decision 290) (was `22-rakun-file-routing` s8)
@@ -839,9 +839,9 @@ read `POST /actuator/shutdown`, unaffected. If R11-2 needs the registrar tag, 04
 - [ ] R82-2 reworded to "traversal and encoded traversal answer 404 without a filesystem call; a symlink escape by resolving the link, before any read" and ticked; symlink cell asserts the escape refused before any read (`rkStaticFsCalls()` grows by exactly the one `readlink`)
 - [ ] R82-3 ("onze front 69's roots are served through `registerStaticRoot` with no second content-type table, ETag rule or traversal guard anywhere under `repository/`"): the grep (`fn contentTypeOf` only in `src/static.bp`) runs as a cell; onze registering is onze's (69)
 
-#### Step 4 — a handler may answer `@Result<Response, E>` (decision 304) (was `65-rakun-url-rules` s4)
+#### Step 4 — a handler may answer `Result<Response, E>` (decision 304) (was `65-rakun-url-rules` s4)
 
-- [ ] a `#[getMapping]` / `#[postMapping]` / … method declared `-> @Result<Response, E>` is accepted; `Ok(r)` is sent as is
+- [ ] a `#[getMapping]` / `#[postMapping]` / … method declared `-> Result<Response, E>` is accepted; `Ok(r)` is sent as is
 - [ ] an `Error(e)` of 08's `StoreError` answers a problem response: `Unavailable` 503, `Timeout` 504, `Conflict` 409, `Constraint` 409; any other `E` 500 with a digest, as an uncaught raise is today — one cell each
 - [ ] the error is logged once, with the request id, by the same entry that logs a raise (`src/error.bp`)
 
@@ -897,12 +897,12 @@ ONZ-49-4.3's third box closes on onze's side.
 - [ ] four `deferred.md` rows, each naming its box list and the unblocking gap
 - [ ] member README's arm table says which arms run and which refuse
 
-#### Step 6 — one API answering `@Result<T, StoreError>` (decision 304; after 08 step 6) (was `09-rakun-data-nosql` s6)
+#### Step 6 — one API answering `Result<T, StoreError>` (decision 304; after 08 step 6) (was `09-rakun-data-nosql` s6)
 
-- [ ] `KeyValueStore` and `DocumentStore`: every method answers `@Result<T, StoreError>` (`get` → `@Result<?string, StoreError>`, a mutator → `@Result<i32, StoreError>`); no `try*` method on either behavior or any arm
+- [ ] `KeyValueStore` and `DocumentStore`: every method answers `Result<T, StoreError>` (`get` → `Result<?string, StoreError>`, a mutator → `Result<i32, StoreError>`); no `try*` method on either behavior or any arm
 - [ ] each arm maps its driver failure to a `StoreError` case — connection refused / lost → `Unavailable`, deadline → `Timeout`, version clash → `Conflict`; one cell per arm per case it can produce
-- [ ] a refused filter operator stays a boot / call refusal naming the operator (a programming error, `@panic`)
-- [ ] `examples/stores-example.bp` rewritten: `raiseProblem` gone, the controller `-> @Result<Response, StoreError>` with `try` (65 step 4)
+- [ ] a refused filter operator stays a boot / call refusal naming the operator (a programming error, `panic`)
+- [ ] `examples/stores-example.bp` rewritten: `raiseProblem` gone, the controller `-> Result<Response, StoreError>` with `try` (65 step 4)
 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `botopink test --target erlang` green in `modules/rakun-data` with the `nosql/` files; `botopink format --check` clean
@@ -1064,7 +1064,7 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 - [ ] a local set in middleware is read by a page, a route handler and an action in the same
       request; `null` in the next request on the same process
 - [ ] a page reading a local is not prerendered: its kind is `D`, its `why` says `locals`
-      (`@typeInfo(Page).meta(PageMeta)`, 277; jhonstart's hook carries `#[serverOnly]`, 295)
+      (`compiler.typeInfo(Page).meta(PageMeta)`, 277; jhonstart's hook carries `#[serverOnly]`, 295)
 
 #### Step 2 — `sequence` (was `123-bpp-middleware` s2)
 
@@ -1096,7 +1096,7 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 - [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use atomSetter(atom) -> fn(T)` (296) and jhonstart's `use atomValue(atom)` (296; the cookie hooks in the same family, 400);
       `LocalKey`, `setLocal(key, value)`, `local(key)` gone
-- [ ] `#[middleware]` functions, route handlers and actions return `@Component<Response>` (354)
+- [ ] `#[middleware]` functions, route handlers and actions return `Component<Response>` (354)
       (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`
 - [ ] two atoms of one `T` are distinct; an unset atom reads `null`; values die with the request
 - [ ] `examples/locals-and-sequence-example.bp` and `examples/src/app/orders/page.bpp` rewritten to atoms (the page reads `use local(currentUser)` through jhonstart's hook, never `import {local} from "rakun"` — 113, 295)
@@ -1117,22 +1117,22 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 #### Step 1 — `ActionError` and the envelope's typed payload (decision 303) (was `127-bpp-actions` s1)
 
-- [ ] `libs/actions/src/outcome.bp`, both targets: `ActionError` (the sum type above) and the `@Result<T, ActionError>` ↔ `{data}` / `{error}` codec; no `ActionOutcome`, no `ActionErrorCode`; it travels in the envelope's existing `payload` field, no reader changes
+- [ ] `libs/actions/src/outcome.bp`, both targets: `ActionError` (the sum type above) and the `Result<T, ActionError>` ↔ `{data}` / `{error}` codec; no `ActionOutcome`, no `ActionErrorCode`; it travels in the envelope's existing `payload` field, no reader changes
 - [ ] an `Error(Input(fields))` written and read back keeps every path and message; each other case keeps its status and message
-- [ ] a payload with both `data` and `error`, or neither, is refused by the reader (never decoded into a `@Result`)
+- [ ] a payload with both `data` and `error`, or neither, is refused by the reader (never decoded into a `Result`)
 
 #### Step 2 — `#[action]` and the wrapper (was `127-bpp-actions` s2)
 
 - [ ] `examples/typed-action-example.bp` passes on erlang
 - [ ] invalid input never reaches the function — asserted with a counter the function bumps
-- [ ] `#[action]` on a function not returning `@Task<@Result<T, ActionError>>`, or naming a type
-      that is not `#[validated]` (`@typeInfo(T).meta(Validated)`, 306), fails at the annotation
+- [ ] `#[action]` on a function not returning `Async<Result<T, ActionError>>`, or naming a type
+      that is not `#[validated]` (`compiler.typeInfo(T).meta(Validated)`, 306), fails at the annotation
 - [ ] the function answers with `return v` / `throw e`; `throw Input(…)` from the function itself is allowed (a check only the server can make, e.g. a taken e-mail)
 
 #### Step 3 — The client call and the form binding (was `127-bpp-actions` s3)
 
-- [ ] `callAction` over `jhonstart-dom-test`'s fake transport answers `@Task<@Result<T, ActionError>>`: `Ok`, `Error(Input)` and each other `Error` case decode to their variant
-- [ ] a form bound with `formAction(ref)` submits without JavaScript; the next render's `actionResult(ref)` holds the outcome — `?@Result<T, ActionError>`, `null` until posted
+- [ ] `callAction` over `jhonstart-dom-test`'s fake transport answers `Async<Result<T, ActionError>>`: `Ok`, `Error(Input)` and each other `Error` case decode to their variant
+- [ ] a form bound with `formAction(ref)` submits without JavaScript; the next render's `actionResult(ref)` holds the outcome — `?Result<T, ActionError>`, `null` until posted
 - [ ] `fieldError(name)` (`libs/actions/src/state.bp:21`) answers the path's first message, so
       existing form components work over a typed action
 
@@ -1151,7 +1151,7 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 - [ ] an action sets or clears a cookie through hooks over its declaration (`use cookieSetter(decl)` → a
       setter, `use cookieReset(decl)`; 295), the attributes from the declaration; actions return
-      `@Component<…>` (354) so they may `use`
+      `Component<…>` (354) so they may `use`
 - [ ] `typed-action-example.bp` reads the session with `use cookieValue(sessionCookie)` over a declared
       `Cookie<T>` (294), not `ctx.cookie("user-session")`
 
@@ -1245,8 +1245,8 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
 - [x] `rakun_runtime.erl`'s registry: no site — the registry's per-key counters are the sidecar's own Erlang
       (`ets:update_counter/4` in `rakun/src/sidecars/rakun_runtime.erl`); no `.bp` of rakun holds a keyed var written
       as `insert(k, (at(k) ?? 0) + n)`, so nothing moves to `bump` (340, 144 B-26)
-- [x] `rakun-data/src/sql/template.bp`: the comment above `tryQuery` saying a method `-> @Result` is not lowered as a
-      `@Result` on erlang goes — it is (144 B-13; decision 304's dependency met); rakun 08 s6, 09 s6, 65 s4 no longer
+- [x] `rakun-data/src/sql/template.bp`: the comment above `tryQuery` saying a method `-> Result` is not lowered as a
+      `Result` on erlang goes — it is (144 B-13; decision 304's dependency met); rakun 08 s6, 09 s6, 65 s4 no longer
       wait on it
 
 ### 150 s29 — `decl.wrapWith` in rakun (144 B-11; decision 316)

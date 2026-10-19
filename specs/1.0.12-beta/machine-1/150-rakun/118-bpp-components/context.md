@@ -51,7 +51,7 @@ So every page is builders (`onze/examples/blog/src/app/blog/[slug]/page.bp`).
 ## Mechanism
 
 **Where it stands** (`repository/rakun/modules/rakun-bpp/src/html/`): `src/html.bp` 270 lines, one
-function `pub fn html(comptime template: @Expr<string>) -> @ExprCustom<Element>`; `test/` two
+function `pub fn html(syntax template: string) -> Element`; `test/` two
 files; 12 files use `html """` (jhonstart-html 4, jhonstart 2, document-shell 2, jhonstart-markup
 1, jhonstart-emilia 1, emilia 1, erika-linq 1); `[name]={expr}` 10 uses in 7 files outside the
 parser. Body rules in its header (`html.bp:56-75`: no optional, no array index, no comment in the
@@ -130,12 +130,12 @@ pub default fn Card(props: type(title: string)) -> View {
 {case status { Draft -> <em>draft</em>; _ -> <span>live</span>; }}
 ```
 
-**Tag annotations** (278, 302: the same thing as a declaration's decorator — `fn name(comptime decl:
-@Decl, …)`, no return, typed meta through `decl`). Astro's `prefix:name` directives are not in the
+**Tag annotations** (278, 302: the same thing as a declaration's decorator — `fn name(syntax decl:
+unknown, …) -> void`, typed meta through `decl`). Astro's `prefix:name` directives are not in the
 grammar. `#[name(args)]` inside a tag resolves `name` in the caller's scope (hygiene below; unbound = the
 ordinary unbound-name error at its span, never a rendered attribute) and `html` calls it at comptime with
-typed arguments. `decl.kind` says what it receives — `Element` (a native tag: `decl.name`, its static
-attributes) or `Component` (`decl.component` the component's own `@Decl`); an annotation that takes only
+typed arguments. `compiler.kind(decl)` says what it receives — `Element` (a native tag: `decl.name`, its static
+attributes) or `Component` (`compiler.component(decl)` the component's own handle); an annotation that takes only
 one refuses the other at the annotation ("`div` is an element"). `html` reads the **meta the annotation
 records**, by type, never the name: `RawBody` (this front), `isInline`'s style meta (119; `isGlobal` and `defineVars` went with 338), `Hydrate` / `Defer`
 (120), the transition types (126), `styled`'s `StyledMeta` (383) — each reader appended by its front —; an

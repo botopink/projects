@@ -10,7 +10,7 @@
 Criterion: decisions 115–117 — a shared package only when **two or more libraries** (or server and
 browser) need the same code and decision 113 keeps it out of each framework. Names no framework, no
 protocol of its own, no state beyond an inline host table (`persistent_term` / `globalThis`, as in
-`repository/validation/src/messages.bp`), `.bp` only with inline `#[@External]` templates,
+`repository/validation/src/messages.bp`), `.bp` only with inline `#[compiler.external(…)]` templates,
 `["erlang", "commonJS"]` erlang first, imports only std and the shared packages it declares. Generic,
 protocol-free code → **std** ([`97-std-dedupe`](../../../machine-2/144-backends-tooling/97-std-dedupe/context.md)).
 

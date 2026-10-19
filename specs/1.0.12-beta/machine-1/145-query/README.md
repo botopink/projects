@@ -34,18 +34,18 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 #### Step 2 — `QueryContext`, `QueryTable` and the SQL target (397) (was `137-erika-sql` s2)
 
 - [x] `pub behavior QueryContext` in `erika.bp`: running a statement (SQL text and bound parameters) answering
-      `@Result<T[], E>`, the error a parameter of the behavior, so erika names no library's error (the exact
+      `Result<T[], E>`, the error a parameter of the behavior, so erika names no library's error (the exact
       signature in `docs.md`); `pub type QueryTable(name: string, columns: QueryColumn[])` and
       `QueryColumn(field, column)`, the meta a persistence library records on an entity
 - [ ] typed parameters (427): `pub type QueryParam { Int, Float, Text, Bool, Bytes, Null }`; `QueryContext<E>` declares
-      `runMany<T>(sql, params: QueryParam[], decode)` / `runOne<T>(…) -> @Result<?T, E>` (426) and `run(sql, Array<string>)`
+      `runMany<T>(sql, params: QueryParam[], decode)` / `runOne<T>(…) -> Result<?T, E>` (426) and `run(sql, Array<string>)`
       goes; each hole's variant from the field its column is (`?T` → `Null` or the variant), a `limit` hole `Int`; a hole of
       another type an error at the hole — `reject/erika_hole_type_mismatch`, the recording context's params per variant
-- [ ] `query`, erika's template method on every `QueryContext` — `pub fn query<E>(comptime self: @Expr<QueryContext<E>>,
-      comptime q: @Expr<string>) -> @Expr<@Result<unknown[], E>>` (397 (3), 415; the template method is `01-checker` step 29's): `self.db.query "select * from User where active = true"`; an `Array<T>`
+- [ ] `query`, erika's template method on every `QueryContext` — `pub fn query<E>(syntax self: QueryContext<E>,
+      syntax q: string) -> Result<unknown[], E>` (397 (3), 415; the template method is `01-checker` step 29's): `self.db.query "select * from User where active = true"`; an `Array<T>`
       source keeps the in-memory form (`erika "…"`, today's fluent pipeline)
 - [ ] `from User` names a type, resolved at the call site (`e.lookup`, 112): not imported is an error at the
-      token; on a `QueryContext` it reads `q.lookup("User")`'s `@Decl` and its `meta(QueryTable)` at build (415, `01-checker` step 39) — no meta is an error at
+      token; on a `QueryContext` it reads `compiler.lookup(q, "User")`'s declaration handle and its `meta(QueryTable)` at build (415, `01-checker` step 39) — no meta is an error at
       the query ("`User` is not an entity"), a field `User` lacks an error at the field —, and the SQL text with
       `$1…$n` parameters in hole order is built at build from the type's table and columns
 - [ ] cells: the SQL text and parameters a recording `QueryContext` receives, for every clause; an entity
@@ -54,9 +54,9 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 #### Step 3 — the number of rows is written (was `137-erika-sql` s3)
 
 - [ ] an answer `?T` requires `limit 1`, an answer `T[]` (or `Array<T>`) refuses it; a mismatch is a
-      compile error at the query naming the declared answer (decision 312) — `query` builds `runOne` (`@Result<?Row, E>`)
-      under `limit 1`, `runMany` (`@Result<Row[], E>`) otherwise, and the call's type is the built code's (426), with
-      `q.note("query answers a list — add limit 1 for ?User")` on the list branch
+      compile error at the query naming the declared answer (decision 312) — `query` builds `runOne` (`Result<?Row, E>`)
+      under `limit 1`, `runMany` (`Result<Row[], E>`) otherwise, and the call's type is the built code's (426), with
+      `compiler.note("query answers a list — add limit 1 for ?User")` on the list branch
 - [x] in memory `limit n` is `take(n)`; `?T` answers `first()`
 
 #### Step 4 — the grammar grows (was `137-erika-sql` s4)
@@ -92,7 +92,7 @@ commonJS and erlang, `botopink build` of `examples/query-linq`, erika's pre-comm
 #### Step 1 — `query-test`'s first helper and `query-linq`'s README (was `98-packaging-tail` s1)
 
 `modules/query-test/src/asserts.bp`: `assertRows(loc: SourceLocation, q: Query<T>) ->
-@Result<void, string>`, `q.toArray()` one row per line through `snapshots.assertAs(loc, "rows",
+Result<void, string>`, `q.toArray()` one row per line through `snapshots.assertAs(loc, "rows",
 text)`; `test/asserts_test.bp`, one accepted snapshot per target-shared file.
 `examples/query-linq/README.md`: the LINQ operators it mirrors; erika has no front this milestone.
 

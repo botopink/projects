@@ -44,7 +44,7 @@ Each merge, four edits:
 
 1. **Files move** into a sub-directory named after the merged member — the shape of `sql/`,
    `pulsar/`, `jms/` (the tree's convention, not the decision's; step 0's export measurement can
-   refuse it). Sidecar keeps file name and atom, so no `#[@External.Erlang]` template changes.
+   refuse it). Sidecar keeps file name and atom, so no `#[compiler.external(.Erlang(…))]` template changes.
    `rakun-ws` keeps `ws/` (merged, not renamed).
 2. **Absorber's `botopink.json` and `src/root.bp`** gain the `files` entries and `pub mod` lines,
    appended after its own, plus the merged member's missing dependencies (`rakun-cli` gains

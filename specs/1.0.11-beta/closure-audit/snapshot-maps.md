@@ -1,7 +1,7 @@
 # snap-eval — the nine 1.0.11 snapshot maps, case by case
 
 Read-only evaluation (nothing under `/home/user/repo` edited). Measured on the libraries' remote `feat`
-as checked out under `repository/`, against `specs/1.0.11-beta/decisions-taken.md` and the 1.0.10
+as checked out under `repository/`, against `specs/decisions-taken-steps.md` and the 1.0.10
 contract (`specs/1.0.10-beta/01-std/snapshots.md`, `asserts-api.md`, `contracts.md` § 7,
 `02-packaging/README.md` § 5).
 

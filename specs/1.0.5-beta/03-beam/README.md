@@ -237,7 +237,7 @@ tuples, the wasm box and `loop`; 13 takes named-type identity.
 and identity inside the value), and re-records 188 + 130 snapshots across
 `snapshots/codegen/{erlang,beam}/`. The two cannot run at the same time.
 
-[`../decisions-pending.md` #4](../decisions-pending.md) asks this for the milestone and recommends
+[`../decisions-pending.md` #4](../../decisions-pending.md) asks this for the milestone and recommends
 **(a) 14 → 13 → the backends**. This front's measurement agrees with it for every row **except one**,
 and the exception is not a preference — it is a sequencing constraint:
 
@@ -315,7 +315,7 @@ Step 1 moves the `.S` text of 11 snapshots and **no** RUN LOG. Step 2 moves 17 R
    emitter that still carries a run-time template evaluator, and BR5 re-records 11 `.S` texts and no
    RUN LOG, so it is the cheapest row to pull forward. The three options and their measured costs
    are in [Ordering against `13-module-identity`](#ordering-against-13-module-identity); the
-   milestone question is [`../decisions-pending.md` #4](../decisions-pending.md). F2/F3/F4 land
+   milestone question is [`../decisions-pending.md` #4](../../decisions-pending.md). F2/F3/F4 land
    with 13.
 4. **03 × [`14-comptime-on-beam`](../14-comptime-on-beam/README.md) — `no`.** 14 runs comptime evaluation on beam and reads
    `beam_asm.zig` and `beam/**` to do it. Sequence them, or 14 takes a carve-out named in its README.
@@ -339,7 +339,7 @@ Step 1 moves the `.S` text of 11 snapshots and **no** RUN LOG. Step 2 moves 17 R
 
 ## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
 
-**One lowering: the index expression.** [Decision 30](../decisions-taken.md) landed in the parser as a
+**One lowering: the index expression.** [Decision 30](../../decisions-taken-steps.md) landed in the parser as a
 builtin call — `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`, contract at
 `ast.zig:1681-1703` — so `xs[0]`, `d["k"]`, `s[0]` and the slice `xs[0..2]` (the same node with a
 `range` second argument) all arrive as one shape. Until this backend lowers it, the form falls into the

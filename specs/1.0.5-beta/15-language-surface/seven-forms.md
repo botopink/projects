@@ -1,6 +1,6 @@
 # The seven forms of decision 14, reproduced
 
-[Decision 14](../decisions-taken.md#14-seven-forms-that-do-not-parse) settles the seven spellings
+[Decision 14](../../decisions-taken-steps.md) settles the seven spellings
 [front 17 of 1.0.4-beta](../../1.0.4-beta/17-language-test-expansion/README.md#cells-not-written)
 found while writing cells: four are made to parse, three are recorded as deliberately absent.
 

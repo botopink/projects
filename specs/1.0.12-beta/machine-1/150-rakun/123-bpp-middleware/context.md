@@ -52,7 +52,7 @@ declaration — no string key — any `T`:
 ```bp
 pub val currentUser = atom<?User>(null);     // cardume's atom (296); rakun-cardume holds the request's store
 
-// middleware — a hook context: `-> @Component<Response>` (354)
+// middleware — a hook context: `-> Component<Response>` (354)
 val setUser = use atomSetter(currentUser);    // fn(User) — cardume's hook (296)
 setUser(u);
 
@@ -61,7 +61,7 @@ val user = use local(currentUser);            // ?User — null when nobody set 
 ```
 
 Values live in the request's process frame, die with it. Middleware, route handlers and actions
-return `@Component<Response>` (354) so they may `use`; the request is the root context
+return `Component<Response>` (354) so they may `use`; the request is the root context
 `RequestContext`, provided by rakun's pipeline (354); rakun's hooks (`atomSetter`, `cookie`,
 `cookieSetter`) and jhonstart's (`local`, `cookie`) act over the same atoms. `LocalKey<T>(name)` and its run-time name clash go.
 

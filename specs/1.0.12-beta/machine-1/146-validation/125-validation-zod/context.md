@@ -5,7 +5,7 @@
 **Priority:** high for the step 0–2 residue (`08-bpp/121` content collections and `08-bpp/127`
 actions take the `#[validated]` type — decision 306); medium for the rest · **State:** partial: steps 0–3 done;
 steps 4–12 landed in 306's shape but for the boxes that wait on `01-checker` steps 24 / 28, 134 step 4,
-`@typeInfo(T).fields` and the `Decl.variants` gap (step 9's meta-schema check, decision 399, is built: Ajv vendored under `test/tools/`)
+`compiler.typeInfo(T).fields` and the `Decl.variants` gap (step 9's meta-schema check, decision 399, is built: Ajv vendored under `test/tools/`)
 **Depends on:** `01-compiler/01-checker` step 24 (decision 280, step 7) · decision 325 (07-j: every step, 306's shape). Written against decisions 144 (undeclared keys), 145 (emitted names),
 183 (`07-m`: coercion, step 6), 257 (`07-n`: `Schema<T>` lives in `validation` — amended by 306: the
 place stays, the value is private), 306–308
@@ -39,13 +39,13 @@ the field and type markers of steps 4–12) — 246 tests in twenty-seven files,
 commonJS. Consumers: rakun's `rakun/src/{config,config_check}.bp` (its `Duration` / `DataSize` are `#[validated]`) and `onze-content`'s collections (a type's `parse`).
 
 Already provided: JSON tree `json.Json { Null, Bool, Num, Str, Arr, Obj }`,
-`json.decode(s) -> @Result<Json, string>` (document order, duplicates refused), `Json` methods `members` / `field` /
-`items` (97) · fallible return `@Result<T, E>`, `try`, `try … catch`, `case` (`docs.md`) · `A | B`,
+`json.decode(s) -> Result<Json, string>` (document order, duplicates refused), `Json` methods `members` / `field` /
+`items` (97) · fallible return `Result<T, E>`, `try`, `try … catch`, `case` (`docs.md`) · `A | B`,
 `unknown`, `x is T` · `#(A, B)`, `type Shape { Circle(radius: f64) }`, `?T` · `Dict<K, V>`, `Set<T>`
 (`libs/std/src/collections.bp`) · field defaults `type Port(number: i32 = 80, host: string)` ·
 derived records `partial(T)`, `pick`, `omit`, `mergeRecords` (`comptime/infer.zig`; `Type.partial` /
 `Type.pick` / `Type.omit` / `Type.merge` / `Type.required` with 307) · type-writing
-decorator `@emit("pub type …")` (`rakun-data/src/orm/entity.bp`) · text helpers `regex.compile` /
+decorator `compiler.addType(name, …)` (605 (2); `rakun-data/src/orm/entity.bp`) · text helpers `regex.compile` /
 `captures`, `unicode.normalize` / `codepoints`, `url.parse`, `encoding.base64Decode` / `hexDecode`,
 `clock.parseIso8601` / `toCivil`, `string.parseFloat` (97).
 
@@ -59,11 +59,11 @@ field's `typeName` and `annotations`; `decl.variants`) and the decorator gives t
 
 | Member | Zod's |
 |---|---|
-| `T.parse(input: Json) -> @Result<T, ValidationReport>` | `.parse` / `.safeParse` |
-| `T.parseAt(input: Json, at: string) -> @Result<T, ValidationReport>` | the same, for a value at path `at` of a larger document — what a nested field calls |
-| `T.decode(text: string) -> @Result<T, ValidationReport>` | `.parse(JSON.parse(text))`, a syntax error as one violation coded `invalidJson` |
-| `T.bind(pairs: Array<#(string, string)>) -> @Result<T, ValidationReport>` | `z.coerce.*` over a form or a query |
-| `T.encode(v: T) -> @Result<Json, ValidationReport>` | `.encode` |
+| `T.parse(input: Json) -> Result<T, ValidationReport>` | `.parse` / `.safeParse` |
+| `T.parseAt(input: Json, at: string) -> Result<T, ValidationReport>` | the same, for a value at path `at` of a larger document — what a nested field calls |
+| `T.decode(text: string) -> Result<T, ValidationReport>` | `.parse(JSON.parse(text))`, a syntax error as one violation coded `invalidJson` |
+| `T.bind(pairs: Array<#(string, string)>) -> Result<T, ValidationReport>` | `z.coerce.*` over a form or a query |
+| `T.encode(v: T) -> Result<Json, ValidationReport>` | `.encode` |
 | `T.jsonSchema() -> string` | `z.toJSONSchema` |
 | `T.options() -> Array<string>` (an enum) | `.options` / `.values` |
 
@@ -99,7 +99,7 @@ pub type Pet = Cat | Dog | Fish;                                 // was schemas.
 
 - A loose value: declare a type, or call the `constraints.v*` predicates.
 - Another library takes the **type**: `comptime source: type T`, refused unless
-  `@typeInfo(T).meta(Validated)` (298) — `collection(BlogPost)` (121), `paginate(…, Astronaut)` (117),
+  `compiler.typeInfo(T).meta(Validated)` (298) — `collection(BlogPost)` (121), `paginate(…, Astronaut)` (117),
   an action's input and output from its signature (127).
 - A `surface.md` row no declaration says naturally (`pipe`, `xor`, `both`, `lazy`, `custom`, …): a
   marker where one reads well on a field, else `n/a (306)` with its reason.
@@ -159,8 +159,8 @@ Every step, in 306's shape; `surface.md` re-sorted into marker, declared type or
   `fromJSONSchema`, JIT switches — each `n/a` with reason in `surface.md`. None is "later".
 - **Async:** derived schemas are synchronous. `schemas.refineAsync` (private after 306; step 12
   sorts its row) answers a `Schema` whose `parse`
-  is `-> @Task<@Result<…>>`; on erlang `@Task` is eager (`language-gaps.md` lg2-b) — "may call a
-  `@Task` function", not "concurrent".
+  is `-> Async<Result<…>>`; on erlang `Async` is eager (`language-gaps.md` lg2-b) — "may call a
+  `async fn`", not "concurrent".
 - **Cross-backend regex:** intersection of PCRE (`re:run/2`) and ECMAScript, grammar at
   `constraints.bp:212-219`: no backslash class, no lookaround. Formats not sayable in it — `emoji`,
   `ipv6`, `iban`, `creditCard`, the ISO family — are walks; `parity_test.bp` holds the claim.

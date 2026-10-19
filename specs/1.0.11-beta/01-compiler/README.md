@@ -122,12 +122,12 @@ is at its header (measured: no line).
 ## Decisions the maintainer owes
 
 The lettered ids are 1.0.10's and are not renumbered; the answers move to
-[`../decisions-taken.md`](../decisions-taken.md) with the next free number (**146**). New questions
+[`../decisions-taken.md`](../../decisions-taken-steps.md) with the next free number (**146**). New questions
 continue each front's series. Every recommendation is the most restrictive behaviour with no
 configuration that bypasses it (decision 67).
 
 **Open from 1.0.10, unchanged in text** (the full statement is in
-[`../../1.0.10-beta/decisions-pending.md`](../../1.0.10-beta/decisions-pending.md) under the same id):
+[`../../decisions-pending.md`](../../decisions-pending.md) under the same id):
 
 | Id | Question | Blocks |
 |---|---|---|

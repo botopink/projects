@@ -1,6 +1,6 @@
 # The written surface against the parser
 
-The seven forms of [decision 14](../decisions-taken.md#14-seven-forms-that-do-not-parse) were found
+The seven forms of [decision 14](../../decisions-taken-steps.md) were found
 **by accident**, while writing test cells. This file is the deliberate version: every concrete
 spelling the project's documents and sources write, probed against the compiler.
 
@@ -117,7 +117,7 @@ belong to [`01-checker`](../01-checker/README.md).
 | `case x { 0 when (x == 0) { 1 } _ { 2 } }` | `decision-8:276-284` | same | step 4 |
 | `case s { Shape.Circle(r) { … } .Square(s) { … } }` | `MIGRATION.md:192-193` | `non-exhaustive: missing variant(s) Circle, Square` — a **qualified or leading-dot** variant pattern contributes nothing to exhaustiveness, in the arrow form too | step 5 |
 | `x is i32` as a value; `if (a is i32) { … }` | `decision-8:200-210` | `expected bool, got void` — `is` produces `void` | step 3 |
-| `assert x is Some(n)` | `decision-8:223` | `error[is-variant-binding]` — a direct contradiction of §4.2, and [decision 25](../decisions-taken.md) settles it: `is` does not bind | step 3 / closed |
+| `assert x is Some(n)` | `decision-8:223` | `error[is-variant-binding]` — a direct contradiction of §4.2, and [decision 25](../../decisions-taken-steps.md) settles it: `is` does not bind | step 3 / closed |
 | `val v: i32 \| string = 1;`; `f(1)` into a union parameter | `decision-8:140`, `:173` | `expected \|, got i32` — nothing is assignable **into** a union, so a union parameter can never receive an argument | step 2 |
 | `case v { i32 { … } string { … } }` on a union | `decision-8:176-180` | `expected i32, got union` | steps 2, 4 |
 | `val a: unknown = 42;`; `-> unknown` | `decision-8:104`, `:155` | `expected unknown, got i32` | step 1 |
@@ -131,9 +131,9 @@ belong to [`01-checker`](../01-checker/README.md).
 
 | Form | Written at | Today | Proposed owner |
 |---|---|---|---|
-| **`Option.None`, `Option<i32>.None`, `Some(1)`** | `decision-8:66`, `:84`, `docs.md:396` | `unbound variable 'Option'` / `'Some'` — **no `Option` enum is in scope at all**, although `?T` optionals and `.unwrapOr()` work | **unowned** — `libs/std`, and the same shape as [decision 2](../decisions-taken.md#2-optiont-does-not-exist-either) ("`?T` is the only spelling"), which suggests the documents are wrong rather than the compiler |
+| **`Option.None`, `Option<i32>.None`, `Some(1)`** | `decision-8:66`, `:84`, `docs.md:396` | `unbound variable 'Option'` / `'Some'` — **no `Option` enum is in scope at all**, although `?T` optionals and `.unwrapOr()` work | **unowned** — `libs/std`, and the same shape as [decision 2](../../decisions-taken-steps.md) ("`?T` is the only spelling"), which suggests the documents are wrong rather than the compiler |
 | **`any`** parses and checks, and `libs/std/src/builtins.d.bp:88` uses it as a default type argument (`behavior It<T, E = any, C = void>`) | `decision-8:129-133` says `any` **does not exist** | accepted everywhere | **unowned** — the standard library depends on a type the language decision deletes |
-| `#[@asyncGenerator] fn f() -> @AsyncGenerator<i32>` | `decision-8:436`, `MIGRATION.md:238` | `effect-wrapper-mismatch: requires -> @AsyncIterator<…>` | **08-hygiene** — [decision 1](../decisions-taken.md#1-asyncgeneratort-does-not-exist) settled the compiler is right; the two documents still say otherwise |
+| `#[@asyncGenerator] fn f() -> @AsyncGenerator<i32>` | `decision-8:436`, `MIGRATION.md:238` | `effect-wrapper-mismatch: requires -> @AsyncIterator<…>` | **08-hygiene** — [decision 1](../../decisions-taken-steps.md) settled the compiler is right; the two documents still say otherwise |
 | `#[@External.Node("$stringify($0)")]` | `libs/std/src/builtins.d.bp:156` | `compilation failed  PrimOpStringifyUnsupported` on node; the erlang target accepts it | **04-js** |
 | `loop { break 1; }` yields an **array**, not the value | `docs.md:533` | an array | **02-erlang** / **04-js** — already in their rows |
 

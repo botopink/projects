@@ -29,8 +29,8 @@ formatter and merge boxes of the gate.
 
 ## Mechanism
 
-The workspace rule of decisions [75](../decisions-taken.md#75-a-workspaces-manifest-npm-style-declares-a-librarys-members)
-and [76](../decisions-taken.md#76-dependencies-is-the-object-form-only). `repository/botopink-lang/docs/botopink-json.md` is the authority for every field
+The workspace rule of decisions [75](../../decisions-taken-steps.md)
+and [76](../../decisions-taken-steps.md). `repository/botopink-lang/docs/botopink-json.md` is the authority for every field
 and every message; this section states what the rule means for a library.
 
 ### 1. One reader, two kinds of manifest

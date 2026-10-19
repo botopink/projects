@@ -71,8 +71,8 @@ and only emilia uses it. Stands on:
   the pure form (`06-emilia/34` step 1); a decorator calls a host function only with the cells its package's targets need (decision
   341, `01-compiler/14` step 6).
 - `q.source()` answers `Source(file, line, col)` (`libs/std/src/builtins.d.bp`, `Source`).
-- A `@Component<T>` body (354) may write `use`; a template function reads a function's hooks through
-  `@typeInfo(f).hooks` (128, 277).
+- A `Component<T>` body (354) may write `use`; a template function reads a function's hooks through
+  `compiler.hooks(f)` (128, 277).
 
 ## Mechanism
 
@@ -81,26 +81,26 @@ manifest, `data-s` or jhonstart:
 
 | Layer | Where | Is | Imported by |
 |---|---|---|---|
-| `css` — the base for building CSS | `repository/css` (`botopink/css`) | a reader of a stylesheet (rules, at-rules, comments, strings, `{ }` nesting) into a typed `Sheet`; its renderer; `scope(id, css) -> @Result<string, string>`. Pure botopink, both targets, no host cell | `styled` |
+| `css` — the base for building CSS | `repository/css` (`botopink/css`) | a reader of a stylesheet (rules, at-rules, comments, strings, `{ }` nesting) into a typed `Sheet`; its renderer; `scope(id, css) -> Result<string, string>`. Pure botopink, both targets, no host cell | `styled` |
 | `styled` — the base for building CSS components | `repository/rakun/modules/rakun-style` (`botopink/styled`) | `styled "…"` and `styledProperty "…"`; the layered sheet; the theme mechanism; `behavior Styleable` | emilia · `jhonstart-styled` |
 | emilia — a series of components built with `styled` | `repository/rakun/modules/rakun-stylesheet` | the tokens, Tailwind's theme values (`defaultTheme()`), each family a `styledProperty` (`06-emilia/34` steps 3, 5) | the application |
 
 Two consumers of `styled` (emilia, `jhonstart-styled`): decisions 115–117's criterion, under 326
 (own repositories, ordinary dependencies).
 
-**`styled`.** Two template functions over `comptime css: @Expr<string>`, both components in the
+**`styled`.** Two template functions over `syntax css: string`, both components in the
 language's model (354, the pattern of 276's `View`):
 
 ```bp
 // styled/src/styled.bp
 pub type StyledSheet(…);                                  // the render's sheet, the layer
 pub val StyledContext = comptime createContext(StyledSheet.missing());  // read use context(StyledSheet) (378, 379)
-pub type Styled(className: string, rules: string) implement @Renderable;
-pub type StyledView = @Component<Styled>;
+pub type Styled(className: string, rules: string) implement Renderable;
+pub type StyledView = Component<Styled>;
 pub type StyledProperty(declarations: string);        // a value, never a component (381)
 
-pub default fn styled(comptime css: @Expr<string>) -> @ExprCustom<StyledView> { … }
-pub fn styledProperty(comptime css: @Expr<string>) -> @ExprCustom<StyledProperty> { … }
+pub default fn styled(syntax css: string) -> StyledView { … }
+pub fn styledProperty(syntax css: string) -> StyledProperty { … }
 pub behavior Styleable { fn toStyled(self: Self) -> StyledView; }   // StyledView
 ```
 
@@ -141,11 +141,11 @@ pub val code = styled """
 
 | Piece | Does |
 |---|---|
-| its `pub default fn` — what `"bpp".style` names | a template function over the section's text answering a scoped `@Component<Styled>`: scope id (module path and section line, sanitised to `[a-z0-9-]`, `components-post-card-12`), the sheet scoped through `css.scope`, the run-time holes |
+| its `pub default fn` — what `"bpp".style` names | a template function over the section's text answering a scoped `Component<Styled>`: scope id (module path and section line, sanitised to `[a-z0-9-]`, `components-post-card-12`), the sheet scoped through `css.scope`, the run-time holes |
 | run-time holes | a hole whose value is known at build is written into the rule; one known only at render becomes `var(--s-<n>)` in the rule and `style="--s-<n>: …"` on the template's root element, escaped by `escape.css` (a `97-std-dedupe` row) — Astro's `define:vars`, with no annotation |
 | the `StyledContext` provider | `use provide(createContext(<the render's StyledSheet>))` at the render's root (379): styled components computed at render write to that sheet (352, 354); at a prerender, the build's sheet |
 | the sink | writes the render's one `styled` sheet — emilia's layers, then scoped styles in render order — in the head and each boundary fill (step 3), after linked sheets; payload key `s` (`contracts.md` § 6a) |
-| `#[styled(comptime decl: @Decl, comptime ..items: Styleable[])]` | records `ClassName(names: […])` (302); takes the application's `styled` components only — emilia's tokens reach a tag through emilia's own `#[emilia(…)]` (369), whose meta, a type `styled` declares, `html` reads beside `ClassName`: `<button #[styled(btn)] #[emilia(.Pad.All.4)]>` (step 4) |
+| `#[styled(syntax decl: unknown, comptime ..items: Styleable[])]` | records `ClassName(names: […])` (302); takes the application's `styled` components only — emilia's tokens reach a tag through emilia's own `#[emilia(…)]` (369), whose meta, a type `styled` declares, `html` reads beside `ClassName`: `<button #[styled(btn)] #[emilia(.Pad.All.4)]>` (step 4) |
 
 **A component activates its style with `use`** (338): `html` reads the `use` of a scoped style in
 the function's hooks and writes `data-s="<id>"` on every element that function's template writes; a

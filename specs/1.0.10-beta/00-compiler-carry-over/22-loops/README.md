@@ -17,7 +17,7 @@ Paths are relative to `repository/botopink-lang/modules/compiler-core/src/`.
 
 ---
 
-## The surface — [decision 105](../../decisions-taken.md#105-three-loop-keywords-and-generator-loop-is-a-generator-scope), with 122 and 125
+## The surface — [decision 105](../../../decisions-taken-steps.md), with 122 and 125
 
 | Form | Does | Is an expression? |
 |---|---|---|

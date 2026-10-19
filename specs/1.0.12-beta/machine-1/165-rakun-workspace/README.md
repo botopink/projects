@@ -48,7 +48,7 @@ front 145 continues as `query`), `css`, `actions`, `routing`, `validation`, `sna
 
 **Plug-and-play.** Adding a package to `botopink.json` is all a program does. Each package declares what it contributes
 at its root, `#[rakun.module] pub fn service() -> Module`, and `rakun.boot()` in the program's `main` discovers every
-module of the program's dependencies through the catalogue (`@TypeInfo.all(with: rakun.module)`), orders them by the
+module of the program's dependencies through the registry each `#[rakun.module]` executor writes (`registry.modules()`, 664, 665), orders them by the
 declared layers and starts them; a module carries its defaults and reads the program's overrides from a
 `#[rakun.config]` record (a typed config: a wrong field is a build error). Everything resolves at build: two packages
 contributing one thing (two HTTP servers) is a build error naming both; a package another requires and the program
@@ -122,7 +122,7 @@ lacks is a build error naming it; removing the dependency removes the module; no
       the function at run time, checked against `make`; the hooks `use inject(x)` (a module started once, on demand, the
       boot order the dependency order) and `use onStop(f)`; `rakun.boot()` ordinary run-time code mounting each module
       into a `ServiceScope` (the `RenderScope` without a DOM, 388, 504) by `case (m.lifecycle)`, `start(name) ->
-      @Result<void, string>` for `.Manual`, `registry.find(name) -> ?Module`; `#[rakun.config]` and the typed overrides;
+      Result<void, string>` for `.Manual`, `registry.find(name) -> ?Module`; `#[rakun.config]` and the typed overrides;
       the two build errors (one thing contributed twice; a required package absent), each a cell
 - [ ] every `@TypeInfo.all` site gone with s10 (576 (7)); no build body reads the list — `compiler.find` is gone (665), every reader is a registry
 - [ ] every package declares its module at its root with its defaults; `examples/` of a program that adds one package

@@ -50,7 +50,7 @@ inbound:  08-bpp/119 step 1 ──► the repositories `css` and `styled`, befor
 
 ## Decisions
 
-Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md) § Track D):
+Confirmations kept from 1.0.10 ([`../../../../decisions-pending.md`](../../../../decisions-pending.md) § Track D):
 
 | Id | Choice | Closes |
 |---|---|---|

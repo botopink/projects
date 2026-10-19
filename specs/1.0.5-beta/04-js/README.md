@@ -223,7 +223,7 @@ name and the emitter writes the word.
 
 | # | Row | Acceptance |
 |---|---|---|
-| T1 (= [`../decisions-pending.md` #5](../decisions-pending.md)) | a **unit variant** is emitted as the tagged object the `.d.ts` declares — `Nothing: { tag: "Nothing" }` — or the `.d.ts` declares the string. Pick one and make both ends say it; the tagged object is the shape §7's F3 and step 2's D4 both read | `pub type Shape { Square(side: i32), Nothing }` emits a `.js` and a `.d.ts` that agree, and `node --check` passes |
+| T1 (= [`../decisions-pending.md` #5](../../decisions-pending.md)) | a **unit variant** is emitted as the tagged object the `.d.ts` declares — `Nothing: { tag: "Nothing" }` — or the `.d.ts` declares the string. Pick one and make both ends say it; the tagged object is the shape §7's F3 and step 2's D4 both read | `pub type Shape { Square(side: i32), Nothing }` emits a `.js` and a `.d.ts` that agree, and `node --check` passes |
 | T2 | **botopink primitive names stop leaking into the `.d.ts`** — `i32` → `number`, `f64` → `number`, `string` → `string`, `bool` → `boolean`, `?T` → `T \| null`, `#(A, B)` → `[A, B]` | **24** of the 25 non-empty typedefs carry one today; after the row, 0 do, and `tsc --noEmit` accepts every emitted `.d.ts` |
 | T3 | decision 8's new types reach the `.d.ts`: `unknown` → `unknown`, `A \| B` → `A \| B` | a fixture per form |
 
@@ -353,7 +353,7 @@ row.
 
 ## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
 
-**One lowering: the index expression.** [Decision 30](../decisions-taken.md) landed in the parser as a
+**One lowering: the index expression.** [Decision 30](../../decisions-taken-steps.md) landed in the parser as a
 builtin call — `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`, contract at
 `ast.zig:1681-1703` — so `xs[0]`, `d["k"]`, `s[0]` and the slice `xs[0..2]` (the same node with a
 `range` second argument) all arrive as one shape. Until this backend lowers it, the form falls into the
@@ -387,7 +387,7 @@ Six commits on `fix/js`, cold gate green, 4 of 315 snapshots re-recorded and eac
 | commit | row |
 |---|---|
 | `f1757f4` | the three defects [`01-checker`](../01-checker/README.md) handed over |
-| `17e2059` | [decision 30](../decisions-taken.md#30-is-there-an-index-expression)'s index expression |
+| `17e2059` | [decision 30](../../decisions-taken-steps.md)'s index expression |
 | `6196b86` | step 2 **D4** — decision 8 §5's arm shapes |
 | `37efbd4` | step 6 **T3** — a union in the `.d.ts` |
 | `1b86bc3` | step 8 — the IIFE sites classified (docs only) |
@@ -429,11 +429,11 @@ optionals are explicit `null`s. D4's five shapes and the index expression moved 
 **Left undone:** step 1 F2/F3/F4 (land with [`13-module-identity`](../13-module-identity/README.md);
 the commonJS half already passes) · step 7 / JS-4 — `val Circle(r) = s` still reds `unbound variable
 'r'`, waiting on 01 step 8 R5, so the 8 `Pattern.match` build sites stay · step 8's removal, which
-needs R7 · `d["k"]` on a `Dict`, which is [question 46](../decisions-pending.md) · `tsc --noEmit`,
+needs R7 · `d["k"]` on a `Dict`, which is [question 46](../../decisions-pending.md) · `tsc --noEmit`,
 which the gate line asks for and which **could not be run** — there is no `tsc` in the checkout or on
 `PATH`, so it is unverified rather than claimed.
 
-**Three questions opened:** [45](../decisions-pending.md) (a member access on a `?T`, which also moves
-front 12's `§6 T4` owner row to 01), [46](../decisions-pending.md) (`d["k"]`) and
-[47](../decisions-pending.md) (`undefined` vs `null` for an out-of-range read).
+**Three questions opened:** [45](../../decisions-pending.md) (a member access on a `?T`, which also moves
+front 12's `§6 T4` owner row to 01), [46](../../decisions-pending.md) (`d["k"]`) and
+[47](../../decisions-pending.md) (`undefined` vs `null` for an out-of-range read).
 

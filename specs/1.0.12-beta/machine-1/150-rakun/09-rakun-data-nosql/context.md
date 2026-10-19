@@ -49,7 +49,7 @@ pub behavior DocumentStore {
 ```
 
 Documents and filters are JSON strings; `get` / `findById` / `popRight` answer `?string`; mutators
-answer a count. Under decision 304 every method answers `@Result<…, StoreError>` (08's `StoreError`) — no raise on a driver failure, no `try*` twin; the signatures above are the pre-304 shapes, rewritten in step 6.
+answer a count. Under decision 304 every method answers `Result<…, StoreError>` (08's `StoreError`) — no raise on a driver failure, no `try*` twin; the signatures above are the pre-304 shapes, rewritten in step 6.
 
 | Arm | URL | In the gate | How |
 |---|---|---|---|

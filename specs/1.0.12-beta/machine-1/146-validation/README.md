@@ -4,7 +4,7 @@
 **Repository:** `validation` — worktree `--repo validation` (§ Worktree strategy); a step that carries consumer commits runs in a full worktree, one commit per repository, producer first (decision 188)
 **Model:** sonnet — a library step whose README fixes the design (`AGENTS.md` § Which model a thread runs on); a step that names another tier keeps it; the Conformance step opus
 **Owns:** `repository/validation/**`
-**Depends on:** 144 B-10 G1 (12 markers go), B-16 (derived types, `compiler.Field<T>`), B-19 (298, `@typeInfo(T).fields`)
+**Depends on:** 144 B-10 G1 (12 markers go), B-16 (derived types, `compiler.Field<T>`), B-19 (298, `compiler.typeInfo(T).fields`)
 **Does not touch:** `repository/botopink-lang/**` — a compiler or std gap is a `language-gaps.md` row and this
 front pauses on the 144 step that fixes it (fronts.md rules 1, 9); another library's files except a consumer
 commit (decision 188), producer first.
@@ -12,7 +12,7 @@ commit (decision 188), producer first.
 
 Left by 125 (status.md): `#[tag]`'s refusal and `#[wireName]` (B-10 G1, `Decl.variants`); the type-level
 `#[check]`, `#[map]` / `#[tryMap]` / `#[codec]`, the signature refusals (B-16); `Type`'s derived types (B-16);
-reflection by `@typeInfo(T).fields` and 298 (B-19). typed-member-395's validation patch is landing. 105 edits
+reflection by `compiler.typeInfo(T).fields` and 298 (B-19). typed-member-395's validation patch is landing. 105 edits
 `messages.bp` between two steps of this front, never during one. Consumer commits it receives: B-02, B-08 (17),
 B-20 (the 330 codemod), 142 s1 (`json`).
 
@@ -35,7 +35,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 - [ ] 125 step 7's typed-member route lands in validation (decisions 370, 384, 385, 395, 404, 406): a type-level
       `#[check("…", rule)]` records `Check<T>(message, rule)` as typed meta, `#[validated]` hands on the member
-      `__typeChecks` running every one through `for (comptime @typeInfo(T).metaAll(Check))`, `validate()` (so
+      `__typeChecks` running every one through `for (comptime compiler.typeInfo(T).metaAll(Check))`, `validate()` (so
       `parse`, `decode`, `encode`) appends its violations after the field checks, `#[check]` on a field refused naming
       `#[refine]` — the compiler half is on botopink-lang `feat`; held: on erlang `test/refine_and_messages_example_test.bp`'s case "decode runs the
       type-level rules…" fails while another test module's `Signup` answers `Signup.decode` · 144 B-10 G1 (the
@@ -54,11 +54,11 @@ waits on:
 | 8 | `#[map(f)]`, `#[tryMap(f)]`, `#[codec(decode: f, encode: g)]` — they read `f`'s parameter type | `01-checker` step 24 (280 (2)) |
 | 11 | `#[wireName("salmon")]` on each variant | the **`Decl.variants`** gap row (annotations of variants) |
 | 12 | a located refusal for a field marker's function of the wrong signature (`#[preprocess]`, `#[check]`; `#[map]`, `#[tryMap]`, `#[codec]` with them) | `01-checker` step 24 |
-| 12 | reflection reads the type — `@typeInfo(T).fields`, `@typeInfo(T).meta(Validated)` — and a library takes the type (`comptime source: type T`) | `@typeInfo(T).fields` (`typeinfo-unknown-member`, `01-checker`) · 298 |
+| 12 | reflection reads the type — `compiler.typeInfo(T).fields`, `compiler.typeInfo(T).meta(Validated)` — and a library takes the type (`comptime source: type T`) | `compiler.typeInfo(T).fields` (`typeinfo-unknown-member`, `01-checker`) · 298 |
 
 Step 3 touches step 24 in one place: `#[gt]`, `#[lt]` and `#[multipleOf]` declare their bound
 `comptime value: f64` and `#[validated]` gives it the field's type from the lexeme (`5` → `5.0` on an
-`f64` field, a fraction refused on an integer one); under 280 (2) the bound is `@Decl<T>`'s `T` —
+`f64` field, a fraction refused on an integer one); under 280 (2) the bound is the `T` of `syntax decl: T` —
 step 24's migration of the markers rewrites those three signatures, `#[orElse]` / `#[fallback]`'s
 values (step 11) and `#[validated]`'s run-time `form` (a comptime parameter takes no default —
 `language-gaps.md`).

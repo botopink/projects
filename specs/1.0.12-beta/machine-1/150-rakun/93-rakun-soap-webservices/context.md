@@ -26,7 +26,7 @@ envelopes and faults over `xmerl`, the client over `rakun-client` with WS-Securi
 published endpoint dispatching on the wrapped element and serving the WSDL unmodified. No generator.
 
 - **Generator (step 2).** `src/ws/generate.bp`: `generate(wsdlPath: string, outDir: string) ->
-  @Result<string[], string>` reads the WSDL and its local `xsd:import`s through std's `fs` at run
+  Result<string[], string>` reads the WSDL and its local `xsd:import`s through std's `fs` at run
   time; walks the targeted subset (elements, complex types with sequence/all, simple types
   with enumeration and restriction, `minOccurs`/`maxOccurs`, local imports) into records and an
   enum-shaped `type` per enumeration; refuses the closed table's thirteen constructs (choice, any,

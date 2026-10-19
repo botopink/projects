@@ -26,11 +26,13 @@ decision 167's refusal off the BEAM). Figures from 1.0.10's `17-beam-memory/desi
 > beam. Two writes through a `fn` and one read print `2`:
 >
 > ```botopink
+> import {io.terminal} from "std";
+>
 > var hits: i32 = 0;
 >
 > pub fn bump() { hits = hits + 1; }
 >
-> pub fn main() { bump(); bump(); @print(hits); }
+> pub fn main() { bump(); bump(); terminal.print(hits); }
 > ```
 >
 > On the BEAM the annotation `#[@BeamMemory.<member>]` widens where a module `var` lives beyond the

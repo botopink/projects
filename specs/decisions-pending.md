@@ -560,8 +560,8 @@ before every other part of this page; each holds one row, or nothing built.
 ### Implementation choices of tracks 00–03
 
 Each implemented with its recommended option; the maintainer confirms or reverses (a reversal is a
-local change in the named place). Full 1.0.10 text under the same id in
-[`../1.0.10-beta/decisions-pending.md`](1.0.10-beta/decisions-pending.md).
+local change in the named place). The full 1.0.10 text of each was under the same id in 1.0.10-beta's pending page, folded into these files on
+2026-10-18 (decision 748); this table is the record.
 
 #### 01-compiler (28)
 

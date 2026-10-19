@@ -25,7 +25,7 @@ number; cost of a `@Result` per iterator item measured.
 ## Decisions
 
 - 24-a, 24-b, 24-c, 24-g — to confirm (statements in
-  [1.0.10's `decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md))
+  [1.0.10's `decisions-pending.md`](../../../../decisions-pending.md))
 
 **Gate:** standard (fronts.md § Gate) + `effect_chain.zig` drift test green · `test-cli`, `test-docs` green
 

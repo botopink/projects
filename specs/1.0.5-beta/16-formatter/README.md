@@ -383,7 +383,7 @@ rather than building it.
 | **06 comptime-dedup** | yes | 06 owns `src/comptime/snapshot.zig` and the comptime snapshot layout; this front writes neither. The parser/AST commit is snapshot-byte-identical, so it does not collide with 06's move even if they land together |
 | **07 review-backlog** | yes | 07 owns `src/codegen/tests/**`, `src/comptime/tests/**`, `src/parser/tests/**` and the language server's tests. **`src/format/tests/**` is in none of those lists** — it was unowned through 1.0.4-beta and this front claims it. Worth stating explicitly so step 5 is not read as a carve-out |
 | **08 hygiene** | **no** — 08 after 16 | 08's sweeps touch `AGENTS.md` everywhere, including `src/format/` and `src/format/tests/`, which steps 3–5 rewrite. One commit per owning file, after this front |
-| **09 ecosystem-residuals** | **seq — 16's steps 3–4 before 09's step 1** | 09 formats and commits the four libraries. Run before step 3, it commits three files from which the formatter has **deleted the `default` keyword** (D1) — emilia's and erika's `root.bp` and erika's `erika.bp` — and, before step 4, a `tokens.bp` whose members it has reordered. Run after, it commits a canonical form that is stable and lossless. 09's R1 classification is this front's step-1 input; the three "information-losing classes" 09 registers against [`01-checker`](../01-checker/README.md) move here, per [decision 18](../decisions-taken.md#18-emilias-tokensbp-and-format---check). No file is shared at any moment — 16 formats copies in a scratch directory |
+| **09 ecosystem-residuals** | **seq — 16's steps 3–4 before 09's step 1** | 09 formats and commits the four libraries. Run before step 3, it commits three files from which the formatter has **deleted the `default` keyword** (D1) — emilia's and erika's `root.bp` and erika's `erika.bp` — and, before step 4, a `tokens.bp` whose members it has reordered. Run after, it commits a canonical form that is stable and lossless. 09's R1 classification is this front's step-1 input; the three "information-losing classes" 09 registers against [`01-checker`](../01-checker/README.md) move here, per [decision 18](../../decisions-taken-steps.md). No file is shared at any moment — 16 formats copies in a scratch directory |
 | **10 cli-residuals** | yes, with a handover | `modules/compiler-cli/src/cli/format_cmd.zig` is 10's, and there is no per-file exemption mechanism in it today. Step 7 proposes the exemption's shape and hands it over; this front edits no line of it |
 | **11 tooling** | yes | No shared file. The language server does not call the formatter |
 | **12 language-tests** | yes | No shared file. A `format` round-trip is not a language cell |
@@ -434,8 +434,8 @@ five libraries still idempotent, `check` exit 0, cells passing (emilia 17, erika
 onze 8, rakun 4).
 
 **emilia's `tokens.bp` formats without reordering now** — which is what
-[decision 18](../decisions-taken.md#18-emilias-tokensbp-and-format---check) held it back for. Under
-[decision 34](../decisions-taken.md)'s (c) there is no exemption mechanism to build or to lift: the
+[decision 18](../../decisions-taken-steps.md) held it back for. Under
+[decision 34](../../decisions-taken-steps.md)'s (c) there is no exemption mechanism to build or to lift: the
 file is formatted like every other one, and the hoist that would have been excused no longer happens.
 
 **Still open here:** steps 1–2 (the classification pass) and the printer arms

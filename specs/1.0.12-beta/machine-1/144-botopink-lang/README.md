@@ -47,7 +47,7 @@ conformance order (fronts.md § Execution order).
 | B-00c | the comptime driver on wasm for every target; a host function reached at build answers by its `std:` cell, else its `fn:` cell, else is refused (452: the comptime never calls beam-to-wasm, never runs an Erlang cell) | opus |
 | B-00d | the BEAM comptime runtime deleted; `snapshots/codegen/{beam,wat}/<target>/` → `snapshots/codegen/<target>/` | sonnet |
 | B-00e | std-wasm linked into the `--target wasm` output, replacing the `wat_prelude` helpers and `wasi:` bindings it implements | opus |
-| B-00f | `@External.Beam` deleted: `@External.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
+| B-00f | `@External.Beam` deleted: `.Erlang` binds erlang and beam, `@External.Beam` refused located (decision 437) | sonnet |
 | B-00h | wasm codegen snapshots show a transpiled std-wasm function as one line with its hash (decision 446) — before B-00g | sonnet |
 | B-00g | `wat_prelude` split: only representation, operators, output and the language runtime stay; std's helpers move to std-wasm, `bigint` to Zig (442); Unicode case mapping (443); `std:` std's alone (445) | opus |
 | B-00i | the Erlang term library (`rt.zig`) and the OTP functions move into std-wasm; `bp_wat_rt.wasm` goes; beam-to-wasm reads std-wasm's OTP table (decision 450) — before B-30 | opus |
@@ -248,7 +248,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-00c | [2](../../machine-2/144-backends-tooling/README.md) | The comptime driver on wasm for every target (decision 434; amends 84, 341) |
 | B-00d | [2](../../machine-2/144-backends-tooling/README.md) | The BEAM comptime runtime deleted; one codegen snapshot tree (decision 434) |
 | B-00e | [2](../../machine-2/144-backends-tooling/README.md) | std-wasm in the user's `--target wasm` output (decision 434 (2)) |
-| B-00f | [2](../../machine-2/144-backends-tooling/README.md) | `@External.Beam` deleted; `@External.Erlang` binds erlang and beam (decision 437) |
+| B-00f | [2](../../machine-2/144-backends-tooling/README.md) | `@External.Beam` deleted; `.Erlang` binds erlang and beam (decision 437) |
 | B-00g | [2](../../machine-2/144-backends-tooling/README.md) | `wat_prelude` keeps only representation, operators, output and runtime (decision 442) |
 | B-00h | [2](../../machine-2/144-backends-tooling/README.md) | A transpiled std-wasm function is one line in a snapshot (decision 446) |
 | B-00i | [2](../../machine-2/144-backends-tooling/README.md) | The Erlang term library and the OTP functions in std-wasm (decision 450) |
@@ -256,7 +256,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-00k | [2](../../machine-2/144-backends-tooling/README.md) | Conformance: the B-00 group's last step (decisions 458, 459) |
 | B-01 | [2](../../machine-2/144-backends-tooling/README.md) | 431 (1): the effect messages and docs |
 | B-02 | [1](../../machine-1/144-checker/README.md) | 305: labelled annotation arguments (`fn:`, `op:`, `wasi:`, `keyed:`) |
-| B-03 | [2](../../machine-2/144-backends-tooling/README.md) | 431 (2): `throws:` on every `@External` variant, checked |
+| B-03 | [2](../../machine-2/144-backends-tooling/README.md) | 431 (2): `throws:` on every `Implementation` variant, checked |
 | B-04 | [2](../../machine-2/144-backends-tooling/README.md) | 431: std `failure` — `HostError`, `Failure` |
 | B-05 | [2](../../machine-2/144-backends-tooling/README.md) | 431 (2): each backend wraps a `throws: true` cell |
 | B-06 | [2](../../machine-2/144-backends-tooling/README.md) | 432: a failing task rejects, on four targets |
@@ -266,15 +266,15 @@ Where each step is (its machine's folder holds its whole text).
 | B-10 | [1](../../machine-1/144-checker/README.md) | 430: the compiler gaps a library works around today |
 | B-11 | [1](../../machine-1/144-checker/README.md) | 316: `decl.wrapWith(f)` |
 | B-12 | [2](../../machine-2/144-backends-tooling/README.md) | 346, 342: `Bytes`, `@embedFile` / `@embedBytes` |
-| B-13 | [2](../../machine-2/144-backends-tooling/README.md) | 304: a method declared `-> @Result` lowered as a `@Result` on erlang |
+| B-13 | [2](../../machine-2/144-backends-tooling/README.md) | 304: a method declared `-> Result` lowered as a `Result` on erlang |
 | B-14 | [1](../../machine-1/144-checker/README.md) | 359: a spread copies a record's fields |
-| B-15 | [1](../../machine-1/144-checker/README.md) | 302: a tag is a `@Decl` |
+| B-15 | [1](../../machine-1/144-checker/README.md) | 302: a tag is a declaration handle |
 | B-16 | [1](../../machine-1/144-checker/README.md) | 280, 307, 308: typed decorator arguments' rest, derived types' rest, `compiler.Field<T>` |
 | B-17 | [1](../../machine-1/144-checker/README.md) | 277, 376, 354–388: hooks, stages, contexts |
 | B-18 | [1](../../machine-1/144-checker/README.md) | 311, 415, 426, 429: templates |
 | B-19 | [1](../../machine-1/144-checker/README.md) | 216, 281, 298, 353, 356: decorator outputs |
 | B-20 | [1](../../machine-1/144-checker/README.md) | 330: the optional operators' rest and their codemod |
-| B-21 | [1](../../machine-1/144-checker/README.md) | 364, 408, 409: `@Expr` hygiene, the typed function expression, the tail value |
+| B-21 | [1](../../machine-1/144-checker/README.md) | 364, 408, 409: `syntax` hygiene, the typed function expression, the tail value |
 | B-22 | [1](../../machine-1/144-checker/README.md) | The backends' and the checker's residue rows |
 | B-23 | [1](../../machine-1/144-checker/README.md) | 247, 255, 310 and the checker's rows |
 | B-24 | [1](../../machine-1/144-checker/README.md) | 319, 320, 332: numbers and strings exact everywhere |
@@ -286,7 +286,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-30 | [2](../../machine-2/144-backends-tooling/README.md) | wasm memory as erlang's, a heap per process in std-wasm (448, 449, 522) — closed as superseded by group wasm-gc (wasmgc-a): its built boxes stay, its open boxes withdrawn |
 | B-31 | [2](../../machine-2/144-backends-tooling/README.md) | a template whose only part is a float hole is a string on wasm (structural, decision 430) |
 | B-32 | [2](../../machine-2/144-backends-tooling/README.md) | structural equality at build is iterative; an arithmetic error at build reads as Erlang's (decisions 471, 472) |
-| B-33 | [2](../../machine-2/144-backends-tooling/README.md) | `@External.Wasm`'s cells as labelled arguments (decision 481) |
+| B-33 | [2](../../machine-2/144-backends-tooling/README.md) | `.Wasm`'s cells as labelled arguments (decision 481) |
 | B-34 | [2](../../machine-2/144-backends-tooling/README.md) | the BEAM assembler rejects `styled`'s module (structural, decision 430) |
 | B-35 | [2](../../machine-2/144-backends-tooling/README.md) | `@println` has no wasm lowering (structural, decision 430) |
 | B-36 | [2](../../machine-2/144-backends-tooling/README.md) | styled's hook red on `feat`: "tab4's class is not a constant of the emitted module" (structural, decision 430) |
@@ -304,7 +304,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-48 | [2](../../machine-2/144-backends-tooling/README.md) | a raise inside a decorator body is located at the raising call (decision 451 (3)) |
 | B-51 | [2](../../machine-2/144-backends-tooling/README.md) | commonJS prints an `f64` without its `.0` (structural, decision 430) |
 | B-52 | [2](../../machine-2/144-backends-tooling/README.md) | wasm prints a string field or an awaited string as a number (structural, decision 430) |
-| B-53 | [2](../../machine-2/144-backends-tooling/README.md) | `@print` of a `@Result` prints the host's form (structural, decision 430) |
+| B-53 | [2](../../machine-2/144-backends-tooling/README.md) | `print` of a `Result` prints the host's form (structural, decision 430) |
 | B-54 | [2](../../machine-2/144-backends-tooling/README.md) | `botopink format` rewrites an annotation's labelled argument `keyed: true` to `keyed = true` |
 | B-55 | [1](../../machine-1/144-checker/README.md) | whole-package analysis: can two modules of a package import each other? (study, s23-i) |
 | B-56 | [1](../../machine-1/144-checker/README.md) | `botopink migrate` removed (s23-i) |
@@ -361,7 +361,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-116 | [2](../../machine-2/144-backends-tooling/README.md) | the body markers `iter`, `async`, `async iter`, `component`; the `@` types renamed into std; a failure a `Result` in the value's layer (553) |
 | B-117 | [2](../../machine-2/144-backends-tooling/README.md) | `botopink check` of a project of refused decorator markers peaks at 8 GB |
 | B-118 | [2](../../machine-2/144-backends-tooling/README.md) | beam: an `iter loop` as a lambda's tail aborts |
-| B-119 | [2](../../machine-2/144-backends-tooling/README.md) | commonJS: an adopted behavior `default fn … -> @Task` is emitted without `async` |
+| B-119 | [2](../../machine-2/144-backends-tooling/README.md) | commonJS: an adopted behavior `default fn … -> Async` is emitted without `async` |
 | B-120 | [2](../../machine-2/144-backends-tooling/README.md) | commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare |
 | B-121 | [2](../../machine-2/144-backends-tooling/README.md) | beam: a user function named `run` or `size` is taken for a std binding |
 | B-122 | [2](../../machine-2/144-backends-tooling/README.md) | beam: `.toString()` on a tuple is `unresolved_method` |
@@ -384,7 +384,7 @@ Where each step is (its machine's folder holds its whole text).
 | B-139 | [2](../../machine-2/144-backends-tooling/README.md) | no `.d.bp`; no `#[builtin]` / `@name` (606): the prelude types and behaviors into `primitives.bp`, `print` (`io.terminal`) and `panic` (`failure`) imported, `typeInfo` / `embed` / `external` members of `compiler` (`embed` the link only, 607), `compiler.Info<T>` in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630); the removed builtins (decision 575 (1), (2), (7), (8), 606) |
 | B-140 | [1](../../machine-1/144-checker/README.md) | `Type` in botopink in `types.bp`, its records `compiler.Field<T>` / `compiler.Info<T>` in `compiler.bp` (624, 630): `compiler.Field<T>(name, type, annotations)`, `compiler.record` / `fields` / `optional` / `required` (decision 575 (5), (7)) |
 | B-141 | [2](../../machine-2/144-backends-tooling/README.md) | wasm: `join` on an optional meta's list, a coalesced list's `join`, `map(Card)` in an imported module (found by B-136's `setMeta` migration) |
-| B-142 | [2](../../machine-2/144-backends-tooling/README.md) | wasm: a generator in a linear-memory module (and `@Stream`) runs its whole body at the call (decision 105) |
+| B-142 | [2](../../machine-2/144-backends-tooling/README.md) | wasm: a generator in a linear-memory module (and an `AsyncIter`) runs its whole body at the call (decision 105) |
 | B-143 | [2](../../machine-2/144-backends-tooling/README.md) | commonJS: `push` on an array mutates every binding that holds it — a `val` copy of a `var`, a caller's argument — where erlang rebinds the `var` and leaves the value alone (decisions 447 (2), 448 (2), 547) |
 | B-144 | [2](../../machine-2/144-backends-tooling/README.md) | erlang / beam: a namespace member's chained call (`query.of(…).where(…).select(…).toArray()`) dispatches `toArray()` on the `Query` record — `bp_unsupported_method join`; query's cell `generic_loader_binding` red on erlang and beam, query's feat CI red on it |
 | B-145 | [1](../144-checker/README.md) | an annotation `#[name]` that names no decorator (unbound, or a namespace such as `#[check]` naming a module) is dropped silently — no refusal, empty output |

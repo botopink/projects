@@ -50,7 +50,7 @@ pages read. 51, 71: independent members. 53: read-only against every other membe
 
 ## Decisions
 
-Ids kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md) § Track E); new questions continue
+Ids kept from 1.0.10 ([`../../../../decisions-pending.md`](../../../../decisions-pending.md) § Track E); new questions continue
 each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`); `snap-a` → 390, 391;
 from the naturalness review ([`decisions-pending.md`](../../../../decisions-pending.md) § nat): `nat-f2`
 (`onze.json`'s planned keys — 49, 50), `nat-f4` (the `ONZE_PUBLIC_` prefix — 50, 53; a client

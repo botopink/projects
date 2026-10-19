@@ -5,7 +5,7 @@ record — per front what landed and with which commit, what did not, the state 
 worktrees, which of the sixty-seven decisions are implemented, partial or open, and the rules that
 still bind. Everything open or in progress moved, ranked, to
 [`specs/1.0.10-beta/00-compiler-carry-over/`](../1.0.10-beta/00-compiler-carry-over/README.md), with
-the deep dives that still apply copied beside it. [`decisions-taken.md`](./decisions-taken.md) stays
+the deep dives that still apply copied beside it. [`decisions-taken.md`](../decisions-taken-steps.md) stays
 here as the record the carry-over implements against. The rest of this file is the milestone as it was
 planned, kept as written.
 
@@ -20,7 +20,7 @@ waited on them. Here the backends are **four file-disjoint fronts** (`02-erlang`
 `05-wasm`) that run at the same time, the checker is one front over `comptime/**`, and the seven
 support fronts touch none of those files at all.
 
-**Read [`decisions-taken.md`](./decisions-taken.md) first** — twenty-seven decisions taken on
+**Read [`decisions-taken.md`](../decisions-taken-steps.md) first** — twenty-seven decisions taken on
 2026-09-18, each with the evidence that produced it, the options that were on the table and the answer.
 They are what the fronts implement against, and several reshape a front rather than settle a detail:
 the JS value becomes a class per declaration and a subclass per variant (5); a record's identity on
@@ -28,7 +28,7 @@ erlang is a tagged tuple (21); there is one range spelling, `..` (20), which rev
 grammar half just landed; `case` arms union, so **inference may produce a union type** (26); rakun
 supports every target with `libs/std` growing underneath it (17); and `14-comptime-on-beam` runs every
 step, because the principle governs and not the build time (24).
-[`decisions-pending.md`](./decisions-pending.md) holds **six open questions, 38 to 43**, all raised by
+[`decisions-pending.md`](../decisions-pending.md) holds **six open questions, 38 to 43**, all raised by
 the `@BeamMemory` measurement that opened [`17-beam-memory`](./17-beam-memory/README.md) — including
 one, 39, where the measurement contradicts the effect a decision was taken for.
 
@@ -52,12 +52,12 @@ one, 39, where the measurement contradicts the effect a decision was taken for.
 | [`14-comptime-on-beam`](./14-comptime-on-beam/README.md) | critical | The comptime evaluator stops paying `compile:file` for a program that never changes: **942 ms of a 1 592 ms build** on `erika-linq`, for a body that runs in 0.99 ms, with 200 call sites hashing to one distinct program. Steps 0–2 only — 19× — with step 3 (`.S`) deferred by measurement |
 | [`15-language-surface`](./15-language-surface/README.md) | high | An audit of the written surface against what the parser accepts, producing decisions rather than making them: **24 forms the documents write that do not parse** (the 6 real ones decision 14 named, plus 18 found by walking) and 22 that parse and contradict the document writing them. Among them: there is **no index expression** — `xs[0]` is a parse error anywhere, and decision 8 presupposes one twice |
 | [`16-formatter`](./16-formatter/README.md) | **high** | `format --check` is red on four of five libraries, and the formatter is idempotent — so the reds are disagreements about the canonical form. Except one, which is a defect and raised this front's priority: the formatter **deletes the word `default`** (`pub default mod` → `pub mod`), which turns off the package handle and then reports the broken file as clean |
-| [`17-beam-memory`](./17-beam-memory/README.md) | high | Module-level `var` and the `#[@BeamMemory.…]` annotation that gives it storage on the BEAM — [decision 28](./decisions-taken.md#28-what-decision-14-left-unassigned)'s last unlanded half, which [`15-language-surface`](./15-language-surface/README.md) measured and left to the semantics. The carrier cannot land alone: `val hits = 0;` reassigned passes `check` and then throws on node, **does not compile** on erlang and does not validate on wasm, because the only immutability rule in the compiler is decision 37's record-field one. The annotation's spelling already parses on a `fn`; what is missing is a declaration that can carry an annotation and a mutable value. The payoff is measured — **96 of `rakun/src/runtime.mjs`'s 231 lines** and **13 of its 16 `@External.Node` declarations** are registry maintenance that this removes rather than ports — and so is the warning: `-on_load` cannot create an ETS table, so the `Ets` mode as designed degrades into the `ProcessDict` it exists to replace (5 requests × 3 increments → the counter reads **0**), unless the module emits an owner. And the maintainer's own rule cuts the front in half: `libs/std/src/erlang.bp` already proves a target-specific std module can drive emission without a `.zig` recompile, so the host primitives belong in a sibling `std/beam` and only the read/write lowering is irreducibly core — question 43 |
+| [`17-beam-memory`](./17-beam-memory/README.md) | high | Module-level `var` and the `#[@BeamMemory.…]` annotation that gives it storage on the BEAM — [decision 28](../decisions-taken-steps.md)'s last unlanded half, which [`15-language-surface`](./15-language-surface/README.md) measured and left to the semantics. The carrier cannot land alone: `val hits = 0;` reassigned passes `check` and then throws on node, **does not compile** on erlang and does not validate on wasm, because the only immutability rule in the compiler is decision 37's record-field one. The annotation's spelling already parses on a `fn`; what is missing is a declaration that can carry an annotation and a mutable value. The payoff is measured — **96 of `rakun/src/runtime.mjs`'s 231 lines** and **13 of its 16 `@External.Node` declarations** are registry maintenance that this removes rather than ports — and so is the warning: `-on_load` cannot create an ETS table, so the `Ets` mode as designed degrades into the `ProcessDict` it exists to replace (5 requests × 3 increments → the counter reads **0**), unless the module emits an owner. And the maintainer's own rule cuts the front in half: `libs/std/src/erlang.bp` already proves a target-specific std module can drive emission without a `.zig` recompile, so the host primitives belong in a sibling `std/beam` and only the read/write lowering is irreducibly core — question 43 |
 
 ## Order
 
 `14` first and `13` immediately after is the maintainer's decision of 2026-09-18
-([decision 4](./decisions-taken.md#4-the-order-that-dissolves-the-circular-dependency--settled)); `06` before
+([decision 4](../decisions-taken-steps.md)); `06` before
 both, because it is what makes their snapshot re-recordings cheap.
 
 ```

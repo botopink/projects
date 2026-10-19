@@ -10,8 +10,8 @@ everything 1.0.10-beta left open, re-cut by **ownership of files** so that sever
 the same time, one worktree each.
 
 **Where the milestone stands is [`status.md`](./status.md)** — the one file allowed to carry status.
-**What the maintainer has decided and still owes is [`decisions-taken.md`](./decisions-taken.md)
-(numbering starts at 144) and [`decisions-pending.md`](./decisions-pending.md)** (the open
+**What the maintainer has decided and still owes is [`decisions-taken.md`](../decisions-taken-steps.md)
+(numbering starts at 144) and [`decisions-pending.md`](../decisions-pending.md)** (the open
 questions verbatim, every lettered choice indexed to the track that raised it). The 1.0.10 → 1.0.11
 map is [`carried.md`](./carried.md) and each track's `carried.md`.
 

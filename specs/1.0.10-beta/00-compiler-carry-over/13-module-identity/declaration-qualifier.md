@@ -4,7 +4,7 @@ The maintainer accepted [option A](./atom-options.md#option-a--the-path-joined-w
 half the `#Pessoa` suffix was reaching for: **when one `.bp` file produces more than one BEAM
 module, the atoms must say which declaration each one came from.** He then asked that every atom
 start with the package it belongs to. This file is the rule, as
-[decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)
+[decision 109](../../../decisions-taken-steps.md)
 spells it.
 
 ---

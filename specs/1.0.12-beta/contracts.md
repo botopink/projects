@@ -83,7 +83,7 @@ aliases from jhonstart's globals registry (front 30), in this order: `globals.pa
 signal's `<script>`; decisions 115, 117), `globals.starters` (`__bp3`, island starter table filled by
 29's `registerStarter` / `registerRouteStarters`, read by `hydrate()`). One job each; the fill never
 reads a signal. No hand-written `__jh*` / `__onze*` global; link and form mount are the imports
-`linkMount`, `formMount`. A host cell (`declare fn` bound by `#[@External.…]`) is a module function,
+`linkMount`, `formMount`. A host cell (`declare fn` bound by `#[compiler.external(…)]`) is a module function,
 not a global; keeps its owner's `__jh` prefix.
 
 Router state (26) maps 1:1 onto `p` / `m` / `q` / `r`; `segments` derived from `r` (split on `/`,
@@ -248,7 +248,7 @@ pub fn after(work: fn() -> i32) -> i32
 
 pub fn memoKey(name: string, parts: Array<string>) -> string
 pub fn memoize<T>(key: string, load: fn() -> T) -> T
-pub fn preload<T>(key: string, load: fn() -> T) -> i32   // spawns a BEAM process — @Task is eager
+pub fn preload<T>(key: string, load: fn() -> T) -> i32   // spawns a BEAM process — Async is eager
 ```
 
 Every handle carries its minting epoch; mismatch raises (a keep-alive leak is loud). `headersWire`:
@@ -308,7 +308,7 @@ pub fn takeSignal() -> NavOutcome
   capture, redirect checks, response status and `Location`. Relative target matched against 22's
   table at raise time, miss raises; absolute checked against `rakun.navigation.allowedHosts`, empty
   default disables absolute redirects. No property turns either check off, either side.
-- `try … catch` unwraps an `@Result` only → **no construct can swallow a signal** (asserted).
+- `try … catch` unwraps an `Result` only → **no construct can swallow a signal** (asserted).
   Front 31's boundary matches with `isSignalReason`, its test asserts `signalPrefixes()`; no front
   copies the table:
 
@@ -351,17 +351,17 @@ pub fn takeSignal() -> NavOutcome
 pub type Response(
     status: fn(code: i32) -> void,
     header: fn(name: string, value: string) -> void,
-    write:  fn(chunk: string) -> @Task<void>,
-    close:  fn() -> @Task<void>,
+    write:  fn(chunk: string) -> Async<void>,
+    close:  fn() -> Async<void>,
 );
 
 // rakun front 23 — what a page renderer is handed
 pub type ChunkWriter(setStatus: fn(code: i32) -> void, setHeader: fn(name: string, value: string) -> void,
-                     write: fn(string) -> @Task<void>, close: fn() -> @Task<void>);
-pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>>;
+                     write: fn(string) -> Async<void>, close: fn() -> Async<void>);
+pub type PageRenderer = fn(req: Request, out: ChunkWriter) -> Async<Result<void, string>>;
 
 // onze front 49 — the whole adapter; no `case` on a signal
-rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> @Task<@Result<void, string>> {
+rakun.page(pattern, fn(req: Request, out: ChunkWriter) -> Async<Result<void, string>> {
     return site.renderStream(input(req), requestData(req), Response(
         status: fn(c) { out.setStatus(c); },
         header: fn(n, v) { out.setHeader(n, v); },
@@ -470,10 +470,10 @@ to `jhonstart-styled`'s sink.
 ```bp
 // jhonstart/src/plugin.bp
 pub behavior RenderPlugin {
-    fn head(self: Self) -> @Task<string>;                    // once, after the shell
-    fn chunk(self: Self, holeId: string) -> @Task<string>;   // per boundary, before its markup
-    fn close(self: Self) -> @Task<@Result<void, string>>;    // at the end: nothing may be left
-    fn payload(self: Self) -> @Task<?#(string, Json)>;       // once, after close
+    fn head(self: Self) -> Async<string>;                    // once, after the shell
+    fn chunk(self: Self, holeId: string) -> Async<string>;   // per boundary, before its markup
+    fn close(self: Self) -> Async<Result<void, string>>;    // at the end: nothing may be left
+    fn payload(self: Self) -> Async<?#(string, Json)>;       // once, after close
 }
 
 // onze, at boot
@@ -493,7 +493,7 @@ val site = app(plugins: [styledSink()]);             // {app} from "rakun-bpp"; 
 - The plugin never recomputes, re-hashes, sorts or dedups a class (§ 4 untouched); the client bundle
   never calls `flush()` (68 enforces).
 - Every method asynchronous (decision 114): the render awaits each call; the sink awaits the
-  sheet's `@Task`-returning flush in `head` and `chunk`.
+  sheet's `Async`-returning flush in `head` and `chunk`.
 - The sink's `payload()` returns `#("s", <the class names it flushed>)` — the payload's `s` — checked
   by 68's entry with `checkStyles(payload.s)`. jhonstart names no plugin key.
 
@@ -505,10 +505,10 @@ Specified by [`src-builtin.md`](../1.0.10-beta/01-std/src-builtin.md),
 `modules/<lib>-test/` exposes ([`02-packaging/README.md`](../1.0.10-beta/02-packaging/README.md)).
 
 ```bp
-type SourceLocation(file: string, line: i32, column: i32, fnName: string)   // @src(), comptime
+type SourceLocation(file: string, line: i32, column: i32, fnName: string)   // compiler.src(), comptime
 
 test "css: modifiers ---- hover on md breakpoint" {
-    try assertCss(@src(), [.Md([.Hover([.Bg.Color.Red.500])])]);
+    try assertCss(compiler.src(), [.Md([.Hover([.Bg.Color.Red.500])])]);
 }
 ```
 
@@ -518,7 +518,7 @@ test "css: modifiers ---- hover on md breakpoint" {
 - Mismatch or missing file → writes `<path>.new`, fails the test. Only a person renaming `.new`
   accepts a snapshot; **there is no update flag**, no `-test` submodule adds one.
 - Every library, module, submodule, example owns the `__snapshots__/` beside its tests and exposes,
-  from `<lib>-test`, the `assert<Subject>(loc, …) -> @Result<void, string>` helpers writing them. A
+  from `<lib>-test`, the `assert<Subject>(loc, …) -> Result<void, string>` helpers writing them. A
   `-test` helper never re-implements `snap`'s `path` or an `asserts.*` predicate.
-- `@src()` is a compiler builtin — the one contract with a compiler half: the `SourceLocation`
+- `compiler.src()` is a member of `compiler` (606 (2), 718) — the one contract with a compiler half: the `SourceLocation`
   record is asserted by std on every target the tests run on.

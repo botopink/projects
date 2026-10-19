@@ -41,7 +41,7 @@ jhonstart never import each other, so the two meet through onze, which hands thi
 renderer per page pattern (decision 114). The renderer sets the status and headers and writes its
 chunks through the `ChunkWriter` rakun gives it; rakun writes them to the socket and knows nothing
 else about them. A navigation signal raised by a page is jhonstart's to turn into a status
-([decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rule 1); rakun has no page-level `notFound` / `redirect`.
+([decision 117](../../../decisions-taken-steps.md) rule 1); rakun has no page-level `notFound` / `redirect`.
 
 ## Current state
 

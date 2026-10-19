@@ -21,7 +21,7 @@ step 5 (wasm half of step 12, also touches std's wasm bodies `fn:…Body`) — s
 ## Goal
 
 Every primitive two libraries need lives once in std — `.bp` only, both targets,
-`#[@External.<Target>]` template where a host is needed, no sidecar (decisions 115/116). Method on a
+`#[compiler.external(.<Target>(…))]` template where a host is needed, no sidecar (decisions 115/116). Method on a
 primitive receiver (`"42".parseInt()`), method on the type where one exists (`Json`), else a free
 function in the concept's module. Each library copy deleted by its file's front.
 
@@ -39,7 +39,7 @@ Each row is a step of the named front; deletion measured by the grep.
 | rakun's copies (below) | `04-rakun` fronts, by file | one row each | `04-rakun`'s greps |
 
 rakun's copies, by primitive:
-- number parsers answering a `@Result` (e.g. `rakun-metrics/src/registry.bp`,
+- number parsers answering a `Result` (e.g. `rakun-metrics/src/registry.bp`,
   `rakun-scheduling/src/cron.bp`, `rakun/src/config.bp`) → `parseInt` / `parseFloat`
 - `Json` accessors in `rakun-security/src/jwt.bp`, `rakun/src/autoconfig_registry.bp` → `Json` methods
 - the four retry loops → `async.retry`
@@ -54,7 +54,7 @@ rakun's copies, by primitive:
 
 ## Notes
 
-- No jitter, no `retry` over a plain `@Task` (never fails, decision 120), no "unbounded"
+- No jitter, no `retry` over a plain `Async` (never fails, decision 120), no "unbounded"
   `RetryPolicy` field — most restrictive (decision 67).
 - No std argv flag parser (rakun `rakun-cli/src/args.bp`, `config.cliEntries`,
   `onze-cli/src/create.bp`): three consumers, three grammars; a std `cli` module waits until they agree.

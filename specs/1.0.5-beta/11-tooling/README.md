@@ -309,7 +309,7 @@ After [`01-checker`](../01-checker/README.md) renames `buildRecordDeclName` and 
 of 2026-09-18 — `vscode-extension` `94c1366` (step 1, the `unknown` keyword pin and its CI row),
 `e553aa6` (step 2, the `case` snippet), `botopink-lang` `ae6476c` (step 3, the `loadSrcTree`
 diagnostic) and `9589971` + `43eabe5` (step 4, `SymbolKind.Method`). Step 4's decision was **already
-answered** too, at [decision 7](../decisions-taken.md) — option (a), resolved onto the parent-in-tree
+answered** too, at [decision 7](../../decisions-taken-steps.md) — option (a), resolved onto the parent-in-tree
 mechanism, which is this README's option C. Nothing was owed.
 
 Each acceptance was re-verified rather than trusted: `npm run compiler-check` passes, `npm test` reads

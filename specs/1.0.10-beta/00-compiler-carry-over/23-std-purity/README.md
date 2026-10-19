@@ -36,7 +36,7 @@ io.fs.readText(p)`), and a module namespace reaches its types (`collections.Dict
 rewritten by `comptime/std_namespace.zig` into the one-dot forms before the checker and the backends
 see the module (`decisions-pending.md` std-c).
 
-## Mechanism — decisions [106](../../decisions-taken.md#106-std-in-three-categories-a-pure-root-io-and-testing) and [107](../../decisions-taken.md#107-import-a-dotted-path-and-a-braced-group-are-one-tree-and-only-the-leaf-enters-scope)
+## Mechanism — decisions [106](../../../decisions-taken-steps.md) and [107](../../../decisions-taken-steps.md)
 
 **One criterion: `io/` is everything that talks to the world outside the process.** A root module
 is pure by definition — same input, same output, no clock, no disk, no network, no entropy — and the

@@ -16,7 +16,7 @@ four; the rest have no open item) · `.github/workflows/test.yml` (`00-gate`) ·
 ## Goal
 
 1. `modules/emilia-test/src/root.bp`: one resolve test, exports nothing. `02-packaging` § Step 4
-   requires ≥ one `assert<Subject>(loc, …) -> @Result<void, string>` handing `loc` to `snapshots`
+   requires ≥ one `assert<Subject>(loc, …) -> Result<void, string>` handing `loc` to `snapshots`
    unchanged: `20-snap` step 4 writes them.
 2. `examples/emilia-card/botopink.json` depends on `jhonstart` by `path` (4 tests, printing a
    jhonstart-rendered card with three class names and the flushed sheet); decision 114: every emilia

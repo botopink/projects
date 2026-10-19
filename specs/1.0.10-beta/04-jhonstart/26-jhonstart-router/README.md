@@ -8,7 +8,7 @@
 **Depends on:** 01 (`encoding.formParse` / `formStringify`; `json.decode` for the payload `clientApp` reads — decision 117 rule 7) · `01-std/04-routing-lib` (`parseTable`, `matchPath`, `attempt`; `navigation.signalFromWire` / `signalFromReason`) · `01-std/05-actions-lib` (`refresh.refreshValue`) · 30 (payload envelope, `compose`, `redirectAllowed`) · 31 (`notFound` / `redirect`, the not-found boundary) · 94 (element builders used by the examples)
 **Owns:** `modules/jhonstart/src/router.bp` (with `router_runtime.mjs` / `sidecars/jhonstart_router.erl`), `modules/jhonstart/src/client_app.bp` (with `client_app.mjs` / `sidecars/jhonstart_client_app.erl`), `modules/jhonstart/test/router_test.bp`, `modules/jhonstart/test/client_app_test.bp`
 **Does not touch:** `element.bp`, `hooks.bp`, `jhonstart-html/src/html.bp` (frozen), `jhonstart-link` (front 27), `server.bp` (front 28)
-**Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params · [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only)
+**Reference:** `NEXTJS-DOCS.md § 8. Navegação e Linking` · `§ 26. Referência de Funções` · https://nextjs.org/docs/app/api-reference/functions/use-router · https://nextjs.org/docs/app/api-reference/functions/use-params · https://nextjs.org/docs/app/api-reference/functions/use-search-params · [decision 117](../../../decisions-taken-steps.md)
 
 ---
 

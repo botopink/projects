@@ -2,7 +2,7 @@
 
 One front for two concerns, **module naming** and **run-time type identity**; the measured analysis
 of both lives in the companion documents. Decisions 6, 21, 22, 23 and 62 of
-[1.0.5-beta](../../../1.0.5-beta/decisions-taken.md) settle step 0's layout call and the term's
+[1.0.5-beta](../../../decisions-taken-steps.md) settle step 0's layout call and the term's
 representation; where a section below still weighs them, the decision governs.
 
 **Priority:** high — the erlang backend gives two modules with the same file basename the same
@@ -38,7 +38,7 @@ never bulk-accepted), and it is what fixes the order.
 
 | | Half | Steps | What moves | Snapshots | Why it cannot share a diff with its neighbours |
 |---|---|---|---|---:|---|
-| **1** | **the atom** | 0–6 | option A + A2: `main` stays `main`, `web/api/http` → `web@api@http`, `std/math` → `std@math`, a template → `bp@comptime__tpl__<template>__<hash>`, and the package first and the declaration boundary `@@` (`myapp@main@@SourceLocation`, `std@math@@PI`, [decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)). Flat `out/erl/` and `out/beam/`. A collision check over the rendered atoms | **≈ 20** — a name on one line | A diff here changes **names only**. Landed on top of anything else, "the atom changed" stops being a readable classification |
+| **1** | **the atom** | 0–6 | option A + A2: `main` stays `main`, `web/api/http` → `web@api@http`, `std/math` → `std@math`, a template → `bp@comptime__tpl__<template>__<hash>`, and the package first and the declaration boundary `@@` (`myapp@main@@SourceLocation`, `std@math@@PI`, [decision 109](../../../decisions-taken-steps.md)). Flat `out/erl/` and `out/beam/`. A collision check over the rendered atoms | **≈ 20** — a name on one line | A diff here changes **names only**. Landed on top of anything else, "the atom changed" stops being a readable classification |
 | **2** | **policy 3** | 7–13 | one BEAM module per `type` and per `behavior`; `recordMethodAtom`, `interfaceAssocAtom` and `record_method_collisions` **deleted**; `codegenEmit` yields N artefacts; `build.zig` and `run.zig` follow; `botopink run --target erlang` gains `-pa`, which **opens** this half because policy 3 breaks it first | **188** — 94 erlang + 94 beam, each gaining whole emitted sections | Each of the 188 diffs gains sections. With half 1 in the same commit every one of them would carry an atom rename *and* a re-shaping, and classification becomes impossible |
 | **3** | **the identity in the value** | 14–20 | the A2 atom inside the value: `'__bp_type'` as one key in a record map, and the **qualified variant tag** — free in space, no opcode and no arity change. Then `is`, a union `case`, and §7's per-type formatter | **130** — 62 erlang + 68 beam, one or two emitted lines each, and **0 `RUN LOG`s** | 62 of these 130 erlang cells are files half 2 has already re-recorded once. Landing the two together means a diff that splits a module *and* reshapes its values; landing 3 before 1 means re-recording all 130 a second time when the atom rename moves the tag |
 
@@ -310,7 +310,7 @@ Keeps the maintainer's `@`-path intent. The `#<Decl>` half is kept in **intent**
 **spelling**: **A2**, in [`declaration-qualifier.md`](./declaration-qualifier.md), names every
 module a package produces, still unquoted and decodable back to its source. A module's atom starts
 with its package — the `name` of its `botopink.json` — and a declaration's module is the file's
-atom, the boundary `@@` and the declaration's own name **with its case kept** ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)); a comptime evaluation keeps the `__<kind>__` qualifier.
+atom, the boundary `@@` and the declaration's own name **with its case kept** ([decision 109](../../../decisions-taken-steps.md)); a comptime evaluation keeps the `__<kind>__` qualifier.
 
 ```
 atom(module) = sanitise(package) ++ "@" ++ sanitise(path)
@@ -348,7 +348,7 @@ convention, `escript` names its synthesised module `whoami_escript__escript__178
 
 **Maintainer.** Not "slice when it collides" and not today's inlining: **every** `type`
 and `behavior` declaration gets its own BEAM module, named by A2 —
-`<package>@<path>@@<Decl>` ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-); a behavior emits none, decision 23). The full working-out, each claim measured or
+`<package>@<path>@@<Decl>` ([decision 109](../../../decisions-taken-steps.md); a behavior emits none, decision 23). The full working-out, each claim measured or
 run, is [`policy-3-module-per-type.md`](./policy-3-module-per-type.md). In summary:
 
 | | |
@@ -424,7 +424,7 @@ variantAtom(id, decl, variant) = typeAtom(id, decl) ++ "__v__" ++ lower(variant)
 ```
 
 The first line is [A2](./declaration-qualifier.md) verbatim — `declAtom(alloc, id, decl)`, the
-declaration's case kept ([decision 109](../../decisions-taken.md#109-a-module-atom-starts-with-its-package-and-the-declaration-boundary-is-)).
+declaration's case kept ([decision 109](../../../decisions-taken-steps.md)).
 The second is the **one thing half 3 asks half 1 for**: a `__v__` segment so a variant tag decodes
 the same way — in 1.0.4-beta that was a cross-front agreement between 16 and 19; in one front it is
 an internal decision, taken here. Both are legal **unquoted** atoms and both decode: `split("@@")`, then the last `__v__` of the
@@ -520,7 +520,7 @@ maintainer's dotted form and the quoting cost is a known, paid-for cost elsewher
 
 **Acceptance:**
 - [x] A-flat or A-nested recorded here in one line — **A-flat**
-      ([decision 6](../../../1.0.5-beta/decisions-taken.md#6-the-erlang-output-layout--with-the-two-trees-written-out)):
+      ([decision 6](../../../decisions-taken-steps.md)):
       `out/erl/<atom>.erl` and `out/beam/<atom>.S`, one flat directory per BEAM target; commonJS and
       wasm keep `out/<module path><ext>` (`crossModule.outputStem`, `cli/build.zig`)
 - [x] The split is rejected — policy 3 is this front's steps 7–13 (maintainer)
@@ -794,7 +794,7 @@ tagged tuple in one mechanical commit.
 
 **Acceptance:**
 - [x] A maintainer decision recorded here, whichever way it goes, with the re-measured numbers —
-      **not** E10's, which do not survive (E18) — **T2**, [decision 21](../../../1.0.5-beta/decisions-taken.md#21-t1-or-t2-for-the-erlang-record)
+      **not** E10's, which do not survive (E18) — **T2**, [decision 21](../../../decisions-taken-steps.md)
       : the tagged tuple `{TypeAtom, F1, …}`, chosen for the shape and against the
       recommendation; the price recorded with it — 66 erlang + 73 beam cells rewriting construct,
       access, destructure and patterns, 354 cell-writes over 210 files across halves 2–3 — and
@@ -832,7 +832,7 @@ tagged tuple in one mechanical commit.
       [E25](./atom-evidence.md#e25--botopink-run-breaks-under-policy-3)) — `erlc -o` over the
       directory, then `erl -noshell -pa` (`cli/run.zig`); `examples/modules` runs
 - [x] `recordMethodAtom`, `isRecordMethodCollision`, `record_method_collisions` are **deleted**,
-      not bypassed. **`interfaceAssocAtom` stays**: [decision 23](../../../1.0.5-beta/decisions-taken.md#23-does-a-behavior-need-an-atom)
+      not bypassed. **`interfaceAssocAtom` stays**: [decision 23](../../../decisions-taken-steps.md)
       emits nothing for a behavior (its module would be `<package>@<path>@@<Behavior>`, decision 109), so it has no module for its associated
       `default fn` to live in and the mangled local (`array_range/2`) is still emitted per consumer
       — decision 23 is newer than policy 3 § 2.2 and wins (`src/codegen/AGENTS.md` § erlang)

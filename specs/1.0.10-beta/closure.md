@@ -12,8 +12,8 @@ hundred and fifteen fronts across seven tracks; decisions 68–143.
 **Where the open work went:** [`specs/1.0.11-beta/`](../1.0.11-beta/overview.md) — every open item,
 re-cut by ownership of files into fronts that run in parallel, with the deep dives an open item
 still needs copied beside it; the map is [`1.0.11-beta/carried.md`](../1.0.11-beta/carried.md) and
-each track's `carried.md`. [`decisions-taken.md`](./decisions-taken.md) **stays here** as the record;
-1.0.11-beta continues the numbering at 144. [`decisions-pending.md`](./decisions-pending.md) stays
+each track's `carried.md`. [`decisions-taken.md`](../decisions-taken-steps.md) **stays here** as the record;
+1.0.11-beta continues the numbering at 144. [`decisions-pending.md`](../decisions-pending.md) stays
 as the full text of every choice a front made; 1.0.11-beta's copy carries the twenty-seven open
 questions verbatim and indexes the rest.
 
@@ -156,8 +156,8 @@ decisions — used, not free). Open at the close: 26 questions (`ck2-c`, `lg-a`,
 plus `ck-host`, which was raised and never counted. Implementation choices awaiting confirmation:
 ≈80 lettered ids across every track (`24-*`, `01std-*`, `std-*`, `01c-*`, `ck2-*`, `rc3-*`, `23-*`,
 `95-*`, `03r-a…x`, `16-*`, the jhonstart, emilia, onze and `lem-*` sets). All carried to
-[`1.0.11-beta/decisions-pending.md`](../1.0.11-beta/decisions-pending.md) with ids unchanged; the
-full text of the choices stays in [`decisions-pending.md`](./decisions-pending.md) here.
+[`../decisions-pending.md`](../decisions-pending.md) with ids unchanged; the
+full text of the choices stays in [`decisions-pending.md`](../decisions-pending.md) here.
 
 ## What this directory keeps
 

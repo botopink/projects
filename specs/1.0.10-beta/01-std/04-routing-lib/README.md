@@ -17,11 +17,11 @@ their tests, and `scripts/format-check.sh`'s `TREES`
 **Does not touch:** `libs/std/**`; `repository/rakun/**` — rakun fronts 22, 60, 61, 63 and 65 import
 from it; `repository/jhonstart/**` — front 26 imports it in the router, front 27 in `Link`;
 `repository/onze/**`
-**Reference:** [decision 115](../../decisions-taken.md#115-routing-is-a-bundled-library-a-signal-after-the-first-chunk-is-markup-jhonstart-gains-redirect-rakuns-keys-are-rakun)
+**Reference:** [decision 115](../../../decisions-taken-steps.md)
 (the library, its contents, `from "routing"` resolving like `from "std"`) ·
-[decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+[decision 116](../../../decisions-taken-steps.md)
 rules 1 and 9 (the `navigation` and `pattern` modules; the bundled list gains `actions` and
-`validation`) · [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rule 8 (a bundled library ships `.bp` files
+`validation`) · [decision 117](../../../decisions-taken-steps.md) rule 8 (a bundled library ships `.bp` files
 only) · decision 109 (module atoms) · decision 113 (jhonstart and rakun never import each other) ·
 `contracts.md § 1` (the route table) · rakun fronts [22](../../03-rakun/22-rakun-file-routing/README.md) Steps 1, 3, 4,
 [60](../../03-rakun/60-rakun-static-generation/README.md) Step 6,

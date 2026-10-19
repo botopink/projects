@@ -193,7 +193,7 @@ was not touched at all** — zero edits, better than the carve-out allowed.
   body **every** receiver is untyped.
 - The file belongs to [`03-beam`](../03-beam/README.md) and
   [`13-module-identity`](../13-module-identity/README.md) entirely, and
-  [decision 24](../decisions-taken.md#24-does-step-3-of-14-comptime-on-beam-happen-at-all) already
+  [decision 24](../../decisions-taken-steps.md) already
   sequences step 3 after them.
 
 **And the value shrank, measured against the post-step-2 build**: erika's 47.7 ms of `compile:file` is

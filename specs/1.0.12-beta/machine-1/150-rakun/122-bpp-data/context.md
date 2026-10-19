@@ -46,7 +46,7 @@ Paths under `repository/`.
 | `session` | `Session`, three stores | `rakun-session` |
 | `preferredLocale`, `currentLocale` | `negotiate`, the locale filter | `rakun-app/src/i18n.bp` |
 | `getActionResult`, `callAction` | `actionState`; a call | `jhonstart-forms/src/form.bp:182`; 127 |
-| top-level `await`, `fetch` | `await` in a `@Component` body; `io.http.fetch(url)` — GET only | `docs.md:1592`; `libs/std/src/io/http.bp:55` |
+| top-level `await`, `fetch` | `await` in a `component fn` body; `io.http.fetch(url)` — GET only | `docs.md:1592`; `libs/std/src/io/http.bp:55` |
 | **`response.status`, `response.headers`** | **not found** — a render answers 200 or a navigation signal | step 1 |
 | **`rewrite(path)`** | **not found** from a page; `Next.rewrite` in middleware | `rakun-web/src/middleware.bp:41-58` — step 2 |
 | **`site`, `generator`** | **not found** | step 3 · `isPrerendered`: not added — the stage is a comptime fact (291) |
@@ -75,7 +75,7 @@ once more, then refused naming both.
 
 **`site()` is configuration**: `onze.json` `site` (124) via the render's `app(…)` options;
 jhonstart names no config file. No `isPrerendered()`: whether a page is prerendered is its kind,
-recorded by `#[page]` at comptime (`@typeInfo(Page).meta(PageMeta)?.kind`, 277).
+recorded by `#[page]` at comptime (`compiler.typeInfo(Page).meta(PageMeta)?.kind`, 277).
 
 ## Blast radius
 

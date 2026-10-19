@@ -39,7 +39,7 @@ greps files other fronts write.
 
 ### To confirm
 
-Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md).
+Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../../../decisions-pending.md).
 
 | Id | Choice | Closes on it |
 |---|---|---|

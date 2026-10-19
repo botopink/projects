@@ -2,7 +2,7 @@
 
 **Priority:** high — not because any of it is red at run time, but because of **how the seven were
 found**. Front 17 of 1.0.4-beta met them one at a time while writing test cells, routed around each,
-and filed none; [decision 14](../decisions-taken.md#14-seven-forms-that-do-not-parse) settled them and
+and filed none; [decision 14](../../decisions-taken-steps.md) settled them and
 opened this front so that the rest of the surface is reviewed properly rather than decided spelling by
 spelling under pressure. Walked deliberately, the surface holds **18 more** forms the documents write
 and the compiler rejects — including one the language has no syntax for at all.
@@ -39,9 +39,9 @@ expected failures / 0 failed**.
 | `5da938f` | **R2** — a chain link chains from **every** receiver, and `adder(3)(4)` is one |
 | `46f8c5d` | **R3** — a `.` continues a number only before a **digit**, so `42.toString()` reads as a method on a literal |
 | `28e447e` | **R4** — one block body (`parseBlockBody`), so a `//` comment and a blank line belong to the block and not to the copy |
-| `6907119` | **R5** — [decision 30](../decisions-taken.md): `xs[0]`, `d["k"]`, `s[0]`, `xs[0..2]`, `xs[0..]`, `rows(1)[0]` |
-| `fb230e5` | **R8** — [decision 28](../decisions-taken.md): `a ?? 0` |
-| `9daf390` | **R7** — [decision 33](../decisions-taken.md): a bodyless `fn` declares its return type, and says so when it does not |
+| `6907119` | **R5** — [decision 30](../../decisions-taken-steps.md): `xs[0]`, `d["k"]`, `s[0]`, `xs[0..2]`, `xs[0..]`, `rows(1)[0]` |
+| `fb230e5` | **R8** — [decision 28](../../decisions-taken-steps.md): `a ?? 0` |
+| `9daf390` | **R7** — [decision 33](../../decisions-taken-steps.md): a bodyless `fn` declares its return type, and says so when it does not |
 | `e83c783` | The catch-all names the token it stopped on, so a deliberate refusal reads differently from a gap |
 
 **Three premises of this README were wrong, and the measurement is the correction.** The postfix chain
@@ -57,7 +57,7 @@ index needs one lowering from each.
 
 ### What this front did not do, and why
 
-- **[Decision 29](../decisions-taken.md#29-does-a-block-shaped-statement-end-itself) — the parser half
+- **[Decision 29](../../decisions-taken-steps.md) — the parser half
   is written and deliberately not committed.** Rejecting the trailing `;` rejects `libs/std`'s embedded
   prelude, so **every** compile fails and no single front can land it green. The 76-line patch
   (`isBlockShapedStmt` + `blockStatementSemicolon`, with the localised message) is kept beside this
@@ -65,7 +65,7 @@ index needs one lowering from each.
   landing described under decision 29. It applies to `src/parser.zig` at `109f6c9`. **245 sites**, counted by the compiler itself —
   not the ~274 estimated: `libs/std` **51** (the estimate said 23), `tests/language` **44** (said 88),
   erika 78, rakun 31, jhonstart 35, examples/CLI tests 5, onze 1, and **emilia 0** (said 30).
-- **[Decision 36](../decisions-taken.md#20-is-a-pattern-range-inclusive) — untouched**, because
+- **[Decision 36](../../decisions-taken-steps.md) — untouched**, because
   `parser/patterns.zig` is the `case` grammar of [`01-checker`](../01-checker/README.md) step 4 and the
   change re-records its snapshots. The edit is ~10 lines in `finishRangePattern` (`:269-274`) plus
   removing `dotDotDot` from the lexer. **And a worse thing was measured:** `1...9` — the spelling the
@@ -99,7 +99,7 @@ error: Unexpected token
   = hint: Check the syntax around this position.
 ```
 
-`??` is a form the language does not want — [decision 14](../decisions-taken.md#14-seven-forms-that-do-not-parse)
+`??` is a form the language does not want — [decision 14](../../decisions-taken-steps.md)
 settles that it duplicates `catch` and `?.`. `(i32 | string)[]` is a form `decision-8:141` writes as
 *the* way to spell an array of a union. They give the same sentence. `ParseErrorType` has **48**
 variants and `print.zig` renders a named, located message for 47 of them; the 48th,
@@ -187,7 +187,7 @@ not a quotation, and the maintainer confirms it.
 **Acceptance:**
 - [ ] All seven probes re-run at HEAD; any that no longer reproduces is struck from
       [`seven-forms.md`](./seven-forms.md) with the commit that closed it
-- [ ] The assignment is recorded in [`../decisions-pending.md`](../decisions-pending.md) as a new
+- [ ] The assignment is recorded in [`../decisions-pending.md`](../../decisions-pending.md) as a new
       numbered question, with this front's proposal and the evidence for it
 - [ ] `tests/language/test/closure_capture.bp:5-6` and `test/decorator_emit.bp:6-7` are named as the
       two cell headers that carry a now-incorrect description of the gap, and handed to
@@ -201,14 +201,14 @@ the front's judgement — **defect** (a document promises it and the compiler co
 **decision** (the language may simply not want it).
 
 **This step produces decisions; it does not take them.** A form judged a decision leaves this front as
-a question in [`../decisions-pending.md`](../decisions-pending.md) with a recommendation; a form
+a question in [`../decisions-pending.md`](../../decisions-pending.md) with a recommendation; a form
 judged a defect leaves it as a step here, or as a row handed to the front that owns the file.
 
 **Acceptance:**
 - [ ] Every row carries a `file:line` where the form is written, or is struck for having no source
 - [ ] Every row is **defect** or **decision**, with one clause of reasoning
 - [ ] Every row names an owner — this front, another front, or "unowned", and every unowned row is
-      opened in [`../decisions-pending.md`](../decisions-pending.md) in the same commit
+      opened in [`../decisions-pending.md`](../../decisions-pending.md) in the same commit
 - [ ] The 17 rows that belong to [`01-checker`](../01-checker/README.md) name its step, and are
       **registered with it** rather than restated: an audit that cannot tell "nobody is working on
       this" from "step 2 is working on this" produces noise
@@ -240,7 +240,7 @@ the compiler knows the token and the construct it was parsing.
 - [ ] `grep -c unexpectedToken` over `src/parser/**` does not grow
 - [ ] A `reject/` cell per form, handed to [`12-language-tests`](../12-language-tests/README.md) with
       the `.expect` first line and location — including the one front 17 wrote against a row that
-      does not exist ([decision 15](../decisions-taken.md#15-a-lower-case-externalnode-)'s lower-case
+      does not exist ([decision 15](../../decisions-taken-steps.md)'s lower-case
       `#[@external]`, which is [`01-checker`](../01-checker/README.md)'s)
 
 ### Step 4 — Make them parse, by hoisting the rule rather than adding the form
@@ -364,7 +364,7 @@ so the step that waits on one can find it.
 | B | **Does a block-shaped statement terminate itself?** `if`, `loop` and `case` all require a `;` when followed by another statement | step 2; it is what front 17 actually met | no recommendation — it is a taste question with no measured cost either way, and the front's job is to ask it once rather than let it be inferred from a workaround |
 | C | **Is there an index expression?** `xs[0]` does not parse in any position, and `decision-8:112` and `:447` both presuppose it | unowned; nothing blocks on it today | **yes** — a language whose standard library has arrays, strings and dicts and no indexing syntax is not finished, and `..` is documented as slicing |
 | D | **Does `any` exist?** `decision-8:129-133` says no; it parses, it checks, and `libs/std/src/builtins.d.bp:88`, `:98` use it as a default type argument | [`01-checker`](../01-checker/README.md)'s step 11 rewrite of `libs/std` | delete the type and give `Iterator<T, E, C>` a real default — a type that turns the checker off, reachable from the standard library's most-used behavior, is worse than the two lines it saves |
-| E | **Is `Option` a value-level name?** `decision-8:66`, `:84` and `docs.md:396` write `Option.None` and `Some(1)`; neither is in scope, although `?T` and `.unwrapOr()` work | unowned | **the documents are wrong** — [decision 2](../decisions-taken.md#2-optiont-does-not-exist-either) already settled that `?T` is the only spelling of the type; the value-level names follow it |
+| E | **Is `Option` a value-level name?** `decision-8:66`, `:84` and `docs.md:396` write `Option.None` and `Some(1)`; neither is in scope, although `?T` and `.unwrapOr()` work | unowned | **the documents are wrong** — [decision 2](../../decisions-taken-steps.md) already settled that `?T` is the only spelling of the type; the value-level names follow it |
 | F | **A bodyless top-level `fn` with no return type** — `libs/std` declares three and a user cannot write one | step 2 | make it parse: `) F` and `) noreturn` already do, so the form is the odd one out rather than a deliberate absence |
 
 ---
@@ -397,5 +397,5 @@ so the step that waits on one can find it.
 **Front-table row (`overview.md`):**
 
 ```markdown
-| [`15-language-surface`](./15-language-surface/README.md) | high | An audit of the language's **written** surface against what the parser accepts — the front [decision 14](./decisions-taken.md#14-seven-forms-that-do-not-parse) opened so the rest is reviewed properly rather than decided spelling by spelling. Front 17 found seven forms by accident while writing cells; walked deliberately (268 probes over `decision-8-language.md`, `docs.md`, `MIGRATION.md`, `libs/std` and the five libraries), the surface holds **24** written forms that do not parse and **22** that parse and then contradict the document that writes them. Two of the gaps are one rule each that was never hoisted — the `T[]` wrap is applied per-arm, and `parsePostfixChain` is called from seven of eight receivers — and the reason they went unfiled is that all 48 `ParseErrorType` variants render a named message except the catch-all, which is the one every missing form hits. It produces decisions; it takes none |
+| [`15-language-surface`](./15-language-surface/README.md) | high | An audit of the language's **written** surface against what the parser accepts — the front [decision 14](../../decisions-taken-steps.md) opened so the rest is reviewed properly rather than decided spelling by spelling. Front 17 found seven forms by accident while writing cells; walked deliberately (268 probes over `decision-8-language.md`, `docs.md`, `MIGRATION.md`, `libs/std` and the five libraries), the surface holds **24** written forms that do not parse and **22** that parse and then contradict the document that writes them. Two of the gaps are one rule each that was never hoisted — the `T[]` wrap is applied per-arm, and `parsePostfixChain` is called from seven of eight receivers — and the reason they went unfiled is that all 48 `ParseErrorType` variants render a named message except the catch-all, which is the one every missing form hits. It produces decisions; it takes none |
 ```

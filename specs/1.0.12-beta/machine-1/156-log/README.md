@@ -43,9 +43,9 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
 #### Step 3 — the sinks and the runtime-report capture (decision 349) (was `106-log` s3)
 
 - [ ] sinks in `log`: console, a file with rotation, per-name levels — one API on every target; an
-      `@External` cell they use is bound on erlang/beam, commonJS and wasm, never on some only (on the
+      `compiler.external` cell they use is bound on erlang/beam, commonJS and wasm, never on some only (on the
       BEAM a sink may hand records to OTP's `logger`); ported from `rakun-logging`'s `cells.bp`
-      — built: `consoleSink` (`@print`, no cell), `fileSink` / `LogFile` (`logger_std_h`'s rotation in
+      — built: `consoleSink` (`terminal.print`, no cell), `fileSink` / `LogFile` (`logger_std_h`'s rotation in
       botopink over four cells), `fanOut`, `Threshold` / `Levels` (longest dotted prefix) — choices
       106-b…106-d; `hostWrite` bound on wasm (`fn:printLine`). Left: the wasm binding of the sink slot
       (**A wasm binding cannot keep a value across calls**, 140) and of the four file cells (**A wasm

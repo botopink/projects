@@ -48,7 +48,7 @@ key anywhere.
 |---|---|
 | `atom({ key: "count", default: 0 })` | `pub val count = atom(0);` — `from "cardume"`; the identity is the declaration (281), no key |
 | `selector({ key, get: ({get}) => get(count) * 2 })` | `pub val doubled = selector({ get -> get.atom(count) * 2 });` — `get.atom` takes an `Atom<T>` or a type (297); `get.selector(s)` for a selector (no overloading) |
-| async selector (`get` returns a Promise) | `pub val user = selector({ get -> await fetchUser(get.atom(userId)) });` — a `Selector<@Task<User>>` |
+| async selector (`get` returns a Promise) | `pub val user = selector({ get -> await fetchUser(get.atom(userId)) });` — a `Selector<Async<User>>` |
 | `atomFamily({ key, default: id => … })` | `pub val todo = atomFamily({ id: i32 -> Todo(id: id, text: "", done: false) });` — `todo(5)` is an `Atom<Todo>` |
 | `selectorFamily` | `selectorFamily({ id: i32, get -> … })` |
 | `useRecoilState(a)` | `val c = use atomState(a);` → jhonstart's `State<T>` (`c.value`, `c.set(…)`) |
@@ -97,7 +97,7 @@ its framework's root context (296 as amended by 354): `jhonstart-cardume`'s from
 ### The stores
 
 - **In rakun, one store per request** (`rakun-cardume`): it lives in the request's process frame and
-  dies with it; middleware, route handlers and actions (`-> @Component<Response>`, 295, 354)
+  dies with it; middleware, route handlers and actions (`-> Component<Response>`, 295, 354)
   write with `use atomSetter(a)`; a page reads the request's value through jhonstart's own hook
   (`use local(a)`, `05-jhonstart/26` step 12), marked by jhonstart's `#[serverOnly]` (186, 277) — the
   store it reads is `rakun-cardume`'s (295, 296).
@@ -126,14 +126,14 @@ val move = use transaction({ tx, m: Move ->
 move(Move(card: 7, from: .Todo, to: .Done));
 ```
 
-- **Synchronous and atomic**: the body's `fn(tx: Tx, arg: A)` returns nothing — no `@Task`, so no
+- **Synchronous and atomic**: the body's `fn(tx: Tx, arg: A)` returns nothing — no `Async`, so no
   `await` inside —; every `tx.set` / `tx.reset` is applied **together** when the body returns, and
   each subscriber is notified once.
 - **Reads see the transaction's own writes** (`tx.get` after `tx.set` answers the new value).
 - **Atoms only**: `tx.get` / `tx.set` take an `Atom<T>` (a family member included) or a type (its
   implicit atom, 297), never a selector —
   a selector is derived, not stored (Recoil's rule); a selector read inside is a type error.
-- **All or nothing**: a body that fails (a refused `@Result`, a panic) applies nothing.
+- **All or nothing**: a body that fails (a refused `Result`, a panic) applies nothing.
 
 **The examples**, one per section of Recoil's API reference: `state-example.bp` (atom, selector,
 the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`, `waitFor*`,
@@ -164,7 +164,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
       the type's implicit atom per store, `?T` unless `#[atom(default: …)]` on the type; `atomState<T>(a)`
       checked against `a`
 - [ ] `atom<T>(default: T) -> Atom<T>`; `atomValue`, `atomState`, `atomSetter`, `atomReset`, each
-      `-> @Component<…>` (354), the server pass reading the default
+      `-> Component<…>` (354), the server pass reading the default
 - [ ] `atoms_runtime.mjs`: the page store; a component re-renders on a change of what it read, and only then
 - [ ] `examples/atoms-example.bp` passes (server pass on both targets; the browser half in
       `jhonstart-dom-test`: two islands sharing `cartItems`, one `atomSetter` updating both)

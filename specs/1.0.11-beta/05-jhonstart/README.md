@@ -97,7 +97,7 @@ of 26, 27 or 67:
 
 ## Maintainer decisions
 
-Ids kept from 1.0.10 (`specs/1.0.10-beta/decisions-pending.md` § Track C); new questions continue
+Ids kept from 1.0.10 (`specs/decisions-pending.md` § Track C); new questions continue
 the per-front letter sequence. Numbered decisions continue from 225 when answered.
 
 ### To confirm

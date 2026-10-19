@@ -560,8 +560,8 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 ### Escolhas de implementação das trilhas 00–03
 
 Cada uma implementada com sua opção recomendada; o mantenedor confirma ou reverte (uma reversão é uma
-mudança local no lugar nomeado). Texto completo da 1.0.10 sob o mesmo id em
-[`../1.0.10-beta/decisions-pending.md`](1.0.10-beta/decisions-pending.md).
+mudança local no lugar nomeado). O texto completo da 1.0.10 de cada uma estava sob o mesmo id na página de pendências da 1.0.10-beta, dobrado nestes arquivos em
+2026-10-18 (decisão 748); esta tabela é o registro.
 
 #### 01-compiler (28)
 

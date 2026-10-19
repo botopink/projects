@@ -3,7 +3,7 @@
 **Track:** cross-cutting (A std · B rakun · C jhonstart · D emilia · E onze) — the per-library half of [`../README.md`](../README.md) (`02-packaging`), which states the workspace rule every library follows; the assertion half is [`../../01-std/`](../../01-std/)
 **Priority:** high — every library front writes its tests into a member this front creates
 **Target:** none of its own — each member declares its library's targets
-**Depends on:** `01-std` (`testing.asserts`, `testing.snapshots`, `testing.mocks` in std; the old `onze` retired) · the maintainer, for the `onze` takeover (decision [79](../../decisions-taken.md#79-the-old-onze-repository-is-tagged-archived-and-re-pointed))
+**Depends on:** `01-std` (`testing.asserts`, `testing.snapshots`, `testing.mocks` in std; the old `onze` retired) · the maintainer, for the `onze` takeover (decision [79](../../../decisions-taken-steps.md))
 **Owns:** the `modules/<lib>/` and `modules/<lib>-test/` skeletons and their `botopink.json`, and the relocations the cut in each library's `modules.md` needs — the directory moves and the import lines a move changes, never behaviour
 **Does not touch:** `libs/std/src/**` (01-std) · the source of any library beyond the one import line a move changes (its fronts) · the members a library front creates for its own code (`jhonstart-link` 27, `jhonstart-forms` 67, `jhonstart-emilia` 30, `onze-*` 49–71)
 **Reference:** [`../README.md`](../README.md) §§ 2, 5, 9, 11 · `03-rakun/modules.md` · `04-jhonstart/modules.md` · `05-emilia/modules.md` · `06-onze/modules.md` · [`../../01-std/asserts-api.md`](../../01-std/asserts-api.md) · [`../../01-std/onze-migration.md`](../../01-std/onze-migration.md)
@@ -25,7 +25,7 @@ A `<lib>-test` member:
   to std's `snapshots` unchanged, plus fixtures and builders — filled by the library's fronts;
 - **re-exports nothing from std** — a consumer writes `import {testing.asserts} from "std"` beside
   `import {assertSheet} from "emilia-test"`;
-- keeps no mocking runtime: mocking is `testing.mocks` (decision [71](../../decisions-taken.md#71-mocking-lives-in-stdmocks)),
+- keeps no mocking runtime: mocking is `testing.mocks` (decision [71](../../../decisions-taken-steps.md)),
   and a `-test` member documents only the injection pairing (`#[mocks.mock]` + `#[bean]` in rakun).
 
 The worked examples are `01-std`'s: [`asserts-unit-example.bp`](../../01-std/examples/asserts-unit-example.bp),

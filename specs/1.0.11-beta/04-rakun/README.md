@@ -179,14 +179,14 @@ The rule of this milestone: a cell is a hard assertion or it does not exist. For
 
 ## What the maintainer must decide
 
-The 24 choices of 1.0.10 (`03r-a` … `03r-x`, in `specs/1.0.10-beta/decisions-pending.md` § Track B)
+The 24 choices of 1.0.10 (`03r-a` … `03r-x`, in `specs/decisions-pending.md` § Track B)
 are implemented and await confirmation; the fronts here build on them as written and name the ones
 they touch (03r-b/c/d → 04; 03r-e → 04; 03r-i/j → 12; 03r-k/l → 15; 03r-m/n → 22; 03r-r → 73;
 03r-s → 17; 03r-v → 08; 03r-w → 79 and 13; 03r-x → 15). The questions this track adds continue the
 letter sequence. Each is in the milestone's `decisions-pending.md` shape; the recommendation is the
 most restrictive reading, with no configuration that bypasses it (decision 67).
 
-Seven of the fifteen are answered and live in [`../decisions-taken.md`](../decisions-taken.md);
+Seven of the fifteen are answered and live in [`../decisions-taken.md`](../../decisions-taken-steps.md);
 the fronts are written against the decision, not the question:
 
 | Id | Decision | What the fronts implement |

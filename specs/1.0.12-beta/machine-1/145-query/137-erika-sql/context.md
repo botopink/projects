@@ -27,7 +27,7 @@ val adults = erika "select * from people where age >= ${min}";
 // a database query on the context (397): QueryContext — dbcontext's DbContext implements it (398);
 // `User` an entity: its QueryTable meta (#[entity]) gives the table and the columns at build
 type Report(db: DbContext) {
-    fn active(self: Self) -> @Result<User[], StoreError> {
+    fn active(self: Self) -> Result<User[], StoreError> {
         return self.db.query "select * from User where active = true";
     }
 }
@@ -36,7 +36,7 @@ type Report(db: DbContext) {
 #[repository]
 behavior Users {
     #[query "select * from User where id = ${id} limit 1"]
-    fn find(self: Self, id: i32) -> @Result<?User, StoreError>;
+    fn find(self: Self, id: i32) -> Result<?User, StoreError>;
 }
 ```
 

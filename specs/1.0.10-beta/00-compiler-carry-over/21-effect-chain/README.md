@@ -5,9 +5,9 @@
 [`24-effects-by-return`](../24-effects-by-return/README.md) (decisions 118–128), which owns the effect
 chain, `EffectKind`, `effect_chain.zig` and the effect legality. Nothing is open.
 
-Decisions [102](../../decisions-taken.md#102-contextbase-is-the-context-owner-marker-only-use-answers-usec-t-or-componentt),
-103, [104](../../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked) and
-[108](../../decisions-taken.md#108-getcontex--getcontext), as amended by 118–128.
+Decisions [102](../../../decisions-taken-steps.md),
+103, [104](../../../decisions-taken-steps.md) and
+[108](../../../decisions-taken-steps.md), as amended by 118–128.
 
 ---
 

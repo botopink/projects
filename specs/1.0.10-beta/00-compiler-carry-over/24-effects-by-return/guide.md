@@ -1,7 +1,7 @@
 # The effects of botopink — the return decides, `async { }`, `iter` and `stream`
 
 The maintainer's guide to the language **as decided** by the effect revision of 1.0.10-beta
-(decisions [118–128](../../decisions-taken.md#118-the-return-type-is-the-annotation)), in English.
+(decisions [118–128](../../../decisions-taken-steps.md)), in English.
 The effect of a function is its return type; the forms that left the language are listed in § 9
 *Old names that left*, each a located compile error with a fix-it. `docs.md` carries the same text
 (§ Effects, § Results, § Iterators, § use, § Loops, § Host bindings); what is left open is in the

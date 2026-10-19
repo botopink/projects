@@ -52,7 +52,7 @@ runtime wraps the swap in `document.startViewTransition(…)`, without it naviga
 API: swap without animating, content never held back.
 
 **Annotations are data attributes** (278, 302; the template only lowers them). Each is
-`(comptime decl: @Decl, …)` — any element or component tag — declared in `transitions.bp`, recording
+`(syntax decl: unknown, …)` — any element or component tag — declared in `transitions.bp`, recording
 its own meta type (`TransitionName`, `TransitionAnimate`, `TransitionPersist`, `TransitionPersistProps`),
 so one tag may carry several, one of each:
 
@@ -67,8 +67,8 @@ so one tag may carry several, one of each:
 Meets 27 here: `reconcile` answers which layouts are shared; `#[transitionPersist]` adds named elements to what survives.
 
 **Per link: two tag annotations** (292). `#[reload]` on `<a>` / `<form>` forces a document load;
-`#[history(.Push | .Replace | .Auto)]` picks the history call (`History` enum). They take `comptime
-decl: @Decl`, record `LinkReload` / `LinkHistory` metas for this front's arm (302), and lower to the wire attributes
+`#[history(.Push | .Replace | .Auto)]` picks the history call (`History` enum). They take `syntax
+decl: unknown`, record `LinkReload` / `LinkHistory` metas for this front's arm (302), and lower to the wire attributes
 `data-jh-reload` / `data-jh-history="replace"` the runtime reads — the attributes are output, never
 written by hand (a written `data-jh-reload` is refused, naming the annotation).
 

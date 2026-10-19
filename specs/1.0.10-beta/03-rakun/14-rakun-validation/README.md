@@ -48,7 +48,7 @@ source rakun hands the library, both server code
 on, `modules/rakun/src/config_check.bp` (`boot.bp` moved), `modules/rakun/test/config_check_test.bp`
 (`config_test.bp` moved) and the `setMessageSource` call at rakun's boot
 **Does not touch:** `src/decorators.bp`, `src/http.bp`, `src/bootstrap.bp`, `src/runtime.mjs` — frozen for the milestone
-**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+**Reference:** [decision 116](../../../decisions-taken-steps.md)
 rule 5 (validation is a bundled library; the member leaves rakun) · `07-io.md § Validacao` · https://docs.spring.io/spring-boot/reference/io/validation.html
 
 ---

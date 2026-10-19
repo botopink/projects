@@ -266,7 +266,7 @@ lands; three are not this front's at all.
 and identity inside the value), and re-records 188 + 130 snapshots in the two directories this front
 and [`03-beam`](../03-beam/README.md) own. The two cannot run at the same time.
 
-[`../decisions-pending.md` #4](../decisions-pending.md) already asks this question for the milestone
+[`../decisions-pending.md` #4](../../decisions-pending.md) already asks this question for the milestone
 and recommends **(a) 14 → 13 → the backends**, noting that it costs 02 and 03 standing still for the
 whole of 13. This front's measurement adds a third option and recommends it:
 
@@ -365,7 +365,7 @@ file, something crossed into [`01-checker`](../01-checker/README.md)'s territory
    re-record no file 13 re-records), 13 whole, then §7 and the rest; the three options and their
    measured costs are in
    [Ordering against `13-module-identity`](#ordering-against-13-module-identity), and the milestone
-   question is [`../decisions-pending.md` #4](../decisions-pending.md). §7's F2/F3/F4 land with 13
+   question is [`../decisions-pending.md` #4](../../decisions-pending.md). §7's F2/F3/F4 land with 13
    either way.
 4. **02 × [`14-comptime-on-beam`](../14-comptime-on-beam/README.md) — `yes`** as written today; if 14 needs the erlang emitter to render
    a comptime module, it takes a carve-out named in its own README.
@@ -390,7 +390,7 @@ file, something crossed into [`01-checker`](../01-checker/README.md)'s territory
 
 ## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
 
-**One lowering: the index expression.** [Decision 30](../decisions-taken.md) landed in the parser as a
+**One lowering: the index expression.** [Decision 30](../../decisions-taken-steps.md) landed in the parser as a
 builtin call — `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`, contract at
 `ast.zig:1681-1703` — so `xs[0]`, `d["k"]`, `s[0]` and the slice `xs[0..2]` (the same node with a
 `range` second argument) all arrive as one shape. Until this backend lowers it, the form falls into the
@@ -420,7 +420,7 @@ it.
 ## Handed over by `12-language-tests` (2026-09-18)
 
 The suite's new index cells name this front's owner row as `<front> handover 15`, because
-[decision 30](../decisions-taken.md#30-is-there-an-index-expression) says "one lowering in each of
+[decision 30](../../decisions-taken-steps.md) says "one lowering in each of
 fronts 02–05" and this front carries it only as the handover section above, with no numbered step.
 Worth giving it a number when the step is planned.
 

@@ -32,7 +32,7 @@ Today `rakun-test/src`: `root.bp`, `fake_request.bp`, `assertions.bp` (`expect*`
   multi-bulk commands, the twelve commands 12 and 09 use (`GET SET SETEX DEL INCRBY HGET HSET LPUSH
   RPOP TTL EXPIRE PING`) over one ETS table per port (`SETEX` / `EXPIRE` sweeper on
   `erlang:send_after`), a command log (`redisDoubleLog`), a fault injector
-  (`redisDoubleFail(port, cmd)` closes the socket on the next `cmd`), `redisDoubleStop`. `#[@External.Erlang]` cells in
+  (`redisDoubleFail(port, cmd)` closes the socket on the next `cmd`), `redisDoubleStop`. `#[compiler.external(.Erlang(…))]` cells in
   `src/redis_double.bp`, `pub` from `root.bp`; consumers import `{redisDoubleStart, …} from "rakun-test"`.
 - **Context control (step 2).** `rakun-messaging` already keeps `rakun_listener_names`, the core reads
   it; 15 step 1 adds the two registries' `rkOnReset` registration.

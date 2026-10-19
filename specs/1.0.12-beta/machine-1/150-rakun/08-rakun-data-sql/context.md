@@ -33,10 +33,10 @@ join count asserted on what the code can show.
   (a node-local lock on multi-node PostgreSQL is the wrong default).
 - **R78-1.** Since `01-compiler/130` (decision 216) the ORM decorators write members: `T.Columns`,
   `T.columns()`, `<Repo>.<m>Sql()`, `<Repo>.<m>Derived(…)`, and the meta
-  `@typeInfo(T).meta(Entity)` (298: `Entity(table, columns)`). A derived finder naming no field fails at build with
+  `compiler.typeInfo(T).meta(Entity)` (298: `Entity(table, columns)`). A derived finder naming no field fails at build with
   "unknown field 'ciudad'" naming `Columns` (`orm_build_test.bp`), without the field list.
   `#[entityRepository("City")]` names its entity by string today (step 4 takes the type, 281); whether it can read
-  `@typeInfo(City).meta(Entity)?.columns` at comptime (decisions 216, 248) decides if the list prints;
+  `compiler.typeInfo(City).meta(Entity)?.columns` at comptime (decisions 216, 248) decides if the list prints;
   under 347 the check is the type-level generator's (318's `#[repository]` on a behavior), never a
   method marker's.
 - **R78-2.** ETS arm has no JOIN, PostgreSQL arm no server here; "nothing is fetched that the method

@@ -25,7 +25,7 @@ commit that fixed `tsc-check`; it holds every group below whose boxes 3 and 4 ar
 
 **First thing the milestone does** (434), with B-00b–B-00e. A new module `repository/botopink-lang/modules/std-wasm/`
 implements std's host functions directly in Zig, compiled to wasm and served to the comptime runtime — what
-341's host cells call at build — so a std function reached at comptime needs no per-binding `@External.Wasm`
+341's host cells call at build — so a std function reached at comptime needs no per-binding `.Wasm`
 cell. Measure first which ones comptime reaches today.
 
 - [x] measured: every std function a comptime evaluation reaches today (the decorator, template and `comptime`
@@ -74,7 +74,7 @@ subset is a row here, never a library workaround).
 
 Every target's comptime evaluation runs on the wasm runtime (wasmtime in-process, `persistent_wat.zig`,
 `runtime/wat/**`). A host function reached at build resolves, in order: the std-wasm implementation, else the
-beam-to-wasm translation of its `@External.Erlang` cell, else its `@External.Wasm` cell; none → refused at the
+beam-to-wasm translation of its `.Erlang` cell, else its `.Wasm` cell; none → refused at the
 call. An Erlang cell beam-to-wasm does not convert is refused at the call, its `fn:` cell not tried (decision 439). The erlang and beam targets are unchanged — only the comptime runtime moves; `erl`
 / `erlc` stay needed for those targets' own tests, never for compiling. comptime-14 built 341's host cells on the BEAM runtime
 (a decorator's Erlang cell): that code is transitional, deleted in B-00d; 434 amends 341 to this order.
@@ -226,7 +226,7 @@ keeps what defines a value's representation or talks to the host; what only comp
       path the program links
 - [x] what stays is exactly 442 (1): `alloc`, `mem_eq`, `box_*`, `arr_at_box`, `arr_new`, `arr_push`, `arr_at`,
       `str_concat`, `str_eq`, `str_slice`, `int_chk`, `u64_chk`, `*_range_chk`, `i32_abs` / `min` / `max`, the print
-      family (the number's text from std-wasm, the I/O here), the `@Task` scheduler, `unknown`, `assert_fail`; the
+      family (the number's text from std-wasm, the I/O here), the `Async` scheduler, `unknown`, `assert_fail`; the
       rule of 442 (3) written in `codegen/wat/AGENTS.md`
 - [x] every wasm `.out` and RUN LOG unchanged except where 441 changes the text; the size an emitted module gains
       or loses measured (a hello world, a `bigint` program, onze's blog page) and recorded in `codegen/wat/AGENTS.md`
@@ -239,7 +239,7 @@ first; `test-libs` wasm column; `modules/std-wasm` unit tests. **Model:** opus. 
 `unicode` builds and runs on wasm: `fromCodepoint`, `firstCodepointOrZero` and `codepoints` are
 `fn:` bodies, `normalize` std's botopink normalizer (`02/97` step 16, decision 333 (A)), and
 `run/std_unicode_on_every_target` has one `.out` for the four targets. `json.parse` /
-`json.stringify` have no `@External.Wasm`. `run/std_module_imports_std_module`
+`json.stringify` have no `.Wasm` cell. `run/std_module_imports_std_module`
 keeps its `.wasm.expect`, `run/std_template_host_fns_across_modules` and
 `run/std_default_fn_in_a_std_module` their `.targets`, though `encoding` now binds every cell on wasm.
 The limits table of `wat/AGENTS.md` still carries the one-page row.
@@ -250,7 +250,7 @@ The limits table of `wat/AGENTS.md` still carries the one-page row.
       its `.wasm.expect` once `02/97` step 15 (336) lands (`encoding`, `querystring`, `unicode` done)
 - [ ] `wat/AGENTS.md` § Where this backend refuses to answer lists only group 3 (the limits table's
       one-page row is gone)
-- [ ] the bindings this step adds written in 305's form — `@External.Wasm(fn: name)`, `op: "…"`,
+- [ ] the bindings this step adds written in 305's form — `.Wasm(fn: name)`, `op: "…"`,
       `wasi: .Adapter` — never the prefixed string: the parser refuses `fn: name` until `01-checker`
       step 27, so `unicode`'s two new bindings are prefixed strings that step migrates
 
@@ -276,7 +276,7 @@ with a located message, recorded as the design; or (b) restructured so no host c
 **Impacted tests:** `reject/try_in_lambda_without_result.expect`; the comptime error snapshots naming the code.
 **Model:** haiku. **Consumer commits:** none.
 
-#### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 3)
+#### Step 42 — a host binding that throws answers a `Result` (decision 431) — part (was `01-checker` s42 box 3)
 
 - [x] `effect-try-without-fallible-channel`'s message names `try … catch` and `result: true` (490's name for 431's `throws: true`); the reference (`conformance/docs.md`) § Results, § Host bindings
 
@@ -303,10 +303,10 @@ The group's changes against the cells (B-01, B-03 … B-06; box 3, written once 
 | Behaviour (decision) | Cells |
 |---|---|
 | `effect-try-without-fallible-channel` names `try … catch` and `result: true` (431 (1), 490) | `throw_outside_result`, `try_in_plain_fn`, `task_throw_without_result`, `task_try_await_without_result`, `component_try_element`, `throw_in_generator`, `try_in_generator`, `try_in_lambda_without_result`, `iterator_throw_without_result` |
-| `result:` on every `@External` variant, a labelled bool in any order, beside `inline:` (487, 490) | `external_result_return_accepted` |
+| `result:` on every `Implementation` variant, a labelled bool in any order, beside `inline:` (487, 490) | `external_result_return_accepted` |
 | a bare positional `true` / `false` refused at the argument (487) | `external_flag_bare_bool_refused` |
 | a `result:` that is not a bool refused (487) | `external_result_not_bool` |
-| `result: true` only on `@Result<…, HostError>` / `@Task<@Result<…, HostError>>` (431 (2), 490) | `external_result_return`, `external_result_task_plain_value`; on a behavior method the comptime error snapshot only |
+| `result: true` only on `Result<…, HostError>` / `Async<Result<…, HostError>>` (431 (2), 490) | `external_result_return`, `external_result_task_plain_value`; on a behavior method the comptime error snapshot only |
 | `HostError` is std's `failure.HostError` by module identity (488) | `external_result_own_host_error`, `external_result_return_accepted` |
 | std's own path import of `failure.HostError` counts (488) | `codegen/tests/std_package.zig` only — a cell cannot import std's sibling by path |
 | `result:` beside `fn:` / `op:` refused (491) | `external_result_on_fn_cell`, `external_result_on_wasm_op_cell` |
@@ -314,7 +314,7 @@ The group's changes against the cells (B-01, B-03 … B-06; box 3, written once 
 | a sync `result: true` binding answers `Ok` / `Error(HostError)` on commonJS, erlang and beam; wasm wraps nothing (431 (2), 489, 490, 491) | `external_result_host_error` |
 | an erlang `exit` is `HostErrorName.Exit` (489) | `external_result_erlang_exit` |
 | host methods wrapped the same way (490) | `external_result_host_method` |
-| a `result: true` `@Task` binding's rejection or raise is `Error(HostError)` (431, 432) | `external_result_host_error`, `host_node_task_result`, `external_result_host_method` |
+| a `result: true` `Async` binding's rejection or raise is `Error(HostError)` (431, 432) | `external_result_host_error`, `host_node_task_result`, `external_result_host_method` |
 | std `io/http`'s `fetch` over a private `result: true` binding (486) | none — a row |
 | a failing task rejects on commonJS and reads back through `await` on every target (432) | `task_result_rejects`, `task_throw_resolves_error`, `task_async_block_in_lambda`, `task_lambda_result_unannotated` |
 | a JS caller's `try` / `catch`; a dropped failing task is no unhandled rejection (432) | `task_result_caught_by_js` |
@@ -327,22 +327,22 @@ The group's changes against the cells (B-01, B-03 … B-06; box 3, written once 
 **Repository:** botopink-lang (`--lang`)
 
 `builtins.d.bp`'s External variants gain `throws: bool = false`; `refuseThrowsReturn` (`throws: true` only on
-`@Result<…, failure.HostError>` or `@Task` of one); `ast.externalRefOf` trims every bool flag. Questions
+`Result<…, failure.HostError>` or `Async` of one); `ast.externalRefOf` trims every bool flag. Questions
 `decision 487`, `decision 488`.
 
 **Impacted tests:** new `modules/external_result_return`, `modules/external_result_return_accepted`; `comptime/tests/effect_{future,generator}.zig`;
 `infer_decls` drift. **Model:** opus. **Consumer commits:** none (B-08 carries them).
 
-#### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 1)
+#### Step 42 — a host binding that throws answers a `Result` (decision 431) — part (was `01-checker` s42 box 1)
 
 ```bp
-#[@External.JavaScript("JSON.parse($0)", throws: true), @External.Erlang("json:decode($0)", throws: true)]
-declare fn jsParse(s: string) -> @Result<Json, HostError>;
+#[compiler.external(.JavaScript("JSON.parse($0)", result: true), .Erlang("json:decode($0)", result: true))]
+declare fn jsParse(s: string) -> Result<Json, HostError>;
 val doc = try jsParse(texto);                      // a JS SyntaxError / an erlang raise is Error(HostError(…))
 ```
 
-- [x] `result: true` (490's name for `throws: true`) on every `@External` variant, a labelled `bool` read in any order
-      (487); refused unless the declared return is `@Result<…, HostError>` or `@Task<@Result<…, HostError>>`, std's
+- [x] `result: true` (490's name for `throws: true`) on every `Implementation` variant, a labelled `bool` read in any order
+      (487); refused unless the declared return is `Result<…, HostError>` or `Async<Result<…, HostError>>`, std's
       `failure.HostError` by identity (488), and beside an `op:` / `fn:` cell (491) — `modules/external_result_return`,
       the accepted shapes `modules/external_result_return_accepted`
 
@@ -375,7 +375,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 - [x] `libs/std/src/failure.bp`: `HostErrorName`, `pub type HostError(message, kind, name, detail)` (489),
       `pub type Failure(message: string, kind: string)` (`panic` / `host` / `crash`, 492) — `modules/std_failure_types`
-      on the four targets; `root.bp` gains `pub mod failure;`; `attempt` and its `@Task` form are B-07's
+      on the four targets; `root.bp` gains `pub mod failure;`; `attempt` and its `Async` form are B-07's
 
 #### B-04 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -399,24 +399,24 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang (`--lang`)
 
-commonJS: a sync binding in a `try/catch` answering `{ok}` / `{error: HostError(e.message, kind)}`, a `@Task`
+commonJS: a sync binding in a `try/catch` answering `{ok}` / `{error: HostError(e.message, kind)}`, an `Async`
 binding's rejection a `HostError` rejection, `__bp_host_task` only under `throws: true` (`decision 490`); erlang and
 beam: `try … catch Class:Reason` building `HostError` (`decision 489`); wasm: the `wasi:` adapter's error, `throws:`
-refused on `op:` / `fn:` (`decision 491`). Consequence of 431 + 432, recorded (no question): a `throws: true` `@Task`
+refused on `op:` / `fn:` (`decision 491`). Consequence of 431 + 432, recorded (no question): a `throws: true` `Async`
 binding on commonJS rejects with `HostError(e.message, e.name)`.
 
 **Impacted tests:** new `modules/external_result_host_error` (four targets); `run/host_node_task_result` rewritten;
 the host-task JS snapshots; the erlang / beam columns (`run/host_erlang_task_result` unchanged). **Model:** opus
 for the shape, sonnet per backend. **Consumer commits:** none.
 
-#### Step 42 — a host binding that throws answers a `@Result` (decision 431) — part (was `01-checker` s42 box 2)
+#### Step 42 — a host binding that throws answers a `Result` (decision 431) — part (was `01-checker` s42 box 2)
 
 - [x] each backend wraps a `result: true` cell: commonJS `__bp_host_result` / `__bp_host_result_task` (a throw, a
       rejection, a throw before the Promise), erlang and beam `try … of … catch Class:Reason:Stack` (an `{error, R}`
       answer an `Error` too), host methods the same; `HostError` per 489; wasm wraps nothing (no `wasi:` adapter fails,
       `result:` refused on `op:` / `fn:`) — `modules/external_result_host_error` on the four targets,
       `host_node_task_result` rewritten; std `io/http`'s `fetch` over a private `result: true` binding (486). A
-      `result: true` `@Task` on commonJS resolves to `{error: HostError}` until B-06 makes it reject (432)
+      `result: true` `Async` on commonJS resolves to `{error: HostError}` until B-06 makes it reject (432)
 
 #### B-05 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -455,7 +455,7 @@ rakun (task callers) — measured in the step.
 async function buscar(id) { if (id <= 0) throw HttpError.BadId; return await http_get(…); }   // not { Error: … }
 ```
 
-- [x] a `@Task<@Result<T, E>>` lowers to an `async function` whose `Error(e)` / `throw e` rejects with `e` and whose success
+- [x] an `Async<Result<T, E>>` lowers to an `async function` whose `Error(e)` / `throw e` rejects with `e` and whose success
       resolves with the bare `T`; `await` under `try` / `case` reads a rejection as `Error(e)`; the `.d.ts` names `E` —
       `run/task_result_rejects`, `run/task_result_caught_by_js` (a JS caller's `try/catch`), the `snapshots/codegen` that
       print `{ Ok }` / `{ Error }` for a task re-recorded
@@ -499,7 +499,7 @@ replacement).
 
 #### Step 18 — `failure`: `HostError`, `Failure`, `attempt` (decision 431; with `01-checker` step 42) — part (was `97-std-dedupe` s18 boxes 2, 3)
 
-- [x] `failure.attempt<T>(f: fn() -> T) -> @Result<T, Failure>` and its `@Task` form on the four targets; on wasm by
+- [x] `failure.attempt<T>(f: fn() -> T) -> Result<T, Failure>` and its `Async` form on the four targets; on wasm by
       exception handling, its binding declaring `needs: [.Exceptions]`, the host handed the flags the program's
       `botopink.needs` section names; `needs:` outside `WasmNeed` refused; STD-001 at the call (518) —
       `std_failure_attempt`, `std_failure_attempt_task`, `external_wasm_needs_unknown`, `std_unsupported_refused_at_the_call`
@@ -529,7 +529,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
   | Behaviour (decision) | Cells |
   |---|---|
-  | `attempt`: a value is `Ok`, a `@panic` is `panic` (431, 492) | `std_failure_attempt` |
+  | `attempt`: a value is `Ok`, a `panic(…)` is `panic` (431, 492) | `std_failure_attempt` |
   | a host raise is `host`, its erlang message `~tp` (492, 527) | `std_failure_attempt_host` |
   | an unmarked raise is `crash` (527 (1), 546) | `std_failure_attempt_crash` |
   | `@todo` and `x!` over null are `panic` (492) | `std_failure_attempt_abort_kinds` |
@@ -553,14 +553,14 @@ hash 1+1, regex 1, async 3, primitives 1, http 1, process 1, clock 1, asserts 1+
 `feat`); a binding that raises without catching is a crash under 431 (2). Questions `decision 486`, `decision 495`.
 Sequence with 142 s1 (`json` leaves std, B-27).
 
-- [x] every std binding that catches by hand declares `throws: true` and answers `@Result<T, failure.HostError>`,
+- [x] every std binding that catches by hand declares `throws: true` and answers `Result<T, failure.HostError>`,
       or maps `HostError` into the typed error a decision names (`HttpError` 393 / 335, `StoreError` 304,
       `ActionError` 303), per `decision 486`; no hand-written `try` / `catch` template left in `libs/std/src`
 - [x] every binding that raises without catching audited: `throws: true`, or documented in its module as
       promising no raise (`decision 495`); the list in `libs/std/AGENTS.md` — built with `result: true` (490); `json`,
       `regex` and `process` answer `HostError` until their enums (B-130); `encoding`'s decoders `EncodingError`,
       `clock.parseIso8601` `ClockError`, `io.fs` through `FsError`; cell `std_host_error_variants`
-- [x] the consumer commits: rakun — `rakun-service/src/rules.bp` (`regex.compile` answers `@Result<Regex, HostError>`;
+- [x] the consumer commits: rakun — `rakun-service/src/rules.bp` (`regex.compile` answers `Result<Regex, HostError>`;
       it takes down every package that imports rakun-service), `rakun-ssr/src/assets/preprocess.bp` and
       `rakun-cli/src/cli.bp` (`io.process.run`'s `Error` is `HostError`); log — `test/formats_test.bp`
       (`io.clock.parseIso8601`'s `Error` is `ClockError`); each library's gate green on `feat`'s compiler
@@ -629,14 +629,14 @@ Today no primitive, std type or literal holds bytes (`val b: Bytes = "a";` misma
 every host cell marshals through `string`.
 
 - [x] `Bytes` in `primitives.bp` (as `bigint`, no declaration in `builtins.d.bp`): an immutable byte sequence;
-      `Bytes.fromUtf8(s: string) -> Bytes`; `b.toUtf8()` answering `@Result<string, string>` (an `Error` on invalid UTF-8)
+      `Bytes.fromUtf8(s: string) -> Bytes`; `b.toUtf8()` answering `Result<string, string>` (an `Error` on invalid UTF-8)
 - [x] no conversion between `string` and `Bytes` without those calls: `modules/bytes_string_literal`,
       `modules/bytes_where_string_expected`
 - [x] a host cell may take and answer `Bytes` (an Erlang binary, a `Uint8Array` on commonJS, a buffer in wasm
       memory): `modules/bytes_round_trip` on the four targets
 - [x] the rest of the surface — length, slice and `b[a..e]`, concatenation, `==` / `!=`, `encoding`'s four bridges —
       with its cells (`bytes_*`); `docs.md` § Primitives; `language-gaps.md`'s byte row closed in the compiler. The
-      restrictive readings it took (no widening to `unknown`, so `@print(b)` is refused; no `is` or type pattern; no
+      restrictive readings it took (no widening to `unknown`, so `terminal.print(b)` is refused; no `is` or type pattern; no
       `comptime` value; no ordering; `+` with a string and a template hole refused) — question B-12-a
 
 #### Step 33 and Step 6 — `@embed(comptime path) -> Asset` (decisions 519, 520)
@@ -673,22 +673,22 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] the pipeline's state in the step's report (474): each repository the group changes, its runs on `feat` since
       the group's base, green or each red named
 
-### B-13 — 304: a method declared `-> @Result` lowered as a `@Result` on erlang
+### B-13 — 304: a method declared `-> Result` lowered as a `Result` on erlang
 
 **Repository:** botopink-lang (`--lang`)
 
 **Impacted tests:** the `run/` cell of the step, erlang and commonJS. **Model:** sonnet (a measured repro).
 **Consumer commits:** none; unblocks rakun 08 s6, 09 s6, 65 s4.
 
-#### Step 14 — a method declared `-> @Result` is lowered as a `@Result` (decision 304) (was `02-erlang` s14)
+#### Step 14 — a method declared `-> Result` is lowered as a `Result` (decision 304) (was `02-erlang` s14)
 
 Measured by rakun (`rakun-data/src/sql/template.bp`, comment above `tryQuery`): on erlang a **method**
-declared `-> @Result` is lowered as a plain function — a `throw` in it escapes as a raise and a returned
+declared `-> Result` is lowered as a plain function — a `throw` in it escapes as a raise and a returned
 value is not wrapped in `{ok, V}` — while a module-level fn is lowered correctly.
 
-- [x] `run/` cell: a method `-> @Result<i32, string>` with `return 1`, `throw "x"` and `try other()` answers `{ok, 1}`, `{error, "x"}` and the propagated error — same as the module-level fn cell
+- [x] `run/` cell: a method `-> Result<i32, string>` with `return 1`, `throw "x"` and `try other()` answers `{ok, 1}`, `{error, "x"}` and the propagated error — same as the module-level fn cell
 - [x] the same cell on js (no change expected; asserted)
-- [x] a behavior method (`KeyValueStore.get`) declared `-> @Result` dispatches and wraps the same
+- [x] a behavior method (`KeyValueStore.get`) declared `-> Result` dispatches and wraps the same
       Measured on `feat`: already lowered right on every target — `result_method_throw` (a record's and an enum's
       method: `return`, `throw`, `try`, pass-through), `behavior_method_result_typed` and `behavior_method_result_chained`
       green on commonJS, erlang, beam and wasm; no code change. rakun's `tryQuery` comment is stale (150 s28)
@@ -713,8 +713,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 | Behaviour (decision) | Cells |
 |---|---|
-| a record's and an enum's method `-> @Result`: `return`, `throw`, `try`, pass-through (304) | `result_method_throw` |
-| a behavior method `-> @Result` through a behavior-typed parameter, `default fn` included (304) | `behavior_method_result_dispatch` (a pin), `template_method_call` |
+| a record's and an enum's method `-> Result`: `return`, `throw`, `try`, pass-through (304) | `result_method_throw` |
+| a behavior method `-> Result` through a behavior-typed parameter, `default fn` included (304) | `behavior_method_result_dispatch` (a pin), `template_method_call` |
 | a behavior method answers its declared type | `behavior_method_result_typed`, `behavior_method_result_chained` |
 
 
@@ -1268,7 +1268,7 @@ tests, `test-web`, decorator/template/comptime cells of `tests/language`. **Mode
 After B-00g. beam-to-wasm stays a standalone utility that knows only std-wasm; nothing in botopink calls it.
 
 - [x] a host function reached at build answers by its `std:` cell, else its `@External.Wasm("fn:…")` cell; none →
-      `comptime-host-cell-unavailable` naming both; an `@External.Erlang` cell never runs at build
+      `comptime-host-cell-unavailable` naming both; an `.Erlang` cell never runs at build
 - [x] `comptime/runtime/wat/cells.zig` and `host_cells.zig`'s `erlangCellOf` / `callingCell` deleted; compiler-core
       imports nothing of `modules/beam-to-wasm` (`build.zig` wires it to its own tests only)
 - [x] `reject/comptime_beam_call_not_converted*` become `comptime-host-cell-unavailable` cells (renamed, their
@@ -1309,7 +1309,7 @@ traps (447).
 | `std:` outside std refused (445) | `reject/external_wasm_std_outside_std` |
 | the package name `std` reserved (453) | `modules/package_named_std` |
 | an unseeded draw at build refused (451, 456); a seeded one the same every build | `reject/comptime_random_unseeded`, `reject/comptime_random_float_unseeded`, `run/comptime_random_seeded` |
-| an `@External.Erlang` cell never run at build (452) | `run/comptime_erlang_cell_never_runs_at_build`, `reject/comptime_expression_erlang_cell_never_runs`, `reject/comptime_host_cell_unavailable{,_erlang_only}` |
+| an `.Erlang` cell never run at build (452) | `run/comptime_erlang_cell_never_runs_at_build`, `reject/comptime_expression_erlang_cell_never_runs`, `reject/comptime_host_cell_unavailable{,_erlang_only}` |
 | `@External.Beam` refused (437) | `reject/external_beam_removed` |
 | a std-wasm frame past the stack's end traps (447) | not reachable from botopink code; `codegen/tests/wat.zig` |
 
@@ -1322,10 +1322,10 @@ too); `run/comptime_erlang_cell_never_runs_at_build` is the cell that does.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
 
-Found by B-00k, present before the B-00 group: on wasm `val s = "${5.0}"; @print(s + "!")` emits invalid wasm
+Found by B-00k, present before the B-00 group: on wasm `val s = "${5.0}"; terminal.print(s + "!")` emits invalid wasm
 (`type mismatch: expected f64, found i32`) and `val xs: string[] = ["${2.5}", "a"]` is refused ("cannot place a float
 in this array"); erlang and commonJS answer `5.0!` / the array. 441's `"${5.0}"` works on wasm only passed straight to
-`@print`.
+`terminal.print`.
 
 - [x] a template is a `string` on wasm whatever its parts — a single float hole included
 - [x] `run/interpolation_single_float_hole`: a `val`, an array element and a concatenation, four targets, red on the
@@ -1393,9 +1393,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | `%` by zero and a nested division name no cause | none — question B-32-a |
 
 
-### B-33 — `@External.Wasm`'s cells as labelled arguments (decision 481)
+### B-33 — `.Wasm`'s cells as labelled arguments (decision 481)
 
-**Repository:** botopink-lang, and every library with an `@External.Wasm` cell (a full worktree) · **Model:** opus (a
+**Repository:** botopink-lang, and every library with a `.Wasm` cell (a full worktree) · **Model:** opus (a
 codemod tied to a new rule)
 
 Today std writes the cells as prefixed strings (50 `"fn:…"`, 28 `"std:…"`, 6 `"op:…"`); 305 already made them labels.
@@ -1535,11 +1535,11 @@ for a defect).
 
 - [x] the abort's text measured on each target; the library's message reaches stderr unchanged on every target (the
       runtime's frame around it the same, or none); the cell's `stderr` claim in `output/`, green on every target
-- [x] a compiler-core test red on the parent (a `@panic` with a library's message, every backend)
+- [x] a compiler-core test red on the parent (a `panic(…)` with a library's message, every backend)
 - [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
-  | a library's `@panic` message reaches stderr unchanged on every target (430) | `panic_library_message` |
+  | a library's `panic(…)` message reaches stderr unchanged on every target (430) | `panic_library_message` |
   | every abort writes stderr only | the `int_overflow_*` cells |
   | a non-panic run-time abort on erlang and beam reads `Class:Reason` | none — question B-41-a |
 
@@ -1548,9 +1548,9 @@ for a defect).
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
 Found moving emilia's reference (79 cells): on wasm, any cell with a `path` dependency prints nothing, a bare
-`@print("hello")` included; emilia's `arbitrary.bp` does not build on wasm (`join/1` does not resolve).
+`terminal.print("hello")` included; emilia's `arbitrary.bp` does not build on wasm (`join/1` does not resolve).
 
-- [x] a cell red on the parent for each: a `path` dependency and a `@print` on wasm; a module calling `join` from a
+- [x] a cell red on the parent for each: a `path` dependency and a `terminal.print` on wasm; a module calling `join` from a
       dependency on wasm
 - [x] both fixed; emilia's 79 cells green on wasm, or each refused on a host binding it lacks (a departure, 475)
 - [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
@@ -1666,7 +1666,7 @@ expansion's calls are not located.
 `math.abs(0.0 - 1.0)` prints `1` (`import_module_paths`) and an `f64` out of a `case` prints `2` (`enum_declaration`) on
 commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.0` / `2.0`.
 
-- [x] the two cells green on commonJS; an `f64` reaching `@print` through a std call or a `case` keeps its `.0`
+- [x] the two cells green on commonJS; an `f64` reaching `print` through a std call or a `case` keeps its `.0`
 - [x] a codegen test the hook runs, red on the parent
 - [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
@@ -1687,20 +1687,20 @@ commonJS; the same backend prints `1024.0` elsewhere, and every other target `1.
   |---|---|
   | wasm prints a string in a generic field or out of an `await` as text (430) | `generic_fn_and_type`, `async_block_both`, `task_result_await`; a codegen test |
 
-### B-53 — `@print` of a `@Result` prints the host's form (structural, decision 430)
+### B-53 — `print` of a `Result` prints the host's form (structural, decision 430)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-`@print(Ok(81))` prints `{ ok: 81 }` on commonJS, `{ok,81}` on erlang and a number on wasm; the reference says a value
+`terminal.print(Ok(81))` prints `{ ok: 81 }` on commonJS, `{ok,81}` on erlang and a number on wasm; the reference says a value
 prints the way the source writes it.
 
-- [x] a cell red on the parent: `@print` of `Ok(…)` and `Error(…)` on every target, the source's form
-- [x] every backend prints a `@Result` as `Ok(81)` / `Error(…)`
+- [x] a cell red on the parent: `print` of `Ok(…)` and `Error(…)` on every target, the source's form
+- [x] every backend prints a `Result` as `Ok(81)` / `Error(…)`
 - [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
-  | `@print` of a `@Result` writes `Ok(…)` / `Error(…)` on every target (430) | `print_result` |
-  | a template hole writes `@print`'s text for every value | none — question B-53-a |
+  | `print` of a `Result` writes `Ok(…)` / `Error(…)` on every target (430) | `print_result` |
+  | a template hole writes `print`'s text for every value | none — question B-53-a |
 
 ### B-54 — `botopink format` rewrites an annotation's labelled argument `keyed: true` to `keyed = true`
 
@@ -1746,13 +1746,13 @@ that exposed it go.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet
 
-commonJS wrote an `f64` in text as the JS engine does (`5`, `1e21`); erlang, beam, wasm and commonJS's own `@print`
-(since B-51) write `5.0`, `1.0e21`. The change shares `@print`'s helper. It contradicts decision 441's last sentence
+commonJS wrote an `f64` in text as the JS engine does (`5`, `1e21`); erlang, beam, wasm and commonJS's own `print`
+(since B-51) write `5.0`, `1.0e21`. The change shares `print`'s helper. It contradicts decision 441's last sentence
 ("commonJS keeps the JS engine's text; whether it adopts std-wasm's is a later question") and **waits on question
 B-78-a** (`decisions-pending.md`): if the answer is to keep the engine's text, the change is reverted.
 
 - [x] a template hole, `.toString()` and `string + f64` write the `f64` with its decimal part (`5.0`, `1.0e21`) through
-      `@print`'s helper; the cell `float_text_everywhere`
+      `print`'s helper; the cell `float_text_everywhere`
 - [x] a float commonJS cannot type (an imported record's `f64` field, a generic method's answer) keeps its `.0` (521)
 - [x] Conformance step (459, 474, 477, 478, 480) — a string method through `?.` answers std-wasm's text (cell
       `optional_chain_string_text`); an `f64` inside a generic body is B-114
@@ -1902,7 +1902,7 @@ module-level tables (`everySpacingToken/0`, `front38TextLeaves/0`, `layoutLeaves
 539's amendment reads a deferred expression when it runs. erlang carries a `var` the rest of the block reassigns in the
 process dictionary, written after each statement: a reassignment inside a nested arm reaches it only after the outer
 statement, so an arm that panics or throws hands the defer the old value
-(`var f = "a"; defer @print(f); if (c) { f = "b"; @panic("x") }` prints `a`).
+(`var f = "a"; defer terminal.print(f); if (c) { f = "b"; panic("x") }` prints `a`).
 
 - [x] the cell above, red on erlang (beam checked the same), green after
 - [x] the reassignment written where it happens, inside the arm
@@ -1937,7 +1937,7 @@ wrapping every such call (492)", but commonJS wraps nothing: its `attempt` reads
       `attempt` / `attemptTask` Node forms and the abort guard read an unmarked raise as `crash`
 - [x] `std_failure_attempt_crash` widened to commonJS; a cell `abort_text_crash` on commonJS (a raise from emitted
       code: a mistyped binding's value whose method call raises)
-- [x] a cell `abort_text_panic` (`@panic`'s text, `panic: <message>`) on every target, out on wasm until 164 s2c's box
+- [x] a cell `abort_text_panic` (`panic`'s text, `panic: <message>`) on every target, out on wasm until 164 s2c's box
       lands
 
 ### B-101 — commonJS: a `case` no arm matches answers `undefined` instead of raising `crash` (decisions 535, 527 (1), 546)
@@ -1961,15 +1961,15 @@ a `snapshot/targets/commonJS/` departure, which 458 forbids for a defect.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
 
-The erlang emitter unescapes an `@External.Erlang` template a second time (the bound wrappers of 546's host mark), after the lexer has already processed the
+The erlang emitter unescapes an `.Erlang` template a second time (the bound wrappers of 546's host mark), after the lexer has already processed the
 string's escapes: every `\` before `"` is dropped. A template holding an Erlang string literal with an escaped quote,
 `re:run(__B, "q=\"([^\"]+)\"", …)`, is emitted as `"q="([^"]+)""`, which erlc refuses (`adjacent string literals
 without intervening white space`). Hit by rakun-mail's `test/compose_test.bp`. Repro:
 
 ```bp
-#[@External.Erlang("""(fun(__B) -> case re:run(__B, "q=\\"([^\\"]+)\\"", [{capture, all_but_first, binary}, global]) of {match, __Ms} -> [__X || [__X] <- __Ms]; _ -> [] end end)($0)""")]
+#[compiler.external(.Erlang("""(fun(__B) -> case re:run(__B, "q=\\"([^\\"]+)\\"", [{capture, all_but_first, binary}, global]) of {match, __Ms} -> [__X || [__X] <- __Ms]; _ -> [] end end)($0)"""))]
 declare fn quoted(text: string) -> string[];
-pub fn main() { @println(quoted("a q=\"x\" b").length().toString()); }   // 1 on erlang and beam; erlc refused it
+pub fn main() { terminal.print(quoted("a q=\"x\" b").length().toString()); }   // 1 on erlang and beam; erlc refused it
 ```
 
 - [x] the template emitted as the lexer answered it, an Erlang-escaped quote kept; a cell with an escaped quote inside
@@ -1980,17 +1980,17 @@ pub fn main() { @println(quoted("a q=\"x\" b").length().toString()); }   // 1 on
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
 
-431: `try e catch f` handles a `@Result` on the spot; a raise that does not arrive as one — an unannounced host raise —
+431: `try e catch f` handles a `Result` on the spot; a raise that does not arrive as one — an unannounced host raise —
 is contained by `attempt` alone. On erlang and beam the `try … catch` lowering ends in `error:_TryR0 -> {error,
 _TryR0}`, so since 546 marks a library binding's raise as `error:{bp_host, _}` every such raise inside the operand is
 read as the `Error` arm. Found by 165 (rakun's navigation signal, `rakun-app/test/navigation_test.bp`: "a signal inside
 try … catch still reaches the capture"). Repro:
 
 ```bp
-#[@External.Erlang("""erlang:throw($0)""")]
+#[compiler.external(.Erlang("""erlang:throw($0)"""))]
 declare fn sig(r: string) -> i32;
-fn load(s: string) -> @Result<string, string> { val _n = sig("nav:x"); return s; }
-pub fn main() { val v = try load("a") catch "fallback"; @print(v); }   // prints fallback; a host raise is the answer
+fn load(s: string) -> Result<string, string> { val _n = sig("nav:x"); return s; }
+pub fn main() { val v = try load("a") catch "fallback"; terminal.print(v); }   // prints fallback; a host raise is the answer
 ```
 
 - [x] `try … catch` catches only its operand's `Error`; a `host`, `panic` or `crash` raise inside it propagates, on
@@ -2029,7 +2029,7 @@ one.
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a backend bug with a measured repro)
 
 B-87 threads a `var` a value `case`'s arm reassigns; a value `if` is not threaded:
-`var f = "a"; val r = if (c) { f = "b"; 1 } else { 0 }; @print(f)` fails erlc with `unsafe variable`.
+`var f = "a"; val r = if (c) { f = "b"; 1 } else { 0 }; terminal.print(f)` fails erlc with `unsafe variable`.
 
 - [x] the value `if` threads a reassigned `var` as the value `case` does; a cell, red on erlang, green on every target
 
@@ -2129,7 +2129,7 @@ source "rakun"`. So rakun's suite carries one manifest per feature instead of on
 
 521 writes an `f64` as std-wasm's text on commonJS wherever it differs from the engine's. Inside a generic body the
 type is gone: `fn show<T>(x: T) -> string { return "${x}"; }` called with `4.0` answers `4` on commonJS, `4.0` on
-erlang, beam and wasm; `@print(x)` and `"v=" + x` the same. Found by B-78's Conformance step.
+erlang, beam and wasm; `terminal.print(x)` and `"v=" + x` the same. Found by B-78's Conformance step.
 
 - [x] an `f64` reaching a generic body as `T` is written `4.0` on commonJS (the type's shape handed in, or the body
       specialised per call) — a cell red on commonJS today, green on the four targets: a top-level generic fn whose
@@ -2177,11 +2177,11 @@ erlang and wasm answer the generator. B-116's marked lambda writes `return <bloc
 - [x] an `iter loop` as a lambda's tail answers its generator on beam — a cell on every target, red on beam today —
       `lambda_tail_iter_loop`
 
-### B-119 — commonJS: an adopted behavior `default fn … -> @Task` is emitted without `async`
+### B-119 — commonJS: an adopted behavior `default fn … -> Async` is emitted without `async`
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
 
-Found by B-116 P1: a type adopting a behavior's `default fn` that answers `@Task<T>` and awaits gets a non-`async` JS
+Found by B-116 P1: a type adopting a behavior's `default fn` that answers `Async<T>` and awaits gets a non-`async` JS
 function, which Node refuses ("await is only valid in async functions"); erlang, beam and wasm answer.
 
 - [x] the adopted default body is emitted `async` on commonJS — a cell on every target, red on commonJS today —
@@ -2217,7 +2217,7 @@ backend", and a program's `fn size(…)` answers `null`; commonJS and erlang cal
 Found by B-27 step 6: `#(1, 2).toString()` aborts on beam with `unresolved_method`; commonJS and erlang print the
 tuple.
 
-- [ ] a tuple's `toString()` on beam answers the text `@print` writes (`#(1, 2)`, `tuple_print`'s answer) — cell
+- [ ] a tuple's `toString()` on beam answers the text `print` writes (`#(1, 2)`, `tuple_print`'s answer) — cell
       `tuple_to_string`, red on beam on the parent; staged, landing once the hook is green (165 s10)
 - [ ] commonJS: a tuple's `toString()` answers `#(1, 2)`, not JavaScript's `Array.toString` (`1,2`) — the same cell
 - [ ] wasm: a tuple's `toString()` resolves (today `cannot resolve the call toString/0`) — the same cell
@@ -2226,7 +2226,7 @@ tuple.
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
 
-Found by B-27 step 6: an `#[@External.Erlang("""…""")]` template matching `<<_/binary>>` or `<<"lit", X/binary>>`
+Found by B-27 step 6: a `#[compiler.external(.Erlang("""…"""))]` template matching `<<_/binary>>` or `<<"lit", X/binary>>`
 compiles on erlang and is refused on beam; std's templates were rewritten without such patterns.
 
 - [ ] beam accepts the binary patterns an Erlang host template writes — `X/binary` and a literal prefix already did; a
@@ -2277,7 +2277,7 @@ endless `iter loop` cannot be consumed. Found by B-116 P1.
       `take(3)`, red on erlang, beam and wasm today, green on commonJS
       — erlang and beam: each generator a process (`codegen/beam/gen_runtime.zig`, one text for both) that waits for a
       request before it starts and at every `yield`; `generator_body_lazy` green on commonJS, erlang and beam
-- [x] wasm: a generator's body a resumable state machine as a `@Task`'s (392), each `yield` a suspension point; `for`,
+- [x] wasm: a generator's body a resumable state machine as an `Async`'s (392), each `yield` a suspension point; `for`,
       `.next()` and the iterator methods step it; `generator_body_lazy`, `generator_handle_stateful` (B-134) and
       `generator_captured_var_shared` (B-135) green on wasm — in a GC module (`wat/AGENTS.md` § Generators as state
       machines); a module that falls back to linear memory is B-142
@@ -2420,7 +2420,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       commonJS, erlang and beam, wasm through 164; `io.fs`'s `lines()` / `chunks()` answering
       `AsyncIter<…, Result<void, FsError>>`; new cells red on the parent, green after
 - [ ] Conformance (459) — with a cell for the unmarked forms whose tail `await e` / `try e` P1 made the body's value
-      (`fn f() -> @Task<i32> { await g() }`, a bare `async { await g() }`, which answered null on commonJS)
+      (`fn f() -> Async<i32> { await g() }`, a bare `async { await g() }`, which answered null on commonJS)
 
 ### B-91 — `import-of-failed-module` names the failed module's file as the diagnostics label does (decision 545)
 
@@ -2580,7 +2580,7 @@ when it dies. The wasm target's bump heap never frees; this step gives the wasm 
 code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
 
 - [x] measured first, recorded in `codegen/wat/AGENTS.md` § How far a program grows without collection: a string loop
-      ~68 B per iteration, a request loop ~727 B per request (~335 as `@Task`s), a page render ~17.6 KiB per page, all
+      ~68 B per iteration, a request loop ~727 B per request (~335 as `Async` tasks), a page render ~17.6 KiB per page, all
       linear; running out already traps in `$__alloc`; onze's blog does not build on wasm, so a page of its shape
       stands in
 - [x] `modules/std-wasm/src/heap.zig`: a heap per process over one pool, `alloc` on the current heap, minor and major
@@ -2596,7 +2596,7 @@ code erlang's model, implemented in `modules/std-wasm/src/heap.zig` (449).
 - [~] withdrawn with box 3: the bounded long-running cell is B-83's; `heap.zig` and `modules/beam-to-wasm` stay
       untouched until B-84 deletes them
 
-**Impacted tests:** wasm `run/` cells, `@Task` cells first; wasm RUN LOG snapshots (re-read); `modules/std-wasm` and
+**Impacted tests:** wasm `run/` cells, `Async` cells first; wasm RUN LOG snapshots (re-read); `modules/std-wasm` and
 `modules/beam-to-wasm` unit tests; `test-libs` wasm column. **Model:** opus (a design the decision leaves to
 measurement). **Consumer commits:** none.
 - [x] a message copy detects a cycle (522 (5′)): `heap.copy` marks each mutable cell under the walk, answers `error.Cycle`
@@ -2818,8 +2818,8 @@ is the other targets') · **After:** nothing — the builtins group's closure (�
 B-136's migration of the string `setMeta` to typed meta records found three wasm defects; commonJS, erlang and beam answer
 each. Backend code only: no std, no `decorator_*` / `template_*` / `comptime_*` cell, no library.
 
-- [x] `@typeInfo(X).meta(T)?.list.join(",")` resolves `join/1` on wasm; cell `meta_list_method_on_optional`
-- [x] `(@typeInfo(X).meta(T)?.list ?? []).join(",")` answers `a,b` on wasm (it answered `296,304`: the element type
+- [x] `compiler.typeInfo(X).meta(T)?.list.join(",")` resolves `join/1` on wasm; cell `meta_list_method_on_optional`
+- [x] `(compiler.typeInfo(X).meta(T)?.list ?? []).join(",")` answers `a,b` on wasm (it answered `296,304`: the element type
       was lost across `??`); cell `meta_list_coalesced_method`
 - [x] `[1, 2].map(Card)` in a module another module imports resolves `map/1` on wasm (a lifted lambda of a linked
       module was lowered with the importer's lowerings: any primitive method in an imported component); cell
@@ -2833,17 +2833,17 @@ each. Backend code only: no std, no `decorator_*` / `template_*` / `comptime_*` 
 builtins group (§ Machines rule 9)
 
 B-128 made a generator lazy in a WasmGC module; a module that falls back to linear memory still collects every item at
-the call, against 105. It falls back for `@Result` items (decision 122's sugar), a `defer` in a generator body, a
+the call, against 105. It falls back for `Result` items (decision 122's sugar), a `defer` in a generator body, a
 `yield :l` naming an enclosing generator scope, an item type the backend cannot tell, a method over a handle other than
-`for` / `.next()` / `toArray` / `take` / `drop` / `map` / `filter`, and `g.toArray()` printed directly. `@Stream` is eager
+`for` / `.next()` / `toArray` / `take` / `drop` / `map` / `filter`, and `g.toArray()` printed directly. `AsyncIter` is eager
 on wasm too.
 
 - [x] a generator's body one step per item in a linear-memory module, or the module never falls back for it (164 s2's
       WasmGC whole); a cell per fallback cause with a print before and after the first `yield`, red on wasm today,
       green on commonJS, erlang and beam
-- [x] `@Stream` on wasm one step per item, the same cell shape
-      — built as "the module never falls back": `@Result` items, a `defer` in the body (`$__gen_close`), an untyped
-      item, `forEach` / `some` / `every` / `reduce` on the handle, `g.toArray()` printed, `@Stream` / `stream loop`; cells
+- [x] `AsyncIter` on wasm one step per item, the same cell shape
+      — built as "the module never falls back": `Result` items, a `defer` in the body (`$__gen_close`), an untyped
+      item, `forEach` / `some` / `every` / `reduce` on the handle, `g.toArray()` printed, `AsyncIter` / `stream loop`; cells
       `generator_result_items_lazy`, `generator_defer_lazy`, `generator_item_untyped_lazy`, `generator_walk_lazy`,
       `generator_to_array_printed`, `stream_body_lazy`; a `yield :l` naming an enclosing scope is refused by the checker
       (`yield-label-unbound`), so no program reaches that fallback
@@ -2868,8 +2868,8 @@ parent on commonJS for that reason alone, blind to 580.
       rebound to a new array (`v = [...v, x]` or the equivalent), the old array untouched; a `push` whose receiver is
       no `var` keeps its lowering and the value, as on erlang (its refusal is no part of this step)
 - [x] cell `array_push_rebinds_var` (four targets): a module `var xs: string[] = [];` with `fn add(s)` pushing;
-      `val before = all();` then `add("b")`, `@print(before)` then `@print(all())` → `out ["a"]`, `out ["a", "b"]`; and
-      inside a `fn`, `var ys = [1]; val snap = ys; ys.push(2); @print(snap); @print(ys);` → `out [1]`, `out [1, 2]` —
+      `val before = all();` then `add("b")`, `terminal.print(before)` then `terminal.print(all())` → `out ["a"]`, `out ["a", "b"]`; and
+      inside a `fn`, `var ys = [1]; val snap = ys; ys.push(2); terminal.print(snap); terminal.print(ys);` → `out [1]`, `out [1, 2]` —
       red on the parent on commonJS, green on erlang and beam
 - [x] `compile_executor_module_val_order` widened so it sees 580 on commonJS too: `val before = names();` written
       above `#[registered] pub fn own()`, printed first → `out ["second", "first", "later"]` before the four names —

@@ -315,7 +315,7 @@ Two interactions to plan for:
 ## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
 
 **`tests/language/AGENTS.md:183-186` is now doubly obsolete.** Its `??` and module-`var` lines still
-read "deliberately absent (14)", and [decision 28](../decisions-taken.md) reversed the first: `??`
+read "deliberately absent (14)", and [decision 28](../../decisions-taken-steps.md) reversed the first: `??`
 parses as of `fb230e5`. The `??` line also repeats the premise this milestone already measured as
 false — that `catch` covers it; `catch` is `@Result`-only.
 

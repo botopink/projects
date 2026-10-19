@@ -291,4 +291,4 @@ No code. Register, in the owning front's README, with the reproduction:
 **Decision 34's exemption mechanism is not to be built.** The maintainer answered (c) — no exemption —
 and 16 removed the reason the question existed: emilia's `tokens.bp` formats **without reordering**
 now, so there is nothing for `format_cmd.zig` to skip. If a skip list appears later it will be for a
-new reason, not for [decision 18](../decisions-taken.md#18-emilias-tokensbp-and-format---check).
+new reason, not for [decision 18](../../decisions-taken-steps.md).

@@ -9,7 +9,7 @@ with `@BeamMemory` behind it. Seventeen fronts, sixty-seven decisions.
 
 **Where the open work went:** [`specs/1.0.10-beta/00-compiler-carry-over/`](../1.0.10-beta/00-compiler-carry-over/README.md)
 — every open and in-progress item, ranked, with the deep dives that still apply copied beside it.
-[`decisions-taken.md`](./decisions-taken.md) **stays here** as the record; the carry-over references it
+[`decisions-taken.md`](../decisions-taken-steps.md) **stays here** as the record; the carry-over references it
 by path.
 
 **How this record was derived.** Not from memory: the maintainer's status column in
@@ -96,7 +96,7 @@ not the `fix/<front>` names the fronts opened with — each is a follow-up row.
 
 ## The decision record
 
-Sixty-seven decisions in [`decisions-taken.md`](./decisions-taken.md); none pending (65 was the last,
+Sixty-seven decisions in [`decisions-taken.md`](../decisions-taken-steps.md); none pending (65 was the last,
 answered 2026-09-19; the next number is 68). Status as the record and the tree state it:
 
 **Implemented** — 6 (flat `out/erl/`, `out/beam/`) · 8 (beam executes in the suite) · 15 (lower-case

@@ -94,30 +94,30 @@ inside `anyref`, never `i31ref`) · P3 closures, `var` cells, components · P4 t
 P6 the bounded-memory cells and the docs. P6 follows decision 555: the codegen breaks its own cycles (a settled task drops its waiters and frame), the gate
 pins the wasmtime CLI beside the C API, and a cycle a program builds may live until exit on wasmtime.
 
-Landed: P0, P1, P2, P2b (`unknown`, `Dict`, generic records and enums, the arrays' and `@Result`'s methods, union
+Landed: P0, P1, P2, P2b (`unknown`, `Dict`, generic records and enums, the arrays' and `Result`'s methods, union
 arrays, generators) and P3 (function values, closures, fn refs, `var` captures, components; generic static methods, a
 float, array or function value in a type-parameter slot, `==` over a generic record whose type arguments are written, a
-`yield` ending a `case` arm, a `try` inside a generator over a `@Result`, a function value in `unknown`) and P4 (tasks:
+`yield` ending a `case` arm, a `try` inside a generator over a `Result`, a function value in `unknown`) and P4 (tasks:
 `$task`, a typed frame per state machine, waiters, the ready queue, gates, `race` / `raceOf` / `spawnAll`, `async`
 blocks and components that await, the exception tag's payload an `anyref` `$exn`, `attempt` and `try … catch` in GC; a
 settled task nulls its waiters and frame, the codegen breaking its own cycles, 544-a) — 600 GC modules of 1399. A function value is `$closure {idx, mark}`, each lifted lambda a subtype `$env<n>` with one mutable
 field per capture, called through one boxed table entry per arity; a component is `scope_carry`'s `fn(unknown) ->
-unknown` lambda. Left to the linear lowering: an array of tuples in a type-parameter slot, a `try` inside a generator whose item is no `@Result`, a block
+unknown` lambda. Left to the linear lowering: an array of tuples in a type-parameter slot, a `try` inside a generator whose item is no `Result`, a block
 or `case` value typed apart from its function (`{ yield 5; 6 }`), and the refusal of a
 generic body reached with nothing bound, which the GC lowering answers as commonJS does (`Box(n)`) — lifted with P5.
 Writing a type-parameter field is lowered but no cell reaches it.
 
 - [ ] **the types:** one GC type per value shape — string (an `i8` array), array, tuple, record, enum and variant,
-      closure, `@Task` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
+      closure, `Async` record, `Dict` — declared in the module's type section; `unknown` a reference to any of them;
       `Bytes` an `i8` array (346); a value never has an address
-- [ ] **the operations:** construction, field read, array get and length, comparison and `@print`'s text over GC
+- [ ] **the operations:** construction, field read, array get and length, comparison and `terminal.print`'s text over GC
       values; the `wat_prelude` keeps representation, operators, output and runtime (442) in GC form; `alloc` and
       every linear-memory helper gone from the program
 - [x] **a tuple's own subtype, a structural `$__unk_eq` (568, 569, before P5):** a tuple a subtype of `$arr_any` of its
       own, a slot's printer telling `#(1, 2)` from `[1, 2]` (the GC snapshots' `.wat` re-recorded, the diff read); `$__unk_eq`
       comparing records, variants, arrays and tuples by field; the modules they sent to the linear lowering in GC form,
       every answer the same; a cell for each, a tuple through a generic and `==` over an unwritten generic record — `$tuple`; `$__unk_eq` compares records,
-      variants, arrays, tuples, `@Result` and a boxed `i64` by their parts; `generic_tuple_slot`,
+      variants, arrays, tuples, `Result` and a boxed `i64` by their parts; `generic_tuple_slot`,
       `generic_record_equality_unwritten`; an array of tuples in a type-parameter slot still falls back to linear memory
 - [ ] **tasks and the scheduler** (392) over GC records: a settled value is shared, never copied (immutable); a
       mutable cell a GC struct with one mutable field; no heap per task, no copy at a send, no cycle to detect (the
@@ -156,7 +156,7 @@ Each box a cell on every target, out on wasm (never a `snapshot/targets/` depart
 - [x] `continue` inside a block or a `case` arm in a loop builds (today `compilation failed UnknownName`); cell
       `block_continue_reaches_loop`
 - [x] `await tasks[1]!` on an array of tasks answers the task's value; a `[]!` line in `await_postfix_binds_tighter`
-- [x] an abort's text (535): `@panic` / `@todo` / `assert` write `panic: <message>` — cell `abort_text_panic` on the four
+- [x] an abort's text (535): `panic` / `@todo` / `assert` write `panic: <message>` — cell `abort_text_panic` on the four
       targets, its `message` binding removed (144 B-90)
 - [x] an integer overflow and an integer division by zero write 527 (3)'s checked message (the operator, the type,
       `file:line:col`), not a bare trap — the site handed to every checked-arithmetic helper, in both lowerings (after
@@ -194,7 +194,7 @@ Order (each piece keeps every wasm cell's answer and every comptime reply): P0 t
 `std:` cell naming a leaf (beside s2) · P1 `text.*` in botopink over leaves · P2 `array.*`, an integer's text,
 `encoding.*`, `hash.contentHash`, `random.*` · P3 a float's text (one leaf), `bigint.*` in botopink · P4 the comptime
 compiled straight by the GC backend, its Erlang layer and term library deleted (550) · P5 `io.fs` on `wasi:filesystem` (after s2 P4) · P6 the deletions and the docs. P1–P4
-flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's GC types (549); a piece re-records its `COMPTIME WAT` and reads the diff (558); a dependency's function, std's included, is one line with its hash in every snapshot (558 (1)). A `String` method moving to botopink is bound on wasm by a `#[@External.Wasm(fn: …)]` cell, wasm alone (565), after s2 P5 (566). Question 164-s3-g.
+flip wasm once s2 P5 has deleted the linear lowering. A leaf names the codegen's GC types (549); a piece re-records its `COMPTIME WAT` and reads the diff (558); a dependency's function, std's included, is one line with its hash in every snapshot (558 (1)). A `String` method moving to botopink is bound on wasm by a `#[compiler.external(.Wasm(body: …))]` cell, wasm alone (565), after s2 P5 (566). Question 164-s3-g.
 
 Landed: P0 — the reader, the leaf table, `text.length` and `text.charCodeAt` as leaves; a `std:` name that is a leaf
 with no std-wasm export has its signature check written but unexercised until P1 adds such a leaf. P1-a — the leaves

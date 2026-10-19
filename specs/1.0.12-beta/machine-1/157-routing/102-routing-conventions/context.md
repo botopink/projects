@@ -52,7 +52,7 @@ export `x`):
 | `conventions.ConventionFile(authoredPath, segment, kind)` | onze `AppFile` (same three fields) | onze exports `AppFile` |
 | `conventions.conventionConflicts(entries: Array<ConventionFile>) -> Array<string>` | rakun-app `conflictProblems(entries: ScanEntry[])` | rakun-app exports `conflictProblems` |
 | `segment.paramNamesOf(seg) -> Array<string>` | jhonstart `#[page]`'s hand walk | `validation/table` exports `paramNames` |
-| `segment.fillPattern(pattern, bindings: Array<#(string, string)>) -> @Result<string, string>` | rakun-app `expandRow` | jhonstart `router` exports `fill` |
+| `segment.fillPattern(pattern, bindings: Array<#(string, string)>) -> Result<string, string>` | rakun-app `expandRow` | jhonstart `router` exports `fill` |
 | `segment.toColonPattern(pattern) -> string` | rakun-hateoas `bracketToColon` | free |
 
 Deliberate differences from the copies:

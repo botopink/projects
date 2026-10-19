@@ -42,11 +42,11 @@ Order (decision 350: the library on `styled` first): step 5 → step 2 → step 
 
 emilia is the third layer: `css` the base for building CSS, `styled` the base for building CSS
 components, emilia a compile-time library written with `styled`'s literal, applied to a tag with its
-own decorator `#[emilia(…)]` (`<h1 #[emilia(.Text.Bold)]>`, 369, 382: the parameter is `..tokens: @Expr<Token[]>`,
+own decorator `#[emilia(…)]` (`<h1 #[emilia(.Text.Bold)]>`, 369, 382: the parameter is `comptime ..tokens: Token[]`,
 so the leading-dot path resolves — the reader of its meta is `08-bpp/119` step 4). emilia's own sheet model — `Rule`, `Sheet`, `Variant`, `renderRule`,
 `renderDocument` (`output.bp:44-593`) and the per-render store `flush()` drains
 (`emilia.bp:227-235`) — is what `css` and `styled` now hold. Each family is a compile-time function
-answering `StyledProperty` (never a `@Component`, 369), written with the `styledProperty` literal; the
+answering `StyledProperty` (never a `Component`, 369), written with the `styledProperty` literal; the
 ladder of `spacing.bp` becomes the literal's `--spacing()`, and a variant wraps declarations in a
 `styled`:
 
@@ -62,7 +62,7 @@ fn padAllHalf(n: i32) -> StyledProperty { return styledProperty "padding: --spac
 fn hover(inner: StyledProperty) -> Styled { return styled "&:hover { ${inner} }"; }
 
 // the tag decorator: runs at build, records `decl.setMeta(StyledMeta(layer: .Utilities, className: c, rules: r))` (369, 383)
-pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>) { val list = tokens.value; … }
+pub fn emilia(syntax decl: unknown, comptime ..tokens: Token[]) -> void { val list = tokens; … }
 ```
 
 emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 338).
@@ -76,10 +76,10 @@ emilia imports `styled` and std — no framework, no `.bpp`, no jhonstart (113, 
       a token list is the composition of its tokens' components in order, its order the class's
       identity — `[.Bg.White, Token.Focus([.Bg.Color.Gray.__100]), .Pad.All.__4]` renders three rules,
       the `padding` after the `:focus` (368, through `styled`'s source-order reader)
-- [ ] `#[emilia(…)]`: `pub fn emilia(comptime decl: @Decl, comptime ..tokens: @Expr<Token[]>)` (382), no return
+- [ ] `#[emilia(…)]`: `pub fn emilia(syntax decl: unknown, comptime ..tokens: Token[]) -> void` (382), no return
       (302) — `<div #[emilia(.Pad.All.4, .Bg.White)]>` resolves the dot paths against `Token`, computes
       the class and the rules at build and sets them as `styled`'s `StyledMeta(layer: .Utilities,
-      className, rules)` (369, 383; one per tag); no family answers a `@Component`, no function of emilia answers `@Task`
+      className, rules)` (369, 383; one per tag); no family answers a `Component`, no function of emilia answers `Async`
 - [ ] no run-time entry point: `emilia(tokens)`, `emiliaWith`, `className`, emilia's `styled` /
       `styledWith`, `cls`, `clsWith`, `named` leave the run-time API; every caller moves in this
       landing — `jhonstart-emilia` (until `08-bpp/119` step 5), onze 68's reader, `onze-cli`, the
@@ -103,7 +103,7 @@ and `StyledContext` have landed):
   step 1): until it lands, 369 (3)'s `fn padAll(n: i32) -> StyledProperty { return styledProperty "…"; }`
   is `type mismatch: expected StyledProperty, got Component` — boxes 1–3, 6, and 8 through them.
 - `08-bpp/119` step 4 (383's `StyledMeta` in `styled` and its reader in jhonstart) and typed meta
-  (`01-compiler/130` step 8) — box 4 (its parameter is 382's `comptime ..tokens: @Expr<Token[]>`,
+  (`01-compiler/130` step 8) — box 4 (its parameter is 382's `comptime ..tokens: Token[]`,
   which compiles).
 - The toolchain rows "A nested-section enum value at comptime" (`comptime f([.Pad.All.__4])` and a
   decorator's `tokens.value` raise `{badmap,'Pad'}`) and "emilia's dispatcher at comptime" (`comptime`
@@ -201,7 +201,7 @@ first literal, naming `#[theme] pub val appTheme = comptime defaultTheme();`; em
 
 **Repository:** rakun (`--repo rakun`) · **Model:** sonnet
 
-- [ ] `arbitrary.bp`'s `raisedBy` gets an `#[@External.Wasm(…)]` cell (decision 481's labels); the 79 cells declare wasm
+- [ ] `arbitrary.bp`'s `raisedBy` gets an `#[compiler.external(.Wasm(…))]` cell (decision 481's labels); the 79 cells declare wasm
       and run green there, or each names the next host binding wasm lacks
 
 ### 150 s58 — Conformance of the former front 154 (decision 465)

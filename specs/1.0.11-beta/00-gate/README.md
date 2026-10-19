@@ -346,7 +346,7 @@ stays deleted and the gap is carried.
 ### gate-g · rc3-a — the `(if …)` operand refusal is confirmed; the libraries migrate
 
 **Raised by:** this track, for `99-gate-rakun` and `100-gate-onze`; the question itself is
-`specs/1.0.10-beta/decisions-pending.md` § rc3-a, still open.
+`specs/decisions-pending.md` § rc3-a, still open.
 **Measured.** The compiler refuses `if` as an operand, parentheses included (`error[if-operand]`,
 `parser/tests/effect_rejections.zig:266`, `tests/language/reject/if_in_parentheses`). rakun writes
 the form in 42 places and onze in 23 (the lists are in 99 and 100); 244 `if-operand` diagnostics

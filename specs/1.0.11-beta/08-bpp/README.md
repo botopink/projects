@@ -172,7 +172,7 @@ Found by the reanalysis, owned elsewhere. Each is a row of `surface.md` in the *
 ## Decisions the maintainer owes
 
 Lettered `08-a…`; each takes the next free number (225 onward,
-[`../decisions-pending.md`](../decisions-pending.md)) when answered. Answered: `08-a` and `08-i`
+[`../decisions-pending.md`](../../decisions-pending.md)) when answered. Answered: `08-a` and `08-i`
 (decision 198), `08-a2` (199), `08-a3` (200), `08-c` (190, with 191–193 for what it leaves to the
 library), `08-g` (202, on decision 186). Open: `08-b`, `08-d`, `08-e`, `08-f`, `08-h`.
 
@@ -202,7 +202,7 @@ page.
 ### Answered — what a template accepts (`08-c`; decisions 190–193)
 
 `08-c` is answered and 118 is written against it. The rules, each a row of
-[`../decisions-taken.md`](../decisions-taken.md):
+[`../decisions-taken.md`](../../decisions-taken-steps.md):
 
 | Decision | Rule | Where |
 |---|---|---|

@@ -19,9 +19,9 @@ form, decision 116)
 (front 23) are read-only here; the signal vocabulary and both codecs are the bundled library
 `routing`'s (`libs/routing/src/navigation.bp`, `01-std/04-routing-lib` Step 7), imported here and by
 jhonstart fronts 26, 30 and 31
-**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+**Reference:** [decision 116](../../../decisions-taken-steps.md)
 rule 1 (the vocabulary is `routing`'s; the throw, the capture and the checks stay here) ·
-[decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 1 and 4 (a page's signals are jhonstart's; rakun's serve server actions and
+[decision 117](../../../decisions-taken-steps.md) rules 1 and 4 (a page's signals are jhonstart's; rakun's serve server actions and
 route handlers) ·
 `NEXTJS-DOCS.md § 14. Tratamento de Erros` (Not Found), `§ 23. Autenticação` (Layout com
 autenticação), `§ 26. Referência de Funções` (Navegação), `§ 10. Mutação de Dados` ·

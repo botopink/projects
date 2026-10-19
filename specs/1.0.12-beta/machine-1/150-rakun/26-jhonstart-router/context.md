@@ -10,7 +10,7 @@ carve-outs here: bracket-attribute step-1 lines (only comments of `root.bp` / `e
 DSL; no `[name]={` in `src/`), `src/prelude.bp` (decision 270), the `Node` declaration (decision
 223) · `03-bundled-libs/102` step 3's `routes.bp` commit, landed before opening (decision 188) ·
 `01-compiler/01-checker`'s capability (hooks a function activates through `use`, readable from its
-`@Decl` — `language-gaps.md`) for step 8 (decision 186) · `29-a` (reduced: `registerRouteStarters` +
+declaration handle — `language-gaps.md`) for step 8 (decision 186) · `29-a` (reduced: `registerRouteStarters` +
 `globals.starters`) for step 5's starter-table row
 **Owns:** `repository/rakun/modules/rakun-bpp/**` (source, tests, `src/AGENTS.md`),
 `modules/jhonstart-dom-test/**` (`fake_dom.mjs`, `dom_test.bp`), `docs.md`, `AGENTS.md`,

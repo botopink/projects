@@ -84,7 +84,7 @@ already parses), but `DeclKind` is `Type | Behavior | Fn | Method | Field` with 
 `@emit` of **new** declarations (`rakun/src/decorators.bp:67-81`). The decorator is additive, and this
 work is not: `hits` must become `ets:lookup_element(…)` at every **read** and `hits += 1` must become
 `ets:update_counter(…)` at every **write**, at sites spread across the module that only the emitter
-sees. That is [question 43](../../../1.0.5-beta/decisions-pending.md).
+sees. That is [question 43](../../../decisions-pending.md).
 
 ## 3. The three modes
 
@@ -164,7 +164,7 @@ under `keyed = false` finished at `a => 19994`, `b => 20000` — **six writes go
 **What the `false` default implies.** The safe mode is the one that must be asked for, so the line
 written without thinking is the one that loses concurrent writes. That is acceptable because
 non-keyed is what preserves the "one value" semantics the other targets have — but the consequence
-has to be written beside the example in `docs.md`, and [question 42](../../../1.0.5-beta/decisions-pending.md) asks
+has to be written beside the example in `docs.md`, and [question 42](../../../decisions-pending.md) asks
 whether it should also be a located warning. On a scalar type `keyed` is an error: there is no key.
 
 ## 5. What the compiler refuses
@@ -196,7 +196,7 @@ hits = hits * 2 + 1;       // error — read, recompute, write: one of two runs 
 `ets:update_counter` answers `{ok, N}` for `i32`/`i64` and **`{error, badarg}` for `f64` (with
 increment `1.0` *and* `1`), `bool` and binary**. So "`+=` is atomic" is true for integers and nothing
 else; on an `f64` it would have to become lookup + insert, which is precisely the pattern (b)
-refuses. That is [question 40](../../../1.0.5-beta/decisions-pending.md).
+refuses. That is [question 40](../../../decisions-pending.md).
 
 *Not a problem, recorded so it does not become one:* `update_counter` on an `i32` at the limit gives
 `2147483648`, because Erlang integers are bignums — which is exactly what the erlang backend already
@@ -258,7 +258,7 @@ the creation race. Measured, that behaves exactly as decided — and it turns `E
 
 The two mechanisms do not compete: the guard's `undefined` arm becomes "register an owner" instead of
 "become the owner", and the silent re-init stays as the safety net it was decided to be. That is
-[question 39](../../../1.0.5-beta/decisions-pending.md), the only place where measurement contradicts the effect a
+[question 39](../../../decisions-pending.md), the only place where measurement contradicts the effect a
 decision was taken for.
 
 `ProcessDict` and `PersistentTerm` have no such problem: the first dies with whoever created it, which
@@ -307,7 +307,7 @@ construction.
 
 **rakun**: 96 of `runtime.mjs`'s 231 lines and 13 of `runtime.bp`'s 16 `@External.Node` declarations
 (§3.1) — the container-and-router half of
-[decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story), removed rather than ported. 62 of those
+[decision 17](../../../decisions-taken-steps.md), removed rather than ported. 62 of those
 96 lines are the two `Ets` registries, which ties the payoff to question 39.
 
 **emilia** is the validation case for `ProcessDict`, not a migration of this front.
@@ -330,7 +330,7 @@ missing ETS table is re-created and re-seeded silently · cluster state stays ou
 file whose neighbours are `Ets`, the absence of an annotation cannot distinguish a choice from an
 oversight); and cluster stays out, per §8.
 
-**Open, in [`decisions-pending.md`](../../../1.0.5-beta/decisions-pending.md):** **38** is a `val` immutable · **39**
+**Open, in [`decisions-pending.md`](../../../decisions-pending.md):** **38** is a `val` immutable · **39**
 who creates the ETS table · **40** `+=` under `Ets` on a non-integer · **41** is a misspelled
 `@BeamMemory` an error · **42** a `Dict` under `Ets` with `keyed` unwritten · **43** where
 `@BeamMemory` lives — core builtin, library decorator, or the two layers of §2.1.

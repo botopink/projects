@@ -83,7 +83,7 @@ type Token {
 ```
 
 `Italic` and `Under` are **hoisted above** the sections they were written after. This is the emilia
-`tokens.bp` case of [decision 18](../decisions-taken.md#18-emilias-tokensbp-and-format---check),
+`tokens.bp` case of [decision 18](../../decisions-taken-steps.md),
 reproduced in nine lines.
 
 ### The mechanism

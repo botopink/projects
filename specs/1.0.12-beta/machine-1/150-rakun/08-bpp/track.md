@@ -151,7 +151,7 @@ Labels only; text in [`../decisions-taken.md`](../../../../decisions-taken.md).
 | 203 | One convention: `app/` tree, directory per route; `.bpp` where `page.bp` is; no `pages/` | 117 step 1 |
 | 222 | Route handler (`route.bp`, every method) always server, never prerendered | 117 step 4 · 121 step 5 |
 | 224 | Server-island props default **sealed** (AES-256-GCM in the URL; `ONZE_KEY` or build-generated, `onze create-key`); per project `onze.json` `"islands": {"props": "sealed"}` | 120 step 4 · 124 |
-| 278 · 302 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope — since 302 the same thing as a decorator (`comptime decl: @Decl`, no return, typed meta `html` reads by type); `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
+| 278 · 302 | Directives are tag annotations: `#[name(args)]` inside the tag, a function in scope — since 302 the same thing as a decorator (`syntax decl: unknown`, `-> void`, typed meta `html` reads by type); `#[clientOnly]` one function for hook and tag; values become values (§ Tag annotations) | 118 · 119 · 120 · 126 · `05-jhonstart/26` step 8 |
 | 189 | Ordering and ownership (carve-outs, `fake_dom.mjs`, `site` by 122) | all |
 | 293 · 294 | A page takes no parameter: `use params<P>()`, `use pageData<D>()`; a cookie is declared once, `use cookieValue(decl)` | 116 · 117 · 120–123 · 127 |
 | 295 · 296 | Request state = cardume atoms (`rakun-cardume`'s store per request), read through `use` | 123 · 127 |
@@ -162,10 +162,10 @@ No relative imports: same package `import {components.card};` (a `.bpp` componen
 ## Tag annotations (278, 302)
 
 Every annotation this track creates. **An annotation is one thing, on a declaration or on a tag**
-(302): a function `fn name(comptime decl: @Decl, comptime …args)` that returns nothing and acts
-through `decl`. On a tag, `decl.kind` is `Element` or `Component` (`decl.component` — the component's
-own `@Decl`), and its one channel is typed meta (298): the annotation `decl.setMeta(…)` /
-`decl.addMeta(…)`, and `html` — the reader — acts on the meta types it knows (`ClassName` → the
+(302): a function `fn name(syntax decl: unknown, comptime …args) -> void` that returns nothing and acts
+through `decl`. On a tag, `compiler.kind(decl)` is `Element` or `Component` (`compiler.component(decl)` — the component's
+own handle), and its one channel is typed meta (298): the annotation `compiler.setMeta(…)` /
+`compiler.addMeta(…)`, and `html` — the reader — acts on the meta types it knows (`ClassName` → the
 `class`, `Hydrate` → an island, …), as the build acts on a function's. Resolved in the caller's scope
 (the `.bpp` prelude imports the core's; `jhonstart-link`'s by name); blocks or one list (286). One
 meta of each `setMeta` type per tag; `addMeta` types repeat.
@@ -185,7 +185,7 @@ meta of each `setMeta` type per tag; `addMeta` types repeat.
 | `#[transitionPersist(key?)]` | `transition:persist` | `TransitionPersist` | `transitions.bp` | 126 step 1 |
 | `#[transitionPersistProps]` | `transition:persist-props` | `TransitionPersistProps` | `transitions.bp` | 126 step 1 |
 | `#[styled(..items)]` | (none — the app's `styled` components) | `ClassName` (`addMeta`) | `jhonstart-styled` | 119 step 4 (301, 338) |
-| `#[emilia(..tokens)]` | (none — emilia's tokens, `@Expr<Token[]>`, run at build, 382) | `styled`'s `StyledMeta(layer, className, rules)` (`setMeta`, one per tag, 383), read by `html` | `emilia` | `06-emilia/34` step 5 · 119 step 4 (369) |
+| `#[emilia(..tokens)]` | (none — emilia's tokens, `comptime ..tokens: Token[]`, run at build, 382) | `styled`'s `StyledMeta(layer, className, rules)` (`setMeta`, one per tag, 383), read by `html` | `emilia` | `06-emilia/34` step 5 · 119 step 4 (369) |
 | `#[reload]` | `data-astro-reload` | `LinkReload` | `transitions.bp` | 126 step 2 (292) |
 | `#[history(h)]` | `data-astro-history` | `LinkHistory` (`History.Push \| Replace \| Auto`) | `transitions.bp` | 126 step 2 (292) |
 

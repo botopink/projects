@@ -21,9 +21,9 @@ rakun keeps the boot-time configuration check (`config_check.bp`) and sets the m
 boot; `repository/onze/**` — onze sets the browser's message source in its
 generated entry (front 68); `repository/jhonstart/**` — jhonstart names no validation code (the
 client form's application code imports it)
-**Reference:** [decision 116](../../decisions-taken.md#116-code-two-libraries-both-run-is-neutral-routing-gains-navigation-and-param-actions-and-validation-are-bundled-libraries-std-writes-json)
+**Reference:** [decision 116](../../../decisions-taken-steps.md)
 rule 5 (validation is a bundled library; the message lookup is injected; the member leaves rakun) ·
-[decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 8 and 9 (`.bp` files only, target-native code inline; every rakun
+[decision 117](../../../decisions-taken-steps.md) rules 8 and 9 (`.bp` files only, target-native code inline; every rakun
 manifest `["erlang"]`) ·
 decision 113 item 8 (rakun's core is erlang-only — the fact that broke the old home) · decision 115
 (a bundled library is neutral and resolves like `from "std"`) · rakun front

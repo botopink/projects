@@ -62,14 +62,14 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| `.astro` pages | `page.bp`, `#[page("<dir>")]` on `fn(route: PageContext) -> @Component<Element>` (`jhonstart/src/routes.bp:14`, `:315`) | have |
+| `.astro` pages | `page.bp`, `#[page("<dir>")]` on `fn(route: PageContext) -> Component<Element>` (`jhonstart/src/routes.bp:14`, `:315`) | have |
 | the page as a single file — script fence + markup | not found: a function returning builder calls | add · 116 · 118 |
 | `.md` pages | not found | add · 121 |
 | `.html` pages | not found | add · 117 |
 | `.js` / `.ts` endpoints | `route.bp`, `#[getRoute]` … `#[optionsRoute]` (`rakun-app/src/route_handler.bp:243-381`); `serveApp` not installed by onze | wire · `07-onze/49` |
 | file → route | `[x]`, `[...x]`, `[[...x]]`, `(group)`, `@slot`, `_private` (`botopink-lang/libs/routing/src/segment.bp:36-74`) | have |
 | two parameters in one segment (`[lang]-[version]`) | not found: `parseSegment` reads `[`…`]` as one parameter, named `lang]-[version` (`botopink-lang/libs/routing/src/segment.bp:36-74`) | add · 117 |
-| `getStaticPaths()` returning `params` | `registerStaticParams(seg, fn() -> @Task<StaticParams[]>)` (`static_gen.bp:106`) | have |
+| `getStaticPaths()` returning `params` | `registerStaticParams(seg, fn() -> Async<StaticParams[]>)` (`static_gen.bp:106`) | have |
 | `getStaticPaths()` returning `props` | not found: a row binds parameters only | add · 117 |
 | a dynamic route with no `getStaticPaths` is an error in static mode | `prerenderAll(strict)` (`static_gen.bp:478`) | have |
 | `export const prerender = false` | `SegmentConfig(dynamic, dynamicParams, revalidate, fetchCache)` registered by a `val` (`segment_config.bp:38`) — deleted by 290 (`revalidate`, `dynamicParams` become `#[page]` arguments); mode derived — reading request data marks it dynamic | n/a — decision 202 — no page declares its stage: `#[page]` prerenders at comptime a page reaching no `#[serverOnly]` hook; nothing forces per-request |
@@ -155,7 +155,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | schema validation of entries with Zod | `libs/validation` validates typed values only | add · 125 — `03-bundled-libs/125` |
 | `reference("authors")` | not found | add · 121 |
 | `getCollection`, `getEntry`, filters, `render(entry)` | not found | add · 121 |
-| live collections | a function that fetches at request time | n/a — an ordinary `@Task` function; a second API adds nothing |
+| live collections | a function that fetches at request time | n/a — an ordinary `async fn`; a second API adds nothing |
 | JSON Schema files for data entries | not found | add · 125 — the `#[validated]` type's `jsonSchema` member (306) |
 | `<Image />` with `srcset`, an optimising endpoint | `Image(p, cfg, publicDir)`, `/_onze/image` (`onze-assets/src/image.bp:196`, `image_handler.bp:107`); route unregistered | wire · `07-onze/51` |
 | `<Picture />`, `getImage()`, `image.domains`, remote patterns | not found; remote sources answer 501 | wire · `07-onze/51` (ONZ-51-DoD) |
@@ -177,7 +177,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | rewriting the response body after `next()` | not found: `Response` is a frozen record | add · 123 |
 | `context.rewrite()`, `next(request)` | `Next.rewrite` | have |
 | middleware runs for 404 and 500 | not measured | add · 123 step 0 |
-| `fetch()` in the component script, top-level `await` | `io.http.fetch(url)` — GET only (`libs/std/AGENTS.md`); `await` in a `@Component` body | have · wire — `02-std-and-packaging` (method, headers, body) |
+| `fetch()` in the component script, top-level `await` | `io.http.fetch(url)` — GET only (`libs/std/AGENTS.md`); `await` in a `component fn` body | have · wire — `02-std-and-packaging` (method, headers, body) |
 | adapters (Node, Netlify, Vercel, Cloudflare) | one runtime: BEAM, packaged by `onze-release` | n/a — rakun is erlang-only by manifest |
 | `output: "server"` | every page `Auto`: mode derived from what the render reads | n/a — decision 202 — no `output` key |
 | HTML streaming | `App.renderStream`, boundaries in completion order (`streaming.bp:935-957`) | have |
@@ -238,7 +238,7 @@ are on disk, so most of Astro is there, or there and unwired.
 
 | Astro | The stack today | Box · owner |
 |---|---|---|
-| `defineAction({ handler })`, called from the client | `#[serverAction]` on `fn(form: FormData) -> @Task<ActionResult>`, HMAC ids (`rakun-app/src/actions.bp:170`, `:237`); dispatcher not installed by onze | wire · `07-onze/49` (ONZ-49-4.5) |
+| `defineAction({ handler })`, called from the client | `#[serverAction]` on `fn(form: FormData) -> Async<ActionResult>`, HMAC ids (`rakun-app/src/actions.bp:170`, `:237`); dispatcher not installed by onze | wire · `07-onze/49` (ONZ-49-4.5) |
 | `input:` — a schema that validates and types the input | `form.field("title")` by hand, inline checks (`07-onze/53/examples/server-action-example.bp`) | add · 127, on 125 — a `#[validated]` input type (306) |
 | `accept: "form"` and the per-input rules | `bodyForm` (`route_handler.bp:168`) | add · 127 — `bind<T>` |
 | `{ data, error }`, `.orThrow()` | `ActionResult`, `ActionEnvelope` (`libs/actions`) | have · add · 127 (a typed `data`) |

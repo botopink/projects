@@ -21,7 +21,7 @@ Reference: `astro-docs/25-actions.md`.
 ## Goal
 
 An action described once by its input and output types (`#[validated]`, 306), implemented once on the server, validated and typed —
-form or JSON input, `@Result<T, ActionError>` on both sides (decision 303), typed client call — beside `#[serverAction]`.
+form or JSON input, `Result<T, ActionError>` on both sides (decision 303), typed client call — beside `#[serverAction]`.
 
 ## Problem
 
@@ -30,7 +30,7 @@ Today an action takes the raw form and checks by hand:
 ```bp
 // 07-onze/53-onze-example-app/examples/server-action-example.bp
 #[serverAction]
-pub fn createPost(form: FormData) -> @Task<ActionResult> {
+pub async fn createPost(form: FormData) -> Async<ActionResult> {
     val title = form.field("title");
     val tooShort = title.length() < 3;
     if (tooShort) { return ActionResult.invalid("title", "Title must be at least 3 characters"); };
@@ -49,7 +49,7 @@ schema, typed `handler`, typed client `data`). The pieces exist unjoined: `libs/
 
 | | Where |
 |---|---|
-| `#[serverAction]` on `fn(form: FormData) -> @Task<ActionResult>` or `-> @Task<@Result<ActionResult, E>>`; emits `val __rkAction_<name> = rkRegisterAction("<name>", <name>);` | `rakun-app/src/actions.bp:170-196` |
+| `#[serverAction]` on `fn(form: FormData) -> Async<ActionResult>` or `-> Async<Result<ActionResult, E>>`; emits `val __rkAction_<name> = rkRegisterAction("<name>", <name>);` | `rakun-app/src/actions.bp:170-196` |
 | the id — `"a_" + hmacSha256(secret, module + "." + name + ":" + buildId)[0..24]` | `actions.bp:237-243` |
 | `fieldName()`, `headerName()`, `bodyLimit()` from `rakun.actions.*`, set by the orchestrator | `actions.bp:199-234` |
 | `ActionState(ok, message, redirectTo, fields)`, `fieldError(name)` | `libs/actions/src/state.bp:14-26` |
@@ -83,7 +83,7 @@ pub fn addCommentAction() -> ActionRef<NewComment, Comment> {
 ```bp
 // src/actions/comments.bp — erlang
 #[action("NewComment")]
-pub fn addComment(input: NewComment, ctx: ActionContext) -> @Task<@Result<Comment, ActionError>> { … }
+pub async fn addComment(input: NewComment, ctx: ActionContext) -> Async<Result<Comment, ActionError>> { … }
 ```
 
 `#[action("NewComment")]` registers a wrapper under the function's name (as `#[serverAction]`
@@ -96,12 +96,12 @@ registers the function):
 | either, with violations | answers `Error(ActionError.Input(fields))` — violations grouped by path — **without calling the function** |
 | valid | calls the function, encodes `Ok(v)` with `encodeComment` as `{data}`, or `Error(e)` as `{error}` with its case's status and message |
 
-Input type named in the argument because a function `@Decl` has no parameter list; dropped in step
+Input type named in the argument because a function's declaration handle has no parameter list; dropped in step
 5, where the wrapper reads input and output from the signature (280 (2)). The wrapper's `bind…` /
 `parse…` / `encode…` become the `#[validated]` types' own members (306; `T.parse` / `T.encode`, 327).
 
-**One outcome type, both sides: the language's `@Result` (decision 303).** No `ActionOutcome` — the
-server function returns `@Result<T, ActionError>` and the caller receives the same `@Result<T, ActionError>`.
+**One outcome type, both sides: the language's `Result` (decision 303).** No `ActionOutcome` — the
+server function returns `Result<T, ActionError>` and the caller receives the same `Result<T, ActionError>`.
 Exactly one of a value and an error exists, the `case` is exhaustive, nothing needs `!!`.
 
 ```bp
@@ -131,7 +131,7 @@ case (await callAction(newsletterAction(), input)) {
 ```
 
 Each case is an HTTP status in the envelope. The envelope's JSON stays the reference's — `{"data": …}`
-or `{"error": {"code", "message", "fields"}}` — as protocol only; bp code on either side sees the `@Result`.
+or `{"error": {"code", "message", "fields"}}` — as protocol only; bp code on either side sees the `Result`.
 
 **Client calls through the reference.** `callAction(addCommentAction(), input)` in a `#[client]`
 component encodes with the input type, posts the RPC body to the payload's id for that name,
@@ -148,7 +148,7 @@ the server-only implementation (refused by `onze-bundler/src/refusal.bp:55-138`)
 ## Notes
 
 - **Not added.** `defineAction` as one object (description and implementation compile for
-  different targets). `.orThrow()` — `callAction(…)` answers `@Task<@Result<T, ActionError>>`,
+  different targets). `.orThrow()` — `callAction(…)` answers `Async<Result<T, ActionError>>`,
   so `try` works on it directly (303). Nested action objects (`actions.user.getUser`) — the module path.
 - **File inputs.** No `z.instanceof(File)` until 346's `Bytes` is built (`01-checker` step 32); rakun answers multipart with 415.
 - **Security.** Id unguessable, name not secret; authorisation in the function (`ctx`) or middleware.

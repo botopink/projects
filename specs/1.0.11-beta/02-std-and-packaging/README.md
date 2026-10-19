@@ -78,7 +78,7 @@ without a row. The gate track owns the files; this track's fronts depend on the 
 ## Maintainer decisions
 
 Confirmations of choices 1.0.10 implemented (ids kept; the text is in
-`specs/1.0.10-beta/decisions-pending.md`), and the questions this track adds, continuing each
+`specs/decisions-pending.md`), and the questions this track adds, continuing each
 sequence. Numbered decisions continue from 146 when the maintainer answers.
 
 ### To confirm

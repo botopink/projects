@@ -86,7 +86,7 @@ it is read-only against every other repository and asserts what the four fronts 
 
 ## Maintainer decisions
 
-Ids kept from 1.0.10 (`specs/1.0.10-beta/decisions-pending.md` § Track E); new questions continue
+Ids kept from 1.0.10 (`specs/decisions-pending.md` § Track E); new questions continue
 each front's letter sequence. Numbered decisions continue from 225 when answered.
 
 ### To confirm

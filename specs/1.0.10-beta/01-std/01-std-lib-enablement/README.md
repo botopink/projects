@@ -223,7 +223,7 @@ Inline `test` blocks at the bottom of each `src/*.bp`, run by `botopink test --t
 
 ## Steps 11–14 — std reads and writes JSON
 
-Decision 116 rules 3 and 8 and [decision 117](../../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only)
+Decision 116 rules 3 and 8 and [decision 117](../../../decisions-taken-steps.md)
 rules 6 and 7. Every library that answers JSON wrote its own string escaper and none escaped what
 RFC 8259 requires; every library that reads JSON sliced it by hand. These steps give std the writer,
 the `<script>`-safe form and a structured reader.

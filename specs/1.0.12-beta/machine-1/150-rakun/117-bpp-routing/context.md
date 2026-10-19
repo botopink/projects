@@ -34,10 +34,10 @@ The `app/` tree (decision 203) gains:
 
 Exists: segment grammar `[x]`, `[...x]`, `[[...x]]`, `(group)`, `@slot`, `_private`, static
 (`segment.bp`, `parseSegment`); a `.bp` page names its directory in its decorator
-(`#[page("blog/[slug]")]`, `onze/examples/blog/src/app/blog/[slug]/page.bp`) since `@Decl` has no
+(`#[page("blog/[slug]")]`, `onze/examples/blog/src/app/blog/[slug]/page.bp`) since a declaration handle has no
 source location (403: by design); `#[page]` emits `<fn>Params(route)` (`jhonstart/src/routes.bp`, `page`),
 moved by decision 236 to `paramsOf(…seg, route)` (gone by 293) (`01-compiler/130`); static generation:
-`registerStaticParams(seg, fn() -> @Task<StaticParams[]>)`, `decideKind`, `prerenderAll(strict)`,
+`registerStaticParams(seg, fn() -> Async<StaticParams[]>)`, `decideKind`, `prerenderAll(strict)`,
 `prerenderPath`, `serveStatic` (stale-while-revalidate), `staticExport(outDir)` (`static_gen.bp`);
 no segment config — `revalidate` and `dynamicParams` are `#[page]` arguments (290); `page` +
 `route` in one segment refused (`file_router.bp`). onze's scan records each decorator argument,
@@ -60,7 +60,7 @@ never an export name (282), so both become `#[page(…, paths: …, partial: tru
 
 | Export | Meaning | Registers |
 |---|---|---|
-| `pub fn staticPaths() -> @Task<Array<StaticPath>>` | values of the dynamic segments, each with optional data | `registerStaticParams` |
+| `pub fn staticPaths() -> Async<Array<StaticPath>>` | values of the dynamic segments, each with optional data | `registerStaticParams` |
 | `pub val partial = true` | rendered without layouts and document shell | a flag on the route record |
 
 No `prerender` export (202): `#[page]` prerenders unless the page reaches a `#[serverOnly]` hook.
@@ -68,7 +68,7 @@ No `prerender` export (202): `#[page]` prerenders unless the page reaches a `#[s
 `StaticPath(params: Array<#(string, string)>, data: Json)`. `data` = Astro's `props`, carried
 beside the prerendered page, read back with a schema (`pageData(route, schemaOfPost())`) so the page
 does not reload it. `Json`, not typed: the route record is one shape for every page. Steps 7–8
-replace this: `paths: fn() -> @Task<#(P, D)[]>`, read with `use pageData<D>()` (293), `D` a
+replace this: `paths: fn() -> Async<#(P, D)[]>`, read with `use pageData<D>()` (293), `D` a
 `#[validated]` type, never a `Schema<T>` value (306).
 
 **Pagination over `staticPaths`.** `paginate(items, size, T)` — `T` the `#[validated]` item type

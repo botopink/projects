@@ -198,7 +198,7 @@ it imports std only, and rakun, onze and application code import it by name. Spe
 
 ### Step 10 — std reads and writes JSON (`01-std-lib-enablement` Steps 11–14)
 
-Decision 116 rules 3 and 8 and [decision 117](../decisions-taken.md#117-navigation-signals-are-jhonstarts-end-to-end-pages-and-layouts-are-components-std-reads-json-bundled-libraries-are-bp-only) rules 6 and 7: `json.quote`,
+Decision 116 rules 3 and 8 and [decision 117](../../decisions-taken-steps.md) rules 6 and 7: `json.quote`,
 `json.unquote`, `json.array`, `json.object`, `escape.scriptJson`, and the structured reader
 `pub type Json { Null, Bool(bool), Num(f64), Str(string), Arr(Array<Json>), Obj(Array<#(string, Json)>) }`
 with `json.decode(s: string) -> @Result<Json, string>`. rakun's configuration reader, the `actions`

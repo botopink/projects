@@ -85,7 +85,7 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 <button #[styled(btn)] #[emilia(.Pad.All.4)]>Salvar</button>
 ```
 
-`#[emilia(…)]` is emilia's (`..tokens: @Expr<Token[]>`, 382, so a leading-dot path resolves against `Token`; under
+`#[emilia(…)]` is emilia's (`comptime ..tokens: Token[]`, 382, so a leading-dot path resolves against `Token`; under
 `Styleable[]` it names no enum) and runs at build (369); this step owns the meta it records — a type
 `styled` declares, holding the class and the rules — and its reader in jhonstart.
 

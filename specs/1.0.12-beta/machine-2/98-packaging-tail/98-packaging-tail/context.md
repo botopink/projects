@@ -28,7 +28,7 @@ Measured on feat:
 |---|---|---|
 | every library is a workspace; every member lists `files` | all five | — |
 | every library has a `-test` member with one inline test | all five | — |
-| the `-test` member exposes ≥ one `assert<Subject>(loc, …) -> @Result<void, string>` | jhonstart (11 helper files), onze (`core.bp`: 4) | **emilia** (`root.bp` only), **rakun** (`expect*` booleans only), **erika** (`src/root.bp` only, no `test/`) |
+| the `-test` member exposes ≥ one `assert<Subject>(loc, …) -> Result<void, string>` | jhonstart (11 helper files), onze (`core.bp`: 4) | **emilia** (`root.bp` only), **rakun** (`expect*` booleans only), **erika** (`src/root.bp` only, no `test/`) |
 | every example carries a `README.md` naming the upstream section and the front | — (onze: one directory-level `examples/README.md`) | **29 of 29** |
 | no example depends on an ecosystem library by `git` | all | — |
 | a monorepo member is installable from git | `DepSpec.subdir` (step 4, decision 344) | — |

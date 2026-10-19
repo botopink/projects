@@ -9,7 +9,7 @@ open: the two shapes the checker still refuses (`01-checker` step 13). Paths rel
 `01-checker`'s R5: bare `val <Pattern> = e` checks **only where it cannot fail** — the variant of a
 one-variant `type`, a record's own constructor, a spread-only list pattern. Refutable =
 `refutable-val-pattern` at check time, naming `val assert` and `case` (`val assert <Pattern> = e`
-without `catch` desugars to `@panic("assert pattern did not match")`). So no backend needs a
+without `catch` desugars to `panic("assert pattern did not match")`). So no backend needs a
 run-time test: `ctor` destructuring is a plain destructure.
 
 ```js

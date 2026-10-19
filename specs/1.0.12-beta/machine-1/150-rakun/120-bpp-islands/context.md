@@ -59,13 +59,13 @@ At `repository/rakun/modules/rakun-bpp/src/`:
 
 ### Client annotations (278)
 
-> **Since 302** an annotation returns nothing: `clientVisible(comptime decl: @Decl, comptime rootMargin)`
-> records `decl.setMeta(Hydrate.Visible(rootMargin))`; "returns `Hydrate`" below reads "records the
+> **Since 302** an annotation returns nothing: `clientVisible(syntax decl: unknown, comptime rootMargin)`
+> records `compiler.setMeta(Hydrate.Visible(rootMargin))`; "returns `Hydrate`" below reads "records the
 > `Hydrate` meta" (one per tag), `serverDefer` records `Defer(fallback)`. `#[clientOnly]` is one
-> function for hook and tag with no union: both are a `@Decl` (on the hook a marker; on a tag it records
+> function for hook and tag with no union: both are a `syntax decl` (on the hook a marker; on a tag it records
 > `Hydrate.Only`). The checks below run where `html` reads the `Hydrate` meta.
 
-Tag annotations (118's arm): a function in the caller's scope, `comptime decl: @Decl` first — the
+Tag annotations (118's arm): a function in the caller's scope, `syntax decl: unknown` first — the
 tag's component — recording a `Hydrate` meta (302); `html` turns a `Hydrate` into the mount with that strategy.
 All live in `island_strategy.bp` except `clientOnly` (`stage.bp`, below); the prelude imports them.
 
@@ -79,8 +79,8 @@ All live in `island_strategy.bp` except `clientOnly` (`stage.bp`, below); the pr
 
 No `Hydrate` on the tag: server-rendered, never started (static markup, as in Astro).
 
-**The fallback is an annotation argument** (287): `serverDefer(comptime decl: @Decl, comptime
-fallback: ?View = null) -> Defer`, `clientOnly(comptime decl: @Decl, comptime fallback: ?View = null)`.
+**The fallback is an annotation argument** (287): `serverDefer(syntax decl: unknown, comptime
+fallback: ?View = null) -> Defer`, `clientOnly(syntax decl: unknown, comptime fallback: ?View = null)`.
 It shows until the component arrives — the island's second request, or the browser's mount — so it
 is comptime (280): static markup or a component without request data; `fallback: <span>{user.name}</span>`
 is refused at the argument; a `slot="fallback"` child is refused (no `slot="…"`; slots are 360's `#[slot("x")]`); on a hook
@@ -100,7 +100,7 @@ the server, so the component's nodes do not enter the page's `hooks` (277).
   #[clientOnly]";
 - two `Hydrate` on one tag: error at the second.
 
-A library may declare its own (`pub fn clientMobile(comptime decl: @Decl) { clientMedia(decl,
+A library may declare its own (`pub fn clientMobile(syntax decl: unknown) -> void { clientMedia(decl,
 "(max-width: 50em)"); }` — it records the same meta); it gets the checks above and adds no strategy —
 the runtime knows `Hydrate`'s five cases only.
 

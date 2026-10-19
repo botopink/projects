@@ -90,7 +90,7 @@ beam is an opt-in target: `run.sh --target beam` assembles and runs every `run/`
    `nonzero`. Delivered.
 4. **"no external target for the active backend"** — `run/external_erlang_only.bp`, refused on
    commonJS and wasm (`.commonJS.expect`, `.wasm.expect`), runs on erlang and beam. Delivered.
-5. **DSL hygiene** ([decision 112](../../decisions-taken.md#112-dsl-hygiene-each-name-resolves-in-the-scope-of-whoever-wrote-it))
+5. **DSL hygiene** ([decision 112](../../../decisions-taken-steps.md))
    — **owed.** Three `run/` cells over one local library `shapesdsl` whose template writes
    `e.build("double(" + e.text() + ")")` with `double` **private** to the library:
    `shapesdsl "area(4, 5)"` with `{area}` imported; the same through `{area as surface}` and

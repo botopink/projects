@@ -13,13 +13,13 @@ the `use` binding functions of `src/comptime/infer.zig` (`bindingSourceType`, `i
 front 24's (`contextInfoFromReturn`, `FnContext.annotated` / `env.inContextFn`).
 
 Paths are relative to `repository/botopink-lang/modules/compiler-core/`. Decisions:
-[87](../../decisions-taken.md#87-the-boundary-directives-stay-library-decorators--use-never-leaves-a-function-body)
+[87](../../../decisions-taken-steps.md)
 the boundary directives are library decorators and `use` never leaves a function body ·
-[88](../../decisions-taken.md#88-use-lowers-transparently-and-a-component-is-context-fn----element)
-`use f(x)` lowers to `f(x)` on every backend · [96](../../decisions-taken.md#96-one-contextbase-per-function-and-element-carries-its-base)
-one base per body · [104](../../decisions-taken.md#104-only-use-grants-use--decisions-89-and-90-revoked)
-one grant of `use` · [108](../../decisions-taken.md#108-getcontex--getcontext) `getContext` ·
-[118](../../decisions-taken.md#118-the-return-type-is-the-annotation) the return is the annotation ·
+[88](../../../decisions-taken-steps.md)
+`use f(x)` lowers to `f(x)` on every backend · [96](../../../decisions-taken-steps.md)
+one base per body · [104](../../../decisions-taken-steps.md)
+one grant of `use` · [108](../../../decisions-taken-steps.md) `getContext` ·
+[118](../../../decisions-taken-steps.md) the return is the annotation ·
 128 one context wrapper, `@Component<C, T>`.
 
 [`surface.md`](./surface.md) is the per-construct table.

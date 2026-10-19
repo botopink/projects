@@ -125,12 +125,12 @@ calling it through the registry (`globals().signal` stays the entry; `data-jh-g`
 - [ ] `streaming_test.bp` "stream: a boundary resolved before the shell produces no hole and no
       fill" — shell carries the resolved markup inline, `chunks.length == 1`, both rows
 - [ ] sibling server components gathered through std `async.runAll` over unstarted thunks
-      (`Array<fn() -> @Task<T>>`), `__jhEachCompleted` (`streaming.bp:136,810,834`) deleted — or,
+      (`Array<fn() -> Async<T>>`), `__jhEachCompleted` (`streaming.bp:136,810,834`) deleted — or,
       if the render's gatherer must stay (fills holes in completion order, which `runAll` does not
       report), `render.bp` states why in one comment and the box is ticked with that reason
 - [ ] `streaming_test.bp` "stream: two 50 ms sibling loaders finish in under 100 ms" on
       `--target erlang` (spawned per task) and the same test on commonJS
-- [ ] "stream: an already-started `@Task` handed as a sibling is refused" — render takes thunks
+- [ ] "stream: an already-started `Async` handed as a sibling is refused" — render takes thunks
       only (the type refuses a started task), asserted by a `check` refusal fixture under `refusals/`
 
 #### Step 4 — the error digest and the log line through the bundled `log` (decisions 194, 195) (was `26-jhonstart-router` s4)
@@ -181,9 +181,9 @@ upstream section mirrored and fronts exercised (`modules.md` § Examples).
 Opens when `01-compiler/01-checker` step 23 lands `Decl.hooks` (decision 277). The library reads the
 list against its own decorators; the compiler names no marker.
 
-- [ ] `src/stage.bp` (new): `pub fn serverOnly(comptime decl: @Decl) {}`, `pub fn clientOnly(comptime
-      decl: @Decl) {}` (markers, no output); `HookPath(through, use)`; `pathsTo(nodes, marker,
-      unknownToo = false)` breadth-first over `decl.hooks`, every path, each the shortest;
+- [ ] `src/stage.bp` (new): `pub fn serverOnly(syntax decl: unknown) -> void {}`, `pub fn clientOnly(syntax
+      decl: unknown) -> void {}` (markers, no output); `HookPath(through, use)`; `pathsTo(nodes, marker,
+      unknownToo = false)` breadth-first over `compiler.hooks(decl)`, every path, each the shortest;
       `viaText`, `crossesClient`
 - [ ] hooks marked: `#[serverOnly]` on `cookie` (294), `headers`, `request`, `response` (291; `server.bp`), `searchParams`
       (`router.bp`); `#[clientOnly]` on the browser-only hooks; `state`, `effect`, `memo`, `ref`,
@@ -191,7 +191,7 @@ list against its own decorators; the compiler names no marker.
 - [ ] `#[page]` (`routes.bp`): `setMeta(PageMeta(seg, kind, why))` (298; `RouteKind { S, D }`); a
       `#[clientOnly]` path not crossing a `#[client]` refused at its `use`; `kind: .D` when a
       `#[serverOnly]` or a `hook: null` path exists, else `.S`; `why` naming the hook and the chain;
-      read `@typeInfo(Page).meta(PageMeta)`
+      read `compiler.typeInfo(Page).meta(PageMeta)`
 - [ ] `#[client]` (`client.bp`): every `#[serverOnly]` path refused at its `use`, naming the chain
       (`via UserMenu → Avatar`)
 - [ ] `markDynamic` (`router.bp:186,198,276`), its import and call (`server.bp:87,254`) and
@@ -266,7 +266,7 @@ pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf
 
 #### Step 1 — the driver (was `27-jhonstart-link` s1)
 
-`reconcile.bp`'s `applyTransition(current, target, dom: DomOps) -> @Task<@Result<Navigation,
+`reconcile.bp`'s `applyTransition(current, target, dom: DomOps) -> Async<Result<Navigation,
 string>>`; `DomOps` is a record of the entry's six functions (`markup(href)`,
 `replaceSubtree(depth, html)`, `startIslands(depth)`, `mountCount(name)`, `scrollTo(depth)`,
 `markPending(href, pending)` — `27-b` ★) — pure, testable without a document. Additive: the entry
@@ -343,7 +343,7 @@ four re-recorded snapshots
 **Repository:** rakun (`--repo rakun`) · **Model:** sonnet
 
 What 118 built alone is done; each item below waits on the 144 step it names: s1's component spread (B-14),
-s4's slots and s5's 302 arm (B-15), s6's `-> @ExprCustom<View>` and the `@Component` alias (B-10 G3), the
+s4's slots and s5's 302 arm (B-15), s6's `-> View` and the `Component` alias (B-10 G3), the
 `@ExprCustom` LSP snapshot (B-27), native props (150 s36, 26 s13, 362).
 
 #### Open (was `118-bpp-components` open)
@@ -367,18 +367,18 @@ s4's slots and s5's 302 arm (B-15), s6's `-> @ExprCustom<View>` and the `@Compon
 - Step 4 — slots as 360: `<Slot />`, `<Slot name="x">fallback</Slot>`, a child `#[slot("x")]`,
   `<Fragment #[slot("x")]>`, the transfer `<Slot name="x" #[slot("x")] />` through two layouts,
   `use hasSlot("x")`; `Slot` and `slot` are jhonstart functions with `comptime` parameters in
-  302's shape (`slot(comptime decl: @Decl, comptime name: string)`), `html` reading their metas —
-  on `01-compiler/130` step 9 (a tag's `@Decl`), as step 5; a slot name the component does not write and content for an absent default slot
+  302's shape (`slot(syntax decl: unknown, comptime name: string)`), `html` reading their metas —
+  on `01-compiler/130` step 9 (a tag's handle), as step 5; a slot name the component does not write and content for an absent default slot
   refused at the child; lowercase `<slot>` the native element; the hidden slot argument. The props
   as one record (192, `props: type(…)`, 207) still wait on **Template-built code cannot build an
   inline props type** (`01-checker`); slots no longer do.
-- Step 5 — the 302 arm (build a tag's `@Decl`, call every annotation, read its meta by type; two
+- Step 5 — the 302 arm (build a tag's handle, call every annotation, read its meta by type; two
   annotations in order on `<Carousel>`; an argument of the wrong type at the argument): **A tag
   annotation cannot be called by the template function** (`01-compiler/130` step 9). The box "an
   annotation whose first parameter is `@Decl` written on an element fails" is 278's, replaced by 302
-  (every annotation takes `@Decl`; on a tag its `kind` says element or component).
+  (every annotation takes `syntax decl`; on a tag its `kind` says element or component).
 - Step 6 — the language server's `@ExprCustom` snapshot: hand-off to `01-compiler/26`. `html`
-  declared `-> @ExprCustom<View>`: **A template function declared `-> @ExprCustom<View>` refuses
+  declared `-> View`: **A template function declared `-> @ExprCustom<View>` refuses
   built code of type `Element`**, and **A type alias of `@Component<…>` is not the effect in a
   return** (`01-checker`). `#[client]` comparing the resolved type: hand-off to `05-jhonstart/26`
   (decision 276 names it).
@@ -407,7 +407,7 @@ s4's slots and s5's 302 arm (B-15), s6's `-> @ExprCustom<View>` and the `@Compon
 - [ ] a parent's style does not reach a child component's own elements
 - [ ] a component rendered twenty times registers its sheet once — `compose` provides
       `StyledContext` (`jhonstart/src/styled_sheet.bp`, written with step 1, held: § State); below an
-      `error` / `not-found` segment and in a `Suspense` fill too, once a `@Component` thunk a host cell
+      `error` / `not-found` segment and in a `Suspense` fill too, once a `Component` thunk a host cell
       calls is run by jhonstart's renderer with the scope it kept (388, `01-compiler/134` step 6)
 - [ ] head order: `<link>`, emilia's layers, scoped styles
 - [ ] a run-time hole's value containing `;` or `}` is escaped in the root's `style`; the test injects one
@@ -423,7 +423,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 #### Step 4 — `#[styled(..)]` in `jhonstart-styled`, and the reader of `#[emilia(..)]`'s meta (decisions 301, 338, 369) — part (was `119-bpp-styling` s4 boxes 1, 3, 5)
 
-- [ ] `jhonstart-styled` declares `pub fn styled(comptime decl: @Decl, comptime ..items: Styleable[])`
+- [ ] `jhonstart-styled` declares `pub fn styled(syntax decl: unknown, comptime ..items: Styleable[])`
       — no return (302): it records `decl.addMeta(ClassName(names: […]))`; `ClassName(names:
       string[])` is jhonstart's (the core; `html` merges every `ClassName` meta into the tag's `class`,
       after a static `class`); `html` names no emilia or `styled` (113)
@@ -460,7 +460,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 
 - [ ] `island_strategy.bp`: `Hydrate`, `mountIslandWhen`; `mountIsland` is `mountIslandWhen(…, Hydrate.Load)`
 - [ ] the annotations `clientLoad`, `clientIdle(comptime timeoutMs: i32 = 200)`, `clientVisible(comptime
-      rootMargin: string = "")`, `clientMedia(comptime query: string)` — each `(comptime decl: @Decl,
+      rootMargin: string = "")`, `clientMedia(comptime query: string)` — each `(syntax decl: unknown,
       …)`, returning nothing and recording a `Hydrate` meta (280, 302) — and `stage.bp`'s `clientOnly`
       recording `Hydrate.Only` on a tag, still the hook marker `05-jhonstart/26` step 8 reads (278);
       all imported by `prelude.bp`
@@ -478,7 +478,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 #### Step 3 — The `Hydrate` arm of `html` (278) (was `120-bpp-islands` s3)
 
 - [ ] `examples/hydration-directives-example.bp` passes
-- [ ] `#[clientVisible]` on an element fails at the annotation (its first parameter is `@Decl`); on
+- [ ] `#[clientVisible]` on an element fails at the annotation (its first parameter is `syntax decl`); on
       a component without `#[client]` fails at the annotation, checked by `Decorator.same` (371); an unseen
       island fails the build in the bundler's island check (`entry.bp`) with its name — never a
       mount that starts nothing
@@ -496,8 +496,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] `examples/server-island-example.bp` passes on erlang
 - [ ] `server_islands.bp`: `serveIslands(prefix)`, `seal` / `unseal`; tampered or truncated `p` answers 400, renders nothing
 - [ ] `GET` under 2 048 bytes and `POST` over it answer the same markup
-- [ ] the containing page reads no cookie: its kind is `S` (`@typeInfo(Page).meta(PageMeta)?.kind`, 277), page prerenders (`static_gen.bp`)
-- [ ] `serverDefer(comptime decl: @Decl, comptime fallback: ?View = null)` recording `Defer` (287, 302;
+- [ ] the containing page reads no cookie: its kind is `S` (`compiler.typeInfo(Page).meta(PageMeta)?.kind`, 277), page prerenders (`static_gen.bp`)
+- [ ] `serverDefer(syntax decl: unknown, comptime fallback: ?View = null)` recording `Defer` (287, 302;
       `deferred.bp`, imported by the prelude); on a
       non-`#[deferred]` component it fails at the annotation, at compile time, naming it
 - [ ] `seal` / `unseal` take the mode as a plain value — `onze.json`'s `"islands": {"props": …}`,
@@ -544,7 +544,7 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] `examples/response-control-example.bp` passes
 - [ ] either called after the shell is written fails with the hook's name and the phase
 - [ ] a header set from a `Suspense` fill refused the same way
-- [ ] `response` marked `#[serverOnly]`: a page using it is `D` (`@typeInfo(Page).meta(PageMeta)?.kind`),
+- [ ] `response` marked `#[serverOnly]`: a page using it is `D` (`compiler.typeInfo(Page).meta(PageMeta)?.kind`),
       its `why` naming `response`; a call written without `use` is no hook (the checker's ordinary
       error for a hook outside `use`)
 - [ ] `#[page(headers: …)]` on an `S` page: the headers served with the prerendered file

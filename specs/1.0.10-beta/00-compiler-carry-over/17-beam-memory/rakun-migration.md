@@ -2,7 +2,7 @@
 
 Front 17 edits no library. This is the migration, written against rakun and emilia, with the
 line ranges re-derived there rather than carried from the README. It is registered against
-[decision 17](../../../1.0.5-beta/decisions-taken.md#17-rakuns-erlang-story)'s container-and-router
+[decision 17](../../../decisions-taken-steps.md)'s container-and-router
 half and opens the moment C-10 lands the three modes; nothing here can be done before that.
 
 ## What moved since the README was measured

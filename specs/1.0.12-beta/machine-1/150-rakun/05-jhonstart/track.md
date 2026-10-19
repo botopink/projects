@@ -76,7 +76,7 @@ signatures stay the hand-off above.
 
 ## Decisions
 
-Confirmations kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md) § Track C):
+Confirmations kept from 1.0.10 ([`../../../../decisions-pending.md`](../../../../decisions-pending.md) § Track C):
 
 | Id | Choice | Closes |
 |---|---|---|

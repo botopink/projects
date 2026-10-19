@@ -184,7 +184,7 @@ false: `libs.shipErlSidecars` is at `modules/compiler-cli/src/cli/libs.zig:564`,
 
 ### Step 2 — rakun's erlang cell: decide, then act
 
-**Superseded 2026-09-18 by [decision 17](../decisions-taken.md#17-rakuns-erlang-story): none of A, B
+**Superseded 2026-09-18 by [decision 17](../../decisions-taken-steps.md): none of A, B
 or C.** The maintainer answered that rakun supports **every** target and that `libs/std` grows the
 portable primitives its container, router and server rest on — so the gap is not rakun's to close
 alone, and the work is scoped as its own thing rather than as a residual here. The table below is kept

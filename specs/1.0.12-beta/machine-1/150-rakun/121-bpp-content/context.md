@@ -132,7 +132,7 @@ reads, renders, calls the layout. No `layout`: rendered inside the directory's l
 
 - **Not added.** remark/rehype plugins — one hook `MarkdownOptions.transform: fn(node: MdNode) ->
   MdNode`. MDX — 118's template is the form. Processor choice. Syntax highlighting. TOML (one
-  format). Live collections — an ordinary `@Task` function.
+  format). Live collections — an ordinary `async fn`.
 - **`rawContent()`** = `entry.body`; **`compiledContent()`** = `toHtml(parse(entry.body))`;
   **`<Content />`** = `{rendered.content}`; **`getHeadings()`** = `rendered.headings`.
 - **`import.meta.glob`** → `glob(base, pattern)`, a loader evaluated at build and boot, not an import.

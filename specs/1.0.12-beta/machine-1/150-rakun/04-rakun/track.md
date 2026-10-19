@@ -155,7 +155,7 @@ A cell is a hard assertion or does not exist (decision 160):
 
 ## What the maintainer must decide
 
-1.0.10's 24 choices (`03r-a` … `03r-x`, [`1.0.10-beta/decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md)
+1.0.10's 24 choices (`03r-a` … `03r-x`, [`../../../../decisions-pending.md`](../../../../decisions-pending.md)
 § Track B) are implemented; those still awaiting confirmation, fronts building on them: 03r-c/e → 04 ·
 03r-f…j → 12 · 03r-k/l/x → 15 · 03r-m/n/p/q → 22 · 03r-r → 73 · 03r-s → 17 · 03r-t/u → 11 · 03r-v →
 08 · 03r-w → 79 and 13. Closed on 9 Oct: 03r-b (reversed by 299 — a malformed number stops the boot

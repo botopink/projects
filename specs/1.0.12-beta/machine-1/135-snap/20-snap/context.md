@@ -123,11 +123,11 @@ re-recorded, value derived fresh.
 
 ```bp
 // modules/rakun-test/src/assertions.bp
-pub fn assertResponse(loc: SourceLocation, res: Response) -> @Result<void, string> {
+pub fn assertResponse(loc: SourceLocation, res: Response) -> Result<void, string> {
     try snapshots.assertAs(loc, "response", "status " + res.status.toString() + "\n\n" + res.body);
     return;
 }
-// test/assertions_test.bp: try assertResponse(@src(), MockMvc.standalone().perform(fakeGet("/missing")));
+// test/assertions_test.bp: try assertResponse(compiler.src(), MockMvc.standalone().perform(fakeGet("/missing")));
 ```
 
 Alternative: amend 98 check (2) to "a `-test` member that exposes a snapshot helper hands `loc` to
@@ -184,9 +184,9 @@ Sketch, form (4) (`modules/emilia-test/test/helpers_test.bp`, 33 step 1, two `.s
 
 ```bp
 test "class: helpers ---- the contract-4 list" {
-    try assertClassName(@src(), cardTokens());          // records e_f51c2501 (367)
+    try assertClassName(compiler.src(), cardTokens());          // records e_f51c2501 (367)
 }
-test "css: helpers ---- red 500 text" { try assertCss(@src(), [.Color.Red.500], fullTheme()); }
+test "css: helpers ---- red 500 text" { try assertCss(compiler.src(), [.Color.Red.500], fullTheme()); }
 ```
 
 ### Per-front suites (185 cases)

@@ -417,7 +417,7 @@ Repro: `repository/jhonstart/repro/local-binding-leaks-to-later-decls/` — twel
 
 ### Step 14 — decision 112: DSL hygiene (each name resolves in the scope of whoever wrote it)
 
-[Decision 112](../../decisions-taken.md) (maintainer). A DSL's `e.build(…)` text has two
+[Decision 112](../../../decisions-taken-steps.md) (maintainer). A DSL's `e.build(…)` text has two
 authors, and today the whole built text resolves in the **consumer's** scope: a private helper the
 library writes (`double(` … `)`) is `unbound variable 'double'`, an alias the consumer wrote
 (`area as surface`) is unbound the same way, and a consumer that declares its own `double` has it
@@ -515,7 +515,7 @@ than deleted.
 
 ## Decisions the maintainer owes
 
-Four of these are already in [`../decisions-pending.md`](../../../1.0.5-beta/decisions-pending.md) and are listed here
+Four of these are already in [`../decisions-pending.md`](../../../decisions-pending.md) and are listed here
 only so the step that waits on one can find it: **D1 = #1**, **D2 = #11**, **D3 = #12**,
 **D7 = #10**, and R3's question (a lower-case `#[@external]`) = **#15**. **D4, D5 and D6 are new** —
 they were found probing for this front and are not in that document yet.
@@ -601,7 +601,7 @@ already used, so the work is inference-side only.
    `unknown` has none of. Slicing is the same node with a `range` second argument.
 
 **And one that is yours to spend, not 15's:**
-[decision 36](../../../1.0.5-beta/decisions-taken.md#20-is-a-pattern-range-inclusive) is ~10 lines in
+[decision 36](../../../decisions-taken-steps.md) is ~10 lines in
 `parser/patterns.zig`'s `finishRangePattern` (`:269-274`) plus dropping `dotDotDot` from the lexer —
 but `patterns.zig` is this front's step-4 grammar and the change re-records its `case` snapshots, so 15
 left it. Measured while it was there: `1...9`, the spelling today's diagnostic recommends, **works on
@@ -644,8 +644,8 @@ them is a rendering problem:
    consequence 11 found is that hover, inlay hints and the annotation code action all offer `: void`
    for every index expression.
 2. **Landed** (decision 44) — **`val v: optional<i32> = null;` checks clean** — the checker's internal name (`infer.zig:4590`) is
-   reachable as a type annotation, which [decision 2](../../../1.0.5-beta/decisions-taken.md) and `builtins.d.bp:56-58`
-   say no spelling but `?T` is. Opened as [question 44](../../../1.0.5-beta/decisions-pending.md).
+   reachable as a type annotation, which [decision 2](../../../decisions-taken-steps.md) and `builtins.d.bp:56-58`
+   say no spelling but `?T` is. Opened as [question 44](../../../decisions-pending.md).
 3. **Landed** — **`val v: Option<i32> = null;`** answers `type mismatch: expected Option, got optional` — not the
    pointed diagnostic `builtins.d.bp:56-58` promises, and the message leaks the internal name.
 

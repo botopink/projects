@@ -9,7 +9,7 @@ number, and every open 1.0.5 row has an id (decision 68; the mapping is
 
 **Where the milestone stands is [`status.md`](./status.md)** — the one file allowed to carry status,
 kept current in the same commit as the work it reflects. **What the maintainer has decided and still
-owes is [`decisions-taken.md`](./decisions-taken.md) and [`decisions-pending.md`](./decisions-pending.md)**
+owes is [`decisions-taken.md`](../decisions-taken-steps.md) and [`decisions-pending.md`](../decisions-pending.md)**
 — numbering continued from 1.0.5-beta (68 onwards), never reused.
 
 ## Fronts

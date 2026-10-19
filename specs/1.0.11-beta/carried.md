@@ -25,7 +25,7 @@ with their evidence — is each track's `carried.md`:
 | — (new in this milestone; reference: the Astro documentation) | [`08-bpp/`](./08-bpp/README.md) — 11 fronts over jhonstart, onze, rakun and emilia: 118 the template language, 121 content, 120 islands, 117 routing, 119 scoped styles, 127 typed actions, 122 the request surface, 123 middleware, 126 view transitions, 116 the `.bpp` file kind, 124 the CLI. Decisions `08-a…i` | [`surface.md`](./08-bpp/surface.md) — 160 reference rows |
 | `contracts.md`, `deferred.md` | carried whole, re-pointed | — |
 | `language-gaps.md` | carried whole, re-owned, ten rows added at the end of each table | — |
-| `decisions-pending.md` § Open (26) + `ck-host` | [`decisions-pending.md`](./decisions-pending.md), verbatim; the lettered choices indexed to the track that confirms them | — |
-| `decisions-taken.md` 68–143 | stays in 1.0.10-beta; [`decisions-taken.md`](./decisions-taken.md) here starts at 144 | — |
+| `decisions-pending.md` § Open (26) + `ck-host` | [`decisions-pending.md`](../decisions-pending.md), verbatim; the lettered choices indexed to the track that confirms them | — |
+| `decisions-taken.md` 68–143 | stays in 1.0.10-beta; [`decisions-taken.md`](../decisions-taken-steps.md) here starts at 144 | — |
 | `unification.md` | stays (the 1.0.6–1.0.9 map); this file is its successor | — |
 | `status.md` | frozen there; [`status.md`](./status.md) here opens with every carried item under Open | — |

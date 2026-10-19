@@ -380,7 +380,7 @@ Per decision 202 (no `prerender` export).
 - [ ] `examples/static-paths-example.bp` passes; scan finds `staticPaths` and `partial` in a `.bp`
       and a `.bpp` page; no `prerender` read
 - [ ] a page reading a cookie (`use cookieValue(sessionCookie)`, 294) is not prerendered (rendered per request): its kind is `D` and its
-      `why` names the read (`@typeInfo(Page).meta(PageMeta)`, recorded by `#[page]` from `Decl.hooks`, 277)
+      `why` names the read (`compiler.typeInfo(Page).meta(PageMeta)`, recorded by `#[page]` from `compiler.hooks`, 277)
 - [ ] a dynamic route `#[page]` prerenders with no `staticPaths` fails the build (`prerenderAll(strict)`)
 
 #### Step 3 — `StaticPath.data`, `paginate`, `Page<T>` (was `117-bpp-routing` s3)
@@ -400,12 +400,12 @@ Per decision 202 (no `prerender` export).
 
 - [ ] `pub fn staticPaths()` and `pub val partial = true` are no longer read: `#[page("dogs/[dog]",
       paths: dogPaths, partial: true)]`, `paths` typed against the page's `PageContext<P, D>`
-      (`fn() -> @Task<#(P, D)[]>`, 280 example 4); the scan stops looking for export names
+      (`fn() -> Async<#(P, D)[]>`, 280 example 4); the scan stops looking for export names
 - [ ] a `staticPaths` left in a page module is refused, naming `#[page(…, paths: …)]`
 
 #### Step 7 — route parameters and page data are hooks (decision 293) (was `117-bpp-routing` s7)
 
-- [ ] `StaticPath.data: Json` and `pageData(route, schemaOf…)` go: `paths: fn() -> @Task<#(P, D)[]>`
+- [ ] `StaticPath.data: Json` and `pageData(route, schemaOf…)` go: `paths: fn() -> Async<#(P, D)[]>`
       (282), the page reads `use params<P>()` / `use pageData<D>()`
 - [ ] `static-paths-example.bp`, `pagination-example.bp`, `partial-and-endpoint-example.bp` and the
       `.bpp` tree rewritten to the hooks; a `page.bpp` header with `type Props(route: …)` no longer needed
@@ -470,7 +470,7 @@ Per decision 202 (no `prerender` export).
 - [ ] a collection's schema is a `#[validated]` type, never a `Schema<T>` value: `defineCollection("blog",
       glob(…), schemaOfBlogPost())` → the decorator on the type itself —
       `#[validated] #[collection(glob("content/blog", "**/*.md"))] pub type BlogPost(…)` — or
-      `collection(BlogPost)` (`comptime source: type T`, refused unless `@typeInfo(T).meta(Validated)`)
+      `collection(BlogPost)` (`comptime source: type T`, refused unless `compiler.typeInfo(T).meta(Validated)`)
 - [ ] a frontmatter field only a value could check (a list of slugs, a date codec) is a field marker
       (`#[each(…)]`, `#[codec(…)]`); `content-collection-example.bp` rewritten
 - [ ] `markdown-example.bp`'s `Meta` is `#[validated]`, decoded by its own member (no `#[schema]`, no `schemas.Schema` import)

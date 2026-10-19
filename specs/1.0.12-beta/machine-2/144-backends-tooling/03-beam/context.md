@@ -34,4 +34,4 @@ honoured.
   stop, report.
 - Two rows from other fronts to re-measure (a step if either holds): module-level `val g = greet`
   called as `g()` prints `#Fun<…>` on beam (`05-wasm`; `run/fn_value_bound_by_val` keeps to
-  locals); `throw` in a `case` arm's block form under `-> @Result` still throws on beam (`02-erlang`).
+  locals); `throw` in a `case` arm's block form under `-> Result` still throws on beam (`02-erlang`).

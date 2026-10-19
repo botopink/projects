@@ -59,7 +59,7 @@ does not own.
 
 | Row | Waits on |
 |---|---|
-| **C-13 — refusing the `;`.** Front 15's parked [`decision-29-parser-half.patch`](../15-language-surface/decision-29-parser-half.patch), narrowed to `isBracedBlockStmt`, would fail `tests/language` and the siblings until they migrate (rakun, jhonstart, erika and onze still write it; emilia does not) | [decision 132](../../decisions-taken.md#132-the--after-a-braced-block-becomes-an-error-once-every-source-is-migrated): each library runs `c13-migrate.py` at the end of the threads writing in it, `tests/language` in the language-tests front, then the patch |
+| **C-13 — refusing the `;`.** Front 15's parked [`decision-29-parser-half.patch`](../15-language-surface/decision-29-parser-half.patch), narrowed to `isBracedBlockStmt`, would fail `tests/language` and the siblings until they migrate (rakun, jhonstart, erika and onze still write it; emilia does not) | [decision 132](../../../decisions-taken-steps.md): each library runs `c13-migrate.py` at the end of the threads writing in it, `tests/language` in the language-tests front, then the patch |
 | **The siblings' reformat at C-12's rules** — emilia, rakun, jhonstart, erika, onze; compiling, cells equal | 09, after the maintainer confirms 16-a / 16-b |
 | `commaList` (generic, parameter, pattern, import and type lists) and the one-step pipeline are still pinned — none holds a call, so none is a wrong middle today | a construct-by-construct decision, as decision 65 part 4 stages them |
 | Decision 61 rule 3's one-line rule stops at `arrow_when_empty`, so `h1 { "my blog" }` prints open over three lines (the parse error it guarded against is gone) | a formatter row — it moves every trailing-lambda call in the frontend library |

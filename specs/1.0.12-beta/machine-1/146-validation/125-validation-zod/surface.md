@@ -49,9 +49,9 @@ rows:
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
 | `z.object({…})` defining a schema | `#[validated] pub type Player(username: string, xp: i32)` | have | declaration is schema and type at once (306) |
-| `Player.parse(input)` — throws | `try Player.parse(input)` in a `@Result` function | have | member (327) `Player.parse(input: Json) -> @Result<Player, ValidationReport>`; `try` propagates (`docs.md:1467-1529`) |
-| `Player.safeParse(input)` | `Player.parse(input)` — the `@Result` itself, read with `case` or `try … catch` | have | one member: only `@Result` fails (decisions 120 · 121) |
-| `Player.parseAsync` / `safeParseAsync` | — | n/a (306) | a declared type's parse is synchronous; an async rule is the application's own `@Task` function after `parse` |
+| `Player.parse(input)` — throws | `try Player.parse(input)` in a `Result` function | have | member (327) `Player.parse(input: Json) -> Result<Player, ValidationReport>`; `try` propagates (`docs.md:1467-1529`) |
+| `Player.safeParse(input)` | `Player.parse(input)` — the `Result` itself, read with `case` or `try … catch` | have | one member: only `Result` fails (decisions 120 · 121) |
+| `Player.parseAsync` / `safeParseAsync` | — | n/a (306) | a declared type's parse is synchronous; an async rule is the application's own `async fn` after `parse` |
 | `Player.validate(input)` — boolean, no error built | `Player.parse(input).isOk()` | have | the same decoder; no schema value to ask (306) |
 | `ZodError.issues` — `code`, `path`, `message`, `expected` | `ValidationReport.violations` — `field` (the rendered path), `code`, `message`, `invalidValue` | have | `Violation` (`report.bp:28-33`); `field` rendered (`address.street`, `tags[1]`); structural codes step 1's |
 | `z.infer<typeof Player>` | the type is `Player` | native | no second declaration |
@@ -197,7 +197,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `z.strictObject({…})` | `#[validated] pub type …` | have | default: unknown key → `unrecognizedKey` |
 | `z.looseObject({…})` | a field `#[rest] extra: Dict<string, Json>` | have | unknown members kept, document order |
 | `.catchall(schema)` | `#[rest] extra: Dict<string, T>` | have | each unknown member decoded as `T` |
-| `.shape` | `@typeInfo(Dog).fields` | add · 12 | reflection reads the type (306); `fields` is `typeinfo-unknown-member` today (`01-checker`, `language-gaps.md`) |
+| `.shape` | `compiler.typeInfo(Dog).fields` | add · 12 | reflection reads the type (306); `fields` is `typeinfo-unknown-member` today (`01-checker`, `language-gaps.md`) |
 | `.keyof()` | no counterpart: the run-time field key is removed (decision 599); `.field` written where a `compiler.Field<T>` is expected stays a build-time key | gap | decision 599 |
 | `.extend({…})` | `#[validated] pub val DogWithBreed = Type.merge(Dog, Breed);` (307) | add · 5 | waits on `01-checker` step 28; `#[extending]` goes |
 | `.safeExtend({…})` | `Type.merge` refuses an incompatibly retyped field (307) | add · 5 | waits on `01-checker` step 28 |
@@ -253,7 +253,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
 | `z.file()` · `.min` · `.max` · `.mime` | — | gap | no byte type until 346's `Bytes` (`01-checker` step 32); multipart refused with 415 today. Nearest: validate the upload's declared `name`, `size`, `type` as a record |
-| `z.promise()` | — | n/a | deprecated in Zod; a `@Task` is awaited before parsing |
+| `z.promise()` | — | n/a | deprecated in Zod; an `Async` is awaited before parsing |
 | `z.instanceof(Class)` | `x is T` | native | `docs.md:625-626`; a host class has no botopink type |
 | `z.property(k, schema)` · `z.properties({…})` | — | n/a (306) | a check over a `Json` value; declare the shape as a type |
 
@@ -270,7 +270,7 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | `.check(ctx => ctx.issues.push(…))` | the same | add · 7 | one API, no slower one to bypass |
 | `.pipe(schema)` | — | n/a (306) | two schema values in a row; a field's markers and transforms run in order |
 | `z.transform(fn)` · `.transform(fn)` | field marker `#[map(f)]` | add · 8 | reads `f`'s parameter type — typed decorator arguments, `01-checker` step 24 |
-| transform that fails (`ctx.issues.push`, `z.NEVER`) | `#[tryMap(f)]` with `f: fn(a: A) -> @Result<B, string>` | add · 8 | `01-checker` step 24 |
+| transform that fails (`ctx.issues.push`, `z.NEVER`) | `#[tryMap(f)]` with `f: fn(a: A) -> Result<B, string>` | add · 8 | `01-checker` step 24 |
 | `z.preprocess(fn, schema)` | `#[preprocess(f)]` with `f: fn(input: Json) -> Json` | have | |
 | `.overwrite(fn)` | the transform markers of § 4.3 | have | `#[map]` when the type does not change (s24) |
 
@@ -353,11 +353,11 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
 | `z.codec(In, Out, { decode, encode })` | `#[codec(decode: f, encode: g)]` on a field | add · 8 | reads `f`'s parameter type — `01-checker` step 24 |
-| `.decode()` · `.encode()` | `T.parse` · `T.encode(v) -> @Result<Json, ValidationReport>` | have | every `#[validated]` type |
-| `.safeDecode` · `.decodeAsync` · `.encodeAsync` | the `@Result` returns | have | async is n/a (306) |
+| `.decode()` · `.encode()` | `T.parse` · `T.encode(v) -> Result<Json, ValidationReport>` | have | every `#[validated]` type |
+| `.safeDecode` · `.decodeAsync` · `.encodeAsync` | the `Result` returns | have | async is n/a (306) |
 | `z.invertCodec` | — | n/a (306) | a codec value; a field's `#[codec]` names both directions |
 | composability (codecs inside objects and arrays) | a field with `#[codec(…)]` | add · 8 | `01-checker` step 24 |
-| refinements run in both directions | `T.encode` runs `validate()` first and answers `@Result` | have | |
+| refinements run in both directions | `T.encode` runs `validate()` first and answers `Result` | have | |
 | the recipe list — `stringToNumber`, `stringToInt`, `stringToBigInt`, `isoDatetimeToDate`, `epochSecondsToDate`, `epochMillisToDate`, `jsonCodec`, `base64ToBytes`, `hexToBytes`, `stringToURL`, `stringToHttpURL`, `uriComponent`, `stringToBoolean` | `codecs.textToInt` · `textToLong` · `textToFloat` · `isoToMillis` · `secondsToMillis` · `jsonText` · `base64Text` · `base64urlText` · `hexText` · `textToUrl` · `uriComponent` · `textToBool` | add · 8 | `utf8ToBytes` / `bytesToUtf8` are **gap** until 346's `Bytes` (`Bytes.fromUtf8` / `toUtf8`) |
 
 ## § 10 · AOT compilation
@@ -374,13 +374,13 @@ Each format: one `formats.bp` rule, one `constraints.bp` predicate, one marker, 
 
 | Zod | botopink | Box | Notes |
 |---|---|---|---|
-| Standard Schema — "accept any schema" | a parameter taking the type (`comptime source: type<T>`, refused unless `@typeInfo(T).meta(Validated)` — 298) | add · 12 | until then a parse function (`onze-content`'s `defineCollection(name, loader, { d -> T.parse(d) })`) |
+| Standard Schema — "accept any schema" | a parameter taking the type (`comptime source: type<T>`, refused unless `compiler.typeInfo(T).meta(Validated)` — 298) | add · 12 | until then a parse function (`onze-content`'s `defineCollection(name, loader, { d -> T.parse(d) })`) |
 | tRPC-style typed endpoints, form libraries | `08-bpp/127-bpp-actions` | — | the consumer, not this front |
 | Zod → OpenAPI | `table.toOpenApi30` | have | |
 | mock-data generators | — | — | not in the reference's core; no row |
 | Zod Classic (methods) vs Zod Mini (functions) | one API: the type's members | n/a (306) | no schema value, no `checks.*` |
-| `mySchema.isOptional()` · `.isNullable()` | the field's type (`?T`) | n/a (306) | reflection reads the type (`@typeInfo`) |
-| `mySchema.clone(def)` · `_zod.def` · `_zod.run` | `@typeInfo(T)` | add · 12 | `fields` is `typeinfo-unknown-member` today (`01-checker`) |
+| `mySchema.isOptional()` · `.isNullable()` | the field's type (`?T`) | n/a (306) | reflection reads the type (`compiler.typeInfo`) |
+| `mySchema.clone(def)` · `_zod.def` · `_zod.run` | `compiler.typeInfo(T)` | add · 12 | `fields` is `typeinfo-unknown-member` today (`01-checker`) |
 | `z.$ZodType` hierarchy, v3/v4 dual support, peer dependencies | — | n/a | one version per `dependencies` entry (a repository of its own, decision 326) |
 
 ---
@@ -402,7 +402,7 @@ steps 0–12:
 
 The `add` rows wait on `01-checker` step 24 (typed decorator arguments: `#[map]`, `#[tryMap]`,
 `#[codec]`, the type-level `#[check]`), `01-checker` step 28 and 134 step 4 (std's `Type`: pick,
-omit, partial, required, merge), `@typeInfo(T).fields` and 298's `meta(Validated)` (reflection,
+omit, partial, required, merge), `compiler.typeInfo(T).fields` and 298's `meta(Validated)` (reflection,
 a library taking the type), or are not boxes of the front (`io: "input"`). The gaps: wire names and
 payload fields of variants (`compiler.variants(d)`), field defaults in reflection (`Field`), `z.file` and the
 byte codecs (no byte type) — each a [`../../language-gaps.md`](../../../language-gaps.md) row.

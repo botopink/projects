@@ -169,7 +169,7 @@ front owns the cell and the erlang lowering if the template needs a helper.
 Done by the std front 97 (decision 169, measured as `string:length/1` of the prefix — decision 197).
 `erlang.zig` has no `indexOf` lowering of its own: the erlang text is `primitives.bp`'s template,
 so nothing of this step is left in this front's files. The cell waits on
-[`decisions-pending.md` 02e-a](../../decisions-pending.md#02e-a--the-unit-of-a-string-index-on-wasm):
+[`decisions-pending.md` 02e-a](../../../decisions-pending.md):
 erlang, beam and commonJS print `3` and `X`, wasm counts bytes everywhere (`5`, and `.at(1)` of
 `"a—bXc"` is one byte of the dash) — decision 169 names no unit for wasm, and wasm accepts the
 program, so no `.targets` may leave it out.

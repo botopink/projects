@@ -3,9 +3,9 @@
 **Track:** compiler (carry-over item **C-32**)
 **Priority:** critical — every effectful body in the compiler, std and the five libraries is written
 against this surface.
-**Depends on:** decisions [118–128](../../decisions-taken.md#118-the-return-type-is-the-annotation),
-amended by [130](../../decisions-taken.md#130-a-failing-render-carries-e--string-the-writers-stay-infallible)
-and [131](../../decisions-taken.md#131-no-migration-routine-for-the-effect-change);
+**Depends on:** decisions [118–128](../../../decisions-taken-steps.md),
+amended by [130](../../../decisions-taken-steps.md)
+and [131](../../../decisions-taken-steps.md);
 [`22-loops`](../22-loops/README.md) (landed).
 **Owns:** `libs/std/src/builtins.d.bp` (the effect behaviors) · `ast.zig`'s `EffectKind`, the
 `AsyncBlock` node and the prefixed loop (`LoopExpr.generator` / `prefixedKeyword`) ·
@@ -180,7 +180,7 @@ emilia, onze and erika are written in the surface.
       table (decision 135):
       `grep -rlE '#\[@(result|future|use|generator|resultGenerator|futureGenerator)\]|@(Future|Use)<|@(Result|Future)Generator' specs/1.0.10-beta --include=*.md --include=*.bp`
       → `specs/1.0.10-beta/00-compiler-carry-over/24-effects-by-return/guide.md` (§ 9 *Old names that
-      left* only) and `specs/1.0.10-beta/decisions-taken.md`
+      left* only) and `specs/decisions-taken-steps.md`
 
 ## Diagnostics
 

@@ -27,14 +27,14 @@ pub type User(id: i32, nome: string, #[column("ativo")] active: bool)
 #[repository]
 behavior Users {
     #[query "select * from User where id = ${id} limit 1"]            // erika's grammar
-    fn find(self: Self, id: i32) -> @Result<?User, StoreError>;
+    fn find(self: Self, id: i32) -> Result<?User, StoreError>;
 
     #[nativeQuery("select * from usuarios where nome ilike :q")]     // the driver's SQL
-    fn search(self: Self, q: string) -> @Result<User[], StoreError>;
+    fn search(self: Self, q: string) -> Result<User[], StoreError>;
 }
 
 type Relatorio(db: DbContext) {
-    fn ativos(self: Self) -> @Result<User[], StoreError> {
+    fn ativos(self: Self) -> Result<User[], StoreError> {
         return self.db.query "select * from User where active = true";        // 397
     }
 }

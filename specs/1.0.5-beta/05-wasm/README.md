@@ -331,7 +331,7 @@ starting and record it in the landing note.
 3. **05 × [`13-module-identity`](../13-module-identity/README.md) — `no` in substance, `yes` on paper.** 13 does not own `wat.zig`, but
    **step 2's box is the mechanism 13's named-type identity needs on this backend.** Do not merely
    sequence them: agree the tag encoding once, in step 2's D1, with 13's owner — the same question
-   [`../decisions-pending.md` #5](../decisions-pending.md) asks on the commonJS side. **Recommended order:
+   [`../decisions-pending.md` #5](../../decisions-pending.md) asks on the commonJS side. **Recommended order:
    05 runs now**, D1 designed jointly, and F2/F3/F4 land in 13's commit. Sequencing without the
    agreement costs the box being written twice and every boxed value's snapshot re-recorded twice.
 4. **05 × [`14-comptime-on-beam`](../14-comptime-on-beam/README.md) — `yes`.** No shared file.
@@ -353,7 +353,7 @@ starting and record it in the landing note.
 
 ## Handed over by `15-language-surface` (2026-09-18, `109f6c9`)
 
-**One lowering: the index expression.** [Decision 30](../decisions-taken.md) landed in the parser as a
+**One lowering: the index expression.** [Decision 30](../../decisions-taken-steps.md) landed in the parser as a
 builtin call — `ast.index_builtin_name` (`"[]"`) over `(receiver, index)`, contract at
 `ast.zig:1681-1703` — so `xs[0]`, `d["k"]`, `s[0]` and the slice `xs[0..2]` (the same node with a
 `range` second argument) all arrive as one shape. Until this backend lowers it, the form falls into the
@@ -367,7 +367,7 @@ the language already has (`ast.nullish_binding_name`), which this backend alread
 ## Handed over by `12-language-tests` (2026-09-18)
 
 The suite's new index cells name this front's owner row as `<front> handover 15`, because
-[decision 30](../decisions-taken.md#30-is-there-an-index-expression) says "one lowering in each of
+[decision 30](../../decisions-taken-steps.md) says "one lowering in each of
 fronts 02–05" and this front carries it only as the handover section above, with no numbered step.
 Worth giving it a number when the step is planned.
 

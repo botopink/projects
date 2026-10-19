@@ -32,7 +32,7 @@ mechanism it needs does not exist on this stack** (not size of work).
 | `turbopack` config / `--webpack` | `§ 2`, `§ 28`, `§ 29` | Config for two bundlers, neither exists here | As above | As above |
 | `transpilePackages` | `§ 28` | Transpiles npm deps published as untranspiled ESM; botopink libraries compile from source | An npm-interop story for client-side botopink libraries | Only if npm interop becomes a goal |
 | `serverExternalPackages` | `§ 28` | Keeps Node native modules out of the server bundle; the BEAM server has no npm graph | A Node-side server, which this architecture rejects | Never under this architecture |
-| `reactCompiler: true` | `§ 28` | Auto-memoizing compiler pass; library fronts make no compiler changes; `#[@External]` + comptime cannot rewrite call sites | A language-gap row and a compiler milestone | 1.1.x, as a compiler front |
+| `reactCompiler: true` | `§ 28` | Auto-memoizing compiler pass; library fronts make no compiler changes; `#[compiler.external(…)]` + comptime cannot rewrite call sites | A language-gap row and a compiler milestone | 1.1.x, as a compiler front |
 | CSS-in-JS runtime (styled-components) | `§ 15` | JS-runtime style injection + a Babel plugin, npm artefacts with no counterpart | An npm-interop story | Unlikely — `emilia` is the answer; only the server-insertion seam is ported (front 69) |
 | SWR / React Query client cache | `§ 9` | Third-party npm libraries; no npm dependency path for the client half | Front 68 plus npm interop for client bundles | A small native client cache is likelier; no front opens it |
 | `next telemetry` | `§ 29` | Vendor usage reporting to one company's endpoint | Nothing — a product decision | Never |

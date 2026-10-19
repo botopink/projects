@@ -10,8 +10,8 @@
 Count: 32 compiler carry-over items (`00`, C-01…C-32) · `01-std` (6 steps + 3 carried std fronts + the bundled `routing`, `actions` and `validation` libraries) ·
 `02-packaging` · 51 rakun · 9 jhonstart · 22 emilia · 9 onze fronts. The percentage weighs items
 equally; it is a ratio, not a measurement. The decisions are in
-[`decisions-taken.md`](./decisions-taken.md); the questions still open for the maintainer are in
-[`decisions-pending.md`](./decisions-pending.md).
+[`decisions-taken.md`](../decisions-taken-steps.md); the questions still open for the maintainer are in
+[`decisions-pending.md`](../decisions-pending.md).
 
 One line per front, with its current state; the detail and the open boxes are in each front's
 README.

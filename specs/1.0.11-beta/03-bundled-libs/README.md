@@ -128,7 +128,7 @@ Lettered `07-a` … continuing; each becomes a number (next free **225**, alloca
 milestone's `decisions-pending.md`) when answered.
 
 Answered, and written into the fronts — the text is in
-[`../decisions-taken.md`](../decisions-taken.md): `07-c` (180: the BCP 47 subset — 105), `07-d`
+[`../decisions-taken.md`](../../decisions-taken-steps.md): `07-c` (180: the BCP 47 subset — 105), `07-d`
 (181: first-wins cookies — 104 step 1), `07-e` (182: the strict q-value — 104 step 2), `07-i`
 (163: no exported name std or a framework exports — every surface table), `07-k` (145), `07-l`
 (144), `07-m` (183: a grammar per target type — 125 step 6), `07-f` (195: the bundled `log`
