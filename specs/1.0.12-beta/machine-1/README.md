@@ -2,7 +2,7 @@
 
 What machine 1 (the checker and the language; the libraries' lane; front 165) executes without a
 maintainer decision, in order. Every item here is fixed by a decision already in
-[`decisions-taken.md`](../decisions-taken.md) or by a step's README; what still waits on the maintainer is
+[`decisions-taken.md`](../../decisions-taken.md) or by a step's README; what still waits on the maintainer is
 listed at the end and is **not** opened. The sister queue is [`../machine-2/README.md`](../machine-2/README.md).
 
 **Rules for the night**

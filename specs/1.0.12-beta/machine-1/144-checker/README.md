@@ -2052,7 +2052,7 @@ per import spelling).
 23-b (`base64` retired) and std-c (namespace rewrite): each confirmed or reversed; a reversal opens a
 step in the owner (01 for std-c). 23-c is confirmed (317).
 
-- [ ] the three ids in `../../decisions-taken.md` with their numbers, or a reversal's step named —
+- [ ] the three ids in `../../../decisions-taken.md` with their numbers, or a reversal's step named —
       23-c confirmed (317); 23-b and std-c open
 
 #### Step 1 — every guide fence compiles as one program (E3, decision 134) (was `24-effects-by-return` s1)
@@ -2070,7 +2070,7 @@ then, named as stubs in the report). E3's three checker rows landed in 01
 24-a (effect codes), 24-b (`@Task`'s `map` / `then`), 24-c (prefixed loop's label), 24-g
 (`std/async`'s shape) confirmed or reversed; 24-h answered (decision 179, replaced by 432).
 
-- [ ] the four ids in `../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`; 24-b → 432, the failing task;
+- [ ] the four ids in `../../../decisions-taken.md`; a reversal's step named in the owning front — 24-a → 431 (checked `@Result`; 24-b → 432, the failing task;
       `throws: true` and `attempt` are `01-checker` step 42 and `02/97` step 18)
 
 #### Step 3 — the cost of a `@Result` per item (was `24-effects-by-return` s3)

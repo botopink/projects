@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split the milestone's decisions-taken-steps.md into one generated file per repository (decision 482).
 
-Reads specs/<newest milestone>/decisions-taken-steps.md (the row-per-decision record, decision 730) and, for every table row, maps its Binds column
+Reads specs/decisions-taken-steps.md (the row-per-decision record, decision 730) and, for every table row, maps its Binds column
 to repositories: a front number (144 botopink-lang ... 162, rakun), or an old id resolved through the
 alias tables at the top of each front README (old id -> the front that holds it now). Writes
 repository/<repo>/decisions-taken.md: the generated-from line, then every section that has rows,
@@ -48,7 +48,7 @@ WORDS = {
 }
 
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*")
-HEADER = "Generated from botopink/projects · specs/{ms}/decisions-taken-steps.md — edit there."
+HEADER = "Generated from botopink/projects · specs/decisions-taken-steps.md — edit there."
 STEP = r"(?:\s+(?:steps?\s+|s)(?P<{n}>\d+[a-z]?(?:(?:\s*,\s*|\s+and\s+|\s*[–-]\s*)s?\d+[a-z]?)*))?"
 
 
@@ -56,7 +56,7 @@ def newest_milestone():
     best = None
     for d in (ROOT / "specs").iterdir():
         m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)-beta", d.name)
-        if m and (d / "decisions-taken-steps.md").exists():
+        if m and (d / "README.md").exists():
             key = tuple(int(x) for x in m.groups())
             if best is None or key > best[0]:
                 best = (key, d)
@@ -231,7 +231,7 @@ def map_row(binds, by_name, by_num, all_repos):
 def main():
     check = "--check" in sys.argv[1:]
     ms = newest_milestone()
-    src = ms / "decisions-taken-steps.md"
+    src = ROOT / "specs" / "decisions-taken-steps.md"
     by_name, by_num = load_aliases(ms)
     all_repos = sorted(p.name for p in (ROOT / "repository").iterdir() if p.is_dir())
     all_repos = [r for r in all_repos if r in FRONT_REPO.values()]

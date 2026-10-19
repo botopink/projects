@@ -34,7 +34,7 @@ execution order are [`fronts.md`](fronts.md).
 The old track directories (`00-gate` … `10-specs`, `20-snap`) are gone (decision 433): an old id (`01-checker` s42,
 `137-erika-sql` s2) resolves through the alias table at the top of the front that holds its step, and an old front's
 goal, mechanism, topic files and examples sit beside those steps, in a subdirectory named after it
-(`machine-1/150-rakun/26-jhonstart-router/`). Done steps live in git history, `decisions-taken.md` and the
+(`machine-1/150-rakun/26-jhonstart-router/`). Done steps live in git history, `../decisions-taken.md` and the
 1.0.11 closure.
 
 ## Rules in force
@@ -66,7 +66,7 @@ goal, mechanism, topic files and examples sit beside those steps, in a subdirect
   an emitter renders it.**
 - **Coverage is never traded for wall clock**: the gate asserts that the cells it ran equal the cells that exist;
   over the 7m30s budget is yellow, never red (decision 265).
-- **Decisions are asked, not guessed**: a question goes to `decisions-pending.md` with a recommendation, most
+- **Decisions are asked, not guessed**: a question goes to `../decisions-pending.md` with a recommendation, most
   restrictive first.
 - **`status.md` is the only file that carries status.** Every other spec describes current state and remaining
   work; a done step is one line under its front's `## Done`.
@@ -77,10 +77,10 @@ goal, mechanism, topic files and examples sit beside those steps, in a subdirect
 |---|---|
 | [`status.md`](status.md) | The only status: five lanes of open lines — finish what is on `feat` (the conformance order first), the libraries' critical path, ready now, later, blocked on a decision — each by tier and front, and Done |
 | [`fronts.md`](fronts.md) | The rules for a front, ownership by repository, the conflict rules, the execution order, and § Gate (the standard landing every README cites) |
-| [`decisoes-pendentes.md`](decisoes-pendentes.md) | The pending decisions in Portuguese, ordered by what each unblocks, with an example per option — the page the maintainer answers on; `decisions-pending.md` stays the source |
-| [`decisions-taken.md`](decisions-taken.md) | The rules in force, one text per subject, each sentence citing its row of the steps (decision 730) |
-| [`decisions-taken-steps.md`](decisions-taken-steps.md) | The record: one numbered row per decision, append-only (the next free number lives only there) |
-| [`decisions-pending.md`](decisions-pending.md) | The open questions, the contradictions (`ctr-*`), the 1.0.10 choices awaiting confirmation |
+| [`../decisoes-pendentes.md`](../decisoes-pendentes.md) | The pending decisions in Portuguese, ordered by what each unblocks, with an example per option — the page the maintainer answers on; `../decisions-pending.md` stays the source |
+| [`../decisions-taken.md`](../decisions-taken.md) | The rules in force, one text per subject, each sentence citing its row of the steps (decision 730) |
+| [`../decisions-taken-steps.md`](../decisions-taken-steps.md) | The record: one numbered row per decision, append-only (the next free number lives only there) |
+| [`../decisions-pending.md`](../decisions-pending.md) | The open questions, the contradictions (`ctr-*`), the 1.0.10 choices awaiting confirmation |
 | [`language-gaps.md`](language-gaps.md) | Every compiler gap a library front meets, with its nearest form, owner and the Marker index |
 | [`contracts.md`](contracts.md) | The cross-library contracts |
 | [`deferred.md`](deferred.md) | What has no path on the BEAM or no gate cell this milestone |

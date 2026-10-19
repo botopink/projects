@@ -60,7 +60,7 @@ Fronts share no source file or snapshot directory except by named, sequenced car
 
 ## Decisions
 
-Open ids waited on — statements in [`../decisions-pending.md`](../../../decisions-pending.md); 1.0.10
+Open ids waited on — statements in [`../decisions-pending.md`](../../../../decisions-pending.md); 1.0.10
 choices to confirm (23-b/c, std-c, 24-a/b/c/g, 01c-a/b, 0405-b) in
 [1.0.10's](../../../../1.0.10-beta/decisions-pending.md); front in parentheses:
 **17-c** ([`17-beam-memory`](../../../machine-2/144-backends-tooling/17-beam-memory/context.md) § Decisions) · **C-14** (07 step 9) · **23-b, std-c** (23) · **24-a, 24-b,

@@ -1,7 +1,7 @@
 # Machine 2 — the work queue (the maintainer, 2026-10-17, night)
 
 What machine 2 (backends, runtimes, std, tooling, the gate; front 164 wasm-gc) executes without a maintainer
-decision, in order. Every item is fixed by a decision in [`decisions-taken.md`](../decisions-taken.md) or by a
+decision, in order. Every item is fixed by a decision in [`decisions-taken.md`](../../decisions-taken.md) or by a
 step's README; what still waits on the maintainer is listed at the end and is **not** opened. The sister queue is
 [`../machine-1/README.md`](../machine-1/README.md).
 

@@ -289,7 +289,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 ### 163 meta-ci (medium)
 
 - [x] 163 s13 — a small gate may pass older full-pool waiters while the pool is busy, one pass in flight (`scripts/gate-test.sh`) — landed
-- [ ] 141 (`10-specs`) — steps 0–5 done (`decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
+- [ ] 141 (`10-specs`) — steps 0–5 done (`../decisions-taken.md`'s 26 amended rows stated as in force, the central files, tracks 04, 06–09, the examples; F10 for 384, 385); left: step 6, the rule that keeps the specs from drifting · `141-a`
 
 ### 166 decision-cells (medium)
 
@@ -373,11 +373,11 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 ## L5 — blocked on a decision
 
-Full text in [`decisions-pending.md`](decisions-pending.md); confirmations (1.0.10 choices) in its
+Full text in [`../decisions-pending.md`](../decisions-pending.md); confirmations (1.0.10 choices) in its
 last section. Open: 140 questions, 6 contradictions, 100 implementation choices (the counts live at the top of
-`decisions-pending.md`).
+`../decisions-pending.md`).
 
-**First — what blocks now** (`decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:
+**First — what blocks now** (`../decisions-pending.md` § Blocking now — machine 1 and front 165, 2026-10-15), in order:
 - [ ] 434-b — 144 B-17 · 116-a — 116 s2 · 50-b — 50 s2, 53 s6
 
 **Then — the error contract and comptime on wasm** (raised 2026-10-10, 433 / 434; each step also waits on B-00):
@@ -547,7 +547,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 144 B-46 — a failed decorator run checks its body with the module's std imports bound; the decorator `random.float()` cell refused unseeded (451, 456)
 - [x] 144 B-40 — a cell's targets in its `botopink.json` (`"targets"`), a `targets` file refused (475 (1)); jhonstart's, rakun's and emilia's cells on it
 - [x] 144 B-29 step H2 — `tests/language` is `conformance/`: 943 cells, each with its manifest (narrowing in `"targets"`, a `targets` file refused), the suites in `conformance/test/`, test-cli's language half and the examples as cells; the gate's conformance stage is `zig build test-conformance`
-- [x] 163 s10 — each repository's `decisions-taken.md` generated from the meta one by Binds (`scripts/decisions-split.py`, `gate.sh check` 6); a row binding no mappable repository stays in the meta one
+- [x] 163 s10 — each repository's `../decisions-taken.md` generated from the meta one by Binds (`scripts/decisions-split.py`, `gate.sh check` 6); a row binding no mappable repository stays in the meta one
 - [x] 163 s7 + s8 — `scripts/gate.sh` in every repository (byte-identical across the libraries, CI check 4), the hook `--no-conformance`, the conformance stage only where a cell exists; the meta `scripts/gate.sh` runs the five checks (the workflow calls it) and orchestrates (`run`, `tasks`, `libs`, `status`, a job pool); each library's `test.yml` runs `bpmp install` then `scripts/gate.sh`
 - [x] 144 B-37 — a `git` dependency resolves from `BOTOPINK_LIB_ROOTS`, then `<project>/.botopinkbuild/deps/` (and a workspace root's), then the walk-up; `bpmp link` links a checkout's repositories, nothing cloned (483)
 - [x] 144 B-36 — styled's hook red on `feat`: its stage read 354 (8)'s hidden context argument, which decision 388 dropped; fixed in styled

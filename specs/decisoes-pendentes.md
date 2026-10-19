@@ -1,4 +1,6 @@
-# Decisões pendentes — 1.0.12-beta
+# Decisões pendentes
+
+As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
 **36 perguntas e 6 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
@@ -538,7 +540,7 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 Cada uma implementada com sua opção recomendada; o mantenedor confirma ou reverte (uma reversão é uma
 mudança local no lugar nomeado). Texto completo da 1.0.10 sob o mesmo id em
-[`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
+[`../1.0.10-beta/decisions-pending.md`](1.0.10-beta/decisions-pending.md).
 
 #### 01-compiler (28)
 

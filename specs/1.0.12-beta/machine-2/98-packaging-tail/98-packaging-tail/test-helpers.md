@@ -68,7 +68,7 @@ Same shape per track:
 | the compiler, written in botopink | — | `assertJsSingle(loc, source)` | `js` | the JavaScript the source lowers to — the `.bp` twin of `codegen/tests/helpers.zig` `assertJsSingle` |
 
 Shape only; which helpers each library writes is 390 (4) in
-[`../../decisions-pending.md`](../../../decisions-pending.md), worked by [`20-snap`](../../../machine-1/135-snap/20-snap/context.md):
+[`../../decisions-pending.md`](../../../../decisions-pending.md), worked by [`20-snap`](../../../machine-1/135-snap/20-snap/context.md):
 `emilia-test`'s `assertClassName` · `assertCss`, `rakun-test`'s `assertResponse`, jhonstart's and
 onze's existing helpers.
 

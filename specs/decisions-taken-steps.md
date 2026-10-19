@@ -1,7 +1,9 @@
-# Decisions taken — 1.0.12-beta · the steps
+# Decisions taken — the steps
+
+One file above every milestone since 2026-10-18 (the numbering is global; 1.0.12-beta's rows start at 144, a closed milestone keeps the frozen copy it closed with).
 
 The record of every decision, one row per question answered, in the order they were taken (decision 730): what was asked, when, by whom, the options rejected. **The rules in force, by subject, are [`decisions-taken.md`](decisions-taken.md)**; each of its sentences traces to a row here, and a new decision lands as a row here and as a sentence there in the same commit. Where the two differ, the later row number wins until the subject text is corrected. From 730 on, a row is never edited after it lands — an amendment is a new row, and the subject text is what states the rule as it stands. Numbers continue from
-[1.0.10-beta's record](../1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
+[1.0.10-beta's record](1.0.10-beta/decisions-taken.md) (which stopped at 143; 91–94, 97 and
 99–101 are used) and are never renumbered or reused. A question is raised in
 [`decisions-pending.md`](decisions-pending.md) under a lettered id and moves here with the next
 free number. **The next free number is 739.**
@@ -15,17 +17,17 @@ behaviour; shared logic in std) — the maintainer may reverse it.
 
 **Standing principles inherited, cited by number:**
 
-- [67](../1.0.5-beta/decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it)
+- [67](1.0.5-beta/decisions-taken.md#67-the-most-restrictive-behaviour-and-no-configuration-that-bypasses-it)
   — the most restrictive behaviour, and no configuration that bypasses it; every option list is
   written against it; no tolerated red: a red cell is fixed or its test deleted by a decision.
-- [113](../1.0.10-beta/decisions-taken.md) — the libraries split by concern: emilia is CSS,
+- [113](1.0.10-beta/decisions-taken.md) — the libraries split by concern: emilia is CSS,
   jhonstart is HTML, rakun is the service on erlang, onze wires them.
-- [114](../1.0.10-beta/decisions-taken.md) — an emilia example is emilia-only.
-- [115–117](../1.0.10-beta/decisions-taken.md) — a bundled library only when justified (two or more
+- [114](1.0.10-beta/decisions-taken.md) — an emilia example is emilia-only.
+- [115–117](1.0.10-beta/decisions-taken.md) — a bundled library only when justified (two or more
   libraries); what is generic goes to std; `.bp` only, with inline `#[@External]` templates.
-- [118–128](../1.0.10-beta/decisions-taken.md) — the return type is the annotation; only `@Result`
+- [118–128](1.0.10-beta/decisions-taken.md) — the return type is the annotation; only `@Result`
   fails.
-- [79](../1.0.10-beta/decisions-taken.md) — the `onze` name passed from the mocking library to the
+- [79](1.0.10-beta/decisions-taken.md) — the `onze` name passed from the mocking library to the
   orchestrator (how it happened: question `95-f`).
 
 **Rules in force, by topic** (the rows stay in the sections below):

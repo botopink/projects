@@ -37,7 +37,7 @@ BEAM (decision 167); documented in `docs.md`.
 
 ## Decisions
 
-Measured / options / blocks in [`../../decisions-pending.md`](../../../decisions-pending.md).
+Measured / options / blocks in [`../../decisions-pending.md`](../../../../decisions-pending.md).
 
 Answered: 17-b → decision 340 (`Dict.bump`, `ets:update_counter` under `keyed: true`).
 

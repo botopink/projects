@@ -30,7 +30,7 @@ milestone (three when the console is closed).
    an edge updates it in the same commit.
 5. **A front that needs a file it does not own stops and reports** to the owning front, through a
    handed-over row in that front's README.
-6. **Decisions are asked, not guessed**: a question goes to [`decisions-pending.md`](decisions-pending.md)
+6. **Decisions are asked, not guessed**: a question goes to [`../decisions-pending.md`](../decisions-pending.md)
    as Measured / Options / Recommendation / Blocks, the recommendation most restrictive (decision 67).
 7. **The front's README stays current**: a landed step becomes one line under `## Done` in the landing
    commit; `status.md` is the only file that says where the milestone stands.
@@ -310,5 +310,5 @@ Every line is a command and the output it must print; nothing is read from a spe
 6. `scripts/language-gap-markers.sh`: every `// LANGUAGE GAP:` marker names a row of
    `language-gaps.md` (the closed milestones' spec trees excluded).
 7. `gate.sh --cold` within `budget_cold` (450 s, decision 265).
-8. `status.md` lists no open line; every open decision id is answered in `decisions-taken-steps.md` or
-   still listed in `decisions-pending.md` with the step it blocks.
+8. `status.md` lists no open line; every open decision id is answered in `../decisions-taken-steps.md` or
+   still listed in `../decisions-pending.md` with the step it blocks.

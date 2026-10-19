@@ -79,4 +79,4 @@ Implemented in 1.0.10; text in [1.0.10-beta `decisions-pending.md`](../../../../
 > **Recommendation.** (b), most restrictive; (a) additive later if a second consumer appears.
 > **Blocks.** onze 50's `SIGTERM` and prompt boxes; 97 step 6.
 
-`std-e` (test lifecycle hooks) is in [`../decisions-pending.md`](../../../decisions-pending.md).
+`std-e` (test lifecycle hooks) is in [`../decisions-pending.md`](../../../../decisions-pending.md).

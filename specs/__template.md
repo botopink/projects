@@ -13,8 +13,8 @@ specs/<version>/
 ├── overview.md                     what the milestone is, the fronts, the order
 ├── fronts.md                       ownership + conflict matrix (who may run together)
 ├── status.md                       the living checklist: done · in analysis · pending · open, with a rough %
-├── decisions-pending.md            questions only the maintainer can answer, in the Measured/Options/Recommendation/Blocks shape
-├── decisions-taken.md              the answers, numbered, never renumbered — what the fronts implement against
+│   (the decisions live one level up, shared by every milestone: `specs/decisions-pending.md`, `specs/decisoes-pendentes.md`,
+│    `specs/decisions-taken.md`, `specs/decisions-taken-steps.md`)
 ├── <NN>-<front-name>/
 │   ├── README.md                   the front: problem, steps, acceptance, ownership, gate
 │   └── <topic>.md                  the deep dives (mechanism, blast radius, options, evidence)

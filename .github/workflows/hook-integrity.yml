@@ -28,7 +28,7 @@
 #      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md.
 #
 #   6. `scripts/decisions-split.py --check` exits 0 — every repository's generated
-#      `decisions-taken.md` is what the script writes from the milestone's `decisions-taken-steps.md` (decision 482);
+#      `decisions-taken.md` is what the script writes from `specs/decisions-taken-steps.md` (decision 482);
 #   7. `scripts/decision-cells.py check` exits 0 (front 166) — every
 #      `conformance/modules/decisions-taken/<slug>-<N>/` is the `Cell` slug of a code-bearing ledger row of its
 #      repository, with its docs.md and program in the generated shape; completeness

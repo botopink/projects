@@ -7,7 +7,7 @@
   worked around by the library front hitting it (compiler runs beside the libraries, not ahead).
 - **Exit gate** (`fronts.md`): every `// LANGUAGE GAP:` marker in a library or a front's
   `examples/` names a row here. A row gated on a maintainer question names it (`lg2-*`, `std-e`;
-  all in [`decisions-pending.md`](decisions-pending.md) § Open); until answered the row opens no
+  all in [`../decisions-pending.md`](../decisions-pending.md) § Open); until answered the row opens no
   front and the nearest form is the design (most restrictive reading).
 - A gap closes in this order: its markers go, then their index rows, then the gap row.
 - Row ids (`T<n>`, `C-<n>`, `row <n>`) are the names `01-compiler` fronts use for a row.

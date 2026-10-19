@@ -131,7 +131,7 @@ Each a **wire** row of `surface.md`.
 
 ## Rules in force
 
-Labels only; text in [`../decisions-taken.md`](../../../decisions-taken.md).
+Labels only; text in [`../decisions-taken.md`](../../../../decisions-taken.md).
 
 | Decision | Rule | Fronts |
 |---|---|---|
@@ -199,7 +199,7 @@ step 2 owns.
 ## Decisions the maintainer owes
 
 Open: `nat-f2`
-([`../decisions-pending.md`](../../../decisions-pending.md)); `props-d` → 351 (native tags typed as React's intrinsic elements, through `prelude.bp`); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
+([`../decisions-pending.md`](../../../../decisions-pending.md)); `props-d` → 351 (native tags typed as React's intrinsic elements, through `prelude.bp`); contradictions — `ctr-f` → 288, `ctr-g` and `ctr-t` → 289.
 Closed: `08-h` → 285, 224 (`onze.json`, `onze <command>`); `08-j` → 295, 296 (request state is
 `rakun-cardume`'s atoms, read through jhonstart's own hook under its `#[serverOnly]`, 277); `08-d` → 338
 (CSS in three layers — the repositories `css` and `styled`, emilia over `styled` —, `jhonstart-styled`,

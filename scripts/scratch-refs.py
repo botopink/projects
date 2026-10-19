@@ -61,7 +61,7 @@ def tracked(root: Path, paths: list[Path]) -> list[Path]:
 
 def main() -> int:
     root = meta_root()
-    paths = [Path(a) for a in sys.argv[1:]] or [default_tree(root)]
+    paths = [Path(a) for a in sys.argv[1:]] or [default_tree(root), *sorted((root / "specs").glob("*.md"))]
     found = 0
     for f in tracked(root, paths):
         try:

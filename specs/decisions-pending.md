@@ -1,4 +1,6 @@
-# Decisions the maintainer owes — 1.0.12-beta
+# Decisions the maintainer owes
+
+The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
 **36 questions and 6 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
@@ -538,7 +540,7 @@ before every other part of this page; each holds one row, or nothing built.
 
 Each implemented with its recommended option; the maintainer confirms or reverses (a reversal is a
 local change in the named place). Full 1.0.10 text under the same id in
-[`../1.0.10-beta/decisions-pending.md`](../1.0.10-beta/decisions-pending.md).
+[`../1.0.10-beta/decisions-pending.md`](1.0.10-beta/decisions-pending.md).
 
 #### 01-compiler (28)
 

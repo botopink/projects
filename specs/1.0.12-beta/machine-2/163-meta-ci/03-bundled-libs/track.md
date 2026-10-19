@@ -102,7 +102,7 @@ leaves (decision 187).
 
 ## Decisions
 
-Lettered `07-…`; numbered in [`../decisions-taken.md`](../../../decisions-taken.md) when answered.
+Lettered `07-…`; numbered in [`../decisions-taken.md`](../../../../decisions-taken.md) when answered.
 Answered: `07-a` (196), `07-c` (180), `07-d` (181), `07-e` (182), `07-f` (195), `07-i` (163),
 `07-k` (145), `07-l` (144), `07-m` (183), `07-n` (257). Open:
 

@@ -1,6 +1,6 @@
-# Decisions taken — 1.0.12-beta
+# Decisions taken
 
-
+One file above every milestone since 2026-10-18, beside its record [`decisions-taken-steps.md`](decisions-taken-steps.md).
 
 The rules in force, one text per subject. Every sentence traces to a numbered row of
 [`decisions-taken-steps.md`](decisions-taken-steps.md), cited in parentheses; that file is the record — what was

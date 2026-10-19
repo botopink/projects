@@ -52,7 +52,7 @@ pages read. 51, 71: independent members. 53: read-only against every other membe
 
 Ids kept from 1.0.10 ([`../../1.0.10-beta/decisions-pending.md`](../../../../1.0.10-beta/decisions-pending.md) § Track E); new questions continue
 each front's letter sequence. Open: `50-b` (below), `std-d` (`02-std-and-packaging`); `snap-a` → 390, 391;
-from the naturalness review ([`decisions-pending.md`](../../../decisions-pending.md) § nat): `nat-f2`
+from the naturalness review ([`decisions-pending.md`](../../../../decisions-pending.md) § nat): `nat-f2`
 (`onze.json`'s planned keys — 49, 50), `nat-f4` (the `ONZE_PUBLIC_` prefix — 50, 53; a client
 module's unprefixed `env.read` is already refused at build, `onze-bundler/src/refusal.bp`),
 `nat-d6` (`notFound` / `redirect` vs `noreturn` — 53), `nat-d8` (the `use…` hook name — 53's
@@ -60,7 +60,7 @@ examples).
 
 ### To confirm
 
-Built as recommended; full rows in [`decisions-pending.md`](../../../decisions-pending.md) § Implementation
+Built as recommended; full rows in [`decisions-pending.md`](../../../../decisions-pending.md) § Implementation
 choices / 07-onze: `49-a` · `49-c` · `49-e`
 (closes 49 step 2's wording box) · `50-a` (amended: `start` calls 71's `bin/onze`; closes 50) ·
 `52-a` (closes 51 step 4) · `53-a` · `68-a` · `68-d` (moot once `06-emilia/34` step 1 and 119 step 4
@@ -70,7 +70,7 @@ land — emilia's `#[emilia]` tokens are comptime (301, 369), class and rule com
 
 ### 50-b · What `onze dev` does on a change — reload into the running node, or restart it
 
-Raised by front 50 step 2; full question in [`decisions-pending.md`](../../../decisions-pending.md) § 50-b.
+Raised by front 50 step 2; full question in [`decisions-pending.md`](../../../../decisions-pending.md) § 50-b.
 Recommendation (a): restart the node per change (`build` + `start` over a file watcher).
 **Blocks.** 50 step 2 (written for (a)); 53 step 6 ("`dev` serves every route"). Today
 `onze-cli/src/main.bp:101`'s "not available yet" text describes (b) (reload into the running node)
