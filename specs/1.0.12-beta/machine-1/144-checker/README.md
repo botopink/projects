@@ -2610,10 +2610,16 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [x] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
-- [ ] 786: `load` answers `Result<Module, Refused>` — `Module(name, path, target)`, `Refused(module: Module, diagnostics:
+- [x] 786: `load` answers `Result<Module, Refused>` — `Module(name, path, target)`, `Refused(module: Module, diagnostics:
       Diagnostic[])`; `compiler.bp`, the surface table and its test, the handler, the three `compiler_load_*` cells' readers
       (`catch { r -> … r.diagnostics … }`) and cell `compiler_load_answers_module` (786: `name`, `path` and `target` printed, and a
       refused file's `r.module.path`)
+      — built as: `target: Target`, the prelude's enum (`Node`, `Typescript`, `Erlang`, `Beam`, `Wasm`), added to the std modules'
+      reflection source and spliced as a private enum into a module that loads (the prelude enum has no run-time declaration), a
+      beam build answering `Target.Beam`; the cell prints that the `Ok` and `Refused` modules carry the same target, the variant
+      itself held by a unit test (a per-target value has no place in a cell); green on the four targets, beam included
+- [ ] a module that declares its own `Target` and loads sees `Target.<V>` resolve to its own type and is refused — the spliced enum
+      under a name no source can write; a cell, red on the parent
 - [ ] 787: `Module.run()` — `fn run(self) -> Result<void, Failure>` on the `Ok` side (`Error` when the loaded `main` crashes); a
       loaded package whose `run` a `compiler.init` body calls is compiled into the program as a package of its own (its `mod` tree,
       its own dependencies) and its `main` called at that point; one no `run` reaches stays out; `run` outside an init body and a

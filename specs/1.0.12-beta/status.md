@@ -702,7 +702,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 160 snap
 
-- [ ] 786 — `compiler.load` answers `Result<Module, Refused>`, `Module(name, path, target)`: B-158's 786 box, then 160's (`loaded:` header line) · machine 2
+- [ ] 786 — `compiler.load` answers `Result<Module, Refused>`, `Module(name, path, target)`: B-158's box done (cell `compiler_load_answers_module`); left 160's (`loaded:` header line — snap's `matchesRefused` still reads `Result<void, Diagnostic[]>` and is red until then) · machine 2
 - [ ] 787 — `mod.run()` in a `compiler.init` body runs a loaded package's `main`, answering `Result<void, Failure>`: B-158's 787 box (a `fable` plan first) · machine 2
 - [ ] 788 — a top-level `comptime { … }` block: B-159 · machine 2
 - [ ] 789 / 790 — `cell check` records the build phase (`build` lines), then becomes a botopink program over `io.process`: B-160, B-161; B-157 piece 5 waits on B-161 · machine 2
