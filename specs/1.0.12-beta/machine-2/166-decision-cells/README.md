@@ -63,6 +63,8 @@
 
 **Repository:** one per thread — `--lang` for botopink-lang (under 166-d), `--repo <repo>` for each library · **Model:** opus · **After:** 166-a … 166-d answered; per repository, § Order.
 
+- [ ] (the coordinator) rows 1–143, folded into the record on 2026-10-19, get their `Cell` slug or `process` tag — 107 have none; `scaffold --list` for botopink-lang clean of "no slug" before its mapping runs (761 (4))
+- [ ] botopink-lang: s3 is B-157's mapping (761), not new drafts — an existing cell moves under the decision its `Cell` column names, a draft only for a decision no cell proves; the libraries' 67 drafts stand
 - [ ] `scaffold <repo>` committed alone (haiku; the hook), then the writing in batches of about forty rows, one commit per batch: each `docs.md` as § Mechanism (prose, the proving cells, `{main.bp}`), each `main.bp` the one real example in the spelling in force, `compile <repo>` green on the batch, `botopink format` applied to each file
 - [ ] a row whose example cannot be written because the compiler or the library departs from it: the example written as the decision says, the departure a row (`language-gaps.md` for a library, a 144 / 164 row for botopink-lang) named in the report — never an example bent to what compiles
 - [ ] the root `conformance/docs.md` gains one row naming `modules/decisions-taken/` (the ledger's index; 462 / 548); rakun's root manifest and `conformance/docs.md` the same (its tree stays grouped by package; the decision cells are the ledger's, not a package's feature)

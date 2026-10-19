@@ -3035,7 +3035,7 @@ The maintainer (2026-10-19): `conformance/modules` (1,650 cells, 79 `test/` suit
 modules without losing what is tested. Machine 2 (tooling, lane C). Order: **after B-116 (ii), B-139's rest and B-148 have landed**
 — their codemods rewrite the same cell files; the plan may be written before.
 
-- [ ] **Plan** (`fable`, `Plan` agent, 742): the grouping (by cell prefix, which follows `decisions-taken.md`'s subjects: `decorator_*`
+- [ ] **Plan** (`fable`, `Plan` agent, 742): the home is front 166's tree, `modules/decisions-taken/<slug>-<N>/` — each decision's directory holds the cells that prove it as its cases, an existing cell moving under the decision its `Cell` column names, a cell proving no decision staying outside by subject (761); the grouping of those (by cell prefix, which follows `decisions-taken.md`'s subjects: `decorator_*`
       108, `external_*` 70, `template_*` 62, `comptime_*` 56, `std_*` 48, `import_*` 46, `case_*` 46, …); the module format that lets
       a refusal, an abort or a narrowed-`"targets"` cell keep its own compilation unit and snapshot inside a module holding several
       (`cases`); what `botopink cell check`, `cell new`, the runner and `cell_snap.zig` must learn; how `conformance/docs.md`'s 801
@@ -3049,6 +3049,7 @@ modules without losing what is tested. Machine 2 (tooling, lane C). Order: **aft
       regenerates nothing by hand; run once per prefix group, each group's gate green, landed per group.
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
-- Constraint: `conformance/modules/decisions-taken/<slug>-<N>/` (front 166) is untouched — one directory per decision is check 7's
-  contract (647).
+- Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
+  directory grows cases (761). botopink-lang's 166 s3 is this mapping, not 509 new drafts; rows 1–143 get their `Cell` slug or
+  `process` tag first (166 s2, the coordinator).
 
