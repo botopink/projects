@@ -317,6 +317,38 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a) agora, (c) conforme o s11 avança: (a) é o texto que a 626 (2) já traz e destrava o rakun sem 700 edições; (c) é para onde a 625–627 levam.
 - **Bloqueia.** O rakun compilar na `feat` (todo módulo), e portanto 165 s5 / s10 / s11 e todo gate do rakun.
 
+#### 335-a · `async.race` no erlang: o mais rápido, ou o primeiro escrito? (decisão 335; m2-0027)
+- **Proposto (sonnet, 2026-10-19; nada construído):** (a).
+- **Contexto.** 335: `async.race(tasks)` responde a primeira task a terminar. No erlang `Async` é rebaixado de forma ansiosa (cada task roda até o fim onde é feita), como `libs/std/src/async.bp` e a célula `std_async_on_every_target` registram.
+- **Medido.** O rascunho da 335 responde `slow` no erlang e `fast` no commonJS: o `race` do erlang responde o elemento zero.
+- **Opções.**
+  (a) ★ `Async` é rebaixado de forma preguiçosa no erlang: uma task é um processo iniciado no `race` / `await`, e o `race` responde a primeira mensagem de volta — uma resposta em todo alvo.
+  ```bp
+  val w = await async.race([slow(), fast()]);   // "fast" on every target
+  ```
+  (b) A 335 é estreitada: no erlang o `race` responde a primeira task escrita, uma divergência declarada por alvo.
+  ```bp
+  val w = await async.race([slow(), fast()]);   // erlang: "slow"; commonJS: "fast"
+  ```
+- **Recomendação.** (a): uma resposta por programa (as divergências são para o que um alvo não consegue fazer, e o erlang consegue correr processos).
+- **Bloqueia.** A promoção do rascunho da 335; nada mais.
+
+#### 547-a · Uma `var` de módulo escrita por tasks concorrentes no erlang / beam: ETS por padrão? (decisão 547; m2-0027)
+- **Proposto (sonnet, 2026-10-19; nada construído):** (a).
+- **Contexto.** 547: uma `var` de módulo guarda um valor para o programa. No erlang e no beam uma `var` de módulo sem anotação vive no process dictionary, então uma escrita num processo não é vista por outro.
+- **Medido.** O rascunho da 704 / 547: os corredores do `raceOf` escrevem uma `var` de módulo, e o leitor ainda lê 0 depois que ambos terminam.
+- **Opções.**
+  (a) ★ Uma `var` de módulo é uma entrada ETS por padrão no erlang / beam: a tabela feita no boot, um read-modify-write (`+=`, `.bump`) atômico; `#[compiler.beamMemory(.Process)]` mantém a forma local ao processo onde pedida.
+  ```bp
+  var hits = 0;   // ETS on erlang / beam: every process sees the writes
+  ```
+  (b) O process dictionary continua o padrão; uma `var` compartilhada entre tasks escreve `#[compiler.beamMemory(.Ets)]`.
+  ```bp
+  #[compiler.beamMemory(.Ets)] var hits = 0;
+  ```
+- **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
+- **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

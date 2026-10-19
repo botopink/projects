@@ -317,6 +317,38 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a) now, (c) as s11 proceeds: (a) is the text 626 (2) already carries and unblocks rakun without 700 edits; (c) is where 625–627 lead.
 - **Blocks.** rakun compiling on `feat` (every module), so 165 s5 / s10 / s11 and every rakun gate.
 
+#### 335-a · `async.race` on erlang: the fastest, or the first written? (decision 335; m2-0027)
+- **Proposed (sonnet, 2026-10-19; nothing built):** (a).
+- **Context.** 335: `async.race(tasks)` answers the first task to finish. On erlang `Async` lowers eagerly (each task runs to its end where it is made), as `libs/std/src/async.bp` and the cell `std_async_on_every_target` record.
+- **Measured.** The 335 draft answers `slow` on erlang and `fast` on commonJS: erlang's `race` answers element zero.
+- **Options.**
+  (a) ★ `Async` lowers lazily on erlang: a task is a process started at `race` / `await`, and `race` answers the first message back — one answer on every target.
+  ```bp
+  val w = await async.race([slow(), fast()]);   // "fast" on every target
+  ```
+  (b) 335 is narrowed: on erlang `race` answers the first task written, a departure stated per target.
+  ```bp
+  val w = await async.race([slow(), fast()]);   // erlang: "slow"; commonJS: "fast"
+  ```
+- **Recommendation.** (a): one answer per program (the departures are for what a target cannot do, and erlang can race processes).
+- **Blocks.** The 335 draft's promotion; nothing else.
+
+#### 547-a · A module `var` written by concurrent tasks on erlang / beam: ETS by default? (decision 547; m2-0027)
+- **Proposed (sonnet, 2026-10-19; nothing built):** (a).
+- **Context.** 547: a module `var` holds one value for the program. On erlang and beam an annotation-less module `var` lives in the process dictionary, so a write in one process is not seen by another.
+- **Measured.** The 704 / 547 draft: `raceOf`'s racers write a module `var`, and the reader still reads 0 after both finish.
+- **Options.**
+  (a) ★ A module `var` is an ETS entry by default on erlang / beam: the table made at boot, a read-modify-write (`+=`, `.bump`) atomic; `#[compiler.beamMemory(.Process)]` keeps the process-local form where asked.
+  ```bp
+  var hits = 0;   // ETS on erlang / beam: every process sees the writes
+  ```
+  (b) The process dictionary stays the default; a `var` shared across tasks writes `#[compiler.beamMemory(.Ets)]`.
+  ```bp
+  #[compiler.beamMemory(.Ets)] var hits = 0;
+  ```
+- **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
+- **Blocks.** The 704 / 547 draft's promotion; nothing else.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
