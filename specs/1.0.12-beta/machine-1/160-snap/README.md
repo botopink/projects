@@ -40,6 +40,10 @@ consumer commits only: 144 B-08 (17 sites), B-20, B-28.
       under `cases/` until `botopink test` leaves them out of `src/` (B-158's open row), the test calling the bare imported
       `matchesRefused` until B-156's module-qualified call; front 166's `snap_matches_refused-784/` draft beside it
 
+- [ ] 786: `matchesRefused(syntax loaded: Result<Module, Refused>)` — `Ok(m)` fails naming `m.path` (the `written` argument and
+      `loadedPath` go); `Error(r)` writes `loaded: <path>` and one `dependency: <name> <source>` per dependency in the header
+      after `subject:`, the body unchanged; the cell's two `.snap` re-recorded, their bodies byte-identical · after B-158's 786 box
+
 ### 160 Conformance — the front's last step (decision 465)
 
 **Repository:** snap (`--repo snap`) · **Model:** opus

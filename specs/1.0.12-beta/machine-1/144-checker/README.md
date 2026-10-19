@@ -2571,7 +2571,7 @@ Found by 150 s34: `pub default fn styled(syntax css: string) -> Component<Styled
 
 **Machine:** 2 (decision 785 — machine 1 does not open it) · **Repository:** botopink-lang (`--lang`) · **Model:** opus · **After:** nothing
 
-Decisions 780, 782: `load(comptime path: string) -> Result<void, Diagnostic[]>`, a `Build` member of `Compiler`, compiles a file
+Decisions 780, 782, 786: `load(comptime path: string) -> Result<Module, Refused>` (786; was `Result<void, Diagnostic[]>`), a `Build` member of `Compiler`, compiles a file
 of the package at build as the entry of a package of its own and answers `Ok` when it compiles, `Error` its refusals (never
 empty), read with `try … catch` / `try` (783) — never through `attempt`; no `compiler.snapshot`.
 
@@ -2595,6 +2595,11 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [ ] 595 (7) enforced: a `catch` with no `try` in its region is refused `try-region-cannot-fail` (today `f() catch …` compiles,
       and `fs_file_defer_close` relies on it — rewritten with `try`); then the cell of 783's refusal (`comptime compiler.load(…)
       catch …` with no `try`)
+- [ ] 786: `load` answers `Result<Module, Refused>` — `Module(path, target, dependencies: Dependency[])`, `Dependency(name, source,
+      root)` (every dependency the loaded package resolved, transitive, flat, in resolution order; `source` the manifest's spec as
+      `path <p>` / `git <url> <ref>` / `version <v>`), `Refused(module: Module, diagnostics: Diagnostic[])`; `compiler.bp`, the
+      surface table and its test, the handler, the three `compiler_load_*` cells' readers (`catch { r -> … r.diagnostics … }`)
+      and cell `compiler_load_answers_module` (786: `path`, `target` and the dependencies printed, a path and a git dependency)
 - [ ] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does: today a test package
       whose loaded cases sit under `src/` reports each as a failed module, so snap's `snap_matches_refused` keeps them in
       `cases/` and B-157 piece 5's `src/cases/<case>/main.bp` (784 (3)) waits on it
