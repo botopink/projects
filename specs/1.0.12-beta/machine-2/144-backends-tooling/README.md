@@ -3060,6 +3060,9 @@ modules without losing what is tested. Machine 2 (tooling, lane C). Order: **aft
       stay accepted; a case's header is not checked against the row's (a moved cell keeps its own); botopink-lang half running
 - [ ] **Piece 2** — the consolidation script: moves the cells by the plan's grouping, writes the mapping, rewrites every reference,
       regenerates nothing by hand; run once per prefix group, each group's gate green, landed per group.
+      — `plan` / `verify` landed (`scripts/consolidate-cells.py`, no cell moved): `verify --base` the identity on the unchanged
+      tree; `plan` refuses while a code-bearing row has no slug (108 today: rows 1–143's and 11 later), `--allow-unslugged`
+      homing their cells outside; `apply` and the opus pass over the ambiguity list wait on the slugs and on 760's codemods
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
 - Constraint: one directory per decision in `conformance/modules/decisions-taken/<slug>-<N>/` stays check 7's contract (647); the
