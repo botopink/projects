@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**33 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**32 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **763**.
+número livre, que é **764**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -357,13 +357,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### 195-a · O `import {errorDigest, Logger} from "log"` do log sob a 592: a grafia do arquivo de assuntos, ou cada nome do seu módulo? (decisões 195, 592, 582; 156 log, 166 s3)
-- **Proposto (o coordenador, 2026-10-19; aguardando o mantenedor; o draft escrito como (b) pelo encaminhamento da mt-0010):** **(b): cada nome importado do módulo que o declara** (`import {digest.errorDigest} from "log";`, `import {logging.Logger} from "log";`), e a frase de exemplo do § actions-http-log-routing-i18n (2) regrafada para isso.
-- **Medido.** `specs/decisions-taken.md` § actions-http-log-routing-i18n (2) ainda escreve `import {errorDigest, Logger} from "log";`. Sob a 592 (1) e a 582 (3) a forma de folha de um pacote nomeia o que `src/log.bp` (o módulo default do pacote) declara, e não há sintaxe de reexportação (337 (3)). A raiz do log só tem linhas `pub mod` (o codemod da 592 sobre o log está pendente), então a forma de folha não resolve nada. A mt-0010 encaminhou o draft para (b) ("195's spelling is an example of its time"), e o arquivo de assuntos não mudou.
-- **Opções.** (a) A frase do assunto vale: o `src/log.bp` do log declara `errorDigest` e `Logger` (um passo da frente da biblioteca), e o draft segue a frase. (b) Cada nome do seu módulo; o exemplo do assunto é regrafado.
-- **Recomendação.** (b) — é o que a 592 dá sem mudança na biblioteca; (a) pede que o log mova sua API para um módulo.
-- **Bloqueia.** A grafia do draft `log_logger_injected_sink-195` e a frase do assunto; nada construído.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

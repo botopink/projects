@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**33 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**32 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **763**.
+number, which is **764**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -357,13 +357,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### 195-a · log's `import {errorDigest, Logger} from "log"` under 592: the subject file's spelling, or each name from its module? (decisions 195, 592, 582; 156 log, 166 s3)
-- **Proposed (the coordinator, 2026-10-19; awaiting the maintainer; the draft written as (b) by mt-0010's routing):** **(b): each name imported from the module that declares it** (`import {digest.errorDigest} from "log";`, `import {logging.Logger} from "log";`), and § actions-http-log-routing-i18n (2)'s example sentence respelled to it.
-- **Measured.** `specs/decisions-taken.md` § actions-http-log-routing-i18n (2) still writes `import {errorDigest, Logger} from "log";`. Under 592 (1) and 582 (3) a package's leaf form names what `src/log.bp` (the package's default module) declares, and there is no re-export syntax (337 (3)). log's root holds only `pub mod` lines (592's codemod over log is pending), so the leaf form resolves nothing. mt-0010 routed the draft to (b) ("195's spelling is an example of its time"), and the subject file was not changed.
-- **Options.** (a) The subject's sentence stands: log's `src/log.bp` declares `errorDigest` and `Logger` (a library front step), and the draft follows the sentence. (b) Each name from its module; the subject's example is respelled.
-- **Recommendation.** (b) — it is what 592 gives without a library change; (a) needs log to move its API into one module.
-- **Blocks.** The draft `log_logger_injected_sink-195`'s spelling and the subject sentence; nothing built.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
