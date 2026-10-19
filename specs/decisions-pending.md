@@ -381,6 +381,28 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): a `Node` is already code by type, so the hole needs no second spelling.
 - **Blocks.** B-149 P4 (`mock` over `code`).
 
+#### 661-a · Inside a component body, a call of a `Component<R>` with a `Renderable` `R`: the lambda, or `R` rendered? (decisions 388, 504, 553, 661; 150 s34)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** 661 removes rakun-style's aliases `StyledView` / `StyledPropertyView`, so `padAll`, `hover` and their siblings write `-> Component<StyledProperty>`. 553 (2) and 118 rule 1 make a body written `-> Component<R>` a component body, and an alias activates nothing — so these bodies become component bodies. The checker's `inferComponentCall` (`comptime/infer.zig`) renders, in a component body, every call typed `Component<R>` with a `Renderable` `R`: the call is typed `R` and awaited. It cites 104, 118 and 128, all overtaken. The rule in force says the opposite: "calling it only makes the lambda" (388 (1), 504; 661).
+- **Measured.** `fn mk(n: i32) -> Component<Prop>`, `type Prop(d: string) implement Renderable`; in a body written `-> Component<string>`, `val x: Component<Prop> = mk(2);` is refused `type mismatch: expected Component, got Prop` on erlang and commonJS. The holes `styled @`…${padAll(n)}…`` (`splice({ -> padAll(n) })` into `views: Component<StyledProperty>[]`) are refused the same way, so 150 s34 cannot land. Two cells assert the rendering: `body_marker_whole_return_type-553/cells/component_call_renders` (`div([text("title"), Counter()])`, `Counter()` an `Element`) and `component_call_awaited`.
+- **Options.**
+  (a) ★ The lambda, as 388 / 504 / 661 state: a call of a component only makes its lambda; rendering is the caller's `await` or the markup's. The two 553 cells are rewritten (`await Counter()`), and rakun-bpp's `div([Counter()])` sites are measured.
+  ```bp
+  val x: Component<Prop> = mk(2);   // accepted — the lambda
+  div([text("title"), await Counter()])
+  ```
+  (b) `R`, rendered, as the checker does now; s34 writes its holes another way and the rule text is amended to say so.
+  ```bp
+  val x: Prop = mk(2);   // rendered in a component body
+  ```
+  (c) Rendered only where no `Component<R>` is expected at the call — no decision fixes it; both 553 cells and s34 pass.
+  ```bp
+  val x: Component<Prop> = mk(2);   // the lambda (expected)
+  div([Counter()])                  // rendered (an Element expected)
+  ```
+- **Recommendation.** (a): it is the rule already written three times; (c) keeps a context-dependent meaning of a call.
+- **Blocks.** 150 s34 (rakun-style's aliases, 661).
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

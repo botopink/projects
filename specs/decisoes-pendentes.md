@@ -381,6 +381,28 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): um `Node` já é código pelo tipo, então o buraco não precisa de uma segunda grafia.
 - **Bloqueia.** B-149 P4 (`mock` sobre `code`).
 
+#### 661-a · Dentro de um corpo de componente, uma chamada de um `Component<R>` com `R` `Renderable`: o lambda, ou `R` renderizado? (decisões 388, 504, 553, 661; 150 s34)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** A 661 remove os aliases `StyledView` / `StyledPropertyView` do rakun-style, então `padAll`, `hover` e seus irmãos escrevem `-> Component<StyledProperty>`. A 553 (2) e a regra 1 da 118 fazem de um corpo escrito `-> Component<R>` um corpo de componente, e um alias não ativa nada — então esses corpos passam a ser corpos de componente. O `inferComponentCall` do checker (`comptime/infer.zig`) renderiza, num corpo de componente, toda chamada tipada `Component<R>` com `R` `Renderable`: a chamada é tipada `R` e recebe `await`. Ele cita 104, 118 e 128, todas superadas. A regra em vigor diz o contrário: "chamá-lo só faz o lambda" (388 (1), 504; 661).
+- **Medido.** `fn mk(n: i32) -> Component<Prop>`, `type Prop(d: string) implement Renderable`; num corpo escrito `-> Component<string>`, `val x: Component<Prop> = mk(2);` é recusado com `type mismatch: expected Component, got Prop` em erlang e commonJS. Os buracos `styled @`…${padAll(n)}…`` (`splice({ -> padAll(n) })` em `views: Component<StyledProperty>[]`) são recusados do mesmo jeito, então o 150 s34 não pode pousar. Duas células afirmam a renderização: `body_marker_whole_return_type-553/cells/component_call_renders` (`div([text("title"), Counter()])`, `Counter()` um `Element`) e `component_call_awaited`.
+- **Opções.**
+  (a) ★ O lambda, como 388 / 504 / 661 dizem: uma chamada de um componente só faz o seu lambda; renderizar é o `await` de quem chama ou o da marcação. As duas células da 553 são reescritas (`await Counter()`), e os sites `div([Counter()])` do rakun-bpp são medidos.
+  ```bp
+  val x: Component<Prop> = mk(2);   // accepted — the lambda
+  div([text("title"), await Counter()])
+  ```
+  (b) `R`, renderizado, como o checker faz hoje; o s34 escreve seus buracos de outro jeito e o texto da regra é emendado para dizer isso.
+  ```bp
+  val x: Prop = mk(2);   // rendered in a component body
+  ```
+  (c) Renderizado só onde nenhum `Component<R>` é esperado na chamada — nenhuma decisão fixa isso; as duas células da 553 e o s34 passam.
+  ```bp
+  val x: Component<Prop> = mk(2);   // the lambda (expected)
+  div([Counter()])                  // rendered (an Element expected)
+  ```
+- **Recomendação.** (a): é a regra já escrita três vezes; (c) mantém um sentido da chamada que depende do contexto.
+- **Bloqueia.** 150 s34 (os aliases do rakun-style, 661).
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
