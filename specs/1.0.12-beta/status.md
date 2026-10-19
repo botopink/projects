@@ -65,6 +65,8 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [x] 144 B-17, the context box (722, 723) — a context read through the value the reader imports, `use context(<Type>)` refused `context-read-by-type`; the cells' 35 sites and rakun's 3 rewritten
 - [x] decision 669 — code a decorator writes resolves in its module, imports included (`decorator_member_reaches_decorator_imports`); rakun's gap 1
 - [x] rakun's gap 2 — a local `print` shadows the std import, so no `io/terminal` module is required on commonJS (`print_local_shadows_import`)
+- [x] 144 B-17, decisions 735 and 736 — an optional function-typed `comptime` argument tested against `null` (`expr-value-of-function` gone; `comptime_optional_fn_tested_against_null`); `comptime source: Atom<T> | type<T>` with `source is type<T>` (`comptime_value_or_type_union`)
+- [x] decision 756 — `compiler.source(value).file` is the file relative to the package root (`syntax_fn_source_file_is_path`)
 - [x] decision 623 (B-25-b) — `fetch(req: Request) -> Task<Result<Response, HttpError>>`, `Request`, `Method`, `Header`, `HttpError { NotAllowedOnHost, Network(message), Timeout }`; `fetch(url)` removed (`http_fetch_request`, `http_fetch_url_removed`); http on B-138's spelling
 - [x] 150 s31 — `rakun-cache`'s racing-readers test timed out in a cold gate: an order asserted, not a deadline (144 B-23)
 - [x] decision 582 — `import {a.b}` always the namespace, callable as the module's default; `namespace-not-a-value`, `module-item-collision`, `import pkg;`; rakun's 65 imports respelled `X.X` (`import_namespace_callable_default`, `namespace_not_a_value`, `namespace_not_a_value_called`, `import_package_namespace`, `import_package_namespace_braces`, `mod_namespace_callable_default`)
