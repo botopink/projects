@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**30 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**27 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **770**.
+número livre, que é **773**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -295,56 +295,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): uma regra para o template e esta forma, como a 719 diz; o exemplo `-> i32` da caixa é anterior à leitura.
 - **Bloqueia.** Nada; (a) afrouxa uma recusa.
-
-#### 160-b · De onde uma chamada de snapshot posicionada pelo local de quem chama tira o nome do teste (decisões 718, 719; frente 160)
-- **Proposto (sonnet, 2026-10-19; construído em lugar nenhum):** (a).
-- **Contexto.** O snap nomeia um arquivo de snapshot pela suíte e pelo teste (`<suite>/<test>.snap.md`). Sob a 719 `snap.matches(value)` carrega `compiler.source(value)` — `Source(file, line, col)` — e nada mais; o nome do teste não está nele.
-- **Medido.** Um rascunho que monta o caminho só a partir de `Source` tem nome de teste vazio, e o motor o recusa ("test name needs a suite").
-- **Opções.**
-  (a) ★ O executor de testes define o nome do teste em execução onde o `matchesAt` de tempo de execução o lê (um valor de tempo de execução do harness de testes, como a suíte já é), o local só posicionando o snapshot dentro do arquivo.
-  ```bp
-  test "renders the card" { snap.matches(render(card)); }   // card_test/renders the card.snap.md, at line 12
-  ```
-  (b) O snapshot é nomeado só pelo seu local: `<file>/<line>.snap.md`.
-  ```bp
-  test "renders the card" { snap.matches(render(card)); }   // card_test/12.snap.md
-  ```
-- **Recomendação.** (a): um snapshot mantém o nome quando uma linha acima dele se move; (b) renomeia todo snapshot abaixo de uma edição.
-- **Bloqueia.** O passo de local da frente 160.
-
-#### 755-a · O que é uma instância de componente, e onde vive o valor de `use memo` (decisão 755; 144 B-17)
-- **Proposto (sonnet, 2026-10-19; não construído):** (a).
-- **Contexto.** 755: `memo<T>(make: fn() -> T) -> Component<T>` é calculado na primeira renderização do componente e guardado para aquela instância do componente. Hoje uma chamada de componente `Page()` constrói uma lambda `{ bpScope__ -> body }` (388); `use h(x)` é rebaixado para `valueOf(await h(x)(bpScope__))`; o escopo de renderização é uma cadeia imutável de frames, e nenhum hook guarda estado (`conformance/docs.md`: um runtime de cliente fornece a semântica dos hooks).
-- **Medido.** Um `memo` escrito só na std não consegue guardar nada: sua lambda é reconstruída a cada execução do corpo. Ele precisa de um slot por instância que o compilador aloca, em todo alvo (erlang e beam não têm célula mutável; wasm um slot no heap).
-- **Opções.**
-  (a) ★ Uma instância é o valor que uma chamada `Page(…)` faz; o compilador aloca um slot por posição de `use memo` no seu corpo quando esse valor é feito, a primeira renderização o preenche, renderizações seguintes do mesmo valor o leem (erlang / beam: uma entrada de process dictionary ou ETS indexada por instância e posição; commonJS uma célula de closure; wasm uma célula no heap).
-  ```bp
-  val p = Page(dark: true);   // one instance
-  await p; await p;            // make runs once
-  await Page(dark: true);      // a second instance, make runs again
-  ```
-  (b) Uma instância é uma posição na árvore renderizada (a renderização do pai e o lugar do filho nela), como um runtime de cliente indexa seus hooks; no servidor toda renderização é uma primeira renderização.
-  ```bp
-  <Page dark /> <Page dark />   // two positions, two values; a re-render of the same tree keeps both
-  ```
-- **Recomendação.** (a): definida pela linguagem em todo alvo, sem supor uma árvore de renderização; (b) pertence a um runtime de cliente e pode ser posta por cima dela.
-- **Bloqueia.** O build da 755 (`memo_computed_once_per_instance`) e o provide em tempo de execução da 723 (`context_provide_made_at_run_time`).
-
-#### 676-a · Que alvos um pacote sem `"targets"` tem quando a 676 checa suas dependências (decisão 676; 165 s5)
-- **Proposto (opus, 2026-10-19; construído como (b), retido do pouso):** (a).
-- **Contexto.** 676: os `"targets"` de uma dependência contêm todo alvo do pacote que a declara, `dependency-target-missing`. Como construído, um pacote sem `"targets"` conta como os quatro alvos.
-- **Medido.** No gate do rakun: toda célula e teste que não declara `"targets"` conta como commonJS, erlang, beam e wasm, então o rakun (erlang) é recusado para beam e wasm em 135 de 135 células; declarar `beam` no rakun move a recusa para as próprias dependências dele — css (99), validation (29), routing (5), actions (5) não declaram `beam`. A 660, a caixa de contexto do B-17 e o commit do rakun esperam a separação da 676.
-- **Opções.**
-  (a) ★ Um pacote sem `"targets"` toma a interseção dos alvos das suas dependências (e os do seu workspace, quando é membro); a 676 recusa só um pacote que **declara** um alvo que falta a uma dependência.
-  ```json
-  { "name": "container_scopes", "dependencies": { "rakun": "…" } }   // targets: rakun's — erlang
-  ```
-  (b) Sem `"targets"` são os quatro (construído): todo pacote ou célula assim escreve seus alvos, ou os acrescenta às suas dependências.
-  ```json
-  { "name": "container_scopes", "targets": ["erlang"], "dependencies": { "rakun": "…" } }
-  ```
-- **Recomendação.** (a): um conjunto de alvos é dito uma vez, onde um binding de host o decide, e flui para o que o usa; (b) faz 135 células do rakun e quatro bibliotecas o repetirem.
-- **Bloqueia.** O pouso da 676 (a 660 e a caixa de contexto do B-17 pousam sem ela).
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 

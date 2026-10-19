@@ -277,6 +277,8 @@ alias tables (137 → 145 s1, 26 → 150 s36, 04 → 150 s1, …). Compiler step
 
 ## Gate
 
+**Under decisions 768 and 769 (the maintainer, 2026-10-19, until he says otherwise):** conformance is machine 2's whole — the suites' runs, the pipeline's reds, the cells' reference and spelling, front 166, B-157. Machine 1 runs everything else and **skips every Conformance step** (459, 465, 477–480), moving to the step after it; it runs only the cells its change reaches and names a red it meets to machine 2 in the chat. The meta `scripts/gate.sh` enforces it from one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else `$HOME/.config/botopink/machine`, `machine-1` or `machine-2`): on machine 1 `run` / `tasks` / `libs` add `--no-conformance` by themselves and `exec` refuses a whole-suite `cell check`. Machine 2's parked compiler items pass to machine 1 in 769's order (each parked worktree pushed as `front/<name>`), its queue being conformance alone.
+
 Every front README's `**Gate:** standard (fronts.md § Gate)` line means all of the following; the
 boxes after it on that line are the front's own.
 

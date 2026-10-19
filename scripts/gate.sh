@@ -558,6 +558,37 @@ cmdStatus() {
     [ "$any" -eq 1 ] || echo "(no gate running or waiting)"
 }
 
+# execConformanceRefused <command>… — on machine-1 (decisions 768, 769) the text `exec` would run must not reach
+# conformance: the command line, a `bash -c` string, and the text of a script file the command names (one level,
+# its non-comment lines) are read for a whole-suite `cell check` (a cell check over `conformance`,
+# `conformance/modules` or a library's `conformance/`) and for a library's `scripts/gate.sh` run without
+# `--no-conformance` (the commit hook's `--staged` is allowed: it never runs conformance). Refused with a reason.
+execConformanceRefused() {
+    local text=" $* " a
+    for a in "$@"; do
+        if [ -f "$a" ] && [ -r "$a" ] && [ "$(wc -c < "$a")" -lt 200000 ] && grep -Iq . "$a" 2>/dev/null; then
+            text+=$'\n'"$(grep -v '^[[:space:]]*#' "$a")"
+        fi
+    done
+    local line
+    while IFS= read -r line; do
+        if grep -Eq 'cell check( +--jobs +[0-9]+)?( +"?[^ ]*conformance(/modules)?/?"?)( |;|$|\)|&|>|\|)' <<<"$line" \
+            && ! grep -Eq 'cell check( +--jobs +[0-9]+)? +"?[^ ]*conformance/modules/[^ /"]+' <<<"$line"; then
+            echo -e "${RED}✗ gate: a whole-suite cell check is machine 2's (decisions 768, 769) — run the cells your change reaches, one path each${NC}" >&2
+            echo "  in: ${line:0:200}" >&2
+            return 1
+        fi
+        if grep -Eq '(^|[ ;&(/])scripts/gate\.sh( |;|$|\)|&|>|\|)' <<<"$line" \
+            && ! grep -Eq 'gate\.sh +(exec|status|check|run|tasks|libs)( |$)' <<<"$line" \
+            && ! grep -Eq 'gate\.sh[^;&|]*--(no-conformance|staged)' <<<"$line"; then
+            echo -e "${RED}✗ gate: a library's gate runs --no-conformance on machine-1 (decisions 768, 769)${NC}" >&2
+            echo "  in: ${line:0:200}" >&2
+            return 1
+        fi
+    done <<<"$text"
+    return 0
+}
+
 # cmdExec [--jobs <N>] <name> -- <command>… — run one command under the pool:
 # wait for a free job, hold the jobs granted while it runs, return its status.
 cmdExec() {
@@ -572,11 +603,7 @@ cmdExec() {
     done
     [ -n "$name" ] && [ "$#" -gt 0 ] || { echo "usage: scripts/gate.sh exec [--jobs <N>] <name> -- <command>…" >&2; return 1; }
     if [ "$machine" = "machine-1" ]; then
-        local joined=" $* "
-        case "$joined" in
-            *" cell check conformance "*|*" cell check conformance/ "*|*" cell check conformance/modules "*|*" cell check conformance/modules/ "*|*" cell check "*"/conformance "*|*" cell check "*"/conformance/ "*|*" cell check "*"/conformance/modules "*|*" cell check "*"/conformance/modules/ "*)
-                echo -e "${RED}✗ gate: a whole-suite cell check is machine 2's (decisions 768, 769) — run the cells your change reaches, by path${NC}" >&2; return 1 ;;
-        esac
+        execConformanceRefused "$@" || return 1
     fi
     [ -n "$want" ] || { want=$(( $(poolCapacity) / 4 )); [ "$want" -ge 1 ] || want=1; }
     id="$$.exec"

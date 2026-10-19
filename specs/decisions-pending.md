@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**30 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**27 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **770**.
+number, which is **773**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -295,56 +295,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): one rule for the template and this form, as 719 says; the box's `-> i32` example predates the reading.
 - **Blocks.** Nothing; (a) loosens a refusal.
-
-#### 160-b · Where a snapshot call placed by its caller's location gets the test's name (decisions 718, 719; front 160)
-- **Proposed (sonnet, 2026-10-19; built nowhere):** (a).
-- **Context.** snap names a snapshot file by the suite and the test (`<suite>/<test>.snap.md`). Under 719 `snap.matches(value)` carries `compiler.source(value)` — `Source(file, line, col)` — and nothing else; the test's name is not in it.
-- **Measured.** A draft that builds the path from `Source` alone has an empty test name, and the engine refuses it ("test name needs a suite").
-- **Options.**
-  (a) ★ The test runner sets the running test's name where the run-time `matchesAt` reads it (a run-time value of the test harness, as the suite already is), the location only placing the snapshot inside the file.
-  ```bp
-  test "renders the card" { snap.matches(render(card)); }   // card_test/renders the card.snap.md, at line 12
-  ```
-  (b) The snapshot is named by its location alone: `<file>/<line>.snap.md`.
-  ```bp
-  test "renders the card" { snap.matches(render(card)); }   // card_test/12.snap.md
-  ```
-- **Recommendation.** (a): a snapshot keeps its name when a line above it moves; (b) renames every snapshot below an edit.
-- **Blocks.** Front 160's location step.
-
-#### 755-a · What a component instance is, and where `use memo`'s value lives (decision 755; 144 B-17)
-- **Proposed (sonnet, 2026-10-19; not built):** (a).
-- **Context.** 755: `memo<T>(make: fn() -> T) -> Component<T>` is computed on the component's first render and kept for that component instance. Today a component call `Page()` builds a lambda `{ bpScope__ -> body }` (388); `use h(x)` lowers to `valueOf(await h(x)(bpScope__))`; the render scope is an immutable chain of frames, and no hook keeps state (`conformance/docs.md`: a client runtime supplies hook semantics).
-- **Measured.** A `memo` written in std alone cannot keep anything: its lambda is rebuilt on every run of the body. It needs a per-instance slot the compiler allocates, on every target (erlang and beam have no mutable cell; wasm a heap slot).
-- **Options.**
-  (a) ★ An instance is the value one `Page(…)` call makes; the compiler allocates one slot per `use memo` position in its body when that value is made, the first render fills it, later renders of the same value read it (erlang / beam: a process-dictionary or ETS entry keyed by instance and position; commonJS a closure cell; wasm a heap cell).
-  ```bp
-  val p = Page(dark: true);   // one instance
-  await p; await p;            // make runs once
-  await Page(dark: true);      // a second instance, make runs again
-  ```
-  (b) An instance is a position in the rendered tree (the parent's render and the child's place in it), as a client runtime keys its hooks; on the server every render is a first render.
-  ```bp
-  <Page dark /> <Page dark />   // two positions, two values; a re-render of the same tree keeps both
-  ```
-- **Recommendation.** (a): defined by the language on every target, no render tree assumed; (b) belongs to a client runtime and can be layered on it.
-- **Blocks.** 755's build (`memo_computed_once_per_instance`) and 723's run-time provide (`context_provide_made_at_run_time`).
-
-#### 676-a · What targets a package with no `"targets"` holds when 676 checks its dependencies (decision 676; 165 s5)
-- **Proposed (opus, 2026-10-19; built as (b), held from landing):** (a).
-- **Context.** 676: a dependency's `"targets"` hold every target of the package that declares it, `dependency-target-missing`. As built, a package with no `"targets"` counts as all four targets.
-- **Measured.** On rakun's gate: every cell and test that declares no `"targets"` counts as commonJS, erlang, beam and wasm, so rakun (erlang) is refused for beam and wasm in 135 of 135 cells; declaring `beam` in rakun moves the refusal to its own dependencies — css (99), validation (29), routing (5), actions (5) declare no `beam`. 660, B-17's context box and rakun's commit wait on 676's split from them.
-- **Options.**
-  (a) ★ A package with no `"targets"` takes the intersection of its dependencies' targets (and its workspace's, when it is a member); 676 refuses only a package that **declares** a target a dependency lacks.
-  ```json
-  { "name": "container_scopes", "dependencies": { "rakun": "…" } }   // targets: rakun's — erlang
-  ```
-  (b) No `"targets"` is all four (built): every such package or cell writes its targets, or adds them to its dependencies.
-  ```json
-  { "name": "container_scopes", "targets": ["erlang"], "dependencies": { "rakun": "…" } }
-  ```
-- **Recommendation.** (a): a target set is stated once, where a host binding decides it, and flows to what uses it; (b) makes 135 rakun cells and four libraries restate it.
-- **Blocks.** 676's landing (660 and B-17's context box land without it).
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 

@@ -763,7 +763,7 @@ component fn Button() -> Component<Element> {
       — the value's behavior method first (`context_behavior_method_find`)
 - [x] at build, a function value passed as an argument (`r.flatMap(half)`) is unbound — found by B-17
       — `fun f/A` in the comptime module (`comptime_function_value_argument`)
-- [ ] `use memo({ -> createContext(…) })`: std's `memo<T>(make: fn() -> T) -> Component<T>`, computed on the first render, kept per instance, never recomputed · decision 755 (a); cell `context_provide_made_at_run_time`
+- [ ] `use memo({ -> createContext(…) })`: std's `memo<T>(make: fn() -> T) -> Component<T>`, computed on the first render, kept per instance, never recomputed · decision 755 (a); an instance is the value one component call makes, one slot per `use memo` position (771); cells `context_provide_made_at_run_time`, `memo_computed_once_per_instance`
 - [ ] `compiler.src()` in a decorator body answers the annotated declaration's location (718) — legal, never a route · decision 734 (a); cell `decorator_compiler_src_is_declaration_location`
 - [ ] an optional function-typed `comptime` argument tested with `rule == null` as any `?T`; 411's `expr-value-of-function` gone · decision 735 (a); cell `comptime_optional_fn_tested_against_null` replaces `no_null_test_of_optional_fn_expr`
 - [ ] `type<T>` in a `comptime` parameter's union, `source is type<T>` in the body (`comptime source: Atom<T> | type<T>`) · decision 736 (a); cell `comptime_value_or_type_union`
