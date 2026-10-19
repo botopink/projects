@@ -2796,6 +2796,9 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       `fs_asset_*` cells rewritten or removed), `print` in `io/terminal.bp`, `panic` in `failure.bp` (606), the effect
       wrappers and the ambient behaviors in the modules that own them — each declaration's reference prose moved to its
       module's section of `conformance/docs.md`, the prelude's to § Prelude (606 (5))
+- [ ] decision 714: `compiler.wrapWith` removed — the `compiler.bp` member, its `prelude.zig` arity, `infer.zig`'s
+      `wrapperSource` / wrapper refusals (`decorator-wrap-*`, the wrapper half of `decorator-member-captures`), and the 13
+      `decorator_wrap*` / `*_wrap_with` cells, each removed or rewritten and stated (714 names B-139's codemod as its owner)
 - [ ] removed: `module` (the cell `builtin_module_not_lowered` goes), `trap`, `field`, `TypeOf`, `makeRecord`,
       `RecordField`, `RecordKeys`, `comptimeError`, `compilerError` — their `infer.zig` arms, table rows and docs
 - [ ] `libs/std/botopink.json`, `build.zig`, `analysis_entry.zig`, `test_warmup.zig`; `libs/std/AGENTS.md`,
