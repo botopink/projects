@@ -3053,23 +3053,22 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
 
 Oracle: the template cells on four targets; `test-libs`; the cold gate.
 
-### B-160 — `cell check` records the build phase (decision 789)
+### B-160 — the CLI tells the program's build prints from its own messages (decision 789 (2))
 
 **Machine:** 2 · **Repository:** botopink-lang (`--lang`) · **Model:** sonnet · **After:** B-159's print box
 
+Cut to one box by the maintainer (2026-10-20): `botopink cell check` leaves the CLI at B-161's switch (790 (3)), so the `build`
+record in `cell_snap.zig` and `cell check`'s capture of the build phase are not built — the program of B-161 records the `build`
+lines itself, and 789 (6) already counts them as new lines at the move; the proof of the switch compares the records the CLI
+records today. B-159's unit test holds the build prints until B-161 lands.
+
 - [ ] `botopink build` / `run` write the program's build prints to stdout and the CLI's own messages (`Compiling …`, a refusal's
       rendering) to stderr; the CLI tests that read today's mixed output follow
-- [ ] `cell_snap.zig`: the `build <text>` record (a bare `build` an empty line), its place in the order — the package's refusal
-      records, `build`, `out` / `no-final-newline`, `abort`, `stderr` —, parse, canonical spelling and round-trip tests
-- [ ] `cell check` captures the build phase's stdout as `build` records before the run's; one answer for every target (a target
-      whose build lines differ reported as a defect, never a departure)
-- [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
-      lines then the `out` lines, on every target
 
 ### B-161 — `cell check` as a botopink program (decision 790)
 
 **Machine:** 2 · **Repository:** botopink-lang (`--lang`; std's `io/process` with it) · **Model:** opus (a design step: a `fable`
-plan first) · **After:** B-160
+plan first) · **After:** B-160's box; 787-a and 788-a answered (2026-10-20)
 
 - [ ] `botopink build --json`: a package refusal as records (`Diagnostic`'s fields), the program's build prints apart
 - [ ] `io.process`: `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
@@ -3077,6 +3076,8 @@ plan first) · **After:** B-160
 - [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, per target of its manifest runs
       `botopink build` then `botopink run`, builds the records (475 (2) with 789's `build`), applies the departures under
       `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's
+- [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
+      lines then the `out` lines, on every target — recorded by the program, not by the CLI (B-160's cut)
 - [ ] both run over the whole suite until every snapshot agrees byte for byte; then `botopink cell check` leaves the CLI and
       `scripts/gate.sh`, the CI and the fronts' Conformance step call the program; the AGENTS files and the meta `AGENTS.md` follow
 
