@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**24 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **810**.
+number, which is **811**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -347,23 +347,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
 - **Blocks.** The 704 / 547 draft's promotion; nothing else.
 
-#### 791-d · Which narrowing form is the language's for a union child? (decisions 791, 31; 144 B-162)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** 804 fixes `NodeChild = Element | Component<Element>`, so a renderer must tell the two members of a union child apart and run each its own way. `specs/decisions-taken.md` states only that `unknown` is "narrowed with `is` before use" (31) and a bean "narrowed with `is fn() -> T`" (256); no rule says how a union narrows, on which side, or whether a `case` arm does.
-- **Measured.** `x is T` narrows only inside the branch it guards: there is no else side, the rest of the union is not known in `else`. `case` arms do not narrow. `k is Component<unknown>` is accepted but answers false at run time on erlang, so a renderer cannot run an `Element | Component` child yet.
-- **Options.**
-  (a) ★ `case` arms with a type pattern that narrow, exhaustive over the union.
-  ```bp
-  case k { e: Element -> renderElement(e); c: Component<Element> -> use c; }
-  ```
-  (b) `is` narrows both sides: in `else`, `k` is the rest of the union.
-  ```bp
-  if (k is Element) { renderElement(k); } else { use k; }   // k: Component<Element> here
-  ```
-  (c) Both forms.
-- **Recommendation.** (a): one exhaustive form, so a missing member is refused at the `case` and not found at run time.
-- **Blocks.** Since 809 rakun-bpp's child is `Component<Element>` alone and the renderer narrows no union; std's `resolve` does, unless 809-a is answered (a) (a helper over `unknown`).
-
 #### B-21-d · Does a `fn` expression with no typed parameter write its `->`? (decisions 622, 408; 144 B-21)
 - **Proposed (coordinator, 2026-10-20; B-21 built (b)):** (a).
 - **Context.** 622 applies to "every form", naming "the typed lambda `fn(x: T) -> R { … }` (583)"; 408 lets a `fn` expression have every parameter typed or none. A `fn() { … }` (no parameter) or `fn(x) { … }` (none typed) is a `fn` expression that 622's list does not name.
@@ -483,16 +466,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) ★ Kept as written, so no recorded answer changes.
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
-
-#### 809-a · How is std's `resolve<T>` typed, given `is-type-parameter` and `unknown`? (decisions 809 (6), 31, 667; 144 B-162)
-- **Proposed (fable review, 2026-10-20; nothing built):** (a).
-- **Context.** 809 (6) makes std's `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>` the one way a component runs. `v is T` with `T` a type parameter is refused (`is-type-parameter`); `c is Composable<unknown>` narrows to `Composable<unknown>`, whose `compose()` answers `Composition<unknown>` — an `unknown` no body can hand back as `T` (31). A `#[builtin]` resolve was rejected in the conversation that took 809.
-- **Options.**
-  (a) ★ `resolve` is a lowering helper over `unknown`, as `context.push` / `find` and `hooks.read` are today: its body in std's `context.bp` over `unknown`, the checker typing each `use c` and each renderer call by the component's `T`.
-  (b) `resolve<T>(c, scope, comptime t: type<T>)`, the test `v is t` (758).
-  (c) Per-target `compiler.external` forms, as `hooks.bp`'s cells.
-- **Recommendation.** (a): the file's existing pattern, no new surface; it also leaves 791-d blocking nothing.
-- **Blocks.** B-162's 809 (6) box; 791-d (the union `resolve` narrows) under (b) or (c).
 
 #### 809-b · May a program make or apply a `Composition` by hand? (decisions 809 (1), (6), 574, 661, 800 (2); 144 B-162)
 - **Proposed (fable review, 2026-10-20; nothing built):** (a).

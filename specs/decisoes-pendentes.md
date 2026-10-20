@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**24 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **810**.
+número livre, que é **811**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -347,23 +347,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
 - **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
 
-#### 791-d · Qual forma de estreitamento é a da linguagem para um filho de união? (decisões 791, 31; 144 B-162)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** A 804 fixa `NodeChild = Element | Component<Element>`, então um renderizador precisa distinguir os dois membros de um filho de união e executar cada um a seu modo. `specs/decisions-taken.md` diz apenas que `unknown` é "narrowed with `is` before use" (31) e que um bean é "narrowed with `is fn() -> T`" (256); nenhuma regra diz como uma união estreita, em que lado, nem se um braço de `case` estreita.
-- **Medido.** `x is T` estreita apenas dentro do ramo que ele guarda: não há lado else, o resto da união não é conhecido no `else`. Os braços de `case` não estreitam. `k is Component<unknown>` é aceito, mas responde falso em tempo de execução no erlang, então um renderizador ainda não consegue executar um filho `Element | Component`.
-- **Opções.**
-  (a) ★ Braços de `case` com um padrão de tipo que estreita, exaustivos sobre a união.
-  ```bp
-  case k { e: Element -> renderElement(e); c: Component<Element> -> use c; }
-  ```
-  (b) `is` estreita os dois lados: no `else`, `k` é o resto da união.
-  ```bp
-  if (k is Element) { renderElement(k); } else { use k; }   // k: Component<Element> here
-  ```
-  (c) As duas formas.
-- **Recomendação.** (a): uma forma exaustiva, então um membro faltando é recusado no `case` e não descoberto em tempo de execução.
-- **Bloqueia.** Desde a 809 o filho do rakun-bpp é só `Component<Element>` e o renderizador não estreita nenhuma união; o `resolve` da std estreita, a não ser que a 809-a seja respondida (a) (um auxiliar sobre `unknown`).
-
 #### B-21-d · Uma expressão `fn` sem parâmetro tipado escreve seu `->`? (decisões 622, 408; 144 B-21)
 - **Proposto (coordenador, 2026-10-20; o B-21 construiu (b)):** (a).
 - **Contexto.** A 622 se aplica a "toda forma", nomeando "o lambda tipado `fn(x: T) -> R { … }` (583)"; a 408 deixa uma expressão `fn` ter todo parâmetro tipado ou nenhum. Um `fn() { … }` (sem parâmetro) ou `fn(x) { … }` (nenhum tipado) é uma expressão `fn` que a lista da 622 não nomeia.
@@ -483,16 +466,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) ★ Mantida como escrita, então nenhuma resposta registrada muda.
 - **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
 - **Bloqueia.** Nada.
-
-#### 809-a · Como é tipado o `resolve<T>` da std, dado `is-type-parameter` e `unknown`? (decisões 809 (6), 31, 667; 144 B-162)
-- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** A 809 (6) faz do `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>` da std a única forma de um componente rodar. `v is T` com `T` um parâmetro de tipo é recusado (`is-type-parameter`); `c is Composable<unknown>` estreita para `Composable<unknown>`, cujo `compose()` responde `Composition<unknown>` — um `unknown` que nenhum corpo pode devolver como `T` (31). Um `resolve` `#[builtin]` foi rejeitado na conversa que tomou a 809.
-- **Opções.**
-  (a) ★ `resolve` é um auxiliar de lowering sobre `unknown`, como `context.push` / `find` e `hooks.read` são hoje: o seu corpo no `context.bp` da std sobre `unknown`, o checker tipando cada `use c` e cada chamada do renderizador pelo `T` do componente.
-  (b) `resolve<T>(c, scope, comptime t: type<T>)`, o teste `v is t` (758).
-  (c) Formas `compiler.external` por target, como as células do `hooks.bp`.
-- **Recomendação.** (a): o padrão que o arquivo já tem, nenhuma superfície nova; também deixa a 791-d sem bloquear nada.
-- **Bloqueia.** A caixa 809 (6) do B-162; a 791-d (a união que o `resolve` estreita) sob (b) ou (c).
 
 #### 809-b · Um programa pode fazer ou aplicar uma `Composition` à mão? (decisões 809 (1), (6), 574, 661, 800 (2); 144 B-162)
 - **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
