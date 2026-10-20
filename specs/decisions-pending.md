@@ -500,7 +500,7 @@ group), answered before every other part of this page; in the order of the steps
   (b) Every `use` runs with the received scope — the six cells above change answer.
   (c) Two lowerings chosen by a run-time test — contradicts 804 (3).
 - **Recommendation.** (a): the most restrictive, and no measured cell changes.
-- **Blocks.** B-162 P1 (the checker without the split).
+- **Blocks.** B-162 P1 (the checker without the split) and P2 (`Renderable` out: the split rests on that name alone).
 
 #### 804-b · A body written `-> Component<Component<X>>` returning a component whole (decisions 791, 804; 144 B-162)
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
@@ -532,6 +532,18 @@ group), answered before every other part of this page; in the order of the steps
   (c) The renderer runs each `v.run(scope)` — but a scope is not a value a body holds (388 (5)).
 - **Recommendation.** (b) if rakun-style's template can produce it, else (a).
 - **Blocks.** 165 s11; rakun stays red on `feat` (`await-component` in rakun-style) until it lands.
+
+#### 804-e · The type form's refusal codes, and a field read bare inside `compose` (decisions 804 (1), 593 (2); 144 B-162 P3)
+- **Proposed (opus, 2026-10-20; built as (a) and (c)):** (a), (c).
+- **Context.** 593 (2) names the type form's refusals and 804 (1) keeps them with `render` read `compose`; neither names their codes, and neither says whether `compose` reads a field as `self.title` only.
+- **Measured.** Built: `component-compose-missing` (a type `implement Component<R>` with no `compose`), `component-scope-field` (a `RenderScope` field), `component-use-outside-compose` (a `use` in another member), `component-compose-called` (`Card.compose()`); a `compose` of another signature is 800's `implement-signature-differs`. The type is rewritten into a record `Card__Self` and a `component fn Card(<fields>)`, so inside `compose` a field is read as `self.title` and also as a bare `title` (the fields are the function's parameters). No cell covers a type form imported across modules.
+- **Options.**
+  (a) ★ The four codes as built.
+  (b) Other names (the maintainer's).
+  (c) ★ A bare field read inside `compose` accepted, as the parameters of a `component` function are.
+  (d) Only `self.title`; a bare `title` refused as an unknown name, as in any other method.
+- **Recommendation.** (a); (d) over (c) — `compose` is a method, and a method reads its fields through `self` everywhere else.
+- **Blocks.** Nothing of P3's landing; (d) would be a follow-up row.
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 

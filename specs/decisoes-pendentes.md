@@ -500,7 +500,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) Todo `use` roda com o escopo recebido — as seis células acima mudam de resposta.
   (c) Duas descidas escolhidas por um teste em run time — contradiz a 804 (3).
 - **Recomendação.** (a): a mais restritiva, e nenhuma célula medida muda.
-- **Bloqueia.** B-162 P1 (o checker sem a divisão).
+- **Bloqueia.** B-162 P1 (o checker sem a divisão) e P2 (`Renderable` fora: a divisão se apoia só nesse nome).
 
 #### 804-b · Um corpo escrito `-> Component<Component<X>>` que retorna um componente inteiro (decisões 791, 804; 144 B-162)
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).
@@ -532,6 +532,18 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) O renderer roda cada `v.run(scope)` — mas um escopo não é um valor que um corpo segura (388 (5)).
 - **Recomendação.** (b) se o template do rakun-style conseguir produzir isso, senão (a).
 - **Bloqueia.** 165 s11; o rakun fica vermelho na `feat` (`await-component` no rakun-style) até isso pousar.
+
+#### 804-e · Os códigos de recusa da forma de tipo, e um campo lido sem `self.` dentro de `compose` (decisões 804 (1), 593 (2); 144 B-162 P3)
+- **Proposto (opus, 2026-10-20; construído como (a) e (c)):** (a), (c).
+- **Contexto.** A 593 (2) nomeia as recusas da forma de tipo e a 804 (1) as mantém com `render` lido `compose`; nenhuma nomeia seus códigos, e nenhuma diz se `compose` lê um campo só como `self.title`.
+- **Medido.** Construído: `component-compose-missing` (um tipo `implement Component<R>` sem `compose`), `component-scope-field` (um campo `RenderScope`), `component-use-outside-compose` (um `use` em outro membro), `component-compose-called` (`Card.compose()`); um `compose` de outra assinatura é o `implement-signature-differs` da 800. O tipo é reescrito num registro `Card__Self` e num `component fn Card(<campos>)`, então dentro de `compose` um campo é lido como `self.title` e também como `title` puro (os campos são os parâmetros da função). Nenhuma célula cobre uma forma de tipo importada entre módulos.
+- **Opções.**
+  (a) ★ Os quatro códigos como construídos.
+  (b) Outros nomes (os do mantenedor).
+  (c) ★ Um campo lido puro dentro de `compose` aceito, como os parâmetros de uma função `component` são.
+  (d) Só `self.title`; um `title` puro recusado como nome desconhecido, como em qualquer outro método.
+- **Recomendação.** (a); (d) em vez de (c) — `compose` é um método, e um método lê seus campos por `self` em todo outro lugar.
+- **Bloqueia.** Nada do pouso do P3; (d) seria uma linha depois.
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
