@@ -3016,7 +3016,7 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
       `primitive_type_redeclared`
 - [x] `pub type i32 implement Signed { … }` and its siblings declared in `primitives.bp` (`bool`, `string`, `Bytes`, `BigInt`, `Array<T>`, `Pair<A, B>`, `Function` as 617 (1) applies); the six empty behaviors go; `infer.zig`'s width table and the four backends' chains replaced by a read of the `implement` clauses — one resolution, from the text
 - [x] decision 496: `abs` per width — the `i32` and `i64` minimum abort, wasm's `i64` `abs` works; cells `abs_aborts_on_overflow`, `abs_aborts_on_i32_overflow`
-- [ ] decision 641: the primitive types lowercase (`bool`, `string`, `bigint`, `bytes`, `array<T>`), `String` / `Bool` / `BigInt` / `Bytes` /
+- [x] decision 641: the primitive types lowercase (`bool`, `string`, `bigint`, `bytes`, `array<T>`), `String` / `Bool` / `BigInt` / `Bytes` /
       `Array` dissolved into them, their statics on the type with their cells (`string.fromCodepoint`, `array.range`, `bytes.fromUtf8`);
       the 2,500 sites respelled by codemod (std and the cells here, the libraries in their fronts); cells `primitive_static_on_type`,
       `primitive_contract_dissolved`
