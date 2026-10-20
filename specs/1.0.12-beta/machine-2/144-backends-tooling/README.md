@@ -3016,7 +3016,7 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
       `Array` dissolved into them, their statics on the type with their cells (`string.fromCodepoint`, `array.range`, `bytes.fromUtf8`);
       the 2,500 sites respelled by codemod (std and the cells here, the libraries in their fronts); cells `primitive_static_on_type`,
       `primitive_contract_dissolved`
-- [ ] decision 799: a program's contract implemented for a primitive (`StringShout implement Shout for string {}`) gives the receiver
+- [x] decision 799: a program's contract implemented for a primitive (`StringShout implement Shout for string {}`) gives the receiver
       its members — `unknown-primitive-method` there fixed —; the four `program_primitive_behavior_*` / `program_array_behavior_default`
       sites respelled to it, answers unchanged; cell `primitive_member_by_contract` (four targets; `behavior string` and the redeclared
       member refused)
