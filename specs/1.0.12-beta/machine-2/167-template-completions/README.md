@@ -2,11 +2,17 @@
 
 **Priority:** later (the maintainer, 2026-10-20: "uma frente com essa ideia para ser feita depois") — opened in no queue; it
 starts when the maintainer moves it into one.
-**Repository:** botopink-lang (`--lang`): the `compiler` module's build surface and the language server. Its build steps are
-front 144's (433, `fronts.md` § rule 1); this front holds the design and the order. A library that answers completions for its
-template (rakun-bpp's `html`, `query`) does it in its own front, after s2.
+**Repository:** two (the maintainer, 2026-10-20), each step in one of them:
+- `repository/botopink-lang` (`--lang`) — the `compiler` module's build surface (`libs/std/src/compiler.bp` and its readers) and
+  the language server, `modules/language-server/` (`textDocument/completion`, today `Server.completionItems` / `engine.completion`);
+  its build steps are front 144's (433, `fronts.md` § rule 1), this front holding the design and the order;
+- `repository/vscode-extension` (`--repo vscode-extension`) — the client (`src/extension.ts`'s `LanguageClient`), the grammar
+  (`syntaxes/botopink.tmLanguage.json`) and the extension's defaults, so completion fires inside a template's text; beside front
+  161's steps, in that repository's lane.
+
+A library that answers completions for its template (rakun-bpp's `html`, `query`) does it in its own front, after s2.
 **Model:** `fable` for s0 (a design step, `Plan` agent), then opus for the surface (s1) and sonnet for the language server's
-half and the cells (s2, s3).
+half, the extension and the cells (s2, s3, s3b).
 **Depends on:** decision 802 — no hole is the language's; a template reads its text raw and decides its syntax with the
 compiler's build methods directly (`compiler.text`, `compiler.lookup`, `compiler.ast`), `code` optional — and B-149 P2 – P4 built
 over it.
@@ -60,7 +66,10 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
    suggests the caller's names without walking the scope itself (686's word rule read against a text still being typed).
 5. **`code`**: whether std's `code` answers completions for its own `${…}` text (botopink names and members), as the first
    template that does.
-6. **Beyond completion**: hover and diagnostics inside the text by the same route — named, not built here.
+6. **The editor**: VS Code offers no quick suggestion inside a string by default (`editor.quickSuggestions.strings` off), and the
+   grammar paints `` @`…` `` as one region; what the extension sets — the template text scoped apart from a plain string, a
+   `configurationDefaults` for `[botopink]`, the trigger characters the server declares — so suggestions appear as the user types.
+7. **Beyond completion**: hover and diagnostics inside the text by the same route — named, not built here.
 
 ## Steps
 
@@ -80,7 +89,14 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
       offset, the suggestions mapped to LSP items; outside a template text, completion as today
 - [ ] tests in `modules/language-server/src/tests/` (a template's suggestions at a cursor, a failing body answering none)
 
-### s3 — std's `code`
+### s3 — the VS Code extension (`repository/vscode-extension`)
+
+- [ ] completion inside a template's text as s0 (6) fixes it: the grammar's scope for `` @`…` ``, the `[botopink]` defaults, the
+      client passing the server's trigger characters; `test/grammar.test.ts` (the scope) and `test/unit.test.ts` (the defaults);
+      the extension's `AGENTS.md` and `CHANGELOG.md`
+- [ ] by hand in VS Code: `` box @`section na|` `` offers the caller's names as the user types
+
+### s3b — std's `code`
 
 - [ ] `code` answers completions inside its own text, if s0 says so (5)
 
