@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**21 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**20 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **807**.
+número livre, que é **809**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -35,7 +35,6 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | O que decide | Bloqueia | Recomendação |
 |---|---|---|---|---|
-| 1 | **793-a** | Uma função `pub` toda `comptime` expandida no bloco de outro módulo: o seu `compiler.init` no seu próprio módulo, uma chamada em tempo de execução, uma chamada a partir do corpo de um decorator, de um bloco `comptime` de corpo | A caixa 793 (3) da B-159 | (1)(a), (2)(a), (3)(b), (4)(a) |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -489,17 +488,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### 793-a · O que uma função `pub` toda `comptime` expandida no bloco de outro módulo deixa em aberto (decisões 793 (3), 562, 788; 144 B-159)
-- **Proposto (plano fable, 2026-10-20; nada construído):** **(1)(a), (2)(a), (3)(b), (4)(a)**: (1) um `compiler.init` escrito numa função cujos parâmetros são todos `comptime` fica `compiler.init(t)` no seu próprio módulo, tipado `void` ali e tornando a função expandida — ela passa no checker e sai do programa (562); (2) uma chamada em tempo de execução de tal função (`main`, qualquer corpo de tempo de execução, o mesmo ou outro módulo) é recusada na chamada, `compiler-at-run-time` (575), "`f` registers `compiler.init`; call it from a `comptime` block"; (3) uma chamada a partir do corpo de um decorator continua recusada `compiler-output-outside-decorator`, a 793 (3) nomeando blocos; (4) um `comptime { … }` dentro do corpo de uma função (793 (5)) que chama tal função é recusado — ele responde um valor e não é corpo de build do módulo.
-- **Medido.** O parser reescreve um bloco num decorator e copia nele o corpo de uma função toda `comptime` do mesmo módulo antes da passada de superfície, então o `compiler.init` da cópia vira o executor do decorator; a original mantém o seu `compiler.init`, recusado `compiler-output-outside-decorator`, e só uma função privada, agora sem referência, é descartada, então uma `pub` é recusada no seu próprio módulo. O parser não resolve import nenhum e, num acerto do nível B, não faz parse de dependência nenhuma; a sessão de build já publica as funções expandidas de cada módulo para quem o importa (`expandedImports`, reproduzidas do cache). O plano: a expansão entre módulos roda em `analyzeSource`, depois que os imports se resolvem e antes da inferência, sobre o corpo de cada bloco — o corpo importado copiado, o seu `compiler.init` o executor do bloco, os seus próprios nomes com alias, uma recusa localizada no seu dono; o executor entra na âncora do bloco no nível do seu pacote (660); a árvore resolvida (798) guarda o executor e nenhum `f`.
-- **Opções.**
-  (1) O `compiler.init` em tal função no seu próprio módulo: (a) como proposto; (b) um parâmetro de handle oculto acrescentado pela passada de superfície, a chamada mapeada como num decorator; (c) só uma função privada pode escrevê-lo, como hoje.
-  (2) Uma chamada em tempo de execução: (a) como proposto; (b) expandida, o init descartado; (c) expandida, o init rodando ali em tempo de execução.
-  (3) Uma chamada a partir do corpo de um decorator: (a) expandida, o init virando o executor daquele decorator; (b) como proposto.
-  (4) Uma chamada a partir de um `comptime { … }` no corpo de uma função: (a) como proposto; (b) o init ancorado na posição de módulo da função que o contém.
-- **Recomendação.** (1)(a): uma forma só, nenhum handle que o código-fonte nunca escreveu, o descarte da 562 já se aplica; (2)(a): um descarte silencioso ou um init em tempo de execução contradiz a 562 e a 788; (3)(b) para a 793 (3), (a) uma extensão de uma linha quando decidida; (4)(a).
-- **Bloqueia.** A caixa 793 (3) da B-159.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

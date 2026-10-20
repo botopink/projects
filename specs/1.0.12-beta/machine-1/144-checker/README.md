@@ -2596,7 +2596,11 @@ function whose every parameter is `comptime` is called there and expanded at the
 - [ ] a `pub` function whose every parameter is `comptime`, called from another module's block, expanded at the call (793 (3)) — today
       refused `compiler-output-outside-decorator` in its own module; the expansion runs in the parser over the module's own functions; a
       design step: the `fable` plan is written (the expansion in `analyzeSource` after the imports resolve, the function leaving its own
-      module's program); its open points are question 793-a
+      module's program); its open points answered by 808
+- [ ] 808: such a function expanded wherever it is called — in its own module type-checked with `compiler.init` typed `void` and
+      left out of the program; a run-time call (`main`, another module's function) and a `comptime { … }` inside a function body
+      write the executor's body where the call is; only a top-level block makes it a program-start init; a decorator body's call
+      still refused; cell `comptime_init_at_call_site` (the order `antes`, the case, `depois`; a call under an `if` not taken)
 - [x] a cached build replays the build output (793 (4)) — a unit test in `level_b.zig` (a dependency read back from the cache replays
       its block's output), no cell: `cell check` records no build line (796)
 - [x] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)) — a unit test (796); a `void`
