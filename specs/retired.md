@@ -116,7 +116,10 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `compiler.parts`, `Part` | `compiler.text(q)` (raw); the sub-language parses its own holes | 577 (5), 578 (5) | |
 | `Renderable` / `Renderable<T>` (std's marker; 791's node parameter) | nothing — `Component<R>` alone; what a tree holds is the render library's types (rakun-bpp's `NodeChild`) | 804 (2), (3) | 2026-10-20 |
 | A type component's `fn render(self: Self) -> Component<R>` | `fn compose(self: Self) -> Component<R>` | 804 (1) | 2026-10-20 |
-| rakun-bpp's compiler-known `Children` and its coercions | `NodeChildren = NodeChild[]`, `NodeChild = Element \| Component<Element>` | 804 (4) | 2026-10-20 |
+| rakun-bpp's compiler-known `Children` and its coercions | `NodeChildren = NodeChild[]`, `NodeChild = Component<Element>` | 804 (4), 809 (7) | 2026-10-20 |
+| `NodeChild = Element \| Component<Element>` (a union the renderer narrows) | `NodeChild = Component<Element>`, the builders `component fn`s, every child resolved | 809 (7) | 2026-10-20 |
+| `Component<R>` as a type of its own; `type X implement Component<R> { fn compose(self: Self) -> Component<R> }` | `Component<T> = Composition<T> \| Composable<T>`; `type X implement Composable<R> { component fn compose(self: Self) -> Composition<R> }` | 809 (1), (2) | 2026-10-20 |
+| `RenderScope`, `RenderScope.root()`, `c.run(scope)`, `Rendered<R>`, string-keyed frames (`push` / `find`) | `Scope` (`Scope.root()`, `scope.child()`), `resolve(c, scope)`, a persistent map keyed by the context's type | 809 (6), (8) | 2026-10-20 |
 | Template calls `name "…"`, `name """…"""`, `name("lit")`, `#[name("lit")]` | `` name @`…` ``, `` #[name @`…`] `` | 577 (1), (3), (6) | The codemod resolves the escapes to raw bytes |
 | `syntax-captures-build` | a `compiler.*` call inside a tree is evaluated at build and spliced | 575 (4), 614, 642 | |
 | `decorator-member-captures` | the same splice rule inside a member | 642 (replaces 413) | |

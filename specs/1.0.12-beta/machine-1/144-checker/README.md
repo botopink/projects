@@ -2756,16 +2756,40 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exists; its open points filed as questions
       — done: the pieces are P1 the checker without the split (804-a, 804-b), P2 `Renderable` out, P3 the type form's `compose`,
       P4 `Children` retired (804-c), P5 rakun-style's list of components (804-d, 165 s11)
-- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed: the type form rewritten to a record and a `component fn` (`component_types.zig`), cells `component_compose_entry` and its five refusals (question 804-e); (2) waits on 804-a / 804-b (the split rests on `Renderable` alone), its codemod written;
+- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed: the type form rewritten to a record and a `component fn` (`component_types.zig`), cells `component_compose_entry` and its five refusals (question 804-e); (2) waits on 809-c (it replaces 804-a; 804-b overtaken by 809; the split rests on `Renderable` alone), its codemod written;
       `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
       dropped by codemod (std, the cells; rakun's sites in 165's commit)
-- [ ] decision 804 (4): rakun-bpp's `NodeChild = Element | Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
+- [ ] decision 804 (4) (its `NodeChild` respelled by 809 (7)): rakun-bpp's `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
       `children: NodeChildren` (165's commit in rakun); the compiler-known `Children` and its coercions retired here
 
 - [x] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
 - [x] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
 - [x] returning a `Component<R>` from a body that answers `R` (`return mk(1)`) is accepted where the types differ; it is a type mismatch; a cell, red on the parent
-- [ ] 791-d (narrowing a union child): a renderer cannot run an `Element | Component` child — `x is T` narrows only inside the branch it guards, `case` arms do not narrow, and `k is Component<unknown>` is accepted but answers false at run time on erlang; waits on 791-d
+- [ ] ~~791-d (narrowing a union child)~~ — taken off B-162 by 809: the child is `Component<Element>` alone; what stays is the run-time
+      test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
+      and `is fn(Scope) -> …` answering on the four targets; a cell, red on the parent
+- [ ] decision 809, first: a `fable` plan over 809 against what B-162 built (804 (1)'s rewrite of the type form into a record and a
+      `component fn`, the `isComponentType` sites, `context_lower.zig`'s scope handling, std's `context.bp`); its open points filed as
+      questions
+- [ ] 809 (1), (5): std's `context` module declares `Composition<T>`, `Composable<T>` and `Component<T>` (the union, not a type of its own);
+      `implement Component<…>` refused naming `Composable`; a `T` that is a `Composition`, a `Composable`, a `Component` or an `Async`
+      refused where written; cells
+- [ ] 809 (2), (3): the type form `implement Composable<R>` with `component fn compose(self: Self) -> Composition<R>`, the marker required
+      (refused without it), `Card(…)` a value of the type; `component fn` lowering to a `Composition`; 804 (1)'s cells respelled
+- [ ] 809 (4): a component body answering a `Component<T>` resolves it in the same scope before it returns (`return div([…])`,
+      `return Card(…)` with no `use`); cell, four targets
+- [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>`, awaiting nothing inside, the one way a component
+      runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside std's `context`
+      module; `c.run(RenderScope.root())` sites respelled `resolve(c, Scope.root())`; its typing waits on 809-a, the hand-made
+      `Composition` on 809-b
+- [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `child()`), a mutable cell over a persistent map keyed by the
+      context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
+      answers its value alone (`Rendered` goes); the hooks' state each `Composition` instance's own store, given by `resolve` (771);
+      the codemod over std, the cells and the libraries (rakun's sites in 165's commit); the scope a resolved component gets waits on
+      809-c
+- [ ] 809 (7) (rakun, 165's commit): rakun-bpp's builders `component fn`s answering `Component<Element>`, `NodeChild = Component<Element>`,
+      the renderer resolving every child; replaces the 804 (4) box's `NodeChild = Element | Component<Element>`; a ready `Element`
+      and the resolved tree's record wait on 809-d
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
 - [x] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-116 P4 · fixed: a component method's marker goes with its lowered return (`context_lower.zig`); the answers unchanged

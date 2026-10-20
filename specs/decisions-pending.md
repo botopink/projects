@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**24 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **809**.
+number, which is **810**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -362,7 +362,7 @@ group), answered before every other part of this page; in the order of the steps
   ```
   (c) Both forms.
 - **Recommendation.** (a): one exhaustive form, so a missing member is refused at the `case` and not found at run time.
-- **Blocks.** B-162's `NodeChildren` box (a renderer over the union child) and the `k is Component<unknown>` defect row.
+- **Blocks.** Since 809 rakun-bpp's child is `Component<Element>` alone and the renderer narrows no union; std's `resolve` does, unless 809-a is answered (a) (a helper over `unknown`).
 
 #### B-21-d · Does a `fn` expression with no typed parameter write its `->`? (decisions 622, 408; 144 B-21)
 - **Proposed (coordinator, 2026-10-20; B-21 built (b)):** (a).
@@ -484,33 +484,50 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
 
-#### 804-a · Which scope and which ordering does `use c` take once the checker cannot tell a hook from a component? (decisions 354, 791 (3), 804 (3); 144 B-162)
-- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
-- **Context.** `context_lower.zig` hands a `use`d component the body's children scope and a hook the scope the body received; `infer.zig` marks the first component `use` as the body's render, so a later `use provide` is `context-provide-after-render` (354). Both read the split 804 (3) removes.
-- **Measured.** The cells with `use provide` — 723 `context_read_by_value`, 722 `context_default_imported`, 553 `marker_fn_forms`, 388 `render_scope_library`, 354 `context_provide_read` / `context_provide_after_render` — all provide, then `use` a component; `use context(…)` precedes a provide in two (`render_scope_library`'s `Page`, `context_provide_read`'s `App`); no cell `use`s a plain hook after a provide in the same body.
+#### 809-a · How is std's `resolve<T>` typed, given `is-type-parameter` and `unknown`? (decisions 809 (6), 31, 667; 144 B-162)
+- **Proposed (fable review, 2026-10-20; nothing built):** (a).
+- **Context.** 809 (6) makes std's `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>` the one way a component runs. `v is T` with `T` a type parameter is refused (`is-type-parameter`); `c is Composable<unknown>` narrows to `Composable<unknown>`, whose `compose()` answers `Composition<unknown>` — an `unknown` no body can hand back as `T` (31). A `#[builtin]` resolve was rejected in the conversation that took 809.
 - **Options.**
-  (a) ★ Every `use c` of a non-std callee runs with the children scope and marks the body's first render; `use context` / `inject` / `memo` / `provide` keep their own paths (std callees).
+  (a) ★ `resolve` is a lowering helper over `unknown`, as `context.push` / `find` and `hooks.read` are today: its body in std's `context.bp` over `unknown`, the checker typing each `use c` and each renderer call by the component's `T`.
+  (b) `resolve<T>(c, scope, comptime t: type<T>)`, the test `v is t` (758).
+  (c) Per-target `compiler.external` forms, as `hooks.bp`'s cells.
+- **Recommendation.** (a): the file's existing pattern, no new surface; it also leaves 791-d blocking nothing.
+- **Blocks.** B-162's 809 (6) box; 791-d (the union `resolve` narrows) under (b) or (c).
+
+#### 809-b · May a program make or apply a `Composition` by hand? (decisions 809 (1), (6), 574, 661, 800 (2); 144 B-162)
+- **Proposed (fable review, 2026-10-20; nothing built):** (a).
+- **Context.** `Composition<T>` is a transparent alias of `fn(Scope) -> T | Async<T>` (an alias is a second name for one type, 661), so at a call `c(scope)` the checker sees an ordinary function call; nothing says whether a plain lambda `{ s -> … }` typed `Composition<T>` is admitted, which would need return covariance into `T | Async<T>` that 800 (2) gives nowhere else.
+- **Options.**
+  (a) ★ A `Composition` is made only by a `component` body (a `component fn`, a `compose`, 574's `component` lambda) and applied only by `resolve`: a plain lambda where a `Composition<T>` or a `Component<T>` is expected, and a call of a value so typed, are refused, the alias read nominally at those two sites as 804 (1) refuses `X.compose()`.
+  (b) Both admitted; `Scope`'s opacity the only guard.
+- **Recommendation.** (a): `is fn(Scope) -> …` then only meets lambdas the compiler made, and no variance rule is needed.
+- **Blocks.** B-162's 809 (1), (6) boxes.
+
+#### 809-c · Which scope does a component resolved inside a body get — `use c` and `return c`? (decisions 809 (4), (6), (8), 354 (2); 144 B-162; replaces 804-a)
+- **Proposed (fable review, 2026-10-20; nothing built):** (a).
+- **Context.** 809 (8) makes the scope one cell per node: `scope.child()` a new cell over the parent's map, a `use provide` replacing the map of the cell the body was given, `use context` reading the map received at entry. 804-a asked between a children scope and a received scope, a split 809 removes; what is left is whether a component the body resolves gets the body's cell or a child of it. Today `context_lower.zig` hands a `use`d component the body's children scope and marks the first component `use` as the body's render (`context-provide-after-render`, 354).
+- **Options.**
+  (a) ★ `use c` resolves `c` with `scope.child()` made at the `use` — `c`'s provides reach `c`'s subtree alone, never the body's later reads nor its other children (354 (2)); `return c` with the body's own cell, `c`'s subtree being the body's; `context-provide-after-render` goes.
   ```bp
-  fn Page() -> Component<Element> {
-      use provide(theme, "dark");
-      val h = use header();          // children scope; a `use provide` after this line is context-provide-after-render
-      div([h]);
+  component fn Page() -> Component<Element> {
+      use provide(theme);
+      val h = use header();          // header gets scope.child(): it sees `theme`; its own provides stay in it
+      return div([h]);               // div resolved with Page's cell
   }
   ```
-  (b) Every `use` runs with the received scope — the six cells above change answer.
-  (c) Two lowerings chosen by a run-time test — contradicts 804 (3).
-- **Recommendation.** (a): the most restrictive, and no measured cell changes.
-- **Blocks.** B-162 P1 (the checker without the split) and P2 (`Renderable` out: the split rests on that name alone).
+  (b) Both with the body's cell: a `use`d component's provides reach the body's later children.
+- **Recommendation.** (a): the most restrictive, one cell per resolved component, 354 (2)'s "descendants only".
+- **Blocks.** B-162 P1 (the checker without the split), 809 (4), (6).
 
-#### 804-b · A body written `-> Component<Component<X>>` returning a component whole (decisions 791, 804; 144 B-162)
-- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
-- **Context.** The checker refuses `return c` in a `-> Component<R>` body when `c` is a component, and unifies a returned hook with the whole return; with one concept the two rules meet only when `R` is itself a `Component<X>`.
-- **Measured.** No cell or library writes `-> Component<Component<…>>`.
+#### 809-d · How does a ready `T` enter where a `Component<T>` is expected, and what holds the resolved tree? (decisions 809 (7), 574, 414; 165 rakun-bpp)
+- **Proposed (fable review, 2026-10-20; nothing built):** (a).
+- **Context.** With `NodeChild = Component<Element>` alone, a value already an `Element` — 414's `ErrorBoundary` `view: fn(info) -> Element`, a helper method `fn item(self, i) -> Element`, rakun-bpp's `Walked.tree: Element` — has no way into a child; and an `Element` whose `children: NodeChildren` holds Compositions cannot be the tree the renderer has resolved.
 - **Options.**
-  (a) ★ A returned `Component` is always a mismatch naming `use`, for every `R`; cell `component_return_whole_refused`.
-  (b) The whole-return unification kept for that one shape.
-- **Recommendation.** (a): one rule, no shape exempt.
-- **Blocks.** B-162 P1.
+  (a) ★ 574's `component { -> e }` wraps a ready value, its type from the expected parameter (147); rakun-bpp declares a second record for the resolved tree.
+  (b) A std lift `Component.of(v: T) -> Component<T>`.
+  (c) `Element implement Composable<Element>` — rejected by the maintainer in the conversation that took 809.
+- **Recommendation.** (a): no new std surface; the resolved tree is 165's.
+- **Blocks.** 165's rakun-bpp commit (809 (7)).
 
 #### 804-c · The cell `children/cells/children_for_walk` once `Children` is gone (decision 804 (4); 144 B-162)
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
@@ -543,6 +560,7 @@ group), answered before every other part of this page; in the order of the steps
   (c) ★ A bare field read inside `compose` accepted, as the parameters of a `component` function are.
   (d) Only `self.title`; a bare `title` refused as an unknown name, as in any other method.
 - **Recommendation.** (a); (d) over (c) — `compose` is a method, and a method reads its fields through `self` everywhere else.
+- **Since 809.** 809 (2) retires the `Card__Self` rewrite: `compose` is a method of the type, so option (c) has no ground left and (d), `self.title`, is what remains; the four codes are respelled for `Composable` (`implement Component<…>` refused naming `Composable`, `component fn compose` required).
 - **Blocks.** Nothing of P3's landing; (d) would be a follow-up row.
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)

@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**24 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **809**.
+número livre, que é **810**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -362,7 +362,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
   (c) As duas formas.
 - **Recomendação.** (a): uma forma exaustiva, então um membro faltando é recusado no `case` e não descoberto em tempo de execução.
-- **Bloqueia.** A caixa `NodeChildren` do B-162 (um renderizador sobre o filho de união) e a linha de defeito `k is Component<unknown>`.
+- **Bloqueia.** Desde a 809 o filho do rakun-bpp é só `Component<Element>` e o renderizador não estreita nenhuma união; o `resolve` da std estreita, a não ser que a 809-a seja respondida (a) (um auxiliar sobre `unknown`).
 
 #### B-21-d · Uma expressão `fn` sem parâmetro tipado escreve seu `->`? (decisões 622, 408; 144 B-21)
 - **Proposto (coordenador, 2026-10-20; o B-21 construiu (b)):** (a).
@@ -484,33 +484,50 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
 - **Bloqueia.** Nada.
 
-#### 804-a · Que escopo e que ordem `use c` toma quando o checker não distingue mais um hook de um componente? (decisões 354, 791 (3), 804 (3); 144 B-162)
-- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** `context_lower.zig` entrega a um componente `use`ado o escopo de filhos do corpo e a um hook o escopo que o corpo recebeu; `infer.zig` marca o primeiro `use` de componente como o render do corpo, então um `use provide` depois é `context-provide-after-render` (354). Os dois leem a divisão que a 804 (3) remove.
-- **Medido.** As células com `use provide` — 723 `context_read_by_value`, 722 `context_default_imported`, 553 `marker_fn_forms`, 388 `render_scope_library`, 354 `context_provide_read` / `context_provide_after_render` — todas fazem provide e depois `use` de um componente; `use context(…)` vem antes de um provide em duas (o `Page` de `render_scope_library`, o `App` de `context_provide_read`); nenhuma célula faz `use` de um hook simples depois de um provide no mesmo corpo.
+#### 809-a · Como é tipado o `resolve<T>` da std, dado `is-type-parameter` e `unknown`? (decisões 809 (6), 31, 667; 144 B-162)
+- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** A 809 (6) faz do `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>` da std a única forma de um componente rodar. `v is T` com `T` um parâmetro de tipo é recusado (`is-type-parameter`); `c is Composable<unknown>` estreita para `Composable<unknown>`, cujo `compose()` responde `Composition<unknown>` — um `unknown` que nenhum corpo pode devolver como `T` (31). Um `resolve` `#[builtin]` foi rejeitado na conversa que tomou a 809.
 - **Opções.**
-  (a) ★ Todo `use c` de um callee que não é da std roda com o escopo de filhos e marca o primeiro render do corpo; `use context` / `inject` / `memo` / `provide` mantêm seus próprios caminhos (callees da std).
+  (a) ★ `resolve` é um auxiliar de lowering sobre `unknown`, como `context.push` / `find` e `hooks.read` são hoje: o seu corpo no `context.bp` da std sobre `unknown`, o checker tipando cada `use c` e cada chamada do renderizador pelo `T` do componente.
+  (b) `resolve<T>(c, scope, comptime t: type<T>)`, o teste `v is t` (758).
+  (c) Formas `compiler.external` por target, como as células do `hooks.bp`.
+- **Recomendação.** (a): o padrão que o arquivo já tem, nenhuma superfície nova; também deixa a 791-d sem bloquear nada.
+- **Bloqueia.** A caixa 809 (6) do B-162; a 791-d (a união que o `resolve` estreita) sob (b) ou (c).
+
+#### 809-b · Um programa pode fazer ou aplicar uma `Composition` à mão? (decisões 809 (1), (6), 574, 661, 800 (2); 144 B-162)
+- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** `Composition<T>` é um alias transparente de `fn(Scope) -> T | Async<T>` (um alias é um segundo nome para um tipo, 661), então numa chamada `c(scope)` o checker vê uma chamada de função comum; nada diz se uma lambda comum `{ s -> … }` tipada `Composition<T>` é admitida, o que precisaria de covariância de retorno para `T | Async<T>` que a 800 (2) não dá em nenhum outro lugar.
+- **Opções.**
+  (a) ★ Uma `Composition` é feita só por um corpo `component` (um `component fn`, um `compose`, a lambda `component` da 574) e aplicada só pelo `resolve`: uma lambda comum onde se espera uma `Composition<T>` ou um `Component<T>`, e uma chamada de um valor assim tipado, são recusadas, o alias lido nominalmente nesses dois lugares como a 804 (1) recusa `X.compose()`.
+  (b) Ambos admitidos; a opacidade do `Scope` a única guarda.
+- **Recomendação.** (a): `is fn(Scope) -> …` então só encontra lambdas que o compilador fez, e nenhuma regra de variância é necessária.
+- **Bloqueia.** As caixas 809 (1), (6) do B-162.
+
+#### 809-c · Que escopo recebe um componente resolvido dentro de um corpo — `use c` e `return c`? (decisões 809 (4), (6), (8), 354 (2); 144 B-162; substitui a 804-a)
+- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** A 809 (8) faz do escopo uma célula por nó: `scope.child()` uma célula nova sobre o mapa do pai, um `use provide` substituindo o mapa da célula que o corpo recebeu, `use context` lendo o mapa recebido na entrada. A 804-a perguntava entre um escopo dos filhos e um escopo recebido, uma divisão que a 809 remove; o que resta é se um componente que o corpo resolve recebe a célula do corpo ou uma filha dela. Hoje o `context_lower.zig` entrega a um componente `use`ado o escopo dos filhos do corpo e marca o primeiro `use` de componente como o render do corpo (`context-provide-after-render`, 354).
+- **Opções.**
+  (a) ★ `use c` resolve `c` com um `scope.child()` feito no `use` — os provides de `c` alcançam só a subárvore de `c`, nunca as leituras posteriores do corpo nem os seus outros filhos (354 (2)); `return c` com a própria célula do corpo, a subárvore de `c` sendo a do corpo; `context-provide-after-render` sai.
   ```bp
-  fn Page() -> Component<Element> {
-      use provide(theme, "dark");
-      val h = use header();          // children scope; a `use provide` after this line is context-provide-after-render
-      div([h]);
+  component fn Page() -> Component<Element> {
+      use provide(theme);
+      val h = use header();          // header gets scope.child(): it sees `theme`; its own provides stay in it
+      return div([h]);               // div resolved with Page's cell
   }
   ```
-  (b) Todo `use` roda com o escopo recebido — as seis células acima mudam de resposta.
-  (c) Duas descidas escolhidas por um teste em run time — contradiz a 804 (3).
-- **Recomendação.** (a): a mais restritiva, e nenhuma célula medida muda.
-- **Bloqueia.** B-162 P1 (o checker sem a divisão) e P2 (`Renderable` fora: a divisão se apoia só nesse nome).
+  (b) Ambos com a célula do corpo: os provides de um componente `use`ado alcançam os filhos posteriores do corpo.
+- **Recomendação.** (a): a mais restritiva, uma célula por componente resolvido, o "só descendentes" da 354 (2).
+- **Bloqueia.** O B-162 P1 (o checker sem a divisão), 809 (4), (6).
 
-#### 804-b · Um corpo escrito `-> Component<Component<X>>` que retorna um componente inteiro (decisões 791, 804; 144 B-162)
-- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** O checker recusa `return c` num corpo `-> Component<R>` quando `c` é um componente, e unifica um hook retornado com o retorno inteiro; com um conceito só, as duas regras se encontram apenas quando `R` é ele mesmo um `Component<X>`.
-- **Medido.** Nenhuma célula nem biblioteca escreve `-> Component<Component<…>>`.
+#### 809-d · Como um `T` pronto entra onde se espera um `Component<T>`, e o que guarda a árvore resolvida? (decisões 809 (7), 574, 414; 165 rakun-bpp)
+- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** Com `NodeChild = Component<Element>` só, um valor que já é um `Element` — o `view: fn(info) -> Element` do `ErrorBoundary` da 414, um método auxiliar `fn item(self, i) -> Element`, o `Walked.tree: Element` do rakun-bpp — não tem como entrar num filho; e um `Element` cujo `children: NodeChildren` guarda Compositions não pode ser a árvore que o renderizador resolveu.
 - **Opções.**
-  (a) ★ Um `Component` retornado é sempre um mismatch que nomeia `use`, para todo `R`; célula `component_return_whole_refused`.
-  (b) A unificação do retorno inteiro mantida para essa única forma.
-- **Recomendação.** (a): uma regra, nenhuma forma isenta.
-- **Bloqueia.** B-162 P1.
+  (a) ★ A `component { -> e }` da 574 embrulha um valor pronto, o seu tipo vindo do parâmetro esperado (147); o rakun-bpp declara um segundo registro para a árvore resolvida.
+  (b) Um lift da std `Component.of(v: T) -> Component<T>`.
+  (c) `Element implement Composable<Element>` — rejeitado pelo maintainer na conversa que tomou a 809.
+- **Recomendação.** (a): nenhuma superfície nova na std; a árvore resolvida é da 165.
+- **Bloqueia.** O commit do rakun-bpp da 165 (809 (7)).
 
 #### 804-c · A célula `children/cells/children_for_walk` quando `Children` some (decisão 804 (4); 144 B-162)
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).
@@ -543,6 +560,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) ★ Um campo lido puro dentro de `compose` aceito, como os parâmetros de uma função `component` são.
   (d) Só `self.title`; um `title` puro recusado como nome desconhecido, como em qualquer outro método.
 - **Recomendação.** (a); (d) em vez de (c) — `compose` é um método, e um método lê seus campos por `self` em todo outro lugar.
+- **Desde a 809.** A 809 (2) aposenta a reescrita `Card__Self`: `compose` é um método do tipo, então a opção (c) não tem mais base e a (d), `self.title`, é o que resta; os quatro códigos são regrafados para `Composable` (`implement Component<…>` recusado nomeando `Composable`, `component fn compose` exigido).
 - **Bloqueia.** Nada do pouso do P3; (d) seria uma linha depois.
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
