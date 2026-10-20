@@ -2756,7 +2756,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exists; its open points filed as questions
       — done: the pieces are P1 the checker without the split (804-a, 804-b), P2 `Renderable` out, P3 the type form's `compose`,
       P4 `Children` retired (804-c), P5 rakun-style's list of components (804-d, 165 s11)
-- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`);
+- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed: the type form rewritten to a record and a `component fn` (`component_types.zig`), cells `component_compose_entry` and its five refusals (question 804-e); (2) waits on 804-a / 804-b (the split rests on `Renderable` alone), its codemod written;
       `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
       dropped by codemod (std, the cells; rakun's sites in 165's commit)
 - [ ] decision 804 (4): rakun-bpp's `NodeChild = Element | Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
