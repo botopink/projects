@@ -69,6 +69,7 @@ This machine's own queue (§ The group, § After the group) runs beside it, orde
 | 9 | **B-152** (668): a type parameter bound by a parameter, never by the return alone — `type-parameter-unbound`, the cells, std's 13 sites and the cells' 11 migrated; the libraries' 41 sites listed by file for 165 s10, 145, 146 — after B-146 | 668, 667 | opus | the cells; `zig build test` |
 | 10 | **B-154** — checker defects found by 166 s3's drafts: a function value widening to `?fn(…)` (330) — after B-146; sonnet | 330 | sonnet | the cell, red on the parent |
 | 11 | **B-156** — a function with a `syntax` expression parameter expanded at its call (decision 719; the template's rule generalised) — after B-146; opus | 719, 578, 575 (4) | opus | three cells, red on the parent |
+| 12 | **B-164** — `comptime var`, a variable of the build (807): parser, checker, comptime runtime, the final value folded into the resolved program — after B-163 | 807 | opus | its cells, red on the parent |
 
 ## After the group — or beside it, when the files are disjoint
 

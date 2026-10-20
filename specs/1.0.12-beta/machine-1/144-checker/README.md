@@ -2673,6 +2673,23 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 
 Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package as one program) is a later decision (780 (4)).
 
+### B-164 — `comptime var`, a variable of the build (decision 807)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** opus (a declaration form across the parser, the checker, the comptime runtime and
+every backend) · **After:** B-163's resolved program (the final value is folded there)
+
+- [ ] the parser and the formatter: `comptime var name: T = v;` at module level; elsewhere refused as a misplaced modifier
+- [ ] the checker: a run-time write refused `comptime-var-written-at-run`; a write from another package's build code refused
+      `comptime-var-foreign-write`; `pub` read by importers
+- [ ] the comptime runtime: one cell per variable across the build, written by blocks, decorators, templates and build-expanded
+      functions in 660's level order and source order; the final value written as code into the resolved program (798) and the `.bpr`
+      (805); a value that cannot be written (a host handle, an `Async` in flight) refused `comptime-var-not-writable` at the variable;
+      the cached build keeping the final value (793 (4))
+- [ ] cells on four targets: `comptime_var_build_variable` (two `#[get(…)]` incrementing a counter, `main` printing `2`), the three
+      refusals, a `pub comptime var` read by an importer, the value equal after a cached build
+
+Oracle: the cells red on the parent; `zig build test`.
+
 ### B-162 — a component call is its lambda; `use` resolves a component; `Renderable<T>` (decision 791)
 
 **Repository:** botopink-lang (`--lang`), then rakun for `NodeChildren` (165) · **Model:** opus (a semantic rule over every backend) · **After:** nothing
