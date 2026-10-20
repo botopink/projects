@@ -2996,6 +2996,8 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
 - [ ] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
 - [ ] wasm: `.length.toString()` on a `Kid[]` does not resolve; found by B-162; a cell red on the parent
+- [ ] wasm: `botopink test` of `conformance/test/compiler_load_in_a_test_suite` panics in `wat.zig` `finishGc` (index out of bounds),
+      on the parent too; a repro, then the fix
 - [ ] `decorator_invocation`'s B117 memory test fails under load (grown about 23 MB against a 16.8 MB bound) and passes when its shard runs
       alone: the bound or the measure made stable on a busy machine
 - [x] wasm: a package `Module.run()` loads (787, 792) is linked into the program's one module by name, so its `main` calls the program's `main`, its inits run at program start and a `main` answering `Error(e)` aborts with `1`; cells `compiler_load_module_run`, `module_run_twice`, `module_run_body_at_run` red on wasm
@@ -3124,6 +3126,8 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       and each piece's oracle
 - [ ] every target generated from the resolved tree; comptime never reads the target (798 (4)): `Module.target` out of `compiler.bp` and
       `inferLoadBuiltin`, the 786 cell's `target` line dropped (805 (4)); the other target reads a per-target check at `emit`
+      — `Module.target` out (805 (4)): `load.zig`'s `build_target`, the spliced private `Target` enum and its reflection line removed;
+      left: `env.target`, `std-unsupported-on-target` and `compiler.beamMemory` moved to a per-target check at `emit`
 - [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
       specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
       — `reserved-name` built: refused at a declaration's name in a user module's first pass (std, loaded packages and the
