@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**26 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -425,28 +425,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) `Renderable<string>` for what renders text (CSS, HTML).
 - **Recommendation.** (a): the parameter exists to keep trees apart; (b) gives it away.
 - **Blocks.** B-162's codemod of the `implement Renderable` sites.
-
-#### 617-a · The override check: what a type's own member must match of its contract's, with what code, over which members? (decisions 617, 628; 144 B-148)
-- **Proposed (opus, 2026-10-19; box held, nothing built):** (a).
-- **Context.** B-148's box: "a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature". No decision names the code, the members it covers or what counts as the same signature.
-- **Measured.** Nothing checks an implementor against its behavior today: a type writing `fn label(self: Self, extra: i32) -> i32` for a behavior's `fn label(self: Self) -> string` is accepted silently, whether the member is a `default fn` or a required one.
-- **Options.**
-  (a) ★ Every implementor, every member (required and `default fn`): the same parameter count, each parameter's type and the return type equal with `Self` read as the implementing type; labels, parameter names and defaults free; refused at the member, located, naming both signatures — `implement-signature-differs`.
-  ```bp
-  behavior Labelled { fn label(self: Self) -> string; }
-  Tag implement Labelled { fn label(self: Self, extra: i32) -> i32 { … } }   // implement-signature-differs
-  ```
-  (b) The same check on overridden `default fn` only — a required member stays checked by whatever reads it.
-  ```bp
-  behavior Labelled { default fn label(self: Self) -> string { return "?"; } }
-  Tag implement Labelled { fn label(self: Self) -> i32 { … } }   // refused; a required member unchecked
-  ```
-  (c) The primitive widths only (B-148's own scope), the rest later.
-  ```bp
-  pub type i32 implement Signed { fn abs(self: Self) -> i64 { … } }   // refused; user types unchecked
-  ```
-- **Recommendation.** (a): one rule for every contract; a silent mismatch is the strictest thing to refuse (67).
-- **Blocks.** B-148's override box.
 
 #### 791-d · Which narrowing form is the language's for a union child? (decisions 791, 31; 144 B-162)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).

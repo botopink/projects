@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**26 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**25 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -425,28 +425,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) `Renderable<string>` para o que renderiza texto (CSS, HTML).
 - **Recomendação.** (a): o parâmetro existe para manter as árvores separadas; (b) abre mão dele.
 - **Bloqueia.** O codemod dos sites `implement Renderable` do B-162.
-
-#### 617-a · A verificação de override: o que o membro próprio de um tipo precisa casar com o do contrato, com que código, sobre quais membros? (decisões 617, 628; 144 B-148)
-- **Proposto (opus, 2026-10-19; caixa retida, nada construído):** (a).
-- **Contexto.** A caixa do B-148: "a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature". Nenhuma decisão nomeia o código, os membros que ela cobre ou o que conta como a mesma assinatura.
-- **Medido.** Nada verifica um implementador contra o seu behavior hoje: um tipo que escreve `fn label(self: Self, extra: i32) -> i32` para o `fn label(self: Self) -> string` de um behavior é aceito em silêncio, seja o membro um `default fn` ou um obrigatório.
-- **Opções.**
-  (a) ★ Todo implementador, todo membro (obrigatório e `default fn`): a mesma quantidade de parâmetros, o tipo de cada parâmetro e o tipo de retorno iguais com `Self` lido como o tipo que implementa; rótulos, nomes de parâmetro e defaults livres; recusado no membro, localizado, nomeando as duas assinaturas — `implement-signature-differs`.
-  ```bp
-  behavior Labelled { fn label(self: Self) -> string; }
-  Tag implement Labelled { fn label(self: Self, extra: i32) -> i32 { … } }   // implement-signature-differs
-  ```
-  (b) A mesma verificação só nos `default fn` sobrescritos — um membro obrigatório continua verificado por quem o lê.
-  ```bp
-  behavior Labelled { default fn label(self: Self) -> string { return "?"; } }
-  Tag implement Labelled { fn label(self: Self) -> i32 { … } }   // refused; a required member unchecked
-  ```
-  (c) Só as larguras primitivas (o escopo do próprio B-148), o resto depois.
-  ```bp
-  pub type i32 implement Signed { fn abs(self: Self) -> i64 { … } }   // refused; user types unchecked
-  ```
-- **Recomendação.** (a): uma regra para todo contrato; um descasamento silencioso é o que há de mais estrito a recusar (67).
-- **Bloqueia.** A caixa de override do B-148.
 
 #### 791-d · Qual forma de estreitamento é a da linguagem para um filho de união? (decisões 791, 31; 144 B-162)
 - **Proposto (opus, 2026-10-19; nada construído):** (a).
