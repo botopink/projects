@@ -438,6 +438,53 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): um membro obrigatório é o que um implementador fornece, e o tipo fornecê-lo não é uma redeclaração; sob (b) nenhum contrato para um primitivo poderia usar os métodos do tipo.
 - **Bloqueia.** Nada do pouso do B-148.
 
+#### 641-a · Como o `length` de `array<T>` é declarado no seu tipo? (decisão 641; 144 B-148)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** A 641 move os membros de `Array` para `pub type array<T> { … }` em `primitives.bp`; `length` é uma propriedade, não um método (`xs.length`), e nenhuma decisão fixa como o corpo de um tipo declara uma.
+- **Medido.** Construído como `val length: i32;` dentro do corpo do tipo primitivo, uma forma de gramática aceita só ali (`TypeDecl.properties`); `bytes` e `string` leem `length` do mesmo jeito.
+- **Opções.**
+  (a) ★ `val length: i32;` no corpo, aceito só no corpo de um tipo primitivo (`primitives.bp`).
+  ```bp
+  pub type array<T> {
+      val length: i32;
+      fn push(self: Self, x: T) -> void;
+  }
+  ```
+  (b) Um campo no cabeçalho do tipo, `pub type array<T>(length: i32) { … }`, lido como campo de registro.
+  (c) Um método, `fn length(self: Self) -> i32;`, todo `xs.length` reescrito `xs.length()`.
+- **Recomendação.** (a): a resposta continua a propriedade que todo programa lê hoje, e a forma fica confinada ao arquivo que declara os primitivos.
+- **Bloqueia.** Nada do pouso do B-148.
+
+#### 641-b · Um local com nome de tipo primitivo sombreia os estáticos do tipo? (decisão 641; 144 B-148)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** Com os estáticos no tipo minúsculo (`bytes.fromUtf8(s)`), um parâmetro ou local chamado `bytes` torna `bytes.fromUtf8(…)` ambíguo.
+- **Medido.** Construído com escopo léxico comum (`Env.boundInBody`): o local vence, então `bytes.fromUtf8(…)` lê o local e é uma chamada de método sobre ele; a célula `fs_read_text_not_utf8` renomeou seu local `bytes` para `written`. No commonJS uma chamada assim quebra hoje (um estático por um valor é aceito — uma linha de defeito à parte).
+- **Opções.**
+  (a) ★ Escopo léxico: um local sombreia o nome do tipo no seu corpo, estáticos incluídos.
+  (b) Um local com nome de tipo primitivo é recusado no nome, `primitive-type-name-taken` (como um `fn bytes` de módulo já é, 641-c).
+  (c) `<tipo>.<estático>` sempre lê o estático do tipo, seja o que for que esteja ligado.
+- **Recomendação.** (b) se um programa nunca deve ler dois sentidos de `bytes` num corpo; (a) é o que está construído e o que todo outro nome faz.
+- **Bloqueia.** Nada do pouso do B-148.
+
+#### 641-c · `array` entra nos nomes que um módulo não pode declarar? (decisões 641, 639; 144 B-148)
+- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
+- **Contexto.** A 639 recusa uma declaração de módulo com nome de tipo primitivo (`primitive-type-name-taken`); a 641 acrescenta `bytes` e `array` como nomes de tipo.
+- **Medido.** `bytes` entrou na lista (`scalar_type_names`), então um `fn bytes` / `val bytes` de módulo é recusado; `array` não, porque o `json.bp` da std declara `pub fn array`.
+- **Opções.**
+  (a) `array` entra também; o `json.array` da std é reescrito (`json.list`, `json.arrayOf`, …).
+  (b) ★ `array` fica de fora; um `fn array` de um módulo sombreia o nome do tipo naquele módulo.
+- **Recomendação.** (a) por uma regra só sobre todo tipo minúsculo; (b) é o que está construído.
+- **Bloqueia.** Nada do pouso do B-148.
+
+#### 641-d · O texto de run time `Bytes.toUtf8: not valid UTF-8` vira `bytes.toUtf8`? (decisão 641; 144 B-148)
+- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
+- **Contexto.** A mensagem que um `toUtf8` que falha imprime ainda nomeia o `Bytes` dissolvido.
+- **Opções.**
+  (a) `bytes.toUtf8: not valid UTF-8`, as células que a registram regravadas.
+  (b) ★ Mantida como escrita, então nenhuma resposta registrada muda.
+- **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
+- **Bloqueia.** Nada.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

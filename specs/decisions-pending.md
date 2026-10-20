@@ -438,6 +438,53 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): a required member is what an implementor supplies, and the type supplying it is not a redeclaration; under (b) no contract for a primitive could use the type's methods.
 - **Blocks.** Nothing of B-148's landing.
 
+#### 641-a · How is `array<T>`'s `length` declared in its type? (decision 641; 144 B-148)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** 641 moves `Array`'s members into `pub type array<T> { … }` in `primitives.bp`; `length` is a property, not a method (`xs.length`), and no decision fixes how a type's body declares one.
+- **Measured.** Built as `val length: i32;` inside the primitive type's body, a grammar form accepted only there (`TypeDecl.properties`); `bytes` and `string` read `length` the same way.
+- **Options.**
+  (a) ★ `val length: i32;` in the body, accepted only in a primitive type's body (`primitives.bp`).
+  ```bp
+  pub type array<T> {
+      val length: i32;
+      fn push(self: Self, x: T) -> void;
+  }
+  ```
+  (b) A field in the type's header, `pub type array<T>(length: i32) { … }`, read as a record field.
+  (c) A method, `fn length(self: Self) -> i32;`, every `xs.length` respelled `xs.length()`.
+- **Recommendation.** (a): the answer stays the property every program reads today, and the form is confined to the file that declares the primitives.
+- **Blocks.** Nothing of B-148's landing.
+
+#### 641-b · Does a local named like a primitive type shadow the type's statics? (decision 641; 144 B-148)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** With the statics on the lowercase type (`bytes.fromUtf8(s)`), a parameter or a local named `bytes` makes `bytes.fromUtf8(…)` ambiguous.
+- **Measured.** Built with ordinary lexical scoping (`Env.boundInBody`): the local wins, so `bytes.fromUtf8(…)` reads the local and is a method call on it; the cell `fs_read_text_not_utf8` renamed its local `bytes` to `written`. On commonJS such a call crashes today (a static through a value is accepted — a defect row of its own).
+- **Options.**
+  (a) ★ Lexical scoping: a local shadows the type's name in its body, its statics included.
+  (b) A local named like a primitive type is refused at its name, `primitive-type-name-taken` (as a module-level `fn bytes` already is, 641-c).
+  (c) `<type>.<static>` always reads the type's static, whatever is bound.
+- **Recommendation.** (b) if a program should never read two meanings of `bytes` in one body; (a) is what is built and what every other name does.
+- **Blocks.** Nothing of B-148's landing.
+
+#### 641-c · Does `array` join the names a module may not declare? (decisions 641, 639; 144 B-148)
+- **Proposed (opus, 2026-10-20; built as (b)):** (b).
+- **Context.** 639 refuses a module-level declaration named like a primitive type (`primitive-type-name-taken`); 641 adds `bytes` and `array` as type names.
+- **Measured.** `bytes` joined the list (`scalar_type_names`), so a module-level `fn bytes` / `val bytes` is refused; `array` did not, because std's `json.bp` declares `pub fn array`.
+- **Options.**
+  (a) `array` joins too; std's `json.array` is respelled (`json.list`, `json.arrayOf`, …).
+  (b) ★ `array` stays out; a module's `fn array` shadows the type's name in that module.
+- **Recommendation.** (a) for one rule over every lowercase type; (b) is what is built.
+- **Blocks.** Nothing of B-148's landing.
+
+#### 641-d · Does the run-time text `Bytes.toUtf8: not valid UTF-8` become `bytes.toUtf8`? (decision 641; 144 B-148)
+- **Proposed (opus, 2026-10-20; built as (b)):** (b).
+- **Context.** The message a failed `toUtf8` prints still names the dissolved `Bytes`.
+- **Options.**
+  (a) `bytes.toUtf8: not valid UTF-8`, the cells that record it re-recorded.
+  (b) ★ Kept as written, so no recorded answer changes.
+- **Recommendation.** (a): the message names a type the language has.
+- **Blocks.** Nothing.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
