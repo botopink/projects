@@ -468,6 +468,23 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (1)(a): A1 stands and is not variance. (2)(a): the rule is about types, and the language has one type behind each spelling. (3)(a): the strictest reading, since a `comptime` parameter changes how the member is called. B-148 compares it today as (3)(b), so (3)(a) is a follow-up.
 - **Blocks.** Nothing of B-148's landing; (3) adds the marker to the comparison and one cell.
 
+#### 799-a · Does 799 (4) refuse a required member the primitive already has? (decisions 799, 800; 144 B-148)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** 799 (4): "a member the contract declares that the type already has is refused at the implementation, `behavior-member-redeclared`". A contract's `default fn` body can only call what the contract declares, so a contract that wants `slice` or `at` declares them as required members — which `string` already has.
+- **Measured.** B-148 refuses a contract's bodied `default fn` the primitive already has; a required (bodiless) member the primitive has is met by the primitive's own method. The respelled `program/run` cases declare `fn slice(self: Self, start: i32, end: ?i32 = null) -> string;`, `at` and `filter` so, and keep their answers.
+- **Options.**
+  (a) ★ (4) covers bodied `default fn`s only; a required member is met by the type's own method, checked by 800 against it.
+  ```bp
+  behavior Shout {
+      fn slice(self: Self, start: i32, end: ?i32 = null) -> string;    // met by string's own slice
+      default fn tailShout(self: Self) -> string { self.slice(0) + "!" }
+  }
+  StringShout implement Shout for string {}
+  ```
+  (b) (4) covers every member: a contract implemented for a primitive declares only members the type lacks, and its bodies call the type's own methods some other way.
+- **Recommendation.** (a): a required member is what an implementor supplies, and the type supplying it is not a redeclaration; under (b) no contract for a primitive could use the type's methods.
+- **Blocks.** Nothing of B-148's landing.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

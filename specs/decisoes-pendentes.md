@@ -468,6 +468,23 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (1)(a): a A1 se mantém e não é variância. (2)(a): a regra é sobre tipos, e a linguagem tem um tipo por trás de cada grafia. (3)(a): a leitura mais estrita, já que um parâmetro `comptime` muda como o membro é chamado. O B-148 hoje compara como (3)(b), então (3)(a) é um acompanhamento.
 - **Bloqueia.** Nada do pouso do B-148; (3) acrescenta o marcador à comparação e uma célula.
 
+#### 799-a · A 799 (4) recusa um membro obrigatório que o primitivo já tem? (decisões 799, 800; 144 B-148)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** 799 (4): "um membro que o contrato declara e que o tipo já tem é recusado na implementação, `behavior-member-redeclared`". O corpo de um `default fn` de contrato só pode chamar o que o contrato declara, então um contrato que quer `slice` ou `at` os declara como membros obrigatórios — que `string` já tem.
+- **Medido.** O B-148 recusa um `default fn` com corpo do contrato que o primitivo já tem; um membro obrigatório (sem corpo) que o primitivo tem é atendido pelo método do próprio primitivo. Os casos reescritos de `program/run` declaram `fn slice(self: Self, start: i32, end: ?i32 = null) -> string;`, `at` e `filter` assim, e mantêm suas respostas.
+- **Opções.**
+  (a) ★ (4) cobre só `default fn`s com corpo; um membro obrigatório é atendido pelo método do próprio tipo, checado pela 800 contra ele.
+  ```bp
+  behavior Shout {
+      fn slice(self: Self, start: i32, end: ?i32 = null) -> string;    // met by string's own slice
+      default fn tailShout(self: Self) -> string { self.slice(0) + "!" }
+  }
+  StringShout implement Shout for string {}
+  ```
+  (b) (4) cobre todo membro: um contrato implementado para um primitivo declara só membros que o tipo não tem, e seus corpos chamam os métodos do próprio tipo de outra forma.
+- **Recomendação.** (a): um membro obrigatório é o que um implementador fornece, e o tipo fornecê-lo não é uma redeclaração; sob (b) nenhum contrato para um primitivo poderia usar os métodos do tipo.
+- **Bloqueia.** Nada do pouso do B-148.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
