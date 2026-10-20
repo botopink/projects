@@ -3124,6 +3124,8 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       `inferLoadBuiltin`, the 786 cell's `target` line dropped (805 (4)); the other target reads a per-target check at `emit`
 - [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
       specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
+      — `reserved-name` built: refused at a declaration's name in a user module's first pass (std, loaded packages and the
+      spliced re-analysis skipped; a name the parser writes into the tree passes); cells in `build_runtime_binary_reused-805/refused/`
 - [ ] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
       phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
