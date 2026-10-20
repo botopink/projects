@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**27 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**26 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -425,32 +425,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (c) `Renderable<string>` para o que renderiza texto (CSS, HTML).
 - **Recomendação.** (a): o parâmetro existe para manter as árvores separadas; (b) abre mão dele.
 - **Bloqueia.** O codemod dos sites `implement Renderable` do B-162.
-
-#### 641-a · Quando `String` e `Array` se dissolverem, como um programa adiciona membros a `string` / `array<T>`? (decisões 641, 617, 628; 144 B-148)
-- **Proposto (opus, 2026-10-19; caixa retida, nada construído):** (c).
-- **Contexto.** 641: todo tipo primitivo é minúsculo e guarda seus próprios métodos; `String`, `Bool`, `BigInt`, `Bytes` e `Array` se dissolvem. Um passo do checker da 1.0.11, que nenhuma decisão numerada registra, deixa o `behavior String { default fn … }` / `behavior Array<T> { … }` de um programa estender o behavior da std. Suas células estão verdes hoje: os casos de `program/run` `program_primitive_behavior_extends_std` e `program_array_behavior_default`, `program/cells/program_primitive_behavior_redeclares_std` (`behavior-member-redeclared`) e `conformance/test/program_primitive_behavior_extends_std.bp`.
-- **Medido.** Depois da 641 a std não registra `String` / `Array`, então o `behavior String` de um programa é um behavior vazio próprio e `"a+b".tailShout()` é recusado. As outras formas são recusadas no compilador de hoje: `StringExtras extend string { … }` ("`extend string` adds methods without a contract — use `implement <Behavior> for string`"), e `behavior Shout { default fn tailShout(self: Self) … }` + `StringShout implement Shout for string {}` (`unknown-primitive-method`). Nenhuma biblioteca usa o recurso; a metade de `behavior Number` não é afetada.
-- **Opções.**
-  (a) O `behavior string { … }` minúsculo de um programa estende os membros do tipo — contra o "a caixa diz tipo ou contrato" da 641.
-  ```bp
-  behavior string { default fn tailShout(self: Self) -> string { return self + "!"; } }
-  ```
-  (b) `extend` legal num primitivo; as células reescritas; `behavior-member-redeclared` passa para o `extend`.
-  ```bp
-  StringExtras extend string { fn tailShout(self: Self) -> string { return self + "!"; } }
-  ```
-  (c) ★ Um contrato do programa implementado para o primitivo funciona — o próprio conselho da recusa; as células reescritas nessa forma.
-  ```bp
-  behavior Shout { default fn tailShout(self: Self) -> string { return self + "!"; } }
-  StringShout implement Shout for string {}
-  "a+b".tailShout()
-  ```
-  (d) Nenhum membro adicionado a um primitivo sem contrato e nenhuma implementação também: os quatro sites ficam com sua metade de `Number` ou são removidos.
-  ```bp
-  // program_primitive_behavior_extends_std keeps only `behavior Number`
-  ```
-- **Recomendação.** (c): a caixa continua dizendo contrato, e é o que a recusa do `extend` já manda o usuário escrever.
-- **Bloqueia.** A caixa da 641 do B-148 (a dissolução e o codemod: `Array<` 2.231, `Bytes` 144, `String.` 113, `BigInt` 37 sites) e a metade `String` / `Array` / `Bool` / `BigInt` / `Bytes` do `external-on-behavior`.
 
 #### 617-a · A verificação de override: o que o membro próprio de um tipo precisa casar com o do contrato, com que código, sobre quais membros? (decisões 617, 628; 144 B-148)
 - **Proposto (opus, 2026-10-19; caixa retida, nada construído):** (a).

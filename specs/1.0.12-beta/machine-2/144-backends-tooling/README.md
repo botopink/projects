@@ -3013,6 +3013,10 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
       `Array` dissolved into them, their statics on the type with their cells (`string.fromCodepoint`, `array.range`, `bytes.fromUtf8`);
       the 2,500 sites respelled by codemod (std and the cells here, the libraries in their fronts); cells `primitive_static_on_type`,
       `primitive_contract_dissolved`
+- [ ] decision 799: a program's contract implemented for a primitive (`StringShout implement Shout for string {}`) gives the receiver
+      its members — `unknown-primitive-method` there fixed —; the four `program_primitive_behavior_*` / `program_array_behavior_default`
+      sites respelled to it, answers unchanged; cell `primitive_member_by_contract` (four targets; `behavior string` and the redeclared
+      member refused)
 - [x] every behavior of the file holds signatures and `default fn` bodies only — no `#[compiler.external(…)]` on a behavior member (refused there, `external-on-behavior`, at the annotation); the 87 cells move to `declare fn` members of the types, `Self` concrete; a member one target runs in botopink and another in the host uses 610's `.Wasm(body: f)` on the type · landed for the contracts that stay (`Number`, `Integer`, `Signed`, `Float`; cell `external_on_behavior`); `String` / `Array` / `Bool` / `BigInt` / `Bytes` keep their cells, exempt by name in `refuseExternalOnBehavior` until 641's box (question 641-a)
 - [ ] a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature · held by question 617-a (no code, scope or match rule fixed)
 - [x] decision 628 (window: 640 (4) — rakun's and query's one-line commits land with it, machine 1 told the hash): a behavior's member without `self` is a static written `fn` (with a body, the behavior's own; without, provided by each implementor); `default` on it refused `default-on-static`; the 56 `default fn` without `self` (std 10, the cells 44) drop `default` by codemod, the libraries' in their fronts; `conformance/docs.md`'s "associated `default fn`" rewritten

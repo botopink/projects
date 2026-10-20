@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**27 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**26 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -425,32 +425,6 @@ group), answered before every other part of this page; in the order of the steps
   (c) `Renderable<string>` for what renders text (CSS, HTML).
 - **Recommendation.** (a): the parameter exists to keep trees apart; (b) gives it away.
 - **Blocks.** B-162's codemod of the `implement Renderable` sites.
-
-#### 641-a · Once `String` and `Array` dissolve, how does a program add members to `string` / `array<T>`? (decisions 641, 617, 628; 144 B-148)
-- **Proposed (opus, 2026-10-19; box held, nothing built):** (c).
-- **Context.** 641: every primitive type is lowercase and holds its own methods; `String`, `Bool`, `BigInt`, `Bytes` and `Array` dissolve. A 1.0.11 checker step, which no numbered decision records, lets a program's `behavior String { default fn … }` / `behavior Array<T> { … }` extend std's behavior. Its cells are green today: `program/run` cases `program_primitive_behavior_extends_std` and `program_array_behavior_default`, `program/cells/program_primitive_behavior_redeclares_std` (`behavior-member-redeclared`), and `conformance/test/program_primitive_behavior_extends_std.bp`.
-- **Measured.** After 641 std registers no `String` / `Array`, so a program's `behavior String` is an empty behavior of its own and `"a+b".tailShout()` is refused. The other forms are refused on today's compiler: `StringExtras extend string { … }` ("`extend string` adds methods without a contract — use `implement <Behavior> for string`"), and `behavior Shout { default fn tailShout(self: Self) … }` + `StringShout implement Shout for string {}` (`unknown-primitive-method`). No library uses the feature; `behavior Number`'s half is unaffected.
-- **Options.**
-  (a) A program's lowercase `behavior string { … }` extends the type's members — against 641's "the case says type or contract".
-  ```bp
-  behavior string { default fn tailShout(self: Self) -> string { return self + "!"; } }
-  ```
-  (b) `extend` legal on a primitive; the cells respelled; `behavior-member-redeclared` moves onto `extend`.
-  ```bp
-  StringExtras extend string { fn tailShout(self: Self) -> string { return self + "!"; } }
-  ```
-  (c) ★ A program contract implemented for the primitive works — the refusal's own advice; the cells respelled to it.
-  ```bp
-  behavior Shout { default fn tailShout(self: Self) -> string { return self + "!"; } }
-  StringShout implement Shout for string {}
-  "a+b".tailShout()
-  ```
-  (d) No member added to a primitive without a contract and no implementation either: the four sites keep their `Number` half or are removed.
-  ```bp
-  // program_primitive_behavior_extends_std keeps only `behavior Number`
-  ```
-- **Recommendation.** (c): the case still says contract, and it is what the `extend` refusal already tells the user to write.
-- **Blocks.** B-148's 641 box (the dissolution and the codemod: `Array<` 2,231, `Bytes` 144, `String.` 113, `BigInt` 37 sites) and the `String` / `Array` / `Bool` / `BigInt` / `Bytes` half of `external-on-behavior`.
 
 #### 617-a · The override check: what a type's own member must match of its contract's, with what code, over which members? (decisions 617, 628; 144 B-148)
 - **Proposed (opus, 2026-10-19; box held, nothing built):** (a).
