@@ -65,7 +65,7 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
 
 ## What s0 answers
 
-1. **The surface**, on `compiler.custom`'s channel, one of:
+1. **The surface**, on `compiler.custom`'s channel — **(a) chosen (decision 803)**; (b) stays open for what the tree cannot foresee:
    (a) the suggestions live in the tree: a node says what fits at its span (a `suggest` list beside `label` and `ref`, or a node
    kind for a slot), the template computes them in its ordinary build, and the language server captures the cursor `|`, finds the
    node at it and filters by what is typed — no run per keystroke, cached with the build;
@@ -89,7 +89,7 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
 
 ### s0 — the plan (`fable`, `Plan` agent)
 
-- [ ] the answers to § What s0 answers, the pieces in landable order with each piece's oracle, the model per piece; its open
+- [ ] the answers to § What s0 answers ((1) fixed as (a) by 803: what a suggestion carries, a field or a slot node, and whether (b) is needed at all), the pieces in landable order with each piece's oracle, the model per piece; its open
       points filed as questions in `decisions-pending.md` (English, then the Portuguese page)
 
 ### s1 — the build surface (144, `compiler.bp` and the readers)
