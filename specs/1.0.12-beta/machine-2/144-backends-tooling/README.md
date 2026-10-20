@@ -2391,7 +2391,7 @@ sonnet for (ii)
 writes the return type whole under its marker's name (`Iter<T, R>`, `Async<T>`, `AsyncIter<T, R>`, `Component<R>`),
 and puts every failure in a `Result` in the value's layer. Three pieces, in order, each one landing per repository:
 
-- [ ] (i) the markers: parsed before `fn` and before a lambda's brace (`async { … }` and `iter loop { … }` stay the
+- [x] (i) the markers: parsed before `fn` and before a lambda's brace (`async { … }` and `iter loop { … }` stay the
       block forms); the checker admits `yield` / `await` / `use` by the marker and refuses the keyword without it, the
       hint naming it; `marker-type-mismatch`; a marked lambda checked against its expected type (147); a codemod adds
       the marker wherever a body writes the keyword, the `@` types kept; every cell answers the same; a refusal cell
@@ -2402,7 +2402,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       of today's forms refused yet. P2 landed: `scripts/codemod/body_markers.py` over the cells, `conformance/test` and std. P3 landed (rakun, query, markdown: both codemods, the `-> Async<T>` bodies returning a bare value marked `async`; rakun's gate 170 → 47 red items, no new one). Left: (P3 was) one landing per library — each also marking
       every `-> @Task` / `-> @Component` body that compiles specially today without a keyword (570) —, P4 the
       keyword without its marker refused, and an unmarked `-> @Task<T>` / `-> @Component<R>` body returning the bare
-      value refused as a type mismatch, the hint naming the marker and `Async.resolve` (570)
+      value refused as a type mismatch, the hint naming the marker and `Async.resolve` (570) · P4 landed (`await_without_marker_refused`, `yield_without_marker_refused`, `use_without_marker_refused`, `unmarked_async_bare_value_refused`, `unmarked_component_bare_value_refused`, `unmarked_async_throw_refused`; `async_resolve_unmarked`; the messages without `@`; `effect_chain.zig` the marker table); rakun's three sites (`rakun-ssr` `collections.bp` `loadGlob`, `rakun-messaging` `rsocket.bp` `requestResponse`, `rakun-data` `sql/template.bp` `singleAsync`) go with 165
 - [x] (i) the codes renamed (573): `effect-await-without-task` → `await-without-async`, `yield-without-generator` →
       `yield-without-iter`, `use-without-context-effect` → `use-without-component`, each hint naming the marker; no alias;
       every cell, snapshot and `docs.md` citing them updated in the same landing; `iter-await` and the `marker-*` codes kept
