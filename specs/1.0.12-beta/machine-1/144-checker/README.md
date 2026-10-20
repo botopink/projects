@@ -2588,8 +2588,13 @@ function whose every parameter is `comptime` is called there and expanded at the
       stdout as the build's output, kept by the level-B cache and replayed on a cached build, the CLI's own messages on stderr; the
       build lines asserted in `comptime/tests/comptime_blocks.zig` until B-160 records them
 - [ ] a refusal inside a block names it as `comptime`, not the decorator it is rewritten into (`__bp_comptime_<k>`)
+- [ ] a `return` or a `throw` inside a block refused, located (793 (1))
+- [ ] a block in a library package runs in the build of the package that uses it, in 660's level order (793 (2))
+- [ ] a `pub` function whose every parameter is `comptime`, called from another module's block, expanded at the call (793 (3))
+- [ ] a cached build replays the build output (793 (4)) — held by the level-B entry; a cell proves it
 - [ ] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)); today it compiles and the print
       is dropped
+- [ ] cell `module_comptime_block_rules` (793): one case per point, on every target
 - [ ] the language server on an expanded private function (hover, go-to), which leaves the parsed program
 
 ### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782, 783)
@@ -2630,12 +2635,22 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       itself held by a unit test (a per-target value has no place in a cell); green on the four targets, beam included
 - [ ] a module that declares its own `Target` and loads sees `Target.<V>` resolve to its own type and is refused — the spliced enum
       under a name no source can write; a cell, red on the parent
-- [ ] 787: `Module.run()` — `fn run(self) -> Result<void, Failure>` on the `Ok` side (`Error` when the loaded `main` crashes); a
+- [x] 787: `Module.run()` — `fn run(self) -> Result<void, Failure>` on the `Ok` side (`Error` when the loaded `main` crashes); a
       loaded package whose `run` a `compiler.init` body calls is compiled into the program as a package of its own (its `mod` tree,
       its own dependencies) and its `main` called at that point; one no `run` reaches stays out; `run` outside an init body and a
       loaded file with no `main` refused, located; cell `compiler_load_module_run` (787: the init body's prints around the loaded
       `main`'s, and a crashing `main` answered `Error`, on every target) · after the 786 box; a design step — the `fable` plan's open points answered by
       792 (`Error(Failure)` on a `main`'s `Error`, the body run at `run()`, `Module` opaque, three codes)
+      — built as: `compiler.load` also in a top-level `comptime` block and a decorator body, the captured `Module` written into the
+      init body; `m.run()` answered by the checker (`run-outside-init`, `run-module-refused`, `load-no-main` at the call; a receiver
+      not traced to a loaded `Module` is `run-outside-init`); the program compiled again with each file a `run()` reaches as package
+      `bp_load__<path>` until none is new; commonJS requires the loaded package at the call, erlang and beam run its inits first; a
+      `Module(…)` written by hand refused `module-construction`; a second `run()` runs `main` again and the body once; cells
+      `compiler_load_module_run`, `run_outside_init`, `load_no_main` (787) and `module_run_body_at_run`, `module_run_twice`,
+      `run_in_called_function`, `run_module_refused`, `module_construction` (792), green on commonJS, erlang and beam; wasm in
+      B-155
+- [ ] `compiler.bp` declares `fn run(self) -> Result<void, Failure>` on `Module`: a method signature of an imported type resolves its
+      names in the importer, so `Failure` is unknown there and `run` is answered by the checker; a cell, red on the parent
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)
