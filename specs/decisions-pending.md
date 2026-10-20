@@ -484,6 +484,55 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
 
+#### 804-a · Which scope and which ordering does `use c` take once the checker cannot tell a hook from a component? (decisions 354, 791 (3), 804 (3); 144 B-162)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** `context_lower.zig` hands a `use`d component the body's children scope and a hook the scope the body received; `infer.zig` marks the first component `use` as the body's render, so a later `use provide` is `context-provide-after-render` (354). Both read the split 804 (3) removes.
+- **Measured.** The cells with `use provide` — 723 `context_read_by_value`, 722 `context_default_imported`, 553 `marker_fn_forms`, 388 `render_scope_library`, 354 `context_provide_read` / `context_provide_after_render` — all provide, then `use` a component; `use context(…)` precedes a provide in two (`render_scope_library`'s `Page`, `context_provide_read`'s `App`); no cell `use`s a plain hook after a provide in the same body.
+- **Options.**
+  (a) ★ Every `use c` of a non-std callee runs with the children scope and marks the body's first render; `use context` / `inject` / `memo` / `provide` keep their own paths (std callees).
+  ```bp
+  fn Page() -> Component<Element> {
+      use provide(theme, "dark");
+      val h = use header();          // children scope; a `use provide` after this line is context-provide-after-render
+      div([h]);
+  }
+  ```
+  (b) Every `use` runs with the received scope — the six cells above change answer.
+  (c) Two lowerings chosen by a run-time test — contradicts 804 (3).
+- **Recommendation.** (a): the most restrictive, and no measured cell changes.
+- **Blocks.** B-162 P1 (the checker without the split).
+
+#### 804-b · A body written `-> Component<Component<X>>` returning a component whole (decisions 791, 804; 144 B-162)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** The checker refuses `return c` in a `-> Component<R>` body when `c` is a component, and unifies a returned hook with the whole return; with one concept the two rules meet only when `R` is itself a `Component<X>`.
+- **Measured.** No cell or library writes `-> Component<Component<…>>`.
+- **Options.**
+  (a) ★ A returned `Component` is always a mismatch naming `use`, for every `R`; cell `component_return_whole_refused`.
+  (b) The whole-return unification kept for that one shape.
+- **Recommendation.** (a): one rule, no shape exempt.
+- **Blocks.** B-162 P1.
+
+#### 804-c · The cell `children/cells/children_for_walk` once `Children` is gone (decision 804 (4); 144 B-162)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** The cell proves wasm walks a `Children` field; 804 (4) retires `Children`, so the name becomes unknown.
+- **Measured.** One cell, one `pub type El(tag: string, children: Children)`.
+- **Options.**
+  (a) ★ Rewritten over `children: El[]`, homed under the 804 decision module — the walk it guards is an array's.
+  (b) Deleted.
+- **Recommendation.** (a): the wasm walk stays guarded.
+- **Blocks.** B-162 P4 (`Children` retired).
+
+#### 804-d · A component that resolves a list of components (rakun-style's `spliced`; decisions 791 (3), 357, 804; 165 s11)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (b).
+- **Context.** rakun-style's `styled.bp` folds `views: StyledPropertyView[]` with `await v` inside a `for`; `await-component` refuses it, and `use` is refused in a loop or a lambda (357 (1)).
+- **Measured.** One site in rakun (`modules/rakun-style/src/styled.bp:113–122`); the same shape is any map over components in a body.
+- **Options.**
+  (a) Recursion: `spliced(head, tail)` as a component, `use` at the top of each level.
+  (b) ★ The splices made on the template's (build) side, so `spliced` receives `StyledProperty[]` and no component is in the list.
+  (c) The renderer runs each `v.run(scope)` — but a scope is not a value a body holds (388 (5)).
+- **Recommendation.** (b) if rakun-style's template can produce it, else (a).
+- **Blocks.** 165 s11; rakun stays red on `feat` (`await-component` in rakun-style) until it lands.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

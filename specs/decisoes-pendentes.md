@@ -484,6 +484,55 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
 - **Bloqueia.** Nada.
 
+#### 804-a · Que escopo e que ordem `use c` toma quando o checker não distingue mais um hook de um componente? (decisões 354, 791 (3), 804 (3); 144 B-162)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** `context_lower.zig` entrega a um componente `use`ado o escopo de filhos do corpo e a um hook o escopo que o corpo recebeu; `infer.zig` marca o primeiro `use` de componente como o render do corpo, então um `use provide` depois é `context-provide-after-render` (354). Os dois leem a divisão que a 804 (3) remove.
+- **Medido.** As células com `use provide` — 723 `context_read_by_value`, 722 `context_default_imported`, 553 `marker_fn_forms`, 388 `render_scope_library`, 354 `context_provide_read` / `context_provide_after_render` — todas fazem provide e depois `use` de um componente; `use context(…)` vem antes de um provide em duas (o `Page` de `render_scope_library`, o `App` de `context_provide_read`); nenhuma célula faz `use` de um hook simples depois de um provide no mesmo corpo.
+- **Opções.**
+  (a) ★ Todo `use c` de um callee que não é da std roda com o escopo de filhos e marca o primeiro render do corpo; `use context` / `inject` / `memo` / `provide` mantêm seus próprios caminhos (callees da std).
+  ```bp
+  fn Page() -> Component<Element> {
+      use provide(theme, "dark");
+      val h = use header();          // children scope; a `use provide` after this line is context-provide-after-render
+      div([h]);
+  }
+  ```
+  (b) Todo `use` roda com o escopo recebido — as seis células acima mudam de resposta.
+  (c) Duas descidas escolhidas por um teste em run time — contradiz a 804 (3).
+- **Recomendação.** (a): a mais restritiva, e nenhuma célula medida muda.
+- **Bloqueia.** B-162 P1 (o checker sem a divisão).
+
+#### 804-b · Um corpo escrito `-> Component<Component<X>>` que retorna um componente inteiro (decisões 791, 804; 144 B-162)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** O checker recusa `return c` num corpo `-> Component<R>` quando `c` é um componente, e unifica um hook retornado com o retorno inteiro; com um conceito só, as duas regras se encontram apenas quando `R` é ele mesmo um `Component<X>`.
+- **Medido.** Nenhuma célula nem biblioteca escreve `-> Component<Component<…>>`.
+- **Opções.**
+  (a) ★ Um `Component` retornado é sempre um mismatch que nomeia `use`, para todo `R`; célula `component_return_whole_refused`.
+  (b) A unificação do retorno inteiro mantida para essa única forma.
+- **Recomendação.** (a): uma regra, nenhuma forma isenta.
+- **Bloqueia.** B-162 P1.
+
+#### 804-c · A célula `children/cells/children_for_walk` quando `Children` some (decisão 804 (4); 144 B-162)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** A célula prova que o wasm percorre um campo `Children`; a 804 (4) aposenta `Children`, então o nome passa a ser desconhecido.
+- **Medido.** Uma célula, um `pub type El(tag: string, children: Children)`.
+- **Opções.**
+  (a) ★ Reescrita sobre `children: El[]`, colocada no módulo da decisão 804 — o percurso que ela guarda é de um array.
+  (b) Apagada.
+- **Recomendação.** (a): o percurso do wasm continua guardado.
+- **Bloqueia.** B-162 P4 (`Children` aposentado).
+
+#### 804-d · Um componente que resolve uma lista de componentes (o `spliced` do rakun-style; decisões 791 (3), 357, 804; 165 s11)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (b).
+- **Contexto.** O `styled.bp` do rakun-style dobra `views: StyledPropertyView[]` com `await v` dentro de um `for`; `await-component` recusa isso, e `use` é recusado num laço ou numa lambda (357 (1)).
+- **Medido.** Um site no rakun (`modules/rakun-style/src/styled.bp:113–122`); a mesma forma é qualquer map sobre componentes num corpo.
+- **Opções.**
+  (a) Recursão: `spliced(head, tail)` como componente, `use` no topo de cada nível.
+  (b) ★ Os splices feitos do lado do template (build), então `spliced` recebe `StyledProperty[]` e nenhum componente está na lista.
+  (c) O renderer roda cada `v.run(scope)` — mas um escopo não é um valor que um corpo segura (388 (5)).
+- **Recomendação.** (b) se o template do rakun-style conseguir produzir isso, senão (a).
+- **Bloqueia.** 165 s11; o rakun fica vermelho na `feat` (`await-component` no rakun-style) até isso pousar.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
