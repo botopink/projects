@@ -1239,7 +1239,7 @@ fn semi(x: i32) -> i32 { x + 1; }       // ❌ as today: the body falls off its 
       288, onze 372, rakun 1855, actions 12, http 7, log 20, routing 13, validation 389, css 3, styled 55, markdown 20
 - [ ] a lambda's (and an untyped `fn(x) { … }`'s) last expression written with `;`: still its value as today, or a
       statement as 409 reads, with the codemod the counts above measure · question B-21-a
-- [ ] decision 622: every function writes its return type, `-> void` included; a `fn` without `->` refused at its name
+- [x] decision 622: every function writes its return type, `-> void` included; a `fn` without `->` refused at its name
       (`fn-return-missing`); 06 C9's inference from the `return`s removed; the ~2,360 arrow-less functions (1,927 in the
       cells, 1,485 of them `main`; 8 in std) gain `-> void` or their type by codemod, the libraries' in their fronts; cells
       `fn_return_missing`, the tail cells respelled; `conformance/docs.md` § Functions and § `.bpp`
