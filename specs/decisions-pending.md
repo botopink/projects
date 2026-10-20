@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**21 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**20 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **806**.
+number, which is **807**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -443,25 +443,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### 792-a · `Module.run()` as built: the `Failure` of a returned `Error(e)`, and the loaded body on a second `run()` (decisions 787, 792; 144 B-158)
-- **Proposed (fable review, 2026-10-20; built as (1)(a), and (2) differing by target):** **(1)(a), (2)(a)**.
-- **Measured.** The loaded root gains `__bp_loaded_main`, `case main() { Ok(_) -> return; Error(e) -> panic("${e}"); }` (`comptime/load.zig`): `run` answers `Failure(message: <e's print text, 530>, kind: "panic")`; cell `compiler_load_module_run` pins `abort bad answer`. A second `run()`: commonJS `require`s the package once (its body once); erlang and beam call `'_botopink_init'/0` at each `run()`, which caches named `val`s and executors (`persistent_term`) and runs `_` statements again; `module_run_twice`'s loaded file has no body statement, so no cell pins either. 792 (1) fixes `Error(Failure)` "as a crash does" and nothing of its text or kind; 792 (6) fixes `main` twice and leaves the body open.
-- **Options.**
-  (1) The `Failure` of a loaded `main` answering `Error(e)`:
-  (a) `kind: "panic"`, message `e`'s print text (as built).
-  ```bp
-  try m.run() catch { f -> print(f.kind + " " + f.message) }   // panic bad answer
-  ```
-  (b) A kind of its own, `"error"`, message `e`'s text — a fourth kind beside `panic` / `host` / `crash` (492, 546, 675), one `attempt` never answers.
-  ```bp
-  try m.run() catch { f -> print(f.kind + " " + f.message) }   // error bad answer
-  ```
-  (2) The loaded package's body on a second `run()`:
-  (a) Once: body and executors at the first `run()`, `main` at each; erlang and beam guard `'_botopink_init'/0` (commonJS as built).
-  (b) Each time: the package is initialised again at every `run()`; commonJS drops its `require` cache entry.
-- **Recommendation.** (1)(a): "as a crash does" (792 (1)), the text the one `print` writes for every value (530). (2)(a): a module's body runs once per program everywhere else (§ module-system (3), 660); the defect is the targets' disagreement, not the choice.
-- **Blocks.** B-158's row for the body on a second `run()` (cell `module_run_twice_body`); the text every `run()` reader prints.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

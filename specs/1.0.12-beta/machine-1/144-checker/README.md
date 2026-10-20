@@ -2661,9 +2661,10 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       walk, so the `Ok` path stops too; `Error` → the handler's statements then stop, `Ok` → bind and go on; cell
       `comptime_load_try_catch_return_in_expansion` (a `fine` and a `broken` case), red on the parent — B-157 Piece 5's `main.bp`
       shape waits on it
-- [ ] a loaded package's body on a second `run()` runs as 792-a answers, alike on every target — today commonJS once, erlang and beam
-      its `_` statements again; cell `module_run_twice_body` (a `_` statement and an executor in the loaded file, `run()` twice) ·
-      after 792-a
+- [ ] decision 806: `run()` answers `Result<void, RunFailure>` (std's `RunFailure(kind: type { Failed, Abort }, message: string)`,
+      `Failure` unchanged); nothing of the loaded package propagates (cell `module_run_contains_body_failure`); each `run()` re-initialises
+      the package — `val`s, `var`s, body, executors — alike on every target, commonJS dropping its `require` entry, erlang and beam re-running
+      `'_botopink_init'/0` whole; cell `module_run_twice_body` (a `_` statement, an executor and a `var` in the loaded file, `run()` twice)
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)
