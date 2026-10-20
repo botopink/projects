@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**25 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**24 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **802**.
+número livre, que é **803**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -347,22 +347,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
 - **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
-
-#### 149-b · Um buraco que guarda um `Node` dentro de `code @`…``: inserido como o nó? (decisões 637, 638, 644; 144 B-149 P4)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** 637 / 638: em `code @`…`` um buraco `syntax` vira `Syntax(e)` e qualquer outro buraco `Lit(v)`. O membro `mock` do P4 constrói listas de parâmetros e tipos a partir da declaração (`${params(m)}`, `${ret(m)}`), que são valores `Node`.
-- **Medido.** Como construído, um `Node` num buraco é um `Lit` — o registro impresso, não o código que ele descreve.
-- **Opções.**
-  (a) ★ Um buraco cujo valor é um `Node` (ou `Node[]` numa posição de lista) é inserido como esse nó; qualquer outro valor é um `Lit`.
-  ```bp
-  return code @`fn ${name}(${params(m)}) -> ${ret(m)} { … }`;
-  ```
-  (b) Só buracos `syntax` inserem código; um `Node` é inserido por `compiler.ast(node)` escrito no buraco.
-  ```bp
-  return code @`fn ${name}(${compiler.ast(params(m))}) -> ${compiler.ast(ret(m))} { … }`;
-  ```
-- **Recomendação.** (a): um `Node` já é código pelo tipo, então o buraco não precisa de uma segunda grafia.
-- **Bloqueia.** B-149 P4 (`mock` sobre `code`).
 
 #### 791-a · O `Renderable<T>` da std é um marcador, ou carrega um `render()`? (decisões 791 (5), 593; 144 B-162)
 - **Proposto (opus, 2026-10-19; nada construído):** (a).

@@ -3050,6 +3050,11 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
       — the hole's kind read by its arrival (637, 638: a `syntax` value is `Syntax`, a build value `Lit`), so `compiler.bp`
       gains `compiler.isSyntax(v: unknown) -> bool` (a build read, 576 (2)); a cell line where a `Lit` holding a `syntax`
       value is refused ("write `Syntax(e)`"); the vocabulary 644's mock member needs, decision 753 (a): `Fn(params, ret, body)` and the type nodes
+- [ ] decision 802, first: the `fable` plan — the sites of `compiler.holes` with an expression rather than a name, `code`'s own holes,
+      the receiver cells, P1b's pieces that go —; then `compiler.lookup(e, name) -> ?Node` (a run-time binding its name, a build value its
+      `Lit`, a `Node` value the node, a `syntax` value its code as written), `compiler.holes` / `compiler.isSyntax` / `Syntax` removed, `code.bp`
+      resolving its own `${…}` by `lookup` (a `Node` spliced as the node, `Node[]` as list items, a misplaced node refused), the
+      `ast_syntax_node_typed_at_splice` and `template_method_receiver_code` cells over `lookup`; cell `template_lookup_answers_node`
 - [ ] decision 801: the 13 cells that build the caller's raw text with `compiler.build(compiler.text(…))` rewritten — the caller's code a
       `syntax` expression spliced into `code` (429, 691, 577, 578, 515's `shapesdsl`), the seven `bpp_*` `markup` dependencies a build-value
       hole; each cell's location and `docs.md` rewritten, cell `template_caller_code_as_syntax`

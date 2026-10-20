@@ -110,7 +110,9 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `@emit` | a registration in a `compiler.init` executor; a generated type through `compiler.addType`; a member through typed `compiler.addMember` | 605 | 2026-10-17 |
 | `@code` | the typed AST (`compiler.ast`, `code`) | 605, 625 | |
 | `compiler.build(text)` and every code-from-text form | `compiler.ast(node)` over the `Node` records, `` code @`…` `` (`code.bp`), `compiler.buildType` / `buildTypeInline` | 625, 637, 629 | 2026-10-18 |
-| A `Hole(index)` node | `compiler.holes(t)`; a hole in `code` is a build value or a `Syntax(e)` | 625 (4), 637, 638 | |
+| A `Hole(index)` node | `compiler.lookup(e, name) -> ?Node`; the template parses its own text | 625 (4), 637, 802 | |
+| `compiler.holes(t)` (the caller's `${…}` as `syntax` values) | the template parses its text and resolves each name with `compiler.lookup(e, name) -> ?Node` | 802 (reverses 637's caller-hole half), 577 (5) | 2026-10-20 |
+| The `Syntax(e)` node; `compiler.isSyntax(v)` | `compiler.lookup` answering the code a `syntax` value holds, spliced as written; `syntax` a modifier, never a type | 802 (reverses 638) | 2026-10-20 |
 | `compiler.parts`, `Part` | `compiler.text(q)` (raw); the sub-language parses its own holes | 577 (5), 578 (5) | |
 | Template calls `name "…"`, `name """…"""`, `name("lit")`, `#[name("lit")]` | `` name @`…` ``, `` #[name @`…`] `` | 577 (1), (3), (6) | The codemod resolves the escapes to raw bytes |
 | `syntax-captures-build` | a `compiler.*` call inside a tree is evaluated at build and spliced | 575 (4), 614, 642 | |

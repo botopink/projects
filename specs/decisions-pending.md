@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**24 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **802**.
+number, which is **803**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -347,22 +347,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
 - **Blocks.** The 704 / 547 draft's promotion; nothing else.
-
-#### 149-b · A hole that holds a `Node` inside `code @`…``: spliced as the node? (decisions 637, 638, 644; 144 B-149 P4)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** 637 / 638: in `code @`…`` a `syntax` hole becomes `Syntax(e)` and any other hole `Lit(v)`. P4's `mock` member builds parameter lists and types from the declaration (`${params(m)}`, `${ret(m)}`), which are `Node` values.
-- **Measured.** As built, a `Node` in a hole is a `Lit` — the record printed, not the code it describes.
-- **Options.**
-  (a) ★ A hole whose value is a `Node` (or `Node[]` in a list position) is spliced as that node; any other value is a `Lit`.
-  ```bp
-  return code @`fn ${name}(${params(m)}) -> ${ret(m)} { … }`;
-  ```
-  (b) Only `syntax` holes splice code; a `Node` is spliced by `compiler.ast(node)` written in the hole.
-  ```bp
-  return code @`fn ${name}(${compiler.ast(params(m))}) -> ${compiler.ast(ret(m))} { … }`;
-  ```
-- **Recommendation.** (a): a `Node` is already code by type, so the hole needs no second spelling.
-- **Blocks.** B-149 P4 (`mock` over `code`).
 
 #### 791-a · Is std's `Renderable<T>` a marker, or does it carry a `render()`? (decisions 791 (5), 593; 144 B-162)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
