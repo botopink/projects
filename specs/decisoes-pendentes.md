@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**21 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -671,6 +671,17 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (C) Um tipo inline onde quer que um tipo seja escrito, estrutural como os tipos derivados da 629.
 - **Recomendação.** (B): nenhuma forma de tipo nova, e o `.Failed` / `.Abort` de todo leitor já funciona.
 - **Bloqueia.** Só a linha do enum inline da B-158 (o campo `RunFailure` da std).
+
+#### 798-b · Para qual target um arquivo de `compiler.load` é checado, agora que o comptime não lê nenhum? (decisões 780 (1), 798 (4), 805; 144 B-163)
+- **Proposto (opus, 2026-10-20; construído como (a), pela mudança):** (c).
+- **Contexto.** A 780 (1) compila um arquivo carregado "como a entrada de um pacote próprio … para o target do build", suas recusas sendo a resposta; a 798 (4) diz que o comptime nunca lê o target, e a primeira peça da B-163 moveu `std-unsupported-on-target` e `compiler.beamMemory` para uma checagem por target no `emit`.
+- **Medido.** A compilação aninhada de `compiler.load` agora roda sem target, e o pacote carregado nunca é emitido, então um arquivo carregado que chama uma função da std sem binding para o target do build responde `Ok`, onde antes respondia `Error(std-unsupported-on-target)`. Nenhuma célula cobre isso (a suíte está em 1054 de 1054 depois da mudança).
+- **Opções.**
+  (a) Como construído: um arquivo carregado é checado para nenhum target; `load` responde o mesmo em todo target, e uma recusa de target só aparece se o arquivo for depois construído para um.
+  (b) O handler de load roda `target_check` sobre a árvore carregada para o target do build e soma suas recusas à resposta; o próprio comptime nunca ramifica nele, mas a resposta de `load` difere por target.
+  (c) ★ O handler de load roda `target_check` sobre a árvore carregada para todo target do manifesto do pacote e soma toda recusa (cada uma nomeando seu target); a resposta de `load` é uma para todo target.
+- **Recomendação.** (c): a leitura mais restritiva da 780 que mantém a árvore resolvida única da 798 para todo target — um arquivo que não roda num target que o pacote declara é recusado o que quer que `--target` diga.
+- **Bloqueia.** Só a linha de target de `compiler.load` da B-163.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

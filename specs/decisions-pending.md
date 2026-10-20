@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**21 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -671,6 +671,17 @@ before every other part of this page; each holds one row, or nothing built.
   (C) An inline type wherever a type is written, structural like 629's derived types.
 - **Recommendation.** (B): no new type form, and every reader's `.Failed` / `.Abort` already works.
 - **Blocks.** B-158's inline-enum row (std's `RunFailure` field) only.
+
+#### 798-b · Which target is a `compiler.load` file checked for, now that comptime reads none? (decisions 780 (1), 798 (4), 805; 144 B-163)
+- **Proposed (opus, 2026-10-20; built as (a), by the move):** (c).
+- **Context.** 780 (1) compiles a loaded file "as the entry of a package of its own … for the build's target", its refusals the answer; 798 (4) says comptime never reads the target, and B-163's first piece moved `std-unsupported-on-target` and `compiler.beamMemory` to a per-target check at `emit`.
+- **Measured.** The nested compile of `compiler.load` now runs with no target, and the loaded package is never emitted, so a loaded file calling a std function with no binding for the build's target answers `Ok`, where it answered `Error(std-unsupported-on-target)` before. No cell covers it (the suite is 1054 of 1054 after the move).
+- **Options.**
+  (a) As built: a loaded file is checked for no target; `load` answers the same on every target, and a target refusal shows only if the file is later built for one.
+  (b) The load handler runs `target_check` over the loaded tree for the build's target and adds its refusals to the answer; comptime itself never branches on it, but `load`'s answer differs by target.
+  (c) ★ The load handler runs `target_check` over the loaded tree for every target of the package's manifest and adds every refusal (each naming its target); `load`'s answer is one for every target.
+- **Recommendation.** (c): the most restrictive reading of 780 that keeps 798's one resolved tree for every target — a file that cannot run on a target the package declares is refused whatever `--target` says.
+- **Blocks.** B-163's `compiler.load` target row only.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

@@ -3124,10 +3124,16 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
 - [x] the `fable` plan: the resolved tree (what each comptime form leaves: a folded value, a decorator's members and `init`
       executors, a template's expansion, a top-level `comptime` block), the printer, the names, the cache (767, 793 (4)), the pieces
       and each piece's oracle
-- [ ] every target generated from the resolved tree; comptime never reads the target (798 (4)): `Module.target` out of `compiler.bp` and
+- [x] every target generated from the resolved tree; comptime never reads the target (798 (4)): `Module.target` out of `compiler.bp` and
       `inferLoadBuiltin`, the 786 cell's `target` line dropped (805 (4)); the other target reads a per-target check at `emit`
       — `Module.target` out (805 (4)): `load.zig`'s `build_target`, the spliced private `Target` enum and its reflection line removed;
       left: `env.target`, `std-unsupported-on-target` and `compiler.beamMemory` moved to a per-target check at `emit`
+      — built as: `analyse` takes no target and `Env.target` is gone (a new comptime read fails to compile);
+      `codegen/target_check.zig` runs at the top of `emit` and in `botopink check`, the same codes, texts and places, a refused
+      analysis carrying a `TargetTrace` so the target refusal still comes before a later type error; level B's analysis entry is
+      target-free, but the entry still holds each target's emitted code, so it stays per target
+- [ ] a `compiler.load` file's std call with no binding for the target is no longer refused (780 (1): "for the build's target"),
+      the nested compile running with no target since 798 (4) — waits on question 798-b
 - [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
       specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
       — `reserved-name` built: refused at a declaration's name in a user module's first pass (std, loaded packages and the
