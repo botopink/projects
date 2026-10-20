@@ -2650,7 +2650,20 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       `run_in_called_function`, `run_module_refused`, `module_construction` (792), green on commonJS, erlang and beam; wasm in
       B-155
 - [ ] `compiler.bp` declares `fn run(self) -> Result<void, Failure>` on `Module`: a method signature of an imported type resolves its
-      names in the importer, so `Failure` is unknown there and `run` is answered by the checker; a cell, red on the parent
+      names in the importer, so `Failure` is unknown there and `run` is answered by the checker; cell
+      `imported_type_method_signature_resolves_in_owner` (a type whose method returns a type only its own module imports, called
+      from an importer), red on the parent; then `compiler.bp` writes the signature
+- [ ] a local alias of the captured `Module` in the init body (`val m2 = m; m2.run()`) runs `main`: today `load.receiverPath` knows
+      only the spliced load, and the alias is refused `run-outside-init`, a code 792 (4) gives to a place; a receiver still not traced
+      to a loaded file refused under a code of its own; cell `run_on_module_alias`, red on the parent
+- [ ] 789 (4)'s `val mod = try comptime compiler.load(…) catch { r -> compiler.init({…}); return; };` inside an expanded
+      `runCase(comptime name)` takes the branch at build: the expander copies a `try … catch` as run-time code and a `return` ends its
+      walk, so the `Ok` path stops too; `Error` → the handler's statements then stop, `Ok` → bind and go on; cell
+      `comptime_load_try_catch_return_in_expansion` (a `fine` and a `broken` case), red on the parent — B-157 Piece 5's `main.bp`
+      shape waits on it
+- [ ] a loaded package's body on a second `run()` runs as 792-a answers, alike on every target — today commonJS once, erlang and beam
+      its `_` statements again; cell `module_run_twice_body` (a `_` statement and an executor in the loaded file, `run()` twice) ·
+      after 792-a
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)

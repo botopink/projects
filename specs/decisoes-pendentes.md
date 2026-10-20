@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**24 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**25 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -36,6 +36,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | # | Pergunta | O que decide | Bloqueia | Recomendação |
 |---|---|---|---|---|
 | 1 | **798-a** | O que o programa resolvido deixa em aberto: `Module.target` lido em tempo de execução, um intermediário por pacote, `--target` exigido sobre um `.runtime.bp`, os nomes especializados, os prefixos reservados recusados | B-163, depois a B-161 e a Peça 5 da B-157 | (1)(b), (2)–(5)(a) |
+| 2 | **792-a** | `Module.run()` como construído: o `Failure` do `Error(e)` de um `main` carregado (kind e texto), e se o corpo carregado roda de novo num segundo `run()` (commonJS uma vez, erlang e beam de novo) | A linha do corpo da B-158 | (1)(a), (2)(a) |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -471,6 +472,25 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### 792-a · `Module.run()` como construído: o `Failure` de um `Error(e)` respondido, e o corpo carregado num segundo `run()` (decisões 787, 792; 144 B-158)
+- **Proposto (revisão fable, 2026-10-20; construído como (1)(a), e (2) diferindo por target):** **(1)(a), (2)(a)**.
+- **Medido.** A raiz carregada ganha `__bp_loaded_main`, `case main() { Ok(_) -> return; Error(e) -> panic("${e}"); }` (`comptime/load.zig`): `run` responde `Failure(message: <e's print text, 530>, kind: "panic")`; a célula `compiler_load_module_run` fixa `abort bad answer`. Um segundo `run()`: o commonJS faz `require` do pacote uma vez (o corpo dele uma vez); erlang e beam chamam `'_botopink_init'/0` a cada `run()`, que guarda em cache os `val`s nomeados e os executores (`persistent_term`) e roda de novo as instruções `_`; o arquivo carregado de `module_run_twice` não tem instrução no corpo, então nenhuma célula fixa um nem outro. A 792 (1) fixa `Error(Failure)` "como um crash faz" e nada do seu texto ou kind; a 792 (6) fixa `main` duas vezes e deixa o corpo em aberto.
+- **Opções.**
+  (1) O `Failure` de um `main` carregado que responde `Error(e)`:
+  (a) `kind: "panic"`, a mensagem o texto de print de `e` (como construído).
+  ```bp
+  try m.run() catch { f -> print(f.kind + " " + f.message) }   // panic bad answer
+  ```
+  (b) Um kind próprio, `"error"`, a mensagem o texto de `e` — um quarto kind ao lado de `panic` / `host` / `crash` (492, 546, 675), que `attempt` nunca responde.
+  ```bp
+  try m.run() catch { f -> print(f.kind + " " + f.message) }   // error bad answer
+  ```
+  (2) O corpo do pacote carregado num segundo `run()`:
+  (a) Uma vez: corpo e executores no primeiro `run()`, `main` em cada um; erlang e beam protegem `'_botopink_init'/0` (o commonJS como construído).
+  (b) A cada vez: o pacote é inicializado de novo a cada `run()`; o commonJS descarta a sua entrada no cache do `require`.
+- **Recomendação.** (1)(a): "como um crash faz" (792 (1)), o texto que o único `print` escreve para todo valor (530). (2)(a): o corpo de um módulo roda uma vez por programa em todo outro lugar (§ module-system (3), 660); o defeito é o desacordo dos targets, não a escolha.
+- **Bloqueia.** A linha da B-158 do corpo num segundo `run()` (célula `module_run_twice_body`); o texto que todo leitor de `run()` imprime.
 
 #### 798-a · O que a decisão 798 deixa em aberto: `Module.target`, o intermediário de um programa com dependências, o target de um `.runtime.bp`, os nomes gerados (decisão 798; 144 B-163)
 - **Proposto (plano fable, 2026-10-20; nada construído):** **(1)(b), (2)(a), (3)(a), (4)(a), (5)(a):** (1) o `Module.target` do `compiler.load` (786 (1)) continua legível mas é respondido em tempo de execução por uma host function por backend, de modo que a árvore resolvida é uma só; (2) `--emit-runtime <dir>` escreve um `<dir>/<pkg>.runtime.bp` por pacote do fecho do programa, a std excluída, cada `from "<dep>"` resolvido para o arquivo irmão pelo nome, sem manifesto; (3) `build` / `run` sobre um `.runtime.bp` exigem `--target`; (4) o nome `name_$N` de uma função especializada é renomeado `__bp_spec_<name>_<N>` só pelo printer, o mangle do compilador inalterado na B-163; (5) uma declaração do código-fonte cujo nome começa pelos prefixos reservados `__bp_` (valores, funções) ou `Bp__` (tipos) é recusada de imediato, `reserved-name`.

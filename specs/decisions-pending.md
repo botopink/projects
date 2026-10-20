@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**24 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -36,6 +36,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
 | 1 | **798-a** | What the resolved program leaves open: `Module.target` read at run time, one intermediate per package, `--target` required over a `.runtime.bp`, the specialised names, the reserved prefixes refused | B-163, then B-161 and B-157 Piece 5 | (1)(b), (2)–(5)(a) |
+| 2 | **792-a** | `Module.run()` as built: the `Failure` of a loaded `main`'s `Error(e)` (kind and text), and whether the loaded body runs again at a second `run()` (commonJS once, erlang and beam again) | B-158's body row | (1)(a), (2)(a) |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -471,6 +472,25 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
+
+#### 792-a · `Module.run()` as built: the `Failure` of a returned `Error(e)`, and the loaded body on a second `run()` (decisions 787, 792; 144 B-158)
+- **Proposed (fable review, 2026-10-20; built as (1)(a), and (2) differing by target):** **(1)(a), (2)(a)**.
+- **Measured.** The loaded root gains `__bp_loaded_main`, `case main() { Ok(_) -> return; Error(e) -> panic("${e}"); }` (`comptime/load.zig`): `run` answers `Failure(message: <e's print text, 530>, kind: "panic")`; cell `compiler_load_module_run` pins `abort bad answer`. A second `run()`: commonJS `require`s the package once (its body once); erlang and beam call `'_botopink_init'/0` at each `run()`, which caches named `val`s and executors (`persistent_term`) and runs `_` statements again; `module_run_twice`'s loaded file has no body statement, so no cell pins either. 792 (1) fixes `Error(Failure)` "as a crash does" and nothing of its text or kind; 792 (6) fixes `main` twice and leaves the body open.
+- **Options.**
+  (1) The `Failure` of a loaded `main` answering `Error(e)`:
+  (a) `kind: "panic"`, message `e`'s print text (as built).
+  ```bp
+  try m.run() catch { f -> print(f.kind + " " + f.message) }   // panic bad answer
+  ```
+  (b) A kind of its own, `"error"`, message `e`'s text — a fourth kind beside `panic` / `host` / `crash` (492, 546, 675), one `attempt` never answers.
+  ```bp
+  try m.run() catch { f -> print(f.kind + " " + f.message) }   // error bad answer
+  ```
+  (2) The loaded package's body on a second `run()`:
+  (a) Once: body and executors at the first `run()`, `main` at each; erlang and beam guard `'_botopink_init'/0` (commonJS as built).
+  (b) Each time: the package is initialised again at every `run()`; commonJS drops its `require` cache entry.
+- **Recommendation.** (1)(a): "as a crash does" (792 (1)), the text the one `print` writes for every value (530). (2)(a): a module's body runs once per program everywhere else (§ module-system (3), 660); the defect is the targets' disagreement, not the choice.
+- **Blocks.** B-158's row for the body on a second `run()` (cell `module_run_twice_body`); the text every `run()` reader prints.
 
 #### 798-a · What decision 798 leaves open: `Module.target`, the intermediate of a program with dependencies, the target of a `.runtime.bp`, the generated names (decision 798; 144 B-163)
 - **Proposed (fable plan, 2026-10-20; nothing built):** **(1)(b), (2)(a), (3)(a), (4)(a), (5)(a):** (1) `compiler.load`'s `Module.target` (786 (1)) stays readable but is answered at run time by a host function per backend, so the resolved tree is one; (2) `--emit-runtime <dir>` writes one `<dir>/<pkg>.runtime.bp` per package of the program's closure, std excluded, each `from "<dep>"` resolved to the sibling file by name, no manifest; (3) `build` / `run` over a `.runtime.bp` require `--target`; (4) a specialised function's name `name_$N` is renamed `__bp_spec_<name>_<N>` by the printer alone, the compiler's mangle unchanged in B-163; (5) a source declaration whose name starts with the reserved prefixes `__bp_` (values, functions) or `Bp__` (types) is refused at once, `reserved-name`.
