@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**24 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -33,7 +33,9 @@ The questions that hold machine 2's work back today, most blocking first. Each i
 problem, an example, the options, the recommendation and why — and its full entry (Measured, every option) stays in
 § Machine 2. Tick one option per question (`[x]`); the coordinator turns a ticked answer into a decision, and the question leaves this list.
 
-None today.
+| # | Question | What it decides | Blocks | Recommendation |
+|---|---|---|---|---|
+| 1 | **798-a** | What the resolved program leaves open: `Module.target` read at run time, one intermediate per package, `--target` required over a `.runtime.bp`, the specialised names, the reserved prefixes refused | B-163, then B-161 and B-157 Piece 5 | (1)(b), (2)–(5)(a) |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -459,6 +461,13 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
+
+#### 798-a · What decision 798 leaves open: `Module.target`, the intermediate of a program with dependencies, the target of a `.runtime.bp`, the generated names (decision 798; 144 B-163)
+- **Proposed (fable plan, 2026-10-20; nothing built):** **(1)(b), (2)(a), (3)(a), (4)(a), (5)(a):** (1) `compiler.load`'s `Module.target` (786 (1)) stays readable but is answered at run time by a host function per backend, so the resolved tree is one; (2) `--emit-runtime <dir>` writes one `<dir>/<pkg>.runtime.bp` per package of the program's closure, std excluded, each `from "<dep>"` resolved to the sibling file by name, no manifest; (3) `build` / `run` over a `.runtime.bp` require `--target`; (4) a specialised function's name `name_$N` is renamed `__bp_spec_<name>_<N>` by the printer alone, the compiler's mangle unchanged in B-163; (5) a source declaration whose name starts with the reserved prefixes `__bp_` (values, functions) or `Bp__` (types) is refused at once, `reserved-name`.
+- **Measured.** The plan of B-163: one tree (`OkData.transformed` with its side tables) already serves the four backends; comptime reads the target in six places — `codegen.zig` `analyse` handing `target_name` to `compileWith`, `env.target` (`comptime.zig`), the `std-unsupported-on-target` check at the call, `compiler.beamMemory` off the BEAM, `inferLoadBuiltin` writing `Module.target` into the tree as `Target.<Variant>`, and `comptime/load.zig`'s `build_target`. The first four move to a per-target check over the resolved tree at the top of `emit`, with the same codes; the fifth is the only read that changes the tree per target, and 786 (1) fixes the field. 798 (2) names `<dir>/<pkg>.runtime.bp` and (3) "the package's own files": a program with dependencies has more than one package. A `.runtime.bp` has no manifest, so no `targets`. The specialiser names a copy `name_$N`, and `$` does not lex. No `.bp` of `libs/std` or `conformance/modules` declares a name with either prefix; the compiler already generates `__bp_tpl_`, `__bp_ns_`, `__bp_loaded`, `Bp_Load*`, and `_bp_init_<k>` for executors.
+- **Options.** (1) (a) `target` leaves `Module` (786 (1) amended); (b) as proposed; (c) kept as today, an exemption to 798 (4). (2) (a) as proposed; (b) one file for the whole program, dependencies inlined under `<pkg>__<path>__<name>`; (c) the root package alone, its dependencies rebuilt from source (comptime runs again, their build phase printed). (3) (a) as proposed; (b) commonJS by default. (4) (a) as proposed; (b) the mangle itself changes, every codegen snapshot naming one re-recorded. (5) (a) as proposed; (b) a warning for one milestone.
+- **Recommendation.** (1)(b): the field stays readable (786) and the resolved program stays one; (2)(a): packages, erlang module atoms and 660's init order kept per package; (3)(a); (4)(a) in B-163, (b) a later tidy; (5)(a): no hand-written name measured.
+- **Blocks.** B-163's piece 1 (the target leaves comptime) for (1), its printer and CLI pieces for (2)–(5); B-161 and B-157 Piece 5 after it.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

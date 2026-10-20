@@ -3105,7 +3105,11 @@ The `fable` plan is written (2026-10-20): a commonJS program at `conformance/che
 The build runs comptime once and answers a resolved program — botopink with no comptime left — from which every target is
 generated (798 (1)). B-161 waits on it.
 
-- [ ] the `fable` plan: the resolved tree (what each comptime form leaves: a folded value, a decorator's members and `init`
+The `fable` plan is written (2026-10-20): the target leaves comptime (a per-target check over the resolved tree at `emit`), one fold
+channel, the reserved names, the printer and the `.runtime.bp` kind, the CLI, `--emit-resolved`'s origins, the whole-suite oracle; its
+open points are question 798-a, and every piece waits on the answer.
+
+- [x] the `fable` plan: the resolved tree (what each comptime form leaves: a folded value, a decorator's members and `init`
       executors, a template's expansion, a top-level `comptime` block), the printer, the names, the cache (767, 793 (4)), the pieces
       and each piece's oracle
 - [ ] every target generated from the resolved tree; comptime never reads the target, a read refused (798 (4))
