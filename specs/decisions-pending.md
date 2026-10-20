@@ -442,7 +442,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** Nothing of B-21's landing; the parser's refusal and a cell.
 
 #### 800-a · What "identical" means in `implement-signature-differs` (decisions 800, 8; 144 B-148)
-- **Proposed (opus, 2026-10-20; built as (1)(a), (2)(a), (3)(a)):** (1)(a), (2)(a), (3)(a).
+- **Proposed (opus, 2026-10-20; built as (1)(a), (2)(a), (3)(b)):** (1)(a), (2)(a), (3)(a).
 - **Context.** 800 refuses an implementor's member whose parameter count, parameter types or return type differ from the contract's, `Self` read as the implementing type, labels, names and defaults free, no variance. Three readings of "identical" are not fixed by it.
 - **Measured.** B-148's check passes every std type, the primitive widths' `implement` clauses and the 134 cell packages with an `implement` clause; no site was found to fix.
 - **Options.**

@@ -442,7 +442,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Bloqueia.** Nada do pouso do B-21; a recusa do parser e uma célula.
 
 #### 800-a · O que "idêntico" significa em `implement-signature-differs` (decisões 800, 8; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (1)(a), (2)(a), (3)(a)):** (1)(a), (2)(a), (3)(a).
+- **Proposto (opus, 2026-10-20; construído como (1)(a), (2)(a), (3)(b)):** (1)(a), (2)(a), (3)(a).
 - **Contexto.** A 800 recusa um membro de um implementador cujo número de parâmetros, tipos de parâmetro ou tipo de retorno difere do contrato, com `Self` lido como o tipo que implementa, rótulos, nomes e padrões livres, sem variância. Três leituras de "idêntico" não são fixadas por ela.
 - **Medido.** A checagem do B-148 passa todo tipo da std, as cláusulas `implement` das larguras primitivas e os 134 pacotes de células com uma cláusula `implement`; nenhum local foi encontrado para corrigir.
 - **Opções.**
