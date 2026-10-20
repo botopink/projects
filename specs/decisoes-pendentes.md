@@ -607,10 +607,11 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 
 #### docs-a · O que `marker-without-arrow` cobre quando o marcador fica dentro da chave (decisões 553 (1), 573, 584 (1); item 16)
 - **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Respondida (o mantenedor, 2026-10-20):** [x] (a).
 - **Contexto.** A 573 mantém `marker-without-arrow`; a 584 (1) escreve o marcador de um lambda dentro da chave (`{ iter -> … }`) e retira da 553 (1) "o `->` distingue o lambda do bloco" e "uma função chamada `iter` / `async` / `component` com um lambda final escreve os parênteses". A referência ainda diz "`iter`, `async iter` ou `component` antes de uma chave sem `->` é `marker-without-arrow` — uma função chamada `iter`, `async` ou `component` chamada com um lambda final escreve seus parênteses", a distinção que a 584 removeu.
 - **Medido.** A célula `marker_without_arrow` (o pacote refused da 553) recusa `iter { yield 1; … }` no marcador, com o label "no block form: write `iter loop { … }`, or `iter { -> … }`" nomeando a grafia que o retired.md lista sob a 584 (1). Se `iter { -> … }`, o lambda antigo escrito com sua seta, é recusado, e sob qual código, nenhuma decisão afirma.
 - **Opções.**
-  (a) ★ `marker-without-arrow` cobre todo marcador escrito antes de uma chave que não abre forma de bloco — `iter {`, `async iter {`, `component {`, com ou sem `->` (`async {` continua o bloco, `iter loop {` o laço) —, seu label nomeando `{ iter -> … }` e `iter loop { … }`; o código mantém seu nome (573).
+  [x] (a) ★ `marker-without-arrow` cobre todo marcador escrito antes de uma chave que não abre forma de bloco — `iter {`, `async iter {`, `component {`, com ou sem `->` (`async {` continua o bloco, `iter loop {` o laço) —, seu label nomeando `{ iter -> … }` e `iter loop { … }`; o código mantém seu nome (573).
   ```bp
   val xs = iter { -> yield 1; };   // error[marker-without-arrow]: write `{ iter -> … }`
   ```

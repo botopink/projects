@@ -607,10 +607,11 @@ before every other part of this page; each holds one row, or nothing built.
 
 #### docs-a · What `marker-without-arrow` covers once the marker is inside the brace (decisions 553 (1), 573, 584 (1); item 16)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Answered (the maintainer, 2026-10-20):** [x] (a).
 - **Context.** 573 keeps `marker-without-arrow`; 584 (1) writes a lambda's marker inside the brace (`{ iter -> … }`) and drops 553 (1)'s "the `->` distinguishes the lambda from the block" and "a function named `iter` / `async` / `component` with a trailing lambda writes the parentheses". The reference still reads "`iter`, `async iter` or `component` before a brace without `->` is `marker-without-arrow` — a function named `iter`, `async` or `component` called with a trailing lambda writes its parentheses", the distinction 584 removed.
 - **Measured.** The cell `marker_without_arrow` (553's refused package) refuses `iter { yield 1; … }` at the marker, its label "no block form: write `iter loop { … }`, or `iter { -> … }`" naming the spelling retired.md lists under 584 (1). Whether `iter { -> … }`, the old lambda written with its arrow, is refused, and under which code, no decision states.
 - **Options.**
-  (a) ★ `marker-without-arrow` covers every marker written before a brace that opens no block form — `iter {`, `async iter {`, `component {`, with or without `->` (`async {` stays the block, `iter loop {` the loop) —, its label naming `{ iter -> … }` and `iter loop { … }`; the code keeps its name (573).
+  [x] (a) ★ `marker-without-arrow` covers every marker written before a brace that opens no block form — `iter {`, `async iter {`, `component {`, with or without `->` (`async {` stays the block, `iter loop {` the loop) —, its label naming `{ iter -> … }` and `iter loop { … }`; the code keeps its name (573).
   ```bp
   val xs = iter { -> yield 1; };   // error[marker-without-arrow]: write `{ iter -> … }`
   ```
