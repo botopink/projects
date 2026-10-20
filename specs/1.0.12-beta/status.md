@@ -705,7 +705,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 
 ### 160 snap
 
-- [ ] 786 — `compiler.load` answers `Result<Module, Refused>`, `Module(name, path, target)`: B-158's box done (cell `compiler_load_answers_module`); 160's box closed, not respelled: `matchesRefused` leaves snap (the maintainer, 2026-10-20 — the suite records printed output, 789 (5)); left: the snap commit removing it, its cell and its loaded files · machine 2
+- [x] 786 — `compiler.load` answers `Result<Module, Refused>`, `Module(name, path, target)`: B-158's box done (cell `compiler_load_answers_module`); 160's box closed, not respelled: `matchesRefused` leaves snap (the maintainer, 2026-10-20 — the suite records printed output, 789 (5)); snap's commit removed it with its cell and its loaded files (796) · machine 2
 - [ ] 787 — `mod.run()` in a `compiler.init` body runs a loaded package's `main`, answering `Result<void, Failure>`: B-158's 787 box (planned; 787-a answered 2026-10-20, decision 792 — (a) on 1, 2, 5, 6, 7, an opaque `Module` on 3, three refusal codes) · machine 2
 - [x] 788 — a top-level `comptime { … }` block: B-159 (cell `module_comptime_block`, the build prints held by a unit test until B-160) · left: the block's own refusal wording, the language server; 788-a answered 2026-10-20 (decision 793), (a) on every point
 - [ ] 789 / 790 — the CLI tells build prints from its messages (B-160, cut to that box: `cell check` leaves the CLI at the switch, 790 (3)), then `cell check` becomes a botopink program over `io.process` that records the `build` lines (B-161); B-157 piece 5 waits on B-161 · machine 2

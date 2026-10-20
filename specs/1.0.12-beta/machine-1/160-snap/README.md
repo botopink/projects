@@ -40,11 +40,12 @@ consumer commits only: 144 B-08 (17 sites), B-20, B-28.
       under `cases/` until `botopink test` leaves them out of `src/` (B-158's open row), the test calling the bare imported
       `matchesRefused` until B-156's module-qualified call; front 166's `snap_matches_refused-784/` draft beside it
 
-- [ ] 786 — closed, not respelled (the maintainer, 2026-10-20): `matchesRefused` leaves snap. The conformance suite records printed
+- [x] 786 — closed, not respelled (the maintainer, 2026-10-20): `matchesRefused` leaves snap. The conformance suite records printed
       output (789 (5)) and no test needs a refusal snapshot, so the function is not rewritten to `Result<Module, Refused>`; one
       commit in snap removes `matchesRefused` / `matchesRefusedAt`, cell `snap_matches_refused` with its loaded files, the 166
       draft `snap_matches_refused-784/`, and the README / AGENTS lines naming the call; snap green again. 784 (3) and 786 (3) are
       overtaken (a `retired.md` row); no thread of 160 opens for it
+      — built as: the removal (796), snap's hook green on erlang, beam and commonJS (snap declares no wasm target, 770); check 7 green
 
 ### 160 Conformance — the front's last step (decision 465)
 
