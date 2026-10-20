@@ -3021,7 +3021,7 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
       sites respelled to it, answers unchanged; cell `primitive_member_by_contract` (four targets; `behavior string` and the redeclared
       member refused)
 - [x] every behavior of the file holds signatures and `default fn` bodies only — no `#[compiler.external(…)]` on a behavior member (refused there, `external-on-behavior`, at the annotation); the 87 cells move to `declare fn` members of the types, `Self` concrete; a member one target runs in botopink and another in the host uses 610's `.Wasm(body: f)` on the type · landed for the contracts that stay (`Number`, `Integer`, `Signed`, `Float`; cell `external_on_behavior`); `String` / `Array` / `Bool` / `BigInt` / `Bytes` keep their cells, exempt by name in `refuseExternalOnBehavior` until 641's box (question 641-a)
-- [ ] a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature — decision 800: every implementor, every member (required and overridden),
+- [x] a type overriding a contract's `default fn` by declaring the member itself, with or without cells; the override checked against the contract's signature — decision 800: every implementor, every member (required and overridden),
       the parameter count, each parameter's type and the return identical with `Self` the implementing type, labels / names / defaults
       free, `implement-signature-differs` at the member naming both signatures; cell `implement_signature_differs` (a required member,
       an overridden `default fn`, an extension block, a `-> ?string` met by `-> string` refused); the sites it finds fixed here
