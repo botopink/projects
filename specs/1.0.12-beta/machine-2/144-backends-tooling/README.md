@@ -3068,7 +3068,7 @@ records today. B-159's unit test holds the build prints until B-161 lands.
 ### B-161 — `cell check` as a botopink program (decision 790)
 
 **Machine:** 2 · **Repository:** botopink-lang (`--lang`; std's `io/process` with it) · **Model:** opus (a design step: a `fable`
-plan first) · **After:** B-160's box; 787-a and 788-a answered (2026-10-20)
+plan first) · **After:** B-160's box; 787-a and 788-a answered (792, 793)
 
 - [ ] `botopink build --json`: a package refusal as records (`Diagnostic`'s fields), the program's build prints apart
 - [ ] `io.process`: `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn

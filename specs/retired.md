@@ -160,7 +160,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `fs.openAsset`; `Asset.path`, `.bytes`, `.size`, `.hash`, `.text()`; `File.ofBytes`; `embed-text-not-utf8`, `embed-text-not-at-build`, `embed-open-needs-fs` | `Asset(link).open()` and `File`'s reads, each a `Result<…, FsError>` | 607 (2) | |
 | A `string` error from `io.fs` | `FsError`, with `e.message()` | 540 (1), 563 | |
 | A library's own copy of a std function (`clock.parseDuration`, `async.RetryPolicy`, `async.nextDelay`) | std's | 170 | |
-| `$stringify` (a template marker) | `$self`, `$N`, `$args` | 164, 239 | Refused in every template |
+| `$stringify` (a template marker) | `$N`, `$args` (on a method `$0` is `self`) | 164, 239, 795 | Refused in every template; `$self` too (`template-self-marker`) |
 
 ## Libraries and repositories
 
@@ -209,6 +209,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | rakun's SAML 2.0 ACS | — (retired for the milestone): `saml2/` answers 501 under a `deferred.md` row | 713 | |
 | `onze-server` (a package of its own after 724) | `rakun-ssr-server`, erlang only, a row of 724's table | 762 | 2026-10-19; renamed by 165 s5 |
 | `jhonstart-dom-test` (a package of its own after 724) | `rakun-bpp-dom-test`, commonJS only, a row of 724's table | 762 | 2026-10-19; renamed by 165 s5 |
+| `snap.matchesRefused`, `matchesRefusedAt` (a loaded file's refusals as a snapshot) | — (removed): a conformance module prints each case's answer, `cell check` records it | 784, 786, 796 | 2026-10-20 |
 
 ## Process and files
 
@@ -277,6 +278,7 @@ The record keeps these rows as one line (or as the reason they lost force); read
 | 727 | 576 (3), (11), 631, 697, 698 | 727 | |
 | 728 | 592 (5), (6) and 680 | 728 | |
 | 729 | 592 and 665 | 729 | |
+| 784 (2)–(3), 786 (3) (`snap`'s `matchesRefused`, the suite's refused cases through `snap`) | 789 (4)–(5), 796 | 784, 786 | 2026-10-20 |
 
 ## How to use this page
 

@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**31 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**27 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **792**.
+number, which is **797**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -33,10 +33,7 @@ The questions that hold machine 2's work back today, most blocking first. Each i
 problem, an example, the options, the recommendation and why — and its full entry (Measured, every option) stays in
 § Machine 2. Tick one option per question (`[x]`); the coordinator turns a ticked answer into a decision, and the question leaves this list.
 
-| # | Question | What it decides | Blocks | Recommendation |
-|---|---|---|---|---|
-| 1 | **787-a** | What `Module.run()` answers and refuses: a loaded `main`'s `Error`, when the loaded body runs, a hand-built `Module`, the codes, the package's name, `run` twice, `run` in a called function | B-158's 787 box (pieces 2–7) | (a) for each |
-| 2 | **788-a** | What a top-level `comptime` block leaves open: `return` / `throw`, a library's block, `pub` expansion, the cached build's output, a block inside a function body | B-159's last open row | (a) for each |
+No question holds machine 2's work today; the open ones hold one row each, or nothing built (§ Machine 2).
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -500,26 +497,6 @@ group), answered before every other part of this page; in the order of the steps
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
 
-#### 787-a · What `Module.run()` leaves open (decision 787; 144 B-158)
-- **Proposed (fable plan, 2026-10-19; nothing built):** **(a) for each:** (1) a loaded `main -> Result<void, E>` answering `Error(e)` makes `run` answer `Error(Failure)`, as a crash does; (2) the loaded package's module body and its `compiler.init` executors run at `run()`, just before its `main`, not at program start; (3) a hand-built `Module(...)`, or one whose `path` is not known at build, is refused `run-module-not-loaded`; (4) the refusals are `run-outside-init`, `run-module-not-loaded`, `run-module-refused` and `load-no-main`, each located at the `run()` call; (5) the loaded package's name is derived from its path (`bp_load__<path>`, one package per file), and it is visible in erlang atoms and commonJS paths; (6) `run()` called twice on one `Module`, or in two init bodies, runs `main` twice in one package; (7) `run` is written directly in the init body: a function the body calls that calls `run` is refused `run-outside-init`.
-- **Answered (the maintainer, 2026-10-20):** [x] (a) for points 1, 2, 5, 6 and 7; [x] (3)(c) — `Module` opaque, no hand-built value; point 4 keeps three codes: `run-outside-init`, `run-module-refused`, `load-no-main` (`run-module-not-loaded` has no case).
-- **Measured.** The plan of B-158's 787 box: a `Module`'s identity is its constant `path`; the loader keeps a per-build registry from path to loaded package; the loaded file is compiled as a package of its own, its root given a public entry that calls `main`; `mod.run()` is rewritten into `failure.attempt` over that entry, so a crash answers `Error(Failure)`. Decision 787 says `Error` when the loaded `main` crashes. It does not say what `run` answers when `main` returns `Error(e)`, when the loaded package's body runs, whether a `Module` not answered by `load` may run, the refusal codes, the package's name, whether `run` may be called twice, or whether it may be called from a function the init body calls.
-- **Options.** Each point (a) as proposed or (b): (1) `Ok`: only a crash is an `Error`; (2) at program start, with every dependency's (660); (3) admitted when a load of that path exists in the build; (4) other codes; (5) a name numbered per load; (6) the second `run()` refused; (7) also allowed inside a function the init body calls.
-  [x] (3)(c) (the maintainer, 2026-10-20) `Module` is opaque: its constructor is std's alone — only `compiler.load` answers one —, its fields `name`, `path`, `target` readable (786 (1) kept); a hand-built `Module` cannot be written, so `run-module-not-loaded` has no case and goes (point 4 keeps three codes); structural, no check on the value (67). No `opaque` form exists in the language today: the mechanism is a std type whose constructor is not public, as `RenderScope` (388) and `compiler.bindings`'s handles (686) already are.
-  ```bp
-  val fake = Module(name: "x", path: "src/cases/x/mod.bp", target: Target.Node);   // refused: `Module` has no public constructor
-  ```
-- **Recommendation.** (a) for each: the most restrictive reading, where 787 is silent.
-- **Blocks.** B-158's 787 box, pieces 2–7 of its plan.
-
-#### 788-a · What a top-level `comptime` block leaves open (decision 788; 144 B-159)
-- **Proposed (opus, 2026-10-19; built as noted):** (1) a `return` or a `throw` inside a block refused (not measured); (2) a block in a library package allowed: it runs in the build of the package that uses the library, in 660's level order (not measured); (3) a function whose every parameter is `comptime` also expanded when it is `pub` and called from another module's block (built: only a private function called at statement level from a block of its own module is expanded; elsewhere its `compiler.init` is refused); (4) a cached build replays the build output (built so); (5) a `comptime { print(…) }` inside a function body writes the build output too (built: it compiles and the print is dropped).
-- **Answered (the maintainer, 2026-10-20):** [x] (a) for each of the five points.
-- **Measured.** B-159 rewrites the block into a decorator and runs it on the build-body machinery; a build body's `print` goes to stdout, kept by the level-B cache and replayed on a cached build. Decision 788 does not reach a `return` or `throw` inside a block, a block in a library, a `pub` or cross-module expansion, the cache, or a `comptime` block inside a function body.
-- **Options.** Each point (a) as proposed or (b): (1) allowed, ending the block; (2) refused in a library; (3) only the private, same-module form; (4) a cached build prints nothing; (5) refused, located.
-- **Recommendation.** (a) for each: one rule for every block, and `cell check` (790) needs the build output on every build.
-- **Blocks.** B-159's row on a `comptime` block inside a function body; nothing else built.
-
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
 - **Measured.** `modules/std-wasm/wat/bytes.wat`: `bytes.at` compares the index unsigned against `array.len` and answers `-1` past it (a negative index included), the body of `text.byteAt` (P1-a) over the same `$str` layout (`bytes` is an `i8` array, 164 s2, 346); `string.charCodeAt` (641; then `String.charCodeAt`) answers `-1` out of range on the four targets (`primitives.bp`: Erlang `_ -> -1`, Node `?? -1`, `text.zig`). `bytes.ofWords` writes each word with `array.set $str`: an `i8` slot keeps the low eight bits, so `256 + 33` is the byte `33`. No botopink operation builds a `bytes` from words (the type's members, 641 — then `behavior Bytes`: `fromUtf8`, `toUtf8`, `length`, `concat`, `slice`), so no target has an answer to compare, and 585 (k) names the three leaves without their answers. The codecs they are written for (`base64DecodeBytes`, `hexDecodeBytes`) produce words in `0..255` and read indices in `0..length-1`: through them neither answer is observable; any `std:` cell of `libs/std` (445) reaches the leaves. The unit test `wat: front 164 s3 ---- the Bytes leaves answer in a GC module` (`codegen/tests/wat.zig`) fixes `bytesOfWords([104, 105, 256 + 33])` as three bytes, `bytesAt(b, 2)` as `33`, `bytesAt(b, 3)` and `bytesAt(b, -1)` as `-1`. Without the check, `array.get_u` traps outside `0..length-1` (a `crash:` abort).
@@ -611,23 +588,6 @@ before every other part of this page; each holds one row, or nothing built.
 - **Recommendation.** (a).
 - **Blocks.** Nothing built; two refusal cells once answered.
 
-#### docs-a · What `marker-without-arrow` covers once the marker is inside the brace (decisions 553 (1), 573, 584 (1); item 16)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Answered (the maintainer, 2026-10-20):** [x] (a).
-- **Context.** 573 keeps `marker-without-arrow`; 584 (1) writes a lambda's marker inside the brace (`{ iter -> … }`) and drops 553 (1)'s "the `->` distinguishes the lambda from the block" and "a function named `iter` / `async` / `component` with a trailing lambda writes the parentheses". The reference still reads "`iter`, `async iter` or `component` before a brace without `->` is `marker-without-arrow` — a function named `iter`, `async` or `component` called with a trailing lambda writes its parentheses", the distinction 584 removed.
-- **Measured.** The cell `marker_without_arrow` (553's refused package) refuses `iter { yield 1; … }` at the marker, its label "no block form: write `iter loop { … }`, or `iter { -> … }`" naming the spelling retired.md lists under 584 (1). Whether `iter { -> … }`, the old lambda written with its arrow, is refused, and under which code, no decision states.
-- **Options.**
-  [x] (a) ★ `marker-without-arrow` covers every marker written before a brace that opens no block form — `iter {`, `async iter {`, `component {`, with or without `->` (`async {` stays the block, `iter loop {` the loop) —, its label naming `{ iter -> … }` and `iter loop { … }`; the code keeps its name (573).
-  ```bp
-  val xs = iter { -> yield 1; };   // error[marker-without-arrow]: write `{ iter -> … }`
-  ```
-  (b) The code goes with the distinction it drew: a marker before a brace is a call of a function of that name with a trailing lambda (584 dropped the parentheses rule), refused as any unbound name when none is in scope; 573's "stay" amended.
-  ```bp
-  val xs = iter { -> yield 1; };   // error: unbound name `iter`
-  ```
-- **Recommendation.** (a): the old spelling is refused where it is written, naming the new one, as 573 does for a keyword without its marker; (b) answers the retired form with an unrelated message.
-- **Blocks.** item 16 (the docs.md text).
-
 #### docs-b · `std-decorator-leaf-import` once `mock` is a function (decisions 386, 644, 669; item 16)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
 - **Context.** § Mocks states a rule for every std module's decorators: they come with the namespace import — `import {testing.mocks}` makes `#[mocks.mock]` — and a leaf import (`import {testing.mocks.mock}`) is `std-decorator-leaf-import`, because "the code it adds would have no handle to name the runtime by". 644 made `mock` a std function (`val g = mock(Greeter);`), no decorator; 669 resolves the code a decorator writes in the decorator's module, so it needs no handle; 386 reads `#[ns.d]` as `#[d]` imported by name.
@@ -659,23 +619,6 @@ before every other part of this page; each holds one row, or nothing built.
   ```
 - **Recommendation.** (a): one place for a library's helpers whatever its layout (67).
 - **Blocks.** item 16 (the docs.md text).
-
-#### docs-d · `$self` as a template marker: documented (164) or refused (`template-self-marker`)? (decisions 164, 239; 166 s3)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Answered (the maintainer, 2026-10-20):** [x] (a) — only `$N` and `$args`; no `$self`.
-- **Context.** 164 reads "the documented markers are `$self`, `$N`, `$args`", and `specs/retired.md`'s `$stringify` row names `$self`, `$N`, `$args` as its replacement. The compiler refuses `$self` with `template-self-marker` ("`$self` is not a template marker", caret "use `$0`"; on a method `$0` is `self`), from front 12 step 3d, and std's `external.bp` says the same.
-- **Measured.** 164's draft (`stringify_marker_refused_in_templates-164`) uses only `$0`, `$1` and `$args`; no cell writes `$self`.
-- **Options.**
-  [x] (a) ★ The positional markers are in force: 164's sentence and retired.md's row read `$N`, `$args` (on a method `$0` is `self`); `template-self-marker` stays.
-  ```bp
-  #[compiler.external(.JavaScript("$0.length"))] fn size(self: Self) -> i32;
-  ```
-  (b) `$self` is a marker again beside `$N`: `template-self-marker` removed, a cell for it.
-  ```bp
-  #[compiler.external(.JavaScript("$self.length"))] fn size(self: Self) -> i32;
-  ```
-- **Recommendation.** (a): the compiler, std and every cell already agree on the positional form; only the two texts lag.
-- **Blocks.** nothing (the draft is written in the positional form).
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

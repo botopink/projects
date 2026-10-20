@@ -2588,8 +2588,8 @@ function whose every parameter is `comptime` is called there and expanded at the
       stdout as the build's output, kept by the level-B cache and replayed on a cached build, the CLI's own messages on stderr; the
       build lines asserted in `comptime/tests/comptime_blocks.zig` until B-160 records them
 - [ ] a refusal inside a block names it as `comptime`, not the decorator it is rewritten into (`__bp_comptime_<k>`)
-- [ ] a `comptime { print(…) }` inside a function body compiles and its print is dropped — 788 does not reach it; recorded as build
-      output or refused, per the answer to question 788-a (e)
+- [ ] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)); today it compiles and the print
+      is dropped
 - [ ] the language server on an expanded private function (hover, go-to), which leaves the parsed program
 
 ### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782, 783)
@@ -2634,8 +2634,8 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       loaded package whose `run` a `compiler.init` body calls is compiled into the program as a package of its own (its `mod` tree,
       its own dependencies) and its `main` called at that point; one no `run` reaches stays out; `run` outside an init body and a
       loaded file with no `main` refused, located; cell `compiler_load_module_run` (787: the init body's prints around the loaded
-      `main`'s, and a crashing `main` answered `Error`, on every target) · after the 786 box; a design step — the `fable` plan's open points are question
-      787-a, its pieces 2–7 wait on the answer
+      `main`'s, and a crashing `main` answered `Error`, on every target) · after the 786 box; a design step — the `fable` plan's open points answered by
+      792 (`Error(Failure)` on a `main`'s `Error`, the body run at `run()`, `Module` opaque, three codes)
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)

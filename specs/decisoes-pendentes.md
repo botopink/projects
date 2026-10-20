@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**31 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**27 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **792**.
+número livre, que é **797**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -33,10 +33,7 @@ As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam pr
 poucas linhas — o problema, um exemplo, as opções, a recomendação e por quê — e a sua entrada completa (Medido, todas as
 opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coordenador transforma a resposta marcada numa decisão, e a pergunta sai desta lista.
 
-| # | Pergunta | O que decide | Bloqueia | Recomendação |
-|---|---|---|---|---|
-| 1 | **787-a** | O que `Module.run()` responde e recusa: o `Error` de um `main` carregado, quando o corpo carregado roda, um `Module` construído à mão, os códigos, o nome do pacote, `run` duas vezes, `run` numa função chamada | A caixa 787 do B-158 (peças 2–7) | (a) para cada um |
-| 2 | **788-a** | O que um bloco `comptime` de topo deixa em aberto: `return` / `throw`, o bloco de uma biblioteca, a expansão `pub`, a saída do build em cache, um bloco dentro de um corpo de função | A última linha aberta do B-159 | (a) para cada um |
+Nenhuma pergunta segura o trabalho da máquina 2 hoje; as abertas seguram uma linha cada, ou nada construído (§ Máquina 2).
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -500,26 +497,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
 
-#### 787-a · O que `Module.run()` deixa em aberto (decisão 787; 144 B-158)
-- **Proposto (plano fable, 2026-10-19; nada construído):** **(a) para cada um:** (1) um `main -> Result<void, E>` carregado que responde `Error(e)` faz `run` responder `Error(Failure)`, como faz uma queda; (2) o corpo de módulo do pacote carregado e os seus executores de `compiler.init` rodam em `run()`, logo antes do seu `main`, não no início do programa; (3) um `Module(...)` construído à mão, ou um cujo `path` não é conhecido no build, é recusado `run-module-not-loaded`; (4) as recusas são `run-outside-init`, `run-module-not-loaded`, `run-module-refused` e `load-no-main`, cada uma localizada na chamada `run()`; (5) o nome do pacote carregado é derivado do seu caminho (`bp_load__<path>`, um pacote por arquivo), e é visível em átomos erlang e caminhos commonJS; (6) `run()` chamado duas vezes num `Module`, ou em dois corpos de init, roda `main` duas vezes num pacote; (7) `run` é escrito diretamente no corpo de init: uma função que o corpo chama e que chama `run` é recusada `run-outside-init`.
-- **Respondida (o mantenedor, 2026-10-20):** [x] (a) nos pontos 1, 2, 5, 6 e 7; [x] (3)(c) — `Module` opaco, nenhum valor montado à mão; o ponto 4 fica com três códigos: `run-outside-init`, `run-module-refused`, `load-no-main` (`run-module-not-loaded` não tem caso).
-- **Medido.** O plano da caixa 787 do B-158: a identidade de um `Module` é o seu `path` constante; o carregador mantém um registro por build de caminho para pacote carregado; o arquivo carregado é compilado como um pacote próprio, a sua raiz recebe uma entrada pública que chama `main`; `mod.run()` é reescrito em `failure.attempt` sobre essa entrada, então uma queda responde `Error(Failure)`. A decisão 787 diz `Error` quando o `main` carregado cai. Ela não diz o que `run` responde quando `main` retorna `Error(e)`, quando o corpo do pacote carregado roda, se um `Module` não respondido por `load` pode rodar, os códigos das recusas, o nome do pacote, se `run` pode ser chamado duas vezes, ou se pode ser chamado de uma função que o corpo de init chama.
-- **Opções.** Cada ponto (a) como proposto ou (b): (1) `Ok`: só uma queda é um `Error`; (2) no início do programa, com os de toda dependência (660); (3) admitido quando existe no build um load daquele caminho; (4) outros códigos; (5) um nome numerado por load; (6) o segundo `run()` recusado; (7) permitido também dentro de uma função que o corpo de init chama.
-  [x] (3)(c) (o mantenedor, 2026-10-20) `Module` é opaco: seu construtor é só da std — só `compiler.load` responde um —, seus campos `name`, `path`, `target` legíveis (786 (1) mantida); um `Module` montado à mão não pode ser escrito, logo `run-module-not-loaded` não tem caso e sai (o ponto 4 fica com três códigos); estrutural, sem checagem sobre o valor (67). Nenhuma forma `opaque` existe na linguagem hoje: o mecanismo é um tipo da std cujo construtor não é público, como `RenderScope` (388) e os handles de `compiler.bindings` (686) já são.
-  ```bp
-  val fake = Module(name: "x", path: "src/cases/x/mod.bp", target: Target.Node);   // refused: `Module` has no public constructor
-  ```
-- **Recomendação.** (a) para cada um: a leitura mais restritiva, onde a 787 se cala.
-- **Bloqueia.** A caixa 787 do B-158, as peças 2–7 do seu plano.
-
-#### 788-a · O que um bloco `comptime` de topo deixa em aberto (decisão 788; 144 B-159)
-- **Proposto (opus, 2026-10-19; construído como anotado):** (1) um `return` ou um `throw` dentro de um bloco recusado (não medido); (2) um bloco num pacote de biblioteca permitido: roda no build do pacote que usa a biblioteca, na ordem de níveis da 660 (não medido); (3) uma função cujos parâmetros são todos `comptime` expandida também quando é `pub` e chamada do bloco de outro módulo (construído: só uma função privada chamada em nível de statement de um bloco do seu próprio módulo é expandida; em outro lugar o seu `compiler.init` é recusado); (4) um build em cache repete a saída de build (construído assim); (5) um `comptime { print(…) }` dentro de um corpo de função escreve a saída de build também (construído: compila e o print se perde).
-- **Respondida (o mantenedor, 2026-10-20):** [x] (a) em cada um dos cinco pontos.
-- **Medido.** O B-159 reescreve o bloco num decorator e o roda na máquina de corpos de build; o `print` de um corpo de build vai para o stdout, guardado pelo cache de nível B e repetido num build em cache. A decisão 788 não alcança um `return` ou `throw` dentro de um bloco, um bloco numa biblioteca, uma expansão `pub` ou entre módulos, o cache, nem um bloco `comptime` dentro de um corpo de função.
-- **Opções.** Cada ponto (a) como proposto ou (b): (1) permitido, encerrando o bloco; (2) recusado numa biblioteca; (3) só a forma privada, do mesmo módulo; (4) um build em cache não imprime nada; (5) recusado, localizado.
-- **Recomendação.** (a) para cada um: uma regra para todo bloco, e o `cell check` (790) precisa da saída de build em todo build.
-- **Bloqueia.** A linha do B-159 sobre um bloco `comptime` dentro de um corpo de função; nada mais construído.
-
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
 - **Medido.** `modules/std-wasm/wat/bytes.wat`: `bytes.at` compara o índice sem sinal com `array.len` e responde `-1` além dele (um índice negativo incluído), o corpo de `text.byteAt` (P1-a) sobre o mesmo layout `$str` (`bytes` é um array de `i8`, 164 s2, 346); `string.charCodeAt` (641; então `String.charCodeAt`) responde `-1` fora do intervalo nos quatro alvos (`primitives.bp`: Erlang `_ -> -1`, Node `?? -1`, `text.zig`). `bytes.ofWords` escreve cada palavra com `array.set $str`: uma célula `i8` guarda os oito bits baixos, logo `256 + 33` é o byte `33`. Nenhuma operação de botopink constrói um `bytes` a partir de palavras (os membros do tipo, 641 — então `behavior Bytes`: `fromUtf8`, `toUtf8`, `length`, `concat`, `slice`), logo nenhum alvo tem uma resposta para comparar, e a 585 (k) nomeia as três folhas sem as suas respostas. Os codecs para que foram escritas (`base64DecodeBytes`, `hexDecodeBytes`) produzem palavras em `0..255` e leem índices em `0..length-1`: por eles nenhuma das respostas é observável; qualquer célula `std:` de `libs/std` (445) alcança as folhas. O teste unitário `wat: front 164 s3 ---- the Bytes leaves answer in a GC module` (`codegen/tests/wat.zig`) fixa `bytesOfWords([104, 105, 256 + 33])` como três bytes, `bytesAt(b, 2)` como `33`, `bytesAt(b, 3)` e `bytesAt(b, -1)` como `-1`. Sem a verificação, `array.get_u` dá trap fora de `0..length-1` (um abort `crash:`).
@@ -611,23 +588,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
 - **Recomendação.** (a).
 - **Bloqueia.** Nada construído; duas células de recusa uma vez respondida.
 
-#### docs-a · O que `marker-without-arrow` cobre quando o marcador fica dentro da chave (decisões 553 (1), 573, 584 (1); item 16)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Respondida (o mantenedor, 2026-10-20):** [x] (a).
-- **Contexto.** A 573 mantém `marker-without-arrow`; a 584 (1) escreve o marcador de um lambda dentro da chave (`{ iter -> … }`) e retira da 553 (1) "o `->` distingue o lambda do bloco" e "uma função chamada `iter` / `async` / `component` com um lambda final escreve os parênteses". A referência ainda diz "`iter`, `async iter` ou `component` antes de uma chave sem `->` é `marker-without-arrow` — uma função chamada `iter`, `async` ou `component` chamada com um lambda final escreve seus parênteses", a distinção que a 584 removeu.
-- **Medido.** A célula `marker_without_arrow` (o pacote refused da 553) recusa `iter { yield 1; … }` no marcador, com o label "no block form: write `iter loop { … }`, or `iter { -> … }`" nomeando a grafia que o retired.md lista sob a 584 (1). Se `iter { -> … }`, o lambda antigo escrito com sua seta, é recusado, e sob qual código, nenhuma decisão afirma.
-- **Opções.**
-  [x] (a) ★ `marker-without-arrow` cobre todo marcador escrito antes de uma chave que não abre forma de bloco — `iter {`, `async iter {`, `component {`, com ou sem `->` (`async {` continua o bloco, `iter loop {` o laço) —, seu label nomeando `{ iter -> … }` e `iter loop { … }`; o código mantém seu nome (573).
-  ```bp
-  val xs = iter { -> yield 1; };   // error[marker-without-arrow]: write `{ iter -> … }`
-  ```
-  (b) O código sai com a distinção que fazia: um marcador antes de uma chave é uma chamada de uma função desse nome com um lambda final (a 584 retirou a regra dos parênteses), recusada como qualquer nome não ligado quando nenhum está no escopo; o "continuam" da 573 emendado.
-  ```bp
-  val xs = iter { -> yield 1; };   // error: unbound name `iter`
-  ```
-- **Recomendação.** (a): a grafia antiga é recusada onde é escrita, nomeando a nova, como a 573 faz para uma palavra-chave sem seu marcador; (b) responde à forma aposentada com uma mensagem sem relação.
-- **Bloqueia.** item 16 (o texto dos docs.md).
-
 #### docs-b · `std-decorator-leaf-import` quando `mock` é uma função (decisões 386, 644, 669; item 16)
 - **Proposto (opus, 2026-10-19; nada construído):** (a).
 - **Contexto.** O § Mocks afirma uma regra para os decoradores de todo módulo da std: eles vêm com o import do namespace — `import {testing.mocks}` faz `#[mocks.mock]` — e um import de folha (`import {testing.mocks.mock}`) é `std-decorator-leaf-import`, porque "o código que ele adiciona não teria handle para nomear o runtime". A 644 fez de `mock` uma função da std (`val g = mock(Greeter);`), nenhum decorador; a 669 resolve o código que um decorador escreve no módulo do decorador, então ele não precisa de handle; a 386 lê `#[ns.d]` como `#[d]` importado por nome.
@@ -659,23 +619,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   ```
 - **Recomendação.** (a): um lugar para os helpers de uma biblioteca qualquer que seja seu layout (67).
 - **Bloqueia.** item 16 (o texto dos docs.md).
-
-#### docs-d · `$self` como marcador de template: documentado (164) ou recusado (`template-self-marker`)? (decisões 164, 239; 166 s3)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Respondida (o mantenedor, 2026-10-20):** [x] (a) — só `$N` e `$args`; sem `$self`.
-- **Contexto.** A 164 diz "the documented markers are `$self`, `$N`, `$args`", e a linha `$stringify` de `specs/retired.md` nomeia `$self`, `$N`, `$args` como sua substituta. O compilador recusa `$self` com `template-self-marker` ("`$self` is not a template marker", caret "use `$0`"; num método `$0` é `self`), desde a frente 12 passo 3d, e o `external.bp` da std diz o mesmo.
-- **Medido.** O draft da 164 (`stringify_marker_refused_in_templates-164`) usa só `$0`, `$1` e `$args`; nenhuma cell escreve `$self`.
-- **Opções.**
-  [x] (a) ★ Os marcadores posicionais estão em vigor: a frase da 164 e a linha do retired.md dizem `$N`, `$args` (num método `$0` é `self`); `template-self-marker` fica.
-  ```bp
-  #[compiler.external(.JavaScript("$0.length"))] fn size(self: Self) -> i32;
-  ```
-  (b) `$self` volta a ser marcador ao lado de `$N`: `template-self-marker` removido, uma cell para ele.
-  ```bp
-  #[compiler.external(.JavaScript("$self.length"))] fn size(self: Self) -> i32;
-  ```
-- **Recomendação.** (a): o compilador, a std e toda cell já concordam com a forma posicional; só os dois textos estão atrasados.
-- **Bloqueia.** nada (o draft está escrito na forma posicional).
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
