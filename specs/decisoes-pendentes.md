@@ -443,6 +443,36 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma forma exaustiva, então um membro faltando é recusado no `case` e não descoberto em tempo de execução.
 - **Bloqueia.** As caixas `Renderable<T>` e `NodeChildren` do B-162 (um renderizador sobre o filho de união) e a linha de defeito `k is Component<unknown>`.
 
+#### B-21-d · Uma expressão `fn` sem parâmetro tipado escreve seu `->`? (decisões 622, 408; 144 B-21)
+- **Proposto (coordenador, 2026-10-20; o B-21 construiu (b)):** (a).
+- **Contexto.** A 622 se aplica a "toda forma", nomeando "o lambda tipado `fn(x: T) -> R { … }` (583)"; a 408 deixa uma expressão `fn` ter todo parâmetro tipado ou nenhum. Um `fn() { … }` (sem parâmetro) ou `fn(x) { … }` (nenhum tipado) é uma expressão `fn` que a lista da 622 não nomeia.
+- **Medido.** O `fn-return-missing` do B-21 recusa uma expressão `fn` sem `->` só quando um de seus parâmetros tem tipo escrito; `fn() { … }` e `fn(x) { … }` são aceitos, seu retorno ainda lido do corpo. O codemod escreve `-> void` em todo `fn() { … }` das células e da std mesmo assim.
+- **Opções.**
+  (a) ★ Toda expressão `fn` escreve `->`, com parâmetros tipados ou não; o lambda entre chaves `{ x -> … }` continua a forma não tipada (328).
+  ```bp
+  val run = fn() -> void { print("go"); };     // fn() { print("go"); } refused, fn-return-missing
+  ```
+  (b) Só uma expressão `fn` com parâmetro tipado escreve `->`; `fn() { … }` e `fn(x) { … }` são tipados pela posição, como um lambda entre chaves.
+  ```bp
+  val run: fn() -> void = fn() { print("go"); };
+  ```
+- **Recomendação.** (a): um `fn` é escrito inteiro onde quer que apareça, e a forma não tipada já tem sua própria grafia.
+- **Bloqueia.** Nada do pouso do B-21; o alcance da recusa sobre `fn() { … }` e sua célula.
+
+#### B-21-e · A forma curta `fn f(x: T) R` (um tipo de retorno sem `->`) ainda é da linguagem? (decisões 622, 606; 144 B-21)
+- **Proposto (coordenador, 2026-10-20; nada construído):** (a).
+- **Contexto.** A forma curta vem das declarações `.d.bp`; a 606 removeu o `.d.bp`, e a 622 diz que toda função escreve seu tipo de retorno com `->`.
+- **Medido.** O parser ainda aceita `fn f(x: i32) i32` (um tipo e nenhum `->`) num arquivo `.bp`, e o `fn-return-missing` do B-21 não o recusa: o tipo de retorno está escrito.
+- **Opções.**
+  (a) ★ Recusada no tipo, nomeando `-> T`; a grafia é aposentada.
+  ```bp
+  declare fn size(self: Self) i32;      // refused: write -> i32
+  declare fn size(self: Self) -> i32;
+  ```
+  (b) Mantida como segunda grafia de `-> T`.
+- **Recomendação.** (a): uma grafia por forma, e os arquivos que precisavam dela se foram.
+- **Bloqueia.** Nada do pouso do B-21; a recusa do parser e uma célula.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

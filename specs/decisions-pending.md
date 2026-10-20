@@ -443,6 +443,36 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one exhaustive form, so a missing member is refused at the `case` and not found at run time.
 - **Blocks.** B-162's `Renderable<T>` and `NodeChildren` boxes (a renderer over the union child) and the `k is Component<unknown>` defect row.
 
+#### B-21-d · Does a `fn` expression with no typed parameter write its `->`? (decisions 622, 408; 144 B-21)
+- **Proposed (coordinator, 2026-10-20; B-21 built (b)):** (a).
+- **Context.** 622 applies to "every form", naming "the typed lambda `fn(x: T) -> R { … }` (583)"; 408 lets a `fn` expression have every parameter typed or none. A `fn() { … }` (no parameter) or `fn(x) { … }` (none typed) is a `fn` expression that 622's list does not name.
+- **Measured.** B-21's `fn-return-missing` refuses a `fn` expression without `->` only when one of its parameters has a written type; `fn() { … }` and `fn(x) { … }` are accepted, their return still read off the body. The codemod writes `-> void` on every `fn() { … }` of the cells and std anyway.
+- **Options.**
+  (a) ★ Every `fn` expression writes `->`, typed parameters or not; the braced lambda `{ x -> … }` stays the untyped form (328).
+  ```bp
+  val run = fn() -> void { print("go"); };     // fn() { print("go"); } refused, fn-return-missing
+  ```
+  (b) Only a `fn` expression with a typed parameter writes `->`; `fn() { … }` and `fn(x) { … }` are typed from their position like a braced lambda.
+  ```bp
+  val run: fn() -> void = fn() { print("go"); };
+  ```
+- **Recommendation.** (a): a `fn` is written whole wherever it appears, and the untyped form already has its own spelling.
+- **Blocks.** Nothing of B-21's landing; the refusal's reach over `fn() { … }` and its cell.
+
+#### B-21-e · Is the shortform `fn f(x: T) R` (a return type without `->`) still the language? (decisions 622, 606; 144 B-21)
+- **Proposed (coordinator, 2026-10-20; nothing built):** (a).
+- **Context.** The shortform comes from the `.d.bp` declarations; 606 removed `.d.bp`, and 622 says every function writes its return type with `->`.
+- **Measured.** The parser still accepts `fn f(x: i32) i32` (a type and no `->`) in a `.bp` file, and B-21's `fn-return-missing` does not refuse it: the return type is written.
+- **Options.**
+  (a) ★ Refused at the type, naming `-> T`; the spelling is retired.
+  ```bp
+  declare fn size(self: Self) i32;      // refused: write -> i32
+  declare fn size(self: Self) -> i32;
+  ```
+  (b) Kept as a second spelling of `-> T`.
+- **Recommendation.** (a): one spelling per form, and the files that needed it are gone.
+- **Blocks.** Nothing of B-21's landing; the parser's refusal and a cell.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
