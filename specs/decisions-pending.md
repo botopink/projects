@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**20 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**21 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -35,8 +35,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **798-a** | What the resolved program leaves open: `Module.target` read at run time, one intermediate per package, `--target` required over a `.runtime.bp`, the specialised names, the reserved prefixes refused | B-163, then B-161 and B-157 Piece 5 | (1)(b), (2)–(5)(a) |
-| 2 | **792-a** | `Module.run()` as built: the `Failure` of a loaded `main`'s `Error(e)` (kind and text), and whether the loaded body runs again at a second `run()` (commonJS once, erlang and beam again) | B-158's body row | (1)(a), (2)(a) |
+| 1 | **793-a** | A `pub` all-`comptime` function expanded in another module's block: its `compiler.init` in its own module, a run-time call, a call from a decorator body, from a body `comptime` block | B-159's 793 (3) box | (1)(a), (2)(a), (3)(b), (4)(a) |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -443,6 +442,17 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
+
+#### 793-a · What a `pub` all-`comptime` function expanded in another module's block leaves open (decisions 793 (3), 562, 788; 144 B-159)
+- **Proposed (fable plan, 2026-10-20; nothing built):** **(1)(a), (2)(a), (3)(b), (4)(a)**: (1) a `compiler.init` written in a function whose every parameter is `comptime` stays `compiler.init(t)` in its own module, typed `void` there and making the function expanded — it type-checks and leaves the program (562); (2) a run-time call of such a function (`main`, any run-time body, the same or another module) is refused at the call, `compiler-at-run-time` (575), "`f` registers `compiler.init`; call it from a `comptime` block"; (3) a call from a decorator body stays refused `compiler-output-outside-decorator`, 793 (3) naming blocks; (4) a `comptime { … }` inside a function body (793 (5)) that calls such a function is refused — it answers a value and is no build body of the module.
+- **Measured.** The parser rewrites a block into a decorator and copies a same-module all-`comptime` callee's body into it before the surface pass, so the copy's `compiler.init` becomes the decorator's executor; the original keeps its `compiler.init`, refused `compiler-output-outside-decorator`, and only a private, now-unreferenced function is dropped, so a `pub` one is refused in its own module. The parser resolves no import and, on a level-B hit, parses no dependency; the build session already publishes each module's expanded functions to its importers (`expandedImports`, replayed from the cache). The plan: the cross-module expansion runs in `analyzeSource`, after the imports resolve and before inference, over each block's body — the imported body copied, its `compiler.init` the block's executor, its own names aliased, a refusal located in its owner; the executor joins at the block's anchor in its package's level (660); the resolved tree (798) holds the executor and no `f`.
+- **Options.**
+  (1) The `compiler.init` in such a function in its own module: (a) as proposed; (b) a hidden handle parameter appended by the surface pass, the call mapped as in a decorator; (c) only a private function may write it, as today.
+  (2) A run-time call: (a) as proposed; (b) expanded, the init dropped; (c) expanded, the init running there at run time.
+  (3) A call from a decorator body: (a) expanded, the init becoming that decorator's executor; (b) as proposed.
+  (4) A call from a `comptime { … }` in a function body: (a) as proposed; (b) the init anchored at the enclosing function's module position.
+- **Recommendation.** (1)(a): one form, no handle the source never wrote, 562's drop already applies; (2)(a): a silent drop or a run-time init contradicts 562 and 788; (3)(b) for 793 (3), (a) a one-line extension once decided; (4)(a).
+- **Blocks.** B-159's 793 (3) box.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
