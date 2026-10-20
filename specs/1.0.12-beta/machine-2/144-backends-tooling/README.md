@@ -2996,8 +2996,10 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
 - [ ] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
 - [ ] wasm: `.length.toString()` on a `Kid[]` does not resolve; found by B-162; a cell red on the parent
-- [ ] wasm: `botopink test` of `conformance/test/compiler_load_in_a_test_suite` panics in `wat.zig` `finishGc` (index out of bounds),
+- [x] wasm: `botopink test` of `conformance/test/compiler_load_in_a_test_suite` panics in `wat.zig` `finishGc` (index out of bounds),
       on the parent too; a repro, then the fix
+      — built as: `reach.dropCallers` shrank the item list after `emitWatPass` recorded the program's range; it now moves the range
+      with the kept items (`wat/reach.zig`, a unit test beside it); the suite green on wasm
 - [ ] `decorator_invocation`'s B117 memory test fails under load (grown about 23 MB against a 16.8 MB bound) and passes when its shard runs
       alone: the bound or the measure made stable on a busy machine
 - [x] wasm: a package `Module.run()` loads (787, 792) is linked into the program's one module by name, so its `main` calls the program's `main`, its inits run at program start and a `main` answering `Error(e)` aborts with `1`; cells `compiler_load_module_run`, `module_run_twice`, `module_run_body_at_run` red on wasm
