@@ -21,6 +21,15 @@ over it.
 
 ---
 
+## Current state (measured 2026-10-20)
+
+The channel exists: a template attaches a tree describing its text with `compiler.custom(ast: CustomNode)` (576 (4)) —
+`CustomNode(kind, span, label, ref, children)`, stored by call location — and the language server's sub-language overlay
+(`modules/language-server/src/engine.zig`, `appendCustomNode`; tests in `src/tests/sublanguage.zig`) paints each span by its
+`label` as a semantic token, answers hover and go-to-definition through `ref`, and reports diagnostics inside the text. Each
+template's text already gets its own colours this way (the `bpp_*` cells' `markup` dependencies call `compiler.custom(root)`).
+Completion is the one thing the overlay does not answer.
+
 ## Problem
 
 A template's text is a language of its own (802, 577 (5)): `` html @`<div class="${c}">…</div>` ``, `` query @`from User where …` ``,
@@ -29,7 +38,7 @@ nothing. Only the template knows its syntax, so only the template can say what f
 
 ## The idea (the maintainer, 2026-10-20)
 
-When the editor asks for completion with the cursor `|` inside a template's text, the language server runs that template's body
+Completion rides the same channel as the colours. When the editor asks for completion with the cursor `|` inside a template's text, the language server runs that template's body
 at build on the text as written so far, telling it where the cursor is, and the template answers a list of suggestions through
 the build surface — "um `comptime.sugestoes([…])` algo assim":
 
@@ -56,9 +65,13 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
 
 ## What s0 answers
 
-1. **The surface**: the call that answers the suggestions (`compiler.suggestions(items)` or the template's return in a
-   completion run), how the cursor reaches the body (`compiler.cursor(t) -> ?i32`, an offset into `compiler.text(t)`), and what a
-   suggestion carries — a label, a kind, a detail, the text inserted, the range it replaces.
+1. **The surface**, on `compiler.custom`'s channel, one of:
+   (a) the suggestions live in the tree: a node says what fits at its span (a `suggest` list beside `label` and `ref`, or a node
+   kind for a slot), the template computes them in its ordinary build, and the language server captures the cursor `|`, finds the
+   node at it and filters by what is typed — no run per keystroke, cached with the build;
+   (b) a completion run: the language server runs the body with the cursor (`compiler.cursor(t) -> ?i32`) and the template answers
+   `compiler.suggestions(items)` — what the tree cannot foresee, a text that does not parse yet;
+   and what a suggestion carries — a label, a kind, a detail, the text inserted, the range it replaces.
 2. **The completion run**: the body runs with no output kept — no `addMember`, `addType`, `init` and no code answered (or its
    answer discarded) —, on a text that may not parse yet; a body that fails gives no suggestion and no diagnostic.
 3. **Cost**: a run per keystroke — the cache (767, 793 (4)), a deadline, and what the language server keeps between runs.
@@ -66,9 +79,10 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
    suggests the caller's names without walking the scope itself (686's word rule read against a text still being typed).
 5. **`code`**: whether std's `code` answers completions for its own `${…}` text (botopink names and members), as the first
    template that does.
-6. **The editor**: VS Code offers no quick suggestion inside a string by default (`editor.quickSuggestions.strings` off), and the
-   grammar paints `` @`…` `` as one region; what the extension sets — the template text scoped apart from a plain string, a
-   `configurationDefaults` for `[botopink]`, the trigger characters the server declares — so suggestions appear as the user types.
+6. **The editor**: the colours already come from the server's semantic tokens; what is left is that VS Code offers no quick
+   suggestion inside a string by default (`editor.quickSuggestions.strings` off) and the grammar paints `` @`…` `` as one string
+   region — what the extension sets (the template text scoped apart from a plain string, a `configurationDefaults` for
+   `[botopink]`, the trigger characters the server declares) so suggestions appear as the user types.
 7. **Beyond completion**: hover and diagnostics inside the text by the same route — named, not built here.
 
 ## Steps
@@ -85,9 +99,10 @@ Every name here (`compiler.cursor`, `compiler.suggestions`, `Suggestion`) is a s
 
 ### s2 — the language server
 
-- [ ] `textDocument/completion` inside a template's text: the call found, its body run in a completion run with the cursor's
-      offset, the suggestions mapped to LSP items; outside a template text, completion as today
-- [ ] tests in `modules/language-server/src/tests/` (a template's suggestions at a cursor, a failing body answering none)
+- [ ] the sub-language overlay (`appendCustomNode` and its neighbours) answers `textDocument/completion` inside a template's text:
+      the call's tree found by location, the suggestions at the cursor as s0 (1) fixes them, mapped to LSP items; outside a
+      template text, completion as today
+- [ ] tests beside `src/tests/sublanguage.zig` (a template's suggestions at a cursor, a failing body answering none)
 
 ### s3 — the VS Code extension (`repository/vscode-extension`)
 
