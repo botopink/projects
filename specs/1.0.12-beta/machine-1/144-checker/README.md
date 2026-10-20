@@ -2675,12 +2675,15 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] rakun-bpp's `NodeChildren = Renderable<Element> | Component<Element>` and `Element`'s children, as 791-b answers (165's
       commit in rakun; the compiler-known `Children` retired here if 791-b (a)) · waits on 791-b
 
-- [ ] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
-- [ ] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
-- [ ] returning a `Component<R>` from a body that answers `R` (`return mk(1)`) is accepted where the types differ; it is a type mismatch; a cell, red on the parent
+- [x] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
+- [x] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
+- [x] returning a `Component<R>` from a body that answers `R` (`return mk(1)`) is accepted where the types differ; it is a type mismatch; a cell, red on the parent
 - [ ] 791-d (narrowing a union child): a renderer cannot run a `Renderable | Component` child — `x is T` narrows only inside the branch it guards, `case` arms do not narrow, and `k is Component<unknown>` is accepted but answers false at run time on erlang; waits on 791-d
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
+- [ ] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-162 / B-116 P4; measured, fixed or their answers rewritten to 791
+- [ ] the iterator helpers (596) on `Iter` / `AsyncIter` are exempt from the behavior-member check until B-128 declares them in `primitives.bp`; the exemption goes then
+
 
 ### B-156 — a function with a `syntax` expression parameter is expanded at its call (decision 719)
 
