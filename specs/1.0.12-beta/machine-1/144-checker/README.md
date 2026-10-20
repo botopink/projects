@@ -2587,15 +2587,23 @@ function whose every parameter is `comptime` is called there and expanded at the
       `implement` in a block refused `compiler-output-outside-decorator`; a build body's `print` (it never worked before) goes to
       stdout as the build's output, kept by the level-B cache and replayed on a cached build, the CLI's own messages on stderr; the
       build lines asserted in `comptime/tests/comptime_blocks.zig` until B-160 records them
-- [ ] a refusal inside a block names it as `comptime`, not the decorator it is rewritten into (`__bp_comptime_<k>`)
-- [ ] a `return` or a `throw` inside a block refused, located (793 (1))
-- [ ] a block in a library package runs in the build of the package that uses it, in 660's level order (793 (2))
-- [ ] a `pub` function whose every parameter is `comptime`, called from another module's block, expanded at the call (793 (3))
-- [ ] a cached build replays the build output (793 (4)) — held by the level-B entry; a cell proves it
-- [ ] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)); today it compiles and the print
-      is dropped
-- [ ] cell `module_comptime_block_rules` (793): one case per point, on every target
-- [ ] the language server on an expanded private function (hover, go-to), which leaves the parsed program
+- [x] a refusal inside a block names it as `comptime`, not the decorator it is rewritten into (`__bp_comptime_<k>`)
+      — built as: "the `comptime` block raised"; cell `block_refusal_names_comptime` (788's directory)
+- [x] a `return` or a `throw` inside a block refused, located (793 (1)) — built as `comptime-block-exit` at the statement; cell
+      `block_return_refused`, the `throw` and a lambda's `return` in unit tests
+- [x] a block in a library package runs in the build of the package that uses it, in 660's level order (793 (2)) — already true;
+      cell `library_block_level_order`
+- [ ] a `pub` function whose every parameter is `comptime`, called from another module's block, expanded at the call (793 (3)) — today
+      refused `compiler-output-outside-decorator` in its own module; the expansion runs in the parser over the module's own functions; a
+      design step: a `fable` plan first (where the expansion runs across modules, what the function is in its own module, a call at run
+      time or from another package)
+- [x] a cached build replays the build output (793 (4)) — a unit test in `level_b.zig` (a dependency read back from the cache replays
+      its block's output), no cell: `cell check` records no build line (796)
+- [x] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)) — a unit test (796); a `void`
+      block leaves nothing in the program
+- [x] cell `module_comptime_block_rules` (793): the cases of (1) and (2); (4) and (5) unit tests (796), (3) with its box
+- [x] the language server on an expanded private function (hover, go-to), which leaves the parsed program — hover built, go-to
+      already worked; tests for both
 
 ### B-158 — `compiler.load(path)` answers a file's refusals at build (decisions 780, 782, 783)
 
