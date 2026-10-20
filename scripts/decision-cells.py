@@ -142,7 +142,10 @@ def ledger(root, repo):
         # a rule may hold an unescaped `|` inside code: # and Id from the left, Binds and Cell from the right
         body = ln.rstrip()
         body = body[:-1].rstrip() if body.endswith("|") else body
-        num, rid, rest = [c.strip() for c in body[1:].split("|", 2)]
+        num, rest = [c.strip() for c in body[1:].split("|", 1)]
+        # the Id column may quote a `|` too (791, 802): the rule opens bold, so split there when it does
+        cut = rest.find(" | **")
+        rid, rest = (rest[:cut].strip(), rest[cut + 3:]) if cut >= 0 else [c.strip() for c in rest.split("|", 1)]
         tail = [c.strip() for c in (rest + " ").rsplit(" | ", 2 if has_cell else 1)]
         rule, binds = tail[0], tail[1]
         slug = (tail[2].strip("`") or None) if has_cell else None

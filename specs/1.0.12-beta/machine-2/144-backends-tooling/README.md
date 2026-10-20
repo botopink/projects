@@ -3194,9 +3194,8 @@ being the one that stands.
       equal on every measure, the full `cell check` 1,676 / 2 on both trees (the two `fs_asset_*`); the drafts of the ten rows that
       gained a cell meanwhile (660, 668, 669, 676, 722, 723, 735, 757, 758, 759) removed, their docs linking the cases; a cell a later
       landing writes flat (machine 1, under 769) is homed by 166, never by its writer
-      — left: 55 flat cells whose home is a decision directory holding only its draft (the draft removed, its docs linking the
-      cells, as P3 did) or a decision directory not yet written (791's `component_resolved_by_use_or_tree`, 802's
-      `template_lookup_answers_node`)
+      — the 68 flat cells homed (2026-10-20): 13 into prefix modules and decision directories, 55 into decision directories that held
+      only a draft (the draft removed, the docs linking the cells) or were new (791, 802)
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
       — `conformance/docs.md`, `conformance/AGENTS.md` and the meta's `AGENTS.md` done; left: botopink-lang's root `AGENTS.md` still says
