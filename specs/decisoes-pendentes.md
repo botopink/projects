@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**29 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**31 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -33,7 +33,10 @@ As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam pr
 poucas linhas — o problema, um exemplo, as opções, a recomendação e por quê — e a sua entrada completa (Medido, todas as
 opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coordenador transforma a resposta marcada numa decisão, e a pergunta sai desta lista.
 
-Nenhuma pergunta segura o trabalho da máquina 2 hoje; as abertas seguram uma linha cada, ou nada construído (§ Máquina 2).
+| # | Pergunta | O que decide | Bloqueia | Recomendação |
+|---|---|---|---|---|
+| 1 | **787-a** | O que `Module.run()` responde e recusa: o `Error` de um `main` carregado, quando o corpo carregado roda, um `Module` construído à mão, os códigos, o nome do pacote, `run` duas vezes, `run` numa função chamada | A caixa 787 do B-158 (peças 2–7) | (a) para cada um |
+| 2 | **788-a** | O que um bloco `comptime` de topo deixa em aberto: `return` / `throw`, o bloco de uma biblioteca, a expansão `pub`, a saída do build em cache, um bloco dentro de um corpo de função | A última linha aberta do B-159 | (a) para cada um |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -496,6 +499,20 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
+
+#### 787-a · O que `Module.run()` deixa em aberto (decisão 787; 144 B-158)
+- **Proposto (plano fable, 2026-10-19; nada construído):** **(a) para cada um:** (1) um `main -> Result<void, E>` carregado que responde `Error(e)` faz `run` responder `Error(Failure)`, como faz uma queda; (2) o corpo de módulo do pacote carregado e os seus executores de `compiler.init` rodam em `run()`, logo antes do seu `main`, não no início do programa; (3) um `Module(...)` construído à mão, ou um cujo `path` não é conhecido no build, é recusado `run-module-not-loaded`; (4) as recusas são `run-outside-init`, `run-module-not-loaded`, `run-module-refused` e `load-no-main`, cada uma localizada na chamada `run()`; (5) o nome do pacote carregado é derivado do seu caminho (`bp_load__<path>`, um pacote por arquivo), e é visível em átomos erlang e caminhos commonJS; (6) `run()` chamado duas vezes num `Module`, ou em dois corpos de init, roda `main` duas vezes num pacote; (7) `run` é escrito diretamente no corpo de init: uma função que o corpo chama e que chama `run` é recusada `run-outside-init`.
+- **Medido.** O plano da caixa 787 do B-158: a identidade de um `Module` é o seu `path` constante; o carregador mantém um registro por build de caminho para pacote carregado; o arquivo carregado é compilado como um pacote próprio, a sua raiz recebe uma entrada pública que chama `main`; `mod.run()` é reescrito em `failure.attempt` sobre essa entrada, então uma queda responde `Error(Failure)`. A decisão 787 diz `Error` quando o `main` carregado cai. Ela não diz o que `run` responde quando `main` retorna `Error(e)`, quando o corpo do pacote carregado roda, se um `Module` não respondido por `load` pode rodar, os códigos das recusas, o nome do pacote, se `run` pode ser chamado duas vezes, ou se pode ser chamado de uma função que o corpo de init chama.
+- **Opções.** Cada ponto (a) como proposto ou (b): (1) `Ok`: só uma queda é um `Error`; (2) no início do programa, com os de toda dependência (660); (3) admitido quando existe no build um load daquele caminho; (4) outros códigos; (5) um nome numerado por load; (6) o segundo `run()` recusado; (7) permitido também dentro de uma função que o corpo de init chama.
+- **Recomendação.** (a) para cada um: a leitura mais restritiva, onde a 787 se cala.
+- **Bloqueia.** A caixa 787 do B-158, as peças 2–7 do seu plano.
+
+#### 788-a · O que um bloco `comptime` de topo deixa em aberto (decisão 788; 144 B-159)
+- **Proposto (opus, 2026-10-19; construído como anotado):** (1) um `return` ou um `throw` dentro de um bloco recusado (não medido); (2) um bloco num pacote de biblioteca permitido: roda no build do pacote que usa a biblioteca, na ordem de níveis da 660 (não medido); (3) uma função cujos parâmetros são todos `comptime` expandida também quando é `pub` e chamada do bloco de outro módulo (construído: só uma função privada chamada em nível de statement de um bloco do seu próprio módulo é expandida; em outro lugar o seu `compiler.init` é recusado); (4) um build em cache repete a saída de build (construído assim); (5) um `comptime { print(…) }` dentro de um corpo de função escreve a saída de build também (construído: compila e o print se perde).
+- **Medido.** O B-159 reescreve o bloco num decorator e o roda na máquina de corpos de build; o `print` de um corpo de build vai para o stdout, guardado pelo cache de nível B e repetido num build em cache. A decisão 788 não alcança um `return` ou `throw` dentro de um bloco, um bloco numa biblioteca, uma expansão `pub` ou entre módulos, o cache, nem um bloco `comptime` dentro de um corpo de função.
+- **Opções.** Cada ponto (a) como proposto ou (b): (1) permitido, encerrando o bloco; (2) recusado numa biblioteca; (3) só a forma privada, do mesmo módulo; (4) um build em cache não imprime nada; (5) recusado, localizado.
+- **Recomendação.** (a) para cada um: uma regra para todo bloco, e o `cell check` (790) precisa da saída de build em todo build.
+- **Bloqueia.** A linha do B-159 sobre um bloco `comptime` dentro de um corpo de função; nada mais construído.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

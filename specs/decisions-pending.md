@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**29 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**31 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -33,7 +33,10 @@ The questions that hold machine 2's work back today, most blocking first. Each i
 problem, an example, the options, the recommendation and why — and its full entry (Measured, every option) stays in
 § Machine 2. Tick one option per question (`[x]`); the coordinator turns a ticked answer into a decision, and the question leaves this list.
 
-No question holds machine 2's work today; the open ones hold one row each, or nothing built (§ Machine 2).
+| # | Question | What it decides | Blocks | Recommendation |
+|---|---|---|---|---|
+| 1 | **787-a** | What `Module.run()` answers and refuses: a loaded `main`'s `Error`, when the loaded body runs, a hand-built `Module`, the codes, the package's name, `run` twice, `run` in a called function | B-158's 787 box (pieces 2–7) | (a) for each |
+| 2 | **788-a** | What a top-level `comptime` block leaves open: `return` / `throw`, a library's block, `pub` expansion, the cached build's output, a block inside a function body | B-159's last open row | (a) for each |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -496,6 +499,20 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
+
+#### 787-a · What `Module.run()` leaves open (decision 787; 144 B-158)
+- **Proposed (fable plan, 2026-10-19; nothing built):** **(a) for each:** (1) a loaded `main -> Result<void, E>` answering `Error(e)` makes `run` answer `Error(Failure)`, as a crash does; (2) the loaded package's module body and its `compiler.init` executors run at `run()`, just before its `main`, not at program start; (3) a hand-built `Module(...)`, or one whose `path` is not known at build, is refused `run-module-not-loaded`; (4) the refusals are `run-outside-init`, `run-module-not-loaded`, `run-module-refused` and `load-no-main`, each located at the `run()` call; (5) the loaded package's name is derived from its path (`bp_load__<path>`, one package per file), and it is visible in erlang atoms and commonJS paths; (6) `run()` called twice on one `Module`, or in two init bodies, runs `main` twice in one package; (7) `run` is written directly in the init body: a function the body calls that calls `run` is refused `run-outside-init`.
+- **Measured.** The plan of B-158's 787 box: a `Module`'s identity is its constant `path`; the loader keeps a per-build registry from path to loaded package; the loaded file is compiled as a package of its own, its root given a public entry that calls `main`; `mod.run()` is rewritten into `failure.attempt` over that entry, so a crash answers `Error(Failure)`. Decision 787 says `Error` when the loaded `main` crashes. It does not say what `run` answers when `main` returns `Error(e)`, when the loaded package's body runs, whether a `Module` not answered by `load` may run, the refusal codes, the package's name, whether `run` may be called twice, or whether it may be called from a function the init body calls.
+- **Options.** Each point (a) as proposed or (b): (1) `Ok`: only a crash is an `Error`; (2) at program start, with every dependency's (660); (3) admitted when a load of that path exists in the build; (4) other codes; (5) a name numbered per load; (6) the second `run()` refused; (7) also allowed inside a function the init body calls.
+- **Recommendation.** (a) for each: the most restrictive reading, where 787 is silent.
+- **Blocks.** B-158's 787 box, pieces 2–7 of its plan.
+
+#### 788-a · What a top-level `comptime` block leaves open (decision 788; 144 B-159)
+- **Proposed (opus, 2026-10-19; built as noted):** (1) a `return` or a `throw` inside a block refused (not measured); (2) a block in a library package allowed: it runs in the build of the package that uses the library, in 660's level order (not measured); (3) a function whose every parameter is `comptime` also expanded when it is `pub` and called from another module's block (built: only a private function called at statement level from a block of its own module is expanded; elsewhere its `compiler.init` is refused); (4) a cached build replays the build output (built so); (5) a `comptime { print(…) }` inside a function body writes the build output too (built: it compiles and the print is dropped).
+- **Measured.** B-159 rewrites the block into a decorator and runs it on the build-body machinery; a build body's `print` goes to stdout, kept by the level-B cache and replayed on a cached build. Decision 788 does not reach a `return` or `throw` inside a block, a block in a library, a `pub` or cross-module expansion, the cache, or a `comptime` block inside a function body.
+- **Options.** Each point (a) as proposed or (b): (1) allowed, ending the block; (2) refused in a library; (3) only the private, same-module form; (4) a cached build prints nothing; (5) refused, located.
+- **Recommendation.** (a) for each: one rule for every block, and `cell check` (790) needs the build output on every build.
+- **Blocks.** B-159's row on a `comptime` block inside a function body; nothing else built.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

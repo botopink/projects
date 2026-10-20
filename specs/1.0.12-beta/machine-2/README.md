@@ -90,4 +90,4 @@ Every report to the maintainer and every reply is a file of `repository/conversa
 
 ## Blocked on the maintainer — not opened
 
-In the order the maintainer answers them (the queue of 2026-10-17): 529-a / b, 537-b, 539-a, 540-b, 532-a, 533-a, 543-a, B-116-k, 164-s3-g, 164-s3-m, 518-a. A thread that reaches one of these stops at it and reports.
+In the order the maintainer answers them: 787-a (B-158's 787 box, pieces 2–7 of its plan) and 788-a (B-159's last open row), then the queue of 2026-10-17: 529-a / b, 537-b, 539-a, 540-b, 532-a, 533-a, 543-a, B-116-k, 164-s3-g, 164-s3-m, 518-a. A thread that reaches one of these stops at it and reports.

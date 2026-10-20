@@ -2634,7 +2634,8 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       loaded package whose `run` a `compiler.init` body calls is compiled into the program as a package of its own (its `mod` tree,
       its own dependencies) and its `main` called at that point; one no `run` reaches stays out; `run` outside an init body and a
       loaded file with no `main` refused, located; cell `compiler_load_module_run` (787: the init body's prints around the loaded
-      `main`'s, and a crashing `main` answered `Error`, on every target) · after the 786 box; a design step — a `fable` plan first
+      `main`'s, and a crashing `main` answered `Error`, on every target) · after the 786 box; a design step — the `fable` plan's open points are question
+      787-a, its pieces 2–7 wait on the answer
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)
