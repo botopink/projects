@@ -1603,7 +1603,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [x] proposed: a template body's raise naming its file (only `decorator_invocation.zig` pins it)
       — a defect: another module's template named no file; fixed (`template_raise_names_body_file`)
 - [ ] a raise in the module's own template located at the call that raised, as a decorator's (451 (3)) · question B-23-b
-- [ ] decision 603 for a std type: a local type beside an aliased import of a same-named std type (`import {Dict as D} from "std"` beside `type Dict(…)`) is two types — cell `own_type_beside_std_type_import` flipped to accept. Today it stays `import-name-collision`: a std type keeps its declared name in the checker, std's signatures resolve `Dict` by that name, and the backends treat std's `Dict` as a builtin shape, so keying it by its alias needs a rename of std's declarations and signatures (what `registerRenamedImportedType` does for a non-std import) · model: opus
+- [x] decision 603 for a std type: a local type beside an aliased import of a same-named std type (`import {Dict as D} from "std"` beside `type Dict(…)`) is two types — cell `own_type_beside_std_type_import` flipped to accept. Today it stays `import-name-collision`: a std type keeps its declared name in the checker, std's signatures resolve `Dict` by that name, and the backends treat std's `Dict` as a builtin shape, so keying it by its alias needs a rename of std's declarations and signatures (what `registerRenamedImportedType` does for a non-std import) · model: opus · landed (`own_type_beside_std_type_import` answers the two types; an unaliased std leaf beside a local type stays `import-name-collision`)
 
 ### B-24 — 319, 320, 332: numbers and strings exact everywhere
 
