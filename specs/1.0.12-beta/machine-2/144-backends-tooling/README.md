@@ -3062,8 +3062,10 @@ record in `cell_snap.zig` and `cell check`'s capture of the build phase are not 
 lines itself, and 789 (6) already counts them as new lines at the move; the proof of the switch compares the records the CLI
 records today. B-159's unit test holds the build prints until B-161 lands.
 
-- [ ] `botopink build` / `run` write the program's build prints to stdout and the CLI's own messages (`Compiling …`, a refusal's
+- [x] `botopink build` / `run` write the program's build prints to stdout and the CLI's own messages (`Compiling …`, a refusal's
       rendering) to stderr; the CLI tests that read today's mixed output follow
+      — built as: B-159 had already split the streams in `build.zig` (`run` goes through `build`); a `cli_contract.sh` row proves it — a
+      package whose top-level `comptime` block prints builds with stdout holding only that print, stderr the `Compiling` line
 
 ### B-161 — `cell check` as a botopink program (decision 790)
 
