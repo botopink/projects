@@ -441,6 +441,32 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma grafia por forma, e os arquivos que precisavam dela se foram.
 - **Bloqueia.** Nada do pouso do B-21; a recusa do parser e uma célula.
 
+#### 800-a · O que "idêntico" significa em `implement-signature-differs` (decisões 800, 8; 144 B-148)
+- **Proposto (opus, 2026-10-20; construído como (1)(a), (2)(a), (3)(a)):** (1)(a), (2)(a), (3)(a).
+- **Contexto.** A 800 recusa um membro de um implementador cujo número de parâmetros, tipos de parâmetro ou tipo de retorno difere do contrato, com `Self` lido como o tipo que implementa, rótulos, nomes e padrões livres, sem variância. Três leituras de "idêntico" não são fixadas por ela.
+- **Medido.** A checagem do B-148 passa todo tipo da std, as cláusulas `implement` das larguras primitivas e os 134 pacotes de células com uma cláusula `implement`; nenhum local foi encontrado para corrigir.
+- **Opções.**
+  (1) Um contrato genérico implementado com um argumento por um tipo não genérico, um membro introduzindo um parâmetro de tipo dentro de `Self<…>` (decisão 8 A1):
+  (a) ★ O parâmetro recebe o argumento da cláusula, como a A1 lê hoje: sob `implement Mappable<i32>`, `map<U>(…) -> Self<U>` é atendido por `map(…) -> Box` com `U = i32`. Essa substituição não é variância.
+  (b) Recusado: o membro é escrito com o parâmetro de tipo do contrato.
+  ```bp
+  behavior Mappable<T> { fn map<U>(self: Self, f: fn(x: T) -> U) -> Self<U>; }
+  Box implement Mappable<i32> { fn map(self: Self, f: fn(x: i32) -> i32) -> Box { … } }
+  ```
+  (2) Duas grafias de um tipo:
+  (a) ★ Os tipos são comparados, não o texto: `Array<T>` e `T[]`, um alias e o que ele nomeia, e um wrapper escrito com ou sem `@` contam como um tipo; um nome de import qualificado ou com alias também é comparado pelo que nomeia.
+  (b) O texto é comparado: qualquer outra grafia é recusada.
+  ```bp
+  type Ints = i32[];
+  behavior Sum { fn all(self: Self) -> Ints; }
+  Bag implement Sum { fn all(self: Self) -> Array<i32> { … } }   // (a) accepted, (b) refused
+  ```
+  (3) Um marcador `comptime` num parâmetro:
+  (a) ★ Comparado: um `comptime n: i32` do contrato não é atendido por `n: i32`, nem o inverso.
+  (b) Não comparado: o marcador não faz parte do tipo.
+- **Recomendação.** (1)(a): a A1 se mantém e não é variância. (2)(a): a regra é sobre tipos, e a linguagem tem um tipo por trás de cada grafia. (3)(a): a leitura mais estrita, já que um parâmetro `comptime` muda como o membro é chamado. O B-148 hoje compara como (3)(b), então (3)(a) é um acompanhamento.
+- **Bloqueia.** Nada do pouso do B-148; (3) acrescenta o marcador à comparação e uma célula.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

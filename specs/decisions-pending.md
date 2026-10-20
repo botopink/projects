@@ -441,6 +441,32 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one spelling per form, and the files that needed it are gone.
 - **Blocks.** Nothing of B-21's landing; the parser's refusal and a cell.
 
+#### 800-a · What "identical" means in `implement-signature-differs` (decisions 800, 8; 144 B-148)
+- **Proposed (opus, 2026-10-20; built as (1)(a), (2)(a), (3)(a)):** (1)(a), (2)(a), (3)(a).
+- **Context.** 800 refuses an implementor's member whose parameter count, parameter types or return type differ from the contract's, `Self` read as the implementing type, labels, names and defaults free, no variance. Three readings of "identical" are not fixed by it.
+- **Measured.** B-148's check passes every std type, the primitive widths' `implement` clauses and the 134 cell packages with an `implement` clause; no site was found to fix.
+- **Options.**
+  (1) A generic contract implemented with an argument by a non-generic type, a member introducing a type parameter inside `Self<…>` (decision 8 A1):
+  (a) ★ The parameter takes the clause's argument, as A1 reads today: under `implement Mappable<i32>`, `map<U>(…) -> Self<U>` is met by `map(…) -> Box` with `U = i32`. This substitution is not variance.
+  (b) Refused: the member is written with the contract's type parameter.
+  ```bp
+  behavior Mappable<T> { fn map<U>(self: Self, f: fn(x: T) -> U) -> Self<U>; }
+  Box implement Mappable<i32> { fn map(self: Self, f: fn(x: i32) -> i32) -> Box { … } }
+  ```
+  (2) Two spellings of one type:
+  (a) ★ The types are compared, not their text: `Array<T>` and `T[]`, an alias and what it names, and a wrapper written with or without `@` count as one type; a qualified or aliased import name is compared by what it names too.
+  (b) The text is compared: any other spelling is refused.
+  ```bp
+  type Ints = i32[];
+  behavior Sum { fn all(self: Self) -> Ints; }
+  Bag implement Sum { fn all(self: Self) -> Array<i32> { … } }   // (a) accepted, (b) refused
+  ```
+  (3) A `comptime` marker on a parameter:
+  (a) ★ Compared: a contract's `comptime n: i32` is not met by `n: i32`, nor the reverse.
+  (b) Not compared: the marker is not part of the type.
+- **Recommendation.** (1)(a): A1 stands and is not variance. (2)(a): the rule is about types, and the language has one type behind each spelling. (3)(a): the strictest reading, since a `comptime` parameter changes how the member is called. B-148 compares it today as (3)(b), so (3)(a) is a follow-up.
+- **Blocks.** Nothing of B-148's landing; (3) adds the marker to the comparison and one cell.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
