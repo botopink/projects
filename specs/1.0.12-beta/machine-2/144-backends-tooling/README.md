@@ -3134,6 +3134,8 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       `codegen/target_check.zig` runs at the top of `emit` and in `botopink check`, the same codes, texts and places, a refused
       analysis carrying a `TargetTrace` so the target refusal still comes before a later type error; level B's analysis entry is
       target-free, but the entry still holds each target's emitted code, so it stays per target
+      — one fold channel: a folded value reaches the backends only as the literal the analysis splices (`srcRewrites`);
+      `comptime_vals` gone from the transform, the four emitters and the analysis result
 - [ ] a `compiler.load` file's std call with no binding for the target is no longer refused (780 (1): "for the build's target"),
       the nested compile running with no target since 798 (4) — waits on question 798-b
 - [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
