@@ -328,6 +328,11 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 - [ ] 164 cli — a new library repository `botopink/cli` (decision 506): typed commands, style and prompts over std's new CLI primitives (144 B-27); the repository and its front open after the 144 front · after 144 B-27
 
+
+### 167 template-completions (later)
+
+- [ ] s0 – s4 — a template's own syntax answers the editor's completion at a cursor inside its text (802); opened in no queue · machine 2
+
 ### 144 botopink-lang
 - [ ] 144 B-140 — decision 599 (1) landed: the run-time field key removed, 599's own cell module with it; decision 631's `Field(Owner, "name")` run-time form (`meta_field_tuple_and_field_key`, `meta_field_build_member_at_run_time`, `meta_field_compared_by_owner`); a record constructor whose field is a run-time `type<T>` takes a type written positionally; left: the derived types written over `compiler.fields` + `compiler.buildType`, 669–671, `compiler.Field<T>` · B-139
 - [ ] 144 row — decision 596: the eleven iterator helpers declared on `Iter<T, R>` and given by every target (`flatMap` missing on erlang and beam today; wasm the set in GC); cells `iter_helpers_*`, `iter_flat_map_generator` · with B-116 (ii); machine 2
