@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **797**.
+número livre, que é **801**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -33,9 +33,7 @@ As perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam pr
 poucas linhas — o problema, um exemplo, as opções, a recomendação e por quê — e a sua entrada completa (Medido, todas as
 opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coordenador transforma a resposta marcada numa decisão, e a pergunta sai desta lista.
 
-| # | Pergunta | O que decide | Bloqueia | Recomendação |
-|---|---|---|---|---|
-| 1 | **790-a** | O que o programa em que o `cell check` se torna deixa em aberto: um ou dois compiles, o contrato do `build --json`, o cache do rascunho, o `cwd` / `env` de um spawn, uma fase de build em desacordo, o script de prova | B-161, depois a Peça 5 do B-157 | (a) para cada um |
+Nenhuma hoje.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 

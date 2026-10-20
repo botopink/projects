@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **797**.
+number, which is **801**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -33,9 +33,7 @@ The questions that hold machine 2's work back today, most blocking first. Each i
 problem, an example, the options, the recommendation and why — and its full entry (Measured, every option) stays in
 § Machine 2. Tick one option per question (`[x]`); the coordinator turns a ticked answer into a decision, and the question leaves this list.
 
-| # | Question | What it decides | Blocks | Recommendation |
-|---|---|---|---|---|
-| 1 | **790-a** | What the program `cell check` becomes leaves open: one or two compiles, the `build --json` contract, the scratch's cache, a spawn's `cwd` / `env`, a disagreeing build phase, the proof script | B-161, then B-157 Piece 5 | (a) for each |
+None today.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
