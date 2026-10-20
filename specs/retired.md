@@ -114,6 +114,9 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `compiler.holes(t)` (the caller's `${…}` as `syntax` values) | the template parses its text and resolves each name with `compiler.lookup(e, name) -> ?Node` | 802 (reverses 637's caller-hole half), 577 (5) | 2026-10-20 |
 | The `Syntax(e)` node; `compiler.isSyntax(v)` | `compiler.lookup` answering the code a `syntax` value holds, spliced as written; `syntax` a modifier, never a type | 802 (reverses 638) | 2026-10-20 |
 | `compiler.parts`, `Part` | `compiler.text(q)` (raw); the sub-language parses its own holes | 577 (5), 578 (5) | |
+| `Renderable` / `Renderable<T>` (std's marker; 791's node parameter) | nothing — `Component<R>` alone; what a tree holds is the render library's types (rakun-bpp's `NodeChild`) | 804 (2), (3) | 2026-10-20 |
+| A type component's `fn render(self: Self) -> Component<R>` | `fn compose(self: Self) -> Component<R>` | 804 (1) | 2026-10-20 |
+| rakun-bpp's compiler-known `Children` and its coercions | `NodeChildren = NodeChild[]`, `NodeChild = Element \| Component<Element>` | 804 (4) | 2026-10-20 |
 | Template calls `name "…"`, `name """…"""`, `name("lit")`, `#[name("lit")]` | `` name @`…` ``, `` #[name @`…`] `` | 577 (1), (3), (6) | The codemod resolves the escapes to raw bytes |
 | `syntax-captures-build` | a `compiler.*` call inside a tree is evaluated at build and spliced | 575 (4), 614, 642 | |
 | `decorator-member-captures` | the same splice rule inside a member | 642 (replaces 413) | |

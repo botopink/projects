@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**25 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **804**.
+número livre, que é **805**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -349,56 +349,10 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
 - **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
 
-#### 791-a · O `Renderable<T>` da std é um marcador, ou carrega um `render()`? (decisões 791 (5), 593; 144 B-162)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** A 791 dá ao `Renderable` o nó da árvore como parâmetro e começa o render de um componente no seu `render()` (593). Hoje `Renderable` é um marcador (`pub behavior Renderable {}`, `primitives.bp`); `Element` é uma folha da árvore.
-- **Opções.**
-  (a) ★ Um marcador: `pub behavior Renderable<T> {}`; o `render()` que começa um render é o do componente (593), um nó não escreve nada.
-  ```bp
-  pub behavior Renderable<T> {}
-  type Element(…) implement Renderable<Element>
-  type Menu(items: string[]) implement Component<Element> {
-      fn render(self: Self) -> Component<Element> { … }   // the render starts here
-  }
-  ```
-  (b) Um contrato com o membro: todo tipo `Renderable` escreve o seu `render`; a folha `Element` precisa de um nativo da biblioteca de render.
-  ```bp
-  pub behavior Renderable<T> { fn render(self: Self) -> Component<T>; }
-  ```
-- **Recomendação.** (a): um nó é dado que o renderer lê; o `render()` que roda é o de um componente, como a 593 já diz.
-- **Bloqueia.** A caixa `Renderable<T>` do B-162.
-
-#### 791-b · Os filhos do rakun-bpp: um `NodeChildren` por filho numa lista, ou as coerções do `Children` de hoje? (decisão 791 (2); 144 B-162, 165)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** A 791 fixa `NodeChildren = Renderable<Element> | Component<Element>`. Hoje o `children: Children` do `Element` é um tipo que o compilador conhece (`rakun-bpp/src/node.bp`), coagindo uma lista, um filho só e uma string.
-- **Opções.**
-  (a) ★ Um `NodeChildren` é um filho, `children: NodeChildren[]` a lista; o `Children` conhecido pelo compilador e suas coerções se aposentam.
-  ```bp
-  pub type NodeChildren = Renderable<Element> | Component<Element>;
-  pub type Element(tag: string, value: string, children: NodeChildren[], attrs: …) implement Renderable<Element>
-  ```
-  (b) `NodeChildren[]` mantendo as coerções: um filho só ou uma string também aceitos onde a lista é esperada.
-  (c) Genérico na std: `NodeChildren<T> = Renderable<T> | Component<T>`, o rakun-bpp escrevendo `NodeChildren<Element>`.
-- **Recomendação.** (a): uma grafia, nenhuma coerção que o compilador precise conhecer (67).
-- **Bloqueia.** A caixa `NodeChildren` do B-162 e os sites do rakun-bpp da 165.
-
-#### 791-c · O `T` dos tipos `Renderable` que não são `Element` (decisão 791 (5); 144 B-162, 150, 165)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** Além do `Element`, o rakun implementa `Renderable` em `Styled` e `StyledProperty` (rakun-style, `styled.bp`), renderizados por `Sheet.render(self: Self) -> Component<string>` (661), e no tipo de `rakun/src/request_context.bp:107`.
-- **Opções.**
-  (a) ★ A árvore do dono: cada um declara a árvore em que entra — `Styled implement Renderable<Sheet>` —, então um `Styled` não pode ser filho de um `div`; o codemod mede cada site e um site sem árvore clara vira uma pergunta.
-  ```bp
-  pub type Styled(className: string, rules: string) implement Styleable, Renderable<Sheet> { … }
-  ```
-  (b) `Renderable<Element>` para todos: um `Styled` pode ser filho de um `Element`.
-  (c) `Renderable<string>` para o que renderiza texto (CSS, HTML).
-- **Recomendação.** (a): o parâmetro existe para manter as árvores separadas; (b) abre mão dele.
-- **Bloqueia.** O codemod dos sites `implement Renderable` do B-162.
-
 #### 791-d · Qual forma de estreitamento é a da linguagem para um filho de união? (decisões 791, 31; 144 B-162)
 - **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** A 791 fixa `NodeChildren = Renderable<Element> | Component<Element>`, então um renderizador precisa distinguir os dois membros de um filho de união e executar cada um a seu modo. `specs/decisions-taken.md` diz apenas que `unknown` é "narrowed with `is` before use" (31) e que um bean é "narrowed with `is fn() -> T`" (256); nenhuma regra diz como uma união estreita, em que lado, nem se um braço de `case` estreita.
-- **Medido.** `x is T` estreita apenas dentro do ramo que ele guarda: não há lado else, o resto da união não é conhecido no `else`. Os braços de `case` não estreitam. `k is Component<unknown>` é aceito, mas responde falso em tempo de execução no erlang, então um renderizador ainda não consegue executar um filho `Renderable | Component`.
+- **Contexto.** A 804 fixa `NodeChild = Element | Component<Element>`, então um renderizador precisa distinguir os dois membros de um filho de união e executar cada um a seu modo. `specs/decisions-taken.md` diz apenas que `unknown` é "narrowed with `is` before use" (31) e que um bean é "narrowed with `is fn() -> T`" (256); nenhuma regra diz como uma união estreita, em que lado, nem se um braço de `case` estreita.
+- **Medido.** `x is T` estreita apenas dentro do ramo que ele guarda: não há lado else, o resto da união não é conhecido no `else`. Os braços de `case` não estreitam. `k is Component<unknown>` é aceito, mas responde falso em tempo de execução no erlang, então um renderizador ainda não consegue executar um filho `Element | Component`.
 - **Opções.**
   (a) ★ Braços de `case` com um padrão de tipo que estreita, exaustivos sobre a união.
   ```bp
@@ -410,7 +364,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
   (c) As duas formas.
 - **Recomendação.** (a): uma forma exaustiva, então um membro faltando é recusado no `case` e não descoberto em tempo de execução.
-- **Bloqueia.** As caixas `Renderable<T>` e `NodeChildren` do B-162 (um renderizador sobre o filho de união) e a linha de defeito `k is Component<unknown>`.
+- **Bloqueia.** A caixa `NodeChildren` do B-162 (um renderizador sobre o filho de união) e a linha de defeito `k is Component<unknown>`.
 
 #### B-21-d · Uma expressão `fn` sem parâmetro tipado escreve seu `->`? (decisões 622, 408; 144 B-21)
 - **Proposto (coordenador, 2026-10-20; o B-21 construiu (b)):** (a).

@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **804**.
+number, which is **805**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -349,56 +349,10 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
 - **Blocks.** The 704 / 547 draft's promotion; nothing else.
 
-#### 791-a · Is std's `Renderable<T>` a marker, or does it carry a `render()`? (decisions 791 (5), 593; 144 B-162)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** 791 gives `Renderable` the tree's node as a parameter and starts a component's render at its `render()` (593). Today `Renderable` is a marker (`pub behavior Renderable {}`, `primitives.bp`); `Element` is a leaf of the tree.
-- **Options.**
-  (a) ★ A marker: `pub behavior Renderable<T> {}`; the `render()` that starts a render is the component's (593), a node writes nothing.
-  ```bp
-  pub behavior Renderable<T> {}
-  type Element(…) implement Renderable<Element>
-  type Menu(items: string[]) implement Component<Element> {
-      fn render(self: Self) -> Component<Element> { … }   // the render starts here
-  }
-  ```
-  (b) A contract with the member: every `Renderable` type writes its `render`; the leaf `Element` needs one native to the render library.
-  ```bp
-  pub behavior Renderable<T> { fn render(self: Self) -> Component<T>; }
-  ```
-- **Recommendation.** (a): a node is data the renderer reads; the `render()` that runs is a component's, as 593 already states.
-- **Blocks.** B-162's `Renderable<T>` box.
-
-#### 791-b · rakun-bpp's children: one `NodeChildren` per child in a list, or the coercions of today's `Children`? (decision 791 (2); 144 B-162, 165)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** 791 fixes `NodeChildren = Renderable<Element> | Component<Element>`. Today `Element`'s `children: Children` is a type the compiler knows (`rakun-bpp/src/node.bp`), coercing a list, a single child and a string.
-- **Options.**
-  (a) ★ A `NodeChildren` is one child, `children: NodeChildren[]` the list; the compiler-known `Children` and its coercions retire.
-  ```bp
-  pub type NodeChildren = Renderable<Element> | Component<Element>;
-  pub type Element(tag: string, value: string, children: NodeChildren[], attrs: …) implement Renderable<Element>
-  ```
-  (b) `NodeChildren[]` keeping the coercions: a single child or a string also accepted where the list is expected.
-  (c) Generic in std: `NodeChildren<T> = Renderable<T> | Component<T>`, rakun-bpp writing `NodeChildren<Element>`.
-- **Recommendation.** (a): one spelling, no coercion the compiler must know (67).
-- **Blocks.** B-162's `NodeChildren` box and 165's rakun-bpp sites.
-
-#### 791-c · The `T` of the `Renderable` types that are not `Element` (decision 791 (5); 144 B-162, 150, 165)
-- **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** Besides `Element`, rakun implements `Renderable` in `Styled` and `StyledProperty` (rakun-style, `styled.bp`), rendered by `Sheet.render(self: Self) -> Component<string>` (661), and in the type of `rakun/src/request_context.bp:107`.
-- **Options.**
-  (a) ★ The owner's tree: each declares the tree it enters — `Styled implement Renderable<Sheet>` —, so a `Styled` cannot be a `div`'s child; the codemod measures each site and a site with no clear tree becomes a question.
-  ```bp
-  pub type Styled(className: string, rules: string) implement Styleable, Renderable<Sheet> { … }
-  ```
-  (b) `Renderable<Element>` for all: a `Styled` may be an `Element`'s child.
-  (c) `Renderable<string>` for what renders text (CSS, HTML).
-- **Recommendation.** (a): the parameter exists to keep trees apart; (b) gives it away.
-- **Blocks.** B-162's codemod of the `implement Renderable` sites.
-
 #### 791-d · Which narrowing form is the language's for a union child? (decisions 791, 31; 144 B-162)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
-- **Context.** 791 fixes `NodeChildren = Renderable<Element> | Component<Element>`, so a renderer must tell the two members of a union child apart and run each its own way. `specs/decisions-taken.md` states only that `unknown` is "narrowed with `is` before use" (31) and a bean "narrowed with `is fn() -> T`" (256); no rule says how a union narrows, on which side, or whether a `case` arm does.
-- **Measured.** `x is T` narrows only inside the branch it guards: there is no else side, the rest of the union is not known in `else`. `case` arms do not narrow. `k is Component<unknown>` is accepted but answers false at run time on erlang, so a renderer cannot run a `Renderable | Component` child yet.
+- **Context.** 804 fixes `NodeChild = Element | Component<Element>`, so a renderer must tell the two members of a union child apart and run each its own way. `specs/decisions-taken.md` states only that `unknown` is "narrowed with `is` before use" (31) and a bean "narrowed with `is fn() -> T`" (256); no rule says how a union narrows, on which side, or whether a `case` arm does.
+- **Measured.** `x is T` narrows only inside the branch it guards: there is no else side, the rest of the union is not known in `else`. `case` arms do not narrow. `k is Component<unknown>` is accepted but answers false at run time on erlang, so a renderer cannot run an `Element | Component` child yet.
 - **Options.**
   (a) ★ `case` arms with a type pattern that narrow, exhaustive over the union.
   ```bp
@@ -410,7 +364,7 @@ group), answered before every other part of this page; in the order of the steps
   ```
   (c) Both forms.
 - **Recommendation.** (a): one exhaustive form, so a missing member is refused at the `case` and not found at run time.
-- **Blocks.** B-162's `Renderable<T>` and `NodeChildren` boxes (a renderer over the union child) and the `k is Component<unknown>` defect row.
+- **Blocks.** B-162's `NodeChildren` box (a renderer over the union child) and the `k is Component<unknown>` defect row.
 
 #### B-21-d · Does a `fn` expression with no typed parameter write its `->`? (decisions 622, 408; 144 B-21)
 - **Proposed (coordinator, 2026-10-20; B-21 built (b)):** (a).

@@ -208,7 +208,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `use-not-top-level` (357), so a redesign is needed; jhonstart's `val tree = await view(props)` matches the `layoutOf` case;
       root-run rewrites (`c.run(RenderScope.root())`) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
       `view_test`, `link_test`, `router_test`, `server_test` and `styled_sheet_test`; `div([text("title"), Counter()])`-style children
-      crash in rakun-bpp's renderer (`{error,badarg}`), which is 791-b's
+      crash in rakun-bpp's renderer (`{error,badarg}`), which is 804 (4)'s
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 

@@ -2996,7 +2996,9 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
 - [ ] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
 - [ ] wasm: `.length.toString()` on a `Kid[]` does not resolve; found by B-162; a cell red on the parent
-- [ ] wasm: a package `Module.run()` loads (787, 792) is linked into the program's one module by name, so its `main` calls the program's `main`, its inits run at program start and a `main` answering `Error(e)` aborts with `1`; cells `compiler_load_module_run`, `module_run_twice`, `module_run_body_at_run` red on wasm
+- [x] wasm: a package `Module.run()` loads (787, 792) is linked into the program's one module by name, so its `main` calls the program's `main`, its inits run at program start and a `main` answering `Error(e)` aborts with `1`; cells `compiler_load_module_run`, `module_run_twice`, `module_run_body_at_run` red on wasm
+      — built as: the loaded package's `main` namespaced `<module>/main`, its initialisers in `$__bp_loaded_init__<package>`, run once and
+      called first by its `__bp_loaded_main`; a `main` answering `Error(e)` gives `Error(Failure)` through the `attempt` path
 
 ### B-148 — the primitive widths are types; a behavior is a contract and carries no cell (decision 617)
 
@@ -3190,6 +3192,9 @@ being the one that stands.
       equal on every measure, the full `cell check` 1,676 / 2 on both trees (the two `fs_asset_*`); the drafts of the ten rows that
       gained a cell meanwhile (660, 668, 669, 676, 722, 723, 735, 757, 758, 759) removed, their docs linking the cases; a cell a later
       landing writes flat (machine 1, under 769) is homed by 166, never by its writer
+      — left: 55 flat cells whose home is a decision directory holding only its draft (the draft removed, its docs linking the
+      cells, as P3 did) or a decision directory not yet written (791's `component_resolved_by_use_or_tree`, 802's
+      `template_lookup_answers_node`)
 - [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
       — `conformance/docs.md`, `conformance/AGENTS.md` and the meta's `AGENTS.md` done; left: botopink-lang's root `AGENTS.md` still says

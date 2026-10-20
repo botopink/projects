@@ -2698,16 +2698,19 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [x] 553's cells: `component_call_renders` with its children typed as a node or a component, `component_call_awaited` rewritten
       with `use`; the cell `component_resolved_by_use_or_tree` (791)
       — built as: the two cells follow 791, `component_resolved_by_use_or_tree` added
-- [ ] `Renderable<T>` in `primitives.bp` — the marker or a `render()` member as 791-a answers; a `Component<R>` a component when
-      `R` implements `Renderable<T>` for some `T`; the codemod of the `implement Renderable` sites once 791-c fixes the `T` of
-      the sites that are not `Element`
-- [ ] rakun-bpp's `NodeChildren = Renderable<Element> | Component<Element>` and `Element`'s children, as 791-b answers (165's
-      commit in rakun; the compiler-known `Children` retired here if 791-b (a)) · waits on 791-b
+- [ ] decision 804, first: a `fable` plan over the six `isComponentType` sites of `infer.zig` (the component body's flag, the `use`
+      operand, `await-component`, `decl.hooks`, the children coercion) and 410's, 416's and 791 (3)'s rules, once no component / hook split
+      exists; its open points filed as questions
+- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`);
+      `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
+      dropped by codemod (std, the cells; rakun's sites in 165's commit)
+- [ ] decision 804 (4): rakun-bpp's `NodeChild = Element | Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
+      `children: NodeChildren` (165's commit in rakun); the compiler-known `Children` and its coercions retired here
 
 - [x] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
 - [x] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
 - [x] returning a `Component<R>` from a body that answers `R` (`return mk(1)`) is accepted where the types differ; it is a type mismatch; a cell, red on the parent
-- [ ] 791-d (narrowing a union child): a renderer cannot run a `Renderable | Component` child — `x is T` narrows only inside the branch it guards, `case` arms do not narrow, and `k is Component<unknown>` is accepted but answers false at run time on erlang; waits on 791-d
+- [ ] 791-d (narrowing a union child): a renderer cannot run an `Element | Component` child — `x is T` narrows only inside the branch it guards, `case` arms do not narrow, and `k is Component<unknown>` is accepted but answers false at run time on erlang; waits on 791-d
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
 - [x] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-116 P4 · fixed: a component method's marker goes with its lowered return (`context_lower.zig`); the answers unchanged
