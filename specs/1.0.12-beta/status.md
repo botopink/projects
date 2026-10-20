@@ -140,6 +140,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 
 ### 144 botopink-lang
 
+- [ ] 144 B-162 — boxes 1–4 landed (791): a component call makes its lambda in a component body too, `use c` resolves a component there, `await` over a component refused `await-component`, 553's cells and `component_resolved_by_use_or_tree`; left: `Renderable<T>` and its codemod (after 791-a / 791-c), rakun-bpp's `NodeChildren` (after 791-b), the union-child narrowing (791-d), and three checker defect boxes (`use` over a template call, a member read on a behavior-typed value, `return mk(1)` of a `Component<R>` where `R` is answered) · 791-a / b / c / d
 - [x] 144 B-103 — erlang and beam: `try … catch` handles only its operand's `Error`; a `host`, `panic` or `crash` raise propagates (431, 546); rakun-app's `navigation_test` test back
 - [x] 144 B-112 — `test-analysis-equivalence` reads rakun's conformance by feature (548)
 - [x] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace and lists it alone in the copy's manifest (548); the nested-workspace fixture moved to `cli_contract.sh` (`tsc-check.sh` green again); rakun's one root manifest landed (165 s9)

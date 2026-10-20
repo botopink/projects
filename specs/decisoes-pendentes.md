@@ -475,6 +475,23 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): uma regra para todo contrato; um descasamento silencioso é o que há de mais estrito a recusar (67).
 - **Bloqueia.** A caixa de override do B-148.
 
+#### 791-d · Qual forma de estreitamento é a da linguagem para um filho de união? (decisões 791, 31; 144 B-162)
+- **Proposto (opus, 2026-10-19; nada construído):** (a).
+- **Contexto.** A 791 fixa `NodeChildren = Renderable<Element> | Component<Element>`, então um renderizador precisa distinguir os dois membros de um filho de união e executar cada um a seu modo. `specs/decisions-taken.md` diz apenas que `unknown` é "narrowed with `is` before use" (31) e que um bean é "narrowed with `is fn() -> T`" (256); nenhuma regra diz como uma união estreita, em que lado, nem se um braço de `case` estreita.
+- **Medido.** `x is T` estreita apenas dentro do ramo que ele guarda: não há lado else, o resto da união não é conhecido no `else`. Os braços de `case` não estreitam. `k is Component<unknown>` é aceito, mas responde falso em tempo de execução no erlang, então um renderizador ainda não consegue executar um filho `Renderable | Component`.
+- **Opções.**
+  (a) ★ Braços de `case` com um padrão de tipo que estreita, exaustivos sobre a união.
+  ```bp
+  case k { e: Element -> renderElement(e); c: Component<Element> -> use c; }
+  ```
+  (b) `is` estreita os dois lados: no `else`, `k` é o resto da união.
+  ```bp
+  if (k is Element) { renderElement(k); } else { use k; }   // k: Component<Element> here
+  ```
+  (c) As duas formas.
+- **Recomendação.** (a): uma forma exaustiva, então um membro faltando é recusado no `case` e não descoberto em tempo de execução.
+- **Bloqueia.** As caixas `Renderable<T>` e `NodeChildren` do B-162 (um renderizador sobre o filho de união) e a linha de defeito `k is Component<unknown>`.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da

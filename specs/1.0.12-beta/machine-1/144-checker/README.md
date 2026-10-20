@@ -2651,22 +2651,34 @@ Decision 791: a call of a component only makes its lambda, in a component body t
 node's child, run from its `render()`) or resolved by `use c`, only inside a component body; `await` only over a call answering
 `Async<T>`, in an `async` or a component body; std's `Renderable` takes the tree's node, `Renderable<T>`.
 
-- [ ] the call: `inferComponentCall` (`comptime/infer.zig`) stops typing a component call `R` and awaiting it in a component
+- [x] the call: `inferComponentCall` (`comptime/infer.zig`) stops typing a component call `R` and awaiting it in a component
       body; `val x: Component<Prop> = mk(2);` in a body written `-> Component<string>` accepted on every target (the 661-a
       repro, red on the parent); `context_lower.zig`'s and `env.zig`'s comments that cite the rendering rewritten — unblocks 150 s34
-- [ ] `use c` over a component in a component body runs it with the body's children scope and answers its `R`; a `use` of a
+      — built as: a component call makes its lambda in a component body too, the implicit render in `inferComponentCall` removed;
+      cells `component_call_lambda_in_body`, `component_resolved_by_use_or_tree`
+- [x] `use c` over a component in a component body runs it with the body's children scope and answers its `R`; a `use` of a
       component outside a component body refused as a hook's is (553, 722); 410's rules of hooks for both; cells, the refusal one
       located
-- [ ] `await c` over a `Component<R>` refused at the `await`, located, `await-component`, naming `use c` or `c` as a child; the
+      — built as: cells `component_use_in_body` and the refusal outside a body
+- [x] `await c` over a `Component<R>` refused at the `await`, located, `await-component`, naming `use c` or `c` as a child; the
       sites that awaited a component (std, the cells, jhonstart's `val tree = await view(props)`) measured and rewritten with
       `use` or as children, the libraries' listed for their fronts
-- [ ] 553's cells: `component_call_renders` with its children typed as a node or a component, `component_call_awaited` rewritten
+      — built as: `await-component` at the `await`; cells `await_component_in_body`, `await_component_at_root`; every cell that awaited a
+      component rewritten (`use` in a component body; `c.run(RenderScope.root())` in `main`, tests and plain functions); the
+      library sites are filed in 150 s34 and 165 s11
+- [x] 553's cells: `component_call_renders` with its children typed as a node or a component, `component_call_awaited` rewritten
       with `use`; the cell `component_resolved_by_use_or_tree` (791)
+      — built as: the two cells follow 791, `component_resolved_by_use_or_tree` added
 - [ ] `Renderable<T>` in `primitives.bp` — the marker or a `render()` member as 791-a answers; a `Component<R>` a component when
       `R` implements `Renderable<T>` for some `T`; the codemod of the `implement Renderable` sites once 791-c fixes the `T` of
       the sites that are not `Element`
 - [ ] rakun-bpp's `NodeChildren = Renderable<Element> | Component<Element>` and `Element`'s children, as 791-b answers (165's
-      commit in rakun; the compiler-known `Children` retired here if 791-b (a))
+      commit in rakun; the compiler-known `Children` retired here if 791-b (a)) · waits on 791-b
+
+- [ ] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
+- [ ] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
+- [ ] returning a `Component<R>` from a body that answers `R` (`return mk(1)`) is accepted where the types differ; it is a type mismatch; a cell, red on the parent
+- [ ] 791-d (narrowing a union child): a renderer cannot run a `Renderable | Component` child — `x is T` narrows only inside the branch it guards, `case` arms do not narrow, and `k is Component<unknown>` is accepted but answers false at run time on erlang; waits on 791-d
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
 

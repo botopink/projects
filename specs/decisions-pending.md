@@ -475,6 +475,23 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one rule for every contract; a silent mismatch is the strictest thing to refuse (67).
 - **Blocks.** B-148's override box.
 
+#### 791-d · Which narrowing form is the language's for a union child? (decisions 791, 31; 144 B-162)
+- **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Context.** 791 fixes `NodeChildren = Renderable<Element> | Component<Element>`, so a renderer must tell the two members of a union child apart and run each its own way. `specs/decisions-taken.md` states only that `unknown` is "narrowed with `is` before use" (31) and a bean "narrowed with `is fn() -> T`" (256); no rule says how a union narrows, on which side, or whether a `case` arm does.
+- **Measured.** `x is T` narrows only inside the branch it guards: there is no else side, the rest of the union is not known in `else`. `case` arms do not narrow. `k is Component<unknown>` is accepted but answers false at run time on erlang, so a renderer cannot run a `Renderable | Component` child yet.
+- **Options.**
+  (a) ★ `case` arms with a type pattern that narrow, exhaustive over the union.
+  ```bp
+  case k { e: Element -> renderElement(e); c: Component<Element> -> use c; }
+  ```
+  (b) `is` narrows both sides: in `else`, `k` is the rest of the union.
+  ```bp
+  if (k is Element) { renderElement(k); } else { use k; }   // k: Component<Element> here
+  ```
+  (c) Both forms.
+- **Recommendation.** (a): one exhaustive form, so a missing member is refused at the `case` and not found at run time.
+- **Blocks.** B-162's `Renderable<T>` and `NodeChildren` boxes (a renderer over the union child) and the `k is Component<unknown>` defect row.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

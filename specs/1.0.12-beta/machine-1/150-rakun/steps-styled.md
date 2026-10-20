@@ -109,6 +109,10 @@ lists, compounds, combinators, pseudo-classes/elements (attribute before a pseud
 
 - [ ] `Sheet.add` takes what `toStyled()` answers — a component — once a method's behavior-typed parameter takes an
       implementer (144 B-10, `method_behavior_parameter_implementer`); styled's marker for it and its gap row go
+- [ ] rakun-style's awaits of a component after 144 B-162 (791): `src/styled.bp:111` (`spliced`) and `src/layers.bp:94` (`Sheet.render`) await a
+      component inside a `for` loop, and a loop cannot hold `use` (357), so a redesign is needed (the loop's components
+      collected and run from a component body, or the loop turned into children); about 30 test sites need the root-run
+      rewrite (`c.run(RenderScope.root())`), `styled_sheet_test` among them
 
 ### 150 s35 — Conformance of the former front 148 (decision 465)
 
