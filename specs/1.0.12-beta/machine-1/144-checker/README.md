@@ -2681,7 +2681,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] 791-d (narrowing a union child): a renderer cannot run a `Renderable | Component` child — `x is T` narrows only inside the branch it guards, `case` arms do not narrow, and `k is Component<unknown>` is accepted but answers false at run time on erlang; waits on 791-d
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
-- [ ] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-162 / B-116 P4; measured, fixed or their answers rewritten to 791
+- [x] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-116 P4 · fixed: a component method's marker goes with its lowered return (`context_lower.zig`); the answers unchanged
 - [ ] the iterator helpers (596) on `Iter` / `AsyncIter` are exempt from the behavior-member check until B-128 declares them in `primitives.bp`; the exemption goes then
 
 
