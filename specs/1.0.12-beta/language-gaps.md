@@ -32,9 +32,8 @@ exempts a file.
 | `repository/rakun/modules/rakun-cache/test/granularity_test.bp` | 1 | **No module-level annotation** |
 | `repository/rakun/modules/rakun-ssr/src/content/collections.bp` | 1 | **A field marker cannot be read by the library that takes the type** |
 | `repository/rakun/modules/rakun-style/src/hash.bp` | 1 | **A decorator body cannot call a host function** |
-| `repository/rakun/modules/rakun-style/src/layers.bp` | 1 | **A method's behavior-typed parameter refuses an implementer** |
 | `repository/rakun/modules/rakun-style/src/reader.bp` | 1 | **A template function cannot read another expansion's value** |
-| `repository/rakun/modules/rakun-style/src/styled.bp` | 2 | **A wrapper's type alias cannot implement a behavior** · **A library's template function cannot read the program's catalogue** |
+| `repository/rakun/modules/rakun-style/src/styled.bp` | 1 | **A library's template function cannot read the program's catalogue** |
 | `repository/rakun/modules/rakun-style/src/variants.bp` | 1 | **A function a template body reaches cannot name an enum variant nor build a private record** |
 | `repository/rakun/modules/rakun-style/test/styled_example_test.bp` | 1 | **No assignment to a `self` field — by design.** · **A method's behavior-typed parameter refuses an implementer** |
 | `repository/validation/src/codecs.bp` | 1 | **std's `clock.formatIso8601` answers differently on erlang and commonJS** |

@@ -2593,14 +2593,32 @@ function whose every parameter is `comptime` is called there and expanded at the
       `block_return_refused`, the `throw` and a lambda's `return` in unit tests
 - [x] a block in a library package runs in the build of the package that uses it, in 660's level order (793 (2)) — already true;
       cell `library_block_level_order`
-- [ ] a `pub` function whose every parameter is `comptime`, called from another module's block, expanded at the call (793 (3)) — today
+- [x] a `pub` function whose every parameter is `comptime`, called from another module's block, expanded at the call (793 (3)) — today
       refused `compiler-output-outside-decorator` in its own module; the expansion runs in the parser over the module's own functions; a
       design step: the `fable` plan is written (the expansion in `analyzeSource` after the imports resolve, the function leaving its own
       module's program); its open points answered by 808
-- [ ] 808: such a function expanded wherever it is called — in its own module type-checked with `compiler.init` typed `void` and
+      — built as: the call expanded in `analyzeSource` after the imports resolve and before inference, the body copied with 562's
+      Copier (its names aliased), its `compiler.init` the block's executor; cell `block_calls_other_module_pub` (793's directory)
+- [x] 808: such a function expanded wherever it is called — in its own module type-checked with `compiler.init` typed `void` and
       left out of the program; a run-time call (`main`, another module's function) and a `comptime { … }` inside a function body
       write the executor's body where the call is; only a top-level block makes it a program-start init; a decorator body's call
       still refused; cell `comptime_init_at_call_site` (the order `antes`, the case, `depois`; a call under an `if` not taken)
+      — built as: `compiler.init(f)` typed `void` in such a function, which leaves the program, `pub` included; a run-time call and a
+      body `comptime { … }` write the executor's body in place; a call from a decorator, a template or a value-answering `comptime`
+      refused `compiler-output-outside-decorator` at the call; cells in `comptime_init_at_call_site-808/` (`run/`, `refused/`,
+      `cells/init_at_call_other_module`), the build lines in `comptime/tests/comptime_blocks.zig`; 615's
+      `init_output_outside_decorator` rewritten with a run-time parameter, its refusal unchanged
+- [ ] a function whose every parameter is `comptime` is expanded at its call also when its body only forwards a parameter to another
+      such function (`fn twice(comptime n: string) -> void { inner(n); inner(n + "!"); }`; 562: never specialised, no run-time body) —
+      today `transform.zig` `trySpecializeCall` copies it (`hooks.isExpandedFn` misses a body that only forwards), erlang refusing the
+      build (`inner/1` undefined) and wasm the call; cell `comptime_parameter_call_expanded-562/cells/expanded_fn_forwards_parameter`,
+      red on the parent, green on the four targets
+- [ ] a function-body `comptime { … }`'s `print` is one build line per build also in a module that holds a top-level `comptime` block
+      (788 (2), 793 (5), 789 (1)): the spliced re-analysis must not run it again (and, checked with it, the top-level block's own `print`
+      and `compiler.init` registration); unit test `body_block_prints_once_beside_top_level_block` in `comptime/tests/comptime_blocks.zig`,
+      red on the parent
+- [ ] 808's refusal at the call from a template's body and under a value-answering `comptime` (575 (3), 376 (2)) gets its cases
+      (458 (2)): `comptime_init_at_call_site-808/refused/src/cases/init_at_call_from_template` and `init_at_call_in_value_comptime`
 - [x] a cached build replays the build output (793 (4)) — a unit test in `level_b.zig` (a dependency read back from the cache replays
       its block's output), no cell: `cell check` records no build line (796)
 - [x] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)) — a unit test (796); a `void`
