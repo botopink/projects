@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**21 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **805**.
+número livre, que é **806**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -462,13 +462,6 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) A cada vez: o pacote é inicializado de novo a cada `run()`; o commonJS descarta a sua entrada no cache do `require`.
 - **Recomendação.** (1)(a): "como um crash faz" (792 (1)), o texto que o único `print` escreve para todo valor (530). (2)(a): o corpo de um módulo roda uma vez por programa em todo outro lugar (§ module-system (3), 660); o defeito é o desacordo dos targets, não a escolha.
 - **Bloqueia.** A linha da B-158 do corpo num segundo `run()` (célula `module_run_twice_body`); o texto que todo leitor de `run()` imprime.
-
-#### 798-a · O que a decisão 798 deixa em aberto: `Module.target`, o intermediário de um programa com dependências, o target de um `.runtime.bp`, os nomes gerados (decisão 798; 144 B-163)
-- **Proposto (plano fable, 2026-10-20; nada construído):** **(1)(b), (2)(a), (3)(a), (4)(a), (5)(a):** (1) o `Module.target` do `compiler.load` (786 (1)) continua legível mas é respondido em tempo de execução por uma host function por backend, de modo que a árvore resolvida é uma só; (2) `--emit-runtime <dir>` escreve um `<dir>/<pkg>.runtime.bp` por pacote do fecho do programa, a std excluída, cada `from "<dep>"` resolvido para o arquivo irmão pelo nome, sem manifesto; (3) `build` / `run` sobre um `.runtime.bp` exigem `--target`; (4) o nome `name_$N` de uma função especializada é renomeado `__bp_spec_<name>_<N>` só pelo printer, o mangle do compilador inalterado na B-163; (5) uma declaração do código-fonte cujo nome começa pelos prefixos reservados `__bp_` (valores, funções) ou `Bp__` (tipos) é recusada de imediato, `reserved-name`.
-- **Medido.** O plano da B-163: uma árvore (`OkData.transformed` com suas tabelas laterais) já serve os quatro backends; o comptime lê o target em seis lugares — `analyse` do `codegen.zig` passando `target_name` a `compileWith`, `env.target` (`comptime.zig`), a checagem `std-unsupported-on-target` na chamada, `compiler.beamMemory` fora da BEAM, `inferLoadBuiltin` escrevendo `Module.target` na árvore como `Target.<Variant>`, e o `build_target` de `comptime/load.zig`. Os quatro primeiros passam para uma checagem por target sobre a árvore resolvida no início do `emit`, com os mesmos códigos; o quinto é a única leitura que muda a árvore por target, e 786 (1) fixa o campo. 798 (2) nomeia `<dir>/<pkg>.runtime.bp` e (3) "os arquivos do próprio pacote": um programa com dependências tem mais de um pacote. Um `.runtime.bp` não tem manifesto, logo não tem `targets`. O especializador nomeia uma cópia `name_$N`, e `$` não passa no lexer. Nenhum `.bp` de `libs/std` ou `conformance/modules` declara um nome com algum dos prefixos; o compilador já gera `__bp_tpl_`, `__bp_ns_`, `__bp_loaded`, `Bp_Load*`, e `_bp_init_<k>` para os executores.
-- **Opções.** (1) (a) `target` sai de `Module` (786 (1) emendada); (b) como proposto; (c) mantido como hoje, uma exceção a 798 (4). (2) (a) como proposto; (b) um arquivo para o programa inteiro, as dependências embutidas sob `<pkg>__<path>__<name>`; (c) só o pacote raiz, suas dependências reconstruídas do código-fonte (o comptime roda de novo, a fase de build delas impressa). (3) (a) como proposto; (b) commonJS por padrão. (4) (a) como proposto; (b) o próprio mangle muda, todo snapshot de codegen que nomeia um regravado. (5) (a) como proposto; (b) um aviso por um milestone.
-- **Recomendação.** (1)(b): o campo continua legível (786) e o programa resolvido continua um só; (2)(a): pacotes, átomos de módulo do erlang e a ordem de init da 660 mantidos por pacote; (3)(a); (4)(a) na B-163, (b) uma arrumação posterior; (5)(a): nenhum nome escrito à mão medido.
-- **Bloqueia.** A peça 1 da B-163 (o target sai do comptime) pela (1), suas peças de printer e de CLI pelas (2)–(5); a B-161 e a Peça 5 da B-157 depois dela.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

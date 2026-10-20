@@ -3114,17 +3114,19 @@ The build runs comptime once and answers a resolved program — botopink with no
 generated (798 (1)). B-161 waits on it.
 
 The `fable` plan is written (2026-10-20): the target leaves comptime (a per-target check over the resolved tree at `emit`), one fold
-channel, the reserved names, the printer and the `.runtime.bp` kind, the CLI, `--emit-resolved`'s origins, the whole-suite oracle; its
-open points are question 798-a, and every piece waits on the answer.
+channel, the reserved names, the printer and the intermediate's kind, the CLI, `--emit-resolved`'s origins, the whole-suite oracle; its
+open points are answered by decision 805 (a binary `.bpr` per package, `Module.target` out, backtick names, `$` / `__bp_` / `Bp__` reserved).
 
 - [x] the `fable` plan: the resolved tree (what each comptime form leaves: a folded value, a decorator's members and `init`
       executors, a template's expansion, a top-level `comptime` block), the printer, the names, the cache (767, 793 (4)), the pieces
       and each piece's oracle
-- [ ] every target generated from the resolved tree; comptime never reads the target, a read refused (798 (4))
-- [ ] the printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
-      generated name under a reserved prefix
-- [ ] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.runtime.bp`) and `build` / `run` over a `.runtime.bp`, no comptime, no build
-      phase printed; `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
+- [ ] every target generated from the resolved tree; comptime never reads the target (798 (4)): `Module.target` out of `compiler.bp` and
+      `inferLoadBuiltin`, the 786 cell's `target` line dropped (805 (4)); the other target reads a per-target check at `emit`
+- [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
+      specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
+- [ ] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
+      reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
+      phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
       when missing, each file written named (798 (2), (3))
 - [ ] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
       from its intermediate, the same answer byte for byte on four targets (798 (5)); a CLI row for the refused missing directory
