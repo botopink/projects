@@ -2665,14 +2665,21 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       names in the importer, so `Failure` is unknown there and `run` is answered by the checker; cell
       `imported_type_method_signature_resolves_in_owner` (a type whose method returns a type only its own module imports, called
       from an importer), red on the parent; then `compiler.bp` writes the signature
-- [ ] a local alias of the captured `Module` in the init body (`val m2 = m; m2.run()`) runs `main`: today `load.receiverPath` knows
+- [x] a local alias of the captured `Module` in the init body (`val m2 = m; m2.run()`) runs `main`: today `load.receiverPath` knows
       only the spliced load, and the alias is refused `run-outside-init`, a code 792 (4) gives to a place; a receiver still not traced
       to a loaded file refused under a code of its own; cell `run_on_module_alias`, red on the parent
-- [ ] 789 (4)'s `val mod = try comptime compiler.load(…) catch { r -> compiler.init({…}); return; };` inside an expanded
+      — built as: `load.zig`'s `withRunImports` runs an alias pass first, a `val` bound to a traced receiver (the spliced load, a
+      `Refused`'s `.module`, another alias) rewritten to it, a `var` or a lambda parameter of the name hiding it; an untraced receiver
+      refused `run-module-untraced` (a code no decision names — chosen with the build)
+- [x] 789 (4)'s `val mod = try comptime compiler.load(…) catch { r -> compiler.init({…}); return; };` inside an expanded
       `runCase(comptime name)` takes the branch at build: the expander copies a `try … catch` as run-time code and a `return` ends its
       walk, so the `Ok` path stops too; `Error` → the handler's statements then stop, `Ok` → bind and go on; cell
       `comptime_load_try_catch_return_in_expansion` (a `fine` and a `broken` case), red on the parent — B-157 Piece 5's `main.bp`
       shape waits on it
+      — built as: the expander is the parser's (`parser/comptime_blocks.zig`, 788), which expanded no body that leaves early;
+      `liftCatchReturns` rewrites a top-level `[val x =] try e catch { r -> …; return; }` into `case e { Ok(x) -> { the rest }
+      Error(r) -> { the handler } }`, so the body expands and the load is answered at build; the cell writes `val loaded`, `mod`
+      being a reserved word (`reserved-word-as-name`); the case's build print is not recorded until 796's build records
 - [x] decision 806: `run()` answers `Result<void, RunFailure>` (std's `RunFailure(kind: type { Failed, Abort }, message: string)`,
       `Failure` unchanged); nothing of the loaded package propagates (cell `module_run_contains_body_failure`); each `run()` re-initialises
       the package — `val`s, `var`s, body, executors — alike on every target, commonJS dropping its `require` entry, erlang and beam re-running
