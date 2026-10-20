@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**20 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**21 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -611,6 +611,17 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   ```
 - **Recomendação.** (a): um lugar para os helpers de uma biblioteca qualquer que seja seu layout (67).
 - **Bloqueia.** item 16 (o texto dos docs.md).
+
+#### 806-b · Um campo de registro pode ter um tipo inline, e o que é `type { … }`? (decisões 806, 207, 575 (5), 578 (2); 144 B-158)
+- **Proposto (opus, 2026-10-20; nada construído):** (B).
+- **Contexto.** A 806 escreve na std `pub type RunFailure(kind: type { Failed, Abort }, message: string)`; o parser recusa um `type { … }` inline num campo ("write `anytype`"), então a std declara enquanto isso um `pub type RunFailureKind { Failed, Abort }` nomeado.
+- **Medido.** A 207 permite um tipo inline "só na posição de parâmetro — não num retorno, num campo ou numa anotação de `val`", e só a forma de registro `type(…)`; a 575 (5) e a 578 (2) dizem "`type(` / `type {` continuam o tipo inline" sem fixar o que `type { … }` significa. O campo da 806 é o único exemplo de um enum inline. Em aberto: se um campo pode ter um, para o que ele é baixado, se um leitor pode nomeá-lo, se dois enums inline idênticos são um só tipo.
+- **Opções.**
+  (A) Emendar a 207: um campo de registro pode ter um tipo inline; `type { A, B }` é um enum privado nomeado pelo seu dono, como a forma de parâmetro; os leitores escrevem `.Failed` / `.Abort` e não podem nomear o tipo.
+  (B) ★ Manter a 207 e ler a grafia da 806 como abreviação: a std mantém o `RunFailureKind` nomeado, e o texto da 806 e a linha da B-158 são regrafados.
+  (C) Um tipo inline onde quer que um tipo seja escrito, estrutural como os tipos derivados da 629.
+- **Recomendação.** (B): nenhuma forma de tipo nova, e o `.Failed` / `.Abort` de todo leitor já funciona.
+- **Bloqueia.** Só a linha do enum inline da B-158 (o campo `RunFailure` da std).
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

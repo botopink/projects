@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**20 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**21 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -611,6 +611,17 @@ before every other part of this page; each holds one row, or nothing built.
   ```
 - **Recommendation.** (a): one place for a library's helpers whatever its layout (67).
 - **Blocks.** item 16 (the docs.md text).
+
+#### 806-b · May a record field hold an inline type, and what is `type { … }`? (decisions 806, 207, 575 (5), 578 (2); 144 B-158)
+- **Proposed (opus, 2026-10-20; nothing built):** (B).
+- **Context.** 806 writes std's `pub type RunFailure(kind: type { Failed, Abort }, message: string)`; the parser refuses an inline `type { … }` in a field ("write `anytype`"), so std declares a named `pub type RunFailureKind { Failed, Abort }` meanwhile.
+- **Measured.** 207 allows an inline type "only in a parameter position — not a return, a field or a `val` annotation", and only the record form `type(…)`; 575 (5) and 578 (2) say "`type(` / `type {` stay the inline type" without fixing what `type { … }` means. 806's field is the only example of an inline enum. Open: whether a field may hold one at all, what it lowers to, whether a reader can name it, whether two identical inline enums are one type.
+- **Options.**
+  (A) Amend 207: a record field may hold an inline type; `type { A, B }` is a private enum named after its owner, as the parameter form is; readers write `.Failed` / `.Abort` and cannot name the type.
+  (B) ★ Keep 207 and read 806's spelling as shorthand: std keeps the named `RunFailureKind`, and 806's text and the B-158 row are respelled.
+  (C) An inline type wherever a type is written, structural like 629's derived types.
+- **Recommendation.** (B): no new type form, and every reader's `.Failed` / `.Abort` already works.
+- **Blocks.** B-158's inline-enum row (std's `RunFailure` field) only.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

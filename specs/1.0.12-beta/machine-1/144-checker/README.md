@@ -2681,13 +2681,18 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       `Result<void, string>`); commonJS drops the package's directory from the `require` cache, erlang and beam erase a loaded module's
       cached `val`s and ProcessDict `var`s before its init, wasm's loaded init has no run-once guard and sets each `var` from its
       declaration; std declares `pub type RunFailureKind { Failed, Abort }` for the field, an inline `type { … }` in a field being refused
-- [ ] erlang and beam: a loaded package's ETS and PersistentTerm `var`s are not reset at a second `run()` (806 (3)); a case in
+- [x] erlang and beam: a loaded package's ETS and PersistentTerm `var`s are not reset at a second `run()` (806 (3)); a case in
       `module_run_twice_body`, red on the parent
+      — built as: the loaded module's init empties a keyed `Ets` var and puts its seed rows back, and puts its `PersistentTerm` vars
+      on each run (no longer by `-on_load` for a loaded module); cell `module_run_twice_beam_memory` (806's directory, erlang and beam)
 - [ ] an inline enum in a record field — 806's `RunFailure(kind: type { Failed, Abort }, message: string)` — is refused by the parser
       ("write `anytype`"); std writes a named `RunFailureKind` meanwhile; a cell, red on the parent, then std writes the field inline
-- [ ] the comptime runtime refuses a `catch` binding inside an init lambda that shares its name with an outer `case` arm's binding
+      — waits on question 806-b (207 allows an inline type only in a parameter, and fixes no `type { … }` form)
+- [x] the comptime runtime refuses a `catch` binding inside an init lambda that shares its name with an outer `case` arm's binding
       (`Error(r) -> compiler.init({ -> try … catch { r -> … } })`: "the wat runtime does not take variable `R` used before it is
       bound"); a cell, red on the parent
+      — built as: `member_fn.zig`'s Binder counts a `catch { r -> … }` binder and an `if (x) { b -> … }` binding as the executor's
+      own, so an outer `r` is no longer spliced in; cell `init_executor_binder_shadows_local` (575's directory, four targets)
 - [x] `botopink test` leaves a loaded file and its `mod` tree out of the package as `botopink build` does
       — built as: the `compiler.load` calls of `test/` modules scanned with `src/`'s (one helper for both), `build` and `check`
       unchanged; suite `conformance/test/compiler_load_in_a_test_suite/` (red on the parent, green on the four targets)
