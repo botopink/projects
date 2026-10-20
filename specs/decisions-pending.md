@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**28 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**27 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -495,13 +495,6 @@ group), answered before every other part of this page; in the order of the steps
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's
 before every other part of this page; each holds one row, or nothing built.
-
-#### 790-a · What the program `cell check` becomes leaves open (decision 790; 144 B-161)
-- **Proposed (fable plan, 2026-10-20; nothing built):** **(a) for each:** (1) the run phase is `botopink build --json` then `botopink run`, the program stripping the build output `run` replays before the program's own stdout (790 as written; two compiles per target); (2) `build --json` writes JSON lines on stdout — one event each for the targets the package holds, a build print, a refusal (`Diagnostic`'s fields plus `from`) and a summary — and leaves stderr as today; (3) `build` and `run` gain `--cache-root <dir>`, handed by the program only, so a scratch copy of a cell reuses the workspace's dependency cache; (4) `io.process.start` takes `cwd` and `env` as parameters — no shell, no quoting; (5) a target whose `build` lines differ from another's fails the cell with no candidate written, as the wasm hosts' disagreement does (789 (3)); (6) the proof script that compares the CLI and the program lives at `conformance/check/proof.sh` and leaves with the CLI's `cell check` at the switch (790 (3)).
-- **Measured.** The plan of B-161: the program at `conformance/check/` runs on commonJS alone (erlang's `run` keeps folding stderr into stdout), ports `cell_snap.zig`'s format and tests, keeps the CLI's departures, `deps/`, `.new` flow and report byte for byte, and runs N packages at once over a new `io.process.start` answering a `Captured` whose `wait()` is an `Async<Exit>`. Decision 790 does not say how the program learns a package's refusals and build prints apart (a `--json` contract), whether it compiles once or twice per target, where a scratch copy's dependency cache lives, how a spawn takes its directory and environment, what a disagreeing build phase writes, or where the proof script lives.
-- **Options.** Each point (a) as proposed or (b): (1) `build --json` also names the program's command line and the program spawns it (one compile, no prefix to strip), or a `run --json`; (2) the records written to a file beside the prints; (3) the scratch placed under the workspace so the cache is found, or a cold cache per package; (4) `/bin/sh -c 'cd … && VAR=… exec …'`; (5) a candidate per target; (6) the CLI's `cell check` kept reachable for a later re-proof.
-- **Recommendation.** (a) for each: the most restrictive reading, no shell, nothing accepted (67).
-- **Blocks.** Every piece of B-161 (the `--json` contract, `io.process.start`, the program, the switch); B-157 Piece 5 after it.
 
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).

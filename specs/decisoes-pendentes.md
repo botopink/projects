@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**28 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**27 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -495,13 +495,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
 máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, ou nada construído.
-
-#### 790-a · O que o programa em que o `cell check` se torna deixa em aberto (decisão 790; 144 B-161)
-- **Proposto (plano fable, 2026-10-20; nada construído):** **(a) para cada um:** (1) a fase de execução é `botopink build --json` e depois `botopink run`, o programa retirando a saída de build que o `run` repete antes do stdout do próprio programa (a 790 como escrita; dois compiles por target); (2) o `build --json` escreve linhas JSON no stdout — um evento para os targets que o pacote tem, um print de build, uma recusa (os campos do `Diagnostic` mais `from`) e um resumo — e deixa o stderr como hoje; (3) `build` e `run` ganham `--cache-root <dir>`, passado só pelo programa, para que uma cópia de rascunho de uma célula reuse o cache de dependências do workspace; (4) o `io.process.start` recebe `cwd` e `env` como parâmetros — sem shell, sem aspas; (5) um target cujas linhas `build` diferem das de outro reprova a célula sem candidato escrito, como faz o desacordo dos hosts wasm (789 (3)); (6) o script de prova que compara o CLI e o programa fica em `conformance/check/proof.sh` e sai junto com o `cell check` do CLI na troca (790 (3)).
-- **Medido.** O plano do B-161: o programa em `conformance/check/` roda só em commonJS (o `run` do erlang continua juntando o stderr ao stdout), porta o formato e os testes do `cell_snap.zig`, mantém byte a byte as exceções por target, o `deps/`, o fluxo `.new` e o relatório do CLI, e roda N pacotes ao mesmo tempo sobre um novo `io.process.start` que responde um `Captured` cujo `wait()` é um `Async<Exit>`. A decisão 790 não diz como o programa separa as recusas e os prints de build de um pacote (um contrato `--json`), se compila uma ou duas vezes por target, onde fica o cache de dependências de uma cópia de rascunho, como um spawn recebe o seu diretório e ambiente, o que uma fase de build em desacordo escreve, nem onde fica o script de prova.
-- **Opções.** Cada ponto (a) como proposto ou (b): (1) o `build --json` também nomeia a linha de comando do programa e o programa a executa (um compile, nenhum prefixo a retirar), ou um `run --json`; (2) os registros escritos num arquivo ao lado dos prints; (3) o rascunho colocado sob o workspace para que o cache seja achado, ou um cache frio por pacote; (4) `/bin/sh -c 'cd … && VAR=… exec …'`; (5) um candidato por target; (6) o `cell check` do CLI mantido acessível para uma nova prova depois.
-- **Recomendação.** (a) para cada um: a leitura mais restritiva, sem shell, nada aceito (67).
-- **Bloqueia.** Toda peça do B-161 (o contrato `--json`, o `io.process.start`, o programa, a troca); a Peça 5 do B-157 depois dele.
 
 #### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
 - **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).

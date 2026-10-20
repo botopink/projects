@@ -3070,21 +3070,44 @@ records today. B-159's unit test holds the build prints until B-161 lands.
 ### B-161 — `cell check` as a botopink program (decision 790)
 
 **Machine:** 2 · **Repository:** botopink-lang (`--lang`; std's `io/process` with it) · **Model:** opus (a design step: a `fable`
-plan first) · **After:** B-160's box; 787-a and 788-a answered (792, 793)
+plan first) · **After:** B-160's box; B-163
 
 The `fable` plan is written (2026-10-20): a commonJS program at `conformance/check/` over `build --json` and a new
-`io.process.start`; its open points are question 790-a, and every piece waits on the answer.
+`io.process.start`; its open points are answered by decision 798 — each package built once into the intermediate, every target run from it.
 
-- [ ] `botopink build --json`: a package refusal as records (`Diagnostic`'s fields), the program's build prints apart
-- [ ] `io.process`: `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
+- [ ] `botopink build --json` (798 (6)): JSON lines on stdout — the targets, a build print, a refusal (`Diagnostic`'s fields plus
+      `from`), the intermediate's path, a summary —, stderr as today; `build` / `run` take `--cache-root <dir>`
+- [ ] `io.process`: `start` takes `cwd` and `env` as parameters, no shell (798 (6)); `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
       whose output comes back as an `Async<Exit>`, so N packages run at once within the pool's jobs
-- [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, per target of its manifest runs
-      `botopink build` then `botopink run`, builds the records (475 (2) with 789's `build`), applies the departures under
+- [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
+      `--json --emit-runtime <scratch>` and runs every target of its manifest from the intermediate (798 (6)), the scratch removed after, builds the records (475 (2) with 789's `build`), applies the departures under
       `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's
 - [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
       lines then the `out` lines, on every target — recorded by the program, not by the CLI (B-160's cut)
-- [ ] both run over the whole suite until every snapshot agrees byte for byte; then `botopink cell check` leaves the CLI and
-      `scripts/gate.sh`, the CI and the fronts' Conformance step call the program; the AGENTS files and the meta `AGENTS.md` follow
+- [ ] the proof script at `conformance/check/proof.sh`; both run over the whole suite until every snapshot agrees byte for byte; then `botopink cell check` leaves the CLI and
+      `scripts/gate.sh`, the CI and the fronts' Conformance step call the program; the AGENTS files and the meta `AGENTS.md` follow;
+      `proof.sh` leaves with it
+
+### B-163 — the resolved program and the build's three modes (decision 798)
+
+**Machine:** 2 · **Repository:** botopink-lang (`--lang`) · **Model:** opus (a design step: a `fable` plan first) · **After:** B-160's box
+
+The build runs comptime once and answers a resolved program — botopink with no comptime left — from which every target is
+generated (798 (1)). B-161 waits on it.
+
+- [ ] the `fable` plan: the resolved tree (what each comptime form leaves: a folded value, a decorator's members and `init`
+      executors, a template's expansion, a top-level `comptime` block), the printer, the names, the cache (767, 793 (4)), the pieces
+      and each piece's oracle
+- [ ] every target generated from the resolved tree; comptime never reads the target, a read refused (798 (4))
+- [ ] the printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
+      generated name under a reserved prefix
+- [ ] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.runtime.bp`) and `build` / `run` over a `.runtime.bp`, no comptime, no build
+      phase printed; `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
+      when missing, each file written named (798 (2), (3))
+- [ ] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
+      from its intermediate, the same answer byte for byte on four targets (798 (5)); a CLI row for the refused missing directory
+
+Oracle: `build_modes_same_answer`; the whole suite built from the intermediate equal to built directly; `zig build test`.
 
 ### B-157 — fewer conformance modules, nothing tested lost (decision 760)
 
