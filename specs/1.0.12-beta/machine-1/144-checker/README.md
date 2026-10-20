@@ -2744,9 +2744,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [x] 553's cells: `component_call_renders` with its children typed as a node or a component, `component_call_awaited` rewritten
       with `use`; the cell `component_resolved_by_use_or_tree` (791)
       — built as: the two cells follow 791, `component_resolved_by_use_or_tree` added
-- [ ] decision 804, first: a `fable` plan over the six `isComponentType` sites of `infer.zig` (the component body's flag, the `use`
+- [x] decision 804, first: a `fable` plan over the six `isComponentType` sites of `infer.zig` (the component body's flag, the `use`
       operand, `await-component`, `decl.hooks`, the children coercion) and 410's, 416's and 791 (3)'s rules, once no component / hook split
       exists; its open points filed as questions
+      — done: the pieces are P1 the checker without the split (804-a, 804-b), P2 `Renderable` out, P3 the type form's `compose`,
+      P4 `Children` retired (804-c), P5 rakun-style's list of components (804-d, 165 s11)
 - [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`);
       `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
       dropped by codemod (std, the cells; rakun's sites in 165's commit)
