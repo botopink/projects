@@ -655,10 +655,11 @@ before every other part of this page; each holds one row, or nothing built.
 
 #### docs-d · `$self` as a template marker: documented (164) or refused (`template-self-marker`)? (decisions 164, 239; 166 s3)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
+- **Answered (the maintainer, 2026-10-20):** [x] (a) — only `$N` and `$args`; no `$self`.
 - **Context.** 164 reads "the documented markers are `$self`, `$N`, `$args`", and `specs/retired.md`'s `$stringify` row names `$self`, `$N`, `$args` as its replacement. The compiler refuses `$self` with `template-self-marker` ("`$self` is not a template marker", caret "use `$0`"; on a method `$0` is `self`), from front 12 step 3d, and std's `external.bp` says the same.
 - **Measured.** 164's draft (`stringify_marker_refused_in_templates-164`) uses only `$0`, `$1` and `$args`; no cell writes `$self`.
 - **Options.**
-  (a) ★ The positional markers are in force: 164's sentence and retired.md's row read `$N`, `$args` (on a method `$0` is `self`); `template-self-marker` stays.
+  [x] (a) ★ The positional markers are in force: 164's sentence and retired.md's row read `$N`, `$args` (on a method `$0` is `self`); `template-self-marker` stays.
   ```bp
   #[compiler.external(.JavaScript("$0.length"))] fn size(self: Self) -> i32;
   ```
