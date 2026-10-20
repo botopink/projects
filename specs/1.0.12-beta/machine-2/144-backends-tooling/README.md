@@ -3050,6 +3050,9 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
       — the hole's kind read by its arrival (637, 638: a `syntax` value is `Syntax`, a build value `Lit`), so `compiler.bp`
       gains `compiler.isSyntax(v: unknown) -> bool` (a build read, 576 (2)); a cell line where a `Lit` holding a `syntax`
       value is refused ("write `Syntax(e)`"); the vocabulary 644's mock member needs, decision 753 (a): `Fn(params, ret, body)` and the type nodes
+- [ ] decision 801: the 13 cells that build the caller's raw text with `compiler.build(compiler.text(…))` rewritten — the caller's code a
+      `syntax` expression spliced into `code` (429, 691, 577, 578, 515's `shapesdsl`), the seven `bpp_*` `markup` dependencies a build-value
+      hole; each cell's location and `docs.md` rewritten, cell `template_caller_code_as_syntax`
 - [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; the 14
       `decorator_add_type*` cells written `compiler.addType("Columns", type(id: string))` (640 (2)); `compiler.ast` admitted in a
       decorator body with a cell (640 (3)); the builders' surface, `mocks.bp` and `build_type_from_fields` are this step's, `Type`'s

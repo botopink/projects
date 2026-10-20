@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**24 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **801**.
+number, which is **802**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -345,22 +345,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
 - **Blocks.** The 704 / 547 draft's promotion; nothing else.
-
-#### 149-a · The template cells that build the caller's raw text as code, once `compiler.build` goes (decisions 625, 719, 752; 144 B-149 P2)
-- **Proposed (opus, 2026-10-19; P2 held):** (a).
-- **Context.** 625: no code from text — `code @`…`` and `compiler.ast(node)` build code, `compiler.build(text)` goes in P3. Some template cells build the caller's own text: `compiler.build(compiler.text(q))` in 429 `template_built_code_diagnostic_located`, 691 `template_hole_error_at_column`, 577's refused package, `template/run`, 515 `local_dependency`.
-- **Measured.** With P1b's `code` in std, these are the only `compiler.build` users left beside the B-156 `syntax_fn_*` cells; neither `code` nor `compiler.ast` turns raw text into code.
-- **Options.**
-  (a) ★ Rewritten: the caller's code arrives as a `syntax` expression (719) and is spliced as `Syntax(e)`; 429's "located by expansion" is kept by 752's location rule for spliced syntax.
-  ```bp
-  pub fn checked(syntax q: unknown) -> anyvalue { return code @`assert(${q})`; }
-  ```
-  (b) Retired with `compiler.build`: each cell removed, its rule covered by the `code` cells.
-  ```bp
-  // template_built_code_diagnostic_located removed
-  ```
-- **Recommendation.** (a): what those cells prove (a built call located at the caller) survives 625 through `syntax`.
-- **Blocks.** B-149 P2 – P4 (`compiler.build` removed, `buildType`).
 
 #### 149-b · A hole that holds a `Node` inside `code @`…``: spliced as the node? (decisions 637, 638, 644; 144 B-149 P4)
 - **Proposed (opus, 2026-10-19; nothing built):** (a).
