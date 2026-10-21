@@ -3235,13 +3235,19 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       — the printer built for a package of one module (`comptime/resolved_print.zig` over `OkData.resolved`, a copy of the module
       taken before inference with only the comptime rewrites applied; `botopink build --emit-resolved <dir>` writes `<dir>/<pkg>.bp`;
       `_bp_init_` → `__bp_init_`, `Bp_Load*` → `Bp__Load*`); its oracle `codegen/tests/resolved_print.zig` (re-read with no comptime,
-      the same answer on four targets); left (834–836): one file per module as the `.bpr` groups them, `<dir>/<pkg>/<module path>.bp`, the
-      dependencies and `std/` printed, the oracle over a package of several modules and a dependency; a context printed `createContext(v)`, an
-      `Asset` `Asset(Link(path: "…"))`, folded bytes `bytes.fromHex("…")` (885; `fromHex` / `toHex` on `bytes`; cell `resolved_prints_asset_and_bytes`), a `@TypeInfo.all` read kept until B-137; `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` moved into the
-      reserved space, the snapshots re-recorded; cells `resolved_one_file_per_module`, `resolved_prints_the_builder`, `hand_written_twin_name_is_free`
+      the same answer on four targets)
+      — 834 and 835 (1), (3) built: one file per module, `<dir>/<pkg>/<module path>.bp`, grouped as the `.bpr` groups them, each opening
+      `// module <path>`; a hygiene alias printed as its alias import, its declaration in its own file; level B reads no cached entry while
+      the resolved program is kept; a folded context `createContext(v)` with its import; a `@TypeInfo.all` read as written (the oracle drops
+      `decorator_marker_empty_body` until B-137); the oracle over two modules and a dependency (a dependency's module now its own erlang atom
+      in the test harness); `resolved_one_file_per_module` a CLI case, `compiler-cli/tests/resolved_file.sh` (the suite checks no emitted file)
+      — left: the 798 (2) origin comments (`// from #[…] (file:line)`): nothing in the tree records a piece's origin yet; an `Asset` printed
+      `Asset(Link(path: "…"))` and folded bytes `bytes.fromHex("…")` (885; `fromHex` / `toHex` on `bytes` on four targets, a std-wasm leaf;
+      cell `resolved_prints_asset_and_bytes`) — after B-139 lands 607's `Asset(link: Link)`; 836: `<f>__type`, `__<Enum>__<Section>`,
+      `__embed_<p>` moved into the reserved space, the snapshots re-recorded; cells `resolved_prints_the_builder`, `hand_written_twin_name_is_free`
 - [x] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
-      phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
+      phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment (the comments still open, the printer's box), never read back; the directory required, created
       when missing, each file written named (798 (2), (3))
       — built as: one `<dir>/<group>.bpr` per package — the root, each dependency, each loaded file's package, each std module
       (`<dir>/std/<module>.bpr`, level B's filing; 837 (1)) — level B's `analysis_entry` encoding under its own magic, keyed by
