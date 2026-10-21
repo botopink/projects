@@ -2793,8 +2793,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exhaustive over a union (`non-exhaustive`, naming the member); std's `resolve` written with them; cell
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
 - [ ] decision 811: the `opaque` type modifier (`[pub] opaque type X(…)`, before `type`): the constructor written only in `X`'s own
-      methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` callable by the lowering
-      alone; std's `Composition<T>` an opaque type (`of` without `pub`, the lowering of every `component` body; `pub fn resolve`),
+      methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module
+      (814); std's `Composition<T>` an opaque type (`of` without `pub`, the lowering of every `component` body; `pub fn resolve`),
       `is Composition<…>` an identity test; `Scope` opaque (`render-scope-construction` goes); cells, four targets
 - [ ] 811 (4) (with B-158's owner): `Module` opaque, made by a method without `pub` `compiler.load` lowers to, `mod.name()` /
       `mod.path()` for the fields; the cells and libraries that read `mod.name` / `mod.path` respelled
