@@ -1390,7 +1390,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | structural equality at build is iterative (471) | `comptime_deep_structure_equality`; term order in std-wasm's `term.zig` tests |
 | a float or integer division by zero at build is `comptime-badarith … (division by zero)`, located (472) | `comptime_float_division_by_zero`, `comptime_integer_division_by_zero` |
 | `%` by zero and a nested division name no cause | none — question B-32-a |
-
+- [ ] decision 869: `badarithRefusal` formats the `binaryOp` at the located operator; cells `comptime_nested_division_by_zero`,
+      `comptime_division_by_zero_in_helper`, `hole_any_call_raises` re-recorded (red on the parent)
 
 ### B-33 — `.Wasm`'s cells as labelled arguments (decision 481)
 
@@ -1541,6 +1542,9 @@ for a defect).
   | a library's `panic(…)` message reaches stderr unchanged on every target (430) | `panic_library_message` |
   | every abort writes stderr only | the `int_overflow_*` cells |
   | a non-panic run-time abort on erlang and beam reads `Class:Reason` | none — question B-41-a |
+- [ ] decision 870: the abort handler emitted in the commonJS entry's `require.main === module` branch; `--import` dropped from `run.zig`
+      and `runtime.zig` for commonJS; the four `abort_text_*` cells red on the parent under the bare harness; one commonJS codegen snapshot
+      regenerated
 
 ### B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (structural, decision 430)
 

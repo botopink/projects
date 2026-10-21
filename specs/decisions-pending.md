@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **864**.
+number, which is **871**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -84,6 +84,13 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 861 | 548-a | Answered by 650: one link form, 166 s4's codemod |
 | [ ] | 862 | 548-b | Former library names out of rakun's code (`stylesheet()`, `SsrConfig`, `/_rakun-ssr/` — the fable's names, to confirm) |
 | [ ] | 863 | 165-a | The version set one row per package in `version_set.bp`, as built |
+| [ ] | 864 | 529-a, 529-b | `..` any expression, no migration; a record parameter on every callable, no variadic or default beside it |
+| [ ] | 865 | 537-b | `catch` the lowest infix, `??` the tightest binary level, as built |
+| [ ] | 866 | 539-a | A `defer` body neither throws nor propagates (`defer-throw`, `defer-try`) |
+| [ ] | 867 | 540-b | Answered by 607: `Asset` imports `io.fs` itself |
+| [ ] | 868 | 532-a | A refusal cell claims its `from` frames, header unchanged |
+| [ ] | 869 | 533-a | `comptime-badarith` names the dividing operation at its caret |
+| [ ] | 870 | 535-b | The commonJS abort handler emitted in the program's entry |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -241,68 +248,12 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (b) — a leaf answers nothing outside its domain and no word is silently truncated; `text.byteAt`'s `-1` stays P1-a's until the maintainer extends the answer to it.
 - **Blocks.** Nothing built waits; P2-d's `.bp` half (after B-139 and s2 P5) reads the answer before it is written.
 
-#### 529-a · What `..` as the one spread leaves open (decisions 529 (3), 359, 37; 144)
-- **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a) for each:** (1) no migration tool — no library writes a `...` call-site spread today (jhonstart's one `{...pairs}` is a tag spread the compiler does not implement yet); (2) 37's refusal of a non-name base is gone: 359 (6) allows any source expression, evaluated once (`record_update_base_not_a_name` answers `out 1`); (3) an enum variant's `..` update stays refused as `call-spread` (359's enum-variant row); (4) the dead decision-37 update path in `infer.zig` is deleted.
-- **Measured.** 529 (3) landed: `..src` is the record spread, `...src` as a spread is `spread-dot-dot-dot` naming `..`, the formatter prints `..`, botopink-lang migrated. Merging the two spread forms moved three answers: `record_update_base_not_a_name` (a refusal under 37) now answers `out 1` under 359 (6); `Subject.Animal(..alice)` is `call-spread` (it was a type mismatch); two refusal carets moved one column (the shorter `..`). The parser refuses `...`, so the formatter cannot read an old `...` spread to migrate it.
-- **Options.** Each point (a) as proposed or (b): (1) the parser keeps reading `...` for one release, the formatter rewriting it; (2) 37's restriction kept under 359; (3) an enum variant's update allowed; (4) the old path kept.
-- **Recommendation.** (a) — 359 is the later rule, no library needs the old spelling.
-- **Blocks.** Nothing built; `record_update_base_not_a_name`'s answer.
-
-#### 529-b · What a record parameter `..props: R` leaves open (decision 529 (2); 144)
-- **Proposed (sonnet, 2026-10-14; awaiting the maintainer):** **(a) for each:** (1) a record parameter beside a variadic refused (`record-param-variadic`) — positional variadic arguments and labelled fields clash; (2) a default on the record parameter refused (`record-param-default`) — `R`'s own field defaults are the defaults; (3) positions count the other parameters: in `fn f(a, ..p: R, b)`, `f(1, 2, x: 3)` passes `2` to `b`; (4) methods and associated functions take a record parameter as functions do (a later step builds it); (5) a generic `R` (`..p: Props<T>`) is legal, its fields typed by the call.
-- **Measured.** 529 (2) landed for plain function calls: `..props: R` is an ordinary parameter of type `R`; the checker rewrites a call's labels naming `R`'s fields, and a `..src` spread, into one `R(…)` construction; four refusals 529 names have cells. Built beyond 529 and to confirm: (1) and (2) above; (3) is how positions are read today; methods and associated functions are not rewritten yet; a generic `R` parses and is untested.
-- **Options.** Each point (a) as proposed or (b) its opposite.
-- **Recommendation.** (a) — the strictest readings where 529 is silent, and the same rule for every callable.
-- **Blocks.** A record parameter on a method; nothing built otherwise.
-
 #### 543-a · What front 164 s1 (wasmtime) leaves open (decision 543)
 - **Proposed (opus, 2026-10-14; awaiting the maintainer):** **(1) Winch with the cache** — a cold compile 315 ms against Cranelift's ~1000 ms, a run 37 against 33 ms; (2) the CLI and the LSP call `interrupt()` on SIGINT, so a runaway body ends as a located error; (3) `attempt` at build catches what it catches in a wasm program — an integer division by zero traps there, so it is excluded at build too (one answer, 434 (5)); (4) the compiled-module cache is reaped by B-77's `botopink cache`.
 - **Measured.** s1 landed on wasmtime v49 with Cranelift and the compiled-module cache (warm 48 ms, cold 1.0–1.3 s for 12 builds); Winch was not one of 543's two options; no SIGINT handler is installed (Ctrl-C ends the process; `interrupt()` exists, nothing calls it); `attempt` at build also catches an integer division by zero, which traps in a wasm program; the cache has no reaping until B-77.
 - **Options.** Each point (a) as proposed or (b): (1) keep Cranelift; (2) no handler; (3) keep catching at build; (4) a size bound now.
 - **Recommendation.** (a) for each.
 - **Blocks.** Nothing built.
-
-#### 539-a · `throw` and a propagating `try` inside a `defer` body: refused or allowed? (decision 539 (5); 144)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(c): refuse a `throw` and a `try` that propagates, located (`defer-throw`, `defer-try`); a `try … catch` handled inside the body stays** — 539 (5)'s reason is "cannot leave the path", and a throw leaves it: in `finally` / `after` the deferred error replaces the error being propagated, masking it silently. Zig refuses `try` in a `defer`, Swift refuses throwing.
-- **Measured.** 539 landed on every target with `return`, `break` / `continue` out of the body, `yield` and `await` refused; a `throw` or a propagating `try` in the body compiles, and its error replaces the block's own on commonJS, erlang and beam.
-- **Options.** (a) Refuse both forms, `catch` included. (b) Allow: the deferred error replaces the block's (today, undocumented). (c) As proposed.
-- **Recommendation.** (c).
-- **Blocks.** Nothing built; two refusal cells once answered.
-
-#### 537-b · `??`'s precedence against 537's parenthetical (decisions 537 (2), 28, 330)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): keep `??` tight; 537 (2) amended to "`catch` is the infix of the lowest precedence, below `??`"** — no program changes meaning, and 330's parenthesisation rule already covers the one ambiguous neighbour.
-- **Measured.** 537 gives `catch` "`??`'s precedence, below every arithmetic operator", but `??` is the tightest binary level (decision 28), refused beside `&&` / `||` (330). std relies on it: `libs/std/src/hash.bp` (`h.at(2 * i) ?? 0 * 65536.0 + …`), `io/random.bp` (`64 + b.at(6) ?? 0 % 16`). The build made `catch` the lowest and left `??` alone.
-- **Options.** (a) `??` moves to `catch`'s level, with a formatter rewrite parenthesising every `??` beside an arithmetic operator. (b) As proposed. (c) `??` at `||`'s level (JS), `catch` below it — the same migration as (a).
-- **Recommendation.** (b).
-- **Blocks.** Nothing built; 537's text only.
-
-#### 535-b · Where the commonJS abort text lives: the runner's guard or the emitted program (decision 535)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): the entry module (the one with `main`, never a library module — a global `process.on` in a library is a side effect) emits the handler; the runner's guard kept for the browser's `.mjs`** — 535 is about what the program writes; one mechanical regeneration of the commonJS codegen snapshots.
-- **Measured.** 535 landed on commonJS as a `node --import` guard that `botopink run` and the tests hand to node; the emitted `main.js` is unchanged, and a hand-run `node main.js` prints node's own report. erlang's guard is the runner's too, but an erlang build has no self-contained entry; a commonJS program has one and is run by node outside botopink.
-- **Options.** (a) The runner's guard only, as landed. (b) As proposed. (c) Both.
-- **Recommendation.** (b).
-- **Blocks.** Nothing; the `abort_text_*` cells answer the same.
-
-#### 532-a · The `from <file>:<line>:<col>` record extends 475 (2) (decisions 532, 475)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): 475 (2) amended with `from`, the header unchanged** — older cells are unaffected: the record appears only where frames exist.
-- **Measured.** 475 (2) lists the `.snap` records exhaustively; 532's build added `from` (after `at` / `label`, innermost first, compared exactly) in the cell format and `conformance/docs.md`. 13 cells carry `from` lines; the header is still `botopink-cell 1`.
-- **Options.** (a) As proposed. (b) `botopink-cell 2`. (c) The frames folded into the message.
-- **Recommendation.** (a).
-- **Blocks.** Nothing landed; 475's text.
-
-#### 533-a · `comptime-badarith` names the whole expression while the caret is at the operator (decisions 533, 472)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(b): the message names the dividing operation's source (`6 / (3 - 3)`, `a / b`), text and caret agreeing; the `from` lines give the `comptime`** — low stakes.
-- **Measured.** 472 reads "the operation and place"; after 533 the place is the operator but the backticked text is the `comptime`'s whole expression (`1 + 6 / (3 - 3) * 2`, `ratio(6, 0)`): `comptime_nested_division_by_zero`, `comptime_division_by_zero_in_helper`, `hole_any_call_raises`.
-- **Options.** (a) The `comptime`'s text, as landed. (b) As proposed. (c) No backticked text.
-- **Recommendation.** (b).
-- **Blocks.** Nothing.
-
-#### 540-b · `a.open()` requires `import {io.fs}` (decision 538; 144)
-- **Proposed (fable, 2026-10-14; awaiting the maintainer):** **(a): keep the refusal `embed-open-needs-fs`** — `File` is std's type; a value whose type the module cannot name is Go's reason for `import "embed"`.
-- **Measured.** 538 writes `pub fn open(self: Asset) -> File` with no import condition. The checker rewrites `a.open()` to `<fs>.openAsset(a)` (the shortest alias of `io/fs`); without the import it is refused at the call (`embed_open_without_fs_import`).
-- **Options.** (a) As built. (b) An implicit import of `io/fs` where `a.open()` is written. (c) `File` ambient in `builtins.d.bp`, `open` a real method of `Asset`.
-- **Recommendation.** (a).
-- **Blocks.** Nothing.
 
 #### 164-s3-g · `String.slice` (`text.slice`, `sliceFrom`, `sliceBetween`): with P1 or P2? (164 s3)
 - **Proposed (fable, 2026-10-15; awaiting the maintainer):** **(a): P2, as a botopink body the codegen's `s[a..b]` / `s[i]` calls through the prelude.**

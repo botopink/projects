@@ -2763,6 +2763,18 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 
 Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package as one program) is a later decision (780 (4)).
 
+### B-165 — a record parameter on every callable; a `defer` body cannot fail (decisions 864, 866)
+
+**Repository:** botopink-lang (`--lang`) · **Model:** sonnet (the decisions fix every answer) · **After:** nothing
+
+- [ ] decision 864: `recordParamCalleeParams` reaches a method and an associated function; `rewriteRecordUpdate`'s name-only refusal
+      deleted; cells `record_param_on_method`, `record_param_on_associated` (red on the parent), `record_param_generic`,
+      `record_param_variadic_refused`, `record_param_default_refused`
+- [ ] decision 866: `refuseInDefer` gains `throw` and `try` (595's region check); cells `defer_refuses_throw`, `defer_refuses_try`
+      (refused, red on the parent), `defer_try_catch_inside` (run); `defer_try_and_throw_propagate` removed
+
+Oracle: the cells, red on the parent; `zig build test`.
+
 ### B-164 — `comptime var`, a variable of the build (decision 807)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** opus (a declaration form across the parser, the checker, the comptime runtime and
