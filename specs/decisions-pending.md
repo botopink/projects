@@ -504,25 +504,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Since 809.** 809 (2) retires the `Card__Self` rewrite: `compose` is a method of the type, so option (c) has no ground left and (d), `self.title`, is what remains; the four codes are respelled for `Composable` (`implement Component<…>` refused naming `Composable`, `component fn compose` required).
 - **Blocks.** Nothing of P3's landing; (d) would be a follow-up row.
 
-#### 809-e · How does a root site read `resolve`'s `T | Async<T>` — `main`, a test, rakun's root? (decisions 809 (6), 725, 661; 144 B-162 P1)
-- **Proposed (fable plan, 2026-10-20; nothing built):** (b).
-- **Context.** `resolve` awaits nothing; 66 cells and rakun's roots (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) write `await c.run(RenderScope.root())` today.
-- **Measured.** 66 cells with `.run(RenderScope.root())`, 13 with `use memo`; every root is in an `async` body.
-- **Since 815.** `Composition<T>` is a function again and `c(scope)` by hand is admitted; std's `resolve` stays the one that composes a `Composable`.
-- **Since 820.** `resolve` takes a place: a root passes `Place.none()`, `resolve(c, Scope.root(), Place.none())` in (a); (b)'s `run` passes it itself, its call unchanged.
-- **Options.**
-  (a) Each root narrows: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (810's flow).
-  (b) ★ std's `context` adds `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, then `await` only when the answer `is Async<unknown>` — for roots and tests; `resolve` stays the renderer's.
-  ```bp
-  async fn main() -> Async<void> {
-      val page = await run(App(), Scope.root());
-      print(renderToString(page));
-  }
-  ```
-  (c) `await` accepted over `T | Async<T>` (the identity on the `T` member) — a language change.
-- **Recommendation.** (b): one written root form, 725's "the root is always asynchronous", no new rule of `await`.
-- **Blocks.** B-162 P1's codemod of the root sites.
-
 #### 809-f · Is `Component<T>` still a prelude name, and does the checker read it nominally? (decisions 809 (1), 118, 661; 144 B-162 P1)
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
 - **Context.** 809 (1) declares the three names in std's `context` module and moves `Component` there from `primitives.bp`; today `Component` needs no import, `Context` and `RenderScope` do.

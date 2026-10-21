@@ -206,7 +206,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
 - [ ] rakun's gate on the main checkout's compiler; `conformance/` green; `test-libs`
 - [ ] the sites 144 B-162 (791) reaches: rakun-bpp `render.bp` `layoutOf` / `templateOf` need `use view(…)` after an early `return`, which is
       `use-not-top-level` (357), so a redesign is needed; jhonstart's `val tree = await view(props)` matches the `layoutOf` case;
-      root-run rewrites (`c.run(RenderScope.root())`, respelled by 809 as the root form 809-e chooses — `resolve(c, Scope.root())` meanwhile) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
+      root-run rewrites (`c.run(RenderScope.root())`, respelled `await run(c, Scope.root())`, decision 822) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
       `view_test`, `link_test`, `router_test`, `server_test` and `styled_sheet_test`; `div([text("title"), Counter()])`-style children
       crash in rakun-bpp's renderer (`{error,badarg}`), which is 804 (4)'s
 

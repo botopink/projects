@@ -504,25 +504,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Desde a 809.** A 809 (2) aposenta a reescrita `Card__Self`: `compose` é um método do tipo, então a opção (c) não tem mais base e a (d), `self.title`, é o que resta; os quatro códigos são regrafados para `Composable` (`implement Component<…>` recusado nomeando `Composable`, `component fn compose` exigido).
 - **Bloqueia.** Nada do pouso do P3; (d) seria uma linha depois.
 
-#### 809-e · Como um site raiz lê o `T | Async<T>` de `resolve` — `main`, um teste, a raiz do rakun? (decisões 809 (6), 725, 661; 144 B-162 P1)
-- **Proposto (plano fable, 2026-10-20; nada construído):** (b).
-- **Contexto.** `resolve` não aguarda nada; 66 células e as raízes do rakun (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) escrevem `await c.run(RenderScope.root())` hoje.
-- **Medido.** 66 células com `.run(RenderScope.root())`, 13 com `use memo`; toda raiz está num corpo `async`.
-- **Desde a 815.** `Composition<T>` é de novo uma função e `c(scope)` à mão é admitido; o `resolve` da std continua sendo o que compõe um `Composable`.
-- **Desde a 820.** `resolve` recebe um place: uma raiz passa `Place.none()`, `resolve(c, Scope.root(), Place.none())` em (a); o `run` de (b) o passa ele mesmo, sua chamada inalterada.
-- **Opções.**
-  (a) Cada raiz estreita: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (o fluxo da 810).
-  (b) ★ O `context` da std acrescenta `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, depois `await` só quando a resposta `is Async<unknown>` — para raízes e testes; `resolve` continua sendo do renderer.
-  ```bp
-  async fn main() -> Async<void> {
-      val page = await run(App(), Scope.root());
-      print(renderToString(page));
-  }
-  ```
-  (c) `await` aceito sobre `T | Async<T>` (a identidade no membro `T`) — uma mudança de linguagem.
-- **Recomendação.** (b): uma forma de raiz escrita, o "a raiz é sempre assíncrona" da 725, nenhuma regra nova de `await`.
-- **Bloqueia.** O codemod dos sites raiz do B-162 P1.
-
 #### 809-f · `Component<T>` continua um nome do prelude, e o checker o lê nominalmente? (decisões 809 (1), 118, 661; 144 B-162 P1)
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).
 - **Contexto.** A 809 (1) declara os três nomes no módulo `context` da std e move `Component` para lá a partir de `primitives.bp`; hoje `Component` não precisa de import, `Context` e `RenderScope` precisam.

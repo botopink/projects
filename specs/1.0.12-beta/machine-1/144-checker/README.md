@@ -2862,8 +2862,9 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `return Card(…)` with no `use`); cell, four targets
 - [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope, key: Place) -> T | Async<T>` (819), awaiting nothing inside, the one way a
       component runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside std's `resolve`
-      (815); `c.run(RenderScope.root())` sites respelled to the root's form, which waits on 809-e (with `Place.none()`, 820), and on 810-b
-      for `is Async<unknown>` off commonJS; typed by 810
+      (815); std's `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` (822: `resolve` with `Place.none()`, awaited only when
+      it answers an `Async`), every `await c.run(RenderScope.root())` respelled `await run(c, Scope.root())` by codemod (66 cells; rakun's
+      roots in 165's commit); `run` waits on 810-b for `is Async<unknown>` off commonJS; typed by 810; cell `component_root_run`
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above);
