@@ -125,7 +125,7 @@ program lacks is a boot failure naming it (234); removing the dependency removes
       its executor `compiler.init({ -> registry.add(Module(name: name, lifecycle: lifecycle, make: decl)) })`, `decl`
       the function at run time, checked against `make`; the hooks `use inject(x)` (a module started once, on demand, the
       boot order the dependency order) and `use onStop(f)`; `rakun.boot()` ordinary run-time code mounting each module
-      into a `ServiceScope` (the `RenderScope` without a DOM, 388, 504) by `case (m.lifecycle)`, `start(name) ->
+      into a `ServiceScope` (the `Scope` without a DOM, 388, 504, 809 (8)) by `case (m.lifecycle)`, `start(name) ->
       Result<void, string>` for `.Manual`, `registry.find(name) -> ?Module`; `#[rakun.config]` and the typed overrides;
       the two build errors (one thing contributed twice; a required package absent), each a cell
 - [ ] every `@TypeInfo.all` site gone with s10 (576 (7)); no build body reads the list — `compiler.find` is gone (665), every reader is a registry
@@ -206,9 +206,14 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
 - [ ] rakun's gate on the main checkout's compiler; `conformance/` green; `test-libs`
 - [ ] the sites 144 B-162 (791) reaches: rakun-bpp `render.bp` `layoutOf` / `templateOf` need `use view(…)` after an early `return`, which is
       `use-not-top-level` (357), so a redesign is needed; jhonstart's `val tree = await view(props)` matches the `layoutOf` case;
-      root-run rewrites (`c.run(RenderScope.root())`) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
+      root-run rewrites (`c.run(RenderScope.root())`, respelled by 809 as the root form 809-e chooses — `Composition.resolve(c, Scope.root())` meanwhile) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
       `view_test`, `link_test`, `router_test`, `server_test` and `styled_sheet_test`; `div([text("title"), Counter()])`-style children
       crash in rakun-bpp's renderer (`{error,badarg}`), which is 804 (4)'s
+
+- [ ] decisions 809 (7), 813 (rakun-bpp, the 809 commit): the node builders (`text`, `div`, …) `component fn`s answering `Component<Element>`;
+      `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`; a ready `Element` wrapped as the answer to the open question on
+      `{ component -> v }` says; the resolved tree a record of its own beside `Element` (`Rendered(tag, attrs, children: Rendered[])` in
+      813's example), what `rakun-bpp-dom-test` inspects, a `Suspense` keeps and hydration reads
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 

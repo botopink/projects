@@ -2814,8 +2814,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] 809 (4): a component body answering a `Component<T>` resolves it in the same scope before it returns (`return div([…])`,
       `return Card(…)` with no `use`); cell, four targets
 - [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>`, awaiting nothing inside, the one way a component
-      runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside std's `context`
-      module; `c.run(RenderScope.root())` sites respelled `resolve(c, Scope.root())`; typed by 810; 811: `resolve` is `Composition.resolve`
+      runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside `Composition`'s
+      methods (811); `c.run(RenderScope.root())` sites respelled `resolve(c, Scope.root())`; typed by 810; 811: `resolve` is `Composition.resolve`
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `child()`), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state each `Composition` instance's own store, given by `resolve` (771);
@@ -2824,7 +2824,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `use_child_cell_provide_in_order`
 - [ ] 809 (7) (rakun, 165's commit): rakun-bpp's builders `component fn`s answering `Component<Element>`, `NodeChild = Component<Element>`,
       the renderer resolving every child; replaces the 804 (4) box's `NodeChild = Element | Component<Element>`; 813: a ready `Element`
-      enters through `component { -> e }`, the resolved tree a record of its own (`Rendered(tag, attrs, children: Rendered[])` in the
+      enters through `{ component -> e }` (584's spelling), the resolved tree a record of its own (`Rendered(tag, attrs, children: Rendered[])` in the
       decision's example), what `rakun-bpp-dom-test` inspects
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
