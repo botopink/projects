@@ -3258,13 +3258,21 @@ The `fable` plan is written (2026-10-20): a commonJS program at `conformance/che
       `Error(Unsupported(…))` (a call refused there would refuse the whole module, `spawn` with it), on wasm the call is refused
       `std-unsupported-on-target`; `env` `NAME=value` entries added to the parent's — `env` confirmed and the erlang / beam answer replaced by a refusal at the call by 906, a box below; cells under
       `cell_check_program-790/`
-- [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
+- [x] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
       `--json --emit-runtime <scratch>`, each build and run with its working directory the package's (838 (4)), and runs every target of its manifest from the intermediate (798 (6)), the scratch removed after, builds the records (475 (2) with 789's `build`), applies the departures under
       `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's
       — piece 3a built (0fcc06b28): the package, `records.bp` (a port of `cell_snap.zig` with 789's `build`; `from` spelled `frames`, a
       reserved word), its 13 tests; every accepted `.snap` of the suite and the libraries parses and renders back byte for byte; the
-      `build` lines come before the package's refusal records (904, a box below) · left (3b): `discover` skips `conformance/check/` itself (a dir with
-      `src/` reads as a cell), `run.sh` runs its suite, then `main`, `observe`, `compare`, `report` and `proof.sh`
+      `build` lines come before the package's refusal records (904, a box below)
+      — piece 3b built (c1b11bf89): `main`, `discover` (skips `check/`), `manifest`, `scratch` (the CLI's `Scratch.open` ported: a cell is
+      built in a copy, the conformance workspace's `*/run` / `*/cells/*` entries being refused by `manifest.expand` in place), `observe`,
+      `compare` (verbatim), `report`, `refusals`; tests 26/26 in `run.sh`; `build --json` gained a manifest refusal's `refused` event and
+      `held` targets (770); `proof.sh` over `conformance/modules/` (1,122 cells): identical but for three cells' new 789 `build` lines
+      (`cell_records_build_phase-789`, `module_comptime_block-788`, `module_comptime_block_rules-793`), accepted at the switch; the program
+      takes about five times the CLI's wall time (a `botopink` spawn per build and run, std analysed each time) — piece 5 weighs it
+- [ ] the conformance workspace's member globs `*/run` and `*/cells/*` refused by `manifest.expand` when a cell is built in place (838 (4)
+      reads "its working directory the package's"); a `cli_contract.sh` row
+- [ ] commonJS: a `///` doc comment holding `*/` is copied into a JS block comment unescaped and breaks the emitted program; a cell
 - [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
       lines then the `out` lines, on every target — recorded by the program, not by the CLI (B-160's cut)
 - [ ] the proof script at `conformance/check/proof.sh`; both run over the whole suite until every snapshot agrees byte for byte; then `botopink cell check` leaves the CLI and
