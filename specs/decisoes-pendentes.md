@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**21 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**20 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **812**.
+número livre, que é **813**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -466,22 +466,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) ★ Mantida como escrita, então nenhuma resposta registrada muda.
 - **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
 - **Bloqueia.** Nada.
-
-#### 809-c · Que escopo recebe um componente resolvido dentro de um corpo — `use c` e `return c`? (decisões 809 (4), (6), (8), 354 (2); 144 B-162; substitui a 804-a)
-- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** A 809 (8) faz do escopo uma célula por nó: `scope.child()` uma célula nova sobre o mapa do pai, um `use provide` substituindo o mapa da célula que o corpo recebeu, `use context` lendo o mapa recebido na entrada. A 804-a perguntava entre um escopo dos filhos e um escopo recebido, uma divisão que a 809 remove; o que resta é se um componente que o corpo resolve recebe a célula do corpo ou uma filha dela. Hoje o `context_lower.zig` entrega a um componente `use`ado o escopo dos filhos do corpo e marca o primeiro `use` de componente como o render do corpo (`context-provide-after-render`, 354).
-- **Opções.**
-  (a) ★ `use c` resolve `c` com um `scope.child()` feito no `use` — os provides de `c` alcançam só a subárvore de `c`, nunca as leituras posteriores do corpo nem os seus outros filhos (354 (2)); `return c` com a própria célula do corpo, a subárvore de `c` sendo a do corpo; `context-provide-after-render` sai.
-  ```bp
-  component fn Page() -> Component<Element> {
-      use provide(theme);
-      val h = use header();          // header gets scope.child(): it sees `theme`; its own provides stay in it
-      return div([h]);               // div resolved with Page's cell
-  }
-  ```
-  (b) Ambos com a célula do corpo: os provides de um componente `use`ado alcançam os filhos posteriores do corpo.
-- **Recomendação.** (a): a mais restritiva, uma célula por componente resolvido, o "só descendentes" da 354 (2).
-- **Bloqueia.** O B-162 P1 (o checker sem a divisão), 809 (4), (6).
 
 #### 809-d · Como um `T` pronto entra onde se espera um `Component<T>`, e o que guarda a árvore resolvida? (decisões 809 (7), 574, 414; 165 rakun-bpp)
 - **Proposta (revisão fable, 2026-10-20; nada construído):** (a).

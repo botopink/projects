@@ -2774,7 +2774,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exists; its open points filed as questions
       — done: the pieces are P1 the checker without the split (804-a, 804-b), P2 `Renderable` out, P3 the type form's `compose`,
       P4 `Children` retired (804-c), P5 rakun-style's list of components (804-d, 165 s11)
-- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed: the type form rewritten to a record and a `component fn` (`component_types.zig`), cells `component_compose_entry` and its five refusals (question 804-e); (2) waits on 809-c (it replaces 804-a; 804-b overtaken by 809; the split rests on `Renderable` alone), its codemod written;
+- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed: the type form rewritten to a record and a `component fn` (`component_types.zig`), cells `component_compose_entry` and its five refusals (question 804-e); (2) unblocked by 812 (809-c, which replaced 804-a; 804-b overtaken by 809; the split rests on `Renderable` alone), its codemod written;
       `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
       dropped by codemod (std, the cells; rakun's sites in 165's commit)
 - [ ] decision 804 (4) (its `NodeChild` respelled by 809 (7)): rakun-bpp's `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
@@ -2814,8 +2814,9 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `child()`), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state each `Composition` instance's own store, given by `resolve` (771);
-      the codemod over std, the cells and the libraries (rakun's sites in 165's commit); the scope a resolved component gets waits on
-      809-c
+      the codemod over std, the cells and the libraries (rakun's sites in 165's commit); 812: `use c` with a child cell made at the `use`,
+      `return c` with the body's cell, `use provide` in the order written, `context-provide-after-render` removed; cell
+      `use_child_cell_provide_in_order`
 - [ ] 809 (7) (rakun, 165's commit): rakun-bpp's builders `component fn`s answering `Component<Element>`, `NodeChild = Component<Element>`,
       the renderer resolving every child; replaces the 804 (4) box's `NodeChild = Element | Component<Element>`; a ready `Element`
       and the resolved tree's record wait on 809-d

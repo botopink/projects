@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**21 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**20 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **812**.
+number, which is **813**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -466,22 +466,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) ★ Kept as written, so no recorded answer changes.
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
-
-#### 809-c · Which scope does a component resolved inside a body get — `use c` and `return c`? (decisions 809 (4), (6), (8), 354 (2); 144 B-162; replaces 804-a)
-- **Proposed (fable review, 2026-10-20; nothing built):** (a).
-- **Context.** 809 (8) makes the scope one cell per node: `scope.child()` a new cell over the parent's map, a `use provide` replacing the map of the cell the body was given, `use context` reading the map received at entry. 804-a asked between a children scope and a received scope, a split 809 removes; what is left is whether a component the body resolves gets the body's cell or a child of it. Today `context_lower.zig` hands a `use`d component the body's children scope and marks the first component `use` as the body's render (`context-provide-after-render`, 354).
-- **Options.**
-  (a) ★ `use c` resolves `c` with `scope.child()` made at the `use` — `c`'s provides reach `c`'s subtree alone, never the body's later reads nor its other children (354 (2)); `return c` with the body's own cell, `c`'s subtree being the body's; `context-provide-after-render` goes.
-  ```bp
-  component fn Page() -> Component<Element> {
-      use provide(theme);
-      val h = use header();          // header gets scope.child(): it sees `theme`; its own provides stay in it
-      return div([h]);               // div resolved with Page's cell
-  }
-  ```
-  (b) Both with the body's cell: a `use`d component's provides reach the body's later children.
-- **Recommendation.** (a): the most restrictive, one cell per resolved component, 354 (2)'s "descendants only".
-- **Blocks.** B-162 P1 (the checker without the split), 809 (4), (6).
 
 #### 809-d · How does a ready `T` enter where a `Component<T>` is expected, and what holds the resolved tree? (decisions 809 (7), 574, 414; 165 rakun-bpp)
 - **Proposed (fable review, 2026-10-20; nothing built):** (a).
