@@ -210,7 +210,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       root-run rewrites (`c.run(RenderScope.root())`, respelled `await run(c)`, decisions 822, 825) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
       `view_test`, `link_test`, `router_test`, `server_test` and `styled_sheet_test`; `div([text("title"), Counter()])`-style children
       crash in rakun-bpp's renderer (`{error,badarg}`), which is 804 (4)'s; rakun-style's `Sheet.render` (`layers.bp:86–105`) and `spliced` /
-      `styledComputed` (`styled.bp:113–144`) rewritten over `use all` (827; 804-d, 809-g)
+      `styledComputed` (`styled.bp:113–144`) rewritten over `use all` (827, 884; 804-d, 809-g)
 
 - [ ] decisions 809 (7), 813 (rakun-bpp, the 809 commit): the node builders (`text`, `div`, …) `component fn`s answering `Component<Element>`;
       `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`; a ready `Element` entering as a plain lambda `{ _ -> e }` (815); the resolved tree a record of its own beside `Element` (`Rendered(tag, attrs, children: Rendered[])` in

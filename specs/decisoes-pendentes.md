@@ -26,7 +26,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **884**.
+número livre, que é **889**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -104,6 +104,11 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 881 | docs-b | Um decorator da std importado como folha é anotado pelo seu nome |
 | [ ] | 882 | docs-c | Os helpers de teste de uma biblioteca são o seu módulo `testing/`; nenhum membro `-test` |
 | [ ] | 883 | as correções de texto da auditoria | Oito frases velhas das 814–882 corrigidas (o armazenamento da 824, o teste wasm da 823 já construído, o exemplo da 866, os marcadores da 871, a dica da 847, `RAKUN_SSR_KEY`, a citação da 852, a 869) |
+| [ ] | 884 | ctr-all-place | `use all` roda a entrada `i` em `Place.index(i)`, sem nunca substituir uma chave |
+| [ ] | 885 | ctr-embed-resolved | Um `Asset` dobrado imprime `Asset(Link(path: …))`, bytes dobrados `bytes.fromHex(…)`; `bytes` ganha `fromHex` / `toHex` |
+| [ ] | 886 | ctr-private-through-contract | O método de um tipo atende um bloco de extensão de outro módulo só se for `pub` |
+| [ ] | 887 | ctr-no-pub-spelling | Um membro que `addMember` acrescenta é `pub`; `pub val length: i32;` |
+| [ ] | 888 | ctr-lambda-arity | Uma lambda não tipada pode omitir parâmetros finais do tipo esperado |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 

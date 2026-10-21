@@ -3106,8 +3106,8 @@ Oracle: the whole suite on four targets; `test-libs`; the cold gate.
 - [ ] decision 871: a parameter's `comptime` marker compared by `implement-signature-differs`; cell `implement_signature_over_types`
       (a contract's `comptime n: i32` met by `n: i32` refused, and the reverse), red on the parent
 - [ ] decision 872: the member a type supplies to an extension block's contract compared by 800's check; cell
-      `contract_required_member_met_by_type` (a one-parameter `slice` for `string` refused), red on the parent
-- [ ] decision 873: the `val` property form gated on the prelude; `array` in `primitive-type-name-taken`, `json.arrayOf`;
+      `contract_required_member_met_by_type` (a one-parameter `slice` for `string` refused), red on the parent (886: the supplied member `pub` or the block in its module)
+- [ ] decision 873: the `val` property form gated on the prelude, written `pub val length: i32;` (887); `array` in `primitive-type-name-taken`, `json.arrayOf`;
       `bytes.toUtf8: not valid UTF-8` re-recorded; cell `primitive_type_body_and_names`, red on the parent
 
 ### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
@@ -3218,7 +3218,7 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       `_bp_init_` → `__bp_init_`, `Bp_Load*` → `Bp__Load*`); its oracle `codegen/tests/resolved_print.zig` (re-read with no comptime,
       the same answer on four targets); left (834–836): one file per module as the `.bpr` groups them, `<dir>/<pkg>/<module path>.bp`, the
       dependencies and `std/` printed, the oracle over a package of several modules and a dependency; a context printed `createContext(v)`, an
-      `Asset` `@embed("path")`, a `@TypeInfo.all` read kept until B-137; `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` moved into the
+      `Asset` `Asset(Link(path: "…"))`, folded bytes `bytes.fromHex("…")` (885; `fromHex` / `toHex` on `bytes`; cell `resolved_prints_asset_and_bytes`), a `@TypeInfo.all` read kept until B-137; `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` moved into the
       reserved space, the snapshots re-recorded; cells `resolved_one_file_per_module`, `resolved_prints_the_builder`, `hand_written_twin_name_is_free`
 - [x] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build

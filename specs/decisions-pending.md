@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **884**.
+number, which is **889**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -104,6 +104,11 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 881 | docs-b | A std decorator imported as a leaf is annotated by its name |
 | [ ] | 882 | docs-c | A library's test helpers are its `testing/` module; no `-test` member |
 | [ ] | 883 | the audit's wording fixes | Eight stale phrasings of 814–882 corrected (824's store, 823's wasm test landed, 866's example, 871's markers, 847's hint, `RAKUN_SSR_KEY`, 852's citation, 869) |
+| [ ] | 884 | ctr-all-place | `use all` runs entry `i` at `Place.index(i)`, never replacing a key |
+| [ ] | 885 | ctr-embed-resolved | A folded `Asset` prints `Asset(Link(path: …))`, folded bytes `bytes.fromHex(…)`; `bytes` gains `fromHex` / `toHex` |
+| [ ] | 886 | ctr-private-through-contract | A type's method meets another module's extension block only if `pub` |
+| [ ] | 887 | ctr-no-pub-spelling | A member `addMember` adds is `pub`; `pub val length: i32;` |
+| [ ] | 888 | ctr-lambda-arity | An untyped lambda may omit trailing parameters of its expected type |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 

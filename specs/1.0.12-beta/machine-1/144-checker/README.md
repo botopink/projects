@@ -2848,10 +2848,10 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       an aliased import, a subtype's mark), four targets, red on the parent
 - [ ] decisions 815–821, the component model as it stands (one box; each decision's cell written against this text):
       (1) `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>` (815, 819); a one-parameter lambda, `{ _ -> v }` or
-      `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)); a function answering a member of a union fits where one answering
+      `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)) — admitted by 888's trailing-parameter rule, cell `lambda_omits_trailing_parameters`; a function answering a member of a union fits where one answering
       the union is expected (returns only); `x.compose()` refused outside std's `resolve`; `{ component -> … }` refused where a `Component<T>`
       is expected, `component-lambda-not-component` (817 (3))
-      (2) std's `Place` (a call's number and the item's, or a key: `Place.none()`, `Place.key(k)`, `with`) and `Scope` (`Scope.root()`,
+      (2) std's `Place` (a call's number and the item's, or a key: `Place.none()`, `Place.key(k)`, `Place.index(i)` (884), `with`) and `Scope` (`Scope.root()`,
       `scope.childAt(key)`, the parent's cell keeping `place → cell`, a place not met in a render dropped, a repeated place among siblings
       failing `key-duplicate`); every `component` body's lowering opening `scope.childAt(stamped.with(key))` (819 (1), 820 (2));
       `resolve<T>(c, scope, key)`
@@ -2859,7 +2859,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       lambda, a plain function answering one (the outer stamp wins) — and each function answering a component named as a value
       (`itens.map(Card)`) stamps its place, numbered within the nearest `component` body with the lambdas written in it, the item's counter
       in that body's cell and reset at each of its renders; a plain function's calls numbered within it, its counter reset at each entry;
-      `use c`, the renderer and the root pass `Place.none()`; a value made outside every component body takes the root's place
+      `use c`, the renderer and the root pass `Place.none()`, `all` passes `Place.index(i)` (884); a value made outside every component body takes the root's place
       (4) every `use` that answers a value (a hook or a component) a call with a child cell at its place; `use provide` / `context` /
       `inject` taking none, the node's own cell holding its contexts alone, `memo`'s slot its own child cell's (818 (1)); a reused cell's
       contexts taken anew from the parent, only its hooks' slots kept (817 (5)); the render library keeping a mounted root, a root closed by its owner on the BEAM, else by its process (824); 771's `slot()`
@@ -2878,7 +2878,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] decision 811: the `opaque` type modifier (`[pub] opaque type X(…)`, before `type`): the constructor written only in `X`'s own
       methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module, of every type
       (814, 859: `method-not-pub` replacing `opaque-method`, `primitives.bp`'s methods `pub` by codemod, a behavior's implemented member
-      exempt; cell `method_private_to_module`, red on the parent); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
+      exempt, an extension block of another module needing `pub` (886), an added member and `pub val length` `pub` (887); cell `method_private_to_module`, red on the parent); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
       — the modifier landed: `opaque` contextual before `type` (`opaque-construction`, `opaque-field`, `opaque-method`, `opaque-not-record`),
       cells under `opaque_type_modifier-811/cells/` (811-a answered by 829, as built; 811-b by 859); `Scope` opaque is B-162 P1's
 - [ ] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
