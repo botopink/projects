@@ -1544,9 +1544,13 @@ for a defect).
   | a library's `panic(…)` message reaches stderr unchanged on every target (430) | `panic_library_message` |
   | every abort writes stderr only | the `int_overflow_*` cells |
   | a non-panic run-time abort on erlang and beam reads `Class:Reason` | none — question B-41-a |
-- [ ] decision 870: the abort handler emitted in the commonJS entry's `require.main === module` branch; `--import` dropped from `run.zig`
+- [x] decision 870: the abort handler emitted in the commonJS entry's `require.main === module` branch; `--import` dropped from `run.zig`
       and `runtime.zig` for commonJS; the four `abort_text_*` cells red on the parent under the bare harness; one commonJS codegen snapshot
       regenerated
+      — built as: the entry's `require.main === module` branch installs `otp.cjs_abort_handler` (546's marks) on `globalThis.process`
+      (a user `process` cannot shadow it), writing through `process.stderr` (no `require(`); `run.zig` / `runtime.zig` run `node` bare;
+      239 commonJS codegen snapshots took the same six-line diff (every entry with a `main`), not one; the four `abort_text_*` cells red
+      under the bare harness on the parent
 
 ### B-42 — wasm: a cell with a `path` dependency prints nothing; emilia's `arbitrary.bp` does not build (structural, decision 430)
 
