@@ -3120,8 +3120,10 @@ Each box is a library's decision-cell draft that builds on the other targets and
       on the parent too; a repro, then the fix
       — built as: `reach.dropCallers` shrank the item list after `emitWatPass` recorded the program's range; it now moves the range
       with the kept items (`wat/reach.zig`, a unit test beside it); the suite green on wasm
-- [ ] `decorator_invocation`'s B117 memory test fails under load (grown about 23 MB against a 16.8 MB bound) and passes when its shard runs
+- [x] `decorator_invocation`'s B117 memory test fails under load (grown about 23 MB against a 16.8 MB bound) and passes when its shard runs
       alone: the bound or the measure made stable on a busy machine
+      — built as (ea19f3515): the test counts the session's live allocator bytes around the one compile (`LiveBytes`), not the
+      process's RSS; 15.4 MB on every run, alone and under load, the bounds unchanged; the B-117 shape still fails it (393 MB)
 - [x] wasm: a package `Module.run()` loads (787, 792) is linked into the program's one module by name, so its `main` calls the program's `main`, its inits run at program start and a `main` answering `Error(e)` aborts with `1`; cells `compiler_load_module_run`, `module_run_twice`, `module_run_body_at_run` red on wasm
       — built as: the loaded package's `main` namespaced `<module>/main`, its initialisers in `$__bp_loaded_init__<package>`, run once and
       called first by its `__bp_loaded_main`; a `main` answering `Error(e)` gives `Error(Failure)` through the `attempt` path
