@@ -2823,7 +2823,9 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] decision 811: the `opaque` type modifier (`[pub] opaque type X(…)`, before `type`): the constructor written only in `X`'s own
       methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module
       (814); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
-- [ ] 811 (4) (with B-158's owner): `Module` opaque, made by a method without `pub` `compiler.load` lowers to, `mod.name()` /
+      — the modifier landed: `opaque` contextual before `type` (`opaque-construction`, `opaque-field`, `opaque-method`, `opaque-not-record`),
+      cells under `opaque_type_modifier-811/cells/` (questions 811-a … c); `Scope` opaque is B-162 P1's
+- [x] 811 (4) (with B-158's owner): `Module` opaque, made by a method without `pub` `compiler.load` lowers to, `mod.name()` /
       `mod.path()` for the fields; the cells and libraries that read `mod.name` / `mod.path` respelled
 - [ ] ~~791-d (narrowing a union child)~~ — answered by 810; what stays is the run-time
       test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
