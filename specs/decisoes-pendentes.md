@@ -490,16 +490,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a) se toda recusa deve levar um código que a documentação possa indexar; (b) é o que está construído.
 - **Bloqueia.** Nada do pouso da 810.
 
-#### 810-c · A identidade de um comportamento em run time: pelo nome declarado, ou qualificada pelo módulo? (decisões 810 (1), 23, 603, 635; 144 B-162)
-- **Proposto (opus, 2026-10-20; construído como (b)):** (a).
-- **Contexto.** `v is B<unknown>` sobre um comportamento precisa de uma marca em run time que a decisão 23 diz que comportamentos não têm; a 810 construiu uma por backend (`prototype.__bp_b_<B>` no commonJS, `'__bp_behaviors'/0` em cada módulo de tipo e `'__bp_implements'/2` no erlang e no beam).
-- **Medido.** A chave é o nome declarado do comportamento: dois comportamentos de mesmo nome em dois módulos testam como um; um alias e um supertipo (`extends`) não são marcados.
-- **Opções.**
-  (a) ★ A chave qualificada pela identidade do módulo que declara (a que a 603 e a 635 dão aos tipos), supertipos marcados por `extends`.
-  (b) O nome declarado sozinho, como construído.
-- **Recomendação.** (a): a 635 já faz de dois tipos de mesmo nome de dois pacotes dois tipos.
-- **Bloqueia.** Nada do pouso da 810; uma linha depois.
-
 #### 811-b · Um método sem `pub` de um tipo comum, chamado de outro módulo (decisões 814 (2), 23; 144 B-162)
 - **Proposto (opus, 2026-10-20; nada construído):** (a).
 - **Contexto.** A 814 (2): "um método de `X` escrito sem `pub` pode ser chamado de qualquer lugar do módulo de `X`, como uma função ou um `val` sem `pub` pode". Construído para um tipo opaco (`opaque-method`); um método sem `pub` de um tipo comum ainda pode ser chamado de outro módulo — o checker não tem recusa de visibilidade para métodos.

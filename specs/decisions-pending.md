@@ -490,16 +490,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a) if every refusal is to carry a code the documentation can index; (b) is what is built.
 - **Blocks.** Nothing of 810's landing.
 
-#### 810-c · A behavior's run-time identity: by its declared name, or qualified by its module? (decisions 810 (1), 23, 603, 635; 144 B-162)
-- **Proposed (opus, 2026-10-20; built as (b)):** (a).
-- **Context.** `v is B<unknown>` over a behavior needs a run-time mark decision 23 says behaviors do not have; 810 built one per backend (`prototype.__bp_b_<B>` on commonJS, `'__bp_behaviors'/0` in each type module and `'__bp_implements'/2` on erlang and beam).
-- **Measured.** The key is the behavior's declared name: two behaviors of one name in two modules test as one; an alias and a supertype (`extends`) are not marked.
-- **Options.**
-  (a) ★ The key qualified by the declaring module's identity (the one 603 and 635 give types), supertypes marked through `extends`.
-  (b) The declared name alone, as built.
-- **Recommendation.** (a): 635 already makes two same-named types of two packages two types.
-- **Blocks.** Nothing of 810's landing; a follow-up row.
-
 #### 811-b · A method without `pub` of a plain type, called from another module (decisions 814 (2), 23; 144 B-162)
 - **Proposed (opus, 2026-10-20; nothing built):** (a).
 - **Context.** 814 (2): "a method of `X` written without `pub` is callable from anywhere in `X`'s module, as a function or a `val` without `pub` is". Built for an opaque type (`opaque-method`); a non-`pub` method of a plain type is still callable from another module — the checker has no visibility refusal for methods.

@@ -1606,7 +1606,10 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [x] decision 603 for a std type: a local type beside an aliased import of a same-named std type (`import {Dict as D} from "std"` beside `type Dict(…)`) is two types — cell `own_type_beside_std_type_import` flipped to accept. Today it stays `import-name-collision`: a std type keeps its declared name in the checker, std's signatures resolve `Dict` by that name, and the backends treat std's `Dict` as a builtin shape, so keying it by its alias needs a rename of std's declarations and signatures (what `registerRenamedImportedType` does for a non-std import) · model: opus · landed (`own_type_beside_std_type_import` answers the two types; an unaliased std leaf beside a local type stays `import-name-collision`)
 - [ ] an imported value's method answer or field typed by the owner's `Tag` resolves to the importer's own `type Tag(…)`
       (`unknown field 'label' on type 'Tag'`): types are matched by name, against 603's identity (module + name); a cell (an
-      importer declaring its own `Tag` beside a `shop.bp` whose method answers `shop`'s `Tag`), red on the parent — a design step
+      importer declaring its own `Tag` beside a `shop.bp` whose method answers `shop`'s `Tag`), red on the parent — the mechanism
+      (the maintainer, 2026-10-21): every type declaration gets a unique id the compiler writes, as Zig names an anonymous struct
+      `struct__0014`, carried by the type and marked on its values, so two same-named types of two modules (`type_0015`, `type_3232`)
+      never meet — the checker compares ids, never names; a name stays the program's spelling (603: module + name)
 
 ### B-24 — 319, 320, 332: numbers and strings exact everywhere
 
@@ -2806,7 +2809,12 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
-      the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (823 settles the rest); the key unqualified (810-c)
+      the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (823 settles the rest); the key unqualified (831, below)
+- [ ] decision 831 (810-c): a behavior's identity qualified by its module — the lowering carries `<package>@<path>@@<B>` with the declared name
+      (`infer.zig`'s `behaviorDeclaredName` gains the owner path; `crossModule` indexes every `pub behavior`, not only one with a default fn);
+      erlang / beam `'__bp_behaviors'/0` and commonJS `__bp_b_<atom>` emit the atom, wasm keys `behavior_impls` by it; marks follow `extends`
+      (the checker's `behaviorReaches` chain) and an import alias; cell `behavior_identity_by_module` (two same-named behaviors of two modules,
+      an aliased import, a subtype's mark), four targets, red on the parent
 - [ ] decisions 815–821, the component model as it stands (one box; each decision's cell written against this text):
       (1) `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>` (815, 819); a one-parameter lambda, `{ _ -> v }` or
       `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)); a function answering a member of a union fits where one answering
