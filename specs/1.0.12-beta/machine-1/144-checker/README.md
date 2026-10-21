@@ -2806,6 +2806,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
       the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (810-b); the key unqualified (810-c)
+- [ ] decision 819: `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>`, every `component` body's lowering opening with
+      `scope.childAt(key)`; std's `Place` the call's number within its declaration and the item's (or the `#[key(…)]` value) — no callee
+      name, no type; `resolve` taking the key; a hand call `c(scope, Place.key(k))` taking its own cell; a one-parameter lambda still a
+      `Composition`; `key-duplicate` at run time; cell `composition_takes_its_place` (`if … Painel() else Login()` never shares, a keyed
+      list called by hand keeps each item's state, a repeated key fails)
 - [ ] decision 818: every `use` that answers a value (a hook or a component) lowered to `childAt(Use(n), c)`, `provide` / `context` /
       `inject` taking no place, the node's cell holding its contexts alone; a component's identity the call that made it, numbered within
       its declaration (no type argument); `#[key(expr)]` before an expression answering a `Component<T>` (`key-type`, a duplicate failing at
