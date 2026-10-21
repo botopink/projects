@@ -122,11 +122,13 @@ Writing a type-parameter field is lowered but no cell reaches it.
 - [ ] **tasks and the scheduler** (392) over GC records: a settled value is shared, never copied (immutable); a
       mutable cell a GC struct with one mutable field; no heap per task, no copy at a send, no cycle to detect (the
       host's collector follows cycles)
-- [ ] **`is Async<unknown>` on wasm** (decision 823): a `ref.test (ref $task)` row in `gcTypeTests` (`codegen/wat.zig`; today the name has
+- [x] **`is Async<unknown>` on wasm** (decision 823): a `ref.test (ref $task)` row in `gcTypeTests` (`codegen/wat.zig`; today the name has
       no GC type, a GC gap that sends the module to the linear lowering, which refuses the test at the call), the task's state not read, so
       `v is Async<unknown>` answers whether `v` is a task, settled or not; `lowerAwait` over a `T | Async<T>` (the `await` that `use c` lowers
       to) testing the same instead of deciding by the static type; cell `is_async_answers_a_task`'s wasm column (the cell is 166's, under
       `decisions-taken/`); B-162 P1's `run` and `use c` wait on it on wasm only
+      — built as: `$task` the GC type of an `Async` type ref, a task boxed into an `unknown` as is, `await` over a `T | Async<T>`
+      testing `ref.test (ref $task)`; the cell green on four targets (wasm refused it on the parent)
 - [x] **`needs: [.Gc]`** (518) on every program emitting GC types — wasmtime `-W gc=y`, node and the browser by default
 - [ ] **every `run/` cell's `.out` on wasm unchanged**; a long-running cell (a loop of 10M allocations, a recursion
       without a loop, a request loop) whose memory stays bounded; `std_wasm.wasm` still linked for the std's functions

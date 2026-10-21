@@ -2982,8 +2982,10 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [x] parser: a typed lambda parameter of an optional type, `{ h: ?Holder -> … }`, does not parse (583 writes a lambda's parameter
       types); a cell, red on the parent
       — void: a brace lambda declares no types (583); the typed form `fn(h: ?Holder) -> string { … }` parses and runs on four targets
-- [ ] wasm: a function value `fn(h: ?Holder[]) -> i32 { return 1; }` called with `null` traps at run time (`main!__lambda2`), beside
+- [x] wasm: a function value `fn(h: ?Holder[]) -> i32 { return 1; }` called with `null` traps at run time (`main!__lambda2`), beside
       a `fn(h: ?fn(i32) -> i32) -> i32` in the same program (which one traps not isolated); a cell, red on wasm on the parent
+      — built as: both trapped — a call through a function value with no declared type boxed `null` as an `i32` box the adapter's
+      cast refused; each argument now boxed by the lambda's written parameter type; cell `fn_expr_optional_param_null` (408)
 - [x] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
       — built as: `noteTupleElemShape` hands a container element's shape to the bound name; cell `tuple_destructure_array_element` (738)
@@ -2997,8 +2999,14 @@ Each box is a library's decision-cell draft that builds on the other targets and
       function is right); a cell of the shape, red on wasm on the parent
       — built as: `resultShapeOf` asks `recordMethodSym` for the method's declared shape; cell `import_type_method_result` (107);
       codegen snapshot `try_catch_tail_on_method_call` moved from the linear fallback to the GC lowering (the same output)
-- [ ] wasm: `print(h?.fields?.length() ?? 0)` with `val h: ?Form = null` (`type Form(fields: ?Field[])`) prints `8` where the
+- [x] wasm: `print(h?.fields?.length() ?? 0)` with `val h: ?Form = null` (`type Form(fields: ?Field[])`) prints `8` where the
       other three print `0` (a present receiver with `fields: null` prints `0`); a cell, red on wasm on the parent
+      — built as: a local annotated `?R` whose value names no record takes `R` from its annotation, so each link is guarded
+      (the length was loaded off address 0); cell `optional_chain_absent_array_length` (330)
+- [ ] beam: `x?.length()` over a present optional array crashes `{unresolved_method,length,1}` — `f?.fields?.length()` with
+      `fields` present, `h?.length()` on a `?Holder[]` lambda parameter; found by B-155's wasm rows; a cell red on beam on the parent
+- [ ] wasm: `f?.(3)` on a `?fn(i32) -> i32` parameter is refused "the type of what it answers is not known here" where the
+      other three answer; found by B-155's wasm rows; a cell red on wasm on the parent
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
       it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
       machine 1's under 769
