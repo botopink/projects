@@ -3169,8 +3169,15 @@ Oracle: the whole suite on four targets; `test-libs`; the cold gate.
       — built as: a record's or primitive's own method meets an extension block's required member, compared by 800's check at the
       block; 886's `method-not-pub` at the block (a primitive's prelude methods read as its `pub` surface, 859 (3), until B-162's respell);
       cells under 872's and 886's own directories
-- [ ] a `default fn` of an extension block's contract cannot be called on a record target (`TagShout implement Labelled for Tag {}`, then
+- [x] a `default fn` of an extension block's contract cannot be called on a record target (`TagShout implement Labelled for Tag {}`, then
       `Tag(…).shout()`: "'shout' is not declared in any behavior implemented for 'Tag'"); found by B-148's 872 cells; a cell red on the parent
+      — built as (44b4c1630): `adopt_defaults.zig`'s `adoptForBlocks` gives a type of the module the `default fn`s of the contracts its
+      local or imported-and-activated blocks implement, as `pub` methods (its `implement` clause untouched, 684); a primitive's adoption
+      reads the activated imported blocks too; the resolver exports a `pub X implement … for …` block; cell `contract_default_fn_called_on_target`
+- [ ] beam: a block's own method on a primitive (`StringShout implement Shout for string { fn label(self) … }`, `"d".label()`) crashes
+      `{unresolved_method,label,1}` (commonJS and erlang answer); on wasm a `default fn` calling that method prints a pointer (`344!`); a cell
+- [ ] a record's extension block in another module than the record's does not give the record the contract's `default fn`s (only the
+      same-module case is adopted); a cell red on the parent
 - [x] decision 873: the `val` property form gated on the prelude, written `pub val length: i32;` (887); `array` in `primitive-type-name-taken`, `json.arrayOf`;
       `bytes.toUtf8: not valid UTF-8` re-recorded; cell `primitive_type_body_and_names`, red on the parent
       — built as: `pub val length: i32;` parsed in the prelude alone, a local shadowing a primitive's statics, `array`
