@@ -2942,12 +2942,14 @@ Each box is a library's decision-cell draft that builds on the other targets and
       local after a closure that reads it, run at build, red on wasm on the parent
       — not reproduced in botopink-lang alone (css's `Context.X` shape, `Result` / `throw`, a loop, nested `else if`: green on
       four targets); measured again on css's draft once it compiles
-- [ ] `?.` on wasm: `x?.name` where the receiver's type comes from a field of an optional record is refused with
+- [x] `?.` on wasm: `x?.name` where the receiver's type comes from a field of an optional record is refused with
       `the wasm backend cannot place ?.name: the receiver's type is not known here` (actions'
       `optional_typescript_operators-330` draft, 330); a cell of the shape, four targets, red on wasm on the parent
       — not reproduced in any written shape (the actions draft never compiled); a nearby defect fixed instead: `xs?.[i]` over an
       optional array of records named no record (`optLinkElemRecord`), cell `optional_index_record_field` (330); left: compile the draft
       — not reproduced in botopink-lang alone (seven shapes); measured again on actions' draft once it compiles
+      — closed: the draft cannot build on wasm (actions declares no wasm target, 770); its shape rebuilt as a botopink-lang program
+      answers as commonJS on wasm
 - [x] comptime: a call to a dependency's function written module-qualified inside a `comptime` block
       (`markdown.toHtml(markdown.parse(source))`, `status.reasonPhrase(…)`, `cookie.serialize(…)`) is refused with `the
       comptime block calls .toHtml(…) with 1 argument(s) …, which no primitive type and no type the block reaches
@@ -2964,14 +2966,25 @@ Each box is a library's decision-cell draft that builds on the other targets and
       — built as: `beam_asm.zig` reads `recv?.member` on an unplaced record type through the run-time field helper, as the plain read
       does (it shows only when another record declares the same field); the repro written `fn apply(x: ?Holder, f: fn(?Holder) -> string)`,
       an untyped lambda being refused (583); cell `optional_chain_lambda_param` (330)
-- [ ] wasm: the same `?.` chain in a lambda over a generic `apply<T, R>(x: T, f: fn(T) -> R)` prints `324` / `360` where the other
+- [x] wasm: the same `?.` chain in a lambda over a generic `apply<T, R>(x: T, f: fn(T) -> R)` prints `324` / `360` where the other
       three targets print `a` / `none`; a cell in 330's directory, red on wasm on the parent
+      — built as: `isStringExpr` reads the lambda's body when `-> R` matches `f: fn(T) -> R` (`genericResultLambda`); cell
+      `optional_chain_lambda_generic` (330)
+- [ ] wasm: a generic function's result `R` is lowered from the lambda's body only when it is a `string` (`genericResultLambda`); any
+      other `R` (a number, a record, an array) and a plain `apply(h, { x -> "s" })` in GC mode (a `cast failure` trap) are wrong; a cell
+      per shape, red on wasm on the parent
+- [ ] wasm GC mode: the nested optional chain `f?.fields?.[0]?.name` — `optInfoOf`'s fix applies in linear mode only (in GC it traps on
+      an absent receiver); a cell case forcing GC, red on the parent
+- [ ] parser: a typed lambda parameter of an optional type, `{ h: ?Holder -> … }`, does not parse (583 writes a lambda's parameter
+      types); a cell, red on the parent
 - [x] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
       — built as: `noteTupleElemShape` hands a container element's shape to the bound name; cell `tuple_destructure_array_element` (738)
-- [ ] wasm: `f?.fields?.[0]`, `f` an optional record whose `fields` is an optional array, prints garbage; a cell of the shape, red on
+- [x] wasm: `f?.fields?.[0]`, `f` an optional record whose `fields` is an optional array, prints garbage; a cell of the shape, red on
       wasm on the parent
-- [ ] wasm: `t._1` read off a tuple local holding an array prints the array's address; a cell of the shape, red on wasm on the parent
+      — built as: `optInfoOf` gives an optional-array field its own optional info in linear mode; cell `optional_chain_nested_array` (330)
+- [x] wasm: `t._1` read off a tuple local holding an array prints the array's address; a cell of the shape, red on wasm on the parent
+      — built as: `isArrayExpr` / `elemKindOf` read a tuple element's shape (`tupleElemArrayShape`); cell `tuple_element_array_read` (738)
 - [ ] wasm: a method of an imported type answering a `Result` reads its `Ok` / `Error` payload as a number (`case
       Shop(name: "corner").num() { Ok(t) -> print(t); … }` prints `296` where the other three print `corner`; one module or a free
       function is right); a cell of the shape, red on wasm on the parent
