@@ -77,8 +77,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | prefixed strings on `@External.Wasm` (481) | `external_wasm_prefixed_{fn,op,wasi,std}_refused` |
 | the formatter prints `label: value`; the LSP rename; no prefixed string in `libs/**` | no cell: `format/tests/declarations.zig`, `language-server/src/tests/rename.zig`, the `build.zig` scan |
 
-- [ ] `"std:…"` in a template refused on `.JavaScript` / `.Erlang` too, naming `.Wasm(std: …)` (847); `infer.zig`'s `std_` exemption goes;
-      cell `external_std_prefix_refused_everywhere` (red on the parent, 305's folder)
+- [x] `"std:…"` in a template refused on `.JavaScript` / `.Erlang` too, naming `.Wasm(std: …)` (847); `infer.zig`'s `std_` exemption goes;
+      cell `external_std_prefix_refused_everywhere` (red on the parent, 305's folder) — landed (a case of 305's `refused` package; no site
+      relied on the exemption)
 
 ### B-10 — 430: the compiler gaps a library works around today
 
@@ -118,8 +119,8 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [ ] `compiler.variants(d) -> compiler.Variant[]` (name, fields, annotations, section) (848); the prelude mirror; cell
       `compiler_variants_typed_entries`; validation's two markers and their `language-gaps.md` rows in the consumer commit
 - [ ] `Field` reflects a field's default · question B-10-a
-- [ ] `clock.formatIso8601` always `.sssZ`: the erlang cell on `{unit, millisecond}` (849); cell `clock_iso8601_millis_always` on commonJS,
-      erlang, beam
+- [x] `clock.formatIso8601` always `.sssZ`: the erlang cell on `{unit, millisecond}` (849); cell `clock_iso8601_millis_always` on commonJS,
+      erlang, beam — landed (red on the parent)
 - [ ] handed to 146 (their compiler halves built): the comptime parameter default and the raw lexeme (125 s12, s7),
       `#[each("email")]` → `#[each(email)]` (125 s8)
 - [ ] G2: the same for rakun-style's and rakun-stylesheet's markers — built: a method's behavior-typed parameter takes an
@@ -2086,8 +2087,8 @@ other repositories' steps.
 - [x] `io.terminal`: `stdoutIsTTY()`, `size() -> ?#(i32, i32)`, `setRaw(on)`, `keys() -> Stream<Key>`
       — `keys()` written `@Stream<Key>` (553's types not in std yet), with a pure `parseKey`; `std_io_terminal_not_a_tty`;
       on erlang / beam `keys()` lazy since B-128 (855), raw mode reads Linux's `/proc` and `stty` (856)
-- [ ] `TerminalError.Unsupported`; `setRaw` `Error(Unsupported)` and `size()` `null` off Linux on erlang / beam, `os:type()` tested first;
-      `libs/std/AGENTS.md` says it; no cell runs off Linux (856)
+- [x] `TerminalError.Unsupported`; `setRaw` `Error(Unsupported)` and `size()` `null` off Linux on erlang / beam, `os:type()` tested first;
+      `libs/std/AGENTS.md` says it; no cell runs off Linux (856) — landed (`std_io_terminal_not_a_tty`'s exhaustive `case` gained the arm)
 - [x] `io.process`: `enum Signal { Int, Term, Hup, Winch }`, `onSignal(s, f)`, `spawn(cmd, args) -> @Result<Child,
       ProcessError>` with `Child.wait()`, `kill(s)`, `forwardSignals()` — a spawned child receives the `SIGTERM` sent to
       its parent, asserted with a child that prints on the signal
@@ -2130,9 +2131,9 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
       `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
       — `backtick_name_{binding,parameter,function,type,field,module_segment,import_item,in_diagnostic,empty,line_break}`,
       `bpp_not_found_aliased`, `bpp_not_found_unaliased`; open: B-27-d (the formatter's plain spelling); B-27-e answered by 853 and 890, B-27-f by 854 (as built)
-- [ ] the duplicate-module message names 109's fold and the pair is refused on every target at the top of `codegen.emit`, `duplicate_decl`
+- [x] the duplicate-module message names 109's fold and the pair is refused on every target at the top of `codegen.emit`, `duplicate_decl`
       too (853, 890); cell `module_atom_pair_refused` (`not_found.bp` + `not-found.bpp`), four targets, red on the parent by its text on
-      commonJS and wasm
+      commonJS and wasm — landed (`crossModule.pairFaults`; red on the parent)
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

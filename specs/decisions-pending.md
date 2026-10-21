@@ -194,6 +194,30 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** 841 (1)'s `log` example as written; nothing else — built: the shape read as a decorator, the cell writing a first parameter
   before the `syntax` one.
 
+#### b162-render-library · A render library that runs a tree's children outside the parent's body (809 (8))
+- **Measured.** 809 (8) takes `Rendered`'s scope away: a component answers its value alone. The cells of 388
+  (`component_is_lambda`, `component_run_root`, `render_scope_library`), 574 (`component_lambda_typed_param`,
+  `component_lambda_typed_val`), 791 (`component_resolved_by_use_or_tree`) and 584 (`marker_lambda_brace_component`) carry a
+  `render(c, scope)` helper. It runs a tree's children from outside the parent's body, under the scope it holds. Built on
+  B-162 P1, those children no longer see the parent's `use provide`, and the cells' answers change.
+- **Options.** (a) The cells are rewritten so the children are resolved inside the providing body (`use c`, or a call by hand
+  `c(scope, key)` in a `{ scope -> … }` component, 819 (4)), and their answers kept. (b) The outside renderer is kept and the new
+  answer recorded: the parent's `provide` is not seen. (c) The cells are retired as 388 (2)'s.
+- **Recommendation.** (a): 817 makes a child's contexts its parent cell's, so a child run outside that cell is not the model's
+  child. The render library the cells stand for is rakun-bpp's, which 891 already runs inside the node's cell.
+- **Blocks.** Those seven cells on B-162 P1's branch; P1's other pieces go on.
+
+#### 848-a · `compiler.variants`: a section wrapper's field name and the entries' order
+- **Measured.** 848 (3) makes a section wrapper's constructor (`Token.Color`) an entry "with its one field and its own `section`".
+  It names neither that field nor the order of the entries. Built: the field is `value`, typed by the section (`Token.Color`, or
+  `Token.Color.Warm` when nested), and the wrapper's `section` is its enclosing section, `null` at the top level. The entries run
+  in this order: the top-level variants, then each section's wrapper, its leaves and its sub-sections, in source order.
+- **Options.** (a) As built. (b) The field named after the section (`color: Token.Color`). (c) The entries in source order,
+  each wrapper where its section is written, the same order the constructors are in.
+- **Recommendation.** (a): `value` is the name validation's 125 workaround already holds (`Success(value: ReplySuccess)`), and
+  for a flat enum (a) and (c) give the same order.
+- **Blocks.** Nothing; built as (a).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 ## Part 1 — What blocks tracks 00–03

@@ -194,6 +194,30 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Bloqueia.** O exemplo `log` de 841 (1) como escrito; nada mais — construído: a forma lida como decorator, a célula escrevendo um primeiro parâmetro
   antes do `syntax`.
 
+#### b162-render-library · Uma biblioteca de render que roda os filhos de uma árvore fora do corpo do pai (809 (8))
+- **Medido.** 809 (8) tira o scope de `Rendered`: um componente responde só o seu valor. As células de 388
+  (`component_is_lambda`, `component_run_root`, `render_scope_library`), 574 (`component_lambda_typed_param`,
+  `component_lambda_typed_val`), 791 (`component_resolved_by_use_or_tree`) e 584 (`marker_lambda_brace_component`) carregam um
+  helper `render(c, scope)`. Ele roda os filhos de uma árvore de fora do corpo do pai, sob o scope que guarda. Construído sobre
+  o B-162 P1, esses filhos não veem mais o `use provide` do pai, e as respostas das células mudam.
+- **Opções.** (a) As células são reescritas para que os filhos sejam resolvidos dentro do corpo que provê (`use c`, ou uma chamada à mão
+  `c(scope, key)` num componente `{ scope -> … }`, 819 (4)), e suas respostas mantidas. (b) O renderer de fora é mantido e a nova
+  resposta registrada: o `provide` do pai não é visto. (c) As células são aposentadas como as de 388 (2).
+- **Recomendação.** (a): a 817 faz dos contextos de um filho os da célula do seu pai, então um filho rodado fora dessa célula não é
+  filho do modelo. A biblioteca de render que as células representam é a do rakun-bpp, que a 891 já roda dentro da célula do nó.
+- **Bloqueia.** Essas sete células no branch do B-162 P1; as outras peças do P1 seguem.
+
+#### 848-a · `compiler.variants`: o nome do campo de um wrapper de seção e a ordem das entradas
+- **Medido.** 848 (3) faz do construtor de um wrapper de seção (`Token.Color`) uma entrada "com o seu único campo e a sua própria `section`".
+  Não nomeia esse campo nem a ordem das entradas. Construído: o campo é `value`, tipado pela seção (`Token.Color`, ou
+  `Token.Color.Warm` quando aninhada), e a `section` do wrapper é a seção que o envolve, `null` no topo. As entradas vêm
+  nesta ordem: as variantes do topo, depois o wrapper de cada seção, suas folhas e suas subseções, na ordem do fonte.
+- **Opções.** (a) Como construído. (b) O campo com o nome da seção (`color: Token.Color`). (c) As entradas na ordem do fonte,
+  cada wrapper onde sua seção está escrita, a mesma ordem dos construtores.
+- **Recomendação.** (a): `value` é o nome que o contorno 125 da validation já usa (`Success(value: ReplySuccess)`), e
+  para um enum plano (a) e (c) dão a mesma ordem.
+- **Bloqueia.** Nada; construído como (a).
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
