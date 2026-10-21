@@ -2731,7 +2731,11 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       on each run (no longer by `-on_load` for a loaded module); cell `module_run_twice_beam_memory` (806's directory, erlang and beam)
 - [ ] an inline enum in a record field — 806's `RunFailure(kind: type { Failed, Abort }, message: string)` — is refused by the parser
       ("write `anytype`"); std writes a named `RunFailureKind` meanwhile; a cell, red on the parent, then std writes the field inline
-      — waits on question 806-b (207 allows an inline type only in a parameter, and fixes no `type { … }` form)
+      — decision 832: the parser admits `type(…)` / `type { … }` in a record field beside a named type (both the language);
+      `inline_types.zig` hoists it as `Bp__<Owner>__<field>`, 207's parameter type renamed `Bp__<fn>__<param>` (snapshots re-recorded);
+      a return, a `val` annotation, a behavior member, a variant payload stay `inline-type-outside-parameter`, a nested one
+      `inline-type-nested`; cells `inline_type_in_field_named_by_owner` (four targets, a cross-package `.Failed` in a `case`, two identical
+      inline types two types, the nested one refused)
 - [x] the comptime runtime refuses a `catch` binding inside an init lambda that shares its name with an outer `case` arm's binding
       (`Error(r) -> compiler.init({ -> try … catch { r -> … } })`: "the wat runtime does not take variable `R` used before it is
       bound"); a cell, red on the parent

@@ -622,17 +622,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): one place for a library's helpers whatever its layout (67).
 - **Blocks.** item 16 (the docs.md text).
 
-#### 806-b · May a record field hold an inline type, and what is `type { … }`? (decisions 806, 207, 575 (5), 578 (2); 144 B-158)
-- **Proposed (opus, 2026-10-20; nothing built):** (B).
-- **Context.** 806 writes std's `pub type RunFailure(kind: type { Failed, Abort }, message: string)`; the parser refuses an inline `type { … }` in a field ("write `anytype`"), so std declares a named `pub type RunFailureKind { Failed, Abort }` meanwhile.
-- **Measured.** 207 allows an inline type "only in a parameter position — not a return, a field or a `val` annotation", and only the record form `type(…)`; 575 (5) and 578 (2) say "`type(` / `type {` stay the inline type" without fixing what `type { … }` means. 806's field is the only example of an inline enum. Open: whether a field may hold one at all, what it lowers to, whether a reader can name it, whether two identical inline enums are one type.
-- **Options.**
-  (A) Amend 207: a record field may hold an inline type; `type { A, B }` is a private enum named after its owner, as the parameter form is; readers write `.Failed` / `.Abort` and cannot name the type.
-  (B) ★ Keep 207 and read 806's spelling as shorthand: std keeps the named `RunFailureKind`, and 806's text and the B-158 row are respelled.
-  (C) An inline type wherever a type is written, structural like 629's derived types.
-- **Recommendation.** (B): no new type form, and every reader's `.Failed` / `.Abort` already works.
-- **Blocks.** B-158's inline-enum row (std's `RunFailure` field) only.
-
 #### 798-b · Which target is a `compiler.load` file checked for, now that comptime reads none? (decisions 780 (1), 798 (4), 805; 144 B-163)
 - **Proposed (opus, 2026-10-20; built as (a), by the move):** (c).
 - **Context.** 780 (1) compiles a loaded file "as the entry of a package of its own … for the build's target", its refusals the answer; 798 (4) says comptime never reads the target, and B-163's first piece moved `std-unsupported-on-target` and `compiler.beamMemory` to a per-target check at `emit`.
@@ -670,6 +659,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Proposed (opus, 2026-10-20; built as (b)):** (b).
 - **Context.** 805 (6) reserves `$`, `__bp_` and `Bp__`; the printer moved `_bp_init_` → `__bp_init_` and `Bp_Load*` / `Bp_RunFailure` → `Bp__Load*` / `Bp__RunFailure`.
 - **Measured.** Still printed outside that space: `<f>__type` (297), `Type__Field` (631), `declared__metaAll__T` (298), `<Type>__<Assoc>` (216), `BpInline__…` (207), `BpRef`, `__<Type>__<Section>`, `__embed_<p>`.
+- **Since 832.** 207's `BpInline__…` moves to `Bp__<fn>__<param>`, and a record field's inline type is `Bp__<Owner>__<field>` (832); the rest of the list is still this question's.
 - **Options.**
   (a) Each renamed into `__bp_` / `Bp__`, the snapshots that show them re-recorded.
   (b) ★ Left as they are: 805 (6) refuses a hand-written name and no more.

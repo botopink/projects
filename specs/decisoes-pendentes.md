@@ -622,17 +622,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): um lugar para os helpers de uma biblioteca qualquer que seja seu layout (67).
 - **Bloqueia.** item 16 (o texto dos docs.md).
 
-#### 806-b · Um campo de registro pode ter um tipo inline, e o que é `type { … }`? (decisões 806, 207, 575 (5), 578 (2); 144 B-158)
-- **Proposto (opus, 2026-10-20; nada construído):** (B).
-- **Contexto.** A 806 escreve na std `pub type RunFailure(kind: type { Failed, Abort }, message: string)`; o parser recusa um `type { … }` inline num campo ("write `anytype`"), então a std declara enquanto isso um `pub type RunFailureKind { Failed, Abort }` nomeado.
-- **Medido.** A 207 permite um tipo inline "só na posição de parâmetro — não num retorno, num campo ou numa anotação de `val`", e só a forma de registro `type(…)`; a 575 (5) e a 578 (2) dizem "`type(` / `type {` continuam o tipo inline" sem fixar o que `type { … }` significa. O campo da 806 é o único exemplo de um enum inline. Em aberto: se um campo pode ter um, para o que ele é baixado, se um leitor pode nomeá-lo, se dois enums inline idênticos são um só tipo.
-- **Opções.**
-  (A) Emendar a 207: um campo de registro pode ter um tipo inline; `type { A, B }` é um enum privado nomeado pelo seu dono, como a forma de parâmetro; os leitores escrevem `.Failed` / `.Abort` e não podem nomear o tipo.
-  (B) ★ Manter a 207 e ler a grafia da 806 como abreviação: a std mantém o `RunFailureKind` nomeado, e o texto da 806 e a linha da B-158 são regrafados.
-  (C) Um tipo inline onde quer que um tipo seja escrito, estrutural como os tipos derivados da 629.
-- **Recomendação.** (B): nenhuma forma de tipo nova, e o `.Failed` / `.Abort` de todo leitor já funciona.
-- **Bloqueia.** Só a linha do enum inline da B-158 (o campo `RunFailure` da std).
-
 #### 798-b · Para qual target um arquivo de `compiler.load` é checado, agora que o comptime não lê nenhum? (decisões 780 (1), 798 (4), 805; 144 B-163)
 - **Proposto (opus, 2026-10-20; construído como (a), pela mudança):** (c).
 - **Contexto.** A 780 (1) compila um arquivo carregado "como a entrada de um pacote próprio … para o target do build", suas recusas sendo a resposta; a 798 (4) diz que o comptime nunca lê o target, e a primeira peça da B-163 moveu `std-unsupported-on-target` e `compiler.beamMemory` para uma checagem por target no `emit`.
@@ -670,6 +659,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Proposto (opus, 2026-10-20; construído como (b)):** (b).
 - **Contexto.** A 805 (6) reserva `$`, `__bp_` e `Bp__`; o printer moveu `_bp_init_` → `__bp_init_` e `Bp_Load*` / `Bp_RunFailure` → `Bp__Load*` / `Bp__RunFailure`.
 - **Medido.** Ainda impressos fora desse espaço: `<f>__type` (297), `Type__Field` (631), `declared__metaAll__T` (298), `<Type>__<Assoc>` (216), `BpInline__…` (207), `BpRef`, `__<Type>__<Section>`, `__embed_<p>`.
+- **Desde a 832.** O `BpInline__…` da 207 passa a `Bp__<fn>__<param>`, e o tipo inline de um campo de registro é `Bp__<Owner>__<field>` (832); o resto da lista continua sendo desta pergunta.
 - **Opções.**
   (a) Cada um renomeado para `__bp_` / `Bp__`, os snapshots que os mostram regravados.
   (b) ★ Deixados como estão: a 805 (6) recusa um nome escrito à mão e nada mais.
