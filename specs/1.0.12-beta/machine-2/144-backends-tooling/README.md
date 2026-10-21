@@ -3429,10 +3429,12 @@ being the one that stands.
       landing writes flat (machine 1, under 769) is homed by 166, never by its writer
       — the 68 flat cells homed (2026-10-20): 13 into prefix modules and decision directories, 55 into decision directories that held
       only a draft (the draft removed, the docs linking the cells) or were new (791, 802)
-- [ ] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
+- [x] **Piece 3** — the counts before and after in the report; `conformance/docs.md` § cells updated; `AGENTS.md` (meta and
       botopink-lang's) § conformance updated in the same commit.
       — `conformance/docs.md`, `conformance/AGENTS.md` and the meta's `AGENTS.md` done; left: botopink-lang's root `AGENTS.md` still says
       `modules/<cell>/` (its § Layout row, the `<!-- example: modules/<cell> -->` line and `botopink cell new`'s path).
+      — botopink-lang's root `AGENTS.md` done (a99609584); 13 more flat cells homed (27a94f55d: 622, 800, a new 799 directory), 1,122 cells
+      before and after; `plan` refuses while 22 code-bearing rows have no `Cell` slug (846 among them) — the ledger's slugs to complete
 - [x] **Piece 4 — the packages (decision 779)**: each module's 765 `cases/` packed by `scripts/pack-cells.py apply` into
       `run/` (the printing cases, one program, entry `runCase`), `refused/` (the refused cases, one build, one `.snap` per case)
       and `cells/<case>/` (the rest, unchanged); a case packs only when its package's `cell check` equals its old answers on
