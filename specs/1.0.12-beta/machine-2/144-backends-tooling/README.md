@@ -2874,10 +2874,17 @@ on wasm too.
       `generator_result_items_lazy`, `generator_defer_lazy`, `generator_item_untyped_lazy`, `generator_walk_lazy`,
       `generator_to_array_printed`, `stream_body_lazy`; a `yield :l` naming an enclosing scope is refused by the checker
       (`yield-label-unbound`), so no program reaches that fallback
-- [ ] a `return` or `break :outer` out of a `for` over a generator closes it (its pending `defer`s run) on wasm, as leaving
+- [x] a `return` or `break :outer` out of a `for` over a generator closes it (its pending `defer`s run) on wasm, as leaving
       by the loop's end or a plain `break` does; checked against commonJS, erlang and beam, a cell for each exit
-- [ ] `find` and `flatMap` on a generator handle keep a module in linear memory on wasm; stepped in place as the other
+      — built as (7d9b35bd3): a `return`, `break :outer` or propagating `try` out of the `for` runs the iteration's defers, then the
+      generator's pending `defer` (GC mode); cases `generator_for_return_closes`, `generator_for_break_outer_closes`
+- [x] `find` and `flatMap` on a generator handle keep a module in linear memory on wasm; stepped in place as the other
       methods (the method set is decision 596's)
+      — built as (d8c81241a): `find` stepped in place (stops at the match, closes the generator, answers `?T`), `flatMap` a fifth derived
+      handle kind (8 wasm snapshots' body-kind constants one higher); case `generator_find_lazy`; `flatMap`'s cell waits on 596's runtime
+      half (erlang `bp_unsupported_method flatMap`, beam `unresolved_method`)
+- [ ] wasm: `take(n)` reaching its count does not close its source, nor `toArray()` its handle — `counted().take(1).toArray()` prints
+      `closed` on commonJS and erlang, not on wasm (`$__gen_resume`'s take case at `left <= 0`); a cell red on wasm on the parent
 
 ### B-143 — commonJS: `push` mutates the array every binding holds, not the `var` it was called on (decisions 447 (2), 448 (2), 547)
 
