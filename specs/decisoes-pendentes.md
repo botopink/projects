@@ -26,7 +26,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **871**.
+número livre, que é **883**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -91,6 +91,18 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 868 | 532-a | Uma célula de recusa declara os seus frames `from`, o cabeçalho igual |
 | [ ] | 869 | 533-a | `comptime-badarith` nomeia a operação que divide no seu caret |
 | [ ] | 870 | 535-b | O handler de abort do commonJS emitido na entrada do programa |
+| [ ] | 871 | 800-a | "Idêntico" sobre tipos; o marcador `comptime` faz parte da assinatura |
+| [ ] | 872 | 799-a | Um membro obrigatório que o tipo já tem atende o contrato, comparado pela 800 |
+| [ ] | 873 | 641-a…d | `val length` só em `primitives.bp`; um local sombreia estáticos; `array` um nome reservado (`json.arrayOf`); `bytes.toUtf8` |
+| [ ] | 874 | B-116-k | Respondida pelas 553/147, 819/821, 584/409 |
+| [ ] | 875 | 518-a | Respondida pelas 575 (6), 621: as recusas de `needs:` são do construtor |
+| [ ] | 876 | 335-a | Respondida pela 823: `race` sobre valores prontos; o rascunho sobre `raceOf` |
+| [ ] | 877 | 547-a | Respondida pela 547: um `var` de módulo sem anotação é ETS no BEAM; o build um defeito |
+| [ ] | 878 | 543-a | Cranelift com o cache; SIGINT / cancel do LSP interrompem um build |
+| [ ] | 879 | 164-s3-g | `String.slice` como corpos botopink no P1 |
+| [ ] | 880 | 164-s3-m | Uma folha de `Bytes` dá trap fora do seu domínio |
+| [ ] | 881 | docs-b | Um decorator da std importado como folha é anotado pelo seu nome |
+| [ ] | 882 | docs-c | Os helpers de teste de uma biblioteca são o seu módulo `testing/`; nenhum membro `-test` |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -118,195 +130,6 @@ Abertas e sem travar nada (frente 165): **548-a** (toda biblioteca linka seu có
 
 As perguntas que os passos da máquina 1 esperam (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, o grupo do
 modelo de módulos), respondidas antes de toda outra parte desta página; na ordem dos passos que travam.
-
-#### 335-a · `async.race` no erlang: o mais rápido, ou o primeiro escrito? (decisão 335; m2-0027)
-- **Proposto (sonnet, 2026-10-19; nada construído):** (a).
-- **Contexto.** 335: `async.race(tasks)` responde a primeira task a terminar. No erlang `Async` é rebaixado de forma ansiosa (cada task roda até o fim onde é feita), como `libs/std/src/async.bp` e a célula `std_async_on_every_target` registram.
-- **Medido.** O rascunho da 335 responde `slow` no erlang e `fast` no commonJS: o `race` do erlang responde o elemento zero.
-- **Opções.**
-  (a) ★ `Async` é rebaixado de forma preguiçosa no erlang: uma task é um processo iniciado no `race` / `await`, e o `race` responde a primeira mensagem de volta — uma resposta em todo alvo.
-  ```bp
-  val w = await async.race([slow(), fast()]);   // "fast" on every target
-  ```
-  (b) A 335 é estreitada: no erlang o `race` responde a primeira task escrita, uma divergência declarada por alvo.
-  ```bp
-  val w = await async.race([slow(), fast()]);   // erlang: "slow"; commonJS: "fast"
-  ```
-- **Recomendação.** (a): uma resposta por programa (as divergências são para o que um alvo não consegue fazer, e o erlang consegue correr processos).
-- **Bloqueia.** A promoção do rascunho da 335; nada mais.
-
-#### 547-a · Uma `var` de módulo escrita por tasks concorrentes no erlang / beam: ETS por padrão? (decisão 547; m2-0027)
-- **Proposto (sonnet, 2026-10-19; nada construído):** (a).
-- **Contexto.** 547: uma `var` de módulo guarda um valor para o programa. No erlang e no beam uma `var` de módulo sem anotação vive no process dictionary, então uma escrita num processo não é vista por outro.
-- **Medido.** O rascunho da 704 / 547: os corredores do `raceOf` escrevem uma `var` de módulo, e o leitor ainda lê 0 depois que ambos terminam.
-- **Opções.**
-  (a) ★ Uma `var` de módulo é uma entrada ETS por padrão no erlang / beam: a tabela feita no boot, um read-modify-write (`+=`, `.bump`) atômico; `#[compiler.beamMemory(.Process)]` mantém a forma local ao processo onde pedida.
-  ```bp
-  var hits = 0;   // ETS on erlang / beam: every process sees the writes
-  ```
-  (b) O process dictionary continua o padrão; uma `var` compartilhada entre tasks escreve `#[compiler.beamMemory(.Ets)]`.
-  ```bp
-  #[compiler.beamMemory(.Ets)] var hits = 0;
-  ```
-- **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
-- **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
-
-#### 800-a · O que "idêntico" significa em `implement-signature-differs` (decisões 800, 8; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (1)(a), (2)(a), (3)(b)):** (1)(a), (2)(a), (3)(a).
-- **Contexto.** A 800 recusa um membro de um implementador cujo número de parâmetros, tipos de parâmetro ou tipo de retorno difere do contrato, com `Self` lido como o tipo que implementa, rótulos, nomes e padrões livres, sem variância. Três leituras de "idêntico" não são fixadas por ela.
-- **Medido.** A checagem do B-148 passa todo tipo da std, as cláusulas `implement` das larguras primitivas e os 134 pacotes de células com uma cláusula `implement`; nenhum local foi encontrado para corrigir.
-- **Opções.**
-  (1) Um contrato genérico implementado com um argumento por um tipo não genérico, um membro introduzindo um parâmetro de tipo dentro de `Self<…>` (decisão 8 A1):
-  (a) ★ O parâmetro recebe o argumento da cláusula, como a A1 lê hoje: sob `implement Mappable<i32>`, `map<U>(…) -> Self<U>` é atendido por `map(…) -> Box` com `U = i32`. Essa substituição não é variância.
-  (b) Recusado: o membro é escrito com o parâmetro de tipo do contrato.
-  ```bp
-  behavior Mappable<T> { fn map<U>(self: Self, f: fn(x: T) -> U) -> Self<U>; }
-  Box implement Mappable<i32> { fn map(self: Self, f: fn(x: i32) -> i32) -> Box { … } }
-  ```
-  (2) Duas grafias de um tipo:
-  (a) ★ Os tipos são comparados, não o texto: `Array<T>` e `T[]`, um alias e o que ele nomeia, e um wrapper escrito com ou sem `@` contam como um tipo; um nome de import qualificado ou com alias também é comparado pelo que nomeia.
-  (b) O texto é comparado: qualquer outra grafia é recusada.
-  ```bp
-  type Ints = i32[];
-  behavior Sum { fn all(self: Self) -> Ints; }
-  Bag implement Sum { fn all(self: Self) -> Array<i32> { … } }   // (a) accepted, (b) refused
-  ```
-  (3) Um marcador `comptime` num parâmetro:
-  (a) ★ Comparado: um `comptime n: i32` do contrato não é atendido por `n: i32`, nem o inverso.
-  (b) Não comparado: o marcador não faz parte do tipo.
-- **Recomendação.** (1)(a): a A1 se mantém e não é variância. (2)(a): a regra é sobre tipos, e a linguagem tem um tipo por trás de cada grafia. (3)(a): a leitura mais estrita, já que um parâmetro `comptime` muda como o membro é chamado. O B-148 hoje compara como (3)(b), então (3)(a) é um acompanhamento.
-- **Bloqueia.** Nada do pouso do B-148; (3) acrescenta o marcador à comparação e uma célula.
-
-#### 799-a · A 799 (4) recusa um membro obrigatório que o primitivo já tem? (decisões 799, 800; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
-- **Contexto.** 799 (4): "um membro que o contrato declara e que o tipo já tem é recusado na implementação, `behavior-member-redeclared`". O corpo de um `default fn` de contrato só pode chamar o que o contrato declara, então um contrato que quer `slice` ou `at` os declara como membros obrigatórios — que `string` já tem.
-- **Medido.** O B-148 recusa um `default fn` com corpo do contrato que o primitivo já tem; um membro obrigatório (sem corpo) que o primitivo tem é atendido pelo método do próprio primitivo. Os casos reescritos de `program/run` declaram `fn slice(self: Self, start: i32, end: ?i32 = null) -> string;`, `at` e `filter` assim, e mantêm suas respostas.
-- **Opções.**
-  (a) ★ (4) cobre só `default fn`s com corpo; um membro obrigatório é atendido pelo método do próprio tipo, checado pela 800 contra ele.
-  ```bp
-  behavior Shout {
-      fn slice(self: Self, start: i32, end: ?i32 = null) -> string;    // met by string's own slice
-      default fn tailShout(self: Self) -> string { self.slice(0) + "!" }
-  }
-  StringShout implement Shout for string {}
-  ```
-  (b) (4) cobre todo membro: um contrato implementado para um primitivo declara só membros que o tipo não tem, e seus corpos chamam os métodos do próprio tipo de outra forma.
-- **Recomendação.** (a): um membro obrigatório é o que um implementador fornece, e o tipo fornecê-lo não é uma redeclaração; sob (b) nenhum contrato para um primitivo poderia usar os métodos do tipo.
-- **Bloqueia.** Nada do pouso do B-148.
-
-#### 641-a · Como o `length` de `array<T>` é declarado no seu tipo? (decisão 641; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
-- **Contexto.** A 641 move os membros de `Array` para `pub type array<T> { … }` em `primitives.bp`; `length` é uma propriedade, não um método (`xs.length`), e nenhuma decisão fixa como o corpo de um tipo declara uma.
-- **Medido.** Construído como `val length: i32;` dentro do corpo do tipo primitivo, uma forma de gramática aceita só ali (`TypeDecl.properties`); `bytes` e `string` leem `length` do mesmo jeito.
-- **Opções.**
-  (a) ★ `val length: i32;` no corpo, aceito só no corpo de um tipo primitivo (`primitives.bp`).
-  ```bp
-  pub type array<T> {
-      val length: i32;
-      fn push(self: Self, x: T) -> void;
-  }
-  ```
-  (b) Um campo no cabeçalho do tipo, `pub type array<T>(length: i32) { … }`, lido como campo de registro.
-  (c) Um método, `fn length(self: Self) -> i32;`, todo `xs.length` reescrito `xs.length()`.
-- **Recomendação.** (a): a resposta continua a propriedade que todo programa lê hoje, e a forma fica confinada ao arquivo que declara os primitivos.
-- **Bloqueia.** Nada do pouso do B-148.
-
-#### 641-b · Um local com nome de tipo primitivo sombreia os estáticos do tipo? (decisão 641; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
-- **Contexto.** Com os estáticos no tipo minúsculo (`bytes.fromUtf8(s)`), um parâmetro ou local chamado `bytes` torna `bytes.fromUtf8(…)` ambíguo.
-- **Medido.** Construído com escopo léxico comum (`Env.boundInBody`): o local vence, então `bytes.fromUtf8(…)` lê o local e é uma chamada de método sobre ele; a célula `fs_read_text_not_utf8` renomeou seu local `bytes` para `written`. No commonJS uma chamada assim quebra hoje (um estático por um valor é aceito — uma linha de defeito à parte).
-- **Opções.**
-  (a) ★ Escopo léxico: um local sombreia o nome do tipo no seu corpo, estáticos incluídos.
-  (b) Um local com nome de tipo primitivo é recusado no nome, `primitive-type-name-taken` (como um `fn bytes` de módulo já é, 641-c).
-  (c) `<tipo>.<estático>` sempre lê o estático do tipo, seja o que for que esteja ligado.
-- **Recomendação.** (b) se um programa nunca deve ler dois sentidos de `bytes` num corpo; (a) é o que está construído e o que todo outro nome faz.
-- **Bloqueia.** Nada do pouso do B-148.
-
-#### 641-c · `array` entra nos nomes que um módulo não pode declarar? (decisões 641, 639; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
-- **Contexto.** A 639 recusa uma declaração de módulo com nome de tipo primitivo (`primitive-type-name-taken`); a 641 acrescenta `bytes` e `array` como nomes de tipo.
-- **Medido.** `bytes` entrou na lista (`scalar_type_names`), então um `fn bytes` / `val bytes` de módulo é recusado; `array` não, porque o `json.bp` da std declara `pub fn array`.
-- **Opções.**
-  (a) `array` entra também; o `json.array` da std é reescrito (`json.list`, `json.arrayOf`, …).
-  (b) ★ `array` fica de fora; um `fn array` de um módulo sombreia o nome do tipo naquele módulo.
-- **Recomendação.** (a) por uma regra só sobre todo tipo minúsculo; (b) é o que está construído.
-- **Bloqueia.** Nada do pouso do B-148.
-
-#### 641-d · O texto de run time `Bytes.toUtf8: not valid UTF-8` vira `bytes.toUtf8`? (decisão 641; 144 B-148)
-- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
-- **Contexto.** A mensagem que um `toUtf8` que falha imprime ainda nomeia o `Bytes` dissolvido.
-- **Opções.**
-  (a) `bytes.toUtf8: not valid UTF-8`, as células que a registram regravadas.
-  (b) ★ Mantida como escrita, então nenhuma resposta registrada muda.
-- **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
-- **Bloqueia.** Nada.
-
-#### 164-s3-m · `bytes.at` fora do intervalo e `bytes.ofWords` sobre uma palavra fora de `0..255` (decisão 585 (k); 164 s3 P2-d)
-- **Proposta (sonnet, 2026-10-17; regrafada em 2026-10-18; aguardando o mantenedor; construída como (a)):** **(a): `bytes.at` responde `-1` para um índice fora de `0..length-1`, como `text.byteAt` e `string.charCodeAt`; `bytes.ofWords` guarda os oito bits baixos de cada palavra.** A revisão (fable, 2026-10-17) recomenda (b).
-- **Medido.** `modules/std-wasm/wat/bytes.wat`: `bytes.at` compara o índice sem sinal com `array.len` e responde `-1` além dele (um índice negativo incluído), o corpo de `text.byteAt` (P1-a) sobre o mesmo layout `$str` (`bytes` é um array de `i8`, 164 s2, 346); `string.charCodeAt` (641; então `String.charCodeAt`) responde `-1` fora do intervalo nos quatro alvos (`primitives.bp`: Erlang `_ -> -1`, Node `?? -1`, `text.zig`). `bytes.ofWords` escreve cada palavra com `array.set $str`: uma célula `i8` guarda os oito bits baixos, logo `256 + 33` é o byte `33`. Nenhuma operação de botopink constrói um `bytes` a partir de palavras (os membros do tipo, 641 — então `behavior Bytes`: `fromUtf8`, `toUtf8`, `length`, `concat`, `slice`), logo nenhum alvo tem uma resposta para comparar, e a 585 (k) nomeia as três folhas sem as suas respostas. Os codecs para que foram escritas (`base64DecodeBytes`, `hexDecodeBytes`) produzem palavras em `0..255` e leem índices em `0..length-1`: por eles nenhuma das respostas é observável; qualquer célula `std:` de `libs/std` (445) alcança as folhas. O teste unitário `wat: front 164 s3 ---- the Bytes leaves answer in a GC module` (`codegen/tests/wat.zig`) fixa `bytesOfWords([104, 105, 256 + 33])` como três bytes, `bytesAt(b, 2)` como `33`, `bytesAt(b, 3)` e `bytesAt(b, -1)` como `-1`. Sem a verificação, `array.get_u` dá trap fora de `0..length-1` (um abort `crash:`).
-- **Opções.** (a) Como construído. (b) Ambas dão trap: `bytes.at` é o `array.get_u` nu (um trap fora de `0..length-1`, um índice negativo lido sem sinal incluído) e `bytes.ofWords` é `unreachable` na primeira palavra fora de `0..255`; os codecs `.bp` guardam os seus próprios limites; as três linhas do teste unitário substituídas. (c) `bytes.at` como `text.byteAt` (`-1`: uma resposta para uma leitura sobre um layout), `bytes.ofWords` dando trap.
-- **Recomendação.** (b) — uma folha não responde nada fora do seu domínio e nenhuma palavra é truncada em silêncio; o `-1` de `text.byteAt` fica o do P1-a até o mantenedor estender a resposta a ele.
-- **Bloqueia.** Nada construído espera; a metade `.bp` do P2-d (depois do B-139 e do s2 P5) lê a resposta antes de ser escrita.
-
-#### 543-a · O que o s1 da front 164 (wasmtime) deixa em aberto (decisão 543)
-- **Proposto (opus, 2026-10-14; aguardando o mantenedor):** **(1) Winch com o cache** — uma compilação a frio de 315 ms contra ~1000 ms do Cranelift, uma execução de 37 contra 33 ms; (2) o CLI e o LSP chamam `interrupt()` no SIGINT, para um corpo descontrolado terminar como um erro localizado; (3) o `attempt` no build captura o que captura num programa wasm — uma divisão inteira por zero faz trap lá, então é excluída no build também (uma resposta, 434 (5)); (4) o cache de módulos compilados é limpo pelo `botopink cache` do B-77.
-- **Medido.** O s1 pousou no wasmtime v49 com Cranelift e o cache de módulos compilados (quente 48 ms, frio 1,0–1,3 s para 12 builds); o Winch não era uma das duas opções da 543; nenhum handler de SIGINT está instalado (Ctrl-C encerra o processo; `interrupt()` existe, nada o chama); o `attempt` no build também captura uma divisão inteira por zero, que faz trap num programa wasm; o cache não tem limpeza até o B-77.
-- **Opções.** Cada ponto (a) como proposto ou (b): (1) manter o Cranelift; (2) nenhum handler; (3) continuar capturando no build; (4) um limite de tamanho já.
-- **Recomendação.** (a) para cada um.
-- **Bloqueia.** Nada construído.
-
-#### 164-s3-g · `String.slice` (`text.slice`, `sliceFrom`, `sliceBetween`): com o P1 ou o P2? (164 s3)
-- **Proposta (fable, 2026-10-15; aguardando o mantenedor):** **(a): P2, como um corpo em botopink que o `s[a..b]` / `s[i]` do codegen chama pelo prelúdio.**
-- **Medido.** Os três são do próprio codegen (ele rebaixa `s[a..b]` e `s[i]` para eles), não métodos de `String` ligados por uma célula.
-- **Opções.** (a) P2. (b) P1, como mais uma folha.
-- **Recomendação.** (a).
-- **Bloqueia.** Nada no P1.
-
-#### B-116-k · O que o corpo de uma lambda `component` permite (decisão 574; 144 B-116 (i))
-- **Proposta (opus, 2026-10-16; aguardando o mantenedor; construída como listado, a mais restritiva):** (1) um `throw` ou um `try` que propaga numa lambda `component` é recusado — `Component<Result<R, E>>` é do B-116 (iii); (2) os seus `use`s e `await`s não entram em nenhum nó de hook: o builder da função que a envolve é limpo para o corpo dela, então as suas chamadas recebem a leitura assíncrona conservadora da 375; (3) um corpo cuja última expressão termina com `;` é recusado como incompatível quando `R` não é `void`, onde uma `component fn` responderia `rendered(null)`.
-- **Medido.** A 574 rebaixa `component { -> … }` como uma `component fn` (o caminho de component-fn, as capturas carregadas); `component_lambda_typed_val` e `component_lambda_typed_param` respondem nos quatro alvos. Os três pontos são casos que a 574 não nomeia.
-- **Opções.** Cada ponto como construído, ou (b): (1) um `throw` permitido como numa `component fn` (um `ErrorBoundary` o pega, 414, 504); (2) os hooks da lambda juntados ao builder que a envolve; (3) um corpo terminado em `;` respondendo `rendered(null)` como uma `component fn` faz.
-- **Recomendação.** (b) para (1) e (3), uma regra para uma `component fn` e uma lambda `component` como a 574 diz; (2) como construído até uma lambda `component` ter um builder próprio.
-- **Bloqueia.** Nada construído espera.
-
-#### 518-a · Duas recusas de `needs:` que nenhuma decisão afirma (decisão 518 (1); 144 B-07)
-- **Proposto (o coordenador, 2026-10-15; aguardando o mantenedor):** **(a): as duas continuam recusas, cada uma com uma célula** — `needs:` em `@External.Node` / `@External.Erlang`, e `needs:` dado como qualquer coisa que não uma lista de valores `WasmNeed`; a leitura mais restritiva (67).
-- **Medido.** A 518 (1) afirma uma recusa: um valor de `needs:` fora de `WasmNeed`. O build da 518 (7990b7de) também recusa `needs:` numa forma Node ou Erlang e um `needs:` que não é lista; nenhuma decisão afirma nenhuma das duas, e nenhuma célula as fixa (a análise da Conformance do B-07).
-- **Opções.** (a) Como proposto. (b) `needs:` noutra forma aceito e ignorado. (c) Um valor só aceito como lista de um elemento.
-- **Recomendação.** (a).
-- **Bloqueia.** Nada construído; duas células de recusa uma vez respondida.
-
-#### docs-b · `std-decorator-leaf-import` quando `mock` é uma função (decisões 386, 644, 669; item 16)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** O § Mocks afirma uma regra para os decoradores de todo módulo da std: eles vêm com o import do namespace — `import {testing.mocks}` faz `#[mocks.mock]` — e um import de folha (`import {testing.mocks.mock}`) é `std-decorator-leaf-import`, porque "o código que ele adiciona não teria handle para nomear o runtime". A 644 fez de `mock` uma função da std (`val g = mock(Greeter);`), nenhum decorador; a 669 resolve o código que um decorador escreve no módulo do decorador, então ele não precisa de handle; a 386 lê `#[ns.d]` como `#[d]` importado por nome.
-- **Medido.** A recusa está construída para os decoradores de todo módulo da std (`infer.zig` `registerStdImportDecorators`, `markStdImports`); sua única célula, `std/cells/std_decorator_leaf_import`, importa `testing.mocks.mock` e é recusada no import, seu comentário nomeando `#[mocks.mock]`, o decorador que a 644 removeu. Nenhuma decisão afirma a recusa, e nenhuma a aposenta; o retired.md lista só o `#[mock]` da std (644). Os outros decoradores da std (`bpp.html`, `bpp.style`, …) são escritos pelo seu namespace.
-- **Opções.**
-  (a) ★ A recusa sai: um decorador da std importado por nome é anotado por esse nome, como o de uma biblioteca (386, 669); o § Mocks perde o parágrafo, e a célula vira uma célula run que importa um decorador da std como folha, ou é removida.
-  ```bp
-  import {bpp.html} from "std";   // compiles; the decorator is `#[html]`
-  ```
-  (b) A recusa fica para todo decorador da std: o parágrafo sai do § Mocks com outro decorador da std como exemplo, e a célula é reescrita sobre ele.
-  ```bp
-  import {bpp.html} from "std";   // error[std-decorator-leaf-import]
-  ```
-- **Recomendação.** (a): sua razão saiu com a 669, e a 386 já faz de uma anotação por namespace e de um import por nome uma coisa só.
-- **Bloqueia.** item 16 (o texto dos docs.md).
-
-#### docs-c · O "cada `*-test` vira o módulo `testing/` do seu pacote" da 724 alcança toda biblioteca? (decisões 75, 390, 724; item 16)
-- **Proposto (opus, 2026-10-19; nada construído):** (a).
-- **Contexto.** O § Examples and `-test` members da referência (75, 390) diz "Toda biblioteca é um workspace com um núcleo, um membro `-test` e seus exemplos como membros", um membro `-test` expondo pelo menos um helper `assert<Subject>`, e `scripts/check-packaging.sh` verificando um helper por membro `-test`. A 724, a linha do rakun, escreve "os `rakun-starter-*` saem; cada `*-test` vira o módulo `testing/` do seu pacote"; o "o `botopink.json` guarda-chuva de uma biblioteca é um workspace" da 75 está de pé no decisions-taken.
-- **Medido.** Os pacotes do rakun têm `src/testing/` (`rakun`, `rakun-bpp`, `rakun-ssr`, `rakun-stylesheet`); `query` é um workspace com um membro `query-test`; `actions`, `css`, `http`, `json`, `log`, `markdown`, `routing`, `snap`, `validation` e `yaml` são um pacote cada, sem membro `-test` e sem membro de exemplo.
-- **Opções.**
-  (a) ★ A regra da 724 alcança toda biblioteca: os helpers de teste de uma biblioteca são o módulo `testing/` do seu pacote, nenhum membro `-test`; o mínimo da 390 (4) diz "um `assert<Subject>` por módulo `testing/`"; a regra do `check-packaging.sh` é reescrita; `query-test` se funde em `query`.
-  ```bp
-  import {testing.assertQuery} from "query";
-  ```
-  (b) Só do rakun: o parágrafo é delimitado — uma biblioteca workspace fora do rakun mantém seu membro `-test` (`query`), os pacotes do rakun seu módulo `testing/`, uma biblioteca de um pacote nenhum dos dois.
-  ```bp
-  import {assertQuery} from "query-test";
-  ```
-- **Recomendação.** (a): um lugar para os helpers de uma biblioteca qualquer que seja seu layout (67).
-- **Bloqueia.** item 16 (o texto dos docs.md).
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

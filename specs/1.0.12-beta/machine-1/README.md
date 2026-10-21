@@ -99,5 +99,5 @@ Every report to the maintainer and every reply is a file of `repository/conversa
 
 ## Blocked on the maintainer — not opened
 
-In the order the maintainer answers them (the queue of 2026-10-17):
-B-10-b … g, B-02-c, B-27-g2 / g4, 564-d, 165-a, 548-a / b, B-86-a, 797-a (165 s11's typed-member box). A thread that reaches one of these stops at it and reports.
+The queue of 2026-10-17:
+all answered on 2026-10-21 by fables at the maintainer's delegation (decisions 839–863; each in the pending page's To review table) — nothing waits on the maintainer here; 862's names (`stylesheet()`, `SsrConfig`, `/_rakun-ssr/`) await his confirmation before 150 s72 opens.

@@ -77,7 +77,9 @@ every comptime answer are unchanged (440, 450): the same wasm, compiled instead 
 Measured (12 builds — jhonstart's 8 examples, styled's 4; the `instance` + `run` stages): wasm3 163–189 ms; wasmtime
 cold 1.0–1.3 s; Pulley 1.5 s; wasmtime with the compiled-module cache under `.botopinkbuild/build/comptime/` warm 48 ms —
 the cache is the choice. The binary grows from 53 MB to 74 MB; an artifact linking wasmtime on Linux links with LLD.
-Open points: question 543-a.
+543-a answered by 878.
+- [ ] the interrupt (878): the CLI's SIGINT handler and the LSP's `$/cancelRequest` / `shutdown` call `persistent_wat.interrupt()`;
+      `comptime-interrupted` located at the body; `runtime/AGENTS.md` limit 1 rewritten; a unit test
 
 ### s2 — the wasm codegen emits WasmGC: every value a GC struct or array, no linear-memory value (the maintainer, 2026-10-14; wasmgc-a)
 
@@ -208,7 +210,7 @@ with no std-wasm export has its signature check written but unexercised until P1
 `text.byteLength`, `text.byteAt`, `text.byteSlice` and `text.fromCodepoint`, each with a twin std-wasm export of the
 same name and types (a module that falls back to linear memory still builds); proved by a GC-module unit test on wasm,
 since 445 refuses a `std:` cell outside `libs/std` — their cells on the four targets come with the `String` method
-that binds them (P1-b, P1-c, after s2 P5 — 565, 566; question 164-s3-g). P1-c's first build (the 18 bodies as free
+that binds them (P1-b, P1-c, after s2 P5 — 565, 566; `slice` with P1, 879). P1-c's first build (the 18 bodies as free
 bodied `fn`s in `primitives.bp`) broke std's compile on every target — `primitives.bp` is a core file, flattened into the
 global environment — failed on `true` / `false` not yet bound when the prelude is inferred, and was reverted; P1-b and
 P1-c then landed: the prelude binds `true` / `false` first and hides a private bodied prelude `fn` from programs after
@@ -244,6 +246,7 @@ bodies' names mangled and their locations `std/primitives.bp`'s. P2-a — an int
       `modules/std-wasm/AGENTS.md`, `libs/std/AGENTS.md`
 
 **Impacted tests:** every comptime snapshot (the reply unchanged, the listing re-recorded by piece, 558), `test-conformance`, `test-libs`, `test-web`. **Consumer commits:** none.
+- [ ] P2-d's leaves trap outside their domain (880): `bytes.wat` rewritten, the unit test's three lines; the `.bp` codecs bound their reads
 
 ### s4 — Conformance, the front's last step (decisions 459, 474, 477, 478, 479, 480)
 

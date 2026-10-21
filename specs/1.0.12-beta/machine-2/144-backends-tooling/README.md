@@ -536,7 +536,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
   | a failing `assert` is `panic` (527 (2)) | `assert_failure_is_panic` |
   | `attemptTask` (494) | `std_failure_attempt_task` |
   | `asserts.throws` / `throwsWith` over `attempt` (493) | `std_asserts_throws_over_attempt` |
-  | `needs:` outside `WasmNeed` refused (518 (1)) | `external_wasm_needs_unknown`; the two other `needs:` refusals wait on 518-a |
+  | `needs:` outside `WasmNeed` refused (518 (1)) | `external_wasm_needs_unknown`; the two other `needs:` refusals are the constructor's own (575 (6), 621; 518-a answered by 875) |
   | STD-001 at the call (518 (4)) | `std_unsupported_refused_at_the_call`, `std_unsupported_names_the_call`, `std_asserts_host_cell_on_wasm` |
   | `attempt` at build (518, 543) | `comptime_attempt_at_build` |
   | `try … catch` catches only the operand's `Error` (431, B-103) | `try_catch_host_raise_propagates` |
@@ -2413,7 +2413,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
 - [x] (i) a `component` lambda lowered (574): `component { -> … }` against its expected type compiles as a `component fn`
       (the component-fn path, captures carried) on commonJS, erlang, beam and wasm; `component-lambda-not-lowered`
       deleted; cells: one bound to a typed `val`, one passed to a typed parameter, rendered, one answer everywhere — `component_lambda_typed_val`,
-      `component_lambda_typed_param`; lowered through `lowerComponentBody` (question B-116-k)
+      `component_lambda_typed_param`; lowered through `lowerComponentBody` (B-116-k answered by 874)
 - [x] (i) decision 584: a lambda's marker inside the brace, before the parameters (`{ async x -> … }`, `{ iter -> … }`,
       `{ async iter x -> … }`, `{ component -> … }`), `async {` always the block, the trailing form admitted; a marked
       lambda's body a function body (`return v` the `R`, a top-level `continue` and `break v` refused), `docs.md`'s
@@ -2896,6 +2896,9 @@ parent on commonJS for that reason alone, blind to 580.
 Six commonJS codegen snapshots read `x = x.concat([v])`.
 
 Oracle: the two cells on commonJS, erlang, beam and wasm.
+- [ ] decision 877 (547 landed on erlang and beam): an unannotated module `var` the one-row ETS table created at boot, `x = f(x)` atomic,
+      `BeamMemory`'s `ProcessDict` and `keyed` gone; the 704 draft promoted; cell `module_var_written_by_processes` (an unannotated `var`
+      written by `runAll`'s thunks), red on the parent
 
 ### B-144 — erlang / beam: a chained call on a namespace member dispatches on the wrong receiver
 
@@ -3092,6 +3095,12 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
 - [x] commonJS: when rakun-bpp's whole package compiles, the modules load in an order that breaks `instanceof` of a class from a circular import (`Right-hand side of 'instanceof' is not an object`, `error_boundary_test`'s four tests, node's circular-export warnings); a cell with two modules importing each other, red on commonJS · fixed: a module with tests and no `main` required its dependencies' inits before its own exports; they now follow them, an entry keeps them first (660); suite `conformance/test/module_init_requires_its_importer`; rakun-bpp on commonJS 98 → 4 failing (four `clientApp` tests in `client_app_test.bp`, rakun's to triage)
 - [x] `indexOf` / `lastIndexOf` / `contains` over records compare by `==`, which is structural on every target (the equality rule): commonJS and wasm answer by identity today (`[P(1, "a")].indexOf(P(1, "a"))` is -1 there, 0 on erlang / beam); a cell on four targets, red on commonJS and wasm · fixed (`array_search_is_structural`; commonJS's prototype patch over `__bp_eq`, wasm's `__unk_same` structural); left: `collections.bp`'s comment that says identity, at the next snapshot refresh
 Oracle: the whole suite on four targets; `test-libs`; the cold gate.
+- [ ] decision 871: a parameter's `comptime` marker compared by `implement-signature-differs`; cell `implement_signature_over_types`
+      (a contract's `comptime n: i32` met by `n: i32` refused, and the reverse), red on the parent
+- [ ] decision 872: the member a type supplies to an extension block's contract compared by 800's check; cell
+      `contract_required_member_met_by_type` (a one-parameter `slice` for `string` refused), red on the parent
+- [ ] decision 873: the `val` property form gated on the prelude; `array` in `primitive-type-name-taken`, `json.arrayOf`;
+      `bytes.toUtf8: not valid UTF-8` re-recorded; cell `primitive_type_body_and_names`, red on the parent
 
 ### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
 
