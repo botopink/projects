@@ -243,6 +243,16 @@ group), answered before every other part of this page; in the order of the steps
   for a flat enum (a) and (c) give the same order.
 - **Blocks.** Nothing; built as (a).
 
+#### 859-a · The `.d.ts` of a method without `pub` that implements a behavior's member
+- **Measured.** 859 (4) has the `.d.ts` declare `pub` methods only, for every type. 859 (2) lets every module reach a method
+  without `pub` when it implements a member of a behavior the type declares `implement` for: `s.toStyled()` from another
+  module stands. Built as 859 (4) reads, so a TypeScript consumer does not see a method that every botopink module may call.
+- **Options.** (a) As built: the `.d.ts` declares `pub` methods only. (b) The `.d.ts` also declares a method without `pub`
+  that implements a behavior's member, as 859 (2) reaches it.
+- **Recommendation.** (b): the `.d.ts` is the module's surface for another language, and 859 (2) makes that method part of
+  the surface.
+- **Blocks.** Nothing; built as (a).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 ## Part 1 — What blocks tracks 00–03

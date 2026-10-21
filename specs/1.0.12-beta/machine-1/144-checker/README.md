@@ -2894,6 +2894,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exempt, an extension block of another module needing `pub` (886), an added member and `pub val length` `pub` (887); cell `method_private_to_module`, red on the parent); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
       — the modifier landed: `opaque` contextual before `type` (`opaque-construction`, `opaque-field`, `opaque-method`, `opaque-not-record`),
       cells under `opaque_type_modifier-811/cells/` (811-a answered by 829, as built; 811-b by 859); `Scope` opaque is B-162 P1's
+- [x] decisions 859, 887 (811-b): a method without `pub` private to its module for every type, `method-not-pub` at the call naming the type,
+      the method and its module (`opaque-method` gone); a behavior member the type implements and the lowering's marked calls exempt;
+      `primitives.bp`'s members and their `comptime.zig` mirrors written `pub`, `.d.ts` the `pub` methods only; a member `addMember` adds `pub`
+      — landed (cells `method_private_to_module-859/cells/` and `added_member_is_pub-887/cells/`; no library site reached; 886 landed with
+      B-148; 859 (3)'s `Fn.of` names no declaration, `Module.of` stays without `pub` (830 (1)); question 859-a)
 - [x] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
       line range gone; `reserved-name` at a call of a `__bp_` name (`reserved_names.zig`); cell `lowering_call_marked` (a program calling
       `__bp_load_module` refused, an adopted default body building an opaque type refused), red on the parent — landed (`CallExpr.lowering`;

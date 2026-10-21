@@ -243,6 +243,16 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   para um enum plano (a) e (c) dão a mesma ordem.
 - **Bloqueia.** Nada; construído como (a).
 
+#### 859-a · O `.d.ts` de um método sem `pub` que implementa um membro de um behavior
+- **Medido.** 859 (4) faz o `.d.ts` declarar só métodos `pub`, para todo tipo. 859 (2) deixa todo módulo alcançar um método
+  sem `pub` quando ele implementa um membro de um behavior para o qual o tipo declara `implement`: `s.toStyled()` de outro
+  módulo é aceito. Construído como 859 (4) diz, então um consumidor TypeScript não vê um método que todo módulo botopink pode chamar.
+- **Opções.** (a) Como construído: o `.d.ts` declara só métodos `pub`. (b) O `.d.ts` também declara um método sem `pub`
+  que implementa um membro de um behavior, como 859 (2) o alcança.
+- **Recomendação.** (b): o `.d.ts` é a superfície do módulo para outra linguagem, e 859 (2) faz desse método parte
+  da superfície.
+- **Bloqueia.** Nada; construído como (a).
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
