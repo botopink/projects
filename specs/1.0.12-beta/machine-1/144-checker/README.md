@@ -2788,10 +2788,13 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [x] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
 - [x] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
 - [x] returning a `Component<R>` from a body that answers `R` (`return mk(1)`) is accepted where the types differ; it is a type mismatch; a cell, red on the parent
-- [ ] decision 810: `v is X<T>` accepted when `X<T>` is a member of `v`'s type with `T` bound through it (tested by `X`'s identity);
+- [x] decision 810: `v is X<T>` accepted when `X<T>` is a member of `v`'s type with `T` bound through it (tested by `X`'s identity);
       narrowing by the flow (`else`, after a branch that leaves, a `var` until assigned); `case` type patterns over generic types,
       exhaustive over a union (`non-exhaustive`, naming the member); std's `resolve` written with them; cell
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
+      — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
+      (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
+      the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (810-b); the key unqualified (810-c)
 - [ ] decision 817: std's `Scope` keeps the tree of cells — `scope.childAt(place, c)` (`Use(n)`, `Tail`, `Index(i)`, `Key(k)`) in place of a
       public `scope.child()`, the parent's cell keeping `place → (identity, cell)`; `use c` / `return c` lowered to it; identity written by
       each target's lowering (declaration with type arguments, a type, a lambda's position, a `#[key]` value); a reused cell's contexts
@@ -2814,6 +2817,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] ~~791-d (narrowing a union child)~~ — answered by 810; what stays is the run-time
       test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
       and `is fn(Scope) -> …` answering on the four targets; a cell, red on the parent
+      — partly landed with 810: a behavior's identity and a function type answer on the four targets
+      (`is_behavior_identity_run_time`); `is Async<unknown>` answers on commonJS only — erlang, beam and wasm wait on 810-b
 - [x] decision 809, first: a `fable` plan over 809 against what B-162 built (804 (1)'s rewrite of the type form into a record and a
       `component fn`, the `isComponentType` sites, `context_lower.zig`'s scope handling, std's `context.bp`); its open points filed as
       questions
