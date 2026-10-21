@@ -2379,8 +2379,10 @@ catalogue is read at build, 665); `src/internal/` is private to its package; the
       the package's default that of `src/<pkg>.bp`; `expandImports` (`default_fn.zig`) and the "prefix symbol wins" rule
       go; cells: the callable namespace on four targets, the two refusals; `docs.md` § Imports
 - [ ] Conformance step (459, 474, 477, 478, 480)
-- [ ] a folder is not importable: `import {io} from "std"` / `import {collections} from "std"` refused, located, naming the leaf; `comptime/std_namespace.zig` deleted; cell `folder_import_refused` (decision 919, 110 (2) amended)
-- [ ] an import of another package's `src/internal/` refused, located, std's included (`import {internal.unicode_tables} from "std"`); cell `std_internal_import_refused` (decision 913)
+- [x] a folder is not importable: `import {io} from "std"` / `import {collections} from "std"` refused, located, naming the leaf; `comptime/std_namespace.zig` deleted; cell `folder_import_refused` (decision 919, 110 (2) amended) — landed (`folder-import`, the leaves in the hint;
+      `std_namespace.zig` keeps 111's module-namespace rewrite, its folder half removed — the file goes once that rewrite moves to
+      `mod_namespace.zig`; `collections` is a module, not a folder, so nothing refuses it)
+- [x] an import of another package's `src/internal/` refused, located, std's included (`import {internal.unicode_tables} from "std"`); cell `std_internal_import_refused` (decision 913)
 
 ### B-70 — `src/comptime/`, the build layer (B-55-a (e) (3))
 
@@ -2449,7 +2451,7 @@ One mechanical pass, as B-33's codemod: no design choice.
       `src/comptime/`, private modules to `src/internal/`; each library's gate green
 - [ ] the specs and `AGENTS.md` files that name `root.bp`, `lib.bp` or `pub mod` updated
 - [ ] Conformance step (459, 474, 477, 478, 480)
-- [ ] `libs/std/src/unicode_tables.bp` moves to `src/internal/unicode_tables.bp`, `unicode.bp` writes `import {internal.unicode_tables as tables};`, the generator's output path with it (decision 913)
+- [x] `libs/std/src/unicode_tables.bp` moves to `src/internal/unicode_tables.bp`, `unicode.bp` writes `import {internal.unicode_tables as tables};`, the generator's output path with it (decision 913)
 
 ### B-76 — the module-model group's Conformance step
 
