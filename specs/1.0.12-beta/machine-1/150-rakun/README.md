@@ -1280,13 +1280,15 @@ saying two same-named methods in one module collide, and that this is the right 
 - [x] "store: a write racing sixteen readers is never undone by a read" timed out under `test-libs` in a cold gate on
       a loaded machine: measure it alone and under load; a test that depends on timing asserts an order, not a deadline
 
-### 150 s72 — the former libraries' names out of the code (548-b, decision 862)
+### 150 s72 — the former libraries' names out of the code (548-b, decisions 862, 889)
 
 **Repository:** rakun · **Model:** haiku (a codemod, the gate the oracle) · **After:** 165 s11
 
-- [ ] the codemod of 862 (1): `emilia()` / `emiliaWith` / `emiliaPlugin` / `emilia-hash-split` → `stylesheet…`; `OnzeConfig` → `SsrConfig`,
-      `ONZE_PUBLIC_` → `RAKUN_SSR_PUBLIC_`, `/_onze/` → `/_rakun-ssr/`, `onze_main.bp` → `ssr_main.bp`; `jhonstart_*.erl` → `rakun_bpp_*.erl`;
-      the `examples/` directories renamed — every consumer, example and cell in the one commit
+- [ ] the codemod of 862 (1) as 889 (1)–(3): `emilia()` / `emiliaWith` / `emiliaPlugin` → `stylesheet…`, `emilia.bp` → `stylesheet.bp`, the four
+      bundler kinds `emilia-*` → `stylesheet-*`; `OnzeConfig` → `SsrConfig`, `ONZE_PUBLIC_` → `RAKUN_SSR_PUBLIC_`, `/_onze/` → `/_rakun-ssr/`,
+      `onze_main.bp` → `ssr_main.bp`; `jhonstart_*.erl` → `rakun_bpp_*.erl`; `rakun-cli`'s `onze` setting, env and function → `rakun-ssr`;
+      `examples/rakun-stylesheet/emilia-*` → `stylesheet-*`, `examples/rakun-bpp/jhonstart-*` → the bare name; `styled` untouched (889 (4)) —
+      every consumer, example and cell in the one commit
 - [ ] a cell per renamed entry point (`stylesheet()`, `SsrConfig`), red on the parent
 - [ ] the name grep of `repository-stages.sh` extended to `emilia|jhonstart|onze` over `modules/`; its 165-a comment cites 863
 - [ ] the gate green

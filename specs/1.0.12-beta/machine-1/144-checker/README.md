@@ -2126,9 +2126,10 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
       takes, each backend's collision-free mapping, diagnostics in the backtick form; `not-found.bpp` imported as
       `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
       — `backtick_name_{binding,parameter,function,type,field,module_segment,import_item,in_diagnostic,empty,line_break}`,
-      `bpp_not_found_aliased`, `bpp_not_found_unaliased`; open: B-27-d (the formatter's plain spelling); B-27-e answered by 853, B-27-f by 854 (as built)
-- [ ] the duplicate-module message names 109's fold (853); cell `erlang_module_atom_pair_refused` (`not_found.bp` + `not-found.bpp`),
-      erlang and beam, red on the parent by its text
+      `bpp_not_found_aliased`, `bpp_not_found_unaliased`; open: B-27-d (the formatter's plain spelling); B-27-e answered by 853 and 890, B-27-f by 854 (as built)
+- [ ] the duplicate-module message names 109's fold and the pair is refused on every target at the top of `codegen.emit`, `duplicate_decl`
+      too (853, 890); cell `module_atom_pair_refused` (`not_found.bp` + `not-found.bpp`), four targets, red on the parent by its text on
+      commonJS and wasm
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
