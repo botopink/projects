@@ -26,7 +26,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **839**.
+número livre, que é **847**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -59,6 +59,14 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 836 | 798-e | `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` vão para o espaço reservado; `<Type>__<Assoc>` fica |
 | [ ] | 837 | 805-a, 805-c | Um `.bpr` por pacote e por módulo da std, como construído; a ordem do programa só no arquivo da raiz |
 | [ ] | 838 | 805-b | Um `.bpr` compilado e rodado só do diretório do seu projeto, `runtime-other-project` fora dele |
+| [ ] | 839 | 723-b | `use context(ctx)` nomeia só um valor de contexto do módulo, nunca um parâmetro, um local ou uma expressão (como construído) |
+| [ ] | 840 | 668-a | `compiler.meta(d, M)` / `compiler.metaAll(d, M)` a única grafia; `compiler.meta<M>(d)` sai |
+| [ ] | 841 | 719-a | Uma função com parâmetro de expressão `syntax` retorna qualquer tipo escrito, `void` incluído |
+| [ ] | 842 | 797-a | Um membro que um decorator acrescenta e usa é guardado como valor; um `decl` tipado por behavior atendido por `implement` (716 (1) sobre a 626 (2)) |
+| [ ] | 843 | 564-d | Respondida pelas 606 (1), 639, 826 (3): um módulo pode sombrear um nome do prelude |
+| [ ] | 844 | 723-c | Respondida pela 723: um default por tipo de contexto |
+| [ ] | 845 | B-21-d | Respondida pelas 583, 408: `fn() { … }` é a forma não tipada |
+| [ ] | 846 | B-21-e | Respondida pela 622: a forma curta `fn f(x: T) R` recusada, um desvio a remover |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -250,105 +258,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): nenhum caminho sem teste é entregue.
 - **Bloqueia.** Nada no Linux.
 
-#### 564-d · Um módulo pode declarar um nome ao qual o compilador dá regras? (decisão 564; linha da máquina 1 do 144)
-- **Proposta (opus, 2026-10-16; construída como (a), aguardando o mantenedor):** (b) para os nomes aos quais o compilador dá regras, (a) para o resto.
-- **Contexto.** O `behavior` próprio ou importado de um módulo agora é dono do seu nome em toda posição de tipo, como um `type` de mesmo nome já era (`conformance/docs.md` § behavior). Alguns nomes do prelúdio carregam regras da linguagem: `Result` (`try`, `throw`), `Task`, `Component`, `Iterator`.
-- **Medido.** Como construído, `pub behavior Result { fn score(self: Self) -> i32; }` compila e despacha; o `Result` do módulo é o que o nome lê ali, e `try` / `throw` ficam com o da std.
-- **Opções.**
-  (a) Sim, para todo nome: a declaração do módulo é o que o nome lê (construído).
-  ```bp
-  pub behavior Result { fn score(self: Self) -> i32; }   // accepted
-  ```
-  (b) ★ Recusado na declaração para um nome ao qual o compilador dá regras, localizado, nomeando a declaração da std, como `primitive-type-name-taken` faz para os primitivos; (a) para o resto.
-  ```bp
-  pub behavior Result { … }      // refused: `Result` is std's (builtins.d.bp), the language's rules use it
-  pub behavior Component { … }   // accepted
-  ```
-- **Recomendação.** (b) para os nomes aos quais o compilador dá regras, (a) para o resto: nunca uma sombra silenciosa de um tipo da linguagem.
-- **Bloqueia.** Nada.
-
-#### 723-b · Uma leitura de contexto pode nomear um parâmetro ou um local de tipo `Context<T>`? (decisões 722, 723; 144 B-17)
-- **Proposto (opus, 2026-10-19; construído como (a)):** (a).
-- **Contexto.** 722 / 723: um contexto é lido por um valor de contexto que o leitor importa; o handle fornece o tipo e o default.
-- **Medido.** Como construído, `use context(ctx)` com `ctx` um parâmetro, um local ou uma expressão é recusado no argumento, `context-not-declared` (exemplo `context_read_of_parameter` em `conformance/docs.md`).
-- **Opções.**
-  (a) ★ Recusado: o argumento nomeia uma declaração de contexto de nível de módulo, local ou importada (construído).
-  ```bp
-  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // refused: context-not-declared
-  ```
-  (b) Aceito: qualquer valor de tipo `Context<T>`; seu tipo e seu default vêm do valor.
-  ```bp
-  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // accepted
-  ```
-- **Recomendação.** (a): a leitura mais restritiva, e a leitura continua resolvível no build a partir do texto.
-- **Bloqueia.** Nada.
-
-#### 723-c · Os defaults do `inject` e a checagem de um default por tipo, agora que um contexto é lido pelo seu handle (decisões 416, 722, 723, 379 (1))
-- **Proposto (opus, 2026-10-19; construído como (a)):** (a).
-- **Contexto.** A 722 retira o catálogo da 379 (1): uma leitura acha seu default pelo handle que nomeia. O `use inject(Deps)` da 416 ainda toma o default de cada campo como "o default declarado daquele tipo", o que exige achar as declarações por tipo; o `context-declared-twice` da 379 (1) (um default por tipo) é o que torna essa busca única.
-- **Medido.** Como construído, `inject` e `context-declared-twice` não mudaram e ainda leem as declarações de contexto do programa por tipo.
-- **Opções.**
-  (a) ★ Manter os dois: `inject` resolve o default de um campo entre as declarações que o programa tem, e duas declarações sobre um tipo são recusadas (construído).
-  ```bp
-  pub val a = comptime createContext(Theme(…)); pub val b = comptime createContext(Theme(…));   // refused: context-declared-twice
-  ```
-  (b) `inject` perde o passo do default declarado (o mais próximo provido, senão o default do próprio campo, senão um erro); duas declarações sobre um tipo permitidas.
-  ```bp
-  type Deps(theme: Theme = Theme.default())   // the field's default when none is provided
-  ```
-- **Recomendação.** (a): a 416 vale como escrita e a 731 a mantém; (b) só se o maintainer não quiser busca de programa inteiro em lugar nenhum.
-- **Bloqueia.** Nada.
-
-#### 668-a · `compiler.meta<M>(d)` nomeia `M` só pelo retorno — a chamada reescrita `compiler.meta(d, M)`? (decisões 668, 298, 576 (3); 144 B-152)
-- **Proposto (opus, 2026-10-19; construído como (b)):** (a).
-- **Contexto.** 298 / 576 (3) escrevem a leitura `compiler.meta<M>(d) -> ?M` e `compiler.metaAll<M>(d) -> M[]`: `M` aparece só no tipo de retorno, o que a 668 recusa.
-- **Medido.** Como construído, as declarações tomam `comptime m: type<M>` (a forma da 668) e o parser continua aceitando `compiler.meta<M>(d)`, reescrevendo para o token internamente.
-- **Opções.**
-  (a) ★ A chamada é escrita como a declaração lê: `compiler.meta(d, M)`; `compiler.meta<M>(d)` recusado como todo argumento de tipo explícito que não liga nada.
-  ```bp
-  val e = compiler.meta(decl, Entity);   // ?Entity
-  ```
-  (b) A grafia com argumento de tipo explícito continua, rebaixada para o token (construído).
-  ```bp
-  val e = compiler.meta<Entity>(decl);   // ?Entity
-  ```
-- **Recomendação.** (a): uma regra para toda função, `compiler` incluído; (b) mantém uma grafia que nenhuma função de usuário pode ter.
-- **Bloqueia.** Nada (o B-152 está retido na 667-a).
-
-#### 719-a · Uma função com parâmetro de expressão `syntax` pode responder `-> T`, código de tipo `T`? (decisões 719, 578 (2); 144 B-156)
-- **Proposto (opus, 2026-10-19; construído como (b)):** (a).
-- **Contexto.** A 719 manda a forma nova para os retornos da 578 (2): "um tipo, `anyvalue` ou `anytype`" — um template que responde `-> Component<Styled>` retorna código daquele tipo (célula `template_answer_component` do B-153). A caixa do B-156 diz que um retorno de tempo de execução (`-> void`, `-> i32`) é recusado na declaração.
-- **Medido.** Como construído, só `-> anyvalue` e `-> anytype` são aceitos; `-> i32` e nenhum retorno são recusados `template-signature`, nomeando esses dois (célula `syntax_fn_run_time_return`).
-- **Opções.**
-  (a) ★ Como a 578 (2): todo tipo `T` é aceito e significa código de tipo `T`, checado onde é inserido; só `-> void` e nenhum retorno são recusados.
-  ```bp
-  pub fn twice(syntax e: i32) -> i32 { return code @`${e} + ${e}`; }   // accepted: code of type i32
-  ```
-  (b) Só `anyvalue` / `anytype` (construído): `-> i32` recusado como retorno de tempo de execução.
-  ```bp
-  pub fn twice(syntax e: i32) -> i32 { … }   // refused: template-signature
-  ```
-- **Recomendação.** (a): uma regra para o template e esta forma, como a 719 diz; o exemplo `-> i32` da caixa é anterior à leitura.
-- **Bloqueia.** Nada; (a) afrouxa uma recusa.
-
-#### 797-a · O que a decisão 797 deixa em aberto: os membros tipados que um decorator acrescenta e depois chama, e como um `decl` tipado por um behavior é atendido (decisões 797, 716 (1), 626 (2), 627; 165 s11)
-- **Contexto.** 797 (716-a (c)): um membro que um decorator acrescenta nunca conta no tipo de `decl`, e os membros `rk*` saem com o 165 s11. Dois pontos ficam abertos. (1) Nem todo membro acrescentado sai: a 625 (1) mantém `bindProperties` / `new` / `gated` como membros tipados, a 626 acrescenta `make` / `check` por `configurationProperties`, o rakun-data acrescenta `entityMeta` e `Tx`; onde o próprio executor do decorator chama um deles em `decl`, a 797 o recusa. (2) A 716 (1) diz que um `decl` tipado por um behavior admite um tipo que *implementa* o behavior (um sem `implement` recusado); a 626 (2) e o `decisions-taken.md` dizem que a checagem é estrutural, contra os membros que o behavior lista.
-- **Medido.** Nada construído; os sites estão entre os 166 sites do rakun recusados hoje ("cannot call a method on an `unknown` value").
-- **Opções para (1).**
-  (a) ★ O executor recebe o membro como valor: o decorator constrói a função uma vez, a acrescenta e entrega o mesmo valor ao seu executor; `decl` não é usado para alcançá-lo.
-  ```bp
-  val make = fn() -> decl { … };
-  compiler.addMember("make", make);
-  compiler.init({ -> register(make()) });
-  ```
-  (b) Um membro conta para `decl` só dentro do decorator que o acrescentou (seu próprio `init` e seus membros), nunca para outro decorator.
-  (c) Os membros tipados saem também: o que um executor precisa deles é registrado por dono em tempo de execução, como os membros `rk*`.
-- **Opções para (2).**
-  (a) ★ `implement` escrito, 716 (1) como escrita: o tipo nomeia cada behavior que seus decorators exigem.
-  (b) Estrutural, 626 (2): os membros declarados pelo próprio tipo atendem o behavior, sem `implement`.
-- **Recomendação.** (1) (a): o executor recebe o que precisa como valor, como a 797 diz, e nenhum membro conta em `decl`; (2) (a): a leitura mais restritiva (67), e a 797 já recusa contar membros que o tipo não escreve.
-- **Bloqueia.** A caixa de membros tipados do 165 s11 (`make` / `check` de `configurationProperties`, `http` do rakun-restclient, `entityMeta` / `Tx` do rakun-data).
-
 #### 335-a · `async.race` no erlang: o mais rápido, ou o primeiro escrito? (decisão 335; m2-0027)
 - **Proposto (sonnet, 2026-10-19; nada construído):** (a).
 - **Contexto.** 335: `async.race(tasks)` responde a primeira task a terminar. No erlang `Async` é rebaixado de forma ansiosa (cada task roda até o fim onde é feita), como `libs/std/src/async.bp` e a célula `std_async_on_every_target` registram.
@@ -380,36 +289,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): o "um valor para o programa" da 547 vale sem anotação; a forma por processo é a exceção que um programa pede.
 - **Bloqueia.** A promoção do rascunho da 704 / 547; nada mais.
-
-#### B-21-d · Uma expressão `fn` sem parâmetro tipado escreve seu `->`? (decisões 622, 408; 144 B-21)
-- **Proposto (coordenador, 2026-10-20; o B-21 construiu (b)):** (a).
-- **Contexto.** A 622 se aplica a "toda forma", nomeando "o lambda tipado `fn(x: T) -> R { … }` (583)"; a 408 deixa uma expressão `fn` ter todo parâmetro tipado ou nenhum. Um `fn() { … }` (sem parâmetro) ou `fn(x) { … }` (nenhum tipado) é uma expressão `fn` que a lista da 622 não nomeia.
-- **Medido.** O `fn-return-missing` do B-21 recusa uma expressão `fn` sem `->` só quando um de seus parâmetros tem tipo escrito; `fn() { … }` e `fn(x) { … }` são aceitos, seu retorno ainda lido do corpo. O codemod escreve `-> void` em todo `fn() { … }` das células e da std mesmo assim.
-- **Opções.**
-  (a) ★ Toda expressão `fn` escreve `->`, com parâmetros tipados ou não; o lambda entre chaves `{ x -> … }` continua a forma não tipada (328).
-  ```bp
-  val run = fn() -> void { print("go"); };     // fn() { print("go"); } refused, fn-return-missing
-  ```
-  (b) Só uma expressão `fn` com parâmetro tipado escreve `->`; `fn() { … }` e `fn(x) { … }` são tipados pela posição, como um lambda entre chaves.
-  ```bp
-  val run: fn() -> void = fn() { print("go"); };
-  ```
-- **Recomendação.** (a): um `fn` é escrito inteiro onde quer que apareça, e a forma não tipada já tem sua própria grafia.
-- **Bloqueia.** Nada do pouso do B-21; o alcance da recusa sobre `fn() { … }` e sua célula.
-
-#### B-21-e · A forma curta `fn f(x: T) R` (um tipo de retorno sem `->`) ainda é da linguagem? (decisões 622, 606; 144 B-21)
-- **Proposto (coordenador, 2026-10-20; nada construído):** (a).
-- **Contexto.** A forma curta vem das declarações `.d.bp`; a 606 removeu o `.d.bp`, e a 622 diz que toda função escreve seu tipo de retorno com `->`.
-- **Medido.** O parser ainda aceita `fn f(x: i32) i32` (um tipo e nenhum `->`) num arquivo `.bp`, e o `fn-return-missing` do B-21 não o recusa: o tipo de retorno está escrito.
-- **Opções.**
-  (a) ★ Recusada no tipo, nomeando `-> T`; a grafia é aposentada.
-  ```bp
-  declare fn size(self: Self) i32;      // refused: write -> i32
-  declare fn size(self: Self) -> i32;
-  ```
-  (b) Mantida como segunda grafia de `-> T`.
-- **Recomendação.** (a): uma grafia por forma, e os arquivos que precisavam dela se foram.
-- **Bloqueia.** Nada do pouso do B-21; a recusa do parser e uma célula.
 
 #### 800-a · O que "idêntico" significa em `implement-signature-differs` (decisões 800, 8; 144 B-148)
 - **Proposto (opus, 2026-10-20; construído como (1)(a), (2)(a), (3)(b)):** (1)(a), (2)(a), (3)(a).

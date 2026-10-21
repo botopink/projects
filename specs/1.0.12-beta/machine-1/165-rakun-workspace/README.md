@@ -200,7 +200,8 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
 - [ ] `rakun-bpp/src/html/html.bp`: the generator answers `compiler.ast(…)` — the `Node` records of `compiler.bp` — in place of the concatenated source and `compiler.build(code)`; `rakun-style`'s template the same; `platform_test.bp`'s templates
 - [ ] the registrations of 165 s10 written as 625 (1): each method marker registers itself through `compiler.init` with its declaration as code (613), the run-time registry grouping by owner; `rkRoutes`, `rkBeans`, `rkHooks`, `rkImports`, `rkAutoBeans`, `rkAdvice`, `rkCliCommands`, `rkSchedules`, `rkJobs`, `rkListeners` and the string `addMember(source)` go
 - [ ] decision 797: no executor calls on `decl` a member its decorator adds — rakun's 166 sites refused today ("cannot call a method on an `unknown` value") go with the registrations above; rakun is red on `feat` until this step lands
-- [ ] (waits on 797-a) `configurationProperties`'s `make` / `check` and rakun-restclient's `http` as typed members naming the owner `decl`
+- [ ] (decision 842: each held as a value and handed to the executor and sibling members; `syntax decl: Configurable` met by `implement`, 716 (1);
+      cell `added_member_handed_as_value`) `configurationProperties`'s `make` / `check` and rakun-restclient's `http` as typed members naming the owner `decl`
       (626); `syntax decl` typed by a behavior where the decorator calls members (`Configurable { fn make() -> Self; }`);
       rakun-restclient's `Api.http()` a static on the behavior answering `-> decl` (627), `Name.Http` gone
 - [ ] rakun's gate on the main checkout's compiler; `conformance/` green; `test-libs`

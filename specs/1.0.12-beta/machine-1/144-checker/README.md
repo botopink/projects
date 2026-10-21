@@ -1288,6 +1288,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | the formatter's tail | no cell: `format/tests/declarations.zig` |
 
 - [ ] the formatter adds `;` to a `case` arm block's last expression (409 covers function bodies) · question B-21-c
+- [ ] the shortform `fn f(x: T) R` (a type with no `->`) refused `fn-return-missing` at the name, the hint naming `-> R`; the parser's
+      `arrowOmitted` branch removed (decisions 622, 846); cell `fn_return_without_arrow` (reject; red on the parent)
+
 
 ### B-22 — The backends' and the checker's residue rows
 
@@ -2564,6 +2567,10 @@ covers only the `#[@Family]` forms.
 - [ ] a caller's type method that hands its `comptime t: type<T>` on to an imported function gets that function's copy too; cell `comptime_type_token_handed_on_from_method`
 
 Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are migrated.
+- [ ] `compiler.meta(d, M)` / `compiler.metaAll(d, M)` the one spelling (decision 840): the parser's `<M>` rewrite removed, `compiler.meta<M>(d)`
+      the ordinary missing-argument refusal; 30 std and cell sites respelled, rakun's 11 listed for 165 s10; cell `compiler_meta_called_as_declared`
+      (run, four targets; red on the parent)
+
 
 ### B-153 — a template answering `Component<X>` refused as built outside its bound
 
@@ -2927,6 +2934,9 @@ Decision 719 generalises the template (578): a function whose parameter is `synt
 - [x] a `syntax` function called through its module — `snap.matches(x)` after `import {snap} from "snap"` — is not expanded and is refused "expected Expr, got string"; a call through the module's qualified name expands as the bare call does; a cell, red on the parent (found by front 160; snap's README and AGENTS still show that form)
 
 Oracle: the cells; `zig build test`.
+- [ ] decision 841: `-> T` on a `syntax` expression function is code of type `T`, `-> void` included; `template-signature` no longer reads the
+      return; `syntax_fn_run_time_return` rewritten as a run cell (red on the parent)
+
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)
 

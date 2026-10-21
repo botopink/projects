@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **839**.
+number, which is **847**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -59,6 +59,14 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 836 | 798-e | `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` move into the reserved space; `<Type>__<Assoc>` stays |
 | [ ] | 837 | 805-a, 805-c | A `.bpr` per package and per std module, as built; the program's order in the root's file alone |
 | [ ] | 838 | 805-b | A `.bpr` built and run only from its project's directory, `runtime-other-project` otherwise |
+| [ ] | 839 | 723-b | `use context(ctx)` names a module-level context value only, never a parameter, a local or an expression (as built) |
+| [ ] | 840 | 668-a | `compiler.meta(d, M)` / `compiler.metaAll(d, M)` the one spelling; `compiler.meta<M>(d)` goes |
+| [ ] | 841 | 719-a | A `syntax` expression function returns any written type, `void` included |
+| [ ] | 842 | 797-a | A member a decorator adds and needs is held as a value; a behavior-typed `decl` met by `implement` (716 (1) over 626 (2)) |
+| [ ] | 843 | 564-d | Answered by 606 (1), 639, 826 (3): a module may shadow a prelude name |
+| [ ] | 844 | 723-c | Answered by 723: one default per context type |
+| [ ] | 845 | B-21-d | Answered by 583, 408: `fn() { … }` is the untyped form |
+| [ ] | 846 | B-21-e | Answered by 622: the shortform `fn f(x: T) R` refused, a departure to remove |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -250,105 +258,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): no untested path ships.
 - **Blocks.** Nothing on Linux.
 
-#### 564-d · May a module declare a name the compiler gives rules to? (decision 564; 144 machine-1 row)
-- **Proposed (opus, 2026-10-16; built as (a), awaiting the maintainer):** (b) for the names the compiler has rules for, (a) for the rest.
-- **Context.** A module's own or imported `behavior` now owns its name in every type position, as a `type` of the same name already did (`conformance/docs.md` § behavior). Some prelude names carry language rules: `Result` (`try`, `throw`), `Task`, `Component`, `Iterator`.
-- **Measured.** As built, `pub behavior Result { fn score(self: Self) -> i32; }` compiles and dispatches; the module's `Result` is what the name reads there, and `try` / `throw` keep std's.
-- **Options.**
-  (a) Yes, for every name: the module's declaration is what the name reads (built).
-  ```bp
-  pub behavior Result { fn score(self: Self) -> i32; }   // accepted
-  ```
-  (b) ★ Refused at the declaration for a name the compiler has rules for, located, naming std's declaration, as `primitive-type-name-taken` does for primitives; (a) for the rest.
-  ```bp
-  pub behavior Result { … }      // refused: `Result` is std's (builtins.d.bp), the language's rules use it
-  pub behavior Component { … }   // accepted
-  ```
-- **Recommendation.** (b) for the names the compiler has rules for, (a) for the rest: never a quiet shadow of a language type.
-- **Blocks.** Nothing.
-
-#### 723-b · May a context read name a parameter or a local of type `Context<T>`? (decisions 722, 723; 144 B-17)
-- **Proposed (opus, 2026-10-19; built as (a)):** (a).
-- **Context.** 722 / 723: a context is read through a context value the reader imports; the handle supplies the type and the default.
-- **Measured.** As built, `use context(ctx)` with `ctx` a parameter, a local or an expression is refused at the argument, `context-not-declared` (example `context_read_of_parameter` in `conformance/docs.md`).
-- **Options.**
-  (a) ★ Refused: the argument names a module-level context declaration, local or imported (built).
-  ```bp
-  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // refused: context-not-declared
-  ```
-  (b) Accepted: any value of type `Context<T>`; its type and its default come from the value.
-  ```bp
-  component fn Card(c: Context<Theme>) -> Component<Element> { val t = use context(c); … }   // accepted
-  ```
-- **Recommendation.** (a): the strictest reading, and the read stays resolvable at build from the text.
-- **Blocks.** Nothing.
-
-#### 723-c · `inject`'s defaults and the one-default-per-type check, now that a context is read by its handle (decisions 416, 722, 723, 379 (1))
-- **Proposed (opus, 2026-10-19; built as (a)):** (a).
-- **Context.** 722 drops 379 (1)'s catalogue: a read finds its default through the handle it names. 416's `use inject(Deps)` still takes each field's default as "that type's declared default", which needs the declarations found by type; 379 (1)'s `context-declared-twice` (one default per type) is what makes that lookup single.
-- **Measured.** As built, `inject` and `context-declared-twice` are unchanged and still read the program's context declarations by type.
-- **Options.**
-  (a) ★ Keep both: `inject` resolves a field's default among the declarations the program holds, and two declarations over one type are refused (built).
-  ```bp
-  pub val a = comptime createContext(Theme(…)); pub val b = comptime createContext(Theme(…));   // refused: context-declared-twice
-  ```
-  (b) `inject` loses the declared-default step (nearest provided, else the field's own default, else an error); two declarations over one type allowed.
-  ```bp
-  type Deps(theme: Theme = Theme.default())   // the field's default when none is provided
-  ```
-- **Recommendation.** (a): 416 stands as written and 731 keeps it; (b) only if the maintainer wants no program-wide lookup anywhere.
-- **Blocks.** Nothing.
-
-#### 668-a · `compiler.meta<M>(d)` names `M` by the return alone — the call respelled `compiler.meta(d, M)`? (decisions 668, 298, 576 (3); 144 B-152)
-- **Proposed (opus, 2026-10-19; built as (b)):** (a).
-- **Context.** 298 / 576 (3) spell the read `compiler.meta<M>(d) -> ?M` and `compiler.metaAll<M>(d) -> M[]`: `M` occurs only in the return type, which 668 refuses.
-- **Measured.** As built, the declarations take `comptime m: type<M>` (668's form) and the parser keeps accepting `compiler.meta<M>(d)`, rewriting it to the token internally.
-- **Options.**
-  (a) ★ The call is written as the declaration reads: `compiler.meta(d, M)`; `compiler.meta<M>(d)` refused as any explicit type argument that binds nothing.
-  ```bp
-  val e = compiler.meta(decl, Entity);   // ?Entity
-  ```
-  (b) The explicit-type-argument spelling stays, lowered to the token (built).
-  ```bp
-  val e = compiler.meta<Entity>(decl);   // ?Entity
-  ```
-- **Recommendation.** (a): one rule for every function, `compiler` included; (b) keeps a spelling no user function may have.
-- **Blocks.** Nothing (B-152 is held on 667-a).
-
-#### 719-a · May a function with a `syntax` expression parameter answer `-> T`, code of type `T`? (decisions 719, 578 (2); 144 B-156)
-- **Proposed (opus, 2026-10-19; built as (b)):** (a).
-- **Context.** 719 sends the new form to 578 (2)'s returns: "a type, `anyvalue` or `anytype`" — a template answering `-> Component<Styled>` returns code of that type (B-153's cell `template_answer_component`). B-156's box says a run-time return (`-> void`, `-> i32`) is refused at the declaration.
-- **Measured.** As built, only `-> anyvalue` and `-> anytype` are accepted; `-> i32` and no return are refused `template-signature`, naming those two (cell `syntax_fn_run_time_return`).
-- **Options.**
-  (a) ★ As 578 (2): any type `T` is accepted and means code of type `T`, checked where it is spliced; only `-> void` and no return are refused.
-  ```bp
-  pub fn twice(syntax e: i32) -> i32 { return code @`${e} + ${e}`; }   // accepted: code of type i32
-  ```
-  (b) Only `anyvalue` / `anytype` (built): `-> i32` refused as a run-time return.
-  ```bp
-  pub fn twice(syntax e: i32) -> i32 { … }   // refused: template-signature
-  ```
-- **Recommendation.** (a): one rule for the template and this form, as 719 says; the box's `-> i32` example predates the reading.
-- **Blocks.** Nothing; (a) loosens a refusal.
-
-#### 797-a · What decision 797 leaves open: the typed members a decorator adds and then calls, and how a behavior-typed `decl` is met (decisions 797, 716 (1), 626 (2), 627; 165 s11)
-- **Context.** 797 (716-a (c)): a member a decorator adds is never counted in `decl`'s type, and the `rk*` members go with 165 s11. Two points stay open. (1) Not every added member goes: 625 (1) keeps `bindProperties` / `new` / `gated` as typed members, 626 adds `make` / `check` through `configurationProperties`, rakun-data adds `entityMeta` and `Tx`; where the decorator's own executor calls one on `decl`, 797 refuses it. (2) 716 (1) says a behavior-typed `decl` admits a type that *implements* the behavior (one without `implement` refused); 626 (2) and `decisions-taken.md` say the check is structural, against the members the behavior lists.
-- **Measured.** Nothing built; the sites are among the 166 rakun sites refused today ("cannot call a method on an `unknown` value").
-- **Options for (1).**
-  (a) ★ The executor receives the member as a value: the decorator builds the function once, adds it and hands the same value to its executor; `decl` is not used to reach it.
-  ```bp
-  val make = fn() -> decl { … };
-  compiler.addMember("make", make);
-  compiler.init({ -> register(make()) });
-  ```
-  (b) A member counts for `decl` inside the decorator that added it only (its own `init` and members), never for another decorator.
-  (c) The typed members go too: what an executor needs of them is registered by owner at run time, as the `rk*` members.
-- **Options for (2).**
-  (a) ★ `implement` written, 716 (1) as written: the type names each behavior its decorators require.
-  (b) Structural, 626 (2): the type's own declared members meet the behavior, no `implement`.
-- **Recommendation.** (1) (a): the executor receives what it needs as a value, as 797 says, and no member is counted in `decl`; (2) (a): the strictest reading (67), and 797 already refuses counting members the type does not write.
-- **Blocks.** 165 s11's typed-member box (`configurationProperties`'s `make` / `check`, rakun-restclient's `http`, rakun-data's `entityMeta` / `Tx`).
-
 #### 335-a · `async.race` on erlang: the fastest, or the first written? (decision 335; m2-0027)
 - **Proposed (sonnet, 2026-10-19; nothing built):** (a).
 - **Context.** 335: `async.race(tasks)` answers the first task to finish. On erlang `Async` lowers eagerly (each task runs to its end where it is made), as `libs/std/src/async.bp` and the cell `std_async_on_every_target` record.
@@ -380,36 +289,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): 547's "one value for the program" holds without an annotation; the process form is the exception a program asks for.
 - **Blocks.** The 704 / 547 draft's promotion; nothing else.
-
-#### B-21-d · Does a `fn` expression with no typed parameter write its `->`? (decisions 622, 408; 144 B-21)
-- **Proposed (coordinator, 2026-10-20; B-21 built (b)):** (a).
-- **Context.** 622 applies to "every form", naming "the typed lambda `fn(x: T) -> R { … }` (583)"; 408 lets a `fn` expression have every parameter typed or none. A `fn() { … }` (no parameter) or `fn(x) { … }` (none typed) is a `fn` expression that 622's list does not name.
-- **Measured.** B-21's `fn-return-missing` refuses a `fn` expression without `->` only when one of its parameters has a written type; `fn() { … }` and `fn(x) { … }` are accepted, their return still read off the body. The codemod writes `-> void` on every `fn() { … }` of the cells and std anyway.
-- **Options.**
-  (a) ★ Every `fn` expression writes `->`, typed parameters or not; the braced lambda `{ x -> … }` stays the untyped form (328).
-  ```bp
-  val run = fn() -> void { print("go"); };     // fn() { print("go"); } refused, fn-return-missing
-  ```
-  (b) Only a `fn` expression with a typed parameter writes `->`; `fn() { … }` and `fn(x) { … }` are typed from their position like a braced lambda.
-  ```bp
-  val run: fn() -> void = fn() { print("go"); };
-  ```
-- **Recommendation.** (a): a `fn` is written whole wherever it appears, and the untyped form already has its own spelling.
-- **Blocks.** Nothing of B-21's landing; the refusal's reach over `fn() { … }` and its cell.
-
-#### B-21-e · Is the shortform `fn f(x: T) R` (a return type without `->`) still the language? (decisions 622, 606; 144 B-21)
-- **Proposed (coordinator, 2026-10-20; nothing built):** (a).
-- **Context.** The shortform comes from the `.d.bp` declarations; 606 removed `.d.bp`, and 622 says every function writes its return type with `->`.
-- **Measured.** The parser still accepts `fn f(x: i32) i32` (a type and no `->`) in a `.bp` file, and B-21's `fn-return-missing` does not refuse it: the return type is written.
-- **Options.**
-  (a) ★ Refused at the type, naming `-> T`; the spelling is retired.
-  ```bp
-  declare fn size(self: Self) i32;      // refused: write -> i32
-  declare fn size(self: Self) -> i32;
-  ```
-  (b) Kept as a second spelling of `-> T`.
-- **Recommendation.** (a): one spelling per form, and the files that needed it are gone.
-- **Blocks.** Nothing of B-21's landing; the parser's refusal and a cell.
 
 #### 800-a · What "identical" means in `implement-signature-differs` (decisions 800, 8; 144 B-148)
 - **Proposed (opus, 2026-10-20; built as (1)(a), (2)(a), (3)(b)):** (1)(a), (2)(a), (3)(a).
