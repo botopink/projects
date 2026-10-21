@@ -31,7 +31,7 @@ integers, lists, tuples, maps — replacing the `rkRelTerm` sidecar cell), `boot
 `dockerfile(spec)`, `appup(from, to)`.
 
 - [ ] each renderer byte-identical to rakun's release output for one fixed spec, both rows
-- [ ] onze-release's two recorded snapshots reproduced byte for byte (390 (3)):
+- [ ] rakun-ssr's release's two recorded snapshots reproduced byte for byte (390 (3)):
       `modules/onze-release/test/__snapshots__/release/text_rel_sys_config_vm_args_and_the_boot_script.snap`
       (`.rel`, `sys.config`, `vm.args`, boot script) and
       `dockerfile_two_stages_non_root_erts_bundled_and_not.snap` (Dockerfile with and without ERTS) —
@@ -45,8 +45,8 @@ integers, lists, tuples, maps — replacing the `rkRelTerm` sidecar cell), `boot
 #### Step 2 — consumers (was `107-release` s2)
 
 - [ ] rakun-cli's release imports the package; `rkRelTerm` deleted; its tests green
-- [ ] onze-release imports the package; `otp.bp` / `docker.bp` / `spec.bp` keep only onze's spec
-      shape; onze-release's 9 tests green on both rows
+- [ ] rakun-ssr's release imports the package; `otp.bp` / `docker.bp` / `spec.bp` keep only rakun-ssr's spec
+      shape; its 9 tests green on both rows
 
 ### 107 Conformance — the front's last step (decisions 465, 474, 477, 478, 479, 480)
 

@@ -590,7 +590,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 **Repository:** botopink-lang (`--lang`)
 
-- [ ] `docs.md` § Results, § Host bindings, § Effects state 431 and 432 as one contract (`throws: true`,
+- [ ] `docs.md` § Results, § Host bindings, § Effects state 431 and 432 as one contract (`result: true` (490),
       `HostError`, `Failure`, `attempt`, a failing task rejects); `libs/std/AGENTS.md`'s `failure` row; each
       backend's `AGENTS.md` names its wrap
 
@@ -651,7 +651,7 @@ every host cell marshals through `string`.
       `embed_binary_file`, `embed_through_comptime_param`, `bytes_comptime`
 - [ ] every file read joins B-60's closure key: a file under `src/` moves it today (`test-analysis-equivalence`); a
       file outside `src/` does not — the key records no read made at build (B-60's design)
-- [ ] `@embed` through a `comptime` parameter of a decorator or template body: refused `comptime-arg-not-known` —
+- [ ] `compiler.embed` through a `comptime` parameter of a decorator or template body: refused `comptime-arg-not-known` —
       the wasm comptime runtime has no host import to read a file
 
 #### B-12 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
@@ -788,7 +788,7 @@ Each track runs it at the end of its last thread in that tree (07 for erika); ve
 script's docstring — changed lines differ only by a deleted `;`, `botopink format` before/after
 byte-identical, cells green before and after.
 
-- [ ] every tree at 0 sites (step 1's command re-run): emilia, jhonstart, onze and botopink-lang (its 64, all in 45
+- [ ] every tree at 0 sites (step 1's command re-run): rakun-stylesheet, rakun-bpp, rakun-ssr and botopink-lang (its 64, all in 45
       `conformance/` cells) at 0 on `feat`; the other thirteen libraries and vscode-extension had none; rakun's 4 wait
       on 150 s30 (its hook red on `sql_build_test.bp:148`)
 
@@ -1207,7 +1207,7 @@ variant have no printed form yet, so they trap"` — all four backends print §7
 02's file). Reword after 02 lands, then widen the pattern (`build.zig` is `26-cli-tooling`'s —
 one-line carve-out named in the commit).
 
-- [ ] `grep -riIwE 'rakun|jhonstart|erika|onze|emilia' modules/compiler-core/src` empty; gate pattern names all five
+- [ ] `grep -riIwE 'rakun' modules/compiler-core/src` and `query` as a package (`"query"`, `import query`) empty; gate pattern names both (860)
 
 Measured 2026-10-08: the two test-file sites (`codegen/tests/control_flow.zig`, `dispatch.zig`)
 reworded; the rest sits in files this front does not own — `ast.zig`, `comptime.zig`,
@@ -1223,7 +1223,7 @@ lands. The pattern needs `-w`: without it `onze` matches `nonzero` (`commonJS.zi
 is the transition guard beside `test/case_arms.bp`. Needs the maintainer's word before any rewrite;
 each track rewrites its own tree.
 
-- [ ] maintainer's answer recorded; if removed, §5.1 arms rewritten in emilia, jhonstart, rakun by the tracks, cells green; `docs.md` § Case re-measured for both forms
+- [ ] maintainer's answer recorded; if removed, §5.1 arms rewritten in rakun-stylesheet, rakun-bpp, rakun by the tracks, cells green; `docs.md` § Case re-measured for both forms
 
 #### B-29 (rest) Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 
@@ -1598,7 +1598,7 @@ example's move into erika's `conformance/`.
 
 - [x] a cell red on the parent: a local `path` library whose default handle's member is called, on every target
 - [x] the erlang lowering binds the handle (`default_handle_member` green on erlang; beam is B-50)
-- [ ] `examples/generic-loader-binding` moves into `erika/conformance/` as a cell on every target (an erika change, after the 144 front)
+- [ ] `examples/generic-loader-binding` moves into `query/conformance/` as a cell on every target (a query change, after the 144 front)
 - [x] Conformance step (459, 474, 477, 478, 480) — boxes 3 and 4: the table below, the cells' `docs.md`, `conformance/docs.md`; boxes 1, 2 and 5: § The pipeline state
   | Behaviour (decision) | Cells |
   |---|---|
@@ -1895,9 +1895,9 @@ module-level tables (`everySpacingToken/0`, `front38TextLeaves/0`, `layoutLeaves
 
 - [x] the beam emitter splits or builds a large literal table within the assembler's limits; emilia's module assembles
       — a table counts its widest element's y-slots, not their sum (a 1100-row table assembled)
-- [ ] every emilia cell green on beam (`botopink cell check conformance/` in rakun) — emilia's `botopink.json` lists
-      commonJS and erlang only, so its cells read beam once rakun's emilia adds the target (a 165 consumer row); on
-      `2481d61c7` emilia's module (`rakun-stylesheet`, its `#[@External]` migrated by hand) assembles, and a 5000-row
+- [ ] every rakun-stylesheet cell green on beam (`botopink cell check conformance/` in rakun) — its `botopink.json` lists
+      commonJS and erlang only, so its cells read beam once rakun-stylesheet adds the target (a 165 consumer row); on
+      `2481d61c7` its module (`rakun-stylesheet`, its `#[@External]` migrated by hand) assembles, and a 5000-row
       table with a 14-way `.append` chain runs on beam — nothing left in botopink-lang
 - [x] a unit test the hook runs: a module with a literal table past the limit assembles (478)
 
@@ -2524,7 +2524,7 @@ Measured on 2026-10-12: `botopink cell check <lib>/conformance` checks one cell 
       decision 468 counts it); the report in the cells' order, the same lines as today
 - [ ] a library's `scripts/gate.sh --jobs <N>` hands its share to `cell check` (469); botopink-lang's
       `test-conformance` the same
-- [ ] a test the hook runs: two cells checked at once, their report in order; emilia's `conformance/` measured
+- [ ] a test the hook runs: two cells checked at once, their report in order; rakun-stylesheet's `conformance/` measured
       with `--jobs 1` and the default
 - [ ] Conformance step (459, 474, 477, 478, 480)
 
@@ -2747,7 +2747,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       — B-151 prunes a namespace import whose every use became the print / panic call node (`std_calls.expand`); the subject
       file says no backend intercepts `print` (§ host-functions (1)), so this box removes that call node and B-151's cell
       `terminal_namespace_import_print` must stay green through linking only the members the program reaches
-- [ ] `print` on wasm by `.Wasm(std: "print" | "println" | "debug")`: a row of 164 s3 (this step's header: the wasm half
+- [ ] `print` on wasm by `.Wasm(std: "print")` alone (606 (2)): a row of 164 s3 (this step's header: the wasm half
       after 164 s3, never beside), `print_bound_by_cells`'s wasm answer its oracle
 - [x] the codemod's misses: `modules/compiler-cli/tests/{cli_contract,test_tooling,closure_invariant}.sh`, the fixture
       `modules/compiler-cli/tests/cell/departs`, `scripts/test-libs.sh`, `cli/{libs,test_cmd}.zig` still write
@@ -2771,10 +2771,10 @@ cells' answers decide language versus defect; the file kind's removal is mechani
       file listed twice; its snapshot and `docs.md` stated)
       — `Env.declarationFile` kept as `Env.compilerBodies` (the prelude, the reflection cluster, `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)) until the
       modules dissolve; `builtins.d.bp` / `builtins_fns.d.bp` are std modules `builtins.d` / `builtins_fns.d` until then
-- [ ] no `#[builtin]`, no `@name` (606): the types and behaviors `builtins.d.bp` declares (`Result`, `Task`, `Component`, `Renderable`,
-      `Iterator`, `Stream`, `Future`, `Use`, `Display`, `Closeable`, `Index`, `Slice`) move into
+- [ ] no `#[builtin]`, no `@name` (606): the types and behaviors `builtins.d.bp` declares (`Result`, `Async`, `Component`, `Composition`, `Composable` (826),
+      `Iter`, `AsyncIter`, `Future`, `Use`, `Display`, `Closeable`, `Index`, `Slice`) move into
       `primitives.bp` with their bodies; `Annotation` goes (663) and `Decorator` goes (666: `decorator: unknown`, `compiler.same`); `#[Stage.Any]` →
-      `#[stage(.Any)]`, `#[BeamMemory.X(…)]` → `#[beamMemory(.X(…))]`, std decorators over the enums (63 sites) — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
+      `#[compiler.stage(.Any)]`, `#[BeamMemory.X(…)]` → `#[compiler.beamMemory(.X(…))]` (774), std decorators over the enums (63 sites) — the prelude, bare everywhere, a local declaration shadowing a prelude name —; the
       two functions stay, imported, inside std too: `print` in `io/terminal.bp`, `panic` in `failure.bp`; `println`, `todo`,
       `debug`, `src` removed (shortcuts, or `compiler.src`); `typeInfo` (answering `compiler.Info<T>`, the record in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)),
       `embed` (the link only: `Link` in `compiler.bp`, `Asset(link)` in `asset.bp` importing `compiler` and `io.fs`, `open()` the `File`, when by the `comptime` at the read, 607) and `external` (`Compiler.implement` folded in; `Implementation` in `compiler.bp`,
@@ -3128,17 +3128,17 @@ Today a template's body answers code as a string — `compiler.build(code)` afte
       per decision 752 (a): at the `ast` call, the caller's location, the library's `file:line:col` of the `ast` call and the node in the message; cells `template_answers_ast`, `ast_ill_formed_refused`, `ast_syntax_node_typed_at_splice`
 - [ ] a library's private function reached through the hygiene alias keeps its parameter names: `double(n: 3)` in built code
       is `label-on-function-value` today (found by P1); a cell, red on the parent
-- [ ] **P1b, `code.bp`** (637, 625 (4)): the std module whose template `code` turns code written with `${…}` holes into the AST, a hole a build value (a literal) or a `syntax` value (spliced as written); `compiler.holes(syntax t: string) -> unknown[]`, the caller's holes as `syntax` values; `Syntax(e)` the node `code` emits for a `syntax` hole (638), the 8 receiver-by-text cells over `code`; the 11 hole cells and every template cell rewritten over `code` in P2 — no `Hole(index)` node
+- [x] **P1b, `code.bp`** (637, 625 (4)): the std module whose template `code` turns code written with `${…}` holes into the AST, a hole a build value (a literal) or a `syntax` value (spliced as written); `compiler.holes(syntax t: string) -> unknown[]`, the caller's holes as `syntax` values; `Syntax(e)` the node `code` emits for a `syntax` hole (638), the 8 receiver-by-text cells over `code`; the 11 hole cells and every template cell rewritten over `code` in P2 — no `Hole(index)` node
       — the hole's kind read by its arrival (637, 638: a `syntax` value is `Syntax`, a build value `Lit`), so `compiler.bp`
       gains `compiler.isSyntax(v: unknown) -> bool` (a build read, 576 (2)); a cell line where a `Lit` holding a `syntax`
-      value is refused ("write `Syntax(e)`"); the vocabulary 644's mock member needs, decision 753 (a): `Fn(params, ret, body)` and the type nodes
+      value is refused ("write `Syntax(e)`"); the vocabulary 644's mock member needs, decision 753 (a): `Fn(params, ret, body)` and the type nodes — closed as written: 802's box below is its replacement (`Syntax` and `compiler.isSyntax` gone)
 - [ ] decision 802, first: the `fable` plan — the sites of `compiler.holes` with an expression rather than a name, `code`'s own holes,
       the receiver cells, P1b's pieces that go —; then `compiler.lookup(e, name) -> ?Node` (a run-time binding its name, a build value its
       `Lit`, a `Node` value the node, a `syntax` value its code as written), `compiler.holes` / `compiler.isSyntax` / `Syntax` removed, `code.bp`
       resolving its own `${…}` by `lookup` (a `Node` spliced as the node, `Node[]` as list items, a misplaced node refused), the
       `ast_syntax_node_typed_at_splice` and `template_method_receiver_code` cells over `lookup`; cell `template_lookup_answers_node`
 - [ ] decision 801: the 13 cells that build the caller's raw text with `compiler.build(compiler.text(…))` rewritten — the caller's code a
-      `syntax` expression spliced into `code` (429, 691, 577, 578, 515's `shapesdsl`), the seven `bpp_*` `markup` dependencies a build-value
+      `syntax` expression spliced by `lookup` (802 (4); 429, 691, 577, 578, 515's `shapesdsl`), the seven `bpp_*` `markup` dependencies a build-value
       hole; each cell's location and `docs.md` rewritten, cell `template_caller_code_as_syntax`
 - [ ] `compiler.build(source: string)` removed — `compiler_surface.zig`, the readers, 578 (3)'s text in `docs.md`; the 14
       `decorator_add_type*` cells written `compiler.addType("Columns", type(id: string))` (640 (2)); `compiler.ast` admitted in a
@@ -3209,9 +3209,13 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       target-free, but the entry still holds each target's emitted code, so it stays per target
       — one fold channel: a folded value reaches the backends only as the literal the analysis splices (`srcRewrites`);
       `comptime_vals` gone from the transform, the four emitters and the analysis result
-- [ ] a `compiler.load` file is checked for every target of the caller's manifest (833): the load handler runs `codegen/target_check.zig`'s
+- [x] a `compiler.load` file is checked for every target of the caller's manifest (833): the load handler runs `codegen/target_check.zig`'s
       `refusalOf` per lookup name after the nested compile, its refusals after the analysis ones; cell `load_refused_for_every_manifest_target`
       (a file calling a node-only std function, a manifest of four targets, `Error` on every target)
+      — built as: `load.zig`'s `compileFile` runs `refusalOf` per lookup name after the nested compile, `Module.wasm_host` filled from
+      the manifest; the cell loads a file calling `fs.walk` (no wasm binding) with no `targets` (every target — a manifest naming all
+      four is refused by `cell check`), `Error` with `std-unsupported-on-target` on four targets; no std function is node-only, so the
+      cell shows the wasm refusal alone
 - [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name as written, one file per module (834), a
       specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
       — `reserved-name` built: refused at a declaration's name in a user module's first pass (std, loaded packages and the
@@ -3234,9 +3238,11 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       `runtime-not-a-program`; built from the project's directory (838); oracle `compiler-cli/tests/runtime_file.sh` (the direct and
       the `.bpr` builds byte-equal on four targets, every refusal); the root's bytes may differ between a warm and a cold build (the
       encoder's identity table follows the live tree's aliasing), the decoded tree the same
-- [ ] `build` / `run` over a `.bpr` refuse `runtime-other-project` when the working directory holds no `botopink.json` or one of another name
+- [x] `build` / `run` over a `.bpr` refuse `runtime-other-project` when the working directory holds no `botopink.json` or one of another name
       than the file's root (838 (3)); `--help` and `compiler-cli`'s AGENTS say it; a `runtime_file.sh` case (`app.bpr` from the work directory
       and from `lib/`), red on the parent
+      — built as: `runRuntime`'s `inItsProject`, after the root's `.bpr` is read (its name lives there) and before any other file;
+      `runtime_file.sh`'s case
 - [x] the root's `.bpr` records the manifest's wasm host (334 (2)), read into `Config.wasm_host` and the runner's host: today a project
       declaring `"wasm": { "host": "browser" }` builds a WASI component from its `.bpr` and `run` starts wasmtime, against 798 (5);
       `--target` stays required, no `--wasm-host` flag; a `runtime_file.sh` case (browser host, the wasm builds byte-equal, `run` under

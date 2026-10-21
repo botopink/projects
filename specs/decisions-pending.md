@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **892**.
+number, which is **893**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -112,6 +112,7 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 889 | 548-b, 862's names | 862's names confirmed (`stylesheet()`, `SsrConfig`, `/_rakun-ssr/`…); `rakun-bpp` examples bare; `emilia.bp`, bundler kinds and `rakun-cli`'s `onze` added |
 | [ ] | 890 | B-27-e, 853's scope | Two modules folding to one atom refused on every target |
 | [ ] | 891 | 884's open question | rakun-bpp's renderer passes `Place.index(i)` to a child list; an index never touches a body's count or a key |
+| [ ] | 892 | the retired-forms sweep | Rows 751–879 read in their replacements; the subject text, the open boxes and retired.md respelled |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 

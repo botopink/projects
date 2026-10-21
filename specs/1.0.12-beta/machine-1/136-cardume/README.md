@@ -226,7 +226,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 **Repository:** `cardume` and jhonstart (`jhonstart-dom-test`; a full worktree) · **Model:** sonnet
 
-- [ ] the effects `atm-d` keeps, each with a `jhonstart-dom-test` case
+- [ ] the effects `atm-d` keeps, each with a `rakun-bpp-dom-test` case
 
 ### Step 9 — the `cardume` repository and its submodule (138's residue)
 
@@ -266,9 +266,9 @@ After every other step of this front has landed on `feat`; it holds back no fron
 - [ ] the front's changes to the libraries' behaviour analysed against the cells (a table in this README)
 - [ ] the cells that behaviour calls for written (decision 463's shape), red on the front's base, green on its tip
 - [ ] the missing cells found beyond the front's change proposed as rows
-- [ ] the reference updated (480): `cardume/conformance/docs.md`, the bridges' entries in rakun's and jhonstart's, and
+- [ ] the reference updated (480): `cardume/conformance/docs.md`, the bridges' entries in rakun's and rakun-bpp's, and
       the `docs.md` of each cell written or whose answer changed
-- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` of cardume, rakun and jhonstart since the
+- [ ] the GitHub pipeline read (474, 477, `gh` read only): the runs on `feat` of cardume and rakun since the
       front's base, after it landed, green or each red named and fixed or filed; the pipeline's state in the step's report
 - [ ] for each red, the cheap test the hook runs that would have caught it written beside the fix (478), or why none can
 
@@ -281,8 +281,8 @@ After every other step of this front has landed on `feat`; it holds back no fron
 - `atm-d` — which atom effects ship (none; `persistLocal`; URL search-param sync)
 
 **Gate:** standard (fronts.md § Gate), plus:
-- [ ] `botopink test` green on both targets in `cardume`'s `modules/cardume`, `jhonstart-cardume`, `rakun-cardume` (erlang); on commonJS in `jhonstart-dom-test`
-- [ ] `zig build test-libs`: cardume, jhonstart, rakun green; the blog untouched (it uses no atom)
+- [ ] `botopink test` green on both targets in `cardume`'s `modules/cardume`, `jhonstart-cardume`, `rakun-cardume` (erlang); on commonJS in `rakun-bpp-dom-test`
+- [ ] `zig build test-libs`: cardume, rakun green; the blog untouched (it uses no atom)
 - [ ] `repository/cardume`'s own CI (`.github/workflows/test.yml`) green on its `feat`
 
 ## Notes

@@ -32,7 +32,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
       document each `Error` naming the line (67), never read as something else
 - [ ] rakun's `config.bp` reads `.yaml` / `.yml` through it and deletes its own subset (after
       `04-rakun/128`); its config tests unchanged
-- [ ] `08-bpp/121` step 3's frontmatter reads through it (no copy in onze-content)
+- [ ] `08-bpp/121` step 3's frontmatter reads through it (no copy in rakun-ssr's content)
 
 ### 152 Conformance — the front's last step (decision 465)
 

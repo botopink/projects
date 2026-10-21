@@ -188,7 +188,7 @@ workspace's whole `conformance/` once they have landed.
 - [ ] `#[scope("request")]` on a constructor-injected factory refused at boot naming the injection site — the run-time registry sees both declarations, each registered by its own `compiler.init` executor (665)
 - [ ] with defaults every registered bean constructed before `Rakun.run` returns; a missing required config key (`#[value]` today, a `#[config]` field after step 7 — 299) fails inside `Rakun.run` (a recording constructor)
 - [ ] `scopes_test.bp` / `context_test.bp`: clean stop exits `0`; failed boot exits non-zero, a distinct code per failure kind (the table 19's `bootAndExit` consumes)
-- [ ] `rakun.d.bp` leaves `botopink.json`'s `files` and the tree; `fixtures/imports` (a consumer naming `Context` in a signature) still compiles — the concrete type carries `resolve` / `has`
+- [x] `rakun.d.bp` leaves `botopink.json`'s `files` and the tree (deleted, 165 s10); `fixtures/imports` (a consumer naming `Context` in a signature) still compiles — the concrete type carries `resolve` / `has`
 - [ ] the scan registry records each component's injected field names; `rkScannedDeps(name) -> string[]` answers them (88's `beans`)
 - [ ] `rkExcludeFromEager(T)` (by type, step 6 — 281): a registered type skipped by `eagerInitIn`, constructed on first resolution (`context_test.bp`); `pub` from `src/root.bp` (08 step 1 consumes it)
 
@@ -348,7 +348,7 @@ the drivers, the container and the transactions. Today a repository is a `type` 
 `#[query("…")]` (`src/sql/query.bp`), which writes `<Repo>.<m>Sql()` and registers the statement through
 `rkRegisterQuery`.
 
-- [ ] the PostgreSQL and ETS drivers implement `dbcontext`'s `Driver`; statements run on the driver's `SqlTemplate`
+- [ ] the PostgreSQL and ETS drivers implement `rakun-data`'s `Driver`; statements run on the driver's `SqlTemplate`
 - [ ] the container registers `DbContext` and each `#[repository]` behavior's generated implementation
       by type (234): `Users` injectable, `Relatorio(db: DbContext)` built by the container
 - [ ] `SqlTemplate.query` / `update` / `single`: `sql` is `comptime` — a statement built at run time is
@@ -362,7 +362,7 @@ the drivers, the container and the transactions. Today a repository is a `type` 
       with them (`language-gaps.md`)
 - [ ] cells: a `#[repository]` over ETS answering both forms through the container; the body form
       (`self.db.query "…"`, 397) with an injected `DbContext`
-- [ ] `repository/rakun/AGENTS.md` § SQL data access and the member README name `dbcontext` and the drivers
+- [ ] `repository/rakun/AGENTS.md` § SQL data access and the member README name `rakun-data` and the drivers
 
 - [ ] `#[transactional]` (`src/sql/transactional.bp`) a wrapper (316, 318 (7)): the hand-written `<Type>Tx`
       proxy deleted, its sites the annotation on the method
@@ -544,14 +544,14 @@ Blast radius: new files under `rakun-client/src/ws/` only. 88 adds `ws generate`
 
 #### Step 1 — The starters (was `73-rakun-starters` s1)
 
-- [ ] `starters/rakun-starter-app/{botopink.json,src/root.bp}` exist; `starter_manifest_test.bp` asserts the nine starters and their `brings` lists
-- [ ] `starters/rakun-starter-test/botopink.json` names `rakun-starter` and `rakun-test` only; the lint's `allowList()` and its two asserting cells gone (no out-of-repo dependency allowed); the workflow's onze checkout gone; `grep -rn onze repository/rakun/starters` answers nothing
-- [ ] `starters/README.md` lists nine, states the workspace rule (03r-r)
+- [x] `starters/rakun-starter-app/{botopink.json,src/root.bp}` exist; `starter_manifest_test.bp` asserts the nine starters and their `brings` lists — closed: the `rakun-starter-*` go (724)
+- [x] `starters/rakun-starter-test/botopink.json` names `rakun-starter` and `rakun-test` only; the lint's `allowList()` and its two asserting cells gone (no out-of-repo dependency allowed); the workflow's onze checkout gone; `grep -rn onze repository/rakun/starters` answers nothing — closed: the `rakun-starter-*` go (724)
+- [x] `starters/README.md` lists nine, states the workspace rule (03r-r) — closed: the `rakun-starter-*` go (724)
 
 #### Step 2 — The examples run (was `73-rakun-starters` s2)
 
 - [ ] `examples/rakun`: `botopink build --target erlang --out out` then `botopink run` headless exits 0, prints the banner — a cell in `modules/rakun/test/starter_manifest_test.bp` (renamed `consumer_surface_test.bp`) driving the compiler through `BOTOPINK_BIN` under `BOTOPINK_TEST_TMPDIR`, as `rakun-cli`'s tests do
-- [ ] the same for `examples/rakun-container` and `examples/rakun-ssr` (ssr answers `/` over a loopback socket with its renderer's text)
+- [x] the same for `examples/rakun-container` and `examples/rakun-ssr` (ssr answers `/` over a loopback socket with its renderer's text) — closed: only `examples/rakun` stays, its `consumer_surface_test.bp` the one cell (724)
 - [ ] if any of the three fails on a sidecar load, the milestone's `language-gaps.md` toolchain row re-pinned with the measured text, box open naming it
 - [ ] each example has a `README.md` (what it shows, how to run it) — PK-2
 
@@ -683,7 +683,7 @@ per revalidation verb; `rakun-client` reads it in 13.
 #### Step 1 — The page `Request` and the scan hand-off (R62-3, R22-1) (was `22-rakun-file-routing` s1)
 
 - [ ] `ssr_test.bp`: a `PageRenderer` receiving a request with two headers and `?a=1&b=%20` reads `headerNames()` (both), `headers()` (both values), `queryDict()` (`a=1`, `b= `), `rawQuery()` (`a=1&b=%20`)
-- [ ] `file_router_scan_test.bp`: `fixtures/middleware` (root `middleware.bp`, no `pub mod` naming it) — a request through the app runs the file's entry (a header it sets is on the response); `fixtures/routing` (no root file) registers nothing, chain length unchanged
+- [ ] `file_router_scan_test.bp`: `fixtures/middleware` (root `middleware.bp`) — a request through the app runs the file's entry (a header it sets is on the response); `fixtures/routing` (no root file) registers nothing, chain length unchanged
 
 #### Step 2 — Handlers (R25-1 … R25-4) (was `22-rakun-file-routing` s2)
 
@@ -702,11 +702,11 @@ per revalidation verb; `rakun-client` reads it in 13.
 Final state (decision 277): `static_gen.bp` reads the route's `S` / `D` from the `k` blob; the
 interim boxes below hold until `05-jhonstart/26` step 8 lands.
 
-- [ ] `ssr_test.bp`: a renderer reading `queryDict()` without `markDynamic` leaves the page static; one calling `markDynamic("searchParams")` makes it dynamic — through `static_gen.bp`'s decision
+- [ ] `ssr_test.bp`: a renderer reaching `queryDict()` (`#[serverOnly]`) is `D` through the hooks list, one not reaching it `S` (186, 277) — through `static_gen.bp`'s decision
 - [ ] `rakun_ssr.erl` has no implicit mark on any accessor (grep cell over the sidecar source)
 - [ ] `AGENTS.md` § SSR states the rule and the `ChunkWriter` method; contract 5d in the milestone's `contracts.md` amended by the maintainer (named, not edited here)
-- [ ] after `05-jhonstart/26` step 8: `static_gen.bp`'s "the trial render touched a dynamic API"
-      reason deleted — the kind comes from the `k` blob; `ChunkWriter.markDynamic` deleted
+- [x] after `05-jhonstart/26` step 8: `static_gen.bp`'s "the trial render touched a dynamic API"
+      reason deleted — the kind comes from the `k` blob; `ChunkWriter.markDynamic` deleted — closed: no trial render; the kind comes from the hooks list (186, 277)
 
 #### Step 5 — Spans (R11-7) (was `22-rakun-file-routing` s5)
 
@@ -714,10 +714,10 @@ interim boxes below hold until `05-jhonstart/26` step 8 lands.
 
 #### Step 6 — Actions (R24-1, R24-2, RX-2, RX-13) (was `22-rakun-file-routing` s6)
 
-- [ ] `actions_test.bp`: literal `"refresh"` is `refreshValue()`; the envelope's `payload` parsed by bundled `actions`' contract-2 reader once jhonstart 30's reader is in `actions` — until then the cell asserts the pathname field by name and the box stays open naming 30
-- [ ] R24-1 reworded before work starts: the file-level `pub val useServer = true;` form contradicts 282 (a role is said in a decorator, never by an export's name) — an action is `#[action] pub fn` (303) and onze 50 attaches no directive; the field-by-field comparison against a directive file goes (maintainer confirms the new wording)
+- [ ] `actions_test.bp`: literal `"refresh"` is `refreshValue()`; the envelope's `payload` parsed by bundled `actions`' contract-2 reader once rakun-bpp 30's reader is in `actions` — until then the cell asserts the pathname field by name and the box stays open naming 30
+- [ ] R24-1 reworded before work starts: the file-level `pub val useServer = true;` form contradicts 282 (a role is said in a decorator, never by an export's name) — an action is `#[action] pub fn` (303) and rakun-ssr 50 attaches no directive; the field-by-field comparison against a directive file goes (maintainer confirms the new wording)
 - [ ] RX-2 (60, 61, 64, 66): decorator-argument default re-measured in `segment_config_test.bp`, `i18n_test.bp`; README records the result
-- [ ] RX-13: `actions_test.bp` and the `actions-cache` fixture spell no `__bp_action` / `X-Bp-Action` (onze's defaults, decision 114); `grep -rn '__bp_action\|X-Bp-Action' modules/rakun-app` empty
+- [ ] RX-13: `actions_test.bp` and the `actions-cache` fixture spell no `__bp_action` / `X-Bp-Action` (the orchestrator's defaults, decision 114); `grep -rn '__bp_action\|X-Bp-Action' modules/rakun-app` empty
 
 #### Step 7 — file roles are the framework's (decision 285) (was `22-rakun-file-routing` s7)
 
@@ -758,7 +758,7 @@ green in `modules/rakun-app`; `examples/rakun-ssr` still builds.
 #### Step 2 — The digest and the sink (R17-1; after 106's package) (was `17-rakun-logging` s2)
 
 - [ ] `grep -n "fn errorDigest" modules/rakun/src/logging` empty; `digest_test.bp` asserts the lines of `log`'s known-answer fixture through the imported `errorDigest` — fixture is `log`'s, not this member's
-- [ ] the core installs `log`'s sink (configured from `rakun.logging.*`) and calls `log.captureRuntimeReports()` at boot; `cells.bp`'s sink and capture cells deleted (349, after `106` step 3); a record through `log`'s error-logging function produces one `error` line carrying the digest the call answered (`digest_test.bp`); README documents that onze installs `log`'s sink for the render (`07-onze/49` step 3) and that the box ticks when jhonstart 26 step 4's cell reads the same fixture
+- [ ] the core installs `log`'s sink (configured from `rakun.logging.*`) and calls `log.captureRuntimeReports()` at boot; `cells.bp`'s sink and capture cells deleted (349, after `106` step 3); a record through `log`'s error-logging function produces one `error` line carrying the digest the call answered (`digest_test.bp`); README documents that rakun-ssr installs `log`'s sink for the render (`07-onze/49` step 3) and that the box ticks when jhonstart 26 step 4's cell reads the same fixture
 
 #### Step 3 — Endpoints and export (R17-2, R75-1) (was `17-rakun-logging` s3)
 
@@ -802,7 +802,7 @@ appear in the log at `error`, not on standard error.
 - [ ] R11-6 ticked with a pointer to 13's `request_test.bp` cell (`rakun-client`'s `transport.bp` sends `traceparent` from `startSpan("http.client.request", …)`)
 - [ ] R11-7 ticked when 22's `ssr_test.bp` / `actions_test.bp` / `route_handler_test.bp` assert one span each through the core's span API
 - [ ] `actuator_api/span_test.bp`: no subscriber, 1 000 `startSpan`/`endSpan` pairs under 5 ms (`io.clock`)
-- [ ] R11-8's three DoD boxes ticked, the first reworded to "the actuator API lives in the core (`modules/rakun/src/actuator_api/**`, decision 187) and is what 08 · 09 · 12 · 15 · 16 · 17 · 18 · 77 · 85 import"; the other two ("`modules/rakun-actuator/` exists with the endpoint host, the health and info registries, the four registry-reading endpoints, `shutdown`, `instrumentation.bp` and the sidecar"; "spans for request, render, action and handler, `:telemetry`-shaped, with W3C propagation, costing nothing with no subscriber") as written
+- [ ] R11-8's three DoD boxes ticked, the first reworded to "the actuator API lives in the core (`modules/rakun/src/actuator_api/**`, decision 187) and is what 08 · 09 · 12 · 15 · 16 · 17 · 18 · 77 · 85 import"; the other two ("`modules/rakun-service/` exists with the endpoint host, the health and info registries, the four registry-reading endpoints, `shutdown`, `instrumentation.bp` and the sidecar"; "spans for request, render, action and handler, `:telemetry`-shaped, with W3C propagation, costing nothing with no subscriber") as written
 
 #### Step 4 — Hygiene (RX-1) (was `11-rakun-actuator` s4)
 
@@ -824,7 +824,7 @@ read `POST /actuator/shutdown`, unaffected. If R11-2 needs the registrar tag, 04
 - [ ] `static_test.bp`: root `/**` → `public/`; a path no root resolves reaches the next chain entry (a recording entry after the static one sees it); an existing file is served, recorder does not run
 - [ ] a `POST` (and a `PUT`) to a path a root would serve reaches the chain, file not served; `HEAD` served (rule 2, asserting `staticEntry` as it is)
 - [ ] traversal, encoded traversal and a bad segment still final refusals (400/404) at the first matching root, `rkStaticFsCalls()` unchanged for the first two
-- [ ] `AGENTS.md` § Static assets states the three rules; onze 69's registration box named as the consumer
+- [ ] `AGENTS.md` § Static assets states the three rules; rakun-ssr 69's registration box named as the consumer
 
 #### Step 2 — The relay (R65-1, R65-2) (was `65-rakun-url-rules` s2)
 
@@ -836,7 +836,7 @@ read `POST /actuator/shutdown`, unaffected. If R11-2 needs the registrar tag, 04
 - [ ] `rakun-data/src/devtools/devtools.bp`: dev property source sets `rakun.web.resources.cache.period=0`; `rakun-data/test/devtools/devtools_test.bp` asserts the key present under the dev profile, absent otherwise
 - [ ] `static_test.bp`: under the dev profile every root answers `Cache-Control: no-cache`
 - [ ] R82-2 reworded to "traversal and encoded traversal answer 404 without a filesystem call; a symlink escape by resolving the link, before any read" and ticked; symlink cell asserts the escape refused before any read (`rkStaticFsCalls()` grows by exactly the one `readlink`)
-- [ ] R82-3 ("onze front 69's roots are served through `registerStaticRoot` with no second content-type table, ETag rule or traversal guard anywhere under `repository/`"): the grep (`fn contentTypeOf` only in `src/static.bp`) runs as a cell; onze registering is onze's (69)
+- [ ] R82-3 ("rakun-ssr front 69's roots are served through `registerStaticRoot` with no second content-type table, ETag rule or traversal guard anywhere under `repository/`"): the grep (`fn contentTypeOf` only in `src/static.bp`) runs as a cell; onze registering is rakun-ssr's (69)
 
 #### Step 4 — a handler may answer `Result<Response, E>` (decision 304) (was `65-rakun-url-rules` s4)
 
@@ -984,7 +984,7 @@ under (b) the core gains the extension point, `rakun-websocket` one registration
 #### Step 3 — `ws generate` and the boundary (93, R88-6) (was `88-rakun-cli` s3)
 
 - [ ] `rakun ws generate fixtures/rates.wsdl out/` writes the files 93's generator produces, prints them, exits 0; a WSDL with a network `xsd:import` exits 1 with 93's refusal text
-- [ ] the boundary table below is in `AGENTS.md` § CLI; R88-6 ticks when `07-onze/50-onze-cli/README.md` carries the mirror (onze's step — source is here)
+- [ ] the boundary table below is in `AGENTS.md` § CLI; R88-6 ticks when `07-onze/50-onze-cli/README.md` carries the mirror (rakun-ssr's step — source is here)
 
 | | `rakun` (this front) | `onze` (onze 50) |
 |---|---|---|
@@ -1093,16 +1093,16 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 #### Step 7 — locals are atoms (decision 295) (was `123-bpp-middleware` s7)
 
-- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use atomSetter(atom) -> fn(T)` (296) and jhonstart's `use atomValue(atom)` (296; the cookie hooks in the same family, 400);
+- [ ] cardume's `Atom<T>` (296) through `rakun-cardume` (`09-cardume/136` step 7): rakun's `use atomSetter(atom) -> fn(T)` (296) and rakun-bpp's `use atomValue(atom)` (296; the cookie hooks in the same family, 400);
       `LocalKey`, `setLocal(key, value)`, `local(key)` gone
 - [ ] `#[middleware]` functions, route handlers and actions return `Component<Response>` (354)
       (`rakun-web/src/middleware.bp`, `convention.bp`); a plain `-> Response` keeps working without `use`
 - [ ] two atoms of one `T` are distinct; an unset atom reads `null`; values die with the request
-- [ ] `examples/locals-and-sequence-example.bp` and `examples/src/app/orders/page.bpp` rewritten to atoms (the page reads `use local(currentUser)` through jhonstart's hook, never `import {local} from "rakun"` — 113, 295)
+- [ ] `examples/locals-and-sequence-example.bp` and `examples/src/app/orders/page.bpp` rewritten to atoms (the page reads `use local(currentUser)` through rakun-bpp's hook, never `import {local} from "rakun"` — 113, 295)
 
 **Gate:** standard (fronts.md § Gate), plus:
-- [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-web`
-- [ ] `zig build test-libs`: rakun, onze green; the blog's dashboard gate unchanged
+- [ ] `botopink test --target erlang` green in `modules/rakun` and `modules/rakun-service`
+- [ ] `zig build test-libs`: rakun green; the blog's dashboard gate unchanged
 
 ### 150 s23 — actions typed by a schema (127)
 
@@ -1110,13 +1110,13 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 #### Step 0 — Measure (was `127-bpp-actions` s0)
 
-- [ ] how the browser learns an action's id — payload `a` key (`jhonstart/src/render.bp:479-523`)
+- [ ] how the browser learns an action's id — payload `a` key (`rakun-bpp/src/render.bp`)
       or hand-threaded (`07-onze/53/examples/new-post-form-example.bp:45`: `val createPostId = "a_9f31…"`)
 - [ ] what a form post carries besides user fields, by name — the list `bind<T>` must not see
 
 #### Step 1 — `ActionError` and the envelope's typed payload (decision 303) (was `127-bpp-actions` s1)
 
-- [ ] `libs/actions/src/outcome.bp`, both targets: `ActionError` (the sum type above) and the `Result<T, ActionError>` ↔ `{data}` / `{error}` codec; no `ActionOutcome`, no `ActionErrorCode`; it travels in the envelope's existing `payload` field, no reader changes
+- [ ] `repository/actions/src/outcome.bp`, both targets: `ActionError` (the sum type above) and the `Result<T, ActionError>` ↔ `{data}` / `{error}` codec; no `ActionOutcome`, no `ActionErrorCode`; it travels in the envelope's existing `payload` field, no reader changes
 - [ ] an `Error(Input(fields))` written and read back keeps every path and message; each other case keeps its status and message
 - [ ] a payload with both `data` and `error`, or neither, is refused by the reader (never decoded into a `Result`)
 
@@ -1130,9 +1130,9 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
 
 #### Step 3 — The client call and the form binding (was `127-bpp-actions` s3)
 
-- [ ] `callAction` over `jhonstart-dom-test`'s fake transport answers `Async<Result<T, ActionError>>`: `Ok`, `Error(Input)` and each other `Error` case decode to their variant
+- [ ] `callAction` over `rakun-bpp-dom-test`'s fake transport answers `Async<Result<T, ActionError>>`: `Ok`, `Error(Input)` and each other `Error` case decode to their variant
 - [ ] a form bound with `formAction(ref)` submits without JavaScript; the next render's `actionResult(ref)` holds the outcome — `?Result<T, ActionError>`, `null` until posted
-- [ ] `fieldError(name)` (`libs/actions/src/state.bp:21`) answers the path's first message, so
+- [ ] `fieldError(name)` (`repository/actions/src/state.bp:21`) answers the path's first message, so
       existing form components work over a typed action
 
 #### Step 4 — `actionContext` for middleware (was `127-bpp-actions` s4)
@@ -1155,8 +1155,8 @@ manifest edge (measured first); step 4 adds fixtures under `test/fixtures/` only
       `Cookie<T>` (294), not `ctx.cookie("user-session")`
 
 **Gate:** standard (fronts.md § Gate), plus:
-- [ ] `botopink test` green on both targets in `libs/actions` and `jhonstart-forms`; on erlang in `rakun-app`
-- [ ] `zig build test-libs`: rakun, jhonstart, onze green; `#[serverAction]`'s tests unchanged
+- [ ] `botopink test` green on both targets in `repository/actions` and `rakun-bpp`; on erlang in `rakun-app`
+- [ ] `zig build test-libs`: rakun green; `#[serverAction]`'s tests unchanged
 
 ### 150 s24 — rakun-test's `assertResponse` (135 s2)
 
@@ -1213,19 +1213,19 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
       beam backend refuses a `self` in
 - [ ] the fences' import lists name what the emitted wiring needs (`rkResolve`, `rkRegisterBean`,
       `rkConfigCheckRegister`, `rkRegisterListener`, `rkValueOr`, …), or the wiring stops needing them imported
-- [ ] `rkResolveNamed` / `__rkMake_Context` in the text are `rkFindNamed` / `rkFind`; `rkResolve` answers the value
+- [ ] `rkResolveNamed` / `Context.make()` in the text are `rkFindNamed` / `rkFind`; `rkResolve` answers the value
       (not an optional); `Context` comes from `rootContext()`
 - [ ] "`resolve<Foo>("Bar")` answers `null`": a named lookup bound to `?Clock` answered a non-null value — the text or
       the lookup fixed, a cell pinning the answer
-- [ ] rakun-web's decorators are `convention.filter` / `convention.order`, `Chain` and `WebRequest` in the `filter`
-      module; `import {filter, order} from "rakun-web"` resolves `filter` to the module and registers no filter — the
+- [ ] rakun-service's decorators are `convention.filter` / `convention.order`, `Chain` and `WebRequest` in the `filter`
+      module; `import {filter, order} from "rakun-service"` resolves `filter` to the module and registers no filter — the
       text fixed, and that import refused or warned at build rather than silently registering nothing (67)
 - [ ] `#[provides] fn corsPolicy()` shadows the constructor it calls: the example renamed, and the shadowing refused
       at build or documented
 - [ ] `validateCreateUserRequest(…)` / `constraintsOfCreateUserRequest()` are `#[validated]`'s members `validate()` /
       `constraints()`; the validation imports module-qualified (`decorators.validated`, `import {derived} from
       "validation"`)
-- [ ] `#[imports("Wallet")]` of a type with only a `#[bean]` factory does not compile (`Wallet` has no `make`): the
+- [ ] `#[imports("Wallet")]` of a type with only a `#[provides]` factory does not compile (`Wallet` has no `make`): the
       text or the decorator fixed
 - [ ] `newRequestId()`, an event payload from `req.body()` under `rkDispatch` (empty), `draftMode()` marking the request
       dynamic when read: each in the text as the code answers it, or the code fixed
@@ -1234,7 +1234,7 @@ front (a row, then a cell red until it lands). Each item decided and recorded:
 
 **Repository:** rakun (`--repo rakun`) · **Model:** sonnet
 
-- [ ] each of the 35 cells depends on `{"path": "../../../modules/rakun"}` (and `rakun-web` the same), its `deps/`
+- [ ] each of the 35 cells depends on `{"path": "../../../modules/rakun"}` (and `rakun-service` the same), its `deps/`
       directory deleted; every cell green through the library's hook and `botopink cell check conformance/`
 
 ### 150 s28 — two consumer rows from 144 (B-13, B-26)

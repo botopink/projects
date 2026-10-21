@@ -32,8 +32,8 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
 
 - [ ] rakun-logging imports `log` (`Level`, `LogRecord`, `Logger`, `errorDigest`, `clientErrorBody` —
       own copies deleted); after step 3 its sink and capture cells deleted for `log`'s (349); tests green
-- [ ] jhonstart `error_boundary.bp` digests through `log.errorDigest` (`05-jhonstart/26` step 4)
-- [ ] rakun-web's `problem_digest` cell (`error.bp`, `rakun_chain.erl` `problem_digest/1`) deleted
+- [ ] rakun-bpp's `error_boundary.bp` digests through `log.errorDigest` (`05-jhonstart/26` step 4)
+- [ ] rakun-service's `problem_digest` cell (`error.bp`, `rakun_chain.erl` `problem_digest/1`) deleted
       for `errorDigest`
 
 ### 156 s2 — the sinks' wasm column (106 s3)

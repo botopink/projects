@@ -53,7 +53,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 #### Step 3 — the number of rows is written (was `137-erika-sql` s3)
 
-- [ ] an answer `?T` requires `limit 1`, an answer `T[]` (or `Array<T>`) refuses it; a mismatch is a
+- [ ] an answer `?T` requires `limit 1`, an answer `T[]` (or `array<T>`) refuses it; a mismatch is a
       compile error at the query naming the declared answer (decision 312) — `query` builds `runOne` (`Result<?Row, E>`)
       under `limit 1`, `runMany` (`Result<Row[], E>`) otherwise, and the call's type is the built code's (426), with
       `compiler.note("query answers a list — add limit 1 for ?User")` on the list branch
@@ -74,13 +74,15 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 #### Step 5 — the template annotation `#[erika "…"]` (after `01-checker` step 29) (was `137-erika-sql` s5)
 
-- [ ] `erika` used as an annotation on a method (decision 311): the query checked against the
+- [x] `erika` used as an annotation on a method (decision 311): the query checked against the
       method's parameters (each `${…}` a parameter, by name and type) and its declared answer (step 3);
       the result recorded as typed meta of the method (298) — the SQL text with its parameter order —
-      for a type-level decorator to read (`#[repository]`, rakun 08 step 7)
-- [ ] on anything but a method it is an error at the annotation; with `${…}` naming no parameter, the
-      ordinary unbound-name error at the hole
-- [ ] `run/` cell: a test behavior whose type-level test decorator reads the meta and asserts it
+      for a type-level decorator to read (`#[repository]`, rakun 08 step 7) — closed: the annotation on a
+      method left `query` for the persistence package's `#[query @`…`]` (313, 696)
+- [x] on anything but a method it is an error at the annotation; with `${…}` naming no parameter, the
+      ordinary unbound-name error at the hole — closed with the box above (313, 696)
+- [x] `run/` cell: a test behavior whose type-level test decorator reads the meta and asserts it — closed with
+      the box above (313, 696)
 
 **Gate:** standard (fronts.md § Gate) + `botopink test` in `modules/query` and `modules/query-test` on
 commonJS and erlang, `botopink build` of `examples/query-linq`, erika's pre-commit hook green.
@@ -109,8 +111,8 @@ text)`; `test/asserts_test.bp`, one accepted snapshot per target-shared file.
 erika has no track: `16-formatter/c13-migrate.py` over erika (28 sites at 1.0.10 — `16-formatter`
 step 1 re-counts), then `botopink format` at C-12's rules once `16-formatter` step 6 (decision 345) lands.
 
-- [ ] erika's `;` sites migrated by the script, cells green before/after, `botopink format --check` exit 0; reformat token-identical, idempotent
-- [ ] erika's gate (`scripts/git-hooks/pre-commit`: `botopink test` per member, `botopink build` per example) green; `zig build test-libs -- --lib query` / `--lib query-linq` green in the meta worktree
+- [ ] query's `;` sites migrated by the script, cells green before/after, `botopink format --check` exit 0; reformat token-identical, idempotent
+- [ ] query's gate (`scripts/git-hooks/pre-commit`: `botopink test` per member, `botopink build` per example) green; `zig build test-libs -- --lib query` / `--lib query-linq` green in the meta worktree
 
 ### 145 conformance — `query/docs.md` and its examples into `query/conformance/` (decision 463)
 

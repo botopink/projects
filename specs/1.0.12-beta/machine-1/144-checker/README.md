@@ -122,7 +122,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       erlang, beam
 - [ ] handed to 146 (their compiler halves built): the comptime parameter default and the raw lexeme (125 s12, s7),
       `#[each("email")]` → `#[each(email)]` (125 s8)
-- [ ] G2: the same for styled's and emilia's markers — built: a method's behavior-typed parameter takes an
+- [ ] G2: the same for rakun-style's and rakun-stylesheet's markers — built: a method's behavior-typed parameter takes an
       implementer (`method_behavior_parameter_implementer`); a template-reached enum variant or private record no
       longer reproduces across a package. Left:
 - [x] a bare variant in expression position (`Two(t)`) checks but fails on commonJS, erlang and beam · question B-10-d
@@ -133,14 +133,14 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
 - [ ] waits elsewhere: a template reading another expansion's value (119's design), a decorator body calling a host
       function (B-00c); a library template reading the program's catalogue is overtaken by 665 (the registry read at run
       time, styled's half in 150)
-- [ ] G3: the same for jhonstart's markers (after B-15 and 388) — built: template-built code builds an inline props
-      type (`template_builds_inline_props`; jhonstart's two html test markers and the row gone). Left:
+- [ ] G3: the same for rakun-bpp's markers (after B-15 and 388) — built: template-built code builds an inline props
+      type (`template_builds_inline_props`; rakun-bpp's two html test markers and the row gone). Left:
 - [x] a decorator reads whether a `Component<R>` return's `R` implements `Renderable` — overtaken by 804 (2) (851); `client.bp`'s marker and
       its `language-gaps.md` rows go in 165 s10
 - [ ] `html` declared `-> View` (`View = Component<Element>`, its tree through `compiler.custom`): every expansion fails `expected
       Component, got Element` — 852: an alias of `Component` in a return erased (`alias_erase.zig`'s kept position goes); cell
       `component_return_alias_erased` (red on the parent); `html`'s `-> View` answers `Component<Element>` once 809 (7) lands — no rule over `Element`
-- [ ] G5: the same for onze-content's marker — no compiler change: decision 306 makes it a type decorator over
+- [ ] G5: the same for rakun-ssr's content marker — no compiler change: decision 306 makes it a type decorator over
       `compiler.fields(decl)` (121 step 10), handed to 150 s70
 
 **Impacted tests:** a `run/` or `reject/` cell per row; the libraries' suites. **Model:** opus for checker rows,
@@ -286,7 +286,7 @@ val outra = Pessoa(...base, ...contato, nome: n);   // left to right, the later 
 - [x] a source whose type is an import alias of a derived type is refused: the lineage is matched by the type's
       name, so `import {Contato as C}` then `Pessoa(...c, …)` with `c: C` does not reach `Contato`'s source — follow
       the alias; one cell
-- [ ] `..base` (decision 37) beside 359's `...src` · question B-14-a
+- [x] `..base` (decision 37) beside 359's `...src` · question B-14-a — closed: 37's update path is closed and `...` is refused (864)
 - [ ] decision 715: every argument evaluated in the order written, the spread's source where it stands, once; a spread copies field values only, the record's methods its type's — `record_spread_evaluation_order` re-recorded, `record_spread_copies_values_only`
 - [x] `Type.pick` / `omit` / `merge` of a `Type.partial` type, and `Type.required`: their lineage · decision 600, (b) as built; the two cells' comments renamed in B-140
 
@@ -343,7 +343,7 @@ they recorded — the same function shape as a declaration's decorator, named by
 - [ ] the template side's spelling moves to `compiler` (636, as overtaken by 576 (2) and 616): `compiler.tagDecl(kind:
       DeclKind, name: string, syntax attrs: unknown)` builds the handle, `compiler.annotate(syntax d: unknown, at: Span)`
       runs the annotation written at a span of the template's text — neither on a capture nor in a `template` namespace
-- [ ] `compiler.meta<T>(d)` on a decorator's own declaration handle (`syntax d: unknown`) is refused, so an annotation cannot read what an earlier
+- [ ] `compiler.meta(d, T)` on a decorator's own declaration handle (`syntax d: unknown`) is refused, so an annotation cannot read what an earlier
       one recorded on the same tag · question B-15-c
 - [ ] `template.mapSpanToLoc` places a span of a one-line `"""…"""` literal two columns early (the capture has
       `multiline=false`) — found by B-15
@@ -749,7 +749,7 @@ component fn Button() -> Component<Element> {
       found by B-17
       — `toI64`'s bounds were the cause (`comptime_primitives_at_build`); math's `op:`-only functions no longer fold (decision
       764); `@Result` methods refused at build
-- [ ] emilia: four beam cells fail with OTP's "implementation limit"; rakun: two workspace cells red — older than B-17,
+- [ ] rakun-stylesheet: four beam cells fail with OTP's "implementation limit"; rakun: two workspace cells red — older than B-17,
       found by its library gate run
 - [ ] math's `op:`-only functions (`sqrt`, `floor`, `abs`, `trunc`, `minF`, `maxF`) given a `std:` cell each in std-wasm beside their opcode so they fold at build · decision 764 (a); cell `comptime_math_folds`; the six exports are machine 2's (164)
 - [ ] `Context<T>(contextValue)` and a context lowered to its plain value at run time · question B-17-i
@@ -1725,7 +1725,7 @@ and beam, 2 on wasm.
       the digits and the plain decimal text; std's tests `decodesTo("9007199254740993", Int(value: 9007199254740993))`
 - [ ] `json.parse` and `json.stringify` deleted with their Node / Erlang templates (336); their one caller (`tests/language/run/std_json_on_every_target.bp`)
       rewritten to `decode` / `encode`; `json` compiles on wasm under both hosts with no host cell
-- [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, jhonstart 2, onze 2) gain the arms, one commit per
+- [ ] the 13 files with a `case` over `Json` (std 6, rakun 3, rakun-bpp 2, rakun-ssr 2) gain the arms, one commit per
       repository; `run/json_numbers_exact` one `.out` for the four targets
 
 #### B-24 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
@@ -1936,7 +1936,7 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
       package's item or an activation refused at its line. The scope (`compiler-core`: last scope, import-item list) is
       `01-compiler/01-checker`'s, handed by this front
       — waits on question 116-a
-- [ ] `grep -riE 'rakun|jhonstart|erika|emilia|onze'` over `modules/compiler-core/src` and the
+- [ ] `grep -riE 'rakun'` and `query` as a package (`"query"`, `import query`) over `modules/compiler-core/src` and the
       edited `compiler-cli` files is empty
       — `libs.zig` and `resolver.zig` name libraries today; the unfold's code names none
 
@@ -2329,7 +2329,7 @@ in-memory structures, so the checker and the four emitters read what they read t
       on purpose)
 - [x] tests the hook runs: an unchanged library is not analysed again across invocations; a changed file (by
       content), a changed checker source or another target analyses it again; a truncated entry is discarded
-- [ ] measured (B-61's quiet machine): emilia's conformance and one cell repeated, cold and warm, without and with
+- [ ] measured (B-61's quiet machine): rakun-stylesheet's conformance and one cell repeated, cold and warm, without and with
       level B; the directory's size
 - [ ] Conformance step (459, 474, 477, 478, 480)
 - [ ] under the module-model group (B-71, B-72) an entry becomes a block's; noted there
@@ -2427,8 +2427,8 @@ One mechanical pass, as B-33's codemod: no design choice.
 
 - [ ] std: `libs/std/src/root.bp` and every `mod` / `pub mod` removed; its decorators and templates moved to
       `libs/std/src/comptime/`
-- [ ] each library (emilia, erika, jhonstart, onze, rakun, actions, http, log, routing, validation, css, styled, snap,
-      json, yaml, markdown, dbcontext, vscode-extension's botopink sources): `src/root.bp` / `src/lib.bp` and every
+- [ ] each library (rakun-stylesheet, query, rakun-bpp, rakun-ssr, rakun, actions, http, log, routing, validation, css, rakun-style, snap,
+      json, yaml, markdown, rakun-data, vscode-extension's botopink sources): `src/root.bp` / `src/lib.bp` and every
       `mod` / `pub mod` removed, decorators and templates (`#[route]`, `#[page]`, `html`, `css`, `styled` …) moved to
       `src/comptime/`, private modules to `src/internal/`; each library's gate green
 - [ ] the specs and `AGENTS.md` files that name `root.bp`, `lib.bp` or `pub mod` updated
@@ -2550,7 +2550,7 @@ covers only the `#[@Family]` forms.
 
 - [x] such an annotation is refused at the annotation, located, naming what `name` is (nothing, a namespace, a value);
       a refusal cell per kind, red on the parent; no library site measured to rely on the silence (each found, listed)
-- [ ] `#[m.missing]` through a `pub mod` namespace is refused too: a `pub mod` publishes no export list to the checker today, so only an imported module's missing segment is refused (`annotation_dotted_missing_in_import`)
+- [x] `#[m.missing]` through a `pub mod` namespace is refused too: a `pub mod` publishes no export list to the checker today, so only an imported module's missing segment is refused (`annotation_dotted_missing_in_import`) — closed: the `pub mod` namespace is retired (592 (1))
 
 ### B-146 — three checker defects found by 165 s5
 
@@ -2825,7 +2825,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exists; its open points filed as questions
       — done: the pieces are P1 the checker without the split (804-a, 804-b), P2 `Renderable` out, P3 the type form's `compose`,
       P4 `Children` retired (804-c), P5 rakun-style's list of components (804-d, 165 s11)
-- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed: the type form rewritten to a record and a `component fn` (`component_types.zig`), cells `component_compose_entry` and its five refusals (question 804-e); (2) unblocked by 812 (809-c, which replaced 804-a; 804-b overtaken by 809; the split rests on `Renderable` alone), its codemod written;
+- [ ] decision 804 (1), (2): a type component's `render` renamed `compose` (the refusals with it, cell `component_compose_entry`) — (1) landed, its lowering since replaced by `implement Composable<Element>` with a `component fn compose` (809 (2), 828): cells `component_compose_entry` and its five refusals (question 804-e); (2) unblocked by 812 (809-c, which replaced 804-a; 804-b overtaken by 809; the split rests on `Renderable` alone), its codemod written;
       `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
       dropped by codemod (std, the cells; rakun's sites in 165's commit)
 - [ ] decision 804 (4) (its `NodeChild` respelled by 809 (7)): rakun-bpp's `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
@@ -2997,10 +2997,10 @@ Oracle: the cells; `zig build test`. A draft that a later 166 s3 lands names its
       the binding `val`; `derived-type-outside-val`, `derived-type-cycle`, `record-field-duplicate`; defaults and
       markers from the source, 423); `comptime/derived_types.zig` reduced to the record's materialisation and the two
       `val` rules; `partial` / `required` / `merge` / `pick` / `omit`, `keys`, `Field.of` / `all` written in `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630)
-- [ ] decision 578: `compiler.record` gone — the derived types write their record's text from `compiler.fields(T)` and `compiler.buildType` it (defaults and annotations as written, 423; 307's three refusals over the built type); `compiler.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
+- [ ] decision 578: `compiler.record` gone — the derived types are built from `compiler.fields(T)` with `compiler.buildTypeInline(fields)`, a structure and never text (629 (1)) (defaults and annotations as written, 423; 307's three refusals over the built type); `compiler.Field<T>`'s `type: anytype`; the string `addType` → `compiler.addType(name, compiler.buildType(…))`
 - [x] decision 631: a `Field<T>` crossing to run time is `Field(Owner, "name")` and the owner compares by identity; cells `meta_field_tuple_and_field_key`, `meta_field_build_member_at_run_time`, `meta_field_compared_by_owner` (599's own cell module removed: all five of its cases were the removed cells)
 - [ ] `return Field<T>;` — a type written as a value where `type` is expected (the parser point of 575 (7))
-- [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `#[mock]` on the typed `addMember` (`T.Mock(…)`); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
+- [ ] decision 576 (14): the typed `compiler.addType(name, compiler.buildType(…))`; std's `mock(T)` of `testing/mocks.bp` (644); the string `addMember` / `addType`, `decorator-member-not-one-fn` and decorator_add_member_not_one removed; the libraries' sites (165)
 - [ ] a unit test holds `conformance/docs.md` § Prelude to the names `primitives.bp` declares and each imported std function's row to its module's declaration (606): a row per name, its declaration as written, its rule — B-16's builtins-`Field` work is superseded by this step and was not landed
 - [ ] cells: the twelve derived-type cells unchanged; `record_field_duplicate`; `merge`'s duplicate located at the
       second argument; a `type` value printed; `RecipeKey.all()` at run time, computed at build

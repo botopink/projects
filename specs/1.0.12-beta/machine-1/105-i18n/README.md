@@ -48,7 +48,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 #### Step 2 — consumers (was `105-i18n` s2)
 
 - [ ] rakun-app keeps only its registry, filter, cookie and loader; generic half deleted
-- [ ] jhonstart `isLangTag` deleted; `render.bp` imports `i18n.wellFormedTag`
+- [ ] rakun-bpp's `isLangTag` deleted; `render.bp` imports `i18n.wellFormedTag`
 - [ ] validation's `interpolate` deleted; `messages.bp` imports `i18n.interpolate`; validation's
       tests unchanged
 
