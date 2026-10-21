@@ -12,6 +12,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
 
+- **Para revisar** — as decisões que um `fable` tomou por delegação do mantenedor em 2026-10-21, para ele revisar depois.
 - **Bloqueando agora** — prioridade máxima: as perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam primeiro; um índice de entradas mantidas nas suas seções.
 - **Bloqueando agora — máquina 1 e frente 165** — o mesmo para os passos da máquina 1 e a frente 165.
 - **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
@@ -25,7 +26,23 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **814**.
+número livre, que é **833**.
+
+## Para revisar — decididas pelo fable por delegação do mantenedor (2026-10-21)
+
+O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele naquele dia fosse marcada para revisar depois. Cada uma continua em vigor como escrita; uma revisão que mude uma é uma linha nova que a emenda. Marque `[x]` depois de revisar.
+
+| Revisada | Linha | Respondeu | O que o fable decidiu |
+|---|---|---|---|
+| [ ] | 823 | 810-b (parte) | O mantenedor escolheu (d); o fable decidiu onde a regra ansiosa fica escrita (§ body-markers (3), o escalonamento da 392 (1) declarado só para commonJS e wasm) e que o `ref.test` do wasm sobre `$task` é da 164 s2 |
+| [ ] | 824 | 809-i | No erlang e no beam a árvore de células de uma raiz é uma entrada do dicionário do processo que a criou, encerrada com esse processo ou `root.close()`; um scope cruza um processo só como `scope.detach()` (emendada pela 825) |
+| [ ] | 826 | 809-f | `Composition`, `Composable` e `Component` são nomes do prelude em `primitives.bp`, escritos sem import, lidos nominalmente |
+| [ ] | 827 | 809-g, 804-d | O `use all(cs)` da std resolve uma lista de componentes em run time sob um `use`; o `Sheet.render` e o `spliced` do rakun-style o usam |
+| [ ] | 828 | 809-h, 804-e | Os cinco códigos da forma de tipo; `component-compose-missing` e `component-use-outside-compose` viram as recusas gerais |
+| [ ] | 829 | 811-a | `opaque` fecha só um record, uma palavra contextual, como construído |
+| [ ] | 830 | 811-c | As chamadas do próprio lowering conhecidas por uma marca no nó da chamada, não pela faixa de linhas 3.000.000; uma chamada à mão de um nome `__bp_` é `reserved-name` |
+| [ ] | 831 | 810-c | A identidade de um behavior em run time é o átomo da sua declaração `<package>@<path>@@<B>`, sem contador (o mantenedor aceitou a tabela por alvo) |
+| [ ] | 832 | 806-b | A opinião do fable — um tipo inline num campo de registro, nomeado pelo dono `Bp__<Owner>__<field>`, nunca um contador — tomada com o "os dois devem ser aceitos" do mantenedor |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
