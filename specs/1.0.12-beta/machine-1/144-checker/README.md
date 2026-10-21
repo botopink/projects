@@ -2594,7 +2594,8 @@ Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are m
       the ordinary missing-argument refusal; 30 std and cell sites respelled, rakun's 11 listed for 165 s10; cell `compiler_meta_called_as_declared`
       (run, four targets; red on the parent) — landed (the cell under `compiler_meta_called_as_declared-840/cells/meta_called_as_declared`,
       a template reading both; rakun's sites listed in 165 s10)
-- [ ] a refused cell for `compiler.meta<M>(d)` (the ordinary missing-argument refusal, 840), red on 840's parent
+- [x] a refused cell for `compiler.meta<M>(d)` (the ordinary missing-argument refusal, 840), red on 840's parent — landed
+      (`'meta' expects 2 argument(s), got 1`, the `arityMismatch` every call gets; case `meta_generic_spelling` under 840's `refused/`)
 
 
 ### B-153 — a template answering `Component<X>` refused as built outside its bound
@@ -2990,8 +2991,14 @@ Oracle: the cells; `zig build test`.
 - [x] decision 841: `-> T` on a `syntax` expression function is code of type `T`, `-> void` included; `template-signature` no longer reads the
       return; `syntax_fn_run_time_return` rewritten as a run cell (red on the parent) — landed (the cell under `719/cells/`, four targets; its
       `log` takes `(label: string, syntax e: i32) -> void`, question 841-a, answered by 907: the use decides, a box below)
-- [ ] a `syntax` expression function's `code` tree naming an imported std function (`return code @`print(${text})`` with `print` imported) is
-      refused "unbound variable 'print' … in `log`'s tree", `-> anyvalue` too; a cell, red on the parent
+- [x] a `syntax` expression function's `code` tree naming an imported std function (`return code @`print(${text})`` with `print` imported) is
+      refused "unbound variable 'print' … in `log`'s tree", `-> anyvalue` too; a cell, red on the parent — landed for std's `print` / `panic`
+      (`applyAstHygiene` applies the writer's std calls, 669; cell `syntax_fn_code_names_imported_std_function`)
+- [ ] every name of a tree a template or a `syntax` function builds resolves in the writer's module (170, 578), not only std's
+      `print` / `panic`: the writer's own imports and its module's declarations, private ones (859) included, reached from the caller's
+      module the way 830's marked lowering reaches `Module.of`. query's grammar (145, decision 914) needs it: its expansion spliced into
+      the caller names `of` and `Query<T>`'s methods, which 914 makes private; a cell (a library template naming its module's private
+      function, called from another package), red on the parent
 - [ ] 907: the use decides — `#[f]` applies a function whose first parameter is `syntax` as a decorator, `f(e)` expands any function with a `syntax` parameter at the call; `isSyntaxExprFn` goes (`ast.zig`), each use checked by its own rules against the one declared type; cell `syntax_fn_use_decides_kind` (`log(syntax e: unknown) -> void` annotated on a `val` and called on an expression, four targets, red on the parent); `syntax_fn_run_time_return` keeps its shape; B-69's home rule (592 (3)) reads the kind, a `syntax` function declared in `src/comptime/`
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)
