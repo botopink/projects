@@ -2908,6 +2908,11 @@ Oracle: the two cells on commonJS, erlang, beam and wasm.
 - [ ] decision 877 (547 landed on erlang and beam): an unannotated module `var` the one-row ETS table created at boot, `x = f(x)` atomic,
       `BeamMemory`'s `ProcessDict` and `keyed` gone; the 704 draft promoted; cell `module_var_written_by_processes` (an unannotated `var`
       written by `runAll`'s thunks), red on the parent
+      — built: the unannotated `var` a one-row ETS table at boot (`ast.Memory.implicit`), `x = f(x)` / `+=` / `push` atomic through std
+      beam's `etsSwap` (an `ets:select_replace` loop, 547 (ii)), `runStateOf` with no process-local default; 704's draft promoted; cell
+      `module_var_written_by_processes` (547) · left: `ProcessDict` and `keyed` removed — by 547's text, a removed member or label refused
+      by the enum's existing unknown-member / unknown-argument refusal, the keyed cells (168, 340, 167, 547's keyed ones) closed with one
+      refusal cell kept, an annotated `.Ets` the unannotated lowering (547: "the default"); rakun's registry `var`s are now program-wide
 
 ### B-144 — erlang / beam: a chained call on a namespace member dispatches on the wrong receiver
 
