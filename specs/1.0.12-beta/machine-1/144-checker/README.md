@@ -2581,7 +2581,7 @@ covers only the `#[@Family]` forms.
 - [ ] a caller's type method that hands its `comptime t: type<T>` on to an imported function gets that function's copy too; cell `comptime_type_token_handed_on_from_method`
 
 Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are migrated.
-- [ ] `compiler.meta(d, M)` / `compiler.metaAll(d, M)` the one spelling (decision 840): the parser's `<M>` rewrite removed, `compiler.meta<M>(d)`
+- [x] `compiler.meta(d, M)` / `compiler.metaAll(d, M)` the one spelling (decision 840): the parser's `<M>` rewrite removed, `compiler.meta<M>(d)`
       the ordinary missing-argument refusal; 30 std and cell sites respelled, rakun's 11 listed for 165 s10; cell `compiler_meta_called_as_declared`
       (run, four targets; red on the parent) — landed (the cell under `compiler_meta_called_as_declared-840/cells/meta_called_as_declared`,
       a template reading both; rakun's sites listed in 165 s10)
