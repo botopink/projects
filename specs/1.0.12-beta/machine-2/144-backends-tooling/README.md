@@ -3126,12 +3126,21 @@ Today every declaration of `libs/std/src/primitives.bp` is a behavior: `Number`,
 - [x] commonJS: when rakun-bpp's whole package compiles, the modules load in an order that breaks `instanceof` of a class from a circular import (`Right-hand side of 'instanceof' is not an object`, `error_boundary_test`'s four tests, node's circular-export warnings); a cell with two modules importing each other, red on commonJS · fixed: a module with tests and no `main` required its dependencies' inits before its own exports; they now follow them, an entry keeps them first (660); suite `conformance/test/module_init_requires_its_importer`; rakun-bpp on commonJS 98 → 4 failing (four `clientApp` tests in `client_app_test.bp`, rakun's to triage)
 - [x] `indexOf` / `lastIndexOf` / `contains` over records compare by `==`, which is structural on every target (the equality rule): commonJS and wasm answer by identity today (`[P(1, "a")].indexOf(P(1, "a"))` is -1 there, 0 on erlang / beam); a cell on four targets, red on commonJS and wasm · fixed (`array_search_is_structural`; commonJS's prototype patch over `__bp_eq`, wasm's `__unk_same` structural); left: `collections.bp`'s comment that says identity, at the next snapshot refresh
 Oracle: the whole suite on four targets; `test-libs`; the cold gate.
-- [ ] decision 871: a parameter's `comptime` marker compared by `implement-signature-differs`; cell `implement_signature_over_types`
+- [x] decision 871: a parameter's `comptime` marker compared by `implement-signature-differs`; cell `implement_signature_over_types`
       (a contract's `comptime n: i32` met by `n: i32` refused, and the reverse), red on the parent
-- [ ] decision 872: the member a type supplies to an extension block's contract compared by 800's check; cell
+      — built as: cells `implement_comptime_marker_dropped`, `_added`, `implement_signature_spellings_met` (871)
+- [x] decision 872: the member a type supplies to an extension block's contract compared by 800's check; cell
       `contract_required_member_met_by_type` (a one-parameter `slice` for `string` refused), red on the parent (886: the supplied member `pub` or the block in its module)
-- [ ] decision 873: the `val` property form gated on the prelude, written `pub val length: i32;` (887); `array` in `primitive-type-name-taken`, `json.arrayOf`;
+      — built as: a record's or primitive's own method meets an extension block's required member, compared by 800's check at the
+      block; 886's `method-not-pub` at the block (a primitive's prelude methods read as its `pub` surface, 859 (3), until B-162's respell);
+      cells under 872's and 886's own directories
+- [ ] a `default fn` of an extension block's contract cannot be called on a record target (`TagShout implement Labelled for Tag {}`, then
+      `Tag(…).shout()`: "'shout' is not declared in any behavior implemented for 'Tag'"); found by B-148's 872 cells; a cell red on the parent
+- [x] decision 873: the `val` property form gated on the prelude, written `pub val length: i32;` (887); `array` in `primitive-type-name-taken`, `json.arrayOf`;
       `bytes.toUtf8: not valid UTF-8` re-recorded; cell `primitive_type_body_and_names`, red on the parent
+      — built as: `pub val length: i32;` parsed in the prelude alone, a local shadowing a primitive's statics, `array`
+      `primitive-type-name-taken`, std's `json.array` → `json.arrayOf` (36 library sites in actions, rakun, validation respelled apart),
+      `bytes.toUtf8: not valid UTF-8` on four targets; cells under 873's directory
 
 ### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
 
