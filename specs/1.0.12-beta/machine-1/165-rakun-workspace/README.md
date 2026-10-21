@@ -77,7 +77,7 @@ program lacks is a boot failure naming it (234); removing the dependency removes
   libraries`), and the runner is one text only across the new `feat`s
 - Open, not this step's: `conformance/rakun/{cors,filter_chain,middleware,problem_details,response_headers,web_tls}` red
   on `feat` through their per-cell `deps/` (150 s27); every `conformance/emilia/` cell refused on beam (144 B-89);
-  dbcontext holds no package yet (its notes at `modules/dbcontext/AGENTS.md`, not a member; s3); question 165-a
+  dbcontext holds no package yet (its notes at `modules/dbcontext/AGENTS.md`, not a member; s3); 165-a answered by 863
 
 ### s2 — the rename, by codemod
 
@@ -112,7 +112,7 @@ program lacks is a boot failure naming it (234); removing the dependency removes
       catalogue, level B (B-60) stores it with the entry, the program's catalogue is the union — the mechanism
       `rakun.boot()` discovers modules with; a cell: a dependency's `#[m]`-annotated declaration listed by the program
 - [x] the reference: § Decorators, the catalogue's reach
-- Open: question B-86-a (the gate's spelling of `query`; a dependency's `module` path and the transitive reach)
+- B-86-a answered by 860 (the gate as built; the catalogue cell leaves with 144 B-137)
 
 ### s5 — plug-and-play: `rakun.module`, `rakun.boot()`, `rakun.config`
 

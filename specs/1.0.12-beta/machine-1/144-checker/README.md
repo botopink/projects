@@ -2816,7 +2816,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `Renderable` out of `primitives.bp`, the prelude's wrapper names and the language server's list; every `implement Renderable`
       dropped by codemod (std, the cells; rakun's sites in 165's commit)
 - [ ] decision 804 (4) (its `NodeChild` respelled by 809 (7)): rakun-bpp's `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`, `Element`'s
-      `children: NodeChildren` (165's commit in rakun); the compiler-known `Children` and its coercions retired here
+      `children: NodeChildren` (165's commit in rakun; the cell `children/cells/children_for_walk` rewritten over `children: El[]` as
+      `component_compose_entry-804/cells/children_array_walk`, `modules/children/` removed, 857); the compiler-known `Children` and its coercions retired here
 
 - [x] `use view @`a`` (`use` over a template call) is not expanded and reaches the backends as `view/1`; a cell, red on the parent
 - [x] a field read or a method call on a behavior-typed value (`Component<P>`, `Async<string>`) — `c.zzz` — is accepted silently; refused at the name, located; a cell, red on the parent
@@ -2827,7 +2828,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
-      the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (823 settles the rest); the key unqualified (831, below)
+      the code `non-exhaustive` prefixed on every exhaustiveness refusal, five answers re-recorded, cell `non_exhaustive_code` red on the parent (858); `is Async<unknown>` on commonJS only (823 settles the rest); the key unqualified (831, below)
 - [ ] decision 831 (810-c): a behavior's identity qualified by its module — the lowering carries `<package>@<path>@@<B>` with the declared name
       (`infer.zig`'s `behaviorDeclaredName` gains the owner path; `crossModule` indexes every `pub behavior`, not only one with a default fn);
       erlang / beam `'__bp_behaviors'/0` and commonJS `__bp_b_<atom>` emit the atom, wasm keys `behavior_impls` by it; marks follow `extends`
@@ -2863,10 +2864,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `place_numbered_in_component_body` (821: an unkeyed `map` keeps one cell per item, two lambdas' calls in one list never collide,
       `linha(a)` and `linha(b)` two cells, `itens.map(Card)` one cell per item); four targets
 - [ ] decision 811: the `opaque` type modifier (`[pub] opaque type X(…)`, before `type`): the constructor written only in `X`'s own
-      methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module
-      (814); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
+      methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module, of every type
+      (814, 859: `method-not-pub` replacing `opaque-method`, `primitives.bp`'s methods `pub` by codemod, a behavior's implemented member
+      exempt; cell `method_private_to_module`, red on the parent); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
       — the modifier landed: `opaque` contextual before `type` (`opaque-construction`, `opaque-field`, `opaque-method`, `opaque-not-record`),
-      cells under `opaque_type_modifier-811/cells/` (811-a answered by 829, as built; 811-b open); `Scope` opaque is B-162 P1's
+      cells under `opaque_type_modifier-811/cells/` (811-a answered by 829, as built; 811-b by 859); `Scope` opaque is B-162 P1's
 - [ ] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
       line range gone; `reserved-name` at a call of a `__bp_` name (`reserved_names.zig`); cell `lowering_call_marked` (a program calling
       `__bp_load_module` refused, an adopted default body building an opaque type refused), red on the parent

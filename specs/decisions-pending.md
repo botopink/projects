@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **857**.
+number, which is **864**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -77,6 +77,13 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 854 | B-27-f | Answered by 255 (1), 561: a backtick type application before `.` is two comparisons, as built |
 | [ ] | 855 | B-27-g2 | Overtaken by B-128: `keys()` lazy on erlang and beam |
 | [ ] | 856 | B-27-g4 | Raw mode and size Linux-only on erlang and beam, `Unsupported` elsewhere |
+| [ ] | 857 | 804-c | `children_for_walk` rewritten over `children: El[]`, kept as wasm's recursive-field walk |
+| [ ] | 858 | 810-a | Every exhaustiveness refusal carries the code `non-exhaustive` |
+| [ ] | 859 | 811-b | A method without `pub` is private to its module for every type (`method-not-pub`); `primitives.bp`'s methods made `pub` |
+| [ ] | 860 | B-86-a | The lib-agnostic gate as built; the catalogue reach void (`@TypeInfo.all` gone) |
+| [ ] | 861 | 548-a | Answered by 650: one link form, 166 s4's codemod |
+| [ ] | 862 | 548-b | Former library names out of rakun's code (`stylesheet()`, `SsrConfig`, `/_rakun-ssr/` — the fable's names, to confirm) |
+| [ ] | 863 | 165-a | The version set one row per package in `version_set.bp`, as built |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -227,35 +234,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
 
-#### 804-c · The cell `children/cells/children_for_walk` once `Children` is gone (decision 804 (4); 144 B-162)
-- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
-- **Context.** The cell proves wasm walks a `Children` field; 804 (4) retires `Children`, so the name becomes unknown.
-- **Measured.** One cell, one `pub type El(tag: string, children: Children)`.
-- **Options.**
-  (a) ★ Rewritten over `children: El[]`, homed under the 804 decision module — the walk it guards is an array's.
-  (b) Deleted.
-- **Recommendation.** (a): the wasm walk stays guarded.
-- **Blocks.** B-162 P4 (`Children` retired).
-
-#### 810-a · Does the exhaustiveness refusal carry the code `non-exhaustive`? (decision 810 (3); 144 B-162)
-- **Proposed (opus, 2026-10-20; built as (b)):** (b).
-- **Context.** 810 (3) names the refusal `non-exhaustive`; the checker already refused a `case` over an enum or a union that misses a member, with the text "`case` on 'A | B' is not exhaustive: missing member(s) C" and no code.
-- **Measured.** Every existing enum and union exhaustiveness cell records the text without a code; adding `non-exhaustive:` changes each recorded answer.
-- **Options.**
-  (a) The code added, `non-exhaustive: case on 'A | B' is not exhaustive: missing member(s) C`, every such cell re-recorded.
-  (b) ★ The text kept as it is; 810 (3)'s name read as the refusal's subject, not a code.
-- **Recommendation.** (a) if every refusal is to carry a code the documentation can index; (b) is what is built.
-- **Blocks.** Nothing of 810's landing.
-
-#### 811-b · A method without `pub` of a plain type, called from another module (decisions 814 (2), 23; 144 B-162)
-- **Proposed (opus, 2026-10-20; nothing built):** (a).
-- **Context.** 814 (2): "a method of `X` written without `pub` is callable from anywhere in `X`'s module, as a function or a `val` without `pub` is". Built for an opaque type (`opaque-method`); a non-`pub` method of a plain type is still callable from another module — the checker has no visibility refusal for methods.
-- **Options.**
-  (a) ★ Every type's non-`pub` method module-private, refused from another module (the same code renamed `method-not-pub`, or the ordinary visibility refusal), the library sites measured and respelled `pub fn` in their fronts.
-  (b) Only an opaque type's; a plain type's methods all public, `pub` on a method meaningless there.
-- **Recommendation.** (a): 814 (2) reads as the rule for every declaration.
-- **Blocks.** Nothing of 811's landing; a follow-up row.
-
 #### 164-s3-m · `bytes.at` outside the range and `bytes.ofWords` over a word outside `0..255` (decision 585 (k); 164 s3 P2-d)
 - **Proposed (sonnet, 2026-10-17; respelled 2026-10-18; awaiting the maintainer; built as (a)):** **(a): `bytes.at` answers `-1` for an index outside `0..length-1`, as `text.byteAt` and `string.charCodeAt` do; `bytes.ofWords` keeps the low eight bits of each word.** The review (fable, 2026-10-17) recommends (b).
 - **Measured.** `modules/std-wasm/wat/bytes.wat`: `bytes.at` compares the index unsigned against `array.len` and answers `-1` past it (a negative index included), the body of `text.byteAt` (P1-a) over the same `$str` layout (`bytes` is an `i8` array, 164 s2, 346); `string.charCodeAt` (641; then `String.charCodeAt`) answers `-1` out of range on the four targets (`primitives.bp`: Erlang `_ -> -1`, Node `?? -1`, `text.zig`). `bytes.ofWords` writes each word with `array.set $str`: an `i8` slot keeps the low eight bits, so `256 + 33` is the byte `33`. No botopink operation builds a `bytes` from words (the type's members, 641 — then `behavior Bytes`: `fromUtf8`, `toUtf8`, `length`, `concat`, `slice`), so no target has an answer to compare, and 585 (k) names the three leaves without their answers. The codecs they are written for (`base64DecodeBytes`, `hexDecodeBytes`) produce words in `0..255` and read indices in `0..length-1`: through them neither answer is observable; any `std:` cell of `libs/std` (445) reaches the leaves. The unit test `wat: front 164 s3 ---- the Bytes leaves answer in a GC module` (`codegen/tests/wat.zig`) fixes `bytesOfWords([104, 105, 256 + 33])` as three bytes, `bytesAt(b, 2)` as `33`, `bytesAt(b, 3)` and `bytesAt(b, -1)` as `-1`. Without the check, `array.get_u` traps outside `0..length-1` (a `crash:` abort).
@@ -380,54 +358,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Blocks.** item 16 (the docs.md text).
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
-
-#### B-86-a · The lib-agnostic gate's `query`, and the catalogue's reach across packages (144 B-86, front 165 s4)
-- **Proposed (opus, 2026-10-14; awaiting the maintainer):** (1) the gate refuses `rakun` in any case anywhere in `compiler-core/src`, and `query` only as a package — the import source `"query"` or the handle `import query`; (2) `jhonstart` leaves the gate's list, as the box says; (3) a dependency's catalogue entry has `module` = `<package>/<module>` (`plugin/root`), and a transitive dependency's declarations are listed too — built so, pinned by `modules/typeinfo_all_dependency_declarations`.
-- **Measured.** `grep -riIE 'rakun|query' modules/compiler-core/src` matches about 111 lines: `query` is the catalogue's own word (`Query`, "a template body's query"). `@TypeInfo.all` already listed every module of the build, the dependencies included, and level B's journal already stores `declared` and `meta`: the new cell is green on the parent, on every target, cold and from level B. The reference says "every module of the build", while decision 242 lets a program import only its direct dependencies. Order and collisions follow the existing rule (module path, then declaration order; the key is module and name).
-- **Options.** (1)(a) ★ `query` as a package only: `! grep -rIE '"query"|import query\b'`; (b) the word `query` anywhere, the catalogue's vocabulary renamed. (2)(a) ★ `jhonstart` out of the list (the box); (b) kept until 165 s2 renames it. (3)(a) ★ `<package>/<module>`, the transitive dependencies listed; (b) only the direct dependencies listed (242's import rule).
-  ```bp
-  #[m] pub fn hello() -> string { "plugin" }   // in package plugin, module root
-  // the program: @TypeInfo.all(with: m) lists { module: "plugin/root", name: "hello" }
-  ```
-- **Recommendation.** (a) for each: (1) refuses every package spelling without renaming the language's own word; (2) is the box's text; (3) is what `rakun.boot()` needs — a module contributed by a package two layers down is discovered.
-- **Blocks.** Nothing — built as (a); 165 s5 reads (3).
-
-#### 548-a · Does every library's reference link its code and check the links? (decision 548; 461, 463)
-- **Context.** A library's reference — the `docs.md` beside its conformance cells — shows code. Decisions 461 and 463 point at a cell's code with `<!-- example: <cell> -->`; decision 548 (2026-10-15) makes rakun's reference link its code instead, as `[src/main.bp](src/main.bp)`, and checks that every link names a file that exists. Today only rakun does that; the other libraries and botopink-lang keep the old form, and the runner they share knows neither. The question is whether every repository follows rakun.
-- **Measured.** Decision 548 makes rakun's reference link its code (`[src/main.bp](src/main.bp)`, the base the `docs.md`'s directory) and rakun checks every link with its own `scripts/check-doc-links.sh`, run by its `repository-stages.sh`. The other libraries and botopink-lang keep 461 / 463's `<!-- example: <cell> -->`. The shared runner (`runner-standalone.sh`, one text across the libraries, CI check 4) knows neither form.
-- **Options.**
-  (a) ★ Every library and botopink-lang move to 548's form, the link check in the shared runner (and `zig build test-docs` reading `{path}`), one front per repository.
-  ```text
-  conformance/<feature>/docs.md, in every repository:  [src/main.bp](src/main.bp)   ← a link to a file that does not exist fails the gate
-  ```
-  (b) rakun alone; the others keep `<!-- example -->`.
-  ```text
-  rakun:                          [src/main.bp](src/main.bp)
-  other libraries, botopink-lang: <!-- example: <cell> -->
-  ```
-- **Recommendation.** (a): one way to read a reference across the repositories.
-- **Blocks.** Nothing — rakun is built as 548 says.
-
-#### 548-b · The code names that keep a former library's name (front 165)
-- **Context.** After front 165 the packages have new names — `rakun-stylesheet` for emilia, `rakun-bpp` for jhonstart, `rakun-ssr` for onze (mono-a) — but the functions, types, files, URLs and environment prefixes inside them keep the old library names, so a user of `rakun-stylesheet` still calls `emilia()`. The question is whether a front 150 step renames them to the package's vocabulary or they stay as the API.
-- **Measured.** After 165 the package names are new, but the code keeps the old ones: `emilia()`, `emiliaWith`, `emiliaPlugin`, `emilia.bp`, the `emilia-hash-split` refusal, `jhonstart_*.erl` sidecars, `OnzeConfig`, `Onze.run`, `ONZE_PUBLIC_`, `/_onze/`, `.onze`, `onze_main.bp`, the example directories `examples/rakun-stylesheet/emilia-*` and `examples/rakun-bpp/jhonstart-*`.
-- **Options.**
-  (a) ★ A 150 step renames them to the package's vocabulary (a codemod, every consumer and cell in the same commit).
-  ```bp
-  // a 150 step: `emilia()`, `OnzeConfig`, `/_onze/` … get rakun-stylesheet's and rakun-ssr's names; every consumer and cell in one commit
-  ```
-  (b) They stay: the names are the API, the package name only moved.
-  ```bp
-  // a program depending on `rakun-stylesheet` still calls `emilia()`; one on `rakun-ssr` still writes `OnzeConfig`
-  ```
-- **Recommendation.** (a): a reader meets one name for one thing.
-- **Blocks.** Nothing.
-
-#### 165-a · Where the joined packages' rows of the version set live (decision 113; front 165 s2)
-- **Measured.** rakun's `version_set.bp` holds one row per package of the rakun family; its test compares every manifest with the table. After 165 s1 the workspace holds 21 joined packages (erika, emilia, styled, jhonstart, onze and their `*-test` / sub-packages) with no row: a row naming `onze` in rakun's core `src` breaks decision 113's grep (rakun's core names no consumer), so the test reads only the `rakun*` manifests.
-- **Options.** (a) ★ None until s2: after the rename every package is `rakun-*`, the rows are written then, and the filter goes. (b) A version set outside the core (a workspace-level file the gate reads), every member a row now.
-- **Recommendation.** (a): s2 renames every package to a `rakun-*` name, so the rows need no exception; one version for the workspace (the README) makes the table one row per package at s2.
-- **Blocks.** Nothing before s2; s2 writes the rows.
 
 ## Part 1 — What blocks tracks 00–03
 
