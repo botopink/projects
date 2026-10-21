@@ -2823,7 +2823,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `use c`, the renderer and the root pass `Place.none()`; a value made outside every component body takes the root's place
       (4) every `use` that answers a value (a hook or a component) a call with a child cell at its place; `use provide` / `context` /
       `inject` taking none, the node's own cell holding its contexts alone, `memo`'s slot its own child cell's (818 (1)); a reused cell's
-      contexts taken anew from the parent, only its hooks' slots kept (817 (5)); the render library keeping a mounted root; 771's `slot()`
+      contexts taken anew from the parent, only its hooks' slots kept (817 (5)); the render library keeping a mounted root, a root closed by its owner on the BEAM, else by its process (824); 771's `slot()`
       lowering (`hooks.bp`) removed (816)
       (5) `#[key(e)]` before an expression answering a `Component<T>` (818 (3)): the parser admits an annotation before an expression
       (`parseAnnotations` takes loop statements only today); `#[key]` before an expression answering no `Component<T>` refused, the code
@@ -2871,7 +2871,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       roots in 165's commit); `run` reads `is Async<unknown>` (823), on wasm after 164 s2's `$task` test; typed by 810; cell `component_root_run`
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
-      answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above);
+      answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above); on erlang and beam the tree one process-dictionary entry per root,
+      `root.close()` (`Closeable`) and `scope.detach()` (824, 809-i); cell `scope_tree_lives_with_its_process`;
       the codemod over std, the cells and the libraries (rakun's sites in 165's commit); 812: `use c` with a child cell at its place (818, 821),
       `return c` resolved with a child cell (816 (6)), `use provide` in the order written, `context-provide-after-render` removed; cell
       `use_child_cell_provide_in_order`

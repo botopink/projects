@@ -537,20 +537,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Bloqueia.** Os textos esperados das células do B-162 P2.
 
-#### 809-i · O tempo de vida do escopo e dos slots de memo no erlang / beam (decisões 809 (8), (9), 771; 144 B-162 P1)
-- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** Uma célula mutável na BEAM é uma entrada do dicionário de processo chaveada por um ref (`hooks.bp`); nada a apaga, e outro processo não a lê.
-- **Medido.** `hooks.bp` não tem `erase`; o `Fill(boundary, scope)` do rakun (`render.bp:186`) guarda um escopo para um preenchimento posterior, possivelmente em outro processo.
-- **Desde a 816.** As células do escopo e as posições dos hooks agora vivem tanto quanto uma raiz montada (a biblioteca de render a guarda entre renders); a raiz de um teste termina com o seu `run`.
-- **Desde a 817.** O `Scope` da std é dono da árvore de células (`childAt`); a tabela desta pergunta é da std, e vive tanto quanto uma raiz montada.
-- **Desde a 819.** Um componente abre a sua própria célula, `scope.childAt(key)`; a tabela e o seu tempo de vida não mudam.
-- **Opções.**
-  (a) ★ `Scope.root()` é dono de uma tabela (ETS, ou um map guardado pelo processo do renderer) apagada quando o resolve da raiz retorna; um `Fill` carrega o map da célula por valor.
-  (b) O vazamento aceito por ora, uma linha do 164.
-  (c) A célula uma tupla `{Ref, Map}` com o map carregado por valor e `provide` religando — então não é uma célula, contra o "mutável" da 809 (8).
-- **Recomendação.** (a).
-- **Bloqueia.** A metade de run time do B-162 P1 no erlang e no beam.
-
 #### 810-a · A recusa de exaustividade leva o código `non-exhaustive`? (decisão 810 (3); 144 B-162)
 - **Proposto (opus, 2026-10-20; construído como (b)):** (b).
 - **Contexto.** A 810 (3) nomeia a recusa `non-exhaustive`; o checker já recusava um `case` sobre um enum ou uma união que deixa de fora um membro, com o texto "`case` on 'A | B' is not exhaustive: missing member(s) C" e sem código.

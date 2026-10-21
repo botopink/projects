@@ -537,20 +537,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** B-162 P2's cells' expected texts.
 
-#### 809-i · The scope's and the memo slots' lifetime on erlang / beam (decisions 809 (8), (9), 771; 144 B-162 P1)
-- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
-- **Context.** A mutable cell on the BEAM is a process-dictionary entry keyed by a ref (`hooks.bp`); nothing erases it, and another process cannot read it.
-- **Measured.** `hooks.bp` has no `erase`; rakun's `Fill(boundary, scope)` (`render.bp:186`) keeps a scope for a later fill, possibly in another process.
-- **Since 816.** The scope cells and the hooks' slots now live as long as a mounted root (the render library keeps it between renders); a test's root ends with its `run`.
-- **Since 817.** std's `Scope` owns the tree of cells (`childAt`); this question's table is std's, its lifetime a mounted root's.
-- **Since 819.** A component opens its own cell, `scope.childAt(key)`; the table and its lifetime are unchanged.
-- **Options.**
-  (a) ★ `Scope.root()` owns a table (ETS, or a map held by the renderer's process) erased when the root's resolve returns; a `Fill` carries the cell's map by value.
-  (b) The leak accepted for now, a 164 row.
-  (c) The cell a tuple `{Ref, Map}` with the map carried by value and `provide` rebinding — not a cell then, against 809 (8)'s "mutable".
-- **Recommendation.** (a).
-- **Blocks.** B-162 P1's run-time half on erlang and beam.
-
 #### 810-a · Does the exhaustiveness refusal carry the code `non-exhaustive`? (decision 810 (3); 144 B-162)
 - **Proposed (opus, 2026-10-20; built as (b)):** (b).
 - **Context.** 810 (3) names the refusal `non-exhaustive`; the checker already refused a `case` over an enum or a union that misses a member, with the text "`case` on 'A | B' is not exhaustive: missing member(s) C" and no code.

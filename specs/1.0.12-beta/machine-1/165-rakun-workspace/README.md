@@ -214,9 +214,10 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`; a ready `Element` entering as a plain lambda `{ _ -> e }` (815); the resolved tree a record of its own beside `Element` (`Rendered(tag, attrs, children: Rendered[])` in
       813's example), what `rakun-bpp-dom-test` inspects, a `Suspense` keeps and hydration reads
 - [ ] decision 817 (rakun-bpp's renderer): each child run with `resolve(child, scope, Place.none())`, the child opening the cell its stamped
-      place names (819, 820, 821), no table of its own; list items keyed at the call, `#[key(p.id)] Item(p)` (818 (3)), never a `key` prop
+      place names (819, 820, 821), no table of its own, each `Fill(boundary, scope)` carrying `scope.detach()` (824); list items keyed at the call, `#[key(p.id)] Item(p)` (818 (3)), never a `key` prop
 - [ ] decision 816 (rakun-bpp's renderer): a mounted tree's `Scope.root()` kept between renders; each child's cell reused while the same
-      place stands (the call and the item, or its key, 819–821), fresh otherwise; (the `key` prop superseded by 818's `#[key(…)]`)
+      place stands (the call and the item, or its key, 819–821), fresh otherwise; (the `key` prop superseded by 818's `#[key(…)]`); on the BEAM no
+      root is kept: a request's root closed after the response, a `Fill` made with `scope.detach()` (824)
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 
