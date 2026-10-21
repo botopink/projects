@@ -505,7 +505,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Proposto (plano fable, 2026-10-20; nada construído):** (b).
 - **Contexto.** `resolve` não aguarda nada; 66 células e as raízes do rakun (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) escrevem `await c.run(RenderScope.root())` hoje.
 - **Medido.** 66 células com `.run(RenderScope.root())`, 13 com `use memo`; toda raiz está num corpo `async`.
-- **Desde a 811.** `resolve` é `Composition.resolve`, um método da `Composition` opaca; leia o `resolve` das opções assim.
+- **Desde a 815.** `Composition<T>` é de novo uma função e `c(scope)` à mão é admitido; o `resolve` da std continua sendo o que compõe um `Composable`.
 - **Opções.**
   (a) Cada raiz estreita: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (o fluxo da 810).
   (b) ★ O `context` da std acrescenta `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, depois `await` só quando a resposta `is Async<unknown>` — para raízes e testes; `resolve` continua sendo do renderer.
@@ -544,7 +544,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 #### 809-h · Quais dos códigos da 804-e sobrevivem, e as recusas gerais da 800 os substituem? (decisões 809 (2), 800, 804-e; 144 B-162 P2)
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).
 - **Contexto.** Com `Composable<T>` um comportamento de verdade, um `compose` que falta e uma assinatura diferente são recusas gerais da 800; `component-use-outside-compose` passa a ser do marcador (um membro sem `component` não admite `use`).
-- **Desde a 811.** A exceção de `component-compose-called` são os métodos da `Composition`, não o módulo `context` da std.
+- **Desde a 815.** A exceção de `component-compose-called` é só o `resolve` da std.
 - **Opções.**
   (a) ★ Manter `component-scope-field` (`Scope` no lugar de `RenderScope`, só num implementador de `Composable`) e `component-compose-called` (generalizado para todo receptor `Composable`, o módulo `context` da `std` isento); acrescentar `component-compose-unmarked`, `implement-component-not-composable`, `component-arg-is-component`; tirar `component-compose-missing` e `component-use-outside-compose` em favor das gerais.
   (b) Manter os quatro como construídos, reescritos.
@@ -555,6 +555,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).
 - **Contexto.** Uma célula mutável na BEAM é uma entrada do dicionário de processo chaveada por um ref (`hooks.bp`); nada a apaga, e outro processo não a lê.
 - **Medido.** `hooks.bp` não tem `erase`; o `Fill(boundary, scope)` do rakun (`render.bp:186`) guarda um escopo para um preenchimento posterior, possivelmente em outro processo.
+- **Desde a 816.** As células do escopo e as posições dos hooks agora vivem tanto quanto uma raiz montada (a biblioteca de render a guarda entre renders); a raiz de um teste termina com o seu `run`.
 - **Opções.**
   (a) ★ `Scope.root()` é dono de uma tabela (ETS, ou um map guardado pelo processo do renderer) apagada quando o resolve da raiz retorna; um `Fill` carrega o map da célula por valor.
   (b) O vazamento aceito por ora, uma linha do 164.

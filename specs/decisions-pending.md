@@ -505,7 +505,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Proposed (fable plan, 2026-10-20; nothing built):** (b).
 - **Context.** `resolve` awaits nothing; 66 cells and rakun's roots (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) write `await c.run(RenderScope.root())` today.
 - **Measured.** 66 cells with `.run(RenderScope.root())`, 13 with `use memo`; every root is in an `async` body.
-- **Since 811.** `resolve` is `Composition.resolve`, a method of the opaque `Composition`; read the options' `resolve` so.
+- **Since 815.** `Composition<T>` is a function again and `c(scope)` by hand is admitted; std's `resolve` stays the one that composes a `Composable`.
 - **Options.**
   (a) Each root narrows: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (810's flow).
   (b) ★ std's `context` adds `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, then `await` only when the answer `is Async<unknown>` — for roots and tests; `resolve` stays the renderer's.
@@ -544,7 +544,7 @@ group), answered before every other part of this page; in the order of the steps
 #### 809-h · Which of 804-e's codes survive, and do 800's general refusals replace them? (decisions 809 (2), 800, 804-e; 144 B-162 P2)
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
 - **Context.** With `Composable<T>` a real behavior, a missing `compose` and a differing signature are 800's general refusals; `component-use-outside-compose` becomes the marker's (a member without `component` admits no `use`).
-- **Since 811.** `component-compose-called`'s exemption is `Composition`'s methods, not std's `context` module.
+- **Since 815.** `component-compose-called`'s exemption is std's `resolve` alone.
 - **Options.**
   (a) ★ Keep `component-scope-field` (`Scope` for `RenderScope`, on a `Composable` implementor only) and `component-compose-called` (generalised to every `Composable` receiver, `std`'s `context` module exempt); add `component-compose-unmarked`, `implement-component-not-composable`, `component-arg-is-component`; drop `component-compose-missing` and `component-use-outside-compose` for the general ones.
   (b) Keep all four as built, respelled.
@@ -555,6 +555,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
 - **Context.** A mutable cell on the BEAM is a process-dictionary entry keyed by a ref (`hooks.bp`); nothing erases it, and another process cannot read it.
 - **Measured.** `hooks.bp` has no `erase`; rakun's `Fill(boundary, scope)` (`render.bp:186`) keeps a scope for a later fill, possibly in another process.
+- **Since 816.** The scope cells and the hooks' slots now live as long as a mounted root (the render library keeps it between renders); a test's root ends with its `run`.
 - **Options.**
   (a) ★ `Scope.root()` owns a table (ETS, or a map held by the renderer's process) erased when the root's resolve returns; a `Fill` carries the cell's map by value.
   (b) The leak accepted for now, a 164 row.

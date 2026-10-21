@@ -206,14 +206,15 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
 - [ ] rakun's gate on the main checkout's compiler; `conformance/` green; `test-libs`
 - [ ] the sites 144 B-162 (791) reaches: rakun-bpp `render.bp` `layoutOf` / `templateOf` need `use view(…)` after an early `return`, which is
       `use-not-top-level` (357), so a redesign is needed; jhonstart's `val tree = await view(props)` matches the `layoutOf` case;
-      root-run rewrites (`c.run(RenderScope.root())`, respelled by 809 as the root form 809-e chooses — `Composition.resolve(c, Scope.root())` meanwhile) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
+      root-run rewrites (`c.run(RenderScope.root())`, respelled by 809 as the root form 809-e chooses — `resolve(c, Scope.root())` meanwhile) at `server.bp:317`, `streaming.bp:71`, `hooks.bp:81` / `91` and the tests
       `view_test`, `link_test`, `router_test`, `server_test` and `styled_sheet_test`; `div([text("title"), Counter()])`-style children
       crash in rakun-bpp's renderer (`{error,badarg}`), which is 804 (4)'s
 
 - [ ] decisions 809 (7), 813 (rakun-bpp, the 809 commit): the node builders (`text`, `div`, …) `component fn`s answering `Component<Element>`;
-      `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`; a ready `Element` wrapped as the answer to the open question on
-      `{ component -> v }` says; the resolved tree a record of its own beside `Element` (`Rendered(tag, attrs, children: Rendered[])` in
+      `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`; a ready `Element` entering as a plain lambda `{ _ -> e }` (815); the resolved tree a record of its own beside `Element` (`Rendered(tag, attrs, children: Rendered[])` in
       813's example), what `rakun-bpp-dom-test` inspects, a `Suspense` keeps and hydration reads
+- [ ] decision 816 (rakun-bpp's renderer): a mounted tree's `Scope.root()` kept between renders; each child's cell reused while the same
+      component and key stand at its place, fresh otherwise; a `key` prop naming a list item's place
 
 ### s7 — Conformance, the front's last step (decisions 465, 477, 478, 479, 480)
 
