@@ -2790,9 +2790,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] ~~791-d (narrowing a union child)~~ — answered by 810; what stays is the run-time
       test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
       and `is fn(Scope) -> …` answering on the four targets; a cell, red on the parent
-- [ ] decision 809, first: a `fable` plan over 809 against what B-162 built (804 (1)'s rewrite of the type form into a record and a
+- [x] decision 809, first: a `fable` plan over 809 against what B-162 built (804 (1)'s rewrite of the type form into a record and a
       `component fn`, the `isComponentType` sites, `context_lower.zig`'s scope handling, std's `context.bp`); its open points filed as
       questions
+      — done: P1 `Scope`, the three names, `resolve`, the run-time tests and `Renderable` out (after 810; 809-b, 809-e, 809-f, 809-i); P2 the type form
+      respelled, `component_types.zig` removed (809-h); P3 a returned component resolved (809-c); P4 `Children` (804-c); P6 rakun (809-d, 804-d, 809-g)
 - [ ] 809 (1), (5): std's `context` module declares `Composition<T>`, `Composable<T>` and `Component<T>` (the union, not a type of its own);
       `implement Component<…>` refused naming `Composable`; a `T` that is a `Composition`, a `Composable`, a `Component` or an `Async`
       refused where written; cells

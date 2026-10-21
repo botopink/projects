@@ -536,6 +536,65 @@ group), answered before every other part of this page; in the order of the steps
 - **Since 809.** 809 (2) retires the `Card__Self` rewrite: `compose` is a method of the type, so option (c) has no ground left and (d), `self.title`, is what remains; the four codes are respelled for `Composable` (`implement Component<…>` refused naming `Composable`, `component fn compose` required).
 - **Blocks.** Nothing of P3's landing; (d) would be a follow-up row.
 
+#### 809-e · How does a root site read `resolve`'s `T | Async<T>` — `main`, a test, rakun's root? (decisions 809 (6), 725, 661; 144 B-162 P1)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (b).
+- **Context.** `resolve` awaits nothing; 66 cells and rakun's roots (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) write `await c.run(RenderScope.root())` today.
+- **Measured.** 66 cells with `.run(RenderScope.root())`, 13 with `use memo`; every root is in an `async` body.
+- **Options.**
+  (a) Each root narrows: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (810's flow).
+  (b) ★ std's `context` adds `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, then `await` only when the answer `is Async<unknown>` — for roots and tests; `resolve` stays the renderer's.
+  ```bp
+  async fn main() -> Async<void> {
+      val page = await run(App(), Scope.root());
+      print(renderToString(page));
+  }
+  ```
+  (c) `await` accepted over `T | Async<T>` (the identity on the `T` member) — a language change.
+- **Recommendation.** (b): one written root form, 725's "the root is always asynchronous", no new rule of `await`.
+- **Blocks.** B-162 P1's codemod of the root sites.
+
+#### 809-f · Is `Component<T>` still a prelude name, and does the checker read it nominally? (decisions 809 (1), 118, 661; 144 B-162 P1)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** 809 (1) declares the three names in std's `context` module and moves `Component` there from `primitives.bp`; today `Component` needs no import, `Context` and `RenderScope` do.
+- **Measured.** 273 `Component<` sites and 116 `component fn`s in rakun and every component cell; 29 sites in `infer.zig` key on the name `Component`, 2 in `typescript.zig`, 1 in `wat.zig`, 1 in `hooks.zig`.
+- **Options.**
+  (a) ★ Declared in `context.bp` and registered into the prelude by the compiler (as `YieldStep` and `SourceLocation` are): no import written; the checker keeps the name nominal and reads it as the union only at an `is` / `case` (810).
+  (b) An ordinary std name: `import {context.Component} from "std"` in every module — a codemod over every library and cell.
+  (c) `Composition` and `Composable` imported, `Component` in the prelude.
+- **Recommendation.** (a); (b) only if the prelude is to shrink.
+- **Blocks.** B-162 P1.
+
+#### 809-g · A component resolving a run-time list of components — rakun-style's `Sheet.render` (decisions 809 (6), 357 (1), 661; 165 s11; beside 804-d)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** 804-d covers `styled.bp`'s splices, which the template can make at build; `layers.bp:94` folds a sheet's entries — run-time values — with `await view()` in a `for`, refused `await-component`; `use` is refused in a loop (357) and a body holds no `Scope` to call `resolve` with (388 (5)).
+- **Measured.** One site, `modules/rakun-style/src/layers.bp:88–105`; the shape recurs in any component mapping over components.
+- **Options.**
+  (a) ★ Recursion: `component fn renderEntries(entries, i) -> Component<string>` with one `use` per level.
+  (b) A std hook `use all(cs: Component<T>[]) -> Component<T[]>` resolving each with its own `scope.child()`.
+  (c) The sheet's entries become children of a tree rakun-bpp's renderer resolves.
+- **Recommendation.** (a) now, (b) as a later std row if the shape recurs.
+- **Blocks.** B-162 P6 (rakun); rakun stays red on `feat` until it lands.
+
+#### 809-h · Which of 804-e's codes survive, and do 800's general refusals replace them? (decisions 809 (2), 800, 804-e; 144 B-162 P2)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** With `Composable<T>` a real behavior, a missing `compose` and a differing signature are 800's general refusals; `component-use-outside-compose` becomes the marker's (a member without `component` admits no `use`).
+- **Options.**
+  (a) ★ Keep `component-scope-field` (`Scope` for `RenderScope`, on a `Composable` implementor only) and `component-compose-called` (generalised to every `Composable` receiver, `std`'s `context` module exempt); add `component-compose-unmarked`, `implement-component-not-composable`, `component-arg-is-component`; drop `component-compose-missing` and `component-use-outside-compose` for the general ones.
+  (b) Keep all four as built, respelled.
+- **Recommendation.** (a).
+- **Blocks.** B-162 P2's cells' expected texts.
+
+#### 809-i · The scope's and the memo slots' lifetime on erlang / beam (decisions 809 (8), (9), 771; 144 B-162 P1)
+- **Proposed (fable plan, 2026-10-20; nothing built):** (a).
+- **Context.** A mutable cell on the BEAM is a process-dictionary entry keyed by a ref (`hooks.bp`); nothing erases it, and another process cannot read it.
+- **Measured.** `hooks.bp` has no `erase`; rakun's `Fill(boundary, scope)` (`render.bp:186`) keeps a scope for a later fill, possibly in another process.
+- **Options.**
+  (a) ★ `Scope.root()` owns a table (ETS, or a map held by the renderer's process) erased when the root's resolve returns; a `Fill` carries the cell's map by value.
+  (b) The leak accepted for now, a 164 row.
+  (c) The cell a tuple `{Ref, Map}` with the map carried by value and `provide` rebinding — not a cell then, against 809 (8)'s "mutable".
+- **Recommendation.** (a).
+- **Blocks.** B-162 P1's run-time half on erlang and beam.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

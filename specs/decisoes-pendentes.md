@@ -536,6 +536,65 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Desde a 809.** A 809 (2) aposenta a reescrita `Card__Self`: `compose` é um método do tipo, então a opção (c) não tem mais base e a (d), `self.title`, é o que resta; os quatro códigos são regrafados para `Composable` (`implement Component<…>` recusado nomeando `Composable`, `component fn compose` exigido).
 - **Bloqueia.** Nada do pouso do P3; (d) seria uma linha depois.
 
+#### 809-e · Como um site raiz lê o `T | Async<T>` de `resolve` — `main`, um teste, a raiz do rakun? (decisões 809 (6), 725, 661; 144 B-162 P1)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (b).
+- **Contexto.** `resolve` não aguarda nada; 66 células e as raízes do rakun (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) escrevem `await c.run(RenderScope.root())` hoje.
+- **Medido.** 66 células com `.run(RenderScope.root())`, 13 com `use memo`; toda raiz está num corpo `async`.
+- **Opções.**
+  (a) Cada raiz estreita: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (o fluxo da 810).
+  (b) ★ O `context` da std acrescenta `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, depois `await` só quando a resposta `is Async<unknown>` — para raízes e testes; `resolve` continua sendo do renderer.
+  ```bp
+  async fn main() -> Async<void> {
+      val page = await run(App(), Scope.root());
+      print(renderToString(page));
+  }
+  ```
+  (c) `await` aceito sobre `T | Async<T>` (a identidade no membro `T`) — uma mudança de linguagem.
+- **Recomendação.** (b): uma forma de raiz escrita, o "a raiz é sempre assíncrona" da 725, nenhuma regra nova de `await`.
+- **Bloqueia.** O codemod dos sites raiz do B-162 P1.
+
+#### 809-f · `Component<T>` continua um nome do prelude, e o checker o lê nominalmente? (decisões 809 (1), 118, 661; 144 B-162 P1)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** A 809 (1) declara os três nomes no módulo `context` da std e move `Component` para lá a partir de `primitives.bp`; hoje `Component` não precisa de import, `Context` e `RenderScope` precisam.
+- **Medido.** 273 sites `Component<` e 116 `component fn`s no rakun e em toda célula de componente; 29 sites em `infer.zig` se apoiam no nome `Component`, 2 em `typescript.zig`, 1 em `wat.zig`, 1 em `hooks.zig`.
+- **Opções.**
+  (a) ★ Declarado em `context.bp` e registrado no prelude pelo compilador (como `YieldStep` e `SourceLocation` são): nenhum import escrito; o checker mantém o nome nominal e o lê como a união só num `is` / `case` (810).
+  (b) Um nome comum da std: `import {context.Component} from "std"` em todo módulo — um codemod sobre toda biblioteca e célula.
+  (c) `Composition` e `Composable` importados, `Component` no prelude.
+- **Recomendação.** (a); (b) só se o prelude for encolher.
+- **Bloqueia.** B-162 P1.
+
+#### 809-g · Um componente que resolve uma lista de componentes em run time — o `Sheet.render` do rakun-style (decisões 809 (6), 357 (1), 661; 165 s11; ao lado da 804-d)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** A 804-d cobre os splices do `styled.bp`, que o template pode fazer no build; `layers.bp:94` dobra as entradas de uma folha — valores de run time — com `await view()` num `for`, recusado `await-component`; `use` é recusado num laço (357) e um corpo não segura um `Scope` para chamar `resolve` (388 (5)).
+- **Medido.** Um site, `modules/rakun-style/src/layers.bp:88–105`; a forma se repete em qualquer componente que mapeia sobre componentes.
+- **Opções.**
+  (a) ★ Recursão: `component fn renderEntries(entries, i) -> Component<string>` com um `use` por nível.
+  (b) Um hook da std `use all(cs: Component<T>[]) -> Component<T[]>` resolvendo cada um com seu próprio `scope.child()`.
+  (c) As entradas da folha viram filhos de uma árvore que o renderer do rakun-bpp resolve.
+- **Recomendação.** (a) agora, (b) como linha posterior da std se a forma se repetir.
+- **Bloqueia.** B-162 P6 (rakun); o rakun fica vermelho na `feat` até isso pousar.
+
+#### 809-h · Quais dos códigos da 804-e sobrevivem, e as recusas gerais da 800 os substituem? (decisões 809 (2), 800, 804-e; 144 B-162 P2)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** Com `Composable<T>` um comportamento de verdade, um `compose` que falta e uma assinatura diferente são recusas gerais da 800; `component-use-outside-compose` passa a ser do marcador (um membro sem `component` não admite `use`).
+- **Opções.**
+  (a) ★ Manter `component-scope-field` (`Scope` no lugar de `RenderScope`, só num implementador de `Composable`) e `component-compose-called` (generalizado para todo receptor `Composable`, o módulo `context` da `std` isento); acrescentar `component-compose-unmarked`, `implement-component-not-composable`, `component-arg-is-component`; tirar `component-compose-missing` e `component-use-outside-compose` em favor das gerais.
+  (b) Manter os quatro como construídos, reescritos.
+- **Recomendação.** (a).
+- **Bloqueia.** Os textos esperados das células do B-162 P2.
+
+#### 809-i · O tempo de vida do escopo e dos slots de memo no erlang / beam (decisões 809 (8), (9), 771; 144 B-162 P1)
+- **Proposto (plano fable, 2026-10-20; nada construído):** (a).
+- **Contexto.** Uma célula mutável na BEAM é uma entrada do dicionário de processo chaveada por um ref (`hooks.bp`); nada a apaga, e outro processo não a lê.
+- **Medido.** `hooks.bp` não tem `erase`; o `Fill(boundary, scope)` do rakun (`render.bp:186`) guarda um escopo para um preenchimento posterior, possivelmente em outro processo.
+- **Opções.**
+  (a) ★ `Scope.root()` é dono de uma tabela (ETS, ou um map guardado pelo processo do renderer) apagada quando o resolve da raiz retorna; um `Fill` carrega o map da célula por valor.
+  (b) O vazamento aceito por ora, uma linha do 164.
+  (c) A célula uma tupla `{Ref, Map}` com o map carregado por valor e `provide` religando — então não é uma célula, contra o "mutável" da 809 (8).
+- **Recomendação.** (a).
+- **Bloqueia.** A metade de run time do B-162 P1 no erlang e no beam.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
