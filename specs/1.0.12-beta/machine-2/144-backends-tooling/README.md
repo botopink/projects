@@ -2888,8 +2888,9 @@ on wasm too.
       `closed` on commonJS and erlang, not on wasm (`$__gen_resume`'s take case at `left <= 0`); a cell red on wasm on the parent
       — built as (a4a16174f): `$__gen_resume`'s take case closes its source at `left <= 0`, `toArray()` its handle; case
       `generator_take_closes_source`; 8 wasm snapshots gain the close call (seven the `$__gen_close` helper too)
-- [ ] wasm: `flatMap` handed a bare function value (`counted().flatMap(twice)`) refuses the module ("the wasm backend walks an array or
+- [x] wasm: `flatMap` handed a bare function value (`counted().flatMap(twice)`) refuses the module ("the wasm backend walks an array or
       a range; nothing shows this iterable is one") where the lambda form answers; found by 596's runtime half; a cell red on wasm
+      — built as (6ff168d94): a bare function value handed to a generator's `map` / `filter` / `flatMap` lowers as `{ v -> f(v) }`; case `iter_flat_map_function_value`
 
 ### B-143 — commonJS: `push` mutates the array every binding holds, not the `var` it was called on (decisions 447 (2), 448 (2), 547)
 
@@ -3110,8 +3111,11 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [x] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
       — built as (63f4560b4): the checker picks the parameter by its label (`labelledParamIndex`) where it lowers a written type for a
       run-time `type<T>`; cell `type_token_labelled_field` (758), labelled, out of order and positional
-- [ ] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
+- [x] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
+      — built as (dd0b21d81): `if (k is A)` over a union types `k` as `A` in the branch (the other member in the else of a two-member union); case
+      `union_narrowed_field_read` (810); flow narrowing after an early `return` and through `&&` not covered
 - [ ] wasm: `.length.toString()` on a `Kid[]` does not resolve; found by B-162; a cell red on the parent
+      — not reproduced on `feat` (a local, a parameter, a record field, concatenation, after `map`: `2` on four targets); waits on B-162's repro
 - [x] wasm: `botopink test` of `conformance/test/compiler_load_in_a_test_suite` panics in `wat.zig` `finishGc` (index out of bounds),
       on the parent too; a repro, then the fix
       — built as: `reach.dropCallers` shrank the item list after `emitWatPass` recorded the program's range; it now moves the range
