@@ -50,7 +50,7 @@ In order across the two machines (144 README § Machines rule 9); nothing else n
 - [x] 144 B-145 (part) — `#[name]` naming no decorator refused `annotation-not-a-decorator` (`annotation_not_decorator_{unbound,namespace,value}`), dotted paths through a namespace resolved (`annotation_dotted_through_mod`, `_through_import`, `_missing_in_import`); left: a missing segment through a `pub mod`
 - [x] 144 B-150 — wasm: a type's method as a record-constructor argument resolves to the module's same-named `fn` (`init_executor_handle_not_module_name`) — landed
 - [x] 144 B-151 — wasm: a namespace import of a std module (`import {io.terminal}`) links only what the program reaches — landed
-- [ ] 144 B-155 — backend defects found by 166 s3's drafts: wasm comptime `Context used before it is bound` (css 594), wasm `?.name` receiver type unknown (actions 330), a module-qualified comptime call (markdown, http 594), erlang `?.` method on a `Dict` field (routing 330) · the comptime and erlang boxes landed; the two wasm boxes not reproduced alone; two new boxes (wasm `?.at`, beam `?.` over a lambda parameter); the wasm null rows landed (a `null` into a typed lambda parameter, `?.length()` on an absent `?R` local); two rows filed (beam `?.length()` over a present optional array, wasm `f?.(3)`) — machine 2
+- [ ] 144 B-155 — backend defects found by 166 s3's drafts: wasm comptime `Context used before it is bound` (css 594), wasm `?.name` receiver type unknown (actions 330), a module-qualified comptime call (markdown, http 594), erlang `?.` method on a `Dict` field (routing 330) · the comptime and erlang boxes landed; the two wasm boxes not reproduced alone; two new boxes (wasm `?.at`, beam `?.` over a lambda parameter); the wasm null rows landed (a `null` into a typed lambda parameter, `?.length()` on an absent `?R` local); two rows filed (beam `?.length()` over a present optional array, wasm `f?.(3)`); beam `?.length()` over a present optional array landed; two rows filed (commonJS untyped lambda `?.length()`, wasm typed lambda `null` → `8`) — machine 2
 
 ### 144 — the cache group (B-57 … B-64, decisions 508–513): worked now, beside the conformance order
 
@@ -163,7 +163,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-135 — erlang, beam: an `iter` loop's captured `var` is one variable on both sides, every read and write through the cell (`generator_captured_var_shared`; wasm with B-128)
 - [x] 144 B-118 — beam: a lambda's tail `iter loop` is the closure's value (`lambda_tail_iter_loop`)
 - [x] 144 B-119 — commonJS: an adopted behavior `default fn … -> @Task` emitted `async` (`behavior_default_awaits`)
-- [ ] 144 B-120 — commonJS: a contextual variant `.Term` as an argument of a namespace call is emitted bare · nothing
+- [x] 144 B-120 — a contextual variant `.Term` as an argument of a std namespace call takes the parameter's enum (checker, 587); cell `dot_variant_std_namespace_argument` — machine 2
 - [ ] 144 B-121 — beam: a user function named `run` or `size` is taken for a std binding · nothing
 - [ ] 144 B-122 — beam: `.toString()` on a tuple is `unresolved_method` · nothing
 - [ ] 144 B-124 — beam: an Erlang host template with a binary pattern other than a fixed-size unsigned segment is refused · nothing

@@ -2201,8 +2201,10 @@ Found by B-27 step 6: `process.onSignal(.Term, h)` (`process` an imported std na
 Node refuses ("Term is not defined"); erlang and beam resolve the variant from the parameter's type. The std cells
 write `process.Signal.Term`.
 
-- [ ] `.Variant` as an argument of a namespace-qualified call resolved from the parameter's type on commonJS — a cell on
+- [x] `.Variant` as an argument of a namespace-qualified call resolved from the parameter's type on commonJS — a cell on
       every target, red on commonJS today
+      — built as: a std namespace call's parameters are its arguments' expectation, as a program module's (587); the bug was the checker's,
+      `unbound variable 'Term'` on every target; cell `dot_variant_std_namespace_argument` (587)
 
 ### B-121 — beam: a user function named `run` or `size` is taken for a std binding
 
@@ -3010,8 +3012,14 @@ Each box is a library's decision-cell draft that builds on the other targets and
       other three print `0` (a present receiver with `fields: null` prints `0`); a cell, red on wasm on the parent
       — built as: a local annotated `?R` whose value names no record takes `R` from its annotation, so each link is guarded
       (the length was loaded off address 0); cell `optional_chain_absent_array_length` (330)
-- [ ] beam: `x?.length()` over a present optional array crashes `{unresolved_method,length,1}` — `f?.fields?.length()` with
+- [x] beam: `x?.length()` over a present optional array crashes `{unresolved_method,length,1}` — `f?.fields?.length()` with
       `fields` present, `h?.length()` on a `?Holder[]` lambda parameter; found by B-155's wasm rows; a cell red on beam on the parent
+      — built as: inference copies an array receiver's `.prim` lowering from the synthesised link to the written `recv?.m()` call
+      (only `.type_` was copied); cell `optional_chain_present_array_length` (330)
+- [ ] commonJS: an untyped lambda `{ a -> a?.length() ?? 0 }` handed to an `fn(?Holder[]) -> i32` parameter fails `a?.length is not a
+      function` (the typed `fn(h: ?Holder[])` form answers); a cell red on commonJS on the parent
+- [ ] wasm: a typed function expression `fn(h: ?Holder[]) -> i32 { return h?.length() ?? 0; }` called with `null` prints `8` where the
+      other three print `0`; a cell red on wasm on the parent
 - [ ] wasm: `f?.(3)` on a `?fn(i32) -> i32` parameter is refused "the type of what it answers is not known here" where the
       other three answer; found by B-155's wasm rows; a cell red on wasm on the parent
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
