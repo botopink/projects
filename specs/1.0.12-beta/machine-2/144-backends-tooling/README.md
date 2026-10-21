@@ -3032,9 +3032,12 @@ Each box is a library's decision-cell draft that builds on the other targets and
       function` (the typed `fn(h: ?Holder[])` form answers); a cell red on commonJS on the parent
       — built as: the checker gives an untyped lambda handed to a ground function-typed parameter its parameter types first (beam
       was red too); cell `optional_chain_lambda_array_method` (330)
-- [ ] wasm: a tuple passed into a generic body that writes it as text (`show(#(5, 6))`) prints a pointer (`9360`); found by B-115
-- [ ] wasm: an untyped generic fn value called (`val f = show; f(3.0)`) aborts; found by B-115
-- [ ] wasm: `apply<T>(xs: T[], …)` with `f64` is refused (a float has no lowering in a generic array); found by B-115
+- [x] wasm: a tuple passed into a generic body that writes it as text (`show(#(5, 6))`) prints a pointer (`9360`); found by B-115
+      — built as: the literal already answered; a tuple held in a local aborted — `eqBindParam` binds `T` to a local's tuple; cell `tuple_variable_in_generic_text` (521)
+- [x] wasm: an untyped generic fn value called (`val f = show; f(3.0)`) aborts; found by B-115
+      — built as: a local bound to a generic fn called as the fn itself (`generic_fn_aliases`); cell `generic_fn_value_called_untyped` (521); the checker types `f` from its first call, so `f(3.0)` then `f(7)` is refused (the checker's rule, one `val` per type)
+- [x] wasm: `apply<T>(xs: T[], …)` with `f64` is refused (a float has no lowering in a generic array); found by B-115
+      — built as: `bindParam` takes an `f64` element; `xs.map(f)` over a function-typed parameter reads the result's class from its type (`mapFnValueAnswer`); cell `generic_array_of_floats` (521)
 - [x] wasm: a typed function expression `fn(h: ?Holder[]) -> i32 { return h?.length() ?? 0; }` called with `null` prints `8` where the
       other three print `0`; a cell red on wasm on the parent
       — not reproduced on `feat` after 64bd10d3d and e1ece76fd (`0` and `2` on four targets); no cell
