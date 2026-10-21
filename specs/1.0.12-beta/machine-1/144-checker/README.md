@@ -2787,6 +2787,12 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       narrowing by the flow (`else`, after a branch that leaves, a `var` until assigned); `case` type patterns over generic types,
       exhaustive over a union (`non-exhaustive`, naming the member); std's `resolve` written with them; cell
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
+- [ ] decision 811: the `opaque` type modifier (`[pub] opaque type X(…)`, before `type`): the constructor written only in `X`'s own
+      methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` callable by the lowering
+      alone; std's `Composition<T>` an opaque type (`of` without `pub`, the lowering of every `component` body; `pub fn resolve`),
+      `is Composition<…>` an identity test; `Scope` opaque (`render-scope-construction` goes); cells, four targets
+- [ ] 811 (4) (with B-158's owner): `Module` opaque, made by a method without `pub` `compiler.load` lowers to, `mod.name()` /
+      `mod.path()` for the fields; the cells and libraries that read `mod.name` / `mod.path` respelled
 - [ ] ~~791-d (narrowing a union child)~~ — answered by 810; what stays is the run-time
       test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
       and `is fn(Scope) -> …` answering on the four targets; a cell, red on the parent
@@ -2804,8 +2810,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `return Card(…)` with no `use`); cell, four targets
 - [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>`, awaiting nothing inside, the one way a component
       runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside std's `context`
-      module; `c.run(RenderScope.root())` sites respelled `resolve(c, Scope.root())`; typed by 810, the hand-made
-      `Composition` on 809-b
+      module; `c.run(RenderScope.root())` sites respelled `resolve(c, Scope.root())`; typed by 810; 811: `resolve` is `Composition.resolve`
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `child()`), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state each `Composition` instance's own store, given by `resolve` (771);

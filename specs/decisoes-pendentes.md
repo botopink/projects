@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**21 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **811**.
+número livre, que é **812**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -467,15 +467,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
 - **Bloqueia.** Nada.
 
-#### 809-b · Um programa pode fazer ou aplicar uma `Composition` à mão? (decisões 809 (1), (6), 574, 661, 800 (2); 144 B-162)
-- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** `Composition<T>` é um alias transparente de `fn(Scope) -> T | Async<T>` (um alias é um segundo nome para um tipo, 661), então numa chamada `c(scope)` o checker vê uma chamada de função comum; nada diz se uma lambda comum `{ s -> … }` tipada `Composition<T>` é admitida, o que precisaria de covariância de retorno para `T | Async<T>` que a 800 (2) não dá em nenhum outro lugar.
-- **Opções.**
-  (a) ★ Uma `Composition` é feita só por um corpo `component` (um `component fn`, um `compose`, a lambda `component` da 574) e aplicada só pelo `resolve`: uma lambda comum onde se espera uma `Composition<T>` ou um `Component<T>`, e uma chamada de um valor assim tipado, são recusadas, o alias lido nominalmente nesses dois lugares como a 804 (1) recusa `X.compose()`.
-  (b) Ambos admitidos; a opacidade do `Scope` a única guarda.
-- **Recomendação.** (a): `is fn(Scope) -> …` então só encontra lambdas que o compilador fez, e nenhuma regra de variância é necessária.
-- **Bloqueia.** As caixas 809 (1), (6) do B-162.
-
 #### 809-c · Que escopo recebe um componente resolvido dentro de um corpo — `use c` e `return c`? (decisões 809 (4), (6), (8), 354 (2); 144 B-162; substitui a 804-a)
 - **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
 - **Contexto.** A 809 (8) faz do escopo uma célula por nó: `scope.child()` uma célula nova sobre o mapa do pai, um `use provide` substituindo o mapa da célula que o corpo recebeu, `use context` lendo o mapa recebido na entrada. A 804-a perguntava entre um escopo dos filhos e um escopo recebido, uma divisão que a 809 remove; o que resta é se um componente que o corpo resolve recebe a célula do corpo ou uma filha dela. Hoje o `context_lower.zig` entrega a um componente `use`ado o escopo dos filhos do corpo e marca o primeiro `use` de componente como o render do corpo (`context-provide-after-render`, 354).
@@ -540,6 +531,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Proposto (plano fable, 2026-10-20; nada construído):** (b).
 - **Contexto.** `resolve` não aguarda nada; 66 células e as raízes do rakun (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) escrevem `await c.run(RenderScope.root())` hoje.
 - **Medido.** 66 células com `.run(RenderScope.root())`, 13 com `use memo`; toda raiz está num corpo `async`.
+- **Desde a 811.** `resolve` é `Composition.resolve`, um método da `Composition` opaca; leia o `resolve` das opções assim.
 - **Opções.**
   (a) Cada raiz estreita: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (o fluxo da 810).
   (b) ★ O `context` da std acrescenta `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, depois `await` só quando a resposta `is Async<unknown>` — para raízes e testes; `resolve` continua sendo do renderer.
@@ -578,6 +570,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 #### 809-h · Quais dos códigos da 804-e sobrevivem, e as recusas gerais da 800 os substituem? (decisões 809 (2), 800, 804-e; 144 B-162 P2)
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).
 - **Contexto.** Com `Composable<T>` um comportamento de verdade, um `compose` que falta e uma assinatura diferente são recusas gerais da 800; `component-use-outside-compose` passa a ser do marcador (um membro sem `component` não admite `use`).
+- **Desde a 811.** A exceção de `component-compose-called` são os métodos da `Composition`, não o módulo `context` da std.
 - **Opções.**
   (a) ★ Manter `component-scope-field` (`Scope` no lugar de `RenderScope`, só num implementador de `Composable`) e `component-compose-called` (generalizado para todo receptor `Composable`, o módulo `context` da `std` isento); acrescentar `component-compose-unmarked`, `implement-component-not-composable`, `component-arg-is-component`; tirar `component-compose-missing` e `component-use-outside-compose` em favor das gerais.
   (b) Manter os quatro como construídos, reescritos.

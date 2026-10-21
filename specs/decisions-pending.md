@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**21 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **811**.
+number, which is **812**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -467,15 +467,6 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
 
-#### 809-b · May a program make or apply a `Composition` by hand? (decisions 809 (1), (6), 574, 661, 800 (2); 144 B-162)
-- **Proposed (fable review, 2026-10-20; nothing built):** (a).
-- **Context.** `Composition<T>` is a transparent alias of `fn(Scope) -> T | Async<T>` (an alias is a second name for one type, 661), so at a call `c(scope)` the checker sees an ordinary function call; nothing says whether a plain lambda `{ s -> … }` typed `Composition<T>` is admitted, which would need return covariance into `T | Async<T>` that 800 (2) gives nowhere else.
-- **Options.**
-  (a) ★ A `Composition` is made only by a `component` body (a `component fn`, a `compose`, 574's `component` lambda) and applied only by `resolve`: a plain lambda where a `Composition<T>` or a `Component<T>` is expected, and a call of a value so typed, are refused, the alias read nominally at those two sites as 804 (1) refuses `X.compose()`.
-  (b) Both admitted; `Scope`'s opacity the only guard.
-- **Recommendation.** (a): `is fn(Scope) -> …` then only meets lambdas the compiler made, and no variance rule is needed.
-- **Blocks.** B-162's 809 (1), (6) boxes.
-
 #### 809-c · Which scope does a component resolved inside a body get — `use c` and `return c`? (decisions 809 (4), (6), (8), 354 (2); 144 B-162; replaces 804-a)
 - **Proposed (fable review, 2026-10-20; nothing built):** (a).
 - **Context.** 809 (8) makes the scope one cell per node: `scope.child()` a new cell over the parent's map, a `use provide` replacing the map of the cell the body was given, `use context` reading the map received at entry. 804-a asked between a children scope and a received scope, a split 809 removes; what is left is whether a component the body resolves gets the body's cell or a child of it. Today `context_lower.zig` hands a `use`d component the body's children scope and marks the first component `use` as the body's render (`context-provide-after-render`, 354).
@@ -540,6 +531,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Proposed (fable plan, 2026-10-20; nothing built):** (b).
 - **Context.** `resolve` awaits nothing; 66 cells and rakun's roots (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) write `await c.run(RenderScope.root())` today.
 - **Measured.** 66 cells with `.run(RenderScope.root())`, 13 with `use memo`; every root is in an `async` body.
+- **Since 811.** `resolve` is `Composition.resolve`, a method of the opaque `Composition`; read the options' `resolve` so.
 - **Options.**
   (a) Each root narrows: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (810's flow).
   (b) ★ std's `context` adds `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, then `await` only when the answer `is Async<unknown>` — for roots and tests; `resolve` stays the renderer's.
@@ -578,6 +570,7 @@ group), answered before every other part of this page; in the order of the steps
 #### 809-h · Which of 804-e's codes survive, and do 800's general refusals replace them? (decisions 809 (2), 800, 804-e; 144 B-162 P2)
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
 - **Context.** With `Composable<T>` a real behavior, a missing `compose` and a differing signature are 800's general refusals; `component-use-outside-compose` becomes the marker's (a member without `component` admits no `use`).
+- **Since 811.** `component-compose-called`'s exemption is `Composition`'s methods, not std's `context` module.
 - **Options.**
   (a) ★ Keep `component-scope-field` (`Scope` for `RenderScope`, on a `Composable` implementor only) and `component-compose-called` (generalised to every `Composable` receiver, `std`'s `context` module exempt); add `component-compose-unmarked`, `implement-component-not-composable`, `component-arg-is-component`; drop `component-compose-missing` and `component-use-outside-compose` for the general ones.
   (b) Keep all four as built, respelled.
