@@ -2436,7 +2436,7 @@ and puts every failure in a `Result` in the value's layer. Three pieces, in orde
       `@Result` → `Result`, declared in std's `.bp`; `Async.resolve(v: T) -> Async<T>` (570); `comptime/effect_chain.zig` reduced to what the markers need; a
       codemod over botopink-lang and every library; every cell the same · landed in botopink-lang (std, cells, `conformance/test`, `Async.resolve` spliced through the template expansions); the libraries' sites (rakun 201, query 2, markdown 1, by file) go with P3; left: a cell for `Async.resolve` on four targets, the compiler messages' `@Iter` / `@Component` names respelled (retired.md)
 - [ ] (iii) what is new: an iterator's `R` (`return v`; `next()` answering `Step.Item(T)` / `Step.Done(R)`), a failure in
-      `R` ending the iteration (`for x in try xs`), `Component<Result<R, E>>` the one component that throws — on
+      `R` ending the iteration (`for try xs { x -> … }`, 956), `Component<Result<R, E>>` the one component that throws — on
       commonJS, erlang and beam, wasm through 164; `io.fs`'s `lines()` / `chunks()` answering
       `AsyncIter<…, Result<void, FsError>>`; new cells red on the parent, green after
 - [ ] Conformance (459) — with a cell for the unmarked forms whose tail `await e` / `try e` P1 made the body's value

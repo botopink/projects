@@ -24,7 +24,7 @@ As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de tod
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **956**.
+número livre, que é **957**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -166,7 +166,7 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 947 | ctr-l | A terceira recusa da 186 removida — nenhuma página se declara pré-renderizada sob a 202 |
 | [ ] | 948 | ctr-v | Um carve-out só de comentários é do passo dono; a org-3 não sequencia mais nada agora que 118, 33, 34 são passos de uma frente |
 | [ ] | 949 | ctr-x | 337 (2), (3) superadas pela 592 (1); a 337 mantém (1) e (4) |
-| [ ] | 950 | ctr-af | O laço é `for x in xs { … }` / `for await x in s { … }` (553 (3)); o `for (xs) { x -> … }` da 105 removido, reescrito pelo formatter |
+| [x] | 950 | ctr-af | Revertida pelo mantenedor (956): o laço é o da 105, `for xs { x -> … }` / `for (a, b) { x, y -> … }`; `for x in xs` recusado |
 | [ ] | 951 | ctr-ag | Um `?T` é casado por `null` e `_`, o valor lido `x!`; o braço ligador da 54 recusado (602 inteira) |
 | [ ] | 952 | 03r-a, 03r-c, 03r-e, 03r-f, 03r-g, 03r-h, 03r-i, 03r-j, 03r-k, 03r-l, 03r-m, 03r-n, 03r-p, 03r-r, 03r-s, 03r-t, 03r-u, 03r-v, 03r-w, 03r-x (04-rakun) | As 21 escolhas da trilha 04 valem como construídas sob os nomes dos pacotes; 03r-a (todo manifesto erlang), 03r-e (um componente mantido como escrito) e 03r-r (starters) superadas por 724 / 762, 196 e 724; 03r-c, 03r-h, 03r-i, 03r-l, 03r-s, 03r-t, 03r-v emendadas para 299, 281 / 714, as camadas de 724, 318 (5), § library-split e 312 / 397 / 398. |
 | [ ] | 953 | 26-a (jhonstart), 29-a, 30-b, 30-c, 30-d, 30-e, 30-f, 30-g, 31-a (05-jhonstart) | As nove escolhas da trilha 05 valem sob `rakun-bpp`; 29-a reduzida a `registerRouteStarters`; o `payload` de 30-b responde `?#(string, Json)`; `compose` recebe a página como valor de componente e `Suspense` é um nó da árvore (504, 414); a assinatura de 31-a é a de `nat-d6` / `lg2-l`. |

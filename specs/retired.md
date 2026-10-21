@@ -51,6 +51,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `any` | `unknown`, narrowed with `is` | 31 | |
 | `@src()`, `src` | `compiler.src()` (`comptime compiler.src()` in a run-time body) | 575 (4), 606 (2), 718 | |
 | `...` as a spread | `..` (`Pessoa(..p, nome: "Ana")`) | 359 (1), 529 (3), 864 | Refused `spread-dot-dot-dot` naming `..`; nothing migrates it (864); `...` is the inclusive range alone |
+| `for x in xs { … }` (553 (3)'s and 950's spelling of the collection loop) | `for xs { x -> … }`, `for (a, b) { x, y -> … }` (105); refused `for-in-loop` | 956 | 2026-10-21; 950 reversed |
 | `p.f = v` (assigning a record field) | `Person(..p, f: v)` | 37 | |
 | `<pattern> as <name>` | — (removed): a `case` binds through its variant pattern | 11 | |
 | A `Range` value, `.rev()` | — (removed): `a..b` / `a...b` is syntax of a pattern, a loop or a slice | 105 | |

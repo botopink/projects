@@ -24,7 +24,7 @@ The open questions of the current milestone, 1.0.12-beta; one file above every m
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **956**.
+number, which is **957**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -166,7 +166,7 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 947 | ctr-l | 186's third refusal dropped — no page declares itself prerendered under 202 |
 | [ ] | 948 | ctr-v | A comments-only carve-out is the owning step's; org-3 sequences nothing now that 118, 33, 34 are steps of one front |
 | [ ] | 949 | ctr-x | 337 (2), (3) overtaken by 592 (1); 337 keeps (1) and (4) |
-| [ ] | 950 | ctr-af | The loop is `for x in xs { … }` / `for await x in s { … }` (553 (3)); 105's `for (xs) { x -> … }` gone, rewritten by the formatter |
+| [x] | 950 | ctr-af | Reversed by the maintainer (956): the loop is 105's `for xs { x -> … }` / `for (a, b) { x, y -> … }`; `for x in xs` refused |
 | [ ] | 951 | ctr-ag | A `?T` is matched by `null` and `_`, the value read `x!`; 54's binder arm refused (602 whole) |
 | [ ] | 952 | 03r-a, 03r-c, 03r-e, 03r-f, 03r-g, 03r-h, 03r-i, 03r-j, 03r-k, 03r-l, 03r-m, 03r-n, 03r-p, 03r-r, 03r-s, 03r-t, 03r-u, 03r-v, 03r-w, 03r-x (04-rakun) | The 21 choices of track 04 stand as built under the package names; 03r-a (every manifest erlang), 03r-e (a component kept as written) and 03r-r (starters) overtaken by 724 / 762, 196 and 724; 03r-c, 03r-h, 03r-i, 03r-l, 03r-s, 03r-t, 03r-v amended to 299, 281 / 714, 724's layers, 318 (5), § library-split and 312 / 397 / 398. |
 | [ ] | 953 | 26-a (jhonstart), 29-a, 30-b, 30-c, 30-d, 30-e, 30-f, 30-g, 31-a (05-jhonstart) | The nine choices of track 05 stand under `rakun-bpp`; 29-a reduced to `registerRouteStarters`; 30-b's `payload` answers `?#(string, Json)`; `compose` takes the page as a component value and `Suspense` is a tree node (504, 414); 31-a's signature is `nat-d6`'s / `lg2-l`'s. |
