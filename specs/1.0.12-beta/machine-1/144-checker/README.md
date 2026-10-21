@@ -77,7 +77,8 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | prefixed strings on `@External.Wasm` (481) | `external_wasm_prefixed_{fn,op,wasi,std}_refused` |
 | the formatter prints `label: value`; the LSP rename; no prefixed string in `libs/**` | no cell: `format/tests/declarations.zig`, `language-server/src/tests/rename.zig`, the `build.zig` scan |
 
-- [ ] `"std:…"` on `.JavaScript` / `.Erlang`: host code (as built) or refused like the other prefixes · question B-02-c
+- [ ] `"std:…"` in a template refused on `.JavaScript` / `.Erlang` too, naming `.Wasm(std: …)` (847); `infer.zig`'s `std_` exemption goes;
+      cell `external_std_prefix_refused_everywhere` (red on the parent, 305's folder)
 
 ### B-10 — 430: the compiler gaps a library works around today
 
@@ -95,7 +96,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
   `clock.formatIso8601` answers differently on erlang and commonJS (`decision 497`); the package module namespace
   in type and value position (the box below).
 - **G2 styled / emilia** — a method's behavior-typed parameter refuses an implementer; a wrapper's type alias
-  cannot implement a behavior; a template function cannot read another expansion's value; a function a
+  cannot implement a behavior (answered by 850: an alias implements nothing, its `R` does); a template function cannot read another expansion's value; a function a
   template body reaches cannot name an enum variant nor build a private record; a decorator body cannot call a
   host function (closes with B-00c); a library's template function cannot read the program's catalogue (by design
   since 665: the application's `#[theme]` is read from the registry its `compiler.init` executor writes, styled's half
@@ -114,9 +115,11 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       — built: a static member as a value (`associated_fn_as_value`), the spread in an added member and the many
       locals (pins `decorator_member_record_update`, `decorator_lambda_many_locals`), a `Decorator` parameter taking
       a decorator's name (`decorator_argument_decorator_name`); validation's four markers and their rows gone. Left:
-- [ ] `compiler.variants(d)`'s entries carry a variant's payload fields and annotations · question B-10-b
+- [ ] `compiler.variants(d) -> compiler.Variant[]` (name, fields, annotations, section) (848); the prelude mirror; cell
+      `compiler_variants_typed_entries`; validation's two markers and their `language-gaps.md` rows in the consumer commit
 - [ ] `Field` reflects a field's default · question B-10-a
-- [ ] `clock.formatIso8601` one text on erlang and commonJS (497) · question B-10-c
+- [ ] `clock.formatIso8601` always `.sssZ`: the erlang cell on `{unit, millisecond}` (849); cell `clock_iso8601_millis_always` on commonJS,
+      erlang, beam
 - [ ] handed to 146 (their compiler halves built): the comptime parameter default and the raw lexeme (125 s12, s7),
       `#[each("email")]` → `#[each(email)]` (125 s8)
 - [ ] G2: the same for styled's and emilia's markers — built: a method's behavior-typed parameter takes an
@@ -132,9 +135,11 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       time, styled's half in 150)
 - [ ] G3: the same for jhonstart's markers (after B-15 and 388) — built: template-built code builds an inline props
       type (`template_builds_inline_props`; jhonstart's two html test markers and the row gone). Left:
-- [ ] a decorator reads whether a `Component<R>` return's `R` implements `Renderable` · question B-10-f
+- [x] a decorator reads whether a `Component<R>` return's `R` implements `Renderable` — overtaken by 804 (2) (851); `client.bp`'s marker and
+      its `language-gaps.md` rows go in 165 s10
 - [ ] `html` declared `-> View` (`View = Component<Element>`, its tree through `compiler.custom`): every expansion fails `expected
-      Component, got Element` · question B-10-g
+      Component, got Element` — 852: an alias of `Component` in a return erased (`alias_erase.zig`'s kept position goes); cell
+      `component_return_alias_erased` (red on the parent); `html`'s `-> View` answers `Component<Element>` once 809 (7) lands — no rule over `Element`
 - [ ] G5: the same for onze-content's marker — no compiler change: decision 306 makes it a type decorator over
       `compiler.fields(decl)` (121 step 10), handed to 150 s70
 
@@ -1911,13 +1916,13 @@ snapshot message (135 s1); 97's residues; 98's script and its `docs/botopink-jso
 - [ ] the style section unfolds to `use <style> """<the section>""";` after the header's
       statements, before `return html """…""";`, with `import <style> from "<bpp.style>";` binding
       no name the header can reach — § Mechanism's `Props(title)` example unfolds as spelled there
-      — built; its success cell waits on the gap of a template answering `-> Component<T>` (question B-10-g)
+      — built; its success cell waits on the gap of a template answering `-> Component<T>` (852; the fixture's template answers `-> Component<i32>` building `{ _ -> n }`)
 - [ ] fixture style package (not `jhonstart-styled`) whose default function answers something
       trivial (the section's length): a `.bpp` with a style section compiles onto it unchanged —
       the toolchain knows no library for the style section either
-      — waits on question B-10-g
+      — waits on 852 (B-162)
 - [ ] a diagnostic inside the style section reported at its `.bpp` line, like the markup's
-      — waits on question B-10-g
+      — waits on 852 (B-162)
 - [x] the default function anonymous (289): `import {components.PostCard};` binds `PostCard` in the
       importer, an alias another name; a file name that is no identifier (`not-found.bpp`) unfolds;
       `decl.name` is the file name; `page.bpp` whose header imports and writes `#[page(…)]` compiles
@@ -2077,8 +2082,9 @@ other repositories' steps.
       — and `readChunk() -> @Task<?string>`, the byte-level read `keys()` is built on; `std_io_stdin_eof`
 - [x] `io.terminal`: `stdoutIsTTY()`, `size() -> ?#(i32, i32)`, `setRaw(on)`, `keys() -> Stream<Key>`
       — `keys()` written `@Stream<Key>` (553's types not in std yet), with a pure `parseKey`; `std_io_terminal_not_a_tty`;
-      on erlang / beam `keys()` gathers all input before yielding (question B-27-g2), raw mode reads Linux's `/proc`
-      and `stty` (question B-27-g4)
+      on erlang / beam `keys()` lazy since B-128 (855), raw mode reads Linux's `/proc` and `stty` (856)
+- [ ] `TerminalError.Unsupported`; `setRaw` `Error(Unsupported)` and `size()` `null` off Linux on erlang / beam, `os:type()` tested first;
+      `libs/std/AGENTS.md` says it; no cell runs off Linux (856)
 - [x] `io.process`: `enum Signal { Int, Term, Hup, Winch }`, `onSignal(s, f)`, `spawn(cmd, args) -> @Result<Child,
       ProcessError>` with `Child.wait()`, `kill(s)`, `forwardSignals()` — a spawned child receives the `SIGTERM` sent to
       its parent, asserted with a child that prints on the signal
@@ -2120,8 +2126,9 @@ Under `decision 507` (1): one `repository/onze` entry in `.gitmodules`, workspac
       takes, each backend's collision-free mapping, diagnostics in the backtick form; `not-found.bpp` imported as
       `` import {pages.`not-found` as NotFound}; `` and without an alias — cells, one per position and per target
       — `backtick_name_{binding,parameter,function,type,field,module_segment,import_item,in_diagnostic,empty,line_break}`,
-      `bpp_not_found_aliased`, `bpp_not_found_unaliased`; open: B-27-d (the formatter's plain spelling), B-27-e (erlang's
-      module name), B-27-f (`Name<T>.f()` with a backtick type)
+      `bpp_not_found_aliased`, `bpp_not_found_unaliased`; open: B-27-d (the formatter's plain spelling); B-27-e answered by 853, B-27-f by 854 (as built)
+- [ ] the duplicate-module message names 109's fold (853); cell `erlang_module_atom_pair_refused` (`not_found.bp` + `not-found.bpp`),
+      erlang and beam, red on the parent by its text
 
 #### B-27 Conformance — the group's last step (decisions 459, 474, 477, 478, 479, 480)
 

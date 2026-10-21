@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **847**.
+number, which is **857**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -67,6 +67,16 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 844 | 723-c | Answered by 723: one default per context type |
 | [ ] | 845 | B-21-d | Answered by 583, 408: `fn() { … }` is the untyped form |
 | [ ] | 846 | B-21-e | Answered by 622: the shortform `fn f(x: T) R` refused, a departure to remove |
+| [ ] | 847 | B-02-c | `std:` in a template refused on every variant and target |
+| [ ] | 848 | B-10-b | `compiler.variants(d)` answers typed `compiler.Variant[]` |
+| [ ] | 849 | B-10-c | `clock.formatIso8601` always writes milliseconds |
+| [ ] | 850 | B-10-e | Answered by 826 (4), 629 (2), 828 (1): an alias implements nothing |
+| [ ] | 851 | B-10-f | Overtaken by 804 (2): no `Renderable` to ask about |
+| [ ] | 852 | B-10-g | An alias of `Component` in a return is erased; `-> View` answers `Component<Element>` |
+| [ ] | 853 | B-27-e | Two modules folding to one erlang atom refused (erlang and beam only — the fable asks whether every target) |
+| [ ] | 854 | B-27-f | Answered by 255 (1), 561: a backtick type application before `.` is two comparisons, as built |
+| [ ] | 855 | B-27-g2 | Overtaken by B-128: `keys()` lazy on erlang and beam |
+| [ ] | 856 | B-27-g4 | Raw mode and size Linux-only on erlang and beam, `Unsupported` elsewhere |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -94,169 +104,6 @@ Open and blocking nothing (front 165): **548-a** (every library links its code),
 
 The questions machine 1's steps wait on (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, the module-model
 group), answered before every other part of this page; in the order of the steps they block.
-
-#### B-02-c · `"std:…"` written as a `.JavaScript` / `.Erlang` `template`: host code, or refused like the other prefixes? (decisions 305, 481; 144 B-02)
-- **Proposed (opus, 2026-10-13; awaiting the maintainer):** **(a): refused on every target, naming the labelled form** — `conformance/docs.md` § Host bindings already says the four prefixed strings are refused at the argument on every target; a string that reads as a cell and runs as host code is the ambiguity 305 removed. Since 575 (6), 610 and 621 the cell is a value of `Implementation` and `std` is a labelled field of `.Wasm` alone (`.Wasm(std: "hash.contentHash")`); `.JavaScript` and `.Erlang` have only `template` and `body`, so the question narrows to a `template` text that starts with `std:`. Changes: the `template` check refuses `"std:"` on `.JavaScript` and `.Erlang` too; a cell.
-- **Measured.** The table checks (516, kept over the value by 575 (6)) refuse `"std:…"` only in a `.Wasm` template (before 606: `@External.Wasm`); in a `.JavaScript` / `.Erlang` template it is host code ("`std:` was only ever a wasm cell").
-- **Options.**
-  (a) Refused everywhere.
-  ```bp
-  #[compiler.external(.JavaScript("std:hash.contentHash"))]   // refused: a `std:` cell is `.Wasm(std: …)`'s
-  ```
-  (b) Host code off wasm, the text corrected.
-  ```bp
-  #[compiler.external(.JavaScript("std:hash.contentHash"))]   // JavaScript source `std:hash.contentHash`
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-02's `std:` row.
-
-#### B-10-b · `compiler.variants(d)`: what does an entry carry, a section included? (decisions 268, 298; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): `Variant(name: string, fields: compiler.Field<unknown>[], annotations: DeclAnnotation[], section: ?string)`**, a record of `compiler.bp` beside the handle records (608) — a payload variant lists its fields as `compiler.fields(T)` does (576 (8), 630); a section is not an entry, its variants carry the section's name. One entry per constructible variant.
-- **Measured.** `compiler.variants(d)` (before 576: `Decl.variants`) carries names only, sections listed among them.
-- **Options.**
-  (a) Typed entries, sections as a field.
-  ```bp
-  compiler.variants(decl)[0].fields[0].name   // "amount"
-  ```
-  (b) As today: names.
-  ```bp
-  compiler.variants(decl)[0]   // "Paid" — a name, sections among them
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-c · `clock.formatIso8601`: which text is the one answer? (decision 497; 144 B-10 G1)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): always milliseconds, `.sssZ`** — `2026-10-12T20:31:02.000Z` on every target; a fixed width sorts as text and parses back with one rule.
-- **Measured.** commonJS answers `.sssZ` always (node's `toISOString`); erlang never writes milliseconds.
-- **Options.**
-  (a) Always `.sssZ`.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
-  ```
-  (b) Milliseconds only when nonzero.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-e · How does a type alias of `Component<Styled>` implement a behavior? (144 B-10 G2)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(b): it does not — an alias is its target**: `Styleable` is implemented by `Styled`, and `Component<Styled>` (bare since 606 (1)) reaches it through `R`; an alias declares nothing (a second name, not a type). styled's marker is rewritten over `Styled`'s implementation. Re-read under 629: a `val` names a type wherever a type is named (629 (2)), but only a nominal type — declared, or built by `compiler.buildType(name, fields, implements)` — carries an `implement` clause; `buildTypeInline(fields)` takes none (629 (1)). 629 does not say whether a `val` naming the nominal `Component<Styled>` could carry one, so (a) stays a question and not a spelling.
-- **Measured.** `pub val StyledView = Component<Styled>` cannot carry `implement`; no spelling exists.
-- **Options.**
-  (a) An alias with `implement`.
-  ```bp
-  pub val StyledView = Component<Styled> implement Styleable;
-  ```
-  (b) Only the target type implements.
-  ```bp
-  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
-  ```
-- **Recommendation.** (b).
-- **Blocks.** 144 B-10's row.
-
-#### B-10-f · How does a decorator read whether a `Component<R>` return's `R` implements `Renderable`? (decisions 268, 280; 144 B-10 G3)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): through `compiler.typeInfo` of the declared return** — `compiler.typeInfo(compiler.returnType(decl)).typeArg(0).implements(Renderable)`; the handle stays a declaration's handle read through `compiler.*` (576 (3)) and type questions go through `compiler.typeInfo`, the one reflection of a type (606 (3)). Viable: `compiler.returnType(d)` as a type value (today a name) and `compiler.Info<T>.implements(B)`. Changes: two members; jhonstart's marker in `client.bp` goes.
-- **Measured.** No reflection answers it: `compiler.returnType(d)` (before 576: `decl.returnType`) is the type's name as text, and no member asks whether a type implements a behavior. Since 626 (2) a decorator's handle may be typed by what the decorator requires (`syntax decl: fn() -> string`), checked at the annotation — a third route, (c).
-- **Options.**
-  (a) `compiler.typeInfo` of the return type.
-  ```bp
-  if (!compiler.typeInfo(compiler.returnType(decl)).typeArg(0).implements(Renderable)) compiler.fail("…", at: decl);
-  ```
-  (b) A `Compiler` read on the handle.
-  ```bp
-  if (!compiler.returnImplements(decl, Renderable)) compiler.fail("…", at: decl);
-  ```
-  (c) The handle's type says it (626 (2)); whether `Component<Element>` fits `Component<Renderable>` through `Element implement Renderable` is a generic rule 626 does not state.
-  ```bp
-  pub fn page(syntax decl: fn() -> Component<Renderable>) -> void { … }   // a return whose R is no Renderable refused at the annotation
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10 G3's `Renderable` row.
-
-#### B-10-g · A template declared `-> View` whose built code is an `Element`: is the expansion a `View`? (decisions 275, 276; 144 B-10 G3)
-- **Proposed (opus, 2026-10-12; awaiting the maintainer):** **(a): yes — the expansion is what the template declares** — `html` declared `-> View` (576 (4), 578 (2): a template returns an ordinary type, its reference tree attached by `compiler.custom(ast)`) answers a `View` (`Component<Element>`), and a built `Element` is checked against it as a component's body; jhonstart's `renderNode(html …)` and its `-> Element` components move to `View`. Viable: the built code's check against `View` accepts an `Element` as a component's answer. Changes: jhonstart's components (a consumer commit), a cell.
-- **Measured.** With `-> View` (before 576: `-> @ExprCustom<View>`) every `html` expansion fails `expected Component, got Element`. 578 (2) makes the declared `T` the call's type, so the former option — the call keeping `Element` while the declaration says `View` — cannot be written and is gone; what is left is whether the built `Element` code is accepted against `View` as a component's answer, or refused, the template having to build the component itself.
-- **Options.**
-  (a) A `View`: the built `Element` accepted as a component's answer.
-  ```bp
-  fn Card() -> View { html @`<div/>` }   // the expansion is a View
-  ```
-  (b) Refused as today; `html` builds the component around its `Element` itself.
-  ```bp
-  fn Card() -> View { html @`<div/>` }   // expected Component, got Element — unless html answers the component
-  ```
-- **Recommendation.** (a).
-- **Blocks.** 144 B-10 G3's `View` row.
-
-#### B-27-e · On erlang, `not-found.bpp` and `not_found.bp` become the same module name (decisions 561, 109; 144 B-27)
-- **Proposed (opus, 2026-10-15; awaiting the maintainer):** (a): the erlang module atom is quoted from the file's name as written, so the two never meet.
-- **Context.** Decision 561 lets a file whose name is no identifier (`not-found.bpp`) be imported, and asks each backend to map a name without collision. On erlang a module's name goes through decision 109's cleanup, which replaces the characters an unquoted atom cannot hold.
-- **Measured.** Decision 109's cleanup turns `not-found.bpp` into `…@not_found`, the same module as a sibling `not_found.bp`; the two would overwrite each other's `.beam`. No cell holds the pair today.
-- **Options.**
-  (a) ★ The module atom is quoted and keeps the file's name (`'pages@not-found'`).
-  ```erlang
-  'app@pages@not-found':render(...)   % not_found.bp stays app@pages@not_found
-  ```
-  (b) Decision 109's cleanup stays, and the pair is refused at the second file ("`not-found.bpp` and `not_found.bp` are one module on erlang").
-  ```text
-  error: src/pages/not_found.bp and src/pages/not-found.bpp are one module on erlang (app@pages@not_found) — rename one
-  ```
-  (c) Decision 109's cleanup stays and nothing is checked.
-- **Recommendation.** (a): 561 asks for no collision, and a quoted atom is erlang's own form for such a name; (b) if a quoted module atom breaks a tool.
-- **Blocks.** Nothing today; a package holding both files.
-
-#### B-27-f · `Name<T>.f()` with a backtick type name (decision 561; 144 B-27)
-- **Proposed (opus, 2026-10-15; awaiting the maintainer):** (a): the parser tells a type from what the name is, not from an uppercase first letter.
-- **Context.** Explicit type arguments before a `.` (`Name<T>.f()`) are read as a type only when the name starts with an uppercase letter. A backtick type name (`` `my point` ``) has no such letter, so it cannot be written there; a call `Name<T>(…)` already works.
-- **Measured.** `` `my box`<i32>.make() `` does not parse as a type with type arguments; `` `my box`<i32>(…) `` does.
-- **Options.**
-  (a) ★ Extended: a backtick name followed by `<…>.` is read as a type, like an uppercase one.
-  ```bp
-  val b = `my box`<i32>.make();
-  ```
-  (b) Left as is: a backtick type takes its type arguments only at a call or in a type position.
-  ```bp
-  val b: `my box`<i32> = `my box`.make();
-  ```
-- **Recommendation.** (a): 561 says every position that takes a name.
-- **Blocks.** Nothing.
-
-#### B-27-g2 · `io.terminal.keys()` on erlang and beam (decisions 506 (c), 553; 144 B-27 step 6)
-- **Proposed (sonnet, 2026-10-15; awaiting the maintainer):** (b): add `readKey() -> Task<?Key>` (bare since 606 (1)) on every target.
-- **Context.** `keys()` answers a stream of key presses for interactive prompts. On erlang and beam a `Stream` is lowered eagerly.
-- **Measured.** On erlang / beam `keys()` gathers all input before yielding its first key, so it never answers on a live terminal (a hang under a pty); commonJS yields lazily. `stdin.readChunk()` + `terminal.parseKey` works on the three targets.
-- **Options.**
-  (a) `keys()` as is; an interactive loop on erlang reads `readChunk()` and `parseKey`.
-  ```bp
-  val chunk = await stdin.readChunk(); val key = terminal.parseKey(chunk);
-  ```
-  (b) ★ `readKey() -> Task<?Key>` on every target, `keys()` kept.
-  ```bp
-  val key = await terminal.readKey();   // one key, null at end of input
-  ```
-  (c) Wait for a lazy `{ async iter -> … }` lowering on erlang (553; 584's marker spelling), `keys()` the one API.
-  ```bp
-  for (await terminal.keys()) { k -> … }   // lazy once 553 lands on erlang
-  ```
-- **Recommendation.** (b), or (c) once 553 lowers lazily on erlang.
-- **Blocks.** Key-driven prompts (`cli.prompt`) on erlang.
-
-#### B-27-g4 · Raw mode and terminal size on erlang outside Linux (decision 506 (c); 144 B-27 step 6)
-- **Proposed (sonnet, 2026-10-15; awaiting the maintainer):** (a): Linux only, the call answering `Unsupported` elsewhere.
-- **Context.** `terminal.setRaw(on)` and `terminal.size()` need the terminal's device. Node has them built in; the Erlang VM does not.
-- **Measured.** On erlang / beam the build reads Linux's `/proc/<pid>/fd/{0,1}` and runs `stty` (to clear `isig` and read the size). macOS and Windows have no `/proc`.
-- **Options.**
-  (a) ★ Linux only: elsewhere `setRaw` answers `Error(Unsupported)` and `size()` `null`.
-  ```bp
-  case terminal.setRaw(true) { Ok(_) -> …; Error(e) -> … }   // macOS on erlang: Error(Unsupported)
-  ```
-  (b) A path per OS (`/dev/tty` and `stty -f` on macOS; Windows refused).
-  ```bp
-  terminal.setRaw(true);   // Linux and macOS on erlang
-  ```
-- **Recommendation.** (a): no untested path ships.
-- **Blocks.** Nothing on Linux.
 
 #### 335-a · `async.race` on erlang: the fastest, or the first written? (decision 335; m2-0027)
 - **Proposed (sonnet, 2026-10-19; nothing built):** (a).

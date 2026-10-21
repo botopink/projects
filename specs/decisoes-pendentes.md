@@ -26,7 +26,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **847**.
+número livre, que é **857**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -67,6 +67,16 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 844 | 723-c | Respondida pela 723: um default por tipo de contexto |
 | [ ] | 845 | B-21-d | Respondida pelas 583, 408: `fn() { … }` é a forma não tipada |
 | [ ] | 846 | B-21-e | Respondida pela 622: a forma curta `fn f(x: T) R` recusada, um desvio a remover |
+| [ ] | 847 | B-02-c | `std:` num template recusado em toda variante e todo alvo |
+| [ ] | 848 | B-10-b | `compiler.variants(d)` responde `compiler.Variant[]` tipado |
+| [ ] | 849 | B-10-c | `clock.formatIso8601` sempre escreve milissegundos |
+| [ ] | 850 | B-10-e | Respondida pelas 826 (4), 629 (2), 828 (1): um alias não implementa nada |
+| [ ] | 851 | B-10-f | Superada pela 804 (2): não há `Renderable` a perguntar |
+| [ ] | 852 | B-10-g | Um alias de `Component` num retorno é apagado; `-> View` responde `Component<Element>` |
+| [ ] | 853 | B-27-e | Dois módulos que viram o mesmo átomo erlang recusados (só erlang e beam — o fable pergunta se em todo alvo) |
+| [ ] | 854 | B-27-f | Respondida pelas 255 (1), 561: uma aplicação de tipo com crase antes de `.` são duas comparações, como construído |
+| [ ] | 855 | B-27-g2 | Superada pelo B-128: `keys()` preguiçoso no erlang e no beam |
+| [ ] | 856 | B-27-g4 | Modo raw e tamanho só no Linux no erlang e no beam, `Unsupported` fora |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -94,169 +104,6 @@ Abertas e sem travar nada (frente 165): **548-a** (toda biblioteca linka seu có
 
 As perguntas que os passos da máquina 1 esperam (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, o grupo do
 modelo de módulos), respondidas antes de toda outra parte desta página; na ordem dos passos que travam.
-
-#### B-02-c · `"std:…"` escrito como `template` de `.JavaScript` / `.Erlang`: código de host, ou recusado como os outros prefixos? (decisões 305, 481; 144 B-02)
-- **Proposto (opus, 2026-10-13; aguardando o mantenedor):** **(a): recusado em todo target, nomeando a forma rotulada** — o `conformance/docs.md` § Host bindings já diz que as quatro strings com prefixo são recusadas no argumento em todo target; uma string que se lê como cell e roda como código de host é a ambiguidade que a 305 removeu. Desde a 575 (6), a 610 e a 621 a cell é um valor de `Implementation` e `std` é um campo rotulado só de `.Wasm` (`.Wasm(std: "hash.contentHash")`); `.JavaScript` e `.Erlang` têm só `template` e `body`, então a pergunta se estreita a um texto de `template` que começa com `std:`. Muda: a checagem do `template` recusa `"std:"` em `.JavaScript` e `.Erlang` também; uma cell.
-- **Medido.** As checagens da tabela (516, mantidas sobre o valor pela 575 (6)) recusam `"std:…"` só num template de `.Wasm` (antes da 606: `@External.Wasm`); num template de `.JavaScript` / `.Erlang` é código de host ("`std:` was only ever a wasm cell").
-- **Opções.**
-  (a) Recusado em todo lugar.
-  ```bp
-  #[compiler.external(.JavaScript("std:hash.contentHash"))]   // refused: a `std:` cell is `.Wasm(std: …)`'s
-  ```
-  (b) Código de host fora do wasm, o texto corrigido.
-  ```bp
-  #[compiler.external(.JavaScript("std:hash.contentHash"))]   // JavaScript source `std:hash.contentHash`
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `std:` do 144 B-02.
-
-#### B-10-b · `compiler.variants(d)`: o que uma entrada carrega, incluindo uma seção? (decisões 268, 298; 144 B-10 G1)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): `Variant(name: string, fields: compiler.Field<unknown>[], annotations: DeclAnnotation[], section: ?string)`**, um record do `compiler.bp` ao lado dos records de handle (608) — uma variante com payload lista seus campos como `compiler.fields(T)` (576 (8), 630); uma seção não é entrada, suas variantes carregam o nome da seção. Uma entrada por variante construível.
-- **Medido.** `compiler.variants(d)` (antes da 576: `Decl.variants`) carrega só nomes, com as seções listadas entre eles.
-- **Opções.**
-  (a) Entradas tipadas, seções como campo.
-  ```bp
-  compiler.variants(decl)[0].fields[0].name   // "amount"
-  ```
-  (b) Como hoje: nomes.
-  ```bp
-  compiler.variants(decl)[0]   // "Paid" — a name, sections among them
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-c · `clock.formatIso8601`: qual texto é a resposta única? (decisão 497; 144 B-10 G1)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sempre milissegundos, `.sssZ`** — `2026-10-12T20:31:02.000Z` em todo target; uma largura fixa ordena como texto e é lida de volta por uma regra só.
-- **Medido.** o commonJS responde sempre `.sssZ` (o `toISOString` do node); o erlang nunca escreve milissegundos.
-- **Opções.**
-  (a) Sempre `.sssZ`.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02.000Z
-  ```
-  (b) Milissegundos só quando não são zero.
-  ```bp
-  clock.formatIso8601(t)   // 2026-10-12T20:31:02Z, .123Z only when nonzero
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-e · Como um alias de tipo de `Component<Styled>` implementa um behavior? (144 B-10 G2)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(b): não implementa — um alias é o seu alvo**: `Styleable` é implementado por `Styled`, e `Component<Styled>` (sem `@` desde a 606 (1)) chega a ele por `R`; um alias não declara nada (um segundo nome, não um tipo). O marcador do styled é reescrito sobre a implementação de `Styled`. Relido sob a 629: um `val` nomeia um tipo onde quer que um tipo seja nomeado (629 (2)), mas só um tipo nominal — declarado, ou construído por `compiler.buildType(name, fields, implements)` — carrega uma cláusula `implement`; `buildTypeInline(fields)` não recebe nenhuma (629 (1)). A 629 não diz se um `val` que nomeia o nominal `Component<Styled>` poderia carregar uma, então (a) continua uma pergunta e não uma grafia.
-- **Medido.** `pub val StyledView = Component<Styled>` não aceita `implement`; não existe grafia.
-- **Opções.**
-  (a) Um alias com `implement`.
-  ```bp
-  pub val StyledView = Component<Styled> implement Styleable;
-  ```
-  (b) Só o tipo alvo implementa.
-  ```bp
-  pub type Styled(…) implement Styleable { … }   // StyledView reaches it
-  ```
-- **Recomendação.** (b).
-- **Trava.** A linha do 144 B-10.
-
-#### B-10-f · Como um decorator lê se o `R` de um retorno `Component<R>` implementa `Renderable`? (decisões 268, 280; 144 B-10 G3)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): pelo `compiler.typeInfo` do retorno declarado** — `compiler.typeInfo(compiler.returnType(decl)).typeArg(0).implements(Renderable)`; o handle continua sendo o handle de uma declaração lido por `compiler.*` (576 (3)) e perguntas de tipo passam por `compiler.typeInfo`, a única reflexão de um tipo (606 (3)). Viável: `compiler.returnType(d)` como valor de tipo (hoje um nome) e `compiler.Info<T>.implements(B)`. Muda: dois membros; o marcador do jhonstart em `client.bp` sai.
-- **Medido.** Nenhuma reflexão responde: `compiler.returnType(d)` (antes da 576: `decl.returnType`) é o nome do tipo como texto, e nenhum membro pergunta se um tipo implementa um behavior. Desde a 626 (2) o handle de um decorator pode ser tipado pelo que o decorator exige (`syntax decl: fn() -> string`), checado na anotação — um terceiro caminho, (c).
-- **Opções.**
-  (a) `compiler.typeInfo` do tipo de retorno.
-  ```bp
-  if (!compiler.typeInfo(compiler.returnType(decl)).typeArg(0).implements(Renderable)) compiler.fail("…", at: decl);
-  ```
-  (b) Uma leitura de `Compiler` sobre o handle.
-  ```bp
-  if (!compiler.returnImplements(decl, Renderable)) compiler.fail("…", at: decl);
-  ```
-  (c) O tipo do handle o diz (626 (2)); se `Component<Element>` cabe em `Component<Renderable>` por `Element implement Renderable` é uma regra de genéricos que a 626 não enuncia.
-  ```bp
-  pub fn page(syntax decl: fn() -> Component<Renderable>) -> void { … }   // a return whose R is no Renderable refused at the annotation
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `Renderable` do 144 B-10 G3.
-
-#### B-10-g · Um template declarado `-> View` cujo código construído é um `Element`: a expansão é um `View`? (decisões 275, 276; 144 B-10 G3)
-- **Proposto (opus, 2026-10-12; aguardando o mantenedor):** **(a): sim — a expansão é o que o template declara** — o `html` declarado `-> View` (576 (4), 578 (2): um template devolve um tipo comum, a sua árvore de referência anexada por `compiler.custom(ast)`) responde um `View` (`Component<Element>`), e um `Element` construído é checado contra ele como corpo de um componente; o `renderNode(html …)` do jhonstart e os seus componentes `-> Element` passam para `View`. Viável: a checagem do código construído contra `View` aceita um `Element` como resposta de um componente. Muda: os componentes do jhonstart (um commit de consumidor), uma cell.
-- **Medido.** Com `-> View` (antes da 576: `-> @ExprCustom<View>`) toda expansão do `html` falha `expected Component, got Element`. A 578 (2) faz do `T` declarado o tipo da chamada, então a opção anterior — a chamada manter `Element` enquanto a declaração diz `View` — não pode ser escrita e saiu; o que resta é se o código `Element` construído é aceito contra `View` como resposta de um componente, ou recusado, o template tendo de construir o componente ele mesmo.
-- **Opções.**
-  (a) Um `View`: o `Element` construído aceito como resposta de um componente.
-  ```bp
-  fn Card() -> View { html @`<div/>` }   // the expansion is a View
-  ```
-  (b) Recusado como hoje; o `html` constrói ele mesmo o componente em volta do seu `Element`.
-  ```bp
-  fn Card() -> View { html @`<div/>` }   // expected Component, got Element — unless html answers the component
-  ```
-- **Recomendação.** (a).
-- **Trava.** A linha do `View` do 144 B-10 G3.
-
-#### B-27-e · No erlang, `not-found.bpp` e `not_found.bp` viram o mesmo nome de módulo (decisões 561, 109; 144 B-27)
-- **Proposta (opus, 2026-10-15; aguardando o mantenedor):** (a): o átomo do módulo erlang é escrito entre aspas a partir do nome do arquivo como escrito, então os dois nunca se encontram.
-- **Contexto.** A decisão 561 deixa importar um arquivo cujo nome não é identificador (`not-found.bpp`) e pede que cada backend mapeie um nome sem colisão. No erlang o nome de um módulo passa pela limpeza da decisão 109, que troca os caracteres que um átomo sem aspas não aceita.
-- **Medido.** A limpeza da decisão 109 transforma `not-found.bpp` em `…@not_found`, o mesmo módulo que um `not_found.bp` irmão; os dois sobrescreveriam o `.beam` um do outro. Nenhuma célula tem o par hoje.
-- **Opções.**
-  (a) ★ O átomo do módulo vai entre aspas e mantém o nome do arquivo (`'pages@not-found'`).
-  ```erlang
-  'app@pages@not-found':render(...)   % not_found.bp stays app@pages@not_found
-  ```
-  (b) A limpeza da decisão 109 fica, e o par é recusado no segundo arquivo ("`not-found.bpp` and `not_found.bp` are one module on erlang").
-  ```text
-  error: src/pages/not_found.bp and src/pages/not-found.bpp are one module on erlang (app@pages@not_found) — rename one
-  ```
-  (c) A limpeza da decisão 109 fica e nada é checado.
-- **Recomendação.** (a): a 561 pede nenhuma colisão, e um átomo entre aspas é a forma do próprio erlang para tal nome; (b) se um átomo de módulo entre aspas quebrar alguma ferramenta.
-- **Bloqueia.** Nada hoje; um pacote com os dois arquivos.
-
-#### B-27-f · `Name<T>.f()` com um nome de tipo entre crases (decisão 561; 144 B-27)
-- **Proposta (opus, 2026-10-15; aguardando o mantenedor):** (a): o parser distingue um tipo pelo que o nome é, não por uma primeira letra maiúscula.
-- **Contexto.** Argumentos de tipo explícitos antes de um `.` (`Name<T>.f()`) só são lidos como tipo quando o nome começa com letra maiúscula. Um nome de tipo entre crases (`` `my point` ``) não tem essa letra, então não pode ser escrito ali; uma chamada `Name<T>(…)` já funciona.
-- **Medido.** `` `my box`<i32>.make() `` não é lido como um tipo com argumentos de tipo; `` `my box`<i32>(…) `` é.
-- **Opções.**
-  (a) ★ Estendido: um nome entre crases seguido de `<…>.` é lido como tipo, como um maiúsculo.
-  ```bp
-  val b = `my box`<i32>.make();
-  ```
-  (b) Deixado como está: um tipo entre crases recebe seus argumentos de tipo só numa chamada ou numa posição de tipo.
-  ```bp
-  val b: `my box`<i32> = `my box`.make();
-  ```
-- **Recomendação.** (a): a 561 diz toda posição que recebe um nome.
-- **Bloqueia.** Nada.
-
-#### B-27-g2 · `io.terminal.keys()` no erlang e no beam (decisões 506 (c), 553; 144 B-27 passo 6)
-- **Proposta (sonnet, 2026-10-15; aguardando o mantenedor):** (b): acrescentar `readKey() -> Task<?Key>` (sem `@` desde a 606 (1)) em todo target.
-- **Contexto.** `keys()` responde um stream de teclas para prompts interativos. No erlang e no beam um `Stream` é gerado de forma ansiosa.
-- **Medido.** No erlang / beam `keys()` junta toda a entrada antes de entregar a primeira tecla, então nunca responde num terminal vivo (trava sob um pty); o commonJS entrega preguiçosamente. `stdin.readChunk()` + `terminal.parseKey` funciona nos três targets.
-- **Opções.**
-  (a) `keys()` como está; um laço interativo no erlang lê `readChunk()` e `parseKey`.
-  ```bp
-  val chunk = await stdin.readChunk(); val key = terminal.parseKey(chunk);
-  ```
-  (b) ★ `readKey() -> Task<?Key>` em todo target, `keys()` mantido.
-  ```bp
-  val key = await terminal.readKey();   // one key, null at end of input
-  ```
-  (c) Esperar uma geração preguiçosa de `{ async iter -> … }` no erlang (553; a grafia de marcador da 584), `keys()` a única API.
-  ```bp
-  for (await terminal.keys()) { k -> … }   // lazy once 553 lands on erlang
-  ```
-- **Recomendação.** (b), ou (c) quando a 553 gerar preguiçosamente no erlang.
-- **Bloqueia.** Prompts guiados por tecla (`cli.prompt`) no erlang.
-
-#### B-27-g4 · Modo raw e tamanho do terminal no erlang fora do Linux (decisão 506 (c); 144 B-27 passo 6)
-- **Proposta (sonnet, 2026-10-15; aguardando o mantenedor):** (a): só Linux, a chamada respondendo `Unsupported` nos outros.
-- **Contexto.** `terminal.setRaw(on)` e `terminal.size()` precisam do dispositivo do terminal. O Node os tem embutidos; a VM Erlang não.
-- **Medido.** No erlang / beam a implementação lê o `/proc/<pid>/fd/{0,1}` do Linux e roda `stty` (para limpar `isig` e ler o tamanho). macOS e Windows não têm `/proc`.
-- **Opções.**
-  (a) ★ Só Linux: nos outros `setRaw` responde `Error(Unsupported)` e `size()` `null`.
-  ```bp
-  case terminal.setRaw(true) { Ok(_) -> …; Error(e) -> … }   // macOS on erlang: Error(Unsupported)
-  ```
-  (b) Um caminho por SO (`/dev/tty` e `stty -f` no macOS; Windows recusado).
-  ```bp
-  terminal.setRaw(true);   // Linux and macOS on erlang
-  ```
-- **Recomendação.** (a): nenhum caminho sem teste é entregue.
-- **Bloqueia.** Nada no Linux.
 
 #### 335-a · `async.race` no erlang: o mais rápido, ou o primeiro escrito? (decisão 335; m2-0027)
 - **Proposto (sonnet, 2026-10-19; nada construído):** (a).
