@@ -2862,11 +2862,13 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
       the code `non-exhaustive` prefixed on every exhaustiveness refusal, five answers re-recorded, cell `non_exhaustive_code` red on the parent (858); `is Async<unknown>` on commonJS only (823 settles the rest); the key unqualified (831, below)
-- [ ] decision 831 (810-c): a behavior's identity qualified by its module — the lowering carries `<package>@<path>@@<B>` with the declared name
+- [x] decision 831 (810-c): a behavior's identity qualified by its module — the lowering carries `<package>@<path>@@<B>` with the declared name
       (`infer.zig`'s `behaviorDeclaredName` gains the owner path; `crossModule` indexes every `pub behavior`, not only one with a default fn);
       erlang / beam `'__bp_behaviors'/0` and commonJS `__bp_b_<atom>` emit the atom, wasm keys `behavior_impls` by it; marks follow `extends`
       (the checker's `behaviorReaches` chain) and an import alias; cell `behavior_identity_by_module` (two same-named behaviors of two modules,
-      an aliased import, a subtype's mark), four targets, red on the parent
+      an aliased import, a subtype's mark), four targets, red on the parent — landed (`TypeDecl.behaviorMarks` from `infer.behaviorMarksOf`, each backend
+      writing `crossModule.behaviorAtom`; an aliased behavior import stored under its alias, so `is` through it answers; `crossModule`'s
+      index of every `pub behavior` not needed by this design)
 - [ ] decisions 815–821, the component model as it stands (one box; each decision's cell written against this text):
       (1) `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>` (815, 819); a one-parameter lambda, `{ _ -> v }` or
       `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)) — admitted by 888's trailing-parameter rule, cell `lambda_omits_trailing_parameters` (written `{ _ -> v }` as 888 (1) spells it); `_` a lambda parameter bound to nothing, any number of times (895); a function answering a member of a union fits where one answering
