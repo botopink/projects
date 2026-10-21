@@ -86,7 +86,7 @@ milestone (three when the console is closed).
 | **151** json · **152** yaml · **158** markdown | `repository/{json,yaml,markdown}/**`; the consumers' dependency and import lines (rule 10) | the consumers' code beyond the import; `rakun-ssr`'s content collections (150 s64) |
 | **155** http · **156** log · **157** routing · **159** actions · **160** snap | `repository/{http,log,routing,actions,snap}/**`; their consumer lines (rule 10) | anything else in the consumers |
 | **161** vscode-extension | `repository/vscode-extension/**` | the compiler (144) |
-| **136** cardume | `repository/cardume/**` when born; `rakun-cardume`, `jhonstart-cardume` (its bridges) | the frameworks' cores |
+| **136** cardume | `repository/cardume/**` when born; `rakun-cardume` (its bridge, both stores, 893) | the frameworks' cores |
 | **165** rakun-workspace | during its steps: rakun, erika, emilia, styled, jhonstart, onze, dbcontext whole (s1–s3, s5–s7), botopink-lang's s4 (144 B-86), the meta (s8); after it, `repository/rakun/**` is 150's with lanes by layer | the other libraries |
 | **163** meta-ci | the meta `.github/workflows/**`, meta `scripts/**`, `AGENTS.md` § Layout and § CI, the submodule pointers' sweep, the specs' drift rule (141-a) | every repository under `repository/` |
 | **105** i18n · **107** release | `repository/{i18n,release}/**` when born; their consumer lines | — |

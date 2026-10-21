@@ -26,7 +26,7 @@ reading the query stays prerenderable; `onze-test` has one group file per front.
 
 - `onze-server/src/server.bp`: `requestData(req)` — the one rakun `Request` → jhonstart
   `RequestData` (today `query: []`, `headers: []`); `responseFor` — the one `ChunkWriter` →
-  `Response`; `Onze.run` — the one boot. Every step is a line in one of the three.
+  `Response`; `RakunSsr.run` — the one boot. Every step is a line in one of the three.
 - Exist, uncalled: rakun's `queryDict` (`rakun-app/src/ssr.bp`), `headerNames`
   (`rakun/src/request_context.bp`), `serveActions` / `actionsConfigProblem` (`rakun-app/src/actions.bp`).
 - rakun-web's `serveFrom` 404s on a miss inside a matched root (no fall-through): `/**` →
@@ -42,6 +42,6 @@ reading the query stays prerenderable; `onze-test` has one group file per front.
 
 - Step 2 changes every page's `RequestData` (blog tests re-assert); step 3 every error page's
   digest. Nothing outside onze moves.
-- `/_onze/image` (51) and the OG route (rakun 66) reach `Onze.run` as one registration line each,
+- `/_onze/image` (51) and the OG route (rakun 66) reach `RakunSsr.run` as one registration line each,
   handed in; this front commits them.
 

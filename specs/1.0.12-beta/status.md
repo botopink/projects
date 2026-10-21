@@ -376,7 +376,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 ### 136 cardume (medium)
 
-- [ ] 136 (`09-cardume`) — cardume: the core, `rakun-cardume`, `jhonstart-cardume` · `botopink/cardume` to be created and pushed · 26 · 120 · 125 · atm-c · s8: atm-d
+- [ ] 136 (`09-cardume`) — cardume: the core, `rakun-cardume` (both stores, 893) · `botopink/cardume` to be created and pushed · 26 · 120 · 125 · atm-c · s8: atm-d
 
 ### 105 i18n (medium)
 

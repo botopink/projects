@@ -2,7 +2,7 @@
 //
 // Demonstrates: steps 1–3 — a cart shared by two islands of one page. The atom
 // and the selector are declared once, in cardume; each island reads them through
-// jhonstart-cardume's hooks; adding an item in one island updates the badge in
+// rakun-cardume's hooks; adding an item in one island updates the badge in
 // the other, because both read the page's one store.
 //
 //   Recoil                                   here

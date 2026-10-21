@@ -3,7 +3,7 @@
 **Priority:** medium — no page needs it to render; every app with two islands that must agree
 (a cart badge and a cart drawer) needs it to be correct, and rakun's request locals are its atoms (295) ·
 **State:** not started · `repository/cardume` is a submodule `03-bundled-libs/138` adds (326): `botopink/cardume` exists, empty; the scaffold (0.0.1: the model's types, no store) is not in any checkout yet — 138 adds the submodule once it is pushed
-**Repository:** `cardume` — worktree `--repo cardume`; the steps that add `rakun-cardume` (7) or `jhonstart-cardume` (1, 5, 6) also change rakun or jhonstart — a full worktree, one commit per repository (decision 188); step 9 the meta repository (full)
+**Repository:** `cardume` — worktree `--repo cardume`; the steps that add to `rakun-cardume` (1, 5, 6, 7; one package for both stores, decision 893) also change rakun — a full worktree, one commit per repository (decision 188); step 9 the meta repository (full)
 **Model:** sonnet — the README fixes the design (Recoil's model, decisions 295, 296, 400; `AGENTS.md` § Which model a thread runs on); a step that meets `atm-c` or `atm-d` waits on the answer; the Conformance step opus
 **Depends on:** `26-jhonstart-router` (the core and its client runtime — `state` / `effect` rebinding
 in `client_runtime.mjs`) · `08-bpp/120` (the island payload: one page store shared by every island) ·
@@ -90,9 +90,9 @@ several values of one type (`cartItems`, `wishlist`).
 Hook names are **nouns** (`atomState`, `atomValue`, `atomSetter` — jhonstart's rule, `hooks.bp`'s
 header): `use` is the activation, the name never repeats it (no `useAtomValue`). 296 settled the
 request locals (`use setLocal` is `use atomSetter`), and the cookie hooks follow the same family (400:
-`cookieValue`, `cookieState`, `cookieSetter`, `cookieReset`). Both bridges spell the same hooks, each reading the store from
-its framework's root context (296 as amended by 354): `jhonstart-cardume`'s from `ElementContext`,
-`rakun-cardume`'s from `RequestContext`.
+`cookieValue`, `cookieState`, `cookieSetter`, `cookieReset`). `rakun-cardume` holds both stores (893) and spells the same hooks over each, each store read from
+its side's root context (296 as amended by 354): the page's from `ElementContext`,
+the request's from `RequestContext`.
 
 ### The stores
 
@@ -101,7 +101,7 @@ its framework's root context (296 as amended by 354): `jhonstart-cardume`'s from
   write with `use atomSetter(a)`; a page reads the request's value through jhonstart's own hook
   (`use local(a)`, `05-jhonstart/26` step 12), marked by jhonstart's `#[serverOnly]` (186, 277) — the
   store it reads is `rakun-cardume`'s (295, 296).
-- **In the browser, one store per page** (`jhonstart-cardume`). Every island of the page subscribes to it, so two islands
+- **In the browser, one store per page** (`rakun-cardume`, 893). Every island of the page subscribes to it, so two islands
   reading `cartItems` agree; a component re-renders when an atom or selector it **read** changes
   (`atomValue`, `atomState`, `loadable` subscribe; `atomSetter`, `atomReset`, `transaction`,
   `atomCallback` do not). Client navigation (`jhonstart-link`) keeps the store; a document load
@@ -207,7 +207,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 ### Step 6 — The server seed and the island hand-off
 
-**Repository:** `cardume` and jhonstart (`jhonstart-cardume`, the island hand-off; a full worktree) · **Model:** sonnet
+**Repository:** `cardume` and rakun (`rakun-cardume`, the island hand-off; a full worktree) · **Model:** sonnet
 
 - [ ] `<AtomRoot initialize={seed}>` (`fn(set: Setter)`) seeds the request's values; the atoms each
       island read travel in its payload and start the browser store; an atom no island read sends
@@ -281,7 +281,7 @@ After every other step of this front has landed on `feat`; it holds back no fron
 - `atm-d` — which atom effects ship (none; `persistLocal`; URL search-param sync)
 
 **Gate:** standard (fronts.md § Gate), plus:
-- [ ] `botopink test` green on both targets in `cardume`'s `modules/cardume`, `jhonstart-cardume`, `rakun-cardume` (erlang); on commonJS in `rakun-bpp-dom-test`
+- [ ] `botopink test` green on both targets in `cardume`'s `modules/cardume`, `rakun-cardume` (both targets for the page store, erlang for the request store); on commonJS in `rakun-bpp-dom-test`
 - [ ] `zig build test-libs`: cardume, rakun green; the blog untouched (it uses no atom)
 - [ ] `repository/cardume`'s own CI (`.github/workflows/test.yml`) green on its `feat`
 

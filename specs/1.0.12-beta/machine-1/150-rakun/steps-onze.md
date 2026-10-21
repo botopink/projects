@@ -110,7 +110,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
       `queryDict` answers → 400 via `responseFor`, asserted) and `headers` from `headerNames` /
       `req.header(name)`; `server_test.bp`: a page reading the query's `q` (`use searchParams()`)
       and the `x-test` header (`use request()`, 291) answers both over the socket
-- [ ] `Onze.run` installs `serveActions` with the wire names it set; `server_test.bp`: `POST` with
+- [ ] `RakunSsr.run` installs `serveActions` with the wire names it set; `server_test.bp`: `POST` with
       `X-Bp-Action` reaches the action, answers the envelope; a boot with the action keys removed
       fails naming `rakun.actions.field` (refusal rakun's, test here)
 - [ ] two-file boot (49-e) stated in `docs.md` and true: "`integration.bp` imports jhonstart
@@ -127,7 +127,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 After `05-jhonstart/26` step 4 and `04-rakun/17`: the boundary logs/digests via bundled `log` (on
 `feat`); onze only installs one of `log`'s sinks (349; no `RenderHooks.onError`, 195).
 
-- [ ] `Onze.run` installs `log`'s sink and calls `log.captureRuntimeReports()` (349; via `onze-server`; core `integration.bp`
+- [ ] `RakunSsr.run` installs `log`'s sink and calls `log.captureRuntimeReports()` (349; via `onze-server`; core `integration.bp`
       imports no rakun type); `server_test.bp`: a throwing page answers 500 with a 16-hex digest
       in the body, same digest in the captured log line
 - [ ] `docs.md` § Errors states the one scheme (`log`'s `errorDigest`, decision 194) and where
@@ -136,7 +136,7 @@ After `05-jhonstart/26` step 4 and `04-rakun/17`: the boundary logs/digests via 
 #### Step 4 — the public root (decision 201) (was `49-onze-stand-up` s4)
 
 After `04-rakun/65` step 1 (miss falls through, only `GET` / `HEAD` served, refusal final):
-`servedRoots` answers both roots; `Onze.run` registers `public/` at `/**` before the routes,
+`servedRoots` answers both roots; `RakunSsr.run` registers `public/` at `/**` before the routes,
 beside the fingerprinted root — no per-entry root, no `/public` prefix.
 
 - [ ] `server_test.bp`: `/robots.txt` from `public/` served with rakun-web's headers; a page URL
@@ -262,7 +262,7 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
 - [ ] `image_test.bp`: two concurrent identical requests (two spawned `imageResponse` calls over
       a sleeping stand-in encoder) → one encoder invocation, counted from the stand-in's log
 - [ ] `/_onze/image` registration line (front 25's `getRoute` over the handler, erlang) written
-      here, handed to 49 for `Onze.run`; `server_test.bp` (49's) serves a resized fixture with
+      here, handed to 49 for `RakunSsr.run`; `server_test.bp` (49's) serves a resized fixture with
       `Cache-Control: public, max-age=31536000, immutable`
 - [ ] remote sources: 501 stays, `docs.md` says so (no fetch without a decision)
 

@@ -32,7 +32,7 @@ std's number parsing.
   pass the allowlist, answer 501.
 - **Single flight**: `rkCacheFlight(key, work)` around the encoder call in `image_handler.bp` and
   the render in `onze-og/src/response.bp`; key = the content hash the cache already uses. Route =
-  one registration line in `Onze.run`, handed to 49.
+  one registration line in `RakunSsr.run`, handed to 49.
 - **OG defaults** = rakun 66's route-discovery record: `response.bp` reads size and type from the
   route's `#[ogImage(…)]` meta (282, step 8) or `defaultSize()` / `"image/png"` — never from
   exports named `size` / `contentType` (today's form).
