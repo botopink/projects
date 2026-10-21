@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**20 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**19 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -25,7 +25,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **813**.
+número livre, que é **814**.
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -466,16 +466,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) ★ Mantida como escrita, então nenhuma resposta registrada muda.
 - **Recomendação.** (a): a mensagem nomeia um tipo que a linguagem tem.
 - **Bloqueia.** Nada.
-
-#### 809-d · Como um `T` pronto entra onde se espera um `Component<T>`, e o que guarda a árvore resolvida? (decisões 809 (7), 574, 414; 165 rakun-bpp)
-- **Proposta (revisão fable, 2026-10-20; nada construído):** (a).
-- **Contexto.** Com `NodeChild = Component<Element>` só, um valor que já é um `Element` — o `view: fn(info) -> Element` do `ErrorBoundary` da 414, um método auxiliar `fn item(self, i) -> Element`, o `Walked.tree: Element` do rakun-bpp — não tem como entrar num filho; e um `Element` cujo `children: NodeChildren` guarda Compositions não pode ser a árvore que o renderizador resolveu.
-- **Opções.**
-  (a) ★ A `component { -> e }` da 574 embrulha um valor pronto, o seu tipo vindo do parâmetro esperado (147); o rakun-bpp declara um segundo registro para a árvore resolvida.
-  (b) Um lift da std `Component.of(v: T) -> Component<T>`.
-  (c) `Element implement Composable<Element>` — rejeitado pelo maintainer na conversa que tomou a 809.
-- **Recomendação.** (a): nenhuma superfície nova na std; a árvore resolvida é da 165.
-- **Bloqueia.** O commit do rakun-bpp da 165 (809 (7)).
 
 #### 804-c · A célula `children/cells/children_for_walk` quando `Children` some (decisão 804 (4); 144 B-162)
 - **Proposto (plano fable, 2026-10-20; nada construído):** (a).

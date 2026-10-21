@@ -2818,8 +2818,9 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `return c` with the body's cell, `use provide` in the order written, `context-provide-after-render` removed; cell
       `use_child_cell_provide_in_order`
 - [ ] 809 (7) (rakun, 165's commit): rakun-bpp's builders `component fn`s answering `Component<Element>`, `NodeChild = Component<Element>`,
-      the renderer resolving every child; replaces the 804 (4) box's `NodeChild = Element | Component<Element>`; a ready `Element`
-      and the resolved tree's record wait on 809-d
+      the renderer resolving every child; replaces the 804 (4) box's `NodeChild = Element | Component<Element>`; 813: a ready `Element`
+      enters through `component { -> e }`, the resolved tree a record of its own (`Rendered(tag, attrs, children: Rendered[])` in the
+      decision's example), what `rakun-bpp-dom-test` inspects
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
 - [x] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-116 P4 · fixed: a component method's marker goes with its lowered return (`context_lower.zig`); the answers unchanged

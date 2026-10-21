@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**20 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**19 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -25,7 +25,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **813**.
+number, which is **814**.
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -466,16 +466,6 @@ group), answered before every other part of this page; in the order of the steps
   (b) ★ Kept as written, so no recorded answer changes.
 - **Recommendation.** (a): the message names a type the language has.
 - **Blocks.** Nothing.
-
-#### 809-d · How does a ready `T` enter where a `Component<T>` is expected, and what holds the resolved tree? (decisions 809 (7), 574, 414; 165 rakun-bpp)
-- **Proposed (fable review, 2026-10-20; nothing built):** (a).
-- **Context.** With `NodeChild = Component<Element>` alone, a value already an `Element` — 414's `ErrorBoundary` `view: fn(info) -> Element`, a helper method `fn item(self, i) -> Element`, rakun-bpp's `Walked.tree: Element` — has no way into a child; and an `Element` whose `children: NodeChildren` holds Compositions cannot be the tree the renderer has resolved.
-- **Options.**
-  (a) ★ 574's `component { -> e }` wraps a ready value, its type from the expected parameter (147); rakun-bpp declares a second record for the resolved tree.
-  (b) A std lift `Component.of(v: T) -> Component<T>`.
-  (c) `Element implement Composable<Element>` — rejected by the maintainer in the conversation that took 809.
-- **Recommendation.** (a): no new std surface; the resolved tree is 165's.
-- **Blocks.** 165's rakun-bpp commit (809 (7)).
 
 #### 804-c · The cell `children/cells/children_for_walk` once `Children` is gone (decision 804 (4); 144 B-162)
 - **Proposed (fable plan, 2026-10-20; nothing built):** (a).
