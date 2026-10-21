@@ -2945,6 +2945,8 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] `?.` on wasm: `x?.name` where the receiver's type comes from a field of an optional record is refused with
       `the wasm backend cannot place ?.name: the receiver's type is not known here` (actions'
       `optional_typescript_operators-330` draft, 330); a cell of the shape, four targets, red on wasm on the parent
+      — not reproduced in any written shape (the actions draft never compiled); a nearby defect fixed instead: `xs?.[i]` over an
+      optional array of records named no record (`optLinkElemRecord`), cell `optional_index_record_field` (330); left: compile the draft
       — not reproduced in botopink-lang alone (seven shapes); measured again on actions' draft once it compiles
 - [x] comptime: a call to a dependency's function written module-qualified inside a `comptime` block
       (`markdown.toHtml(markdown.parse(source))`, `status.reasonPhrase(…)`, `cookie.serialize(…)`) is refused with `the
@@ -2954,12 +2956,17 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [x] erlang: a method call through `?.` on a `Dict` field is not lowered — `post?.params.at("slug")` crashes at run time
       with `{bp_unsupported_method,<<"at">>,1,{std@collections@@Dict,…}}` (routing's `optional_typescript_operators-330`
       draft, 330); a cell of the shape, four targets, red on erlang on the parent
-- [ ] wasm: `ps?.at(0)` then `p?.title`, with `ps: ?Post[]`, prints garbage (`l`) where the other three targets print `t`;
+- [x] wasm: `ps?.at(0)` then `p?.title`, with `ps: ?Post[]`, prints garbage (`l`) where the other three targets print `t`;
       found hunting the boxes above; a cell of the shape, red on wasm on the parent
+      — built as: the `?.` array-call lowering keeps a record element as its pointer; cell `optional_array_at_record` (330)
 - [ ] beam: `val f = { h -> h?.entry?.name ?? "none" }; f(o.holder)` over a lambda parameter typed `?Holder` answers `none`
       where commonJS, erlang and wasm answer `a`; found hunting the boxes above; a cell of the shape, red on beam on the parent
-- [ ] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
+- [x] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
+      — built as: `noteTupleElemShape` hands a container element's shape to the bound name; cell `tuple_destructure_array_element` (738)
+- [ ] wasm: `f?.fields?.[0]`, `f` an optional record whose `fields` is an optional array, prints garbage; a cell of the shape, red on
+      wasm on the parent
+- [ ] wasm: `t._1` read off a tuple local holding an array prints the array's address; a cell of the shape, red on wasm on the parent
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
       it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
       machine 1's under 769
