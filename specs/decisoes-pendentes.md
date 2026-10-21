@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**31 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**32 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -132,6 +132,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 4 | **798-f** | A grafia do comentário de origem para um template, um valor dobrado e um bloco `comptime` de topo | nada (como construído) | (a) como construído |
 | 5 | **547-b** | Se o `x = f(x)` de um var `#[beamMemory(.PersistentTerm)]` é atômico | nada (como construído: não atômico) | (b) não atômico, a referência diz isso |
 | 6 | **789-b** | Onde ficam as linhas `build` de uma célula quando o pacote é recusado: depois dos registros da recusa, ou antes | B-161 peça 3b / 4 | (b) antes da recusa, como a cláusula diz |
+| 7 | **547-c** | O código que recusa um `var` de módulo que guarda uma task | nada (como construído) | (a) `module-var-holds-task` |
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
@@ -202,6 +203,15 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 - **Recomendação.** (b): o registro segue o que o build imprimiu, na sua ordem; a lista nomeia os tipos de registro, a cláusula a ordem
   deles quando um build imprime e depois recusa.
 - **Bloqueia.** B-161 peça 3b (`observe`) e peça 4 (`cell_records_build_phase`); `records.bp` muda em poucas linhas.
+
+#### 547-c · Qual código recusa um `var` de módulo que guarda uma task? (decisão 547 (iii); 144 B-143 § 877)
+
+- **Medido.** A 547 (iii) recusa, com local, "um `var` de módulo cujo tipo guarda uma `@Task`" e não nomeia código; não havia nenhum. Como construído (71b7b426c):
+  `module-var-holds-task`, no tipo escrito senão no nome, "guarda" lido através de argumentos de tipo, tuplas e campos de records e variantes,
+  nunca através de um tipo função (ele só guarda uma closure); um `val` de módulo que guarda uma task é aceito.
+- **Opções.** (a) `module-var-holds-task`, como construído; (b) outro nome.
+- **Recomendação.** (a): diz o que é recusado nas palavras da 547 (iii).
+- **Bloqueia.** nada.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 

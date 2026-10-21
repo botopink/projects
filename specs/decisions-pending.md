@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**31 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**32 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -132,6 +132,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 4 | **798-f** | The origin comment's spelling for a template, a folded value and a top-level `comptime` block | nothing (as built) | (a) as built |
 | 5 | **547-b** | Whether a `#[beamMemory(.PersistentTerm)]` var's `x = f(x)` is atomic | nothing (as built: not atomic) | (b) not atomic, the reference says so |
 | 6 | **789-b** | Where a cell's `build` lines sit when the package is refused: after the refusal records, or before | B-161 piece 3b / 4 | (b) before the refusal, as the clause says |
+| 7 | **547-c** | The code refusing a module `var` that holds a task | nothing (as built) | (a) `module-var-holds-task` |
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
@@ -202,6 +203,15 @@ problem, an example, the options, the recommendation and why — and its full en
 - **Recommendation.** (b): the record follows what the build printed, in its order; the list names the records' kinds, the clause their
   order when a build prints and then refuses.
 - **Blocks.** B-161 piece 3b (`observe`) and piece 4 (`cell_records_build_phase`); `records.bp` changes in a few lines.
+
+#### 547-c · Which code refuses a module `var` that holds a task? (decision 547 (iii); 144 B-143 § 877)
+
+- **Measured.** 547 (iii) refuses, located, "a module `var` whose type holds a `@Task`" and names no code; none existed. As built (71b7b426c):
+  `module-var-holds-task`, at the written type else the name, "holds" read through type arguments, tuples and the fields of records and variants,
+  never through a function type (it holds a closure only); a module `val` holding a task is accepted.
+- **Options.** (a) `module-var-holds-task`, as built; (b) another name.
+- **Recommendation.** (a): it says what is refused in the words of 547 (iii).
+- **Blocks.** nothing.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 

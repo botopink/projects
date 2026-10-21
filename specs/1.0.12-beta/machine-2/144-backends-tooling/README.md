@@ -2926,9 +2926,13 @@ Oracle: the two cells on commonJS, erlang, beam and wasm.
       or `PersistentTerm`"), `.Ets(keyed: true)` "unknown argument `keyed` — `.Ets` takes none"; an annotated `.Ets` the default lowering; the
       annotation accepted off the BEAM; the keyed cells (168, 340, 167, 547's) closed, 547's `refused/` (`process_dict_member`,
       `ets_keyed_argument`) kept; a `PersistentTerm` write a plain `ptPut` (atomicity: question 547-b)
-- [ ] 547 (iii): a module `var` whose type holds an `Async` refused, located, on every target (today `botopink check` passes it); a cell red
+- [x] 547 (iii): a module `var` whose type holds an `Async` refused, located, on every target (today `botopink check` passes it); a cell red
       on the parent
-- [ ] the retired spelling `#[@BeamMemory.Ets(keyed: true)]`'s message still suggests `(keyed: true)`: it names `#[beamMemory(.Ets)]`
+      — built as (71b7b426c): `module-var-holds-task` (the code chosen, question 547-c), at the written type else the name, read
+      through type arguments, tuples, records and variants, never a function type; `refused/` cases direct, in an array, in a record field;
+      a module `val` holding a task runs (`cells/module_val_holds_task`); `comptime/AGENTS.md` still to name the code
+- [x] the retired spelling `#[@BeamMemory.Ets(keyed: true)]`'s message still suggests `(keyed: true)`: it names `#[beamMemory(.Ets)]`
+      — built as: the hint writes `#[compiler.beamMemory(.Ets)]`
 
 ### B-144 — erlang / beam: a chained call on a namespace member dispatches on the wrong receiver
 
