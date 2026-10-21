@@ -1492,8 +1492,11 @@ After the group's other steps have landed on `feat`; it holds back no front that
       the base red on others' stages (format, B-60's `code_cache.sh`). Box 1 closes on the next completed green `test` run.
 - [ ] `enum_section_value_print` (decision 601); one cell over `Float.toString`'s values (B-78)
 - [x] 926: `hook-name-use-prefix` — a `Component<R>`-answering declaration named `use[A-Z]…` refused at its name; cell `hook_name_use_prefix_refused`, four targets, red on the parent — landed for a `fn` declaration
-- [ ] 926 / 929 on the other declaration forms: a method, a `default fn` and a typed lambda named or typed so (`use[A-Z]…` answering
-      `Component<R>`, `-> noreturn`) are refused as a `fn` is; cells beside 926's and 929's, red on the parent
+- [x] 926 / 929 on the other declaration forms: a method, a `default fn` and a typed lambda named or typed so (`use[A-Z]…` answering
+      `Component<R>`, `-> noreturn`) are refused as a `fn` is; cells beside 926's and 929's, red on the parent — landed (a method and a `default fn` for both; a typed
+      `fn(…) -> noreturn` for 929 — a lambda has no name for 926)
+- [ ] 926 / 929 on a method of an `implement` / `extend` block (checked by another path than `inferTypeMethods`); a cell each, red
+      on the parent
 - [x] 929: `noreturn-falls-through` — a `-> noreturn` body that can complete refused at its name (`stmtsAlwaysExit`); cell `noreturn_body_falls_through_refused`, four targets, red on the parent — landed for a `fn` declaration (the other forms: the box above)
 - [ ] 950: `for x in xs { … }` / `for await x in s { … }` / `for x in try xs` the one loop spelling (parser, checker, four backends); `for (xs) {` refused `for-parenthesised`; `botopink format` rewrites the old form; std and the cells migrated in the same commit, each library in its own; `docs.md` § Loops; cells `for_in_loop`, `for_parenthesised_refused`, red on the parent
 - [x] 951: a `?T`'s non-null arm is `_`, its value read `x!`; the binder arm `case-bare-name-arm`; `docs.md` § case's row and the cells written with the binder rewritten; cell `case_optional_bare_name_refused`, red on the parent — landed (markdown's two sites and rakun's two tests respelled)
