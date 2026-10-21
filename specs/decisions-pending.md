@@ -598,6 +598,36 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a): 635 already makes two same-named types of two packages two types.
 - **Blocks.** Nothing of 810's landing; a follow-up row.
 
+#### 811-a · What `opaque` may stand before, and the refusals no decision names (decisions 811 (1), 814; 144 B-162)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** 811 (1) writes `[pub] opaque type X(…) { … }` — a record type; it says nothing of an enum, a namespace type, a primitive type or an alias, of a record pattern over an opaque type's fields, or of the code a non-`pub` method called from another module gets.
+- **Measured.** Built as the most restrictive reading: `opaque` is a contextual word (a modifier before `type` only, a free name elsewhere, as `component` is — no library uses it as a name); before an enum, a namespace type, a primitive type or an alias it is refused `opaque-not-record` (a unit test, no cell); a record pattern over an opaque type's fields is refused `opaque-field`; a non-`pub` method of an opaque type called from another module is refused `opaque-method`.
+- **Options.**
+  (a) ★ As built.
+  (b) `opaque` also on an enum (its variants made only inside its methods).
+  (c) `opaque` a reserved keyword.
+- **Recommendation.** (a).
+- **Blocks.** Nothing of 811's landing.
+
+#### 811-b · A method without `pub` of a plain type, called from another module (decisions 814 (2), 23; 144 B-162)
+- **Proposed (opus, 2026-10-20; nothing built):** (a).
+- **Context.** 814 (2): "a method of `X` written without `pub` is callable from anywhere in `X`'s module, as a function or a `val` without `pub` is". Built for an opaque type (`opaque-method`); a non-`pub` method of a plain type is still callable from another module — the checker has no visibility refusal for methods.
+- **Options.**
+  (a) ★ Every type's non-`pub` method module-private, refused from another module (the same code renamed `method-not-pub`, or the ordinary visibility refusal), the library sites measured and respelled `pub fn` in their fronts.
+  (b) Only an opaque type's; a plain type's methods all public, `pub` on a method meaningless there.
+- **Recommendation.** (a): 814 (2) reads as the rule for every declaration.
+- **Blocks.** Nothing of 811's landing; a follow-up row.
+
+#### 811-c · `Module`'s maker and how the lowering reaches a module-private method (decisions 811 (1), (4), 814 (2), 805 (6); 144 B-162, B-158)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** 811 (4) makes `Module` by "a method without `pub` that `compiler.load` lowers to" and names neither the method nor how the lowering, from another module, reaches a module-private one (814 (2): "under a name no source can spell").
+- **Measured.** Built: the maker is `of` (after 811's `Composition.of`, which 815 removed); the lowering calls a std helper `__bp_load_module(name, path)` that calls `Module.of`, and the checker admits a call from the lowering by its source line (lines at or past 3,000,000, where load.zig's helper sits — a range shared with `adopt_defaults`); a program could still spell `__bp_load_module` (805 (6) reserves `__bp_` for declarations, not calls).
+- **Options.**
+  (a) ★ As built, the helper's name reserved for calls too (`reserved-name` at a call of a `__bp_` name).
+  (b) A lowering mark on the call node instead of a line range, the helper unreachable by name.
+- **Recommendation.** (b): a mark on the node cannot collide with another synthetic range.
+- **Blocks.** Nothing of 811's landing.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

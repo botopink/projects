@@ -598,6 +598,36 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a): a 635 já faz de dois tipos de mesmo nome de dois pacotes dois tipos.
 - **Bloqueia.** Nada do pouso da 810; uma linha depois.
 
+#### 811-a · Diante do que `opaque` pode ficar, e as recusas que nenhuma decisão nomeia (decisões 811 (1), 814; 144 B-162)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** A 811 (1) escreve `[pub] opaque type X(…) { … }` — um tipo registro; não diz nada de um enum, de um tipo namespace, de um tipo primitivo ou de um alias, de um padrão de registro sobre os campos de um tipo opaco, nem do código que recebe um método sem `pub` chamado de outro módulo.
+- **Medido.** Construído na leitura mais restritiva: `opaque` é uma palavra contextual (um modificador só antes de `type`, um nome livre no resto, como `component` é — nenhuma biblioteca o usa como nome); antes de um enum, de um tipo namespace, de um tipo primitivo ou de um alias é recusado `opaque-not-record` (um teste unitário, sem célula); um padrão de registro sobre os campos de um tipo opaco é recusado `opaque-field`; um método sem `pub` de um tipo opaco chamado de outro módulo é recusado `opaque-method`.
+- **Opções.**
+  (a) ★ Como construído.
+  (b) `opaque` também num enum (suas variantes feitas só dentro dos seus métodos).
+  (c) `opaque` uma palavra-chave reservada.
+- **Recomendação.** (a).
+- **Bloqueia.** Nada do pouso da 811.
+
+#### 811-b · Um método sem `pub` de um tipo comum, chamado de outro módulo (decisões 814 (2), 23; 144 B-162)
+- **Proposto (opus, 2026-10-20; nada construído):** (a).
+- **Contexto.** A 814 (2): "um método de `X` escrito sem `pub` pode ser chamado de qualquer lugar do módulo de `X`, como uma função ou um `val` sem `pub` pode". Construído para um tipo opaco (`opaque-method`); um método sem `pub` de um tipo comum ainda pode ser chamado de outro módulo — o checker não tem recusa de visibilidade para métodos.
+- **Opções.**
+  (a) ★ O método sem `pub` de todo tipo privado ao módulo, recusado de outro módulo (o mesmo código renomeado `method-not-pub`, ou a recusa de visibilidade comum), os sites das bibliotecas medidos e reescritos `pub fn` nas suas frentes.
+  (b) Só o de um tipo opaco; os métodos de um tipo comum todos públicos, `pub` num método sem sentido ali.
+- **Recomendação.** (a): a 814 (2) se lê como a regra para toda declaração.
+- **Bloqueia.** Nada do pouso da 811; uma linha depois.
+
+#### 811-c · O construtor de `Module` e como a descida alcança um método privado ao módulo (decisões 811 (1), (4), 814 (2), 805 (6); 144 B-162, B-158)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** A 811 (4) faz `Module` por "um método sem `pub` para o qual `compiler.load` desce" e não nomeia o método nem como a descida, de outro módulo, alcança um método privado ao módulo (814 (2): "sob um nome que nenhuma fonte consegue escrever").
+- **Medido.** Construído: o construtor é `of` (seguindo o `Composition.of` da 811, que a 815 tirou); a descida chama um helper da std `__bp_load_module(name, path)` que chama `Module.of`, e o checker admite uma chamada da descida pela linha de origem (linhas a partir de 3.000.000, onde fica o helper do load.zig — uma faixa compartilhada com `adopt_defaults`); um programa ainda poderia escrever `__bp_load_module` (a 805 (6) reserva `__bp_` para declarações, não para chamadas).
+- **Opções.**
+  (a) ★ Como construído, o nome do helper reservado também para chamadas (`reserved-name` numa chamada de um nome `__bp_`).
+  (b) Uma marca de descida no nó da chamada em vez de uma faixa de linhas, o helper inalcançável pelo nome.
+- **Recomendação.** (b): uma marca no nó não pode colidir com outra faixa sintética.
+- **Bloqueia.** Nada do pouso da 811.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
