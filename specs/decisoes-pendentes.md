@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**30 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**31 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -127,6 +127,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 3 | **878-a** | O que um segundo Ctrl-C faz enquanto um corpo comptime está sendo interrompido | nada (como construído) | (a) como construído: o primeiro interrompe, um segundo encerra o processo |
 | 4 | **798-f** | A grafia do comentário de origem para um template, um valor dobrado e um bloco `comptime` de topo | nada (como construído) | (a) como construído |
 | 5 | **547-b** | Se o `x = f(x)` de um var `#[beamMemory(.PersistentTerm)]` é atômico | nada (como construído: não atômico) | (b) não atômico, a referência diz isso |
+| 6 | **789-b** | Onde ficam as linhas `build` de uma célula quando o pacote é recusado: depois dos registros da recusa, ou antes | B-161 peça 3b / 4 | (b) antes da recusa, como a cláusula diz |
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
@@ -185,6 +186,18 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 - **Recomendação.** (b): a 547 escolheu `PersistentTerm` para escritas raras e deixou o custo delas para quem escreve; uma trava acrescenta um custo que a 547 não
   pediu. (c) é a mais restritiva se o mantenedor não quiser escrita perdida em lugar nenhum.
 - **Bloqueia.** nada.
+
+#### 789-b · As linhas `build` de um pacote recusado vêm depois dos registros da recusa ou antes? (decisão 789 (1); 144 B-161)
+
+- **Medido.** A 789 (1) dá a ordem dos registros "`refused` / `at` / `label` / `from` (a recusa do próprio pacote) → `build` → `out` / … " e, na
+  mesma frase, "as linhas de build impressas antes de uma recusa do pacote vêm antes dela". `conformance/check/records.bp` (0fcc06b28) segue a
+  lista: `build` depois dos registros da recusa, e um `refused` depois de uma linha `build` é malformado.
+- **Opções.** (a) a lista: os registros da recusa primeiro, depois toda linha `build`; (b) a cláusula: as linhas `build` que um build imprimiu
+  antes de recusar vêm primeiro, depois os registros da recusa — a ordem da lista valendo para um pacote cuja recusa precede qualquer impressão
+  (uma recusa na análise); (c) as duas, conforme onde a recusa surgiu.
+- **Recomendação.** (b): o registro segue o que o build imprimiu, na sua ordem; a lista nomeia os tipos de registro, a cláusula a ordem
+  deles quando um build imprime e depois recusa.
+- **Bloqueia.** B-161 peça 3b (`observe`) e peça 4 (`cell_records_build_phase`); `records.bp` muda em poucas linhas.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 

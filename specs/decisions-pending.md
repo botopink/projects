@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**30 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**31 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -127,6 +127,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 3 | **878-a** | What a second Ctrl-C does while a comptime body is being interrupted | nothing (as built) | (a) as built: the first interrupts, a second ends the process |
 | 4 | **798-f** | The origin comment's spelling for a template, a folded value and a top-level `comptime` block | nothing (as built) | (a) as built |
 | 5 | **547-b** | Whether a `#[beamMemory(.PersistentTerm)]` var's `x = f(x)` is atomic | nothing (as built: not atomic) | (b) not atomic, the reference says so |
+| 6 | **789-b** | Where a cell's `build` lines sit when the package is refused: after the refusal records, or before | B-161 piece 3b / 4 | (b) before the refusal, as the clause says |
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
@@ -185,6 +186,18 @@ problem, an example, the options, the recommendation and why — and its full en
 - **Recommendation.** (b): 547 chose `PersistentTerm` for rare writes and left their cost to the writer; a lock adds a cost 547 did not
   ask for. (c) is the strictest if the maintainer wants no lost write anywhere.
 - **Blocks.** nothing.
+
+#### 789-b · Do a refused package's `build` lines come after its refusal records or before them? (decision 789 (1); 144 B-161)
+
+- **Measured.** 789 (1) gives the record order "`refused` / `at` / `label` / `from` (the package's own refusal) → `build` → `out` / … " and, in the
+  same sentence, "the build lines printed before a package refusal come before it". `conformance/check/records.bp` (0fcc06b28) follows the
+  order list: `build` after the refusal records, and a `refused` after a `build` line is malformed.
+- **Options.** (a) the order list: the refusal records first, then every `build` line; (b) the clause: the `build` lines a build printed
+  before it refused come first, then the refusal records — the list's order holding for a package whose refusal precedes any print
+  (a refusal at analysis); (c) both, by where the refusal arose.
+- **Recommendation.** (b): the record follows what the build printed, in its order; the list names the records' kinds, the clause their
+  order when a build prints and then refuses.
+- **Blocks.** B-161 piece 3b (`observe`) and piece 4 (`cell_records_build_phase`); `records.bp` changes in a few lines.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
