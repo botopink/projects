@@ -230,6 +230,16 @@ None open: every entry was answered by 899–955 (2026-10-21), decided by the fa
 - **Recommendation.** (c): a private helper that only the marked lowering reaches is 830's mechanism already, and the names stay std's.
 - **Blocks.** Nothing.
 
+#### 907-a · The code a body returns when the function is applied as an annotation
+- **Measured.** 907 (2) says "the return answers nothing or `T` alike" for one function used both as `#[f]` and as `f(e)`. At `f(e)` a
+  returned `code @`…`` is the expansion. At `#[f]` no row says what becomes of it. Built: in the decorator's form a top-level
+  `return <code>` is dropped, and the function answers `void` there.
+- **Options.** (a) As built: at `#[f]` the returned code is dropped. (b) At `#[f]` the returned code is spliced after the annotated
+  declaration, as a module-level item. (c) A function whose body returns code is refused at `#[f]`, located, naming the call form.
+- **Recommendation.** (c): dropping written code silently is the accept-over-refuse reading, and (b) gives the annotation a second
+  meaning no decision states.
+- **Blocks.** Nothing; built as (a).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 None open: every entry was answered by 899–955 (2026-10-21), decided by the fable at the maintainer's delegation and listed in § To review.

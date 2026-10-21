@@ -2999,13 +2999,15 @@ Oracle: the cells; `zig build test`.
       module the way 830's marked lowering reaches `Module.of`. query's grammar (145, decision 914) needs it: its expansion spliced into
       the caller names `of` and `Query<T>`'s methods, which 914 makes private; a cell (a library template naming its module's private
       function, called from another package), red on the parent
-- [ ] 907: the use decides — `#[f]` applies a function whose first parameter is `syntax` as a decorator, `f(e)` expands any function with a `syntax` parameter at the call; `isSyntaxExprFn` goes (`ast.zig`), each use checked by its own rules against the one declared type; cell `syntax_fn_use_decides_kind` (`log(syntax e: unknown) -> void` annotated on a `val` and called on an expression, four targets, red on the parent); `syntax_fn_run_time_return` keeps its shape; B-69's home rule (592 (3)) reads the kind, a `syntax` function declared in `src/comptime/`
+- [x] 907: the use decides — `#[f]` applies a function whose first parameter is `syntax` as a decorator, `f(e)` expands any function with a `syntax` parameter at the call; `isSyntaxExprFn` goes (`ast.zig`), each use checked by its own rules against the one declared type; cell `syntax_fn_use_decides_kind` (`log(syntax e: unknown) -> void` annotated on a `val` and called on an expression, four targets, red on the parent); `syntax_fn_run_time_return` keeps its shape; B-69's home rule (592 (3)) reads the kind, a `syntax` function declared in `src/comptime/`
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (measured repros; the cells decide) · **After:** B-146
 
-Front 166's decision cells are written as drafts before they compile; the first ones that do are the oracle. css's drafts (166 s3) measured:
+Front 166's decision cells are written as drafts before they compile; the first ones that do are the oracle. css's drafts (166 s3) measured: — landed (`parser/syntax_use.zig` reads each module's uses; a function used both ways is
+      copied for its calls; cell `syntax_fn_use_decides_kind-907`); left: a use from another module waits on B-69's home rule (907 (4)),
+      so an imported `log(syntax e: unknown) -> void` is not yet expanded at `log(x)`; question 907-a
 
 - [x] a function value does not widen to an optional function type: `Cfg(scoper: scopeA1)` with the field `scoper: ?fn(string) -> string` is refused `type mismatch: expected ?function, got function` — a value of `T` is a value of `?T` for every `T`, a function type included (330); cell `optional_function_field_from_fn_value` (four targets), red on the parent; markdown's 330 draft meets the same (166 s3, markdown)
 - [x] in a nested pattern a bare nullary variant binds a variable instead of matching the variant: `Error(NotAllowedOnHost)` and `Error(Timeout)` as `case` arms over a `Result<T, HttpError>` — erlang warns `variable 'NotAllowedOnHost' is unused`, commonJS takes the first arm for every error; at the top of a `case` the bare variant matches (std's `Method.verb`); a bare name inside a pattern that resolves to a nullary variant of the matched type is that variant (154's rule for expression position, applied to patterns), a binder only when no variant has the name; cell `nested_pattern_nullary_variant` (four targets), red on the parent (166 s3, http's 623 draft)

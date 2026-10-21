@@ -230,6 +230,16 @@ Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida
 - **Recomendação.** (c): um helper privado que só o lowering marcado alcança já é o mecanismo da 830, e os nomes continuam do std.
 - **Bloqueia.** Nada.
 
+#### 907-a · O código que um corpo devolve quando a função é aplicada como anotação
+- **Medido.** 907 (2) diz "o retorno responde nada ou `T` igualmente" para uma função usada tanto como `#[f]` quanto como `f(e)`. Em `f(e)` um
+  `code @`…`` devolvido é a expansão. Em `#[f]` nenhuma linha diz o que acontece com ele. Construído: na forma de decorator um
+  `return <code>` no topo é descartado, e a função responde `void` ali.
+- **Opções.** (a) Como construído: em `#[f]` o código devolvido é descartado. (b) Em `#[f]` o código devolvido é inserido depois da declaração
+  anotada, como item do módulo. (c) Uma função cujo corpo devolve código é recusada em `#[f]`, localizada, nomeando a forma de chamada.
+- **Recomendação.** (c): descartar em silêncio código escrito é a leitura de aceitar em vez de recusar, e (b) dá à anotação um segundo
+  sentido que nenhuma decisão afirma.
+- **Bloqueia.** Nada; construído como (a).
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida pelo fable por delegação do mantenedor e listada em § Para revisar.
