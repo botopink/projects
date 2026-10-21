@@ -2970,11 +2970,15 @@ Each box is a library's decision-cell draft that builds on the other targets and
       three targets print `a` / `none`; a cell in 330's directory, red on wasm on the parent
       — built as: `isStringExpr` reads the lambda's body when `-> R` matches `f: fn(T) -> R` (`genericResultLambda`); cell
       `optional_chain_lambda_generic` (330)
-- [ ] wasm: a generic function's result `R` is lowered from the lambda's body only when it is a `string` (`genericResultLambda`); any
+- [x] wasm: a generic function's result `R` is lowered from the lambda's body only when it is a `string` (`genericResultLambda`); any
       other `R` (a number, a record, an array) and a plain `apply(h, { x -> "s" })` in GC mode (a `cast failure` trap) are wrong; a cell
       per shape, red on wasm on the parent
-- [ ] wasm GC mode: the nested optional chain `f?.fields?.[0]?.name` — `optInfoOf`'s fix applies in linear mode only (in GC it traps on
+      — built as: the result read from the lambda's body with its parameters typed by `f: fn(T) -> R`, any shape;
+      `genericResultLambda` removed; cell `generic_result_any_shape` (328); the GC `cast failure` not reproduced
+- [x] wasm GC mode: the nested optional chain `f?.fields?.[0]?.name` — `optInfoOf`'s fix applies in linear mode only (in GC it traps on
       an absent receiver); a cell case forcing GC, red on the parent
+      — void: GC refuses every form of the chain and the module falls back to linear ("optional of no known payload"), so no GC
+      trap exists; the GC lowering of `?.` over an optional record's optional-array field is 164 s2's (every value on WasmGC)
 - [x] parser: a typed lambda parameter of an optional type, `{ h: ?Holder -> … }`, does not parse (583 writes a lambda's parameter
       types); a cell, red on the parent
       — void: a brace lambda declares no types (583); the typed form `fn(h: ?Holder) -> string { … }` parses and runs on four targets
@@ -2988,9 +2992,13 @@ Each box is a library's decision-cell draft that builds on the other targets and
       — built as: `optInfoOf` gives an optional-array field its own optional info in linear mode; cell `optional_chain_nested_array` (330)
 - [x] wasm: `t._1` read off a tuple local holding an array prints the array's address; a cell of the shape, red on wasm on the parent
       — built as: `isArrayExpr` / `elemKindOf` read a tuple element's shape (`tupleElemArrayShape`); cell `tuple_element_array_read` (738)
-- [ ] wasm: a method of an imported type answering a `Result` reads its `Ok` / `Error` payload as a number (`case
+- [x] wasm: a method of an imported type answering a `Result` reads its `Ok` / `Error` payload as a number (`case
       Shop(name: "corner").num() { Ok(t) -> print(t); … }` prints `296` where the other three print `corner`; one module or a free
       function is right); a cell of the shape, red on wasm on the parent
+      — built as: `resultShapeOf` asks `recordMethodSym` for the method's declared shape; cell `import_type_method_result` (107);
+      codegen snapshot `try_catch_tail_on_method_call` moved from the linear fallback to the GC lowering (the same output)
+- [ ] wasm: `print(h?.fields?.length() ?? 0)` with `val h: ?Form = null` (`type Form(fields: ?Field[])`) prints `8` where the
+      other three print `0` (a present receiver with `fields: null` prints `0`); a cell, red on wasm on the parent
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
       it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
       machine 1's under 769
