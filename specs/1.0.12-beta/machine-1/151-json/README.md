@@ -32,7 +32,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 - [ ] the consumers declare `{ "json": { "git": "https://github.com/botopink/json.git", "branch": "feat" } }`
       and import `from "json"`, one commit per library (188): validation, actions, log, jhonstart, onze,
       rakun (after `04-rakun/128`); each library's suite green unchanged
-- [ ] 941: `Json.isString()` beside `isObject` travels with the type (written in std's `json.bp` until this step moves it); cell `json_is_string`, four targets
+- [x] 941: `Json.isString()` beside `isObject` travels with the type (written in std's `json.bp` until this step moves it); cell `json_is_string`, four targets — landed (`conformance/modules/std/cells/json_is_string`; rakun-ssr's half is 150 s59's)
 
 ### 151 Conformance — the front's last step (decision 465)
 
