@@ -3178,8 +3178,11 @@ Oracle: the whole suite on four targets; `test-libs`; the cold gate.
       reads the activated imported blocks too; the resolver exports a `pub X implement … for …` block; cell `contract_default_fn_called_on_target`
 - [ ] beam: a block's own method on a primitive (`StringShout implement Shout for string { fn label(self) … }`, `"d".label()`) crashes
       `{unresolved_method,label,1}` (commonJS and erlang answer); on wasm a `default fn` calling that method prints a pointer (`344!`); a cell
-- [ ] a record's extension block in another module than the record's does not give the record the contract's `default fn`s (only the
+- [x] a record's extension block in another module than the record's does not give the record the contract's `default fn`s (only the
       same-module case is adopted); a cell red on the parent
+      — built as (d5d9853e2): `adoptForImportedTargets` gives a block over an imported record the contract's `default fn`s as its own
+      methods (the type's module untouched); adopted bodies type-checked with `Self` the target; an expression receiver resolved through
+      the visible extensions; the call typed by the block's written return; cells `contract_default_fn_called_on_imported_record`, `…_block_not_active`
 - [x] decision 873: the `val` property form gated on the prelude, written `pub val length: i32;` (887); `array` in `primitive-type-name-taken`, `json.arrayOf`;
       `bytes.toUtf8: not valid UTF-8` re-recorded; cell `primitive_type_body_and_names`, red on the parent
       — built as: `pub val length: i32;` parsed in the prelude alone, a local shadowing a primitive's statics, `array`
