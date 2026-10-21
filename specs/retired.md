@@ -21,9 +21,9 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `@Iterator<T>` | `Iter<T, R = void>`, with `iter fn` | 553 (2) | |
 | `@Stream<T>` | `AsyncIter<T, R = void>`, with `async iter fn` | 553 (2) | |
 | `@Hook` | `Component<R>`, read with `use` | 354 (1) | |
-| `@Renderable`, `@Future`, `@Use` | `Renderable`, `Future`, `Use` (written bare, from `primitives.bp`) | 606 (1) | |
+| `@Renderable`, `@Future`, `@Use` | `Renderable`, `Future`, `Use` (written bare, from `primitives.bp`) | 606 (1) | `Renderable` since removed (804 (2)) |
 | `@Context<C>` (the context marker on a component's type) | — (removed): a `Component<R>` whose `R` implements `Renderable` is a component | 354 (1) | |
-| `@embed("path")` — the `@` builtin call, in a program and as a printed form of the resolved program | `comptime compiler.embed("path")`, answering a `Link`, opened through `Asset(link).open()` (§ The `compiler` module and builtins) | 606 (1), 607 | 2026-10-18; no `@name` builtin remains. 835 (2)'s printing of a folded `Asset` as `@embed("path")` is a retired form too, its replacement under ctr-embed-resolved (the maintainer, 2026-10-21) |
+| `@embed("path")` — the `@` builtin call, in a program and as a printed form of the resolved program | `comptime compiler.embed("path")`, answering a `Link`, opened through `Asset(link).open()` (§ The `compiler` module and builtins) | 606 (1), 607 | 2026-10-18; no `@name` builtin remains. 835 (2)'s printing of a folded `Asset` as `@embed("path")` is a retired form too: a folded `Asset` prints `Asset(Link(path: "…"))` and bytes `bytes.fromHex("…")` (885, the maintainer, 2026-10-21) |
 | `@getContext(T)` | `use context(themeContext)` | 269, 354, 379, 722 | 269 is `Replaced by 354 and 379` |
 | `Context<T>()` | `createContext(value)` (std's `context` module) | 378 (1) | std's `Context<T>` remains a record holding `contextValue: T` (683) |
 | `use context(T)`, a context read by a bare type name | `use context(themeContext)`, a context value the reader imports | 722, 723 | 2026-10-18 |
@@ -34,9 +34,9 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `comptime { break v; }`; a `case` arm's `break <value>` | the block's or the arm's tail, its last expression written without `;` | 525, 541 (2)–(4) | `botopink format` rewrites both (588) |
 | The `runtime` keyword | — (removed): a line runs on the side of the body it is written in; `comptime` and `compiler.init` are the two crossings | 632 | 2026-10-18 |
 | Any other marker order (`async pub fn`, …) | `#[…] [pub] [default] <marker> fn` | 572 | 2026-10-16 |
-| `async { x -> … }`, `iter { -> … }`, `async iter { x -> … }`, `component { -> … }` (a marked lambda's marker before the brace) | `{ async x -> … }`, `{ iter -> … }`, `{ async iter x -> … }`, `{ component -> … }` | 584 (1) | 2026-10-17. `async { … }` is the block and `iter loop { … }` the loop |
+| `async { x -> … }`, `iter { -> … }`, `async iter { x -> … }`, `component { -> … }` (a marked lambda's marker before the brace) | `{ async x -> … }`, `{ iter -> … }`, `{ async iter x -> … }`, `{ component -> … }` | 584 (1), 794 | 2026-10-17. `async { … }` is the block and `iter loop { … }` the loop; a marker without its arrow is refused, `marker-without-arrow` (794) |
 | `#[use]`, `#[future]`, `#[generator]`, `#[resultGenerator]` (effect annotations) | the body markers `component`, `async`, `iter`, `async iter` | 553, 606 (4) | Refused, `effect-annotation-removed` |
-| A function whose return type is inferred from its body | the return type always written, `-> void` included | 622, 33 | Refused, `fn-return-missing` |
+| A function whose return type is inferred from its body; `fn f(x: T) R`, the arrow-less shortform | the return type always written after `->`, `-> void` included | 622, 33, 846 | Refused, `fn-return-missing` |
 | A lambda typed by its later calls | a lambda whose position fixes its type, or `fn(x: T) -> R { … }` | 583 | Refused, `lambda-untyped` |
 | `mod m;`, `pub mod`, `lib.bp` | every `.bp` under `src/` is a module, its path its name | 592 (1), 337 (2) | |
 | The shorthand import (an item with no `from` whose first segment names no module) | the brace form `import {a.b.c};` | 337 (1) | Refused, `shorthand-import` |
@@ -50,12 +50,26 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `Function` (and its statics) | `fn(A) -> B` as the type; `identity`, `compose`, `flip`, `constant` from std's `functions.bp` | 738 | 2026-10-18 |
 | `any` | `unknown`, narrowed with `is` | 31 | |
 | `@src()`, `src` | `compiler.src()` (`comptime compiler.src()` in a run-time body) | 575 (4), 606 (2), 718 | |
-| `...` as a spread | `..` (`Pessoa(..p, nome: "Ana")`) | 359 (1), 529 (3) | `botopink format` migrates it; `...` is the inclusive range alone |
+| `...` as a spread | `..` (`Pessoa(..p, nome: "Ana")`) | 359 (1), 529 (3), 864 | Refused `spread-dot-dot-dot` naming `..`; nothing migrates it (864); `...` is the inclusive range alone |
 | `p.f = v` (assigning a record field) | `Person(..p, f: v)` | 37 | |
 | `<pattern> as <name>` | — (removed): a `case` binds through its variant pattern | 11 | |
 | A `Range` value, `.rev()` | — (removed): `a..b` / `a...b` is syntax of a pattern, a loop or a slice | 105 | |
 | `===`, `behavior Eq`, a user `equals` | `==`, structural; another sameness is a method with its own name | 211, 348 | |
 | `use client;` (a module-level directive) | `#[client]`, a library decorator | 87 | |
+| `is-type-parameter` on `v is X<T>` with `T` bound by `v`'s type | accepted, tested by `X`'s identity | 810 (1) | 2026-10-21 |
+| `extend` on a primitive; `behavior string` | `Sym implement B for string {}` | 799 | 2026-10-20 |
+| `opaque` before an enum, a namespace, a primitive or an alias | a record alone; `opaque-not-record` | 829 | 2026-10-21 |
+| `opaque-method`; an opaque type's non-`pub` method type-private | `method-not-pub`, module-private for every type | 814 (2), 859 | 2026-10-21 |
+| A type's non-`pub` method meeting another module's extension block | `pub`, or the same module, else `method-not-pub` at the block | 886 | 2026-10-21 |
+| `val length: i32;` (a member added without `pub`) | `pub val length: i32;` | 887 | 2026-10-21 |
+| An exhaustiveness refusal with no code | `non-exhaustive` | 858 | 2026-10-21 |
+| `throw` or a propagating `try` in a `defer` body; cell `defer_try_and_throw_propagate` | `defer-throw`, `defer-try` | 866 | 2026-10-21 |
+| 537 (2)'s `??` above `catch` | `catch` lowest, `??` tightest | 865 | 2026-10-21 |
+| An alias of `Component<T>` kept in a declared return (118 rule 1) | erased: `Component<Element>` | 852 | 2026-10-21 |
+| A module atom pair refused on erlang and beam only; cell `erlang_module_atom_pair_refused` | every target; `module_atom_pair_refused` | 890 | 2026-10-21 |
+| 626 (2)'s structural reading of `syntax decl: B` | `implement` written (716 (1)) | 842 | 2026-10-21 |
+| A decorator reading an added member through `decl` | the member held as a value | 797, 842 | 2026-10-21 |
+| A lambda's parameter count fixed by its expected type | an untyped lambda may omit trailing parameters | 888 | 2026-10-21 |
 
 ## The `compiler` module and builtins
 
@@ -89,11 +103,23 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `d.hooks`, `d.fields`, `d.methods`, `d.params`, `d.returnType`, `d.owner`, `d.annotations`, `d.variants` | `compiler.hooks(d)`, `compiler.fields(d)`, … | 576 (8) | |
 | `decl.loc` | `compiler.src()` inside the decorator body | 718 | |
 | `decl.setMeta`, `decl.addMember`, … (216's four places) | `compiler.setMeta`, `compiler.addMeta`, `compiler.addMember`, `compiler.addType` | 575 (3), 576 (9) | 216 replaced by 575 (3) |
-| The string meta: `setMeta(key, value)`, `.meta.<decorator>.<key>` | typed meta: `compiler.setMeta(M(…))`, read `compiler.meta<M>(d)` / `metaAll<M>(d)` | 576 (11) | |
+| The string meta: `setMeta(key, value)`, `.meta.<decorator>.<key>` | typed meta: `compiler.setMeta(M(…))`, read `compiler.meta(d, M)` / `compiler.metaAll(d, M)` (`compiler.meta<M>(d)` is retired too) | 576 (11), 840 | |
 | The string `addMember(name, source)` | the typed `compiler.addMember<F>(name, syntax member: F)` | 575 (3), 576 (14) | |
 | The string `addType(name, source)` | `compiler.addType(name, compiler.buildType(…))` or a template text answering a type | 640 (2), 605 (2) | |
 | `#[@Host]`; delegate forms | `#[compiler.external(…)]` | 575 (6) | |
 | `#[stage(…)]`, `#[beamMemory(…)]` written bare | `#[compiler.stage(…)]`, `#[compiler.beamMemory(…)]` — members of `compiler`, as `external` | 774, 606 (4), 663 | 2026-10-19 |
+| `-> anyvalue` / `anytype` only for a `syntax` fn | any written `T` | 841 | 2026-10-21 |
+| `compiler.load -> Diagnostic[]` / `Result<void, Diagnostic[]>`; checked for the build's `--target` | `Result<Module, Refused>`; every manifest target | 786, 833 | 2026-10-21 |
+| `Module.target` | `Module(name, path)` | 805 (4) | 2026-10-21 |
+| `run() -> Result<void, Failure>` | `Result<void, RunFailure>` | 806 | 2026-10-21 |
+| `bp_load__<path>`; the 3,000,000 synthetic line range | a marked lowering call; `__bp_` names refused `reserved-name` | 830 | 2026-10-21 |
+| `BpInline__<…>` (207) | `Bp__<fn>__<param>` / `Bp__<Owner>__<field>` | 832 | 2026-10-21 |
+| `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` | `__bp_<f>__type`, `Bp__<Enum>__<Section>`, `__bp_embed_<p>` | 836 | 2026-10-21 |
+| `<dir>/<pkg>.runtime.bp` (798 (2)) | a `.bpr` per package and per std module; one `.bp` per module for `--emit-resolved` | 805, 834, 837 | 2026-10-21 |
+| `.JavaScript("std:…")` host code | refused on every variant | 847 | 2026-10-21 |
+| `std-decorator-leaf-import` | a leaf import annotates by name | 881 | 2026-10-21 |
+| `compiler.init` of an expanded function as a program-start init, anywhere (788 (2)) | only in a top-level block | 808 | 2026-10-21 |
+| `compiler.variants` as 576 (3) wrote it | `compiler.Variant[]` | 848 | 2026-10-21 |
 
 ## `syntax`, `comptime`, templates and code
 
@@ -127,7 +153,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `Composition<T> = fn(scope: Scope) -> T \| Async<T>`; 817's places `Use(n)` / `Tail` / `Index(i)` / `Key(k)` and the identity apart from the place | `fn(scope: Scope, key: Place) -> T \| Async<T>`; a `Place` of the call's number and the item's number or key | 819 | 2026-10-21 |
 | `context-provide-after-render` (the first component `use` read as the body's render) | a `use provide` counting in the order written; `use c` with a child cell | 812 | 2026-10-20 |
 | `render-scope-construction`; `Module`'s readable fields `mod.name`, `mod.path` | `opaque-construction` / `opaque-field`; `mod.name()`, `mod.path()` | 811 (3), (4) | 2026-10-20 |
-| `RenderScope`, `RenderScope.root()`, `c.run(scope)`, `Rendered<R>`, string-keyed frames (`push` / `find`) | `Scope` (`Scope.root()`, `scope.child()`), `resolve(c, scope)`, a persistent map keyed by the context's type | 809 (6), (8) | 2026-10-20 |
+| `RenderScope`, `RenderScope.root()`, `c.run(scope)`, `Rendered<R>`, string-keyed frames (`push` / `find`) | `Scope` (`scope.childAt(key)`, 817, 819), `resolve(c, scope, key)`, `run(c)` (819, 825), a persistent map keyed by the context's type | 809 (6), (8), 817, 819, 825 | 2026-10-20 |
 | Template calls `name "…"`, `name """…"""`, `name("lit")`, `#[name("lit")]` | `` name @`…` ``, `` #[name @`…`] `` | 577 (1), (3), (6) | The codemod resolves the escapes to raw bytes |
 | `syntax-captures-build` | a `compiler.*` call inside a tree is evaluated at build and spliced | 575 (4), 614, 642 | |
 | `decorator-member-captures` | the same splice rule inside a member | 642 (replaces 413) | |
@@ -136,6 +162,13 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | validation's `#[pick]`, `#[omit]`, `#[partial]`, `#[required]`, `#[extending]` | `Type.pick`, `Type.omit`, `Type.partial`, `Type.required`, `Type.merge` (`types.bp`) | 307 | |
 | `Type.keys`, `Field.of`, `Field.all`; a field key matched by `case` | `compiler.Field<T>`, `.field` written where one is expected | 599 (1), (2) | |
 | An expanded `boot`; `d.value` | a plain function over the registry | 581 | 562's example withdrawn |
+| `Component` in `context.bp` (809 (1)) | `primitives.bp`'s compiler section | 826 | 2026-10-21 |
+| `return c` with the body's own cell (812 (2)) | a child cell | 816 (6) | 2026-10-21 |
+| `run(c, Scope.root())`, `c.run(RenderScope.root())`; `close` a no-op off the BEAM | `await run(c)`, `scope: ?Scope = null`; `close` marks closed on every target | 822, 825 | 2026-10-21 |
+| `Place.none()` under `use all` and for the renderer's child list | `Place.index(i)` | 884, 891 | 2026-10-21 |
+| `component-compose-missing`, `component-use-outside-compose` | the general refusals (58 / 800, `use-without-component`) | 828 | 2026-10-21 |
+| `implement Component<R>` | refused `implement-component-not-composable` | 828 (1) | 2026-10-21 |
+| The `Children` cell `modules/children/` | `children_array_walk` under 804's module | 857 | 2026-10-21 |
 
 ## Host functions and targets
 
@@ -158,6 +191,8 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | The linear-memory model of a wasm program; `std_wasm.wasm`, `heap.zig`, the Erlang term library | WasmGC values (`needs: [.Gc]`); std-wasm's logic in botopink, its leaves in hand-written `.wat` | 544, 550, 560 | 2026-10-14. The bump heap stands until B-83 lands; B-30 closed as superseded |
 | The Zig-built wasm runtime (440, 442's split, `$__std_sp` 447, the heap per task 448/449/522/542, two tables 454) | hand-written `.wat` leaves read by the compiler's `.wat` reader | 544, 550, 560 | What survives is 442 (3)'s rule |
 | `snapshots/codegen/{beam,wat}/<target>/` | `snapshots/codegen/<target>/` | 434 (1) | |
+| The runner's `--import` abort guard on commonJS | the entry's own handler | 870 | 2026-10-21 |
+| No `"targets"` meaning all four (676 as built) | the dependencies' intersection | 770 | 2026-10-21 |
 
 ## std
 
@@ -177,6 +212,11 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | A `string` error from `io.fs` | `FsError`, with `e.message()` | 540 (1), 563 | |
 | A library's own copy of a std function (`clock.parseDuration`, `async.RetryPolicy`, `async.nextDelay`) | std's | 170 | |
 | `$stringify` (a template marker) | `$N`, `$args` (on a method `$0` is `self`) | 164, 239, 795 | Refused in every template; `$self` too (`template-self-marker`) |
+| `clock.formatIso8601` without milliseconds | `.sssZ` always | 849 | 2026-10-21 |
+| `json.array(items)` | `json.arrayOf(items)` | 873 | 2026-10-21 |
+| `Bytes.toUtf8`'s error text | `bytes.toUtf8: not valid UTF-8` | 873 | 2026-10-21 |
+| `log`'s leaf form `import {errorDigest, Logger} from "log"` | per declaring module | 763 | 2026-10-21 |
+| 721's "index out of bounds" raise | none: the read answers `null` | 777 | 2026-10-21 |
 
 ## Libraries and repositories
 
@@ -186,13 +226,13 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `jhonstart-styled` | merged into `rakun-bpp` (jhonstart's core) | 361 (3) | |
 | styled | `rakun-style` | 724 | |
 | emilia, jhonstart-emilia | `rakun-stylesheet` | 724 | |
-| onze and its eight members; the `onze` CLI (`onze create-key`); `onze.json` | `rakun-ssr`; `rakun-ssr build`, `rakun-ssr create-key`; `rakun-ssr.json` | 724, 271, 224 | The mocking library lives as the archived repository's tag `mocking-lib-final` (507). `ONZE_KEY` keeps its name |
+| onze and its eight members; the `onze` CLI (`onze create-key`); `onze.json` | `rakun-ssr`; `rakun-ssr build`, `rakun-ssr create-key`; `rakun-ssr.json` | 724, 271, 224 | The mocking library lives as the archived repository's tag `mocking-lib-final` (507). `ONZE_KEY` is `RAKUN_SSR_KEY` (862, 883 (6)) |
 | dbcontext (a repository) | `rakun-data` (dbcontext + rakun-data) | 724, 398 | |
 | erika; `erika "…"` | `query` (`botopink/query`); `` query @`…` `` | 724, 312, 577 (6) | |
 | rakun-web, rakun-actuator | `rakun-service` | 724 | |
 | `rakun-actuator-api`, `rakun-logging` | absorbed by the `rakun` core | 187 | |
 | `rakun-starter-*` | — (removed): a program declares the packages it uses | 724 | |
-| Each `*-test` package | its package's `testing/` module | 724 | |
+| Each `*-test` package (`query-test` included) | its package's `testing/` module (`modules/query/src/testing/`) | 724, 882 | |
 | The `botopink/conformance` repository | `repository/botopink-lang/conformance/` | 467 | |
 | `actions`, `http`, `log`, `routing`, `validation` inside the compiler | repositories of their own, ordinary dependencies | 326 | |
 | onze's `@/` alias (`from "@/…"`) | `import {lib.db.findPost};` | 218 | |
@@ -220,12 +260,14 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | rakun's four `Cookie:` readers, the three q-value parsers | `http`'s `cookie` and `accept` | 196 | |
 | `Schema<T>`, `Codec<A, B>`, `schemas.*`, `checks.*` (public); the module-level functions named after a type | `#[validated]` and its members (`T.parse`, `T.decode`, …) | 306, 327 | |
 | `StyledView`, `StyledPropertyView` | `Styleable.toStyled(self) -> Component<Styled>` | 661 | |
-| `rakun-stylesheet`'s run-time entry points (`emilia(tokens)`, `className`, `cls`) | `#[emilia(…)]` on a tag; `comptime className(…)` | 369 | |
+| `rakun-stylesheet`'s run-time entry points (`emilia(tokens)`, `className`, `cls`) | `#[stylesheet(…)]` on a tag (862, 889); `comptime className(…)` | 369, 862, 889 | |
 | snap's local `fsText` | `e.message()` | 563 | |
 | rakun's SAML 2.0 ACS | — (retired for the milestone): `saml2/` answers 501 under a `deferred.md` row | 713 | |
 | `onze-server` (a package of its own after 724) | `rakun-ssr-server`, erlang only, a row of 724's table | 762 | 2026-10-19; renamed by 165 s5 |
 | `jhonstart-dom-test` (a package of its own after 724) | `rakun-bpp-dom-test`, commonJS only, a row of 724's table | 762 | 2026-10-19; renamed by 165 s5 |
 | `snap.matchesRefused`, `matchesRefusedAt` (a loaded file's refusals as a snapshot) | — (removed): a conformance module prints each case's answer, `cell check` records it | 784, 786, 796 | 2026-10-20 |
+| `emilia()` / `emiliaWith` / `emiliaPlugin` / `emilia.bp` / `emilia-*` bundler kinds and examples; `OnzeConfig`, `ONZE_PUBLIC_`, `/_onze/`, `onze_main.bp`, `ONZE_KEY`; `jhonstart_*.erl`, `examples/rakun-bpp/jhonstart-*`; `onzeAvailable()` / `rakun.cli.onze` / `RAKUN_CLI_ONZE` | `stylesheet()` and its kin; `SsrConfig`, `RAKUN_SSR_PUBLIC_`, `/_rakun-ssr/`, `ssr_main.bp`, `RAKUN_SSR_KEY`; `rakun_bpp_*.erl`, `counter` / `markup` / `todo`; `ssrAvailable()` / `rakun.cli.rakun-ssr` / `RAKUN_CLI_RAKUN_SSR` | 862, 889, 883 (6) | 2026-10-21; `styled`, `Styled`, `StyledSheet` stay |
+| The gate grep `jhonstart\|erika\|emilia\|onze` for compiler-core | `rakun`; `query` as a package (`"query"`, `import query`) | 860 | 2026-10-21 |
 
 ## Process and files
 
@@ -245,7 +287,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `~/.cache/botopink-lsp`; any cache in `$HOME` or `$XDG_CACHE_HOME` | `.botopinkbuild/cache/` (`lsp/` for the server) | 225, 233 | |
 | The windows CI row | — (removed) until the snapshot capture normalises CRLF and path separators | 158 | |
 | `gate.sh --cold` inside a `--repo` / `--lang` worktree | the commit hook's warm gate; a cold gate runs in the main checkout's `repository/botopink-lang` | meta `AGENTS.md` § Worktrees (4b) | |
-| One full cell per case, `<module>/cases/<case>/` (765) | `<module>/run/` and `<module>/refused/`, two packages of cases, and `<module>/cells/<case>/` for a case that cannot share one; `scripts/pack-cells.py` | 765, 779 | 2026-10-19; `cell new` still writes a 765 case, which `pack-cells.py apply` packs |
+| One full cell per case, `<module>/cases/<case>/` (765); `<module>/run/` and `<module>/refused/` (779) | one package per module, `src/cases/<case>/mod.bp` loaded or called by `main.bp`, one `main.snap`; `cells/<case>/` for a case that cannot share one; `scripts/pack-cells.py` | 765, 779, 789 (4), 796 | 2026-10-19; `cell new` still writes a 765 case, which `pack-cells.py apply` packs |
 | A scratch location named in a spec (`.tasks/<name>` paths, `` `/tmp/` ``, a task branch, a worktree by name) | what remains and what blocks it | 484, `scripts/scratch-refs.py` | |
 
 ## Decision rows replaced, reversed or overtaken
@@ -295,6 +337,26 @@ The record keeps these rows as one line (or as the reason they lost force); read
 | 728 | 592 (5), (6) and 680 | 728 | |
 | 729 | 592 and 665 | 729 | |
 | 784 (2)–(3), 786 (3) (`snap`'s `matchesRefused`, the suite's refused cases through `snap`) | 789 (4)–(5), 796 | 784, 786 | 2026-10-20 |
+| 771 | 816, 818 | 771, 892 | 2026-10-21 |
+| 779 (1)–(3), 781 | 789 (4) | 779, 781, 892 | 2026-10-21 |
+| 780 (1)–(2), 782 (1) | 786, 833 | 780, 782, 892 | 2026-10-21 |
+| 787 (1), 792 (1)–(3), (5)–(6) | 806, 811 (4), 830 | 787, 792, 892 | 2026-10-21 |
+| 798 (2), (4) | 805, 834 | 798, 892 | 2026-10-21 |
+| 804 (1), (4) | 809 (2), (7), 828 | 804, 892 | 2026-10-21 |
+| 809 (1), (6), (8), (9) | 826, 819, 817, 816 / 818 | 809, 892 | 2026-10-21 |
+| 810 (5), 815 (1), (3), (5) | 819 | 810, 815, 892 | 2026-10-21 |
+| 812 (2), 813 (1) | 816 (6), 817 (3) | 812, 813, 892 | 2026-10-21 |
+| 816 (1), (2), (4), (5), (7), 817 (1), (2), (4), 818 (1)–(2) | 818, 819, 825 | 816, 817, 818, 892 | 2026-10-21 |
+| 822 (1)–(2), 824 (2) | 825 | 822, 824, 892 | 2026-10-21 |
+| 820 (2), 827 (1) | 884, 891 | 820, 827, 892 | 2026-10-21 |
+| 835 (2)–(4), 838 (1) | 885, 860 | 835, 838, 892 | 2026-10-21 |
+| 853 (2) | 890 | 853, 892 | 2026-10-21 |
+| 862 (1)'s `bpp-*` | 889 (2) | 862, 892 | 2026-10-21 |
+| 537 (2) | 865 | 537, 892 | 2026-10-21 |
+| 539 (5) | 866 | 539, 892 | 2026-10-21 |
+| 207's `BpInline__` | 832 | 207, 892 | 2026-10-21 |
+| 626 (2) | 842 | 626, 892 | 2026-10-21 |
+| 118 rule 1 | 852 | 118, 892 | 2026-10-21 |
 
 ## How to use this page
 
