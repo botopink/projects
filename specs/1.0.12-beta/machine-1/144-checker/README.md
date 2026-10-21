@@ -2890,10 +2890,10 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
       and `is fn(Scope) -> …` answering on the four targets; a cell, red on the parent
       — partly landed with 810: a behavior's identity and a function type answer on the four targets
-      (`is_behavior_identity_run_time`); `is Async<unknown>` answers on commonJS only
+      (`is_behavior_identity_run_time`); `is Async<unknown>` answers on the four targets (823; wasm landed with 164 s2)
 - [ ] decision 823: `is Async<unknown>` answers whether the value is a task — erlang and beam `false` for every value (an `Async<T>` there is
       its settled `T`; what the backends emit today, now the rule); commonJS `instanceof Promise` (built); wasm a `ref.test` over `$task`,
-      164 s2's row, the test refused there until it lands; cell `is_async_answers_a_task` (a settled and a pending task `true` on commonJS,
+      164 s2's row, landed; cell `is_async_answers_a_task` (a settled and a pending task `true` on commonJS,
       `false` on erlang and beam, `run` over a marked and an unmarked component answering on every target)
 - [x] decision 809, first: a `fable` plan over 809 against what B-162 built (804 (1)'s rewrite of the type form into a record and a
       `component fn`, the `isComponentType` sites, `context_lower.zig`'s scope handling, std's `context.bp`); its open points filed as

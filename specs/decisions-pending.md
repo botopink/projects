@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **883**.
+number, which is **884**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -103,6 +103,7 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 880 | 164-s3-m | A `Bytes` leaf traps outside its domain |
 | [ ] | 881 | docs-b | A std decorator imported as a leaf is annotated by its name |
 | [ ] | 882 | docs-c | A library's test helpers are its `testing/` module; no `-test` member |
+| [ ] | 883 | the audit's wording fixes | Eight stale phrasings of 814–882 corrected (824's store, 823's wasm test landed, 866's example, 871's markers, 847's hint, `RAKUN_SSR_KEY`, 852's citation, 869) |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
