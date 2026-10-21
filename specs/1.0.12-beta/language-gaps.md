@@ -37,8 +37,6 @@ exempts a file.
 | `repository/rakun/modules/rakun-style/src/variants.bp` | 1 | **A function a template body reaches cannot name an enum variant nor build a private record** |
 | `repository/rakun/modules/rakun-style/test/styled_example_test.bp` | 1 | **No assignment to a `self` field — by design.** · **A method's behavior-typed parameter refuses an implementer** |
 | `repository/validation/src/codecs.bp` | 1 | **std's `clock.formatIso8601` answers differently on erlang and commonJS** |
-| `repository/validation/src/decorators.bp` | 1 | **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
-| `repository/validation/test/enums_and_unions_example_test.bp` | 1 | **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
 | `repository/validation/test/object_policy_example_test.bp` | 1 | **`Field` reflects no default** |
 | `specs/1.0.12-beta/machine-1/146-validation/125-validation-zod/examples/derived-types-example.bp` | 1 | **A derived record type has no name a decorator can be attached to** *(answered by 307: `#[validated] pub val RecipePatch = Type.partial(Recipe);` — a compile-time static method of std's `Type` answering a new named type; closes with `01-checker` step 28)* |
 | `specs/1.0.12-beta/machine-1/146-validation/125-validation-zod/examples/enums-and-unions-example.bp` | 1 | **`Decl.variants` carries a variant's name and not its payload fields or its annotations** |
