@@ -12,7 +12,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 - A front meeting a question it cannot answer from the code adds it here: id · title · Measured
   (observed, re-runnable) · Options · Recommendation · Blocks. *Proposed* = raised without an id.
 
-- **To review** — the decisions a `fable` took at the maintainer's delegation on 2026-10-21, for his later review.
+- **To review** — the decisions a `fable` took at the maintainer's delegation and his answers to a fable's questions (2026-10-20, 2026-10-21), for his later review.
 - **Blocking now** — maximum priority: the questions that hold machine 2's work back today, most blocking first; an index of entries kept in their sections.
 - **Blocking now — machine 1 and front 165** — the same for machine 1's steps and front 165.
 - **Machine 1** — maximum priority: the questions front 144's machine 1 waits on, by step.
@@ -28,14 +28,24 @@ The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation:
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
 number, which is **833**.
 
-## To review — decided by the fable at the maintainer's delegation (2026-10-21)
+## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
-The maintainer asked (2026-10-21) that every decision a `fable` took for him that day be marked for his later review. Each stays in force as written; a review that changes one is a new row amending it. Tick `[x]` once reviewed.
+The maintainer asked (2026-10-21) that every decision a `fable` took for him, and every answer he gave to a fable's question or to a review beside it, be marked for his later review. Each stays in force as written; a review that changes one is a new row amending it. Tick `[x]` once reviewed.
 
-| Reviewed | Row | Answered | What the fable decided |
+| Reviewed | Row | Answered | What was decided |
 |---|---|---|---|
+| [ ] | 814 | the fable review of 809–813, Q8 | Answered by the maintainer: an opaque type's constructor and fields private to the type, its methods without `pub` private to the module |
+| [ ] | 815 | the fable review of 809–813, Q1–Q3 | Answered by the maintainer: `Composition<T>` a function again, a lambda of that type a component without hooks, callable by hand |
+| [ ] | 816 | the fable review of 809–813, Q2 | Answered by the maintainer: the hooks' state in the node's scope cell, kept from render to render at the same place, as React keeps a fiber |
+| [ ] | 817 | the fable audit, Q1–Q4 | Answered by the maintainer: std's `Scope` keeps the tree of cells by place and identity; contexts taken anew on reuse; `#[key]` |
+| [ ] | 818 | the fable evaluation of 809–817, Q1, Q2, Q4, Q7 | Answered by the maintainer: every value-answering `use` a child cell; a component's identity the call that made it; `#[key(expr)]` at the call |
+| [ ] | 819 | the fable evaluation of 809–817, Q3 | Answered by the maintainer: `Composition<T> = fn(scope: Scope, key: Place)`, opening its own cell; a hand call safe; `key-duplicate` |
+| [ ] | 820 | 819-a | Answered by the maintainer: the call that makes a component stamps its place on the value; runners pass `Place.none()` |
+| [ ] | 821 | 819-b | Answered by the maintainer: a call's number counted within the nearest `component` body; a helper transparent; a component function as a value numbered where written |
+| [ ] | 822 | 809-e | Answered by the maintainer: a root runs a component with std's `run` (amended by 825) |
 | [ ] | 823 | 810-b (part) | The maintainer chose (d); the fable settled where the eager rule is written (§ body-markers (3), 392 (1)'s scheduling stated for commonJS and wasm only) and that the wasm `ref.test` over `$task` is 164 s2's |
 | [ ] | 824 | 809-i | On erlang and beam a root's tree of cells is one process-dictionary entry of the process that made it, ended with that process or `root.close()`; a scope crosses a process only as `scope.detach()` (amended by 825) |
+| [ ] | 825 | the coordinator's review of 824 | Answered by the maintainer: `run` makes and closes its own root (`defer root.close()`); `close` marks a root closed on the four targets |
 | [ ] | 826 | 809-f | `Composition`, `Composable` and `Component` are prelude names in `primitives.bp`, written bare, read nominally |
 | [ ] | 827 | 809-g, 804-d | std's `use all(cs)` resolves a run-time list of components under one `use`; rakun-style's `Sheet.render` and `spliced` use it |
 | [ ] | 828 | 809-h, 804-e | The type form's five codes; `component-compose-missing` and `component-use-outside-compose` become the general refusals |

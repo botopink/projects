@@ -12,7 +12,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 - Uma frente que encontra uma pergunta que não consegue responder pelo código a acrescenta aqui: id · título · Medido
   (observado, re-executável) · Opções · Recomendação · Bloqueia. *Proposta* = levantada sem id.
 
-- **Para revisar** — as decisões que um `fable` tomou por delegação do mantenedor em 2026-10-21, para ele revisar depois.
+- **Para revisar** — as decisões que um `fable` tomou por delegação do mantenedor e as respostas dele às perguntas de um fable (2026-10-20, 2026-10-21), para ele revisar depois.
 - **Bloqueando agora** — prioridade máxima: as perguntas que seguram hoje o trabalho da máquina 2, as que mais bloqueiam primeiro; um índice de entradas mantidas nas suas seções.
 - **Bloqueando agora — máquina 1 e frente 165** — o mesmo para os passos da máquina 1 e a frente 165.
 - **Máquina 1** — prioridade máxima: as perguntas que a máquina 1 da frente 144 espera, por passo.
@@ -28,14 +28,24 @@ A página em português (`decisoes-pendentes.md`) é a tradução direta desta p
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
 número livre, que é **833**.
 
-## Para revisar — decididas pelo fable por delegação do mantenedor (2026-10-21)
+## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
-O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele naquele dia fosse marcada para revisar depois. Cada uma continua em vigor como escrita; uma revisão que mude uma é uma linha nova que a emenda. Marque `[x]` depois de revisar.
+O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, e toda resposta que ele deu a uma pergunta de um fable ou a uma revisão ao lado, fosse marcada para revisar depois. Cada uma continua em vigor como escrita; uma revisão que mude uma é uma linha nova que a emenda. Marque `[x]` depois de revisar.
 
-| Revisada | Linha | Respondeu | O que o fable decidiu |
+| Revisada | Linha | Respondeu | O que foi decidido |
 |---|---|---|---|
+| [ ] | 814 | a revisão do fable de 809–813, Q8 | Respondida pelo mantenedor: o construtor e os campos de um tipo opaco privados ao tipo, os seus métodos sem `pub` privados ao módulo |
+| [ ] | 815 | a revisão do fable de 809–813, Q1–Q3 | Respondida pelo mantenedor: `Composition<T>` de novo uma função, uma lambda desse tipo um componente sem hooks, chamável à mão |
+| [ ] | 816 | a revisão do fable de 809–813, Q2 | Respondida pelo mantenedor: o estado dos hooks na célula de escopo do nó, mantido de render a render no mesmo lugar, como o React mantém uma fiber |
+| [ ] | 817 | a auditoria do fable, Q1–Q4 | Respondida pelo mantenedor: o `Scope` da std guarda a árvore de células por lugar e identidade; contextos tomados de novo no reuso; `#[key]` |
+| [ ] | 818 | a avaliação do fable de 809–817, Q1, Q2, Q4, Q7 | Respondida pelo mantenedor: todo `use` que responde um valor uma célula filha; a identidade de um componente a chamada que o fez; `#[key(expr)]` na chamada |
+| [ ] | 819 | a avaliação do fable de 809–817, Q3 | Respondida pelo mantenedor: `Composition<T> = fn(scope: Scope, key: Place)`, abrindo a sua própria célula; uma chamada à mão segura; `key-duplicate` |
+| [ ] | 820 | 819-a | Respondida pelo mantenedor: a chamada que faz um componente carimba o seu lugar no valor; quem roda passa `Place.none()` |
+| [ ] | 821 | 819-b | Respondida pelo mantenedor: o número de uma chamada contado dentro do corpo `component` mais próximo; uma função auxiliar transparente; uma função de componente como valor numerada onde está escrita |
+| [ ] | 822 | 809-e | Respondida pelo mantenedor: uma raiz roda um componente com o `run` da std (emendada pela 825) |
 | [ ] | 823 | 810-b (parte) | O mantenedor escolheu (d); o fable decidiu onde a regra ansiosa fica escrita (§ body-markers (3), o escalonamento da 392 (1) declarado só para commonJS e wasm) e que o `ref.test` do wasm sobre `$task` é da 164 s2 |
 | [ ] | 824 | 809-i | No erlang e no beam a árvore de células de uma raiz é uma entrada do dicionário do processo que a criou, encerrada com esse processo ou `root.close()`; um scope cruza um processo só como `scope.detach()` (emendada pela 825) |
+| [ ] | 825 | a revisão do coordenador da 824 | Respondida pelo mantenedor: o `run` faz e fecha a sua própria raiz (`defer root.close()`); `close` marca uma raiz fechada nos quatro alvos |
 | [ ] | 826 | 809-f | `Composition`, `Composable` e `Component` são nomes do prelude em `primitives.bp`, escritos sem import, lidos nominalmente |
 | [ ] | 827 | 809-g, 804-d | O `use all(cs)` da std resolve uma lista de componentes em run time sob um `use`; o `Sheet.render` e o `spliced` do rakun-style o usam |
 | [ ] | 828 | 809-h, 804-e | Os cinco códigos da forma de tipo; `component-compose-missing` e `component-use-outside-compose` viram as recusas gerais |
