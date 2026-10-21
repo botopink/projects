@@ -116,8 +116,10 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       — built: a static member as a value (`associated_fn_as_value`), the spread in an added member and the many
       locals (pins `decorator_member_record_update`, `decorator_lambda_many_locals`), a `Decorator` parameter taking
       a decorator's name (`decorator_argument_decorator_name`); validation's four markers and their rows gone. Left:
-- [ ] `compiler.variants(d) -> compiler.Variant[]` (name, fields, annotations, section) (848); the prelude mirror; cell
-      `compiler_variants_typed_entries`; validation's two markers and their `language-gaps.md` rows in the consumer commit
+- [x] `compiler.variants(d) -> compiler.Variant[]` (name, fields, annotations, section) (848); the prelude mirror; cell
+      `compiler_variants_typed_entries`; validation's two markers and their `language-gaps.md` rows in the consumer commit — landed with
+      validation's consumer (its markers stay for 146 s3's box over `Variant.fields`; question 848-a; `annotations` empty until the parser
+      takes an annotation on a variant)
 - [ ] `Field` reflects a field's default · question B-10-a
 - [x] `clock.formatIso8601` always `.sssZ`: the erlang cell on `{unit, millisecond}` (849); cell `clock_iso8601_millis_always` on commonJS,
       erlang, beam — landed (red on the parent)
@@ -2774,11 +2776,15 @@ Oracle: the cell; `zig build test`. The suite's use of it (a `refused/` package 
 
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (the decisions fix every answer) · **After:** nothing
 
-- [ ] decision 864: `recordParamCalleeParams` reaches a method and an associated function; `rewriteRecordUpdate`'s name-only refusal
+- [x] decision 864: `recordParamCalleeParams` reaches a method and an associated function; `rewriteRecordUpdate`'s name-only refusal
       deleted; cells `record_param_on_method`, `record_param_on_associated` (red on the parent), `record_param_generic`,
-      `record_param_variadic_refused`, `record_param_default_refused`
-- [ ] decision 866: `refuseInDefer` gains `throw` and `try` (595's region check); cells `defer_refuses_throw`, `defer_refuses_try`
-      (refused, red on the parent), `defer_try_catch_inside` (run); `defer_try_and_throw_propagate` removed
+      `record_param_variadic_refused`, `record_param_default_refused` — landed (the cells under `record_param_every_callable-864/`, `run` and
+      `refused`; `record_param_generic` written over `i32`, the wasm row below)
+- [ ] wasm: a generic record parameter with a `string` field aborts (`fn show<T>(..p: Props<T>)` called `show(value: "x", label: "s")`);
+      `record_param_generic` widened to the `string` field once green; red on wasm
+- [x] decision 866: `refuseInDefer` gains `throw` and `try` (595's region check); cells `defer_refuses_throw`, `defer_refuses_try`
+      (refused, red on the parent), `defer_try_catch_inside` (run); `defer_try_and_throw_propagate` removed — landed (cases of
+      `modules/defer/`; `enterDefer` clears the try region)
 
 Oracle: the cells, red on the parent; `zig build test`.
 

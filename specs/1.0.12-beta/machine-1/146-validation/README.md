@@ -96,6 +96,11 @@ The copies left the compiler with their libraries (138); each is its owner's ste
 - [x] a comptime decorator parameter's default (125 s12) and a decorator argument read as a value, not its lexeme
       (125 s7): validation's decorators take them, the markers that name them go
 - [x] `#[each("email")]` → `#[each(email)]` (125 s8): the field named, not written as a string
+- [x] decision 848's consumer: `src/decorators.bp` reads `compiler.variants(decl)` as `compiler.Variant[]` (`parsing` over the entries'
+      `name`s)
+- [ ] the two markers of the `Decl.variants` gap (`src/decorators.bp`, `test/enums_and_unions_example_test.bp`) go over `Variant.fields`:
+      a variant's payload read from its entry instead of the hand-written `<Enum><Variant>` record, and an untagged enum whose variant
+      carries fields or a tagged one whose variant has none refused, located, at the annotation; the gap row with them
 
 ### 146 Conformance — the front's last step (decision 465)
 
