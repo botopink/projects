@@ -141,6 +141,22 @@ Open and blocking nothing (front 165): **548-a** (every library links its code),
 The questions machine 1's steps wait on (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, the module-model
 group), answered before every other part of this page; in the order of the steps they block.
 
+#### 841-a · `fn log(syntax e: unknown) -> void`: an expression function or a decorator?
+- **Measured.** 841 (1) accepts `pub fn log(syntax e: unknown) -> void` splicing `print(compiler.text(e), e)`, the call `log(x)` expanded.
+  That signature is a decorator's (576, 716: `pub fn mock(syntax decl: unknown) -> void`, applied as `#[mock]`). The checker tells the two
+  apart by the signature alone (`isSyntaxExprFn`): a `syntax` parameter with a return that answers nothing is a decorator unless the
+  `syntax` parameter is not the first. So today `log(syntax e: unknown) -> void` is read as a decorator and its call is not expanded;
+  841's cell writes `log(label: string, syntax e: i32) -> void` to pass.
+- **Options.** (a) The use decides: one declaration may be both, `log(x)` expanding it as an expression function and `#[log]` applying it
+  as a decorator, each checked by its own rules where it is used. (b) The parameter's type decides: `syntax e: Expr<…>` / a value type is an
+  expression function, `syntax decl: unknown` / a declaration's type a decorator — `log(syntax e: unknown) -> void` stays a decorator and
+  841 (1)'s example is respelled with a value type. (c) A mark on the declaration: an expression function written `syntax fn log(…)`, or
+  a decorator `#[decorator] fn mock(…)`.
+- **Recommendation.** (a): 663 makes a decorator a function and 841 makes the return any type, so the signature can no longer tell them
+  apart; the place it is used already does (an annotation or a call), and each place's rules stay as they are.
+- **Blocks.** 841 (1)'s `log` example as written; nothing else — built: the shape read as a decorator, the cell writing a first parameter
+  before the `syntax` one.
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 ## Part 1 — What blocks tracks 00–03

@@ -193,6 +193,11 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `conformance/rakun-bpp/*/docs.md` and the `examples/rakun-container` comments naming it
 - [x] rakun's gate green on the main checkout's compiler
 
+- [ ] decision 840: rakun's `compiler.meta<T>(x)` / `metaAll<T>(x)` sites respelled `compiler.meta(x, T)` — under `conformance/modules/decisions-taken/`:
+      `decorator_calls_host_comptime_cell-341/draft/main.bp`, `decorator_is_function-663/draft/main.bp` and `docs.md`,
+      `decorator_registry_gathers_marked_declarations-665/draft/main.bp` and `docs.md`, `expr_decl_removed_compiler_templates-576/draft/main.bp`
+      and `docs.md`, `template_annotation-697/draft/main.bp` and `docs.md`, `toolchain_knows_bpp_roles_only-285/draft/main.bp` (a generated first line kept)
+
 ### s11 — rakun-bpp's and rakun-style's generators over `compiler.ast` (decision 625; 144 B-149)
 
 **Repositories:** rakun · **Model:** opus (a 1,400-line generator rewritten over the typed AST) · **After:** 144 B-149

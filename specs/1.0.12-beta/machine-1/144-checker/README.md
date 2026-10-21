@@ -1293,8 +1293,11 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | the formatter's tail | no cell: `format/tests/declarations.zig` |
 
 - [ ] the formatter adds `;` to a `case` arm block's last expression (409 covers function bodies) · question B-21-c
-- [ ] the shortform `fn f(x: T) R` (a type with no `->`) refused `fn-return-missing` at the name, the hint naming `-> R`; the parser's
-      `arrowOmitted` branch removed (decisions 622, 846); cell `fn_return_without_arrow` (reject; red on the parent)
+- [x] the shortform `fn f(x: T) R` (a type with no `->`) refused `fn-return-missing` at the name, the hint naming `-> R`; the parser's
+      `arrowOmitted` branch removed (decisions 622, 846); cell `fn_return_without_arrow` (reject; red on the parent) — landed (no std, cell
+      or library site wrote the shortform)
+- [ ] `botopink format` over the shortform drops its type (`fn f(x: i32) R {` printed `fn f(x: i32) {`): the formatter refuses what the
+      parser refuses (`fn-return-missing`) instead of rewriting it; a `format/tests` case
 
 
 ### B-22 — The backends' and the checker's residue rows
@@ -2577,7 +2580,9 @@ covers only the `#[@Family]` forms.
 Oracle: the cells; `zig build test`; `test-libs` once the libraries' sites are migrated.
 - [ ] `compiler.meta(d, M)` / `compiler.metaAll(d, M)` the one spelling (decision 840): the parser's `<M>` rewrite removed, `compiler.meta<M>(d)`
       the ordinary missing-argument refusal; 30 std and cell sites respelled, rakun's 11 listed for 165 s10; cell `compiler_meta_called_as_declared`
-      (run, four targets; red on the parent)
+      (run, four targets; red on the parent) — landed (the cell under `compiler_meta_called_as_declared-840/cells/meta_called_as_declared`,
+      a template reading both; rakun's sites listed in 165 s10)
+- [ ] a refused cell for `compiler.meta<M>(d)` (the ordinary missing-argument refusal, 840), red on 840's parent
 
 
 ### B-153 — a template answering `Component<X>` refused as built outside its bound
@@ -2882,9 +2887,10 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       exempt, an extension block of another module needing `pub` (886), an added member and `pub val length` `pub` (887); cell `method_private_to_module`, red on the parent); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
       — the modifier landed: `opaque` contextual before `type` (`opaque-construction`, `opaque-field`, `opaque-method`, `opaque-not-record`),
       cells under `opaque_type_modifier-811/cells/` (811-a answered by 829, as built; 811-b by 859); `Scope` opaque is B-162 P1's
-- [ ] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
+- [x] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
       line range gone; `reserved-name` at a call of a `__bp_` name (`reserved_names.zig`); cell `lowering_call_marked` (a program calling
-      `__bp_load_module` refused, an adopted default body building an opaque type refused), red on the parent
+      `__bp_load_module` refused, an adopted default body building an opaque type refused), red on the parent — landed (`CallExpr.lowering`;
+      cells `lowering_call_marked`, red on the parent, and `adopted_default_builds_opaque`, a guard: the default body is refused at its own line on the parent too)
 - [x] 811 (4) (with B-158's owner): `Module` opaque, made by a method without `pub` `compiler.load` lowers to, `mod.name()` /
       `mod.path()` for the fields; the cells and libraries that read `mod.name` / `mod.path` respelled
 - [ ] ~~791-d (narrowing a union child)~~ — answered by 810; what stays is the run-time
@@ -2956,8 +2962,11 @@ Decision 719 generalises the template (578): a function whose parameter is `synt
 - [x] a `syntax` function called through its module — `snap.matches(x)` after `import {snap} from "snap"` — is not expanded and is refused "expected Expr, got string"; a call through the module's qualified name expands as the bare call does; a cell, red on the parent (found by front 160; snap's README and AGENTS still show that form)
 
 Oracle: the cells; `zig build test`.
-- [ ] decision 841: `-> T` on a `syntax` expression function is code of type `T`, `-> void` included; `template-signature` no longer reads the
-      return; `syntax_fn_run_time_return` rewritten as a run cell (red on the parent)
+- [x] decision 841: `-> T` on a `syntax` expression function is code of type `T`, `-> void` included; `template-signature` no longer reads the
+      return; `syntax_fn_run_time_return` rewritten as a run cell (red on the parent) — landed (the cell under `719/cells/`, four targets; its
+      `log` takes `(label: string, syntax e: i32) -> void`, question 841-a)
+- [ ] a `syntax` expression function's `code` tree naming an imported std function (`return code @`print(${text})`` with `print` imported) is
+      refused "unbound variable 'print' … in `log`'s tree", `-> anyvalue` too; a cell, red on the parent
 
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)

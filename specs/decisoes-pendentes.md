@@ -141,6 +141,22 @@ Abertas e sem travar nada (frente 165): **548-a** (toda biblioteca linka seu có
 As perguntas que os passos da máquina 1 esperam (lane A, B-19, B-22, B-23, B-24, B-25, B-27, B-55, B-60, o grupo do
 modelo de módulos), respondidas antes de toda outra parte desta página; na ordem dos passos que travam.
 
+#### 841-a · `fn log(syntax e: unknown) -> void`: uma função de expressão ou um decorator?
+- **Medido.** 841 (1) aceita `pub fn log(syntax e: unknown) -> void` que insere `print(compiler.text(e), e)`, a chamada `log(x)` expandida.
+  Essa assinatura é a de um decorator (576, 716: `pub fn mock(syntax decl: unknown) -> void`, aplicado como `#[mock]`). O checker distingue
+  os dois só pela assinatura (`isSyntaxExprFn`): um parâmetro `syntax` com um retorno que não responde nada é um decorator, a menos que o
+  parâmetro `syntax` não seja o primeiro. Então hoje `log(syntax e: unknown) -> void` é lido como decorator e sua chamada não é expandida;
+  a célula da 841 escreve `log(label: string, syntax e: i32) -> void` para passar.
+- **Opções.** (a) O uso decide: uma declaração pode ser os dois, `log(x)` expandindo-a como função de expressão e `#[log]` aplicando-a
+  como decorator, cada um checado pelas suas próprias regras onde é usado. (b) O tipo do parâmetro decide: `syntax e: Expr<…>` / um tipo de valor é uma
+  função de expressão, `syntax decl: unknown` / o tipo de uma declaração um decorator — `log(syntax e: unknown) -> void` continua decorator e
+  o exemplo de 841 (1) é reescrito com um tipo de valor. (c) Uma marca na declaração: uma função de expressão escrita `syntax fn log(…)`, ou
+  um decorator `#[decorator] fn mock(…)`.
+- **Recomendação.** (a): a 663 faz de um decorator uma função e a 841 faz do retorno qualquer tipo, então a assinatura não consegue mais
+  distingui-los; o lugar onde é usado já distingue (uma anotação ou uma chamada), e as regras de cada lugar ficam como estão.
+- **Bloqueia.** O exemplo `log` de 841 (1) como escrito; nada mais — construído: a forma lida como decorator, a célula escrevendo um primeiro parâmetro
+  antes do `syntax`.
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
