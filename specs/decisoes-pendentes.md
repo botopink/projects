@@ -26,7 +26,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **891**.
+número livre, que é **892**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -111,6 +111,7 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 888 | ctr-lambda-arity | Uma lambda não tipada pode omitir parâmetros finais do tipo esperado |
 | [ ] | 889 | 548-b, os nomes da 862 | Os nomes da 862 confirmados (`stylesheet()`, `SsrConfig`, `/_rakun-ssr/`…); exemplos do `rakun-bpp` sem prefixo; `emilia.bp`, os tipos do bundler e o `onze` do `rakun-cli` acrescentados |
 | [ ] | 890 | B-27-e, o alcance da 853 | Dois módulos que viram o mesmo átomo recusados em todo alvo |
+| [ ] | 891 | a pergunta aberta da 884 | O renderer do rakun-bpp passa `Place.index(i)` a uma lista de filhos; um índice nunca toca a contagem de um corpo nem uma chave |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 

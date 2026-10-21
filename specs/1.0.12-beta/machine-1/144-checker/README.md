@@ -2852,7 +2852,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)) — admitted by 888's trailing-parameter rule, cell `lambda_omits_trailing_parameters`; a function answering a member of a union fits where one answering
       the union is expected (returns only); `x.compose()` refused outside std's `resolve`; `{ component -> … }` refused where a `Component<T>`
       is expected, `component-lambda-not-component` (817 (3))
-      (2) std's `Place` (a call's number and the item's, or a key: `Place.none()`, `Place.key(k)`, `Place.index(i)` (884), `with`) and `Scope` (`Scope.root()`,
+      (2) std's `Place` (a call's number and the item's, or a key: `Place.none()`, `Place.key(k)`, `Place.index(i)` (884, 891), `with`; the stamp's item half recording whether a body or a plain function counted it (891)) and `Scope` (`Scope.root()`,
       `scope.childAt(key)`, the parent's cell keeping `place → cell`, a place not met in a render dropped, a repeated place among siblings
       failing `key-duplicate`); every `component` body's lowering opening `scope.childAt(stamped.with(key))` (819 (1), 820 (2));
       `resolve<T>(c, scope, key)`
@@ -2860,7 +2860,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       lambda, a plain function answering one (the outer stamp wins) — and each function answering a component named as a value
       (`itens.map(Card)`) stamps its place, numbered within the nearest `component` body with the lambdas written in it, the item's counter
       in that body's cell and reset at each of its renders; a plain function's calls numbered within it, its counter reset at each entry;
-      `use c`, the renderer and the root pass `Place.none()`, `all` passes `Place.index(i)` (884); a value made outside every component body takes the root's place
+      `use c` and the root pass `Place.none()`; the renderer's child list and `all` pass `Place.index(i)` (884, 891), an index filling a missing or a plain function's item half and keeping a body's count as it keeps a key; a value made outside every component body takes the root's place
       (4) every `use` that answers a value (a hook or a component) a call with a child cell at its place; `use provide` / `context` /
       `inject` taking none, the node's own cell holding its contexts alone, `memo`'s slot its own child cell's (818 (1)); a reused cell's
       contexts taken anew from the parent, only its hooks' slots kept (817 (5)); the render library keeping a mounted root, a root closed by its owner on the BEAM, else by its process (824); 771's `slot()`
@@ -2920,7 +2920,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `await c.run(RenderScope.root())` respelled `await run(c)` by codemod (66 cells; rakun's
       roots in 165's commit); `run` reads `is Async<unknown>` (823), on wasm after 164 s2's `$task` test; typed by 810; cell `component_root_run`
 - [ ] decision 827: std's `component fn all<T>(cs: Component<T>[]) -> Component<T[]>` lowered at the `use` (its cell at the `use`'s place,
-      each entry `resolve(cs[i], scope, Place.none())` under its own stamp, the answer an `Async<T[]>` only when an entry's is, 823's test);
+      each entry `resolve(cs[i], scope, Place.index(i))` (884, 891), the answer an `Async<T[]>` only when an entry's is, 823's test);
       cell `use_all_resolves_a_list` (a keyed list keeps each item's count, a mixed sync / async list, four targets)
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
