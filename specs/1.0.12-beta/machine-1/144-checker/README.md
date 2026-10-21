@@ -2792,6 +2792,12 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       narrowing by the flow (`else`, after a branch that leaves, a `var` until assigned); `case` type patterns over generic types,
       exhaustive over a union (`non-exhaustive`, naming the member); std's `resolve` written with them; cell
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
+- [ ] decision 817: std's `Scope` keeps the tree of cells — `scope.childAt(place, c)` (`Use(n)`, `Tail`, `Index(i)`, `Key(k)`) in place of a
+      public `scope.child()`, the parent's cell keeping `place → (identity, cell)`; `use c` / `return c` lowered to it; identity written by
+      each target's lowering (declaration with type arguments, a type, a lambda's position, a `#[key]` value); a reused cell's contexts
+      taken anew from the parent; `{ component -> … }` refused where a `Component<T>` is expected (`component-lambda-not-component`);
+      `#[key]` a std builtin (`key-twice`, `key-type`, `key-duplicate`); cell `cells_by_place_and_identity` (a reordered keyed list keeps
+      each item's state, `Lista<i32>` → `Lista<string>` resets, a reused cell reads the parent's new theme)
 - [ ] decision 816: the hooks' state in the node's scope cell, by the order of the `use`s; a cell kept from render to render while the
       same component (its `component fn`, its type, its key) stands at the same place, a fresh one otherwise; `return c` with a child
       cell (812 (2) amended); the render library keeping a mounted root; 771's slot-in-the-lambda lowering removed (`hooks.bp`'s `slot()`);

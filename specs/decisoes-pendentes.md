@@ -559,6 +559,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Contexto.** Uma célula mutável na BEAM é uma entrada do dicionário de processo chaveada por um ref (`hooks.bp`); nada a apaga, e outro processo não a lê.
 - **Medido.** `hooks.bp` não tem `erase`; o `Fill(boundary, scope)` do rakun (`render.bp:186`) guarda um escopo para um preenchimento posterior, possivelmente em outro processo.
 - **Desde a 816.** As células do escopo e as posições dos hooks agora vivem tanto quanto uma raiz montada (a biblioteca de render a guarda entre renders); a raiz de um teste termina com o seu `run`.
+- **Desde a 817.** O `Scope` da std é dono da árvore de células (`childAt`); a tabela desta pergunta é da std, e vive tanto quanto uma raiz montada.
 - **Opções.**
   (a) ★ `Scope.root()` é dono de uma tabela (ETS, ou um map guardado pelo processo do renderer) apagada quando o resolve da raiz retorna; um `Fill` carrega o map da célula por valor.
   (b) O vazamento aceito por ora, uma linha do 164.

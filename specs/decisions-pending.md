@@ -559,6 +559,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Context.** A mutable cell on the BEAM is a process-dictionary entry keyed by a ref (`hooks.bp`); nothing erases it, and another process cannot read it.
 - **Measured.** `hooks.bp` has no `erase`; rakun's `Fill(boundary, scope)` (`render.bp:186`) keeps a scope for a later fill, possibly in another process.
 - **Since 816.** The scope cells and the hooks' slots now live as long as a mounted root (the render library keeps it between renders); a test's root ends with its `run`.
+- **Since 817.** std's `Scope` owns the tree of cells (`childAt`); this question's table is std's, its lifetime a mounted root's.
 - **Options.**
   (a) ★ `Scope.root()` owns a table (ETS, or a map held by the renderer's process) erased when the root's resolve returns; a `Fill` carries the cell's map by value.
   (b) The leak accepted for now, a 164 row.
