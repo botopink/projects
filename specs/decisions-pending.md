@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**19 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -35,6 +35,9 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
+| 1 | **798-c** | How the resolved program names a module's declarations, and in which files (`--emit-resolved`) | B-163's printer over a package of several modules or packages | (c) one file per module |
+| 2 | **798-d** | A folded value the language cannot write back (a context, bytes, a `@TypeInfo.all` catalogue) | B-163's printer over those cells | (a) the call that built it |
+| 3 | **798-e** | The compiler's generated names outside `__bp_` / `Bp__` that a resolved program shows | B-163's printer | (b) left as they are |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -712,6 +715,38 @@ before every other part of this page; each holds one row, or nothing built.
   (c) ★ The load handler runs `target_check` over the loaded tree for every target of the package's manifest and adds every refusal (each naming its target); `load`'s answer is one for every target.
 - **Recommendation.** (c): the most restrictive reading of 780 that keeps 798's one resolved tree for every target — a file that cannot run on a target the package declares is refused whatever `--target` says.
 - **Blocks.** B-163's `compiler.load` target row only.
+
+#### 798-c · How does the resolved program name a module's declarations, and in which files? (decisions 798 (2), (4), (5), 805; 144 B-163)
+- **Proposed (opus, 2026-10-20; built for one module only):** (c).
+- **Context.** 798 (4) writes every name qualified by its module, in one file per package; 805 made the binary `.bpr` the intermediate, so `--emit-resolved`'s text is for reading only. `--emit-resolved <dir>` writes `<dir>/<pkg>.bp` today; 798 (2) named `<pkg>.runtime.bp`, which 805 replaced.
+- **Measured.** The printer (botopink-lang 00f15a365) prints single-file cells and passes its oracle (the printing re-read with no comptime, the same answer on four targets; 445 of 494 single-file cells on commonJS); 148 cells of several files wait on this. Renaming to `<module>__<name>` changes what a program prints: a record shows its type's name (`Point(…)` becomes `main__Point(…)`) and the entry `main` is renamed, so 798 (5)'s same-answer oracle fails.
+- **Options.**
+  (a) Qualify functions and values only, never types and variants; one file per package.
+  (b) Qualify only a name two modules both declare; one file per package.
+  (c) ★ One file per module, `<dir>/<pkg>/<module path>.bp`, names as written, the imports kept; the file name the module's.
+- **Recommendation.** (c): no printed answer changes, and the text is a reading aid since the `.bpr` carries the build.
+- **Blocks.** B-163's printer over a package of several modules or packages; the CLI piece's file names.
+
+#### 798-d · What does the resolved program write for a folded value the language cannot write? (decisions 798 (1), 379, 576 (12); 144 B-163)
+- **Proposed (opus, 2026-10-20; nothing built):** (a).
+- **Context.** The printer writes each folded value as the literal the analysis spliced; four kinds have no source spelling.
+- **Measured.** A context (`Context(contextValue: …)`, refused by 379; about 22 cells); bytes (`<<…>>` has no literal syntax; about 10 `embed` cells); a `@TypeInfo.all` catalogue (`Declared<unknown>(… value: f …)` holding functions of different types does not re-check; about 5 cells); a private function of another package reached by an executor's or a template's hygiene import (`__bp_tpl_<pkg>_…`; about 9 cells — this one resolves once the dependency is printed too, 798-c).
+- **Options.**
+  (a) ★ Print the call that built the value (`createContext("")`, `bytes.fromUtf8(…)`, the catalogue's construction), re-run at start.
+  (b) A spelling only a resolved program may write (accepted when the file is read as resolved).
+  (c) These values are not folded; the build-time call stays in the program.
+- **Recommendation.** (a): no new syntax and no second language, the program the same botopink every reader reads.
+- **Blocks.** B-163's printer over those cells.
+
+#### 798-e · Do the compiler's generated names leave for the reserved space? (decisions 805 (6), 297, 631, 298, 216, 207; 144 B-163)
+- **Proposed (opus, 2026-10-20; built as (b)):** (b).
+- **Context.** 805 (6) reserves `$`, `__bp_` and `Bp__`; the printer moved `_bp_init_` → `__bp_init_` and `Bp_Load*` / `Bp_RunFailure` → `Bp__Load*` / `Bp__RunFailure`.
+- **Measured.** Still printed outside that space: `<f>__type` (297), `Type__Field` (631), `declared__metaAll__T` (298), `<Type>__<Assoc>` (216), `BpInline__…` (207), `BpRef`, `__<Type>__<Section>`, `__embed_<p>`.
+- **Options.**
+  (a) Each renamed into `__bp_` / `Bp__`, the snapshots that show them re-recorded.
+  (b) ★ Left as they are: 805 (6) refuses a hand-written name and no more.
+- **Recommendation.** (b) unless a hand-written name can collide with one; then (a) for that one.
+- **Blocks.** Nothing built waits; B-163's printer prints them as they are.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

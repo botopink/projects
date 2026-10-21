@@ -3142,6 +3142,11 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
       — `reserved-name` built: refused at a declaration's name in a user module's first pass (std, loaded packages and the
       spliced re-analysis skipped; a name the parser writes into the tree passes); cells in `build_runtime_binary_reused-805/refused/`
+      — the printer built for a package of one module (`comptime/resolved_print.zig` over `OkData.resolved`, a copy of the module
+      taken before inference with only the comptime rewrites applied; `botopink build --emit-resolved <dir>` writes `<dir>/<pkg>.bp`;
+      `_bp_init_` → `__bp_init_`, `Bp_Load*` → `Bp__Load*`); its oracle `codegen/tests/resolved_print.zig` (re-read with no comptime,
+      the same answer on four targets); several modules or packages wait on question 798-c, four folded-value kinds on 798-d, the
+      generated names outside the reserved space on 798-e
 - [ ] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
       phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created

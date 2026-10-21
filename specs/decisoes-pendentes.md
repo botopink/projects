@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**19 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -35,6 +35,9 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | O que decide | Bloqueia | Recomendação |
 |---|---|---|---|---|
+| 1 | **798-c** | Como o programa resolvido nomeia as declarações de um módulo, e em quais arquivos (`--emit-resolved`) | O printer da B-163 sobre um pacote de vários módulos ou pacotes | (c) um arquivo por módulo |
+| 2 | **798-d** | Um valor dobrado que a linguagem não consegue escrever de volta (um contexto, bytes, um catálogo de `@TypeInfo.all`) | O printer da B-163 sobre essas células | (a) a chamada que o construiu |
+| 3 | **798-e** | Os nomes gerados pelo compilador fora de `__bp_` / `Bp__` que um programa resolvido mostra | O printer da B-163 | (b) deixados como estão |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -712,6 +715,38 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (c) ★ O handler de load roda `target_check` sobre a árvore carregada para todo target do manifesto do pacote e soma toda recusa (cada uma nomeando seu target); a resposta de `load` é uma para todo target.
 - **Recomendação.** (c): a leitura mais restritiva da 780 que mantém a árvore resolvida única da 798 para todo target — um arquivo que não roda num target que o pacote declara é recusado o que quer que `--target` diga.
 - **Bloqueia.** Só a linha de target de `compiler.load` da B-163.
+
+#### 798-c · Como o programa resolvido nomeia as declarações de um módulo, e em quais arquivos? (decisões 798 (2), (4), (5), 805; 144 B-163)
+- **Proposto (opus, 2026-10-20; construído só para um módulo):** (c).
+- **Contexto.** A 798 (4) escreve todo nome qualificado pelo seu módulo, num arquivo por pacote; a 805 fez do `.bpr` binário o intermediário, então o texto do `--emit-resolved` é só para leitura. Hoje `--emit-resolved <dir>` escreve `<dir>/<pkg>.bp`; a 798 (2) nomeava `<pkg>.runtime.bp`, que a 805 substituiu.
+- **Medido.** O printer (botopink-lang 00f15a365) imprime células de um arquivo e passa no seu oráculo (a impressão relida sem comptime, a mesma resposta nos quatro targets; 445 de 494 células de um arquivo no commonJS); 148 células de vários arquivos esperam isto. Renomear para `<module>__<name>` muda o que um programa imprime: um registro mostra o nome do seu tipo (`Point(…)` vira `main__Point(…)`) e a entrada `main` é renomeada, então o oráculo de mesma resposta da 798 (5) falha.
+- **Opções.**
+  (a) Qualificar só funções e valores, nunca tipos e variantes; um arquivo por pacote.
+  (b) Qualificar só um nome que dois módulos declaram; um arquivo por pacote.
+  (c) ★ Um arquivo por módulo, `<dir>/<pkg>/<module path>.bp`, os nomes como escritos, os imports mantidos; o nome do arquivo o do módulo.
+- **Recomendação.** (c): nenhuma resposta impressa muda, e o texto é um auxílio de leitura já que o `.bpr` carrega o build.
+- **Bloqueia.** O printer da B-163 sobre um pacote de vários módulos ou pacotes; os nomes de arquivo da peça da CLI.
+
+#### 798-d · O que o programa resolvido escreve para um valor dobrado que a linguagem não consegue escrever? (decisões 798 (1), 379, 576 (12); 144 B-163)
+- **Proposto (opus, 2026-10-20; nada construído):** (a).
+- **Contexto.** O printer escreve cada valor dobrado como o literal que a análise inseriu; quatro tipos não têm grafia no fonte.
+- **Medido.** Um contexto (`Context(contextValue: …)`, recusado pela 379; cerca de 22 células); bytes (`<<…>>` não tem sintaxe literal; cerca de 10 células de `embed`); um catálogo de `@TypeInfo.all` (`Declared<unknown>(… value: f …)` guardando funções de tipos diferentes não re-checa; cerca de 5 células); uma função privada de outro pacote alcançada pelo import de higiene de um executor ou de um template (`__bp_tpl_<pkg>_…`; cerca de 9 células — esta resolve quando a dependência também é impressa, 798-c).
+- **Opções.**
+  (a) ★ Imprimir a chamada que construiu o valor (`createContext("")`, `bytes.fromUtf8(…)`, a construção do catálogo), re-executada no início.
+  (b) Uma grafia que só um programa resolvido pode escrever (aceita quando o arquivo é lido como resolvido).
+  (c) Esses valores não são dobrados; a chamada de build fica no programa.
+- **Recomendação.** (a): nenhuma sintaxe nova e nenhuma segunda linguagem, o programa o mesmo botopink que todo leitor lê.
+- **Bloqueia.** O printer da B-163 sobre essas células.
+
+#### 798-e · Os nomes gerados pelo compilador saem para o espaço reservado? (decisões 805 (6), 297, 631, 298, 216, 207; 144 B-163)
+- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
+- **Contexto.** A 805 (6) reserva `$`, `__bp_` e `Bp__`; o printer moveu `_bp_init_` → `__bp_init_` e `Bp_Load*` / `Bp_RunFailure` → `Bp__Load*` / `Bp__RunFailure`.
+- **Medido.** Ainda impressos fora desse espaço: `<f>__type` (297), `Type__Field` (631), `declared__metaAll__T` (298), `<Type>__<Assoc>` (216), `BpInline__…` (207), `BpRef`, `__<Type>__<Section>`, `__embed_<p>`.
+- **Opções.**
+  (a) Cada um renomeado para `__bp_` / `Bp__`, os snapshots que os mostram regravados.
+  (b) ★ Deixados como estão: a 805 (6) recusa um nome escrito à mão e nada mais.
+- **Recomendação.** (b) a menos que um nome escrito à mão possa colidir com um; então (a) para esse.
+- **Bloqueia.** Nada construído espera; o printer da B-163 os imprime como estão.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
