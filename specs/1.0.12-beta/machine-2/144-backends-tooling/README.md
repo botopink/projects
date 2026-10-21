@@ -2959,8 +2959,13 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [x] wasm: `ps?.at(0)` then `p?.title`, with `ps: ?Post[]`, prints garbage (`l`) where the other three targets print `t`;
       found hunting the boxes above; a cell of the shape, red on wasm on the parent
       — built as: the `?.` array-call lowering keeps a record element as its pointer; cell `optional_array_at_record` (330)
-- [ ] beam: `val f = { h -> h?.entry?.name ?? "none" }; f(o.holder)` over a lambda parameter typed `?Holder` answers `none`
+- [x] beam: `val f = { h -> h?.entry?.name ?? "none" }; f(o.holder)` over a lambda parameter typed `?Holder` answers `none`
       where commonJS, erlang and wasm answer `a`; found hunting the boxes above; a cell of the shape, red on beam on the parent
+      — built as: `beam_asm.zig` reads `recv?.member` on an unplaced record type through the run-time field helper, as the plain read
+      does (it shows only when another record declares the same field); the repro written `fn apply(x: ?Holder, f: fn(?Holder) -> string)`,
+      an untyped lambda being refused (583); cell `optional_chain_lambda_param` (330)
+- [ ] wasm: the same `?.` chain in a lambda over a generic `apply<T, R>(x: T, f: fn(T) -> R)` prints `324` / `360` where the other
+      three targets print `a` / `none`; a cell in 330's directory, red on wasm on the parent
 - [x] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
       — built as: `noteTupleElemShape` hands a container element's shape to the bound name; cell `tuple_destructure_array_element` (738)
@@ -2970,10 +2975,12 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
       it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
       machine 1's under 769
-- [ ] wasm: importing `io.process` is refused again — `conformance/test/std_process_import.bp` answers "`rawOnSignal` has no
+- [x] wasm: importing `io.process` is refused again — `conformance/test/std_process_import.bp` answers "`rawOnSignal` has no
       implementation for the wasm backend" at `std/io/process.bp:180` and at the import, against 518 (4) / 652 (3) (an unreached
       function stops nothing); green at botopink-lang 916a688c5, regressed since (suspects: B-151's `std_calls.expand` pruning, B-155's
       namespace aliases, `wat.zig` `checkHostBindings` / `emitModules`); found by machine 2's conformance pass — machine 1's under 769
+      — not reproduced on `feat` (2026-10-20): `conformance/run.sh --only test/std_process_import.bp --target all --cold` passes on the
+      four targets, wasm included; closed
 
 ### B-147 — erlang / beam defects found by 165 s5
 
