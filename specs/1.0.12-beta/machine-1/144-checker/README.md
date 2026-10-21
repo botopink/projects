@@ -2806,7 +2806,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       `union_narrowing_flow_and_case` (the three forms, the forgotten member refused at its use and at the `case`), four targets
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
-      the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (810-b); the key unqualified (810-c)
+      the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (823 settles the rest); the key unqualified (810-c)
 - [ ] decisions 815–821, the component model as it stands (one box; each decision's cell written against this text):
       (1) `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>` (815, 819); a one-parameter lambda, `{ _ -> v }` or
       `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)); a function answering a member of a union fits where one answering
@@ -2847,7 +2847,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       test: `k is Component<unknown>` is accepted but answers false on erlang — 809 (6) needs `is Composable<unknown>`, `is Async<unknown>`
       and `is fn(Scope) -> …` answering on the four targets; a cell, red on the parent
       — partly landed with 810: a behavior's identity and a function type answer on the four targets
-      (`is_behavior_identity_run_time`); `is Async<unknown>` answers on commonJS only — erlang, beam and wasm wait on 810-b
+      (`is_behavior_identity_run_time`); `is Async<unknown>` answers on commonJS only
+- [ ] decision 823: `is Async<unknown>` answers whether the value is a task — erlang and beam `false` for every value (an `Async<T>` there is
+      its settled `T`; what the backends emit today, now the rule); commonJS `instanceof Promise` (built); wasm a `ref.test` over `$task`,
+      164 s2's row, the test refused there until it lands; cell `is_async_answers_a_task` (a settled and a pending task `true` on commonJS,
+      `false` on erlang and beam, `run` over a marked and an unmarked component answering on every target)
 - [x] decision 809, first: a `fable` plan over 809 against what B-162 built (804 (1)'s rewrite of the type form into a record and a
       `component fn`, the `isComponentType` sites, `context_lower.zig`'s scope handling, std's `context.bp`); its open points filed as
       questions
@@ -2864,7 +2868,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       component runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside std's `resolve`
       (815); std's `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` (822: `resolve` with `Place.none()`, awaited only when
       it answers an `Async`), every `await c.run(RenderScope.root())` respelled `await run(c, Scope.root())` by codemod (66 cells; rakun's
-      roots in 165's commit); `run` waits on 810-b for `is Async<unknown>` off commonJS; typed by 810; cell `component_root_run`
+      roots in 165's commit); `run` reads `is Async<unknown>` (823), on wasm after 164 s2's `$task` test; typed by 810; cell `component_root_run`
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above);
