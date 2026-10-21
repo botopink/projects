@@ -2806,6 +2806,12 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
       the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (810-b); the key unqualified (810-c)
+- [ ] decision 820: each written call answering a component (a `component fn`, a `Composable`'s constructor, a `component` lambda) stamps
+      its place on the value — the call's number and the item's counter in the enclosing body's cell, reset at each of its renders, or the
+      `#[key(…)]` value —; `use c`, the renderer and the root pass `Place.none()`; the body opens `scope.childAt(stamped.with(key))`, `Place.key(k)`
+      replacing only the item's half; a value made outside every component body takes the root's place; cell `place_written_by_the_call`
+      (`val h = Header(); … use h` keeps `Header()`'s cell, a `Card(…)` keeps its state, a list reversed after it is made keeps each item's,
+      a hand `Place.key` equals `#[key(…)]`)
 - [ ] decision 819: `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>`, every `component` body's lowering opening with
       `scope.childAt(key)`; std's `Place` the call's number within its declaration and the item's (or the `#[key(…)]` value) — no callee
       name, no type; `resolve` taking the key; a hand call `c(scope, Place.key(k))` taking its own cell; a one-parameter lambda still a

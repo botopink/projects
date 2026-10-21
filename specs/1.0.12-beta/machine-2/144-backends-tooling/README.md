@@ -3188,15 +3188,21 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       `runtime-not-a-program`; built from the project's directory (805-b); oracle `compiler-cli/tests/runtime_file.sh` (the direct and
       the `.bpr` builds byte-equal on four targets, every refusal); the root's bytes may differ between a warm and a cold build (the
       encoder's identity table follows the live tree's aliasing), the decoded tree the same
-- [ ] the root's `.bpr` records the manifest's wasm host (334 (2)), read into `Config.wasm_host` and the runner's host: today a project
+- [x] the root's `.bpr` records the manifest's wasm host (334 (2)), read into `Config.wasm_host` and the runner's host: today a project
       declaring `"wasm": { "host": "browser" }` builds a WASI component from its `.bpr` and `run` starts wasmtime, against 798 (5);
       `--target` stays required, no `--wasm-host` flag; a `runtime_file.sh` case (browser host, the wasm builds byte-equal, `run` under
       node answering the direct run)
-- [ ] a module that reads `@TypeInfo.all` (level B's `reads_catalogue`) is filed in the root package's `.bpr`, whatever its package:
+      — built as: the root's META records the host, read back into `Config.wasm_host` and the runner's; `runtime_file.sh`'s `web` case
+- [x] a module that reads `@TypeInfo.all` (level B's `reads_catalogue`) is filed in the root package's `.bpr`, whatever its package:
       today it is written as its dependency's reusable file holding one program's catalogue, so a second program sharing `<dir>`
       overwrites it (805 (1)); a case under `build_runtime_binary_reused-805/` or in `runtime_file.sh` (two programs over one `lib`
       reading `@TypeInfo.all`, both into one `<dir>`, each built from its `.bpr` answering its direct build); closes with
       `@TypeInfo.all`'s removal (576 (7), (15))
+      — built as: the session carries the paths of the modules that read `@TypeInfo.all`, filed in the root's `.bpr`; `runtime_file.sh`'s
+      `cat` case holds the reader out of `lib.bpr` (a dependency's reader sees its own declarations only — by design since 665, the
+      language-gaps row on a library's catalogue — so the two programs' answers agree and the case checks where the reader is filed)
+- [ ] a module whose template expansion queries the catalogue (not `@TypeInfo.all` written in the module) is filed in the root's
+      `.bpr` too; a `runtime_file.sh` case, red on the parent
 - [ ] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
       from its intermediate, the same answer byte for byte on four targets (798 (5)); a CLI row for the refused missing directory
 
