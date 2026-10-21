@@ -1300,8 +1300,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [x] the shortform `fn f(x: T) R` (a type with no `->`) refused `fn-return-missing` at the name, the hint naming `-> R`; the parser's
       `arrowOmitted` branch removed (decisions 622, 846); cell `fn_return_without_arrow` (reject; red on the parent) — landed (no std, cell
       or library site wrote the shortform)
-- [ ] `botopink format` over the shortform drops its type (`fn f(x: i32) R {` printed `fn f(x: i32) {`): the formatter refuses what the
-      parser refuses (`fn-return-missing`) instead of rewriting it; a `format/tests` case
+- [x] `botopink format` over the shortform drops its type (`fn f(x: i32) R {` printed `fn f(x: i32) {`): the formatter refuses what the
+      parser refuses (`fn-return-missing`) instead of rewriting it; a `format/tests` case — landed (`format.zig`'s `firstReturnMissing`; the file left
+      untouched, exit 1)
 
 
 ### B-22 — The backends' and the checker's residue rows
