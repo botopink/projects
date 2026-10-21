@@ -139,7 +139,7 @@ are on disk, so most of Astro is there, or there and unwired.
 | nesting islands | not measured | add · 120 step 0 |
 | mixing frameworks | — | n/a — one UI library |
 | hydrating an Astro component is an error | a `Hydrate` annotation on a function without `#[client]` | add · 120 — a compile error |
-| event handlers in an island | attribute written (`data-jh-on-click="LikeButton:like"`, `jhonstart/modules/jhonstart/test/client_test.bp:150`), no listener reads it: the one `addEventListener` under `modules/jhonstart/src` is the `jh:refresh` button (`island_runtime.mjs:98`) | wire · handed to `05-jhonstart` — README § Handed |
+| event handlers in an island | attribute written (`data-rakun-on-click="LikeButton:like"`, `jhonstart/modules/jhonstart/test/client_test.bp:150`), no listener reads it: the one `addEventListener` under `modules/jhonstart/src` is the `jh:refresh` button (`island_runtime.mjs:98`) | wire · handed to `05-jhonstart` — README § Handed |
 
 ## 14 · Markdown, 15 · Content collections, 19 · Images
 

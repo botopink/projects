@@ -395,7 +395,7 @@ Per decision 202 (no `prerender` export).
 
 #### Step 4 — Partials and endpoints with an extension (was `117-bpp-routing` s4)
 
-- [ ] partial response = page markup alone — no `<!DOCTYPE`, no `data-jh-root`, no payload script
+- [ ] partial response = page markup alone — no `<!DOCTYPE`, no `data-rakun-root`, no payload script
 - [ ] `app/rss.xml/route.bp` is served per request with its extension's content type; `onze build`
       writes no `<outDir>/rss.xml` (decisions 222, 273)
 - [ ] `examples/partial-and-endpoint-example.bp` passes

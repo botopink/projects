@@ -121,7 +121,7 @@ Each a **wire** row of `surface.md`.
 | Item | Where | Owner |
 |---|---|---|
 | Static attribute in `html """…"""` never reaches the rendered tree | `jhonstart-html/src/html.bp:138-146`, `:233-234` | 118 fixes it; reported because every DSL use is affected |
-| `data-jh-on-click` written by the server, read by nothing | `jhonstart/modules/jhonstart/src/island_runtime.mjs` — one `addEventListener`, the refresh button (`:98`) | `05-jhonstart/26` (carries front 29) |
+| `data-rakun-on-click` written by the server, read by nothing | `jhonstart/modules/jhonstart/src/island_runtime.mjs` — one `addEventListener`, the refresh button (`:98`) | `05-jhonstart/26` (carries front 29) |
 | `Metadata` rendered by jhonstart, onze passes `[]` | `onze-server/src/server.bp:116` | `07-onze/53` (ONZ-53-3) |
 | `serveApp`, `serveActions`, `prerenderAll`, image route: in rakun and onze-assets, not called by `bootServer` | `onze-server/src/server.bp:212-221` | `07-onze/49` · `50` · `51` |
 | Scan records a decorator's argument, never compares it with the file's directory | `onze-cli/src/scan.bp:36-56`, `:66-96` — read, not run | `07-onze/50`; 117 step 0 measures it |

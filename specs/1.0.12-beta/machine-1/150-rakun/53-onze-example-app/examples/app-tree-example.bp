@@ -52,9 +52,9 @@ import {collections.Dict} from "std";
 #[layout("")]
 pub component fn rootLayout(props: LayoutProps) -> Component<Element> {
     val header = div([h1([text("onze", attrs: [])], attrs: [])], attrs: [
-        bracketPair("data-jh-chrome", "header"),
+        bracketPair("data-rakun-chrome", "header"),
     ]);
-    return div([header, props.children], attrs: [bracketPair("data-jh-root", "")]);
+    return div([header, props.children], attrs: [bracketPair("data-rakun-root", "")]);
 }
 
 // ---- app/blog/layout.bp — a segment layout ------------------------------------
@@ -66,7 +66,7 @@ pub component fn rootLayout(props: LayoutProps) -> Component<Element> {
 #[layout("blog")]
 pub component fn blogLayout(props: LayoutProps) -> Component<Element> {
     val crumb = p([text("Blog", attrs: [])], attrs: []);
-    return div([crumb, props.children], attrs: [bracketPair("data-jh-seg", "blog")]);
+    return div([crumb, props.children], attrs: [bracketPair("data-rakun-seg", "blog")]);
 }
 
 // ---- app/page.bp — the home page ----------------------------------------------
@@ -95,7 +95,7 @@ pub component fn homePage(route: PageContext) -> Component<Element> {
 pub component fn blogIndexPage(route: PageContext) -> Component<Element> {
     val slugs = await recentSlugs();
     val items = slugs.map({ s -> li([text(s, attrs: [])], attrs: []) });
-    return ul(items, attrs: [bracketPair("data-jh-list", "posts")]);
+    return ul(items, attrs: [bracketPair("data-rakun-list", "posts")]);
 }
 
 // ---- app/blog/[slug]/page.bp — a dynamic segment ------------------------------
@@ -114,7 +114,7 @@ pub component fn blogPostPage(route: PageContext) -> Component<Element> {
     return div([
         h1([text(params.slug, attrs: [])], attrs: []),
         p([text(body, attrs: [])], attrs: []),
-    ], attrs: [bracketPair("data-jh-seg", "post")]);
+    ], attrs: [bracketPair("data-rakun-seg", "post")]);
 }
 
 // ---- app/(marketing)/about/page.bp — a route group ----------------------------

@@ -162,12 +162,12 @@ example; **still assumed** = the risk.
 
 - **Route handlers:** front 25's `#[getRoute("api/posts")]` / `#[postRoute("api/posts")]`
   (`route_handler.bp`); `app/api/posts/route.bp` uses them.
-- **One form binding** (`contracts.md` § 3, front 24): `data-jh-a="<id>"` + hidden action field;
+- **One form binding** (`contracts.md` § 3, front 24): `data-rakun-a="<id>"` + hidden action field;
   action addressed by an HMAC'd id, never its name. onze passes field and header names to both
   sides — `actionField` / `actionHeader` to jhonstart, `rakun.actions.field` /
   `rakun.actions.header` to rakun — default `__bp_action` / `X-Bp-Action` (decision 114). The
   function's name is in neither attribute nor URL.
-- **One streaming marker** (`contracts.md` § 2): hole = `<div data-jh-h="h0">`, ordinal ids in
+- **One streaming marker** (`contracts.md` § 2): hole = `<div data-rakun-h="h0">`, ordinal ids in
   shell order, never route-derived; `boundaryId` is front 30's bookkeeping name, not the wire id.
 - **Registration is jhonstart's and rakun's, wired by onze:** `#[page]` / `#[layout]` fill
   jhonstart's UI registry; onze's boot copies records into rakun's route table, hands one

@@ -31,7 +31,7 @@ stays prerendered and cacheable, props sealed by default.
 ## Problem
 
 **One hydration mode.** `#[client]` marks a component (`client.bp:102`), the server writes
-`data-jh-i` (`clientMount`, `client.bp:218`), `hydrate()` starts every `[data-jh-i]` on load
+`data-rakun-i` (`clientMount`, `client.bp:218`), `hydrate()` starts every `[data-rakun-i]` on load
 (`island_runtime.mjs`). No idle / visible / media / client-only; the only strategy vocabulary in
 the six repos is `<Script>`'s (`onze-bundler/src/script.bp:18-21`). One chunk — "every island is in
 `shared`" (`onze-cli/AGENTS.md:24-26`) — so unseen islands download with the page.
@@ -51,7 +51,7 @@ At `repository/rakun/modules/rakun-bpp/src/`:
 | the island | `Island(id, component, props)` (`:206`); `clientMount(island, children)` (`:218`); `mountIsland(component, props, children)` assigns render ordinals (`render.bp:218`) |
 | the wire | payload key `i`: rows `#(id, component, "k=v&…")` (`client.bp:237`, `render.bp:479-523`) |
 | the runtime | `hydrate()` — every island at once, `commit(html)` setting `innerHTML` (`island_runtime.mjs`) |
-| server children | `serverSlot(children)` — `data-jh-s="1"` (`client.bp:277`) |
+| server children | `serverSlot(children)` — `data-rakun-s="1"` (`client.bp:277`) |
 | the entry | registers starters, checks islands and holes, calls `hydrate()`, `linkMount()`, `formMount()` (`onze-bundler/src/entry.bp:1-31`) |
 | server islands, strategies | not found |
 
@@ -127,10 +127,10 @@ closed). Today `client.bp` reaches `<Component>Props` by name — step 6. Step 0
    registry read at run time (281, 665; step 6) — not a `"Avatar" → renderer` string registration (today's
    shape, `#[page]`'s `jhPage`, `routes.bp:221-229`); props are a `#[clientProps]` record; the URL
    keeps the component's name as the wire id.
-2. Page render writes the annotation's `fallback` (287) in `<div data-jh-d="<id>" data-jh-src="<url>">`, **does not
+2. Page render writes the annotation's `fallback` (287) in `<div data-rakun-d="<id>" data-rakun-src="<url>">`, **does not
    call the component**; a prerendered page stays prerendered.
 3. `<url>` = `<prefix>/Avatar?p=<sealed props>`; over 2 048 bytes the element carries
-   `data-jh-body` and the runtime sends a `POST`.
+   `data-rakun-body` and the runtime sends a `POST`.
 4. Endpoint unseals, renders in its own request frame (`use cookieValue(decl)`, 294, and `use request()`,
    291, read this request), answers the markup alone; runtime replaces the fallback.
 5. Response headers are the component's (`Cache-Control`); page URL = the request's `Referer`.
@@ -168,6 +168,6 @@ fallback, an annotation argument; `68-c` → 280, 281: starters and props by typ
 - **`#[clientProps]` narrower than Astro** (`string`, `i32`, `f64`, `bool` vs objects, arrays,
   `Map`, `Set`, `Date`, …). Step 1 widens it to arrays of those and nested `#[clientProps]`
   records via `validation`'s encode (a `#[validated]` type's member since 306: `T.encode(v)`, 327); `Dict`, `Set`, dates-as-`i64` follow.
-- **Event handlers.** Markup names handlers (`data-jh-on-click="LikeButton:like"`), runtime binds
+- **Event handlers.** Markup names handlers (`data-rakun-on-click="LikeButton:like"`), runtime binds
   none (`island_runtime.mjs:98` the only listener) — `05-jhonstart/26`'s; tests here start islands, never click.
 - **Suspense not replaced**: streams within a response; a server island is a second one; both may coexist.

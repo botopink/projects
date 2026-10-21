@@ -22,7 +22,7 @@ test needing the minimal document is a case 26 accepts, or stop and report) · a
 
 `reconcile.bp` computes the pure decision (`layoutKeys`, `sharedDepth`, `navigationOf`) and its
 driver `applyTransition` applies it through the entry's `DomOps` — only the changed subtree replaced,
-its islands started, the active link marked `data-jh-pending` while the transition runs. Until the
+its islands started, the active link marked `data-rakun-pending` while the transition runs. Until the
 entry adopts it (`07-onze/50` step 6) the entry still re-hydrates every island after a client
 navigation. `jhonstart-link` has 46 tests (`link_test` 28, `reconcile_test` 18), on both rows.
 

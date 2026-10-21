@@ -61,21 +61,21 @@ escaped with `escape.scriptJson` — `&`, `<`, `>` as `&`, `<`, `>`, U+2028 / U+
 jhonstart keeps no escaper (decision 116).
 
 **Markers** — prefix = the writing package (decision 113). jhonstart writes every marker in use →
-all `data-jh-*`, none `data-onze-*` (an example with `data-onze-*` on a framework marker is stale).
+all `data-rakun-*`, none `data-onze-*` (an example with `data-onze-*` on a framework marker is stale).
 Full registry (no front invents one):
 
 | Marker | Written by | Meaning |
 |---|---|---|
-| `data-jh-i="i0"` | jhonstart · 29 | an island; ids by 30's render, render order; component and props in `i`, not on the element |
-| `data-jh-s` | jhonstart · 29 | server-rendered slot inside an island — the Context-Provider hole; only it |
-| `data-jh-h="h1"` / `data-jh-f="h1"` | jhonstart · 30 | streaming hole and its fill; ids = ordinals in shell order, **not** route-derived. Fill = `<template data-jh-f="h1">…</template><script>__bp1("h1")</script>`; a boundary's CSS, if any, a bare `<style>` first inside that `<template>` (§ 6a) |
-| `data-jh-root` / `data-jh-t="<pattern>#<nav>"` | jhonstart · 30 | document root element; a `template` segment's per-navigation key |
-| `data-jh-e` / `data-jh-reset` | jhonstart · 31 | error boundary and its reset control |
-| `data-jh-l` / `-prefetch` / `-replace` / `-scroll` | jhonstart · 27 | client link and its options |
-| `data-jh-on-click` | jhonstart · 29 | a handler id |
-| `data-jh-a` | jhonstart · 67 | form bound to a server action; id is 24's (§ 3), handed over by onze |
-| `data-jh-sf="1"` | jhonstart · 67 | client-enhanced search form (GET, no action) |
-| `data-jh-g="redirect"` + `data-jh-to` / `data-jh-g="not-found"` | jhonstart · 30 | navigation signal raised after the first chunk: `<template>` then `<script>__bp2()</script>`. Client navigates to `data-jh-to` as its router does (relative: `history.replaceState` + client navigation; listed absolute: `location.replace`), or swaps the template's not-found markup into `data-jh-root`; status stays 200 (decisions 115, 117, § 5b) |
+| `data-rakun-i="i0"` | jhonstart · 29 | an island; ids by 30's render, render order; component and props in `i`, not on the element |
+| `data-rakun-s` | jhonstart · 29 | server-rendered slot inside an island — the Context-Provider hole; only it |
+| `data-rakun-h="h1"` / `data-rakun-f="h1"` | jhonstart · 30 | streaming hole and its fill; ids = ordinals in shell order, **not** route-derived. Fill = `<template data-rakun-f="h1">…</template><script>__bp1("h1")</script>`; a boundary's CSS, if any, a bare `<style>` first inside that `<template>` (§ 6a) |
+| `data-rakun-root` / `data-rakun-t="<pattern>#<nav>"` | jhonstart · 30 | document root element; a `template` segment's per-navigation key |
+| `data-rakun-e` / `data-rakun-reset` | jhonstart · 31 | error boundary and its reset control |
+| `data-rakun-l` / `-prefetch` / `-replace` / `-scroll` | jhonstart · 27 | client link and its options |
+| `data-rakun-on-click` | jhonstart · 29 | a handler id |
+| `data-rakun-a` | jhonstart · 67 | form bound to a server action; id is 24's (§ 3), handed over by onze |
+| `data-rakun-sf="1"` | jhonstart · 67 | client-enhanced search form (GET, no action) |
+| `data-rakun-g="redirect"` + `data-rakun-to` / `data-rakun-g="not-found"` | jhonstart · 30 | navigation signal raised after the first chunk: `<template>` then `<script>__bp2()</script>`. Client navigates to `data-rakun-to` as its router does (relative: `history.replaceState` + client navigation; listed absolute: `location.replace`), or swaps the template's not-found markup into `data-rakun-root`; status stays 200 (decisions 115, 117, § 5b) |
 
 **Browser globals** — a global only for a value two builds must agree on by name. Four, indexed
 aliases from jhonstart's globals registry (front 30), in this order: `globals.payload` (`__bp0`),
@@ -101,7 +101,7 @@ id = "a_" + hash.hmacSha256(buildSecret, module + "." + name + ":" + buildId).sl
 Server-only, echoed by the client, never derived in the browser (`hash` std's, decision 106).
 
 - **Form binding** (jhonstart 67, id from onze): `<form method="post" action="<pathname>"
-  data-jh-a="<id>">` + hidden field named `actionField`. Scripted: same POST with header named
+  data-rakun-a="<id>">` + hidden field named `actionField`. Scripted: same POST with header named
   `actionHeader`, or JSON-RPC body `{"v":1,"id":…,"args":[…]}` written by jhonstart 67 from an event
   handler — same auth path, not a second door. A POST whose header carries `refresh` and no id
   re-renders the current route (26's `refresh()`).
@@ -294,7 +294,7 @@ pub fn takeSignal() -> NavOutcome
   import `notFound`, `redirect(url)`, `cookies()` from `"jhonstart"` (31, 28); they raise via
   `signalReason`; the render (30) writes the outcome to § 5d's `Response`: **before the first chunk**
   `redirect` = `status(307)` + `header("location", to)`, `notFound` = `status(404)` with the route's
-  not-found boundary as document; **after it** the reason as markup (`data-jh-g`, § 2) its client
+  not-found boundary as document; **after it** the reason as markup (`data-rakun-g`, § 2) its client
   executes, status 200. Client-only app (`clientApp`, 26), same signals in the browser: `notFound`
   renders the not-found boundary, URL unchanged; `redirect` navigates with `history.replaceState`
   (listed absolute target: `location.replace`). onze has no `case` on a signal; rakun knows no page
@@ -483,7 +483,7 @@ val site = app(plugins: [styledSink()]);             // {app} from "rakun-bpp"; 
 | Call | When front 30's render makes it | Its result goes |
 |---|---|---|
 | `head()` | **once**, after the shell renders to a string, before head serialization | into `<head>`; `""` if nothing registered |
-| `chunk(holeId)` | after a streamed boundary renders, **before** its markup hits the wire | first inside that boundary's fill: `<template data-jh-f="<holeId>"><style>…</style>…markup…</template>` — no own marker; `""` writes no `<style>` |
+| `chunk(holeId)` | after a streamed boundary renders, **before** its markup hits the wire | first inside that boundary's fill: `<template data-rakun-f="<holeId>"><style>…</style>…markup…</template>` — no own marker; `""` writes no `<style>` |
 | `close()` | after the last chunk | error fails the render; a non-empty pending sheet is that error |
 | `payload()` | **once**, after `close` | into the payload (§ 2) under the plugin's key; `null` writes nothing. A key the render writes itself (every § 2 key but `s`), or given by two plugins, fails the render. `Json` = JSON text from std's `json` writers (decision 116), written verbatim |
 

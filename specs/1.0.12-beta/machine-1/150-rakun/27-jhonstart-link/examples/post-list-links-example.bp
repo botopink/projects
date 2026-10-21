@@ -13,7 +13,7 @@
 //
 // Pending state (decision 363). The checkout link is a server-rendered `Link`
 // and reads no hook: while its navigation is in flight the client router sets
-// `data-jh-pending` on it and clears it when the transition ends, and the page
+// `data-rakun-pending` on it and clears it when the transition ends, and the page
 // styles that attribute. The progress bar is the one `#[client]` island that
 // reads `use linkStatus()`; the server writes its placeholder only.
 //
@@ -43,7 +43,7 @@ fn header() -> Element {
 }
 
 // The checkout link: a plain anchor on the server. Its pending state is the
-// `[data-jh-pending]` rule below, not a hook and not an island per link.
+// `[data-rakun-pending]` rule below, not a hook and not an island per link.
 fn checkoutLink() -> Element {
     return Link(
         withClass(linkProps("/checkout"), "checkout"),
@@ -55,7 +55,7 @@ fn pendingStyle() -> Element {
     return style(
         [
             text(
-                "a[data-jh-pending] { opacity: 0.6; cursor: progress; }",
+                "a[data-rakun-pending] { opacity: 0.6; cursor: progress; }",
                 attrs: [],
             ),
         ],
@@ -113,14 +113,14 @@ pub fn BlogIndex(posts: Array<Post>) -> Element {
 
 test "a header link renders the plain two-attribute anchor" {
     val el = Link(linkProps("/blog"), [text("Blog", attrs: [])]);
-    assert renderToString(el) == "<a href=\"/blog\" data-jh-l=\"1\">Blog</a>";
+    assert renderToString(el) == "<a href=\"/blog\" data-rakun-l=\"1\">Blog</a>";
 }
 
 test "an archive row opts out of prefetching" {
     val row = archiveRow(Post(slug: "hello", title: "Hello"));
     val markup = renderToString(row);
     assert markup.contains("href=\"/blog/hello\"");
-    assert markup.contains("data-jh-prefetch=\"0\"");
+    assert markup.contains("data-rakun-prefetch=\"0\"");
 }
 
 test "the prefetch mode follows the route kind" {
@@ -144,13 +144,13 @@ test "the index renders every row" {
 test "the checkout link renders no pending state on the server" {
     val markup = renderToString(checkoutLink());
     assert markup
-        == "<a href=\"/checkout\" data-jh-l=\"1\" class=\"checkout\">Checkout</a>";
-    assert markup.contains("data-jh-pending") == false;
+        == "<a href=\"/checkout\" data-rakun-l=\"1\" class=\"checkout\">Checkout</a>";
+    assert markup.contains("data-rakun-pending") == false;
 }
 
 test "the page styles the pending attribute and writes only the island's placeholder" {
     val markup = renderToString(BlogIndex([]));
-    assert markup.contains("a[data-jh-pending]");
-    assert markup.contains("<div data-jh-i=\"i0\"></div>");
+    assert markup.contains("a[data-rakun-pending]");
+    assert markup.contains("<div data-rakun-i=\"i0\"></div>");
     assert markup.contains("nav-progress") == false;
 }

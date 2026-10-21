@@ -350,7 +350,7 @@ pub fn LikeButton(props: LikeButtonProps) -> View {
 ### O que sobra em runtime
 ```html
 <!-- servidor: o mesmo HTML; no browser a ilha liga o handler -->
-<button data-jh-h="0">3 likes</button>
+<button data-rakun-h="0">3 likes</button>
 ```
 ```js
 // starter da ilha (gerado): handlers por posição, não por nome
@@ -361,7 +361,7 @@ bind(root, 0, "click", like);
 ```bpp
 <button #[onClick(lik)]>                   <!-- ❌ nome `lik` não existe -->
 <button #[onClick(props.likes)]>           <!-- ❌ esperado fn() -> …, recebido i32 -->
-<button data-jh-on-click="LikeButton:like"> <!-- ❌ não existe mais: use #[onClick(like)] -->
+<button data-rakun-on-click="LikeButton:like"> <!-- ❌ não existe mais: use #[onClick(like)] -->
 ```
 
 ---

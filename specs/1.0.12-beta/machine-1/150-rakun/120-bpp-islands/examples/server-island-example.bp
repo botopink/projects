@@ -86,8 +86,8 @@ fn routeFor(id: string) -> PageContext {
 test "the page renders the fallback and a placeholder, not the component" {
     val markup = renderToString(await Page(routeFor("7")));
     assert markup.contains("<span class=\"avatar generic\"");
-    assert markup.contains("data-jh-d=\"");
-    assert markup.contains("data-jh-src=\"/_onze/island/Avatar?p=");
+    assert markup.contains("data-rakun-d=\"");
+    assert markup.contains("data-rakun-src=\"/_onze/island/Avatar?p=");
     assert markup.contains("Your avatar") == false;
 }
 
@@ -126,4 +126,4 @@ test "an island that is not registered is 404, by name" {
 //   onze build                         → .onze/prerender/product/7/index.html exists
 //   GET /product/7                     → served from the prerendered file, no cookie read
 //   GET /_onze/island/Avatar?p=…       → 200, Cache-Control: private, max-age=60
-//   props over 2 048 bytes             → the element carries data-jh-body; the runtime POSTs
+//   props over 2 048 bytes             → the element carries data-rakun-body; the runtime POSTs

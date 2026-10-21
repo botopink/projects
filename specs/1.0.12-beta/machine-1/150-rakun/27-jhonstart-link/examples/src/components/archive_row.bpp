@@ -7,7 +7,7 @@
 //
 // `withPrefetch(…, false)` is the point of the row. Two hundred of these in a
 // viewport would queue two hundred route requests, which is the case the
-// upstream doc names; the server renders `data-jh-prefetch="0"` and the browser
+// upstream doc names; the server renders `data-rakun-prefetch="0"` and the browser
 // half leaves the link alone.
 //
 // Upstream:

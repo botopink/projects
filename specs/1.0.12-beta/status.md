@@ -255,7 +255,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [ ] decision 360 (slots as Astro's: `<Slot />`, `<Slot name="x">fallback</Slot>`, a child `#[slot("x")]`, transfer, `use hasSlot("x")`, `Slot` / `slot` rakun-bpp functions with `comptime` parameters (302); never props; 193's `children` field goes) — 118 s4 · 130 s9 · 26 (`Slot`, `hasSlot`, prelude) · 01-checker · 120
 - [ ] decision 361 (std's module `bpp`: `#[bpp.html]`, `#[bpp.htmlPrelude]`, `#[bpp.style]`, `#[bpp.stylePrelude]`; `jhonstart-styled` merged into the core; `"bpp": "rakun-bpp"`) — 116 s1 (the std module, the manifest, the roles) · 119 s2–5 (in the core) · 26 · onze · 124
 - [ ] decision 362 (26 rewrites the native builders into props form in place, with the 78 hand-written callers; no second builder per tag) — 26 s13 · after 26 s0, 01-checker s28 and the props-filling lowering
-- [ ] decision 363 (a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-jh-pending`) — 27 s1–3 · 26 (island cells) · 120 · 126
+- [ ] decision 363 (a browser-only cell is `#[clientOnly]`, no erlang twin; a server `Link` styled by `data-rakun-pending`) — 27 s1–3 · 26 (island cells) · 120 · 126
 - [ ] decision 365 (a deferred `after()` failure through the core's logger is 17's step 4, not 128's) — rakun 17 s4 · after 128
 - [ ] decisions 388, 389, 414 (a `Component` at run time is a lambda over an opaque `Scope` (809), `(scope, key)` (819), the render library runs it — replaces 354 (8), 374, 387; a component named as a value is a reached node, a value the checker cannot follow an edge with `callee: null`; boundaries and fills are nodes the renderer runs with the scope) — 134 s6 measurement and box 4b, 01-checker s23's 389 box and `05-jhonstart/26` step 14 landed as one change set (botopink-lang and rakun-bpp; erlang, beam, commonJS green, wasm refused at the first component — 354-wasm; rakun-bpp 208 / 0 on both rows); left: the other lowerings and wasm · 02–05, 18 · 119 s2–3
 - [ ] decision 375 (`HookNode.async`; commonJS emits a synchronous component as a plain `function`) — 01-checker s23 and 04-js s12 (top-level functions): landed; `s23-j` is decision 725, `04s12-a` 593
@@ -688,7 +688,7 @@ Each line landed; a front's README keeps only its open steps. Grouped by front, 
 - [x] 49 s1 · s6 — `config.bp` / `types.bp`'s `Type` (the utilities) and `compiler.bp`'s `Field<T>` / `Info<T>` (624, 630) on std's `Json` methods (`isString` stays — `49-g`); the six `onze-test` group stubs (onze-wave patch 02)
 - [x] 50 s1 — `onze-cli` / `onze-bundler` read std's `Json` methods; no local `membersOf` / `itemsOf` / `textOf` (onze-wave patch 03)
 - [x] 51 s1 — `onze-og` reads integers with std's `parseInt`; no `intOf` (malformed text still `0` — `51-a`) (onze-wave patch 04)
-- [x] 27 s1 box 1 · s2 boxes 1, 3 · s3 — the reconcile driver (`applyTransition` over `DomOps`, question 27-b ★), `use linkStatus()` in a `#[client]` component (363), `data-jh-pending`, the example (jhonstart `b25e959`)
+- [x] 27 s1 box 1 · s2 boxes 1, 3 · s3 — the reconcile driver (`applyTransition` over `DomOps`, question 27-b ★), `use linkStatus()` in a `#[client]` component (363), `data-rakun-pending`, the example (jhonstart `b25e959`)
 - [x] 33 s2 — `emilia-card` emilia-only, the fifteen example READMEs (s1, s3, s4 are 135's)
 
 ### 157 routing

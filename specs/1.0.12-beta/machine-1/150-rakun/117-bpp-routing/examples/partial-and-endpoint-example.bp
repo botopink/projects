@@ -70,6 +70,6 @@ test "the endpoint answers its document per request" {
 
 // The E2E half is 07-onze/53's runner (`bootApp`, `request`):
 //
-//   GET /partials/clicked   → body starts with "<li>", no "<!DOCTYPE", no "data-jh-root"
+//   GET /partials/clicked   → body starts with "<li>", no "<!DOCTYPE", no "data-rakun-root"
 //   onze build              → no .onze/prerender/builtwith.json; GET runs the handler
 //   HEAD /builtwith.json    → 200, empty body (rakun's GET fallback, route_handler.bp:495)

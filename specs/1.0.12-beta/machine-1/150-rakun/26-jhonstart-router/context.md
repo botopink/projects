@@ -43,7 +43,7 @@ time (no run-time `markDynamic`).
   "`headerOfPage` in rakun's `ssr.bp` is the shape"); none is an import. Fix: state the shape, not
   the neighbour.
 - **Two signal handlers.** `registerSignal(name, allowedRedirects)` in `render.mjs` installs what a
-  `data-jh-g` template's script calls; `clientApp` handles a raise via `handleSignal` in
+  `data-rakun-g` template's script calls; `clientApp` handles a raise via `handleSignal` in
   `client_app.bp`. Both decide "relative → `history.replaceState` + `popstate`; absolute → only if
   allowed; hop limit". Shape: one core-exported function called from both; the `.mjs` half calls it
   through the registry.

@@ -84,26 +84,26 @@ test "ViewTransitions writes the stylesheet and the flag" {
 test "a named transition is the same name on both pages" {
     val list = renderToString(ListItem("hello", "Hello"));
     val post = renderToString(PostHero("hello", "Hello"));
-    assert list.contains("data-jh-vt-name=\"cover-hello\"");
-    assert post.contains("data-jh-vt-name=\"cover-hello\"");
+    assert list.contains("data-rakun-vt-name=\"cover-hello\"");
+    assert post.contains("data-rakun-vt-name=\"cover-hello\"");
 }
 
 test "a built-in animation is an attribute; a customised one carries its values" {
     val markup = renderToString(BaseLayout("Blog"));
-    assert markup.contains("<html lang=\"en\" data-jh-vt-animate=\"none\">");
-    assert markup.contains("<main data-jh-vt-animate=\"slide\">");
-    assert markup.contains("<header data-jh-vt-animate=\"fade\" style=\"--jh-vt-duration: 0.4s\">");
+    assert markup.contains("<html lang=\"en\" data-rakun-vt-animate=\"none\">");
+    assert markup.contains("<main data-rakun-vt-animate=\"slide\">");
+    assert markup.contains("<header data-rakun-vt-animate=\"fade\" style=\"--jh-vt-duration: 0.4s\">");
 }
 
 test "a persisted element is marked with its name" {
     val markup = renderToString(BaseLayout("Blog"));
-    assert markup.contains("data-jh-vt-persist=\"player\"");
+    assert markup.contains("data-rakun-vt-persist=\"player\"");
 }
 
 test "the per-link annotations lower to the runtime's attributes (292)" {
     val markup = renderToString(BaseLayout("Blog"));
-    assert markup.contains("<a href=\"/legacy\" data-jh-reload>");
-    assert markup.contains("data-jh-history=\"replace\"");
+    assert markup.contains("<a href=\"/legacy\" data-rakun-reload>");
+    assert markup.contains("data-rakun-history=\"replace\"");
 }
 
 // What does not compile:

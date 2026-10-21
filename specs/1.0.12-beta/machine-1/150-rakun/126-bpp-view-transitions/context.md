@@ -58,19 +58,19 @@ so one tag may carry several, one of each:
 
 | Annotation | Attribute | The runtime |
 |---|---|---|
-| `#[transitionName("hero")]` | `data-jh-vt-name` | sets `view-transition-name`, pairing with the same name on the next page |
-| `#[transitionAnimate(.Slide)]` — `fade` (default), `slide`, `none`, `initial` | `data-jh-vt-animate` | picks the keyframes; `slide` reverses on back navigation |
-| `#[transitionAnimate(fade(duration: "0.4s"))]` — argument `Animate \| TransitionAnimation` (281) | `data-jh-vt-animate` + inline custom properties | `TransitionAnimation(name, delay, duration, easing, fillMode, direction)`, the reference's record |
-| `#[transitionPersist]` · `#[transitionPersist("player")]` | `data-jh-vt-persist` | element **moved** into the new document, not replaced — a playing `<video>`, a stateful island |
-| `#[transitionPersistProps]` | `data-jh-vt-persist-props` | a persisted island keeps its old props too |
+| `#[transitionName("hero")]` | `data-rakun-vt-name` | sets `view-transition-name`, pairing with the same name on the next page |
+| `#[transitionAnimate(.Slide)]` — `fade` (default), `slide`, `none`, `initial` | `data-rakun-vt-animate` | picks the keyframes; `slide` reverses on back navigation |
+| `#[transitionAnimate(fade(duration: "0.4s"))]` — argument `Animate \| TransitionAnimation` (281) | `data-rakun-vt-animate` + inline custom properties | `TransitionAnimation(name, delay, duration, easing, fillMode, direction)`, the reference's record |
+| `#[transitionPersist]` · `#[transitionPersist("player")]` | `data-rakun-vt-persist` | element **moved** into the new document, not replaced — a playing `<video>`, a stateful island |
+| `#[transitionPersistProps]` | `data-rakun-vt-persist-props` | a persisted island keeps its old props too |
 
 Meets 27 here: `reconcile` answers which layouts are shared; `#[transitionPersist]` adds named elements to what survives.
 
 **Per link: two tag annotations** (292). `#[reload]` on `<a>` / `<form>` forces a document load;
 `#[history(.Push | .Replace | .Auto)]` picks the history call (`History` enum). They take `syntax
 decl: unknown`, record `LinkReload` / `LinkHistory` metas for this front's arm (302), and lower to the wire attributes
-`data-jh-reload` / `data-jh-history="replace"` the runtime reads — the attributes are output, never
-written by hand (a written `data-jh-reload` is refused, naming the annotation).
+`data-rakun-reload` / `data-rakun-history="replace"` the runtime reads — the attributes are output, never
+written by hand (a written `data-rakun-reload` is refused, naming the annotation).
 
 **`navigate(href, options)`**: public, for non-click navigations (a `<select>` change, a finished action).
 
@@ -95,5 +95,5 @@ first `<h1>`, else the pathname. `prefers-reduced-motion: reduce` disables every
 
 - **Not added.** A separate client router (`linkMount` is it). `fallback: "animate"` (simulated
   animations): the swap happens, nothing simulated.
-- **Names.** Events and attributes `jh:` / `data-jh-` like all runtime names; annotation names are
+- **Names.** Events and attributes `jh:` / `data-rakun-` like all runtime names; annotation names are
   Astro's directive joined (`transition:persist-props` → `transitionPersistProps`, 278).

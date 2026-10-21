@@ -110,12 +110,12 @@ longer exists).
 
 `client_app.bp` exports `applyLateSignal(site: ClientApp, reason: string, hops: i32)` (body of
 `handleSignal`, `client_app.bp:219`); `render.mjs`'s `registerSignal` (`:199`) installs a closure
-calling it through the registry (`globals().signal` stays the entry; `data-jh-g` markup unchanged).
+calling it through the registry (`globals().signal` stays the entry; `data-rakun-g` markup unchanged).
 
 - [ ] `render.mjs` makes no `replaceState` call (today `:213`); the relative redirect goes through
       `applyLateSignal` and the router's `replace` (`router_runtime.mjs`), so
       `grep -n "replaceState(" render.mjs client_app.mjs` prints nothing
-- [ ] `dom_test.bp`: a `data-jh-g="redirect"` template with target `/x` and a raised
+- [ ] `dom_test.bp`: a `data-rakun-g="redirect"` template with target `/x` and a raised
       `redirect("/x")` leave the same `history` and `location` records; an absolute target not in
       `allowedRedirects` refused by both with the same message; hop limit trips at the same count
 - [ ] `client_app_test.bp` and `streaming_test.bp` unchanged in count
@@ -207,7 +207,7 @@ list against its own decorators; the compiler names no marker.
 #### Step 9 — references, not strings (decision 281) (was `26-jhonstart-router` s9)
 
 - [ ] event handlers as `#[onClick(like)]` (a function value; 278 + 280 example 7) — no
-      `data-jh-on-click="LikeButton:like"`, no `"error:reset"`; the runtime binds by position
+      `data-rakun-on-click="LikeButton:like"`, no `"error:reset"`; the runtime binds by position
 
 #### Step 10 — file roles are the framework's (decision 285) (was `26-jhonstart-router` s10)
 
@@ -300,7 +300,7 @@ activates").
       `writeEnvelope(ok: false, state: writeState("…", [#("title", "Too short")]))`, submitting the
       create-post form leaves `fieldError("title") == "Too short"` in the re-rendered form
 - [ ] "forms: ok:false re-renders in place": same submit keeps the typed `title`, enters no boundary
-      (`data-jh-e` absent after), form element identity unchanged (`===` on the recorded node)
+      (`data-rakun-e` absent after), form element identity unchanged (`===` on the recorded node)
 
 #### Step 2 — `formStatus` for two forms (was `67-jhonstart-forms` s2)
 
@@ -588,8 +588,8 @@ A component first rendered in a `Suspense` fill needs its sheet in that fill.
 - [ ] the five hooks fire in order, once per navigation, with typed events; `onBeforePreparation`'s
       wrapped loader runs around the fetch; a `#[client]` component's `use onBeforeSwap` registered
       once per mount (292)
-- [ ] `#[reload]` / `#[history(…)]` lower to `data-jh-reload` / `data-jh-history`; a hand-written
-      `data-jh-reload` refused at the attribute, naming `#[reload]`
+- [ ] `#[reload]` / `#[history(…)]` lower to `data-rakun-reload` / `data-rakun-history`; a hand-written
+      `data-rakun-reload` refused at the attribute, naming `#[reload]`
 
 #### Step 3 — `#[transitionPersist]` (was `126-bpp-view-transitions` s3)
 

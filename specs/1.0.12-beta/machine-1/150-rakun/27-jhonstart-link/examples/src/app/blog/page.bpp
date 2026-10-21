@@ -12,7 +12,7 @@
 // are the browser half, after the generated entry calls `linkMount()`.
 //
 // The checkout link's pending state is the style section's
-// `a[data-jh-pending]` rule: the client router sets the attribute on the
+// `a[data-rakun-pending]` rule: the client router sets the attribute on the
 // active link while its navigation is in flight (decision 363) — no hook, no
 // island per link. The progress bar is the one `#[client]` island that reads
 // `use linkStatus()`; it is a `.bp` function (`NavProgress` of
@@ -31,7 +31,7 @@ import {lib.blog.listPosts};
 
 val posts = await listPosts();
 --- style ---
-a[data-jh-pending] { opacity: 0.6; cursor: progress; }
+a[data-rakun-pending] { opacity: 0.6; cursor: progress; }
 ---
 <div class="page">
   <NavProgress #[clientOnly] />

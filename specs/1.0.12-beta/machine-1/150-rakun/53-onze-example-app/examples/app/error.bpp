@@ -9,7 +9,7 @@
 // the server under that digest, and the browser is told only the reference. A
 // user-facing error message is a leak.
 //
-// `data-jh-on-click` names a handler the client runtime binds after hydration;
+// `data-rakun-on-click` names a handler the client runtime binds after hydration;
 // there is no JavaScript in this file.
 //
 // Upstream: https://nextjs.org/docs/app/api-reference/file-conventions/error
@@ -24,5 +24,5 @@ fn panelTokens() -> Token[] {
 <section class={emilia(panelTokens())}>
   <h2>Something went wrong</h2>
   <p class="digest">Reference {info.digest}</p>
-  <button data-jh-on-click="error:reset">Try again</button>
+  <button data-rakun-on-click="error:reset">Try again</button>
 </section>

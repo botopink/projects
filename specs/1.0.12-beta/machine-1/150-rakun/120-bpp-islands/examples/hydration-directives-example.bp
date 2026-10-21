@@ -40,7 +40,7 @@ pub type LikeButtonProps(postSlug: string, likes: i32)
 pub fn LikeButton(props: LikeButtonProps) -> View {
     val count = use state(props.likes);
     return html """
-      <button data-jh-on-click="LikeButton:like" data-post={props.postSlug}>
+      <button data-rakun-on-click="LikeButton:like" data-post={props.postSlug}>
         {count.value.toString()} likes
       </button>
     """;
