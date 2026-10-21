@@ -189,6 +189,47 @@ None open: every entry was answered by 899–955 (2026-10-21), decided by the fa
 
 None open: every entry was answered by 899–955 (2026-10-21), decided by the fable at the maintainer's delegation and listed in § To review.
 
+#### b162-place-repeat · One stamped value run twice among siblings
+- **Measured.** B-162's `context.bp` fails `key-duplicate` only when a place's item half is a key. A body-numbered or plain place
+  met twice in one render of one parent (`val h = Header(); div([h, h])`, or `use h` twice) reuses one cell. 819 (5)'s heading says
+  "a repeated place among siblings fails", but its clause names only "two values of one call with one key"; 820 (1) makes one value
+  one place.
+- **Options.** (a) The two runs share one cell (built). (b) Any place met twice in one render of one parent fails at run time
+  (`place-duplicate`, or `key-duplicate` read by 819 (5)'s heading). (c) The second run takes a fresh cell, dropped at the next render.
+- **Recommendation.** (b): 817 (1) keeps one cell per place, and two bodies writing one slot in one render is the aliasing 819 (5)
+  guards against for keys. A program that wants two instances writes the call twice, or a key.
+- **Blocks.** Nothing; built as (a).
+
+#### b162-all-outside-use · `all(cs)` and `memo(f)` used other than as a `use` operand
+- **Measured.** 354's `context-hook-without-use` is raised for `provide`, `context` and `inject` only. `all(cs)` or `memo(f)` outside a
+  `use` type-checks as a `Component` value whose body panics when run. 827 (1)'s "as provide, context and inject are" describes the
+  lowering, not the refusal.
+- **Options.** (a) Refused at check as those three are: 354's code extends to every hook lowered where it is `use`d (`memo`, `all`).
+  (b) A value whose body panics when run (built). (c) std implements the bodies, so the value runs.
+- **Recommendation.** (a): the checker knows it statically, as it does for the three; refuse > accept.
+- **Blocks.** Nothing; built as (b).
+
+#### b162-key-outside-body · `#[key(k)] x` written outside every function
+- **Measured.** Outside every body the lowering writes the key with call number 0. 820 (3) says a value made outside every body
+  carries no stamp, and 818 (3) makes a key's identity "the call and the key's value". With call 0, two module-level calls with one key
+  (`val xs = [#[key(1)] Item(1), #[key(1)] Card(1)]`) collide and fail `key-duplicate` under one runner; inside a body they are two places.
+- **Options.** (a) Call 0 plus the key (built). (b) Refused at check, `key-outside-body`: a key is a stamp (818 (3)), and 820 (3)
+  gives none there; the list is keyed where it is run (`use all(views.map({ v -> #[key(v.id)] v }))`). (c) The module's
+  initialisation numbered as a plain function's body (821 (2)), amending 820 (3) and 891 (1).
+- **Recommendation.** (b): the smallest change, and it keeps 820 (3) whole.
+- **Blocks.** Nothing; built as (a).
+
+#### b162-lowering-aliases · The lowering's `bp…__` aliases and std's `pub` context helpers can be spelled by a program
+- **Measured.** `reserved_names.zig` reserves `__bp_` and `Bp__` only. The component lowering imports std's `context.stamp`,
+  `stampPlain`, `stampKeyed`, `memoIn`, `allIn`, `countNew`, `countEnd` (and the older `enter`, `provideIn`, `find`) as `bpStamp__`, …
+  after the check, and `context.bp` declares them `pub fn`. So `import {context.stamp} from "std"; stamp(Item(p), scope, 7)` type-checks
+  and forges a call number, against 817 (1) ("nothing outside std decides identity") and 814 (2) ("under a name no source can spell").
+- **Options.** (a) As built. (b) The aliases renamed `__bp_stamp` …, so 805 (6) / 830 (3) cover them with no new rule, and a program's
+  reference to the helpers' std names refused as `context-hook-without-use` refuses the hooks. (c) The helpers made module-private,
+  reached by the lowering through 830's call mark, as 814 (2) describes for methods.
+- **Recommendation.** (c): a private helper that only the marked lowering reaches is 830's mechanism already, and the names stay std's.
+- **Blocks.** Nothing.
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 None open: every entry was answered by 899–955 (2026-10-21), decided by the fable at the maintainer's delegation and listed in § To review.

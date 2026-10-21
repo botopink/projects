@@ -189,6 +189,47 @@ Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida
 
 Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida pelo fable por delegação do mantenedor e listada em § Para revisar.
 
+#### b162-place-repeat · Um valor carimbado rodado duas vezes entre irmãos
+- **Medido.** O `context.bp` do B-162 falha `key-duplicate` só quando a metade de item de um lugar é uma chave. Um lugar numerado pelo corpo ou simples
+  encontrado duas vezes numa renderização de um pai (`val h = Header(); div([h, h])`, ou `use h` duas vezes) reusa uma célula. O título de 819 (5) diz
+  "um lugar repetido entre irmãos falha", mas sua cláusula nomeia só "dois valores de uma chamada com uma chave"; 820 (1) faz de um valor
+  um lugar.
+- **Opções.** (a) As duas execuções compartilham uma célula (construído). (b) Qualquer lugar encontrado duas vezes numa renderização de um pai falha em run time
+  (`place-duplicate`, ou `key-duplicate` lido pelo título de 819 (5)). (c) A segunda execução pega uma célula nova, descartada na próxima renderização.
+- **Recomendação.** (b): 817 (1) mantém uma célula por lugar, e dois corpos escrevendo um slot numa renderização é o aliasing de que 819 (5)
+  protege as chaves. Um programa que quer duas instâncias escreve a chamada duas vezes, ou uma chave.
+- **Bloqueia.** Nada; construído como (a).
+
+#### b162-all-outside-use · `all(cs)` e `memo(f)` usados fora de um operando de `use`
+- **Medido.** O `context-hook-without-use` da 354 é emitido só para `provide`, `context` e `inject`. `all(cs)` ou `memo(f)` fora de um
+  `use` passa no checker como um valor `Component` cujo corpo dá panic quando roda. O "como provide, context e inject são" de 827 (1) descreve o
+  lowering, não a recusa.
+- **Opções.** (a) Recusados no check como aqueles três: o código da 354 se estende a todo hook baixado onde é `use`ado (`memo`, `all`).
+  (b) Um valor cujo corpo dá panic quando roda (construído). (c) O std implementa os corpos, então o valor roda.
+- **Recomendação.** (a): o checker sabe disso estaticamente, como sabe dos três; recusar > aceitar.
+- **Bloqueia.** Nada; construído como (b).
+
+#### b162-key-outside-body · `#[key(k)] x` escrito fora de toda função
+- **Medido.** Fora de todo corpo o lowering escreve a chave com o número de chamada 0. 820 (3) diz que um valor feito fora de todo corpo
+  não carrega carimbo, e 818 (3) faz da identidade de uma chave "a chamada e o valor da chave". Com a chamada 0, duas chamadas no nível do módulo com uma chave
+  (`val xs = [#[key(1)] Item(1), #[key(1)] Card(1)]`) colidem e falham `key-duplicate` sob um runner; dentro de um corpo são dois lugares.
+- **Opções.** (a) Chamada 0 mais a chave (construído). (b) Recusado no check, `key-outside-body`: uma chave é um carimbo (818 (3)), e 820 (3)
+  não dá nenhum ali; a lista é chaveada onde é rodada (`use all(views.map({ v -> #[key(v.id)] v }))`). (c) A
+  inicialização do módulo numerada como o corpo de uma função simples (821 (2)), emendando 820 (3) e 891 (1).
+- **Recomendação.** (b): a menor mudança, e mantém 820 (3) inteira.
+- **Bloqueia.** Nada; construído como (a).
+
+#### b162-lowering-aliases · Os aliases `bp…__` do lowering e os helpers `pub` de contexto do std podem ser escritos por um programa
+- **Medido.** `reserved_names.zig` reserva só `__bp_` e `Bp__`. O lowering de componentes importa `context.stamp`,
+  `stampPlain`, `stampKeyed`, `memoIn`, `allIn`, `countNew`, `countEnd` do std (e os mais antigos `enter`, `provideIn`, `find`) como `bpStamp__`, …
+  depois do check, e `context.bp` os declara `pub fn`. Então `import {context.stamp} from "std"; stamp(Item(p), scope, 7)` passa no checker
+  e forja um número de chamada, contra 817 (1) ("nada fora do std decide a identidade") e 814 (2) ("sob um nome que nenhum fonte pode escrever").
+- **Opções.** (a) Como construído. (b) Os aliases renomeados `__bp_stamp` …, então 805 (6) / 830 (3) os cobrem sem regra nova, e a
+  referência de um programa aos nomes do std dos helpers recusada como `context-hook-without-use` recusa os hooks. (c) Os helpers privados ao módulo,
+  alcançados pelo lowering pela marca de chamada da 830, como 814 (2) descreve para métodos.
+- **Recomendação.** (c): um helper privado que só o lowering marcado alcança já é o mecanismo da 830, e os nomes continuam do std.
+- **Bloqueia.** Nada.
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida pelo fable por delegação do mantenedor e listada em § Para revisar.
