@@ -566,6 +566,37 @@ group), answered before every other part of this page; in the order of the steps
 - **Recommendation.** (a).
 - **Blocks.** B-162 P1's run-time half on erlang and beam.
 
+#### 810-a · Does the exhaustiveness refusal carry the code `non-exhaustive`? (decision 810 (3); 144 B-162)
+- **Proposed (opus, 2026-10-20; built as (b)):** (b).
+- **Context.** 810 (3) names the refusal `non-exhaustive`; the checker already refused a `case` over an enum or a union that misses a member, with the text "`case` on 'A | B' is not exhaustive: missing member(s) C" and no code.
+- **Measured.** Every existing enum and union exhaustiveness cell records the text without a code; adding `non-exhaustive:` changes each recorded answer.
+- **Options.**
+  (a) The code added, `non-exhaustive: case on 'A | B' is not exhaustive: missing member(s) C`, every such cell re-recorded.
+  (b) ★ The text kept as it is; 810 (3)'s name read as the refusal's subject, not a code.
+- **Recommendation.** (a) if every refusal is to carry a code the documentation can index; (b) is what is built.
+- **Blocks.** Nothing of 810's landing.
+
+#### 810-b · `is Async<unknown>` on erlang, beam and wasm (decisions 810, 809 (6), 120, 504; 144 B-162)
+- **Proposed (opus, 2026-10-20; nothing built):** —.
+- **Context.** 809 (6) and the renderer (504) test `is Async<unknown>` while they descend; on erlang and beam an `Async<T>` is lowered eagerly to its bare `T` (120), so nothing at run time tells one from a value; wasm has no run-time test for it either. commonJS answers by `instanceof Promise` (built).
+- **Measured.** Built on commonJS; refused nowhere, answered `false` on erlang and beam whatever the value; no wasm test.
+- **Options.**
+  (a) A tagged run-time representation of `Async<T>` on erlang, beam and wasm (a record around the eager value), so `is Async<unknown>` answers.
+  (b) ★ A static rule: `is Async<unknown>` is decided by the checker from the static type and refused where the static type cannot say (`unknown`, a type parameter); the renderer branches on `resolve`'s static answer.
+  (c) Refused everywhere; 809 (6)'s renderer awaits every answer.
+- **Recommendation.** (b): no run-time cost on three targets, and `resolve`'s answer type is known at each site.
+- **Blocks.** B-162 P1 (`resolve`'s and the renderer's tests), B-162 P6.
+
+#### 810-c · A behavior's run-time identity: by its declared name, or qualified by its module? (decisions 810 (1), 23, 603, 635; 144 B-162)
+- **Proposed (opus, 2026-10-20; built as (b)):** (a).
+- **Context.** `v is B<unknown>` over a behavior needs a run-time mark decision 23 says behaviors do not have; 810 built one per backend (`prototype.__bp_b_<B>` on commonJS, `'__bp_behaviors'/0` in each type module and `'__bp_implements'/2` on erlang and beam).
+- **Measured.** The key is the behavior's declared name: two behaviors of one name in two modules test as one; an alias and a supertype (`extends`) are not marked.
+- **Options.**
+  (a) ★ The key qualified by the declaring module's identity (the one 603 and 635 give types), supertypes marked through `extends`.
+  (b) The declared name alone, as built.
+- **Recommendation.** (a): 635 already makes two same-named types of two packages two types.
+- **Blocks.** Nothing of 810's landing; a follow-up row.
+
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
 The questions that hold a step of machine 2 (backends, runtimes, std, tooling, the gate), answered with machine 1's

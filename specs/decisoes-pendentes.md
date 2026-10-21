@@ -566,6 +566,37 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Recomendação.** (a).
 - **Bloqueia.** A metade de run time do B-162 P1 no erlang e no beam.
 
+#### 810-a · A recusa de exaustividade leva o código `non-exhaustive`? (decisão 810 (3); 144 B-162)
+- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
+- **Contexto.** A 810 (3) nomeia a recusa `non-exhaustive`; o checker já recusava um `case` sobre um enum ou uma união que deixa de fora um membro, com o texto "`case` on 'A | B' is not exhaustive: missing member(s) C" e sem código.
+- **Medido.** Toda célula de exaustividade de enum e união existente registra o texto sem código; acrescentar `non-exhaustive:` muda cada resposta registrada.
+- **Opções.**
+  (a) O código acrescentado, `non-exhaustive: case on 'A | B' is not exhaustive: missing member(s) C`, toda célula assim regravada.
+  (b) ★ O texto mantido como está; o nome da 810 (3) lido como o assunto da recusa, não um código.
+- **Recomendação.** (a) se toda recusa deve levar um código que a documentação possa indexar; (b) é o que está construído.
+- **Bloqueia.** Nada do pouso da 810.
+
+#### 810-b · `is Async<unknown>` no erlang, no beam e no wasm (decisões 810, 809 (6), 120, 504; 144 B-162)
+- **Proposto (opus, 2026-10-20; nada construído):** —.
+- **Contexto.** A 809 (6) e o renderer (504) testam `is Async<unknown>` enquanto descem; no erlang e no beam um `Async<T>` é descido de forma ansiosa para o seu `T` puro (120), então nada em run time distingue um de um valor; o wasm também não tem teste em run time para isso. O commonJS responde por `instanceof Promise` (construído).
+- **Medido.** Construído no commonJS; recusado em lugar nenhum, respondido `false` no erlang e no beam qualquer que seja o valor; nenhum teste no wasm.
+- **Opções.**
+  (a) Uma representação marcada de `Async<T>` em run time no erlang, no beam e no wasm (um registro em volta do valor ansioso), para que `is Async<unknown>` responda.
+  (b) ★ Uma regra estática: `is Async<unknown>` é decidido pelo checker a partir do tipo estático e recusado onde o tipo estático não pode dizer (`unknown`, um parâmetro de tipo); o renderer ramifica pela resposta estática de `resolve`.
+  (c) Recusado em todo lugar; o renderer da 809 (6) aguarda toda resposta.
+- **Recomendação.** (b): nenhum custo em run time em três targets, e o tipo da resposta de `resolve` é conhecido em cada site.
+- **Bloqueia.** B-162 P1 (os testes de `resolve` e do renderer), B-162 P6.
+
+#### 810-c · A identidade de um comportamento em run time: pelo nome declarado, ou qualificada pelo módulo? (decisões 810 (1), 23, 603, 635; 144 B-162)
+- **Proposto (opus, 2026-10-20; construído como (b)):** (a).
+- **Contexto.** `v is B<unknown>` sobre um comportamento precisa de uma marca em run time que a decisão 23 diz que comportamentos não têm; a 810 construiu uma por backend (`prototype.__bp_b_<B>` no commonJS, `'__bp_behaviors'/0` em cada módulo de tipo e `'__bp_implements'/2` no erlang e no beam).
+- **Medido.** A chave é o nome declarado do comportamento: dois comportamentos de mesmo nome em dois módulos testam como um; um alias e um supertipo (`extends`) não são marcados.
+- **Opções.**
+  (a) ★ A chave qualificada pela identidade do módulo que declara (a que a 603 e a 635 dão aos tipos), supertipos marcados por `extends`.
+  (b) O nome declarado sozinho, como construído.
+- **Recomendação.** (a): a 635 já faz de dois tipos de mesmo nome de dois pacotes dois tipos.
+- **Bloqueia.** Nada do pouso da 810; uma linha depois.
+
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
 As perguntas que seguram um passo da máquina 2 (backends, runtimes, std, tooling, o gate), respondidas com as da
