@@ -26,7 +26,7 @@ contradictions; a row of a choices table, or a `#####` entry beside it).
 
 The Portuguese page (`decisoes-pendentes.md`) is this page's direct translation: this English text holds the meaning
 (meta `AGENTS.md` § Conventions). Answered ids leave this file; `decisions-taken-steps.md` holds the answers and the next free
-number, which is **833**.
+number, which is **839**.
 
 ## To review — the fable's decisions and the answers to its questions (2026-10-20, 2026-10-21)
 
@@ -53,6 +53,12 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 830 | 811-c | The lowering's own calls known by a mark on the call node, not the 3,000,000 line range; a hand call of a `__bp_` name `reserved-name` |
 | [ ] | 831 | 810-c | A behavior's run-time identity is its declaration's atom `<package>@<path>@@<B>`, no counter (the maintainer accepted the per-target table) |
 | [ ] | 832 | 806-b | The fable's opinion — an inline type in a record field, named by its owner `Bp__<Owner>__<field>`, never a counter — taken with the maintainer's "os dois devem ser aceitos" |
+| [ ] | 833 | 798-b | A `compiler.load` file checked for every target of the caller's manifest, never the build's `--target` |
+| [ ] | 834 | 798-c | `--emit-resolved` writes one file per module, `<dir>/<pkg>/<module path>.bp`, names as written |
+| [ ] | 835 | 798-d | A folded value with no literal printed as the call that builds it (`createContext(v)`, `@embed("path")`) |
+| [ ] | 836 | 798-e | `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` move into the reserved space; `<Type>__<Assoc>` stays |
+| [ ] | 837 | 805-a, 805-c | A `.bpr` per package and per std module, as built; the program's order in the root's file alone |
+| [ ] | 838 | 805-b | A `.bpr` built and run only from its project's directory, `runtime-other-project` otherwise |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -62,9 +68,7 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| 1 | **798-c** | How the resolved program names a module's declarations, and in which files (`--emit-resolved`) | B-163's printer over a package of several modules or packages | (c) one file per module |
-| 2 | **798-d** | A folded value the language cannot write back (a context, bytes, a `@TypeInfo.all` catalogue) | B-163's printer over those cells | (a) the call that built it |
-| 3 | **798-e** | The compiler's generated names outside `__bp_` / `Bp__` that a resolved program shows | B-163's printer | (b) left as they are |
+| — | none open: 798-c, 798-d, 798-e answered by 834–836 (2026-10-21) | | | |
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 
@@ -648,82 +652,6 @@ group), answered before every other part of this page; in the order of the steps
   ```
 - **Recommendation.** (a): one place for a library's helpers whatever its layout (67).
 - **Blocks.** item 16 (the docs.md text).
-
-#### 798-b · Which target is a `compiler.load` file checked for, now that comptime reads none? (decisions 780 (1), 798 (4), 805; 144 B-163)
-- **Proposed (opus, 2026-10-20; built as (a), by the move):** (c).
-- **Context.** 780 (1) compiles a loaded file "as the entry of a package of its own … for the build's target", its refusals the answer; 798 (4) says comptime never reads the target, and B-163's first piece moved `std-unsupported-on-target` and `compiler.beamMemory` to a per-target check at `emit`.
-- **Measured.** The nested compile of `compiler.load` now runs with no target, and the loaded package is never emitted, so a loaded file calling a std function with no binding for the build's target answers `Ok`, where it answered `Error(std-unsupported-on-target)` before. No cell covers it (the suite is 1054 of 1054 after the move).
-- **Options.**
-  (a) As built: a loaded file is checked for no target; `load` answers the same on every target, and a target refusal shows only if the file is later built for one.
-  (b) The load handler runs `target_check` over the loaded tree for the build's target and adds its refusals to the answer; comptime itself never branches on it, but `load`'s answer differs by target.
-  (c) ★ The load handler runs `target_check` over the loaded tree for every target of the package's manifest and adds every refusal (each naming its target); `load`'s answer is one for every target.
-- **Recommendation.** (c): the most restrictive reading of 780 that keeps 798's one resolved tree for every target — a file that cannot run on a target the package declares is refused whatever `--target` says.
-- **Blocks.** B-163's `compiler.load` target row only.
-
-#### 798-c · How does the resolved program name a module's declarations, and in which files? (decisions 798 (2), (4), (5), 805; 144 B-163)
-- **Proposed (opus, 2026-10-20; built for one module only):** (c).
-- **Context.** 798 (4) writes every name qualified by its module, in one file per package; 805 made the binary `.bpr` the intermediate, so `--emit-resolved`'s text is for reading only. `--emit-resolved <dir>` writes `<dir>/<pkg>.bp` today; 798 (2) named `<pkg>.runtime.bp`, which 805 replaced.
-- **Measured.** The printer (botopink-lang 00f15a365) prints single-file cells and passes its oracle (the printing re-read with no comptime, the same answer on four targets; 445 of 494 single-file cells on commonJS); 148 cells of several files wait on this. Renaming to `<module>__<name>` changes what a program prints: a record shows its type's name (`Point(…)` becomes `main__Point(…)`) and the entry `main` is renamed, so 798 (5)'s same-answer oracle fails.
-- **Options.**
-  (a) Qualify functions and values only, never types and variants; one file per package.
-  (b) Qualify only a name two modules both declare; one file per package.
-  (c) ★ One file per module, `<dir>/<pkg>/<module path>.bp`, names as written, the imports kept; the file name the module's.
-- **Recommendation.** (c): no printed answer changes, and the text is a reading aid since the `.bpr` carries the build.
-- **Blocks.** B-163's printer over a package of several modules or packages; the CLI piece's file names.
-
-#### 798-d · What does the resolved program write for a folded value the language cannot write? (decisions 798 (1), 379, 576 (12); 144 B-163)
-- **Proposed (opus, 2026-10-20; nothing built):** (a).
-- **Context.** The printer writes each folded value as the literal the analysis spliced; four kinds have no source spelling.
-- **Measured.** A context (`Context(contextValue: …)`, refused by 379; about 22 cells); bytes (`<<…>>` has no literal syntax; about 10 `embed` cells); a `@TypeInfo.all` catalogue (`Declared<unknown>(… value: f …)` holding functions of different types does not re-check; about 5 cells); a private function of another package reached by an executor's or a template's hygiene import (`__bp_tpl_<pkg>_…`; about 9 cells — this one resolves once the dependency is printed too, 798-c).
-- **Options.**
-  (a) ★ Print the call that built the value (`createContext("")`, `bytes.fromUtf8(…)`, the catalogue's construction), re-run at start.
-  (b) A spelling only a resolved program may write (accepted when the file is read as resolved).
-  (c) These values are not folded; the build-time call stays in the program.
-- **Recommendation.** (a): no new syntax and no second language, the program the same botopink every reader reads.
-- **Blocks.** B-163's printer over those cells.
-
-#### 798-e · Do the compiler's generated names leave for the reserved space? (decisions 805 (6), 297, 631, 298, 216, 207; 144 B-163)
-- **Proposed (opus, 2026-10-20; built as (b)):** (b).
-- **Context.** 805 (6) reserves `$`, `__bp_` and `Bp__`; the printer moved `_bp_init_` → `__bp_init_` and `Bp_Load*` / `Bp_RunFailure` → `Bp__Load*` / `Bp__RunFailure`.
-- **Measured.** Still printed outside that space: `<f>__type` (297), `Type__Field` (631), `declared__metaAll__T` (298), `<Type>__<Assoc>` (216), `BpInline__…` (207), `BpRef`, `__<Type>__<Section>`, `__embed_<p>`.
-- **Since 832.** 207's `BpInline__…` moves to `Bp__<fn>__<param>`, and a record field's inline type is `Bp__<Owner>__<field>` (832); the rest of the list is still this question's.
-- **Options.**
-  (a) Each renamed into `__bp_` / `Bp__`, the snapshots that show them re-recorded.
-  (b) ★ Left as they are: 805 (6) refuses a hand-written name and no more.
-- **Recommendation.** (b) unless a hand-written name can collide with one; then (a) for that one.
-- **Blocks.** Nothing built waits; B-163's printer prints them as they are.
-
-#### 805-a · Where does std sit in the `.bpr`: one file per std module, one `std.bpr`, or inside each package's file? (decisions 805 (1), 509 (1); 144 B-163)
-- **Proposed (opus, 2026-10-20; built as (a)):** (a).
-- **Context.** 805 (1) leaves std's place to a measurement. Built: `<dir>/std/<module>.bpr` per embedded std module, level B's filing (509 (1): one per module).
-- **Measured.** `runtime_file.sh` sees `std/math.bpr` beside `app.bpr` / `lib.bpr`; no count of std files or bytes per program was taken.
-- **Options.**
-  (a) ★ As built: one file per std module, the same bytes for every program that embeds it, the root's `program` table placing each.
-  (b) One `std.bpr` per program: fewer files, rewritten by every program, not reused.
-  (c) std's modules inside each package's file: no sharing, and a dependency's file no longer dependant-free when std differs by program.
-- **Recommendation.** (a): the only option that keeps 805 (1)'s "a dependency's file serves every program" for std too, the filing level B already proved; the file count of a `rakun` scaffold measured once before the box closes.
-- **Blocks.** Nothing built; B-161's scratch layout.
-
-#### 805-b · Does a `.bpr` build from outside its project? (decisions 805 (1), 798 (2), (6), 519; 144 B-163, B-161)
-- **Proposed (opus, 2026-10-20; built as (a)):** (a).
-- **Context.** A project's or a dependency's `.mjs` / `.erl` host file is found through the working directory's `botopink.json`, `BOTOPINK_LIB_ROOTS` and the dependency's directory (`libs.zig` `sidecarOwner`); std's ship from the binary.
-- **Measured.** Every `.bpr` build of `runtime_file.sh` runs in the project's directory and passes; the same `.bpr` built from another directory with a dependency's host file is refused `SidecarRefused`. No decision says a `.bpr` builds from anywhere: 805's motive is reusing a build already done, and 798 (6)'s `cell check` runs in the cell's directory.
-- **Options.**
-  (a) ★ As built: a `.bpr` is built from its project's directory, said in `botopink build --help` and `compiler-cli/AGENTS.md`.
-  (b) Each package's `.bpr` carries the bytes of the host files its host templates name (519's precedent: the artifact carries its copy).
-  (c) The project's absolute directory recorded in the root's file (broken when moved).
-- **Recommendation.** (a) now; (b) only if a `.bpr` is ever shipped, which nothing planned asks.
-- **Blocks.** Nothing; B-161 runs where (a) holds.
-
-#### 805-c · Does every `.bpr` carry its own module order, so any one builds as a program? (decisions 805 (1), 592 (2); 144 B-163)
-- **Proposed (opus, 2026-10-20; built as (a)):** (a).
-- **Context.** Only the root's file holds the program's module order, root and dependencies; a dependency's file handed to `build` is refused `runtime-not-a-program`. A library has no `main` (592 (2)).
-- **Measured.** A library's own `--emit-runtime <dir>` writes `<dir>/lib.bpr` with its order; a dependant's build into the same `<dir>` rewrites it without — the same path, different bytes; readers ignore a dependency file's order, so nothing misbuilds.
-- **Options.**
-  (a) ★ As built: a dependency's file is never a program, refused with its code.
-  (b) Every file carries its own closure order (its modules, its dependencies' and the std modules it reaches): any `.bpr` builds, and a package's file is the same bytes as root or as dependency.
-- **Recommendation.** (a): the most restrictive; (b)'s order inside a dependant's session can interleave with the dependant's modules (592 (4), (5)), a second computation.
-- **Blocks.** Nothing.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

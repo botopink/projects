@@ -3153,7 +3153,7 @@ The `fable` plan is written (2026-10-20): a commonJS program at `conformance/che
 - [ ] `io.process`: `start` takes `cwd` and `env` as parameters, no shell (798 (6)); `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
       whose output comes back as an `Async<Exit>`, so N packages run at once within the pool's jobs
 - [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
-      `--json --emit-runtime <scratch>` and runs every target of its manifest from the intermediate (798 (6)), the scratch removed after, builds the records (475 (2) with 789's `build`), applies the departures under
+      `--json --emit-runtime <scratch>`, each build and run with its working directory the package's (838 (4)), and runs every target of its manifest from the intermediate (798 (6)), the scratch removed after, builds the records (475 (2) with 789's `build`), applies the departures under
       `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's
 - [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
       lines then the `out` lines, on every target — recorded by the program, not by the CLI (B-160's cut)
@@ -3185,28 +3185,34 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       target-free, but the entry still holds each target's emitted code, so it stays per target
       — one fold channel: a folded value reaches the backends only as the literal the analysis splices (`srcRewrites`);
       `comptime_vals` gone from the transform, the four emitters and the analysis result
-- [ ] a `compiler.load` file's std call with no binding for the target is no longer refused (780 (1): "for the build's target"),
-      the nested compile running with no target since 798 (4) — waits on question 798-b
-- [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name qualified by its module, a
+- [ ] a `compiler.load` file is checked for every target of the caller's manifest (833): the load handler runs `codegen/target_check.zig`'s
+      `refusalOf` per lookup name after the nested compile, its refusals after the analysis ones; cell `load_refused_for_every_manifest_target`
+      (a file calling a node-only std function, a manifest of four targets, `Error` on every target)
+- [ ] `--emit-resolved`'s printer: valid botopink, a host template kept as `#[compiler.external(…)]`, every name as written, one file per module (834), a
       specialised copy's `name_$N` between backticks (805 (5)); `reserved-name` for a hand-written `$` / `__bp_` / `Bp__` name (805 (6))
       — `reserved-name` built: refused at a declaration's name in a user module's first pass (std, loaded packages and the
       spliced re-analysis skipped; a name the parser writes into the tree passes); cells in `build_runtime_binary_reused-805/refused/`
       — the printer built for a package of one module (`comptime/resolved_print.zig` over `OkData.resolved`, a copy of the module
       taken before inference with only the comptime rewrites applied; `botopink build --emit-resolved <dir>` writes `<dir>/<pkg>.bp`;
       `_bp_init_` → `__bp_init_`, `Bp_Load*` → `Bp__Load*`); its oracle `codegen/tests/resolved_print.zig` (re-read with no comptime,
-      the same answer on four targets); several modules or packages wait on question 798-c, four folded-value kinds on 798-d, the
-      generated names outside the reserved space on 798-e
+      the same answer on four targets); left (834–836): one file per module as the `.bpr` groups them, `<dir>/<pkg>/<module path>.bp`, the
+      dependencies and `std/` printed, the oracle over a package of several modules and a dependency; a context printed `createContext(v)`, an
+      `Asset` `@embed("path")`, a `@TypeInfo.all` read kept until B-137; `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` moved into the
+      reserved space, the snapshots re-recorded; cells `resolved_one_file_per_module`, `resolved_prints_the_builder`, `hand_written_twin_name_is_free`
 - [x] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
       phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
       when missing, each file written named (798 (2), (3))
       — built as: one `<dir>/<group>.bpr` per package — the root, each dependency, each loaded file's package, each std module
-      (`<dir>/std/<module>.bpr`, level B's filing; question 805-a) — level B's `analysis_entry` encoding under its own magic, keyed by
-      the compiler's stamp; only the root's file holds the module order (805-c); `build` / `run --target <t> x.bpr` go straight to
+      (`<dir>/std/<module>.bpr`, level B's filing; 837 (1)) — level B's `analysis_entry` encoding under its own magic, keyed by
+      the compiler's stamp; only the root's file holds the module order (837 (2), (3)); `build` / `run --target <t> x.bpr` go straight to
       `emit`; refusals `runtime-target-required`, `runtime-other-compiler`, `runtime-unreadable`, `runtime-missing`,
-      `runtime-not-a-program`; built from the project's directory (805-b); oracle `compiler-cli/tests/runtime_file.sh` (the direct and
+      `runtime-not-a-program`; built from the project's directory (838); oracle `compiler-cli/tests/runtime_file.sh` (the direct and
       the `.bpr` builds byte-equal on four targets, every refusal); the root's bytes may differ between a warm and a cold build (the
       encoder's identity table follows the live tree's aliasing), the decoded tree the same
+- [ ] `build` / `run` over a `.bpr` refuse `runtime-other-project` when the working directory holds no `botopink.json` or one of another name
+      than the file's root (838 (3)); `--help` and `compiler-cli`'s AGENTS say it; a `runtime_file.sh` case (`app.bpr` from the work directory
+      and from `lib/`), red on the parent
 - [x] the root's `.bpr` records the manifest's wasm host (334 (2)), read into `Config.wasm_host` and the runner's host: today a project
       declaring `"wasm": { "host": "browser" }` builds a WASI component from its `.bpr` and `run` starts wasmtime, against 798 (5);
       `--target` stays required, no `--wasm-host` flag; a `runtime_file.sh` case (browser host, the wasm builds byte-equal, `run` under

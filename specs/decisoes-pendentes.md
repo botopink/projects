@@ -26,7 +26,7 @@ contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao l
 
 A página em português (`decisoes-pendentes.md`) é a tradução direta desta página: o texto em inglês guarda o sentido
 (`AGENTS.md` da meta § Conventions). Ids respondidos saem deste arquivo; `decisions-taken-steps.md` guarda as respostas e o próximo
-número livre, que é **833**.
+número livre, que é **839**.
 
 ## Para revisar — as decisões do fable e as respostas às suas perguntas (2026-10-20, 2026-10-21)
 
@@ -53,6 +53,12 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 830 | 811-c | As chamadas do próprio lowering conhecidas por uma marca no nó da chamada, não pela faixa de linhas 3.000.000; uma chamada à mão de um nome `__bp_` é `reserved-name` |
 | [ ] | 831 | 810-c | A identidade de um behavior em run time é o átomo da sua declaração `<package>@<path>@@<B>`, sem contador (o mantenedor aceitou a tabela por alvo) |
 | [ ] | 832 | 806-b | A opinião do fable — um tipo inline num campo de registro, nomeado pelo dono `Bp__<Owner>__<field>`, nunca um contador — tomada com o "os dois devem ser aceitos" do mantenedor |
+| [ ] | 833 | 798-b | Um arquivo do `compiler.load` checado para todo alvo do manifesto de quem chama, nunca o `--target` do build |
+| [ ] | 834 | 798-c | O `--emit-resolved` escreve um arquivo por módulo, `<dir>/<pkg>/<module path>.bp`, os nomes como escritos |
+| [ ] | 835 | 798-d | Um valor dobrado sem literal impresso como a chamada que o constrói (`createContext(v)`, `@embed("path")`) |
+| [ ] | 836 | 798-e | `<f>__type`, `__<Enum>__<Section>`, `__embed_<p>` vão para o espaço reservado; `<Type>__<Assoc>` fica |
+| [ ] | 837 | 805-a, 805-c | Um `.bpr` por pacote e por módulo da std, como construído; a ordem do programa só no arquivo da raiz |
+| [ ] | 838 | 805-b | Um `.bpr` compilado e rodado só do diretório do seu projeto, `runtime-other-project` fora dele |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -62,9 +68,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | O que decide | Bloqueia | Recomendação |
 |---|---|---|---|---|
-| 1 | **798-c** | Como o programa resolvido nomeia as declarações de um módulo, e em quais arquivos (`--emit-resolved`) | O printer da B-163 sobre um pacote de vários módulos ou pacotes | (c) um arquivo por módulo |
-| 2 | **798-d** | Um valor dobrado que a linguagem não consegue escrever de volta (um contexto, bytes, um catálogo de `@TypeInfo.all`) | O printer da B-163 sobre essas células | (a) a chamada que o construiu |
-| 3 | **798-e** | Os nomes gerados pelo compilador fora de `__bp_` / `Bp__` que um programa resolvido mostra | O printer da B-163 | (b) deixados como estão |
+| — | nenhuma aberta: 798-c, 798-d, 798-e respondidas pelas 834–836 (2026-10-21) | | | |
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
@@ -648,82 +652,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   ```
 - **Recomendação.** (a): um lugar para os helpers de uma biblioteca qualquer que seja seu layout (67).
 - **Bloqueia.** item 16 (o texto dos docs.md).
-
-#### 798-b · Para qual target um arquivo de `compiler.load` é checado, agora que o comptime não lê nenhum? (decisões 780 (1), 798 (4), 805; 144 B-163)
-- **Proposto (opus, 2026-10-20; construído como (a), pela mudança):** (c).
-- **Contexto.** A 780 (1) compila um arquivo carregado "como a entrada de um pacote próprio … para o target do build", suas recusas sendo a resposta; a 798 (4) diz que o comptime nunca lê o target, e a primeira peça da B-163 moveu `std-unsupported-on-target` e `compiler.beamMemory` para uma checagem por target no `emit`.
-- **Medido.** A compilação aninhada de `compiler.load` agora roda sem target, e o pacote carregado nunca é emitido, então um arquivo carregado que chama uma função da std sem binding para o target do build responde `Ok`, onde antes respondia `Error(std-unsupported-on-target)`. Nenhuma célula cobre isso (a suíte está em 1054 de 1054 depois da mudança).
-- **Opções.**
-  (a) Como construído: um arquivo carregado é checado para nenhum target; `load` responde o mesmo em todo target, e uma recusa de target só aparece se o arquivo for depois construído para um.
-  (b) O handler de load roda `target_check` sobre a árvore carregada para o target do build e soma suas recusas à resposta; o próprio comptime nunca ramifica nele, mas a resposta de `load` difere por target.
-  (c) ★ O handler de load roda `target_check` sobre a árvore carregada para todo target do manifesto do pacote e soma toda recusa (cada uma nomeando seu target); a resposta de `load` é uma para todo target.
-- **Recomendação.** (c): a leitura mais restritiva da 780 que mantém a árvore resolvida única da 798 para todo target — um arquivo que não roda num target que o pacote declara é recusado o que quer que `--target` diga.
-- **Bloqueia.** Só a linha de target de `compiler.load` da B-163.
-
-#### 798-c · Como o programa resolvido nomeia as declarações de um módulo, e em quais arquivos? (decisões 798 (2), (4), (5), 805; 144 B-163)
-- **Proposto (opus, 2026-10-20; construído só para um módulo):** (c).
-- **Contexto.** A 798 (4) escreve todo nome qualificado pelo seu módulo, num arquivo por pacote; a 805 fez do `.bpr` binário o intermediário, então o texto do `--emit-resolved` é só para leitura. Hoje `--emit-resolved <dir>` escreve `<dir>/<pkg>.bp`; a 798 (2) nomeava `<pkg>.runtime.bp`, que a 805 substituiu.
-- **Medido.** O printer (botopink-lang 00f15a365) imprime células de um arquivo e passa no seu oráculo (a impressão relida sem comptime, a mesma resposta nos quatro targets; 445 de 494 células de um arquivo no commonJS); 148 células de vários arquivos esperam isto. Renomear para `<module>__<name>` muda o que um programa imprime: um registro mostra o nome do seu tipo (`Point(…)` vira `main__Point(…)`) e a entrada `main` é renomeada, então o oráculo de mesma resposta da 798 (5) falha.
-- **Opções.**
-  (a) Qualificar só funções e valores, nunca tipos e variantes; um arquivo por pacote.
-  (b) Qualificar só um nome que dois módulos declaram; um arquivo por pacote.
-  (c) ★ Um arquivo por módulo, `<dir>/<pkg>/<module path>.bp`, os nomes como escritos, os imports mantidos; o nome do arquivo o do módulo.
-- **Recomendação.** (c): nenhuma resposta impressa muda, e o texto é um auxílio de leitura já que o `.bpr` carrega o build.
-- **Bloqueia.** O printer da B-163 sobre um pacote de vários módulos ou pacotes; os nomes de arquivo da peça da CLI.
-
-#### 798-d · O que o programa resolvido escreve para um valor dobrado que a linguagem não consegue escrever? (decisões 798 (1), 379, 576 (12); 144 B-163)
-- **Proposto (opus, 2026-10-20; nada construído):** (a).
-- **Contexto.** O printer escreve cada valor dobrado como o literal que a análise inseriu; quatro tipos não têm grafia no fonte.
-- **Medido.** Um contexto (`Context(contextValue: …)`, recusado pela 379; cerca de 22 células); bytes (`<<…>>` não tem sintaxe literal; cerca de 10 células de `embed`); um catálogo de `@TypeInfo.all` (`Declared<unknown>(… value: f …)` guardando funções de tipos diferentes não re-checa; cerca de 5 células); uma função privada de outro pacote alcançada pelo import de higiene de um executor ou de um template (`__bp_tpl_<pkg>_…`; cerca de 9 células — esta resolve quando a dependência também é impressa, 798-c).
-- **Opções.**
-  (a) ★ Imprimir a chamada que construiu o valor (`createContext("")`, `bytes.fromUtf8(…)`, a construção do catálogo), re-executada no início.
-  (b) Uma grafia que só um programa resolvido pode escrever (aceita quando o arquivo é lido como resolvido).
-  (c) Esses valores não são dobrados; a chamada de build fica no programa.
-- **Recomendação.** (a): nenhuma sintaxe nova e nenhuma segunda linguagem, o programa o mesmo botopink que todo leitor lê.
-- **Bloqueia.** O printer da B-163 sobre essas células.
-
-#### 798-e · Os nomes gerados pelo compilador saem para o espaço reservado? (decisões 805 (6), 297, 631, 298, 216, 207; 144 B-163)
-- **Proposto (opus, 2026-10-20; construído como (b)):** (b).
-- **Contexto.** A 805 (6) reserva `$`, `__bp_` e `Bp__`; o printer moveu `_bp_init_` → `__bp_init_` e `Bp_Load*` / `Bp_RunFailure` → `Bp__Load*` / `Bp__RunFailure`.
-- **Medido.** Ainda impressos fora desse espaço: `<f>__type` (297), `Type__Field` (631), `declared__metaAll__T` (298), `<Type>__<Assoc>` (216), `BpInline__…` (207), `BpRef`, `__<Type>__<Section>`, `__embed_<p>`.
-- **Desde a 832.** O `BpInline__…` da 207 passa a `Bp__<fn>__<param>`, e o tipo inline de um campo de registro é `Bp__<Owner>__<field>` (832); o resto da lista continua sendo desta pergunta.
-- **Opções.**
-  (a) Cada um renomeado para `__bp_` / `Bp__`, os snapshots que os mostram regravados.
-  (b) ★ Deixados como estão: a 805 (6) recusa um nome escrito à mão e nada mais.
-- **Recomendação.** (b) a menos que um nome escrito à mão possa colidir com um; então (a) para esse.
-- **Bloqueia.** Nada construído espera; o printer da B-163 os imprime como estão.
-
-#### 805-a · Onde a std fica no `.bpr`: um arquivo por módulo da std, um `std.bpr`, ou dentro do arquivo de cada pacote? (decisões 805 (1), 509 (1); 144 B-163)
-- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
-- **Contexto.** A 805 (1) deixa o lugar da std para uma medição. Construído: `<dir>/std/<module>.bpr` por módulo embutido da std, o arquivamento do level B (509 (1): um por módulo).
-- **Medido.** O `runtime_file.sh` vê `std/math.bpr` ao lado de `app.bpr` / `lib.bpr`; nenhuma contagem de arquivos da std ou de bytes por programa foi feita.
-- **Opções.**
-  (a) ★ Como construído: um arquivo por módulo da std, os mesmos bytes para todo programa que o embute, a tabela `program` da raiz posicionando cada um.
-  (b) Um `std.bpr` por programa: menos arquivos, reescrito por todo programa, não reutilizado.
-  (c) Os módulos da std dentro do arquivo de cada pacote: nenhum compartilhamento, e o arquivo de uma dependência deixa de ser livre do dependente quando a std difere por programa.
-- **Recomendação.** (a): a única opção que mantém o "o arquivo de uma dependência serve todo programa" da 805 (1) também para a std, o arquivamento que o level B já provou; a contagem de arquivos de um scaffold do `rakun` medida uma vez antes de a caixa fechar.
-- **Bloqueia.** Nada construído; o layout de scratch da B-161.
-
-#### 805-b · Um `.bpr` é construído de fora do seu projeto? (decisões 805 (1), 798 (2), (6), 519; 144 B-163, B-161)
-- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
-- **Contexto.** O arquivo de host `.mjs` / `.erl` de um projeto ou de uma dependência é achado pelo `botopink.json` do diretório de trabalho, pelo `BOTOPINK_LIB_ROOTS` e pelo diretório da dependência (`libs.zig` `sidecarOwner`); os da std saem do binário.
-- **Medido.** Todo build de `.bpr` do `runtime_file.sh` roda no diretório do projeto e passa; o mesmo `.bpr` construído de outro diretório com o arquivo de host de uma dependência é recusado `SidecarRefused`. Nenhuma decisão diz que um `.bpr` é construído de qualquer lugar: o motivo da 805 é reutilizar um build já feito, e o `cell check` da 798 (6) roda no diretório da célula.
-- **Opções.**
-  (a) ★ Como construído: um `.bpr` é construído do diretório do seu projeto, dito no `botopink build --help` e no `compiler-cli/AGENTS.md`.
-  (b) O `.bpr` de cada pacote carrega os bytes dos arquivos de host que seus templates de host nomeiam (o precedente da 519: o artefato carrega a sua cópia).
-  (c) O diretório absoluto do projeto gravado no arquivo da raiz (quebra quando movido).
-- **Recomendação.** (a) agora; (b) só se um `.bpr` algum dia for distribuído, o que nada planejado pede.
-- **Bloqueia.** Nada; a B-161 roda onde (a) vale.
-
-#### 805-c · Todo `.bpr` carrega a sua própria ordem de módulos, para que qualquer um seja construído como programa? (decisões 805 (1), 592 (2); 144 B-163)
-- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
-- **Contexto.** Só o arquivo da raiz guarda a ordem de módulos do programa, a raiz e as dependências; o arquivo de uma dependência entregue ao `build` é recusado `runtime-not-a-program`. Uma biblioteca não tem `main` (592 (2)).
-- **Medido.** O próprio `--emit-runtime <dir>` de uma biblioteca escreve `<dir>/lib.bpr` com a sua ordem; o build de um dependente no mesmo `<dir>` o reescreve sem ela — o mesmo caminho, bytes diferentes; os leitores ignoram a ordem do arquivo de uma dependência, então nada é construído errado.
-- **Opções.**
-  (a) ★ Como construído: o arquivo de uma dependência nunca é um programa, recusado com o seu código.
-  (b) Todo arquivo carrega a sua própria ordem de fechamento (os seus módulos, os das suas dependências e os módulos da std que alcança): qualquer `.bpr` é construído, e o arquivo de um pacote tem os mesmos bytes como raiz ou como dependência.
-- **Recomendação.** (a): a mais restritiva; a ordem de (b) dentro da sessão de um dependente pode se intercalar com os módulos do dependente (592 (4), (5)), um segundo cálculo.
-- **Bloqueia.** Nada.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
