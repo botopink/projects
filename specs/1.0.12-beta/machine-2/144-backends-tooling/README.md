@@ -3227,8 +3227,14 @@ The `fable` plan is written (2026-10-20): a commonJS program at `conformance/che
       off stdout) · `refused` (`module`, `message`, `at`, `label`, `from`, read from the rendered refusal — the plan's blind-spot risk) ·
       `runtime` (each `.bpr` written, the root's marked; the intermediate is 805's `.bpr` set) · `summary` (`ok`, `exit`, `refused`) last;
       `--cache-root` sets the level A / B root; `compiler-cli/tests/build_json.sh`; `cell check` byte-identical before and after (755 cells)
-- [ ] `io.process`: `start` takes `cwd` and `env` as parameters, no shell (798 (6)); `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
+- [x] `io.process`: `start` takes `cwd` and `env` as parameters, no shell (798 (6)); `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
       whose output comes back as an `Async<Exit>`, so N packages run at once within the pool's jobs
+      — built as (22a892b58): `start(cmd, args, cwd: ?string, env: string[]) -> Result<Captured, ProcessError>`, `Captured.wait() ->
+      Async<Exit>` (repeatable) and `kill(Signal)`; node's `spawn`, no shell, stdout and stderr apart. The choice written here: the program
+      runs on commonJS alone and `run` is unchanged (an erlang port folds stderr into stdout); on erlang and beam `start` answers
+      `Error(Unsupported(…))` (a call refused there would refuse the whole module, `spawn` with it), on wasm the call is refused
+      `std-unsupported-on-target`; `env` `NAME=value` entries added to the parent's — both waiting on question 790-b; cells under
+      `cell_check_program-790/`
 - [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
       `--json --emit-runtime <scratch>`, each build and run with its working directory the package's (838 (4)), and runs every target of its manifest from the intermediate (798 (6)), the scratch removed after, builds the records (475 (2) with 789's `build`), applies the departures under
       `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's

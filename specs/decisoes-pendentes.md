@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**32 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**33 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -133,6 +133,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 5 | **547-b** | Se o `x = f(x)` de um var `#[beamMemory(.PersistentTerm)]` é atômico | nada (como construído: não atômico) | (b) não atômico, a referência diz isso |
 | 6 | **789-b** | Onde ficam as linhas `build` de uma célula quando o pacote é recusado: depois dos registros da recusa, ou antes | B-161 peça 3b / 4 | (b) antes da recusa, como a cláusula diz |
 | 7 | **547-c** | O código que recusa um `var` de módulo que guarda uma task | nada (como construído) | (a) `module-var-holds-task` |
+| 8 | **790-b** | A forma do `env` de `io.process.start` e a sua resposta fora do commonJS | nada (como construído) | (a) como construído |
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
@@ -211,6 +212,18 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
   nunca através de um tipo função (ele só guarda uma closure); um `val` de módulo que guarda uma task é aceito.
 - **Opções.** (a) `module-var-holds-task`, como construído; (b) outro nome.
 - **Recomendação.** (a): diz o que é recusado nas palavras da 547 (iii).
+- **Bloqueia.** nada.
+
+#### 790-b · O `env` de `io.process.start`, e o que ele responde fora do commonJS (decisões 790, 798 (6), 518 (4); 144 B-161)
+
+- **Medido.** Como construído (22a892b58): `env: string[]` de entradas `NAME=value` somadas ao ambiente do pai (o primeiro `=` termina o
+  nome); no erlang e no beam `start` responde `Error(Unsupported("io.process.start works on commonJS alone"))` — uma chamada recusada lá
+  recusaria o módulo `std/io/process` inteiro nesses alvos, o `spawn` junto, como `run` responde `HostError` hoje —; no wasm a chamada é
+  recusada `std-unsupported-on-target` (518 (4)). As células gravam a resposta do commonJS como um desvio, o `Unsupported` do erlang e do beam como a
+  saída.
+- **Opções.** (a) como construído; (b) `env: Dict<string, string>` (uma conversão do lado JS); (c) a mesma recusa em todo alvo fora do
+  commonJS (exige que o módulo compile com um membro sem ligação no erlang e no beam).
+- **Recomendação.** (a): o programa que o lê roda no commonJS (a escolha da B-161), e uma recusa no erlang custaria o `spawn`.
 - **Bloqueia.** nada.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)

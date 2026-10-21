@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**32 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**33 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -133,6 +133,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 5 | **547-b** | Whether a `#[beamMemory(.PersistentTerm)]` var's `x = f(x)` is atomic | nothing (as built: not atomic) | (b) not atomic, the reference says so |
 | 6 | **789-b** | Where a cell's `build` lines sit when the package is refused: after the refusal records, or before | B-161 piece 3b / 4 | (b) before the refusal, as the clause says |
 | 7 | **547-c** | The code refusing a module `var` that holds a task | nothing (as built) | (a) `module-var-holds-task` |
+| 8 | **790-b** | `io.process.start`'s `env` shape and its answer off commonJS | nothing (as built) | (a) as built |
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
@@ -211,6 +212,18 @@ problem, an example, the options, the recommendation and why — and its full en
   never through a function type (it holds a closure only); a module `val` holding a task is accepted.
 - **Options.** (a) `module-var-holds-task`, as built; (b) another name.
 - **Recommendation.** (a): it says what is refused in the words of 547 (iii).
+- **Blocks.** nothing.
+
+#### 790-b · `io.process.start`'s `env`, and what it answers off commonJS (decisions 790, 798 (6), 518 (4); 144 B-161)
+
+- **Measured.** As built (22a892b58): `env: string[]` of `NAME=value` entries added to the parent's environment (the first `=` ends the
+  name); on erlang and beam `start` answers `Error(Unsupported("io.process.start works on commonJS alone"))` — a call refused there would
+  refuse the whole `std/io/process` module on those targets, `spawn` with it, as `run` answers `HostError` today —; on wasm the call is
+  refused `std-unsupported-on-target` (518 (4)). The cells record commonJS's answer as a departure, erlang's and beam's `Unsupported` as the
+  output.
+- **Options.** (a) as built; (b) `env: Dict<string, string>` (a conversion on the JS side); (c) the same refusal on every target off
+  commonJS (needs the module to compile with an unbound member on erlang and beam).
+- **Recommendation.** (a): the program that reads it runs on commonJS (B-161's choice), and a refusal on erlang would cost `spawn`.
 - **Blocks.** nothing.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
