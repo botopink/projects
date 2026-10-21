@@ -3210,8 +3210,12 @@ plan first) · **After:** B-160's box; B-163
 The `fable` plan is written (2026-10-20): a commonJS program at `conformance/check/` over `build --json` and a new
 `io.process.start`; its open points are answered by decision 798 — each package built once into the intermediate, every target run from it.
 
-- [ ] `botopink build --json` (798 (6)): JSON lines on stdout — the targets, a build print, a refusal (`Diagnostic`'s fields plus
+- [x] `botopink build --json` (798 (6)): JSON lines on stdout — the targets, a build print, a refusal (`Diagnostic`'s fields plus
       `from`), the intermediate's path, a summary —, stderr as today; `build` / `run` take `--cache-root <dir>`
+      — built as (d18b2efe0): `refusalsOf` and its helpers in `cli/refusals.zig`; events `targets` · `build` (one per line, raw prints
+      off stdout) · `refused` (`module`, `message`, `at`, `label`, `from`, read from the rendered refusal — the plan's blind-spot risk) ·
+      `runtime` (each `.bpr` written, the root's marked; the intermediate is 805's `.bpr` set) · `summary` (`ok`, `exit`, `refused`) last;
+      `--cache-root` sets the level A / B root; `compiler-cli/tests/build_json.sh`; `cell check` byte-identical before and after (755 cells)
 - [ ] `io.process`: `start` takes `cwd` and `env` as parameters, no shell (798 (6)); `run` keeps `stderr` apart on erlang, or the program runs on commonJS alone (the choice written here); a spawn
       whose output comes back as an `Async<Exit>`, so N packages run at once within the pool's jobs
 - [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
