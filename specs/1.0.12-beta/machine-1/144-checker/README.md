@@ -2840,7 +2840,10 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module
       (814); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
       — the modifier landed: `opaque` contextual before `type` (`opaque-construction`, `opaque-field`, `opaque-method`, `opaque-not-record`),
-      cells under `opaque_type_modifier-811/cells/` (questions 811-a … c); `Scope` opaque is B-162 P1's
+      cells under `opaque_type_modifier-811/cells/` (811-a answered by 829, as built; 811-b open); `Scope` opaque is B-162 P1's
+- [ ] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
+      line range gone; `reserved-name` at a call of a `__bp_` name (`reserved_names.zig`); cell `lowering_call_marked` (a program calling
+      `__bp_load_module` refused, an adopted default body building an opaque type refused), red on the parent
 - [x] 811 (4) (with B-158's owner): `Module` opaque, made by a method without `pub` `compiler.load` lowers to, `mod.name()` /
       `mod.path()` for the fields; the cells and libraries that read `mod.name` / `mod.path` respelled
 - [ ] ~~791-d (narrowing a union child)~~ — answered by 810; what stays is the run-time
@@ -2857,11 +2860,16 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       questions
       — done: P1 `Scope`, the three names, `resolve`, the run-time tests and `Renderable` out (after 810; 809-b, 809-e, 809-f, 809-i); P2 the type form
       respelled, `component_types.zig` removed (809-h); P3 a returned component resolved (809-c); P4 `Children` (804-c); P6 rakun (809-d, 804-d, 809-g)
-- [ ] 809 (1), (5): std's `context` module declares `Composition<T>`, `Composable<T>` and `Component<T>` (the union, not a type of its own);
+- [ ] 809 (1), (5): `primitives.bp`'s compiler section declares `Composition<T>`, `Composable<T>` and `Component<T>` (826; `Scope` and `Place` in
+      `context.bp`), the parser's wrapper names gaining `Composition` and losing `Renderable`, the checker's `Component` sites reading the
+      three names nominally; cell `component_names_in_prelude`;
       `implement Component<…>` refused naming `Composable`; a `T` that is a `Composition`, a `Composable`, a `Component` or an `Async`
       refused where written; cells
 - [ ] 809 (2), (3): the type form `implement Composable<R>` with `component fn compose(self: Self) -> Composition<R>`, the marker required
-      (refused without it), `Card(…)` a value of the type; `component fn` lowering to a `Composition`; 804 (1)'s cells respelled
+      (refused without it), `Card(…)` a value of the type; `component fn` lowering to a `Composition`; 804 (1)'s cells respelled; the codes
+      828's: `implement-component-not-composable`, `component-compose-unmarked`, `component-scope-field`, `component-compose-called`,
+      `component-arg-is-component`; `component-compose-missing` and `component-use-outside-compose` removed (58's and `use-without-component`);
+      the cells of `component_compose_entry-804/cells/` re-recorded, `component_types.zig` and its codes removed; cell `composable_refusal_codes`
 - [ ] 809 (4): a component body answering a `Component<T>` resolves it with a child cell (816 (6)) before it returns (`return div([…])`,
       `return Card(…)` with no `use`); cell, four targets
 - [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope, key: Place) -> T | Async<T>` (819), awaiting nothing inside, the one way a
@@ -2870,6 +2878,9 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       it answers an `Async`; 825: with no scope it makes `Scope.root()` and closes it by `defer root.close()` (539)), every
       `await c.run(RenderScope.root())` respelled `await run(c)` by codemod (66 cells; rakun's
       roots in 165's commit); `run` reads `is Async<unknown>` (823), on wasm after 164 s2's `$task` test; typed by 810; cell `component_root_run`
+- [ ] decision 827: std's `component fn all<T>(cs: Component<T>[]) -> Component<T[]>` lowered at the `use` (its cell at the `use`'s place,
+      each entry `resolve(cs[i], scope, Place.none())` under its own stamp, the answer an `Async<T[]>` only when an entry's is, 823's test);
+      cell `use_all_resolves_a_list` (a keyed list keeps each item's count, a mixed sync / async list, four targets)
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above); on erlang and beam the tree one process-dictionary entry per root,
