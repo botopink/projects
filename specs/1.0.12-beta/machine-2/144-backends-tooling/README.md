@@ -3178,8 +3178,17 @@ Oracle: the whole suite on four targets; `test-libs`; the cold gate.
       — built as (44b4c1630): `adopt_defaults.zig`'s `adoptForBlocks` gives a type of the module the `default fn`s of the contracts its
       local or imported-and-activated blocks implement, as `pub` methods (its `implement` clause untouched, 684); a primitive's adoption
       reads the activated imported blocks too; the resolver exports a `pub X implement … for …` block; cell `contract_default_fn_called_on_target`
-- [ ] beam: a block's own method on a primitive (`StringShout implement Shout for string { fn label(self) … }`, `"d".label()`) crashes
+- [x] beam: a block's own method on a primitive (`StringShout implement Shout for string { fn label(self) … }`, `"d".label()`) crashes
       `{unresolved_method,label,1}` (commonJS and erlang answer); on wasm a `default fn` calling that method prints a pointer (`344!`); a cell
+      — built as: the checker records the dispatch of a block method on a non-identifier primitive receiver (0248014da; commonJS and
+      erlang were wrong too); beam's `default fn` with a primitive `self` reads the rewrite unless prelude-origin (0fc8b9d87); wasm types a
+      block method's declared result and `self` as the primitive (494eb811e); cell `contract_block_method_on_primitive`
+- [ ] an extension block's method on an `i32` receiver (`n.shout()`) refused `unknown-primitive-method`, and its erlang output refused by
+      the OTP compiler; a cell
+- [ ] wasm: inside an extension block's method over `array<T>`, `self.join(…)` and `self.length.toString()` refused, and `self.toString()`
+      on a primitive `self` not resolved (commonJS, erlang and beam answer); a cell
+- [ ] `std_io_process_spawn` answers in another order under load (once in a full run, green on a rerun): the cell or the binding made
+      order-stable
 - [x] a record's extension block in another module than the record's does not give the record the contract's `default fn`s (only the
       same-module case is adopted); a cell red on the parent
       — built as (d5d9853e2): `adoptForImportedTargets` gives a block over an imported record the contract's `default fn`s as its own
