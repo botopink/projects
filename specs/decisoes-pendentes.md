@@ -248,6 +248,17 @@ Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida
   sentido que nenhuma decisão afirma.
 - **Bloqueia.** Nada; construído como (a).
 
+#### 956-a · As escolhas que a construção da 956 fez onde a linha é silenciosa
+- **Medido.** A construção da 956 no B-22 recusa com três códigos que a linha não nomeia: `for-parameter-count` no bloco (`2 sources, 1
+  parameter`), `for-sources-parenthesised` (várias fontes escritas sem parênteses) e `for-await-one-source`, que recusa
+  `for await (a, b)`. Lê `0..` e `0...` como o mesmo range aberto quando qualquer um é fonte, e aceita uma fonte que não é
+  iterável (`for (xs, 5)`), como `for (5)` já é.
+- **Opções.** (a) Como construído. (b) Como construído, exceto que uma fonte não iterável é recusada na fonte (`for-source-not-iterable`), para
+  uma fonte e para várias. (c) (b), e como fonte `0..` sem fim é recusado, de modo que só `0...` é o índice aberto (`..` é
+  exclusivo, 102; um range exclusivo sem fim não tem sentido).
+- **Recomendação.** (c): recusar > aceitar, e 956 (2) nomeia só `0...`.
+- **Bloqueia.** Nada; construído como (a).
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida pelo fable por delegação do mantenedor e listada em § Para revisar.

@@ -1498,7 +1498,14 @@ After the group's other steps have landed on `feat`; it holds back no front that
 - [ ] 926 / 929 on a method of an `implement` / `extend` block (checked by another path than `inferTypeMethods`); a cell each, red
       on the parent
 - [x] 929: `noreturn-falls-through` — a `-> noreturn` body that can complete refused at its name (`stmtsAlwaysExit`); cell `noreturn_body_falls_through_refused`, four targets, red on the parent — landed for a `fn` declaration (the other forms: the box above)
-- [ ] 956 (950 reversed): the collection loop is 105's — `for xs { x -> … }` / `for (xs) { x -> … }` (parentheses optional with one source), `for await s { x -> … }`, the source `try xs`; several sources `for (a, b) { x, y -> … }` (parentheses required, one parameter per source, ending with the shortest, `0...` an open range as the index, a count mismatch refused naming both); `for x in xs` refused `for-in-loop` naming the block form; no `for-parenthesised`, the formatter keeps the parentheses as written (parser, checker, four backends, formatter); `docs.md` § Loops; cells `for_loop_sources`, `for_in_refused`, red on the parent
+- [x] 956 (950 reversed): the collection loop is 105's — `for xs { x -> … }` / `for (xs) { x -> … }` (parentheses optional with one source), `for await s { x -> … }`, the source `try xs`; several sources `for (a, b) { x, y -> … }` (parentheses required, one parameter per source, ending with the shortest, `0...` an open range as the index, a count mismatch refused naming both); `for x in xs` refused `for-in-loop` naming the block form; no `for-parenthesised`, the formatter keeps the parentheses as written (parser, checker, four backends, formatter); `docs.md` § Loops; cells `for_loop_sources`, `for_in_refused`, red on the parent — landed (950's landing reverted first; several sources lowered by
+      the parser to the standard loop, `LoopExpr.forWritten` kept for the formatter; an open range lowered to a counter on beam; question 956-a)
+- [ ] 956 (1)'s `try` over an iterator whose end is a `Result` (`Iter<T, Result<V, E>>`, 553 (3)): a case of `for_loop_sources` once
+      553's piece 3 gives `Iter` its second argument
+- [ ] wasm: `.next()` on an `Iter` of items other than `i32` traps on a cast (the `Yield` binder typed `i32`); a cell walking an
+      `Iter<string>` with two sources, red on wasm
+- [ ] commonJS: a `return` in a `case` arm, inside a loop nested in an `if` or a block, is lost (`exprJumps` does not descend into case
+      arms); a cell, red on commonJS
 - [x] 951: a `?T`'s non-null arm is `_`, its value read `x!`; the binder arm `case-bare-name-arm`; `docs.md` § case's row and the cells written with the binder rewritten; cell `case_optional_bare_name_refused`, red on the parent — landed (markdown's two sites and rakun's two tests respelled)
 
 ### B-23 — 247, 255, 310 and the checker's rows
@@ -3010,8 +3017,10 @@ Oracle: the cells; `zig build test`.
 - [ ] a built tree naming the writer's type as a constructor: `Box(n: …)` is refused `label-on-function-value` (the type bound under its
       alias as a plain function value) and `Box.make(…)` passes the checker but erlang emits an unbound variable for the alias; a cell,
       red on the parent
-- [ ] erlang: a consumer's `query @`…`` over query's `Query<T>` crashes `bp_unsupported_method join` (with the grammar answering
-      `-> anyvalue`); a cell over a library type's method reached through a built tree, red on erlang
+- [x] erlang: a consumer's `query @`…`` over query's `Query<T>` crashes `bp_unsupported_method join` (with the grammar answering
+      `-> anyvalue`); a cell over a library type's method reached through a built tree, red on erlang — landed (`HygieneResolver.aliasFor` registers the types the
+      writer's signature names, so the chain is typed link by link on four targets; the library's own calls marked `lowering`; cell
+      `syntax_fn_tree_library_type_chain`)
 - [x] 907: the use decides — `#[f]` applies a function whose first parameter is `syntax` as a decorator, `f(e)` expands any function with a `syntax` parameter at the call; `isSyntaxExprFn` goes (`ast.zig`), each use checked by its own rules against the one declared type; cell `syntax_fn_use_decides_kind` (`log(syntax e: unknown) -> void` annotated on a `val` and called on an expression, four targets, red on the parent); `syntax_fn_run_time_return` keeps its shape; B-69's home rule (592 (3)) reads the kind, a `syntax` function declared in `src/comptime/`
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)

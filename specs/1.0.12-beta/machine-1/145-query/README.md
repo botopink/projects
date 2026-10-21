@@ -104,7 +104,7 @@ text)`; `test/asserts_test.bp`, one accepted snapshot per target-shared file.
 - [ ] `Query<T>`'s LINQ-named methods and `of` made private lowering targets of the grammar; `examples/query-linq` and the tests rewritten to `` query @`…` ``; cell `query_array_grammar_is_the_one_spelling` (decision 914)
       — measured: the expansion reaches `of` and the private methods already; the consumer types `unknown` because the grammar's
       `pub default fn query(syntax q: string) -> unknown` answers `unknown` (578): it answers `-> anyvalue`; then erlang crashes
-      `bp_unsupported_method join` on a `Query` (144 B-156's erlang row)
+      `bp_unsupported_method join` on a `Query` (144 B-156's erlang row, landed: the step resumes with the grammar `-> anyvalue`)
 
 ### 145 s3 — erika's C-13 migration and C-12 reformat (after 144 B-28)
 

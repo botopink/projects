@@ -248,6 +248,17 @@ None open: every entry was answered by 899–955 (2026-10-21), decided by the fa
   meaning no decision states.
 - **Blocks.** Nothing; built as (a).
 
+#### 956-a · The choices 956's build made where the row is silent
+- **Measured.** B-22's 956 build refuses with three codes the row does not name: `for-parameter-count` at the block (`2 sources, 1
+  parameter`), `for-sources-parenthesised` (several sources written without parentheses), and `for-await-one-source`, which refuses
+  `for await (a, b)`. It reads `0..` and `0...` as the same open range when either is a source, and it accepts a source that is not
+  iterable (`for (xs, 5)`), as `for (5)` already is.
+- **Options.** (a) As built. (b) As built, except that a non-iterable source is refused at the source (`for-source-not-iterable`), for
+  one source and for several. (c) (b), and as a source `0..` without an end is refused, so that only `0...` is the open index (`..` is
+  exclusive, 102; an exclusive range with no end has no meaning).
+- **Recommendation.** (c): refuse > accept, and 956 (2) names `0...` alone.
+- **Blocks.** Nothing; built as (a).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 None open: every entry was answered by 899–955 (2026-10-21), decided by the fable at the maintainer's delegation and listed in § To review.
