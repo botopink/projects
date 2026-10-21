@@ -78,8 +78,12 @@ Measured (12 builds — jhonstart's 8 examples, styled's 4; the `instance` + `ru
 cold 1.0–1.3 s; Pulley 1.5 s; wasmtime with the compiled-module cache under `.botopinkbuild/build/comptime/` warm 48 ms —
 the cache is the choice. The binary grows from 53 MB to 74 MB; an artifact linking wasmtime on Linux links with LLD.
 543-a answered by 878.
-- [ ] the interrupt (878): the CLI's SIGINT handler and the LSP's `$/cancelRequest` / `shutdown` call `persistent_wat.interrupt()`;
+- [x] the interrupt (878): the CLI's SIGINT handler and the LSP's `$/cancelRequest` / `shutdown` call `persistent_wat.interrupt()`;
       `comptime-interrupted` located at the body; `runtime/AGENTS.md` limit 1 rewritten; a unit test
+      — built as: the CLI's SIGINT handler (exit 130; a second SIGINT ends the process, question 878-a) and the language server's
+      reader thread (`shutdown`, `$/cancelRequest` of the request being dispatched) call `interrupt()`; `comptime-interrupted` from the
+      `comptime`, decorator and template evaluators; `attempt` at build catches an integer division by zero (878 (3)); no cell yet for
+      either (front 166's row 878)
 
 ### s2 — the wasm codegen emits WasmGC: every value a GC struct or array, no linear-memory value (the maintainer, 2026-10-14; wasmgc-a)
 
@@ -246,7 +250,9 @@ bodies' names mangled and their locations `std/primitives.bp`'s. P2-a — an int
       `modules/std-wasm/AGENTS.md`, `libs/std/AGENTS.md`
 
 **Impacted tests:** every comptime snapshot (the reply unchanged, the listing re-recorded by piece, 558), `test-conformance`, `test-libs`, `test-web`. **Consumer commits:** none.
-- [ ] P2-d's leaves trap outside their domain (880): `bytes.wat` rewritten, the unit test's three lines; the `.bp` codecs bound their reads
+- [x] P2-d's leaves trap outside their domain (880): `bytes.wat` rewritten, the unit test's three lines; the `.bp` codecs bound their reads
+      — built as: `bytes.wat`'s `at` the bare `array.get_u`, `ofWords` `unreachable` past 255; the unit test's in-domain run and three
+      traps; no `.bp` codec calls the leaves yet (`encoding.bp`, `hash.bp` use `Bytes`' methods), so none needed a bound
 
 ### s4 — Conformance, the front's last step (decisions 459, 474, 477, 478, 479, 480)
 

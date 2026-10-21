@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**28 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -122,7 +122,44 @@ problem, an example, the options, the recommendation and why — and its full en
 
 | # | Question | What it decides | Blocks | Recommendation |
 |---|---|---|---|---|
-| — | none open: 798-c, 798-d, 798-e answered by 834–836 (2026-10-21) | | | |
+| 1 | **B-115-a** | How a commonJS caller learns to pass a generic fn of another module its print shapes | B-115 box 2 | (a) every bodied, non-host generic fn of another module, by its signature alone |
+| 2 | **B-115-b** | How `K` / `V` reach a generic std type's method (`Dict<K, V>.display` through `collections.shown`, `print(d)`) | B-115 box 3 | (a) the shape carried by the instance |
+| 3 | **878-a** | What a second Ctrl-C does while a comptime body is being interrupted | nothing (as built) | (a) as built: the first interrupts, a second ends the process |
+
+## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
+
+#### B-115-a · How does a commonJS caller learn to pass a generic fn of another module its print shapes? (decisions 521, 673; 144 B-115)
+
+- **Measured.** B-114 hands a top-level generic fn the print shape of each type parameter (`__bp_ty_<T>`, trailing) at a direct call
+  in its own module; the callee of another module already takes them (28ed413f9), but the caller does not know whether to pass them,
+  so `lib.show(2.0)` prints `2` on commonJS where the others print `2.0`.
+- **Options.** (a) pass the shapes to every bodied, non-host generic fn of another module, judged by its declared signature alone, at an
+  exact-arity call — JS ignores extra arguments, so a callee that takes none is unchanged; every caller's output changes, std's and a
+  dependency's callers included, and each depends on signatures alone, which keeps the code cache sound. (b) carry each module's set of
+  shape-taking fns (its body scan) in the cross-module export info — fewer arguments, but a caller's output depends on the callee's body,
+  so a cached dependency can go stale.
+- **Recommendation.** (a): the cache's key stays the signature (509), and the extra arguments cost nothing a callee reads.
+- **Blocks.** B-115 box 2.
+
+#### B-115-b · How do `K` / `V` reach a generic std type's method? (decisions 521, 673; 144 B-115)
+
+- **Measured.** `Dict<K, V>.display` through `collections.shown` prints an `f64` value the engine's way on commonJS, through
+  `d.display()` in another module and through `print(d)`'s run-time `Display` dispatch; wasm refuses the program (`shown` is not
+  monomorphised).
+- **Options.** (a) the shape carried by the instance — a generic record's value holds its type arguments' shapes (as `__bp_s`), set by
+  std's own constructors (`empty`, `insert`), so the value prints right wherever it goes; (b) a hidden shape argument on every generic
+  method, filled from the receiver's static type at each call — `print(d)`'s dynamic dispatch has no static type to read.
+- **Recommendation.** (a): (b) cannot reach `print(d)`.
+- **Blocks.** B-115 box 3.
+
+#### 878-a · What does a second Ctrl-C do while a comptime body is being interrupted? (decision 878; 164 s1)
+
+- **Measured.** As built (bbe280481): while a body runs, the first SIGINT calls `persistent_wat.interrupt()` and the build ends
+  `comptime-interrupted`, exit 130; a second SIGINT, or one with no body running, ends the process at once. A SIGINT that lands between
+  a body's start and its epoch deadline is missed; the second is the fallback.
+- **Options.** (a) as built; (b) every SIGINT only interrupts, the process never killed by it while a body runs.
+- **Recommendation.** (a): a missed interrupt must not leave the user without a way out.
+- **Blocks.** nothing.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 

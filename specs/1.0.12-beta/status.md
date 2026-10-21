@@ -147,7 +147,7 @@ Each resumes on `feat` once the cache group has landed, one commit at a time.
 - [x] 144 B-112 — `test-analysis-equivalence` reads rakun's conformance by feature (548)
 - [x] 144 B-113 — `botopink cell check` keeps a cell's path inside its workspace and lists it alone in the copy's manifest (548); the nested-workspace fixture moved to `cli_contract.sh` (`tsc-check.sh` green again); rakun's one root manifest landed (165 s9)
 - [x] 144 B-114 — commonJS: an `f64` bound to a top-level generic fn's `T` is written `4.0` (521) — the type's print shape handed in at each direct call (`generic_float_text`, `generic_float_record_text`)
-- [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · nothing
+- [ ] 144 B-115 — commonJS: a generic fn as a value, a generic fn of another module, a generic method's type parameters still write an `f64` the engine's way (521) · landed: a generic fn as a value, a tuple in a type-parameter slot; left: another module's generic fn (B-115-a), a generic method (B-115-b) — machine 2
 - [x] 144 B-117 — `botopink check` of validation's refused-marker project: 8.5 GB → 1.3 GB cold (a decorator call's scratch freed per call)
 - [x] 144 B-127 — `botopink check` cold: tokens freed after a parse, a trace's listing lowered when read (1.38 → 0.92 GB)
 - [x] 144 B-128 — a generator runs one step per item (105): erlang, beam (a process per generator) and wasm in a GC module (a resumable state machine over 392's `@Task` frames); `generator_body_lazy`, `generator_handle_stateful`, `generator_captured_var_shared` green on four targets; a linear-memory module is B-142

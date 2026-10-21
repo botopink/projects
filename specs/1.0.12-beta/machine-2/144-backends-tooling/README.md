@@ -1390,8 +1390,10 @@ After the group's other steps have landed on `feat`; it holds back no front that
 | structural equality at build is iterative (471) | `comptime_deep_structure_equality`; term order in std-wasm's `term.zig` tests |
 | a float or integer division by zero at build is `comptime-badarith … (division by zero)`, located (472) | `comptime_float_division_by_zero`, `comptime_integer_division_by_zero` |
 | `%` by zero and a nested division name no cause | none — question B-32-a |
-- [ ] decision 869: `badarithRefusal` formats the `binaryOp` at the located operator; cells `comptime_nested_division_by_zero`,
-      `comptime_division_by_zero_in_helper`, `hole_any_call_raises` re-recorded (red on the parent)
+- [x] decision 869: `badarithRefusal` formats the `binaryOp` at the located operator; cells `comptime_nested_division_by_zero`,
+      `comptime_division_by_zero_in_helper` re-recorded (red on the parent)
+      — built as: `badarithRefusal` finds the `binaryOp` at the reply's first frame (the block's expression or the helper's body) and prints
+      it as written; `hole_any_call_raises` went with 577 (5), nothing to re-record
 
 ### B-33 — `.Wasm`'s cells as labelled arguments (decision 481)
 
@@ -2151,13 +2153,18 @@ erlang, beam and wasm; `terminal.print(x)` and `"v=" + x` the same. Found by B-7
 Decision 673 confirms the shape (521-a (a)). B-114 hands a top-level generic fn the print shape of each type parameter at a direct call in its own module. Three
 calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for `2.0`):
 
-- [ ] a generic fn passed as a value (`xs.map(show)`): the host callback's extra arguments (the index) land in the
+- [x] a generic fn passed as a value (`xs.map(show)`): the host callback's extra arguments (the index) land in the
       hidden slot — a cell red on commonJS today
+      — built as: a generic fn named as a value takes its print shapes; cell `generic_fn_value_takes_shape` (521)
 - [ ] a call into a generic fn of another module — a cell red on commonJS today
+      — the callee takes its shapes (28ed413f9); how the caller learns to pass them waits on question B-115-a
 - [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
       today
-- [ ] a tuple held in a type-parameter slot is printed as a tuple (`Box(value: #(1, 2))`, `id(#(3, "x"))` answers
+      — waits on question B-115-b (wasm refuses it too: `shown` not monomorphised)
+- [x] a tuple held in a type-parameter slot is printed as a tuple (`Box(value: #(1, 2))`, `id(#(3, "x"))` answers
       `#(3, "x")`; today `[1, 2]`, `[3, "x"]`) — found by 164 s2's tuple subtype; a cell on every target
+      — built as: commonJS prints a tuple in a type-parameter slot and a tuple-typed record field as `#(…)`; cell
+      `tuple_in_type_parameter_slot` (521); two commonJS snapshots had recorded the `[…]` text
 
 ### B-117 — `botopink check` of a project of refused decorator markers peaks at 8 GB
 
@@ -2198,7 +2205,7 @@ function, which Node refuses ("await is only valid in async functions"); erlang,
 **Repository:** botopink-lang (`--lang`) · **Model:** sonnet (a measured repro)
 
 Found by B-27 step 6: `process.onSignal(.Term, h)` (`process` an imported std namespace) emits a bare `Term`, which
-Node refuses ("Term is not defined"); erlang and beam resolve the variant from the parameter's type. The std cells
+Node refuses ("Term is not defined"); measured at the fix, the checker refused it on every target (`unbound variable 'Term'`). The std cells
 write `process.Signal.Term`.
 
 - [x] `.Variant` as an argument of a namespace-qualified call resolved from the parameter's type on commonJS — a cell on
@@ -3016,8 +3023,13 @@ Each box is a library's decision-cell draft that builds on the other targets and
       `fields` present, `h?.length()` on a `?Holder[]` lambda parameter; found by B-155's wasm rows; a cell red on beam on the parent
       — built as: inference copies an array receiver's `.prim` lowering from the synthesised link to the written `recv?.m()` call
       (only `.type_` was copied); cell `optional_chain_present_array_length` (330)
-- [ ] commonJS: an untyped lambda `{ a -> a?.length() ?? 0 }` handed to an `fn(?Holder[]) -> i32` parameter fails `a?.length is not a
+- [x] commonJS: an untyped lambda `{ a -> a?.length() ?? 0 }` handed to an `fn(?Holder[]) -> i32` parameter fails `a?.length is not a
       function` (the typed `fn(h: ?Holder[])` form answers); a cell red on commonJS on the parent
+      — built as: the checker gives an untyped lambda handed to a ground function-typed parameter its parameter types first (beam
+      was red too); cell `optional_chain_lambda_array_method` (330)
+- [ ] wasm: a tuple passed into a generic body that writes it as text (`show(#(5, 6))`) prints a pointer (`9360`); found by B-115
+- [ ] wasm: an untyped generic fn value called (`val f = show; f(3.0)`) aborts; found by B-115
+- [ ] wasm: `apply<T>(xs: T[], …)` with `f64` is refused (a float has no lowering in a generic array); found by B-115
 - [x] wasm: a typed function expression `fn(h: ?Holder[]) -> i32 { return h?.length() ?? 0; }` called with `null` prints `8` where the
       other three print `0`; a cell red on wasm on the parent
       — not reproduced on `feat` after 64bd10d3d and e1ece76fd (`0` and `2` on four targets); no cell

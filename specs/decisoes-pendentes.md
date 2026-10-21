@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**25 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**28 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -122,7 +122,44 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 
 | # | Pergunta | O que decide | Bloqueia | Recomendação |
 |---|---|---|---|---|
-| — | nenhuma aberta: 798-c, 798-d, 798-e respondidas pelas 834–836 (2026-10-21) | | | |
+| 1 | **B-115-a** | Como um chamador commonJS sabe passar as formas de impressão a uma fn genérica de outro módulo | B-115 caixa 2 | (a) toda fn genérica com corpo, não host, de outro módulo, pela assinatura apenas |
+| 2 | **B-115-b** | Como `K` / `V` chegam a um método de um tipo genérico do std (`Dict<K, V>.display` por `collections.shown`, `print(d)`) | B-115 caixa 3 | (a) a forma levada pela instância |
+| 3 | **878-a** | O que um segundo Ctrl-C faz enquanto um corpo comptime está sendo interrompido | nada (como construído) | (a) como construído: o primeiro interrompe, um segundo encerra o processo |
+
+## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
+
+#### B-115-a · Como um chamador commonJS sabe passar as formas de impressão a uma fn genérica de outro módulo? (decisões 521, 673; 144 B-115)
+
+- **Medido.** B-114 entrega a uma fn genérica de topo a forma de impressão de cada parâmetro de tipo (`__bp_ty_<T>`, no fim) numa chamada
+  direta no seu próprio módulo; o chamado de outro módulo já as recebe (28ed413f9), mas o chamador não sabe se deve passá-las,
+  então `lib.show(2.0)` imprime `2` no commonJS onde os outros imprimem `2.0`.
+- **Opções.** (a) passar as formas a toda fn genérica com corpo, não host, de outro módulo, julgada só pela sua assinatura declarada, numa
+  chamada de aridade exata — o JS ignora argumentos extras, então um chamado que não recebe nenhum fica igual; a saída de todo chamador muda, os chamadores do std e de uma
+  dependência incluídos, e cada uma depende só de assinaturas, o que mantém o cache de código correto. (b) levar o conjunto de fns que recebem
+  formas de cada módulo (a varredura do seu corpo) na informação de exportação entre módulos — menos argumentos, mas a saída de um chamador depende do corpo do chamado,
+  então uma dependência em cache pode ficar velha.
+- **Recomendação.** (a): a chave do cache continua sendo a assinatura (509), e os argumentos extras não custam nada que um chamado leia.
+- **Bloqueia.** B-115 caixa 2.
+
+#### B-115-b · Como `K` / `V` chegam a um método de um tipo genérico do std? (decisões 521, 673; 144 B-115)
+
+- **Medido.** `Dict<K, V>.display` por `collections.shown` imprime um valor `f64` do jeito do motor no commonJS, por
+  `d.display()` em outro módulo e pelo despacho `Display` em tempo de execução de `print(d)`; o wasm recusa o programa (`shown` não é
+  monomorfizado).
+- **Opções.** (a) a forma levada pela instância — o valor de um record genérico guarda as formas dos seus argumentos de tipo (como `__bp_s`), postas pelos
+  próprios construtores do std (`empty`, `insert`), então o valor imprime certo aonde quer que vá; (b) um argumento de forma oculto em todo método
+  genérico, preenchido pelo tipo estático do receptor em cada chamada — o despacho dinâmico de `print(d)` não tem tipo estático para ler.
+- **Recomendação.** (a): (b) não alcança `print(d)`.
+- **Bloqueia.** B-115 caixa 3.
+
+#### 878-a · O que um segundo Ctrl-C faz enquanto um corpo comptime está sendo interrompido? (decisão 878; 164 s1)
+
+- **Medido.** Como construído (bbe280481): enquanto um corpo roda, o primeiro SIGINT chama `persistent_wat.interrupt()` e o build termina
+  `comptime-interrupted`, saída 130; um segundo SIGINT, ou um sem corpo rodando, encerra o processo na hora. Um SIGINT que cai entre
+  o início de um corpo e o seu prazo de época se perde; o segundo é o recurso.
+- **Opções.** (a) como construído; (b) todo SIGINT só interrompe, o processo nunca é morto por ele enquanto um corpo roda.
+- **Recomendação.** (a): uma interrupção perdida não pode deixar o usuário sem saída.
+- **Bloqueia.** nada.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 
