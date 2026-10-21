@@ -2759,13 +2759,14 @@ every backend) · **After:** B-163's resolved program (the final value is folded
 
 Oracle: the cells red on the parent; `zig build test`.
 
-### B-162 — a component call is its lambda; `use` resolves a component; `Renderable<T>` (decision 791)
+### B-162 — a component call is its lambda; `use` resolves a component; the component model (decisions 791, 804, 809–821)
 
 **Repository:** botopink-lang (`--lang`), then rakun for `NodeChildren` (165) · **Model:** opus (a semantic rule over every backend) · **After:** nothing
 
 Decision 791: a call of a component only makes its lambda, in a component body too; a component is rendered by the tree (a
 node's child, run from its `render()`) or resolved by `use c`, only inside a component body; `await` only over a call answering
-`Async<T>`, in an `async` or a component body; std's `Renderable` takes the tree's node, `Renderable<T>`.
+`Async<T>`, in an `async` or a component body. 804 (2) removed `Renderable`: the language knows no tree node; the component model is
+809's and 815–821's, below.
 
 - [x] the call: `inferComponentCall` (`comptime/infer.zig`) stops typing a component call `R` and awaiting it in a component
       body; `val x: Component<Prop> = mk(2);` in a body written `-> Component<string>` accepted on every target (the 661-a
@@ -2806,36 +2807,35 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
       the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (810-b); the key unqualified (810-c)
-- [ ] decision 820: each written call answering a component (a `component fn`, a `Composable`'s constructor, a `component` lambda) stamps
-      its place on the value — the call's number and the item's counter in the enclosing body's cell, reset at each of its renders, or the
-      `#[key(…)]` value —; `use c`, the renderer and the root pass `Place.none()`; the body opens `scope.childAt(stamped.with(key))`, `Place.key(k)`
-      replacing only the item's half; a value made outside every component body takes the root's place; cell `place_written_by_the_call`
-      (`val h = Header(); … use h` keeps `Header()`'s cell, a `Card(…)` keeps its state, a list reversed after it is made keeps each item's,
-      a hand `Place.key` equals `#[key(…)]`)
-- [ ] decision 819: `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>`, every `component` body's lowering opening with
-      `scope.childAt(key)`; std's `Place` the call's number within its declaration and the item's (or the `#[key(…)]` value) — no callee
-      name, no type; `resolve` taking the key; a hand call `c(scope, Place.key(k))` taking its own cell; a one-parameter lambda still a
-      `Composition`; `key-duplicate` at run time; cell `composition_takes_its_place` (`if … Painel() else Login()` never shares, a keyed
-      list called by hand keeps each item's state, a repeated key fails)
-- [ ] decision 818: every `use` that answers a value (a hook or a component) lowered to `childAt(Use(n), c)`, `provide` / `context` /
-      `inject` taking no place, the node's cell holding its contexts alone; a component's identity the call that made it, numbered within
-      its declaration (no type argument); `#[key(expr)]` before an expression answering a `Component<T>` (`key-type`, a duplicate failing at
-      run time); 817 (2)'s type-argument identity and 817 (4)'s parameter / field `#[key]` (`key-twice`) not built; cell
-      `identity_by_call_and_key` (a branch change resets, a keyed reordered list keeps each item, a generic component at two callers' sites)
-- [ ] decision 817: std's `Scope` keeps the tree of cells — `scope.childAt(place, c)` (`Use(n)`, `Tail`, `Index(i)`, `Key(k)`) in place of a
-      public `scope.child()`, the parent's cell keeping `place → (identity, cell)`; `use c` / `return c` lowered to it; identity written by
-      each target's lowering (declaration with type arguments, a type, a lambda's position, a `#[key]` value); a reused cell's contexts
-      taken anew from the parent; `{ component -> … }` refused where a `Component<T>` is expected (`component-lambda-not-component`);
-      `#[key]` a std builtin (`key-twice`, `key-type`, `key-duplicate`); cell `cells_by_place_and_identity` (a reordered keyed list keeps
-      each item's state, `Lista<i32>` → `Lista<string>` resets, a reused cell reads the parent's new theme)
-- [ ] decision 816: the hooks' state in the node's scope cell, by the order of the `use`s; a cell kept from render to render while the
-      same component (its `component fn`, its type, its key) stands at the same place, a fresh one otherwise; `return c` with a child
-      cell (812 (2) amended); the render library keeping a mounted root; 771's slot-in-the-lambda lowering removed (`hooks.bp`'s `slot()`);
-      cell `hooks_state_by_tree_place` (a parent's re-render keeps a child's count, `if … A() else B()` resets, a type form keeps state)
-- [ ] decision 815: `Composition<T> = fn(scope: Scope) -> T | Async<T>` again (no opaque type, no `of`); a plain lambda of that type a
-      component without hooks; `c(scope)` by hand admitted; a function answering a member of a union fits where one answering the union
-      is expected (returns only); `x.compose()` refused
-      outside std's `resolve`; cell `composition_function_again`, four targets
+- [ ] decisions 815–821, the component model as it stands (one box; each decision's cell written against this text):
+      (1) `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>` (815, 819); a one-parameter lambda, `{ _ -> v }` or
+      `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)); a function answering a member of a union fits where one answering
+      the union is expected (returns only); `x.compose()` refused outside std's `resolve`; `{ component -> … }` refused where a `Component<T>`
+      is expected, `component-lambda-not-component` (817 (3))
+      (2) std's `Place` (a call's number and the item's, or a key: `Place.none()`, `Place.key(k)`, `with`) and `Scope` (`Scope.root()`,
+      `scope.childAt(key)`, the parent's cell keeping `place → cell`, a place not met in a render dropped, a repeated place among siblings
+      failing `key-duplicate`); every `component` body's lowering opening `scope.childAt(stamped.with(key))` (819 (1), 820 (2));
+      `resolve<T>(c, scope, key)`
+      (3) the stamp (820, 821): each written call answering a component — a `component fn`, a `Composable`'s constructor, a `component`
+      lambda, a plain function answering one (the outer stamp wins) — and each function answering a component named as a value
+      (`itens.map(Card)`) stamps its place, numbered within the nearest `component` body with the lambdas written in it, the item's counter
+      in that body's cell and reset at each of its renders; a plain function's calls numbered within it, its counter reset at each entry;
+      `use c`, the renderer and the root pass `Place.none()`; a value made outside every component body takes the root's place
+      (4) every `use` that answers a value (a hook or a component) a call with a child cell at its place; `use provide` / `context` /
+      `inject` taking none, the node's own cell holding its contexts alone, `memo`'s slot its own child cell's (818 (1)); a reused cell's
+      contexts taken anew from the parent, only its hooks' slots kept (817 (5)); the render library keeping a mounted root; 771's `slot()`
+      lowering (`hooks.bp`) removed (816)
+      (5) `#[key(e)]` before an expression answering a `Component<T>` (818 (3)): the parser admits an annotation before an expression
+      (`parseAnnotations` takes loop statements only today); `#[key]` before an expression answering no `Component<T>` refused, the code
+      the builder's; `key-type` for a record or a function key
+      — cells: `composition_function_again` (815), `hooks_state_by_tree_place` (816: a parent's re-render keeps a child's count,
+      `if … A() else B()` resets, a type form keeps state), `cells_by_place_and_identity` (817: a reused cell reads the parent's new theme),
+      `identity_by_call_and_key` (818: a branch change resets, a keyed reordered list keeps each item, `Mostra([1])` and `Mostra(["a"])` at
+      two sites keep two cells), `composition_takes_its_place` (819: `if … Painel() else Login()` never shares, a keyed list called by hand
+      keeps each item's, a repeated key fails), `place_written_by_the_call` (820: `val h = Header(); … use h` keeps `Header()`'s cell, a
+      `Card(…)` keeps its state, a list reversed after it is made keeps each item's, a hand `Place.key` equals `#[key(…)]`),
+      `place_numbered_in_component_body` (821: an unkeyed `map` keeps one cell per item, two lambdas' calls in one list never collide,
+      `linha(a)` and `linha(b)` two cells, `itens.map(Card)` one cell per item); four targets
 - [ ] decision 811: the `opaque` type modifier (`[pub] opaque type X(…)`, before `type`): the constructor written only in `X`'s own
       methods (`opaque-construction`), the fields read only there (`opaque-field`), a method without `pub` private to the module
       (814); (`Composition<T>` is not opaque — 815); `Scope` opaque (`render-scope-construction` goes); cells, four targets
@@ -2858,20 +2858,21 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       refused where written; cells
 - [ ] 809 (2), (3): the type form `implement Composable<R>` with `component fn compose(self: Self) -> Composition<R>`, the marker required
       (refused without it), `Card(…)` a value of the type; `component fn` lowering to a `Composition`; 804 (1)'s cells respelled
-- [ ] 809 (4): a component body answering a `Component<T>` resolves it in the same scope before it returns (`return div([…])`,
+- [ ] 809 (4): a component body answering a `Component<T>` resolves it with a child cell (816 (6)) before it returns (`return div([…])`,
       `return Card(…)` with no `use`); cell, four targets
-- [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope) -> T | Async<T>`, awaiting nothing inside, the one way a component
-      runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside `Composition`'s
-      methods (811); `c.run(RenderScope.root())` sites respelled `resolve(c, Scope.root())`; typed by 810; 815: `Composition` a function again, `c(scope)` by hand admitted
-- [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `child()`), a mutable cell over a persistent map keyed by the
+- [ ] 809 (6): std's `resolve<T>(c: Component<T>, scope: Scope, key: Place) -> T | Async<T>` (819), awaiting nothing inside, the one way a
+      component runs (`use c`, an `await` only where the hooks list marks the node; the root); `x.compose()` refused outside std's `resolve`
+      (815); `c.run(RenderScope.root())` sites respelled to the root's form, which waits on 809-e (with `Place.none()`, 820), and on 810-b
+      for `is Async<unknown>` off commonJS; typed by 810
+- [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
-      answers its value alone (`Rendered` goes); the hooks' state each `Composition` instance's own store, given by `resolve` (771);
-      the codemod over std, the cells and the libraries (rakun's sites in 165's commit); 812: `use c` with a child cell made at the `use`,
-      `return c` with the body's cell, `use provide` in the order written, `context-provide-after-render` removed; cell
+      answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above);
+      the codemod over std, the cells and the libraries (rakun's sites in 165's commit); 812: `use c` with a child cell at its place (818, 821),
+      `return c` resolved with a child cell (816 (6)), `use provide` in the order written, `context-provide-after-render` removed; cell
       `use_child_cell_provide_in_order`
 - [ ] 809 (7) (rakun, 165's commit): rakun-bpp's builders `component fn`s answering `Component<Element>`, `NodeChild = Component<Element>`,
       the renderer resolving every child; replaces the 804 (4) box's `NodeChild = Element | Component<Element>`; 813: a ready `Element`
-      enters through `{ component -> e }` (584's spelling), the resolved tree a record of its own (`Rendered(tag, attrs, children: Rendered[])` in the
+      enters through `{ _ -> e }` (815; `{ component -> … }` refused, 817 (3)), the resolved tree a record of its own (`Rendered(tag, attrs, children: Rendered[])` in the
       decision's example), what `rakun-bpp-dom-test` inspects
 
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.

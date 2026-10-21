@@ -509,6 +509,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Contexto.** `resolve` não aguarda nada; 66 células e as raízes do rakun (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) escrevem `await c.run(RenderScope.root())` hoje.
 - **Medido.** 66 células com `.run(RenderScope.root())`, 13 com `use memo`; toda raiz está num corpo `async`.
 - **Desde a 815.** `Composition<T>` é de novo uma função e `c(scope)` à mão é admitido; o `resolve` da std continua sendo o que compõe um `Composable`.
+- **Desde a 820.** `resolve` recebe um place: uma raiz passa `Place.none()`, `resolve(c, Scope.root(), Place.none())` em (a); o `run` de (b) o passa ele mesmo, sua chamada inalterada.
 - **Opções.**
   (a) Cada raiz estreita: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (o fluxo da 810).
   (b) ★ O `context` da std acrescenta `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, depois `await` só quando a resposta `is Async<unknown>` — para raízes e testes; `resolve` continua sendo do renderer.
@@ -542,6 +543,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   (b) Um hook da std `use all(cs: Component<T>[]) -> Component<T[]>` resolvendo cada um com seu próprio `scope.child()`.
   (c) As entradas da folha viram filhos de uma árvore que o renderer do rakun-bpp resolve.
 - **Recomendação.** (a) agora, (b) como linha posterior da std se a forma se repetir.
+- **Desde a 821.** `scope.child()` não existe mais (817, 819): (b) rodaria cada entrada com `resolve(c, scope, Place.none())`, os places carimbados pelas chamadas que fizeram a lista (`entries.map(view)` numerada onde está escrita).
 - **Bloqueia.** B-162 P6 (rakun); o rakun fica vermelho na `feat` até isso pousar.
 
 #### 809-h · Quais dos códigos da 804-e sobrevivem, e as recusas gerais da 800 os substituem? (decisões 809 (2), 800, 804-e; 144 B-162 P2)
@@ -560,6 +562,7 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
 - **Medido.** `hooks.bp` não tem `erase`; o `Fill(boundary, scope)` do rakun (`render.bp:186`) guarda um escopo para um preenchimento posterior, possivelmente em outro processo.
 - **Desde a 816.** As células do escopo e as posições dos hooks agora vivem tanto quanto uma raiz montada (a biblioteca de render a guarda entre renders); a raiz de um teste termina com o seu `run`.
 - **Desde a 817.** O `Scope` da std é dono da árvore de células (`childAt`); a tabela desta pergunta é da std, e vive tanto quanto uma raiz montada.
+- **Desde a 819.** Um componente abre a sua própria célula, `scope.childAt(key)`; a tabela e o seu tempo de vida não mudam.
 - **Opções.**
   (a) ★ `Scope.root()` é dono de uma tabela (ETS, ou um map guardado pelo processo do renderer) apagada quando o resolve da raiz retorna; um `Fill` carrega o map da célula por valor.
   (b) O vazamento aceito por ora, uma linha do 164.

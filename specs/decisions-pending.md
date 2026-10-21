@@ -509,6 +509,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Context.** `resolve` awaits nothing; 66 cells and rakun's roots (`rakun.bp:164`, `static_gen.bp`, `streaming.bp:621`, `client_app.bp:207`) write `await c.run(RenderScope.root())` today.
 - **Measured.** 66 cells with `.run(RenderScope.root())`, 13 with `use memo`; every root is in an `async` body.
 - **Since 815.** `Composition<T>` is a function again and `c(scope)` by hand is admitted; std's `resolve` stays the one that composes a `Composable`.
+- **Since 820.** `resolve` takes a place: a root passes `Place.none()`, `resolve(c, Scope.root(), Place.none())` in (a); (b)'s `run` passes it itself, its call unchanged.
 - **Options.**
   (a) Each root narrows: `val r = resolve(c, Scope.root()); val v = if (r is Async<T>) await r else r;` (810's flow).
   (b) ★ std's `context` adds `pub async fn run<T>(c: Component<T>, scope: Scope) -> Async<T>` — `resolve`, then `await` only when the answer `is Async<unknown>` — for roots and tests; `resolve` stays the renderer's.
@@ -542,6 +543,7 @@ group), answered before every other part of this page; in the order of the steps
   (b) A std hook `use all(cs: Component<T>[]) -> Component<T[]>` resolving each with its own `scope.child()`.
   (c) The sheet's entries become children of a tree rakun-bpp's renderer resolves.
 - **Recommendation.** (a) now, (b) as a later std row if the shape recurs.
+- **Since 821.** `scope.child()` is gone (817, 819): (b) would run each entry with `resolve(c, scope, Place.none())`, the places stamped by the calls that made the list (`entries.map(view)` numbered where written).
 - **Blocks.** B-162 P6 (rakun); rakun stays red on `feat` until it lands.
 
 #### 809-h · Which of 804-e's codes survive, and do 800's general refusals replace them? (decisions 809 (2), 800, 804-e; 144 B-162 P2)
@@ -560,6 +562,7 @@ group), answered before every other part of this page; in the order of the steps
 - **Measured.** `hooks.bp` has no `erase`; rakun's `Fill(boundary, scope)` (`render.bp:186`) keeps a scope for a later fill, possibly in another process.
 - **Since 816.** The scope cells and the hooks' slots now live as long as a mounted root (the render library keeps it between renders); a test's root ends with its `run`.
 - **Since 817.** std's `Scope` owns the tree of cells (`childAt`); this question's table is std's, its lifetime a mounted root's.
+- **Since 819.** A component opens its own cell, `scope.childAt(key)`; the table and its lifetime are unchanged.
 - **Options.**
   (a) ★ `Scope.root()` owns a table (ETS, or a map held by the renderer's process) erased when the root's resolve returns; a `Fill` carries the cell's map by value.
   (b) The leak accepted for now, a 164 row.
