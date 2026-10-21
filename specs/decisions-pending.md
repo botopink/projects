@@ -253,6 +253,34 @@ group), answered before every other part of this page; in the order of the steps
   the surface.
 - **Blocks.** Nothing; built as (a).
 
+#### b162-lambda-underscore · `{ _ -> v }` in 815 (2) and 888
+- **Measured.** 815 (2) and 888 write a component without hooks as `{ _ -> v }`. The parser takes only an identifier as a
+  lambda parameter, so `_` does not parse; B-162 P1's cells write `{ s -> v }`.
+- **Options.** (a) `_` is admitted as a lambda parameter, any number of times, each one bound to nothing. commonJS lowers each
+  `_` to a fresh name, because strict mode refuses a repeated parameter name. (b) Only identifiers are admitted, and the
+  decisions' examples are respelled `{ s -> v }`.
+- **Recommendation.** (a): `_` already means "nothing bound" in a pattern, and the decisions write it so.
+- **Blocks.** Nothing; the cells write an identifier.
+
+#### b162-close-child · `close()` on a scope that is not a root
+- **Measured.** 825 (2) has `root.close()` mark a root closed. No decision says what `close()` does on a child cell's
+  `Scope`, the one a component body receives. Built: it closes the root's whole tree.
+- **Options.** (a) As built: it closes the whole tree of the root the cell belongs to. (b) It is refused off a root, at run time
+  as `scope-not-root`, or by the type if `root()` answers a type of its own that holds `close`.
+- **Recommendation.** (b): closing a tree from one of its leaves ends every sibling's state. The strictest reading refuses what no
+  decision gives a meaning to.
+- **Blocks.** Nothing; built as (a).
+
+#### b162-detached-reuse · A detached root used after its `close()` on the BEAM
+- **Measured.** 824 (3) makes `scope.detach()` a fresh root over the scope's contexts, and 825 (2) makes a closed root fail with
+  `scope-closed`. On erlang / beam the closed root's process-dictionary entry is erased (825 (3): no `{bp_scope, _}` entry
+  left), so a detached root used again in the same process after `close()` starts a fresh entry instead of failing.
+- **Options.** (a) As built: no tombstone; the closed root is reused as a fresh one. (b) A closed marker is kept per root, so
+  the use fails `scope-closed`, and one small entry per closed root stays behind, against 825 (3). (c) The closed state is held
+  in the `Scope` value itself (its ref marked), so no entry stays and the use fails `scope-closed` wherever that value is used.
+- **Recommendation.** (c): it keeps 825 (2)'s refusal and 825 (3)'s clean process at once.
+- **Blocks.** Nothing; built as (a).
+
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 
 ## Part 1 — What blocks tracks 00–03

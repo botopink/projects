@@ -253,6 +253,34 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   da superfície.
 - **Bloqueia.** Nada; construído como (a).
 
+#### b162-lambda-underscore · `{ _ -> v }` em 815 (2) e 888
+- **Medido.** 815 (2) e 888 escrevem um componente sem hooks como `{ _ -> v }`. O parser só aceita um identificador como
+  parâmetro de lambda, então `_` não é parseado; as células do B-162 P1 escrevem `{ s -> v }`.
+- **Opções.** (a) `_` é aceito como parâmetro de lambda, quantas vezes for, cada um ligado a nada. O commonJS baixa cada
+  `_` para um nome novo, porque o strict mode recusa um nome de parâmetro repetido. (b) Só identificadores são aceitos, e os
+  exemplos das decisões são reescritos `{ s -> v }`.
+- **Recomendação.** (a): `_` já significa "nada ligado" num padrão, e as decisões o escrevem assim.
+- **Bloqueia.** Nada; as células escrevem um identificador.
+
+#### b162-close-child · `close()` num scope que não é raiz
+- **Medido.** 825 (2) faz `root.close()` marcar uma raiz como fechada. Nenhuma decisão diz o que `close()` faz no `Scope` de uma
+  célula filha, o que um corpo de componente recebe. Construído: fecha a árvore inteira da raiz.
+- **Opções.** (a) Como construído: fecha a árvore inteira da raiz a que a célula pertence. (b) É recusado fora de uma raiz, em run time
+  como `scope-not-root`, ou pelo tipo se `root()` responder um tipo próprio que tenha `close`.
+- **Recomendação.** (b): fechar uma árvore a partir de uma de suas folhas acaba com o estado de todo irmão. A leitura mais estrita recusa o que nenhuma
+  decisão dá sentido.
+- **Bloqueia.** Nada; construído como (a).
+
+#### b162-detached-reuse · Uma raiz destacada usada depois do seu `close()` na BEAM
+- **Medido.** 824 (3) faz de `scope.detach()` uma raiz nova sobre os contextos do scope, e 825 (2) faz uma raiz fechada falhar com
+  `scope-closed`. No erlang / beam a entrada do dicionário de processo da raiz fechada é apagada (825 (3): nenhuma entrada `{bp_scope, _}`
+  fica), então uma raiz destacada usada de novo no mesmo processo depois de `close()` começa uma entrada nova em vez de falhar.
+- **Opções.** (a) Como construído: sem lápide; a raiz fechada é reusada como nova. (b) Uma marca de fechada é mantida por raiz, então
+  o uso falha `scope-closed`, e uma pequena entrada por raiz fechada fica, contra 825 (3). (c) O estado de fechada fica
+  no próprio valor `Scope` (sua ref marcada), então nenhuma entrada fica e o uso falha `scope-closed` onde quer que esse valor seja usado.
+- **Recomendação.** (c): mantém ao mesmo tempo a recusa de 825 (2) e o processo limpo de 825 (3).
+- **Bloqueia.** Nada; construído como (a).
+
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 
 ## Parte 1 — O que bloqueia as trilhas 00–03
