@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**22 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**25 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -809,6 +809,38 @@ before every other part of this page; each holds one row, or nothing built.
   (b) ★ Left as they are: 805 (6) refuses a hand-written name and no more.
 - **Recommendation.** (b) unless a hand-written name can collide with one; then (a) for that one.
 - **Blocks.** Nothing built waits; B-163's printer prints them as they are.
+
+#### 805-a · Where does std sit in the `.bpr`: one file per std module, one `std.bpr`, or inside each package's file? (decisions 805 (1), 509 (1); 144 B-163)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** 805 (1) leaves std's place to a measurement. Built: `<dir>/std/<module>.bpr` per embedded std module, level B's filing (509 (1): one per module).
+- **Measured.** `runtime_file.sh` sees `std/math.bpr` beside `app.bpr` / `lib.bpr`; no count of std files or bytes per program was taken.
+- **Options.**
+  (a) ★ As built: one file per std module, the same bytes for every program that embeds it, the root's `program` table placing each.
+  (b) One `std.bpr` per program: fewer files, rewritten by every program, not reused.
+  (c) std's modules inside each package's file: no sharing, and a dependency's file no longer dependant-free when std differs by program.
+- **Recommendation.** (a): the only option that keeps 805 (1)'s "a dependency's file serves every program" for std too, the filing level B already proved; the file count of a `rakun` scaffold measured once before the box closes.
+- **Blocks.** Nothing built; B-161's scratch layout.
+
+#### 805-b · Does a `.bpr` build from outside its project? (decisions 805 (1), 798 (2), (6), 519; 144 B-163, B-161)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** A project's or a dependency's `.mjs` / `.erl` host file is found through the working directory's `botopink.json`, `BOTOPINK_LIB_ROOTS` and the dependency's directory (`libs.zig` `sidecarOwner`); std's ship from the binary.
+- **Measured.** Every `.bpr` build of `runtime_file.sh` runs in the project's directory and passes; the same `.bpr` built from another directory with a dependency's host file is refused `SidecarRefused`. No decision says a `.bpr` builds from anywhere: 805's motive is reusing a build already done, and 798 (6)'s `cell check` runs in the cell's directory.
+- **Options.**
+  (a) ★ As built: a `.bpr` is built from its project's directory, said in `botopink build --help` and `compiler-cli/AGENTS.md`.
+  (b) Each package's `.bpr` carries the bytes of the host files its host templates name (519's precedent: the artifact carries its copy).
+  (c) The project's absolute directory recorded in the root's file (broken when moved).
+- **Recommendation.** (a) now; (b) only if a `.bpr` is ever shipped, which nothing planned asks.
+- **Blocks.** Nothing; B-161 runs where (a) holds.
+
+#### 805-c · Does every `.bpr` carry its own module order, so any one builds as a program? (decisions 805 (1), 592 (2); 144 B-163)
+- **Proposed (opus, 2026-10-20; built as (a)):** (a).
+- **Context.** Only the root's file holds the program's module order, root and dependencies; a dependency's file handed to `build` is refused `runtime-not-a-program`. A library has no `main` (592 (2)).
+- **Measured.** A library's own `--emit-runtime <dir>` writes `<dir>/lib.bpr` with its order; a dependant's build into the same `<dir>` rewrites it without — the same path, different bytes; readers ignore a dependency file's order, so nothing misbuilds.
+- **Options.**
+  (a) ★ As built: a dependency's file is never a program, refused with its code.
+  (b) Every file carries its own closure order (its modules, its dependencies' and the std modules it reaches): any `.bpr` builds, and a package's file is the same bytes as root or as dependency.
+- **Recommendation.** (a): the most restrictive; (b)'s order inside a dependant's session can interleave with the dependant's modules (592 (4), (5)), a second computation.
+- **Blocks.** Nothing.
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
 

@@ -1604,6 +1604,9 @@ After the group's other steps have landed on `feat`; it holds back no front that
       — a defect: another module's template named no file; fixed (`template_raise_names_body_file`)
 - [ ] a raise in the module's own template located at the call that raised, as a decorator's (451 (3)) · question B-23-b
 - [x] decision 603 for a std type: a local type beside an aliased import of a same-named std type (`import {Dict as D} from "std"` beside `type Dict(…)`) is two types — cell `own_type_beside_std_type_import` flipped to accept. Today it stays `import-name-collision`: a std type keeps its declared name in the checker, std's signatures resolve `Dict` by that name, and the backends treat std's `Dict` as a builtin shape, so keying it by its alias needs a rename of std's declarations and signatures (what `registerRenamedImportedType` does for a non-std import) · model: opus · landed (`own_type_beside_std_type_import` answers the two types; an unaliased std leaf beside a local type stays `import-name-collision`)
+- [ ] an imported value's method answer or field typed by the owner's `Tag` resolves to the importer's own `type Tag(…)`
+      (`unknown field 'label' on type 'Tag'`): types are matched by name, against 603's identity (module + name); a cell (an
+      importer declaring its own `Tag` beside a `shop.bp` whose method answers `shop`'s `Tag`), red on the parent — a design step
 
 ### B-24 — 319, 320, 332: numbers and strings exact everywhere
 
@@ -2645,8 +2648,10 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
 - [x] the handler beside `inferEmbedBuiltin` (`comptime/infer.zig`): `embed`'s path rules and reader, `load-no-reader` on a
       build with no reader; a path refused at the argument as `load-path-absolute`, `load-path-outside-package`,
       `load-file-missing`, a file that loads itself `load-cycle` (codes no decision names — chosen with the build)
-- [ ] the loaded file registered as a build input (519): level B's key covers files under a library's `src/`, a loaded file
+- [x] the loaded file registered as a build input (519): level B's key covers files under a library's `src/`, a loaded file
       outside `src/` is not in it
+      — built as: a dependency's reader records every path it reads, written `<pkg>.inputs` beside its level-B entry, and the next
+      key hashes those files by content (`code_cache.closureKeyReading`); a test beside `@embed`'s in `analysis_equivalence.zig`
 - [x] the nested compile (`comptimeMod.compile`, as `comptime/tests/located_errors.zig` runs it) captured — never through the
       CLI's reporter — and guarded against re-entering std's one-time initialisation (`comptime.zig`'s init-once caches)
 - [x] the loaded file is its own package's entry for the build's target: its `mod` tree beside it, the caller's manifest, never the
@@ -2668,8 +2673,9 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       reflection source and spliced as a private enum into a module that loads (the prelude enum has no run-time declaration), a
       beam build answering `Target.Beam`; the cell prints that the `Ok` and `Refused` modules carry the same target, the variant
       itself held by a unit test (a per-target value has no place in a cell); green on the four targets, beam included
-- [ ] a module that declares its own `Target` and loads sees `Target.<V>` resolve to its own type and is refused — the spliced enum
+- [x] a module that declares its own `Target` and loads sees `Target.<V>` resolve to its own type and is refused — the spliced enum
       under a name no source can write; a cell, red on the parent
+      — stale since 805 (4) removed the spliced enum; cell `compiler_load_own_target_type` (786's directory) proves it, four targets
 - [x] 787: `Module.run()` — `fn run(self) -> Result<void, Failure>` on the `Ok` side (`Error` when the loaded `main` crashes); a
       loaded package whose `run` a `compiler.init` body calls is compiled into the program as a package of its own (its `mod` tree,
       its own dependencies) and its `main` called at that point; one no `run` reaches stays out; `run` outside an init body and a
@@ -2684,10 +2690,15 @@ empty), read with `try … catch` / `try` (783) — never through `attempt`; no 
       `compiler_load_module_run`, `run_outside_init`, `load_no_main` (787) and `module_run_body_at_run`, `module_run_twice`,
       `run_in_called_function`, `run_module_refused`, `module_construction` (792), green on commonJS, erlang and beam; wasm in
       B-155
-- [ ] `compiler.bp` declares `fn run(self) -> Result<void, Failure>` on `Module`: a method signature of an imported type resolves its
+- [x] `compiler.bp` declares `fn run(self) -> Result<void, Failure>` on `Module`: a method signature of an imported type resolves its
       names in the importer, so `Failure` is unknown there and `run` is answered by the checker; cell
       `imported_type_method_signature_resolves_in_owner` (a type whose method returns a type only its own module imports, called
       from an importer), red on the parent; then `compiler.bp` writes the signature
+      — built as: `compiler.bp` declares `pub fn run(self: Self) -> Result<void, RunFailure>` (806), the checker's lowering unified with
+      it (`declaredModuleRun`); the cell passes on the parent too — an imported user type already brings its signature's types; the
+      failure is std's alone (below)
+- [ ] a std type's field or method naming a type its module imports from another std module is `unknown type` (`infer.zig`
+      `markStdImports` looks only among the module's own declarations); no std module does it today; a unit test, red on the parent
 - [x] a local alias of the captured `Module` in the init body (`val m2 = m; m2.run()`) runs `main`: today `load.receiverPath` knows
       only the spliced load, and the alias is refused `run-outside-init`, a code 792 (4) gives to a place; a receiver still not traced
       to a loaded file refused under a code of its own; cell `run_on_module_alias`, red on the parent

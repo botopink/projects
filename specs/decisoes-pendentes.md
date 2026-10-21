@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**22 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**25 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -809,6 +809,38 @@ máquina 1 antes de toda outra parte desta página; cada uma segura uma linha, o
   (b) ★ Deixados como estão: a 805 (6) recusa um nome escrito à mão e nada mais.
 - **Recomendação.** (b) a menos que um nome escrito à mão possa colidir com um; então (a) para esse.
 - **Bloqueia.** Nada construído espera; o printer da B-163 os imprime como estão.
+
+#### 805-a · Onde a std fica no `.bpr`: um arquivo por módulo da std, um `std.bpr`, ou dentro do arquivo de cada pacote? (decisões 805 (1), 509 (1); 144 B-163)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** A 805 (1) deixa o lugar da std para uma medição. Construído: `<dir>/std/<module>.bpr` por módulo embutido da std, o arquivamento do level B (509 (1): um por módulo).
+- **Medido.** O `runtime_file.sh` vê `std/math.bpr` ao lado de `app.bpr` / `lib.bpr`; nenhuma contagem de arquivos da std ou de bytes por programa foi feita.
+- **Opções.**
+  (a) ★ Como construído: um arquivo por módulo da std, os mesmos bytes para todo programa que o embute, a tabela `program` da raiz posicionando cada um.
+  (b) Um `std.bpr` por programa: menos arquivos, reescrito por todo programa, não reutilizado.
+  (c) Os módulos da std dentro do arquivo de cada pacote: nenhum compartilhamento, e o arquivo de uma dependência deixa de ser livre do dependente quando a std difere por programa.
+- **Recomendação.** (a): a única opção que mantém o "o arquivo de uma dependência serve todo programa" da 805 (1) também para a std, o arquivamento que o level B já provou; a contagem de arquivos de um scaffold do `rakun` medida uma vez antes de a caixa fechar.
+- **Bloqueia.** Nada construído; o layout de scratch da B-161.
+
+#### 805-b · Um `.bpr` é construído de fora do seu projeto? (decisões 805 (1), 798 (2), (6), 519; 144 B-163, B-161)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** O arquivo de host `.mjs` / `.erl` de um projeto ou de uma dependência é achado pelo `botopink.json` do diretório de trabalho, pelo `BOTOPINK_LIB_ROOTS` e pelo diretório da dependência (`libs.zig` `sidecarOwner`); os da std saem do binário.
+- **Medido.** Todo build de `.bpr` do `runtime_file.sh` roda no diretório do projeto e passa; o mesmo `.bpr` construído de outro diretório com o arquivo de host de uma dependência é recusado `SidecarRefused`. Nenhuma decisão diz que um `.bpr` é construído de qualquer lugar: o motivo da 805 é reutilizar um build já feito, e o `cell check` da 798 (6) roda no diretório da célula.
+- **Opções.**
+  (a) ★ Como construído: um `.bpr` é construído do diretório do seu projeto, dito no `botopink build --help` e no `compiler-cli/AGENTS.md`.
+  (b) O `.bpr` de cada pacote carrega os bytes dos arquivos de host que seus templates de host nomeiam (o precedente da 519: o artefato carrega a sua cópia).
+  (c) O diretório absoluto do projeto gravado no arquivo da raiz (quebra quando movido).
+- **Recomendação.** (a) agora; (b) só se um `.bpr` algum dia for distribuído, o que nada planejado pede.
+- **Bloqueia.** Nada; a B-161 roda onde (a) vale.
+
+#### 805-c · Todo `.bpr` carrega a sua própria ordem de módulos, para que qualquer um seja construído como programa? (decisões 805 (1), 592 (2); 144 B-163)
+- **Proposto (opus, 2026-10-20; construído como (a)):** (a).
+- **Contexto.** Só o arquivo da raiz guarda a ordem de módulos do programa, a raiz e as dependências; o arquivo de uma dependência entregue ao `build` é recusado `runtime-not-a-program`. Uma biblioteca não tem `main` (592 (2)).
+- **Medido.** O próprio `--emit-runtime <dir>` de uma biblioteca escreve `<dir>/lib.bpr` com a sua ordem; o build de um dependente no mesmo `<dir>` o reescreve sem ela — o mesmo caminho, bytes diferentes; os leitores ignoram a ordem do arquivo de uma dependência, então nada é construído errado.
+- **Opções.**
+  (a) ★ Como construído: o arquivo de uma dependência nunca é um programa, recusado com o seu código.
+  (b) Todo arquivo carrega a sua própria ordem de fechamento (os seus módulos, os das suas dependências e os módulos da std que alcança): qualquer `.bpr` é construído, e o arquivo de um pacote tem os mesmos bytes como raiz ou como dependência.
+- **Recomendação.** (a): a mais restritiva; a ordem de (b) dentro da sessão de um dependente pode se intercalar com os módulos do dependente (592 (4), (5)), um segundo cálculo.
+- **Bloqueia.** Nada.
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)
 

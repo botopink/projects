@@ -2972,6 +2972,9 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] wasm: `f?.fields?.[0]`, `f` an optional record whose `fields` is an optional array, prints garbage; a cell of the shape, red on
       wasm on the parent
 - [ ] wasm: `t._1` read off a tuple local holding an array prints the array's address; a cell of the shape, red on wasm on the parent
+- [ ] wasm: a method of an imported type answering a `Result` reads its `Ok` / `Error` payload as a number (`case
+      Shop(name: "corner").num() { Ok(t) -> print(t); … }` prints `296` where the other three print `corner`; one module or a free
+      function is right); a cell of the shape, red on wasm on the parent
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
       it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
       machine 1's under 769
@@ -3161,10 +3164,26 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       `_bp_init_` → `__bp_init_`, `Bp_Load*` → `Bp__Load*`); its oracle `codegen/tests/resolved_print.zig` (re-read with no comptime,
       the same answer on four targets); several modules or packages wait on question 798-c, four folded-value kinds on 798-d, the
       generated names outside the reserved space on 798-e
-- [ ] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
+- [x] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
       phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
       when missing, each file written named (798 (2), (3))
+      — built as: one `<dir>/<group>.bpr` per package — the root, each dependency, each loaded file's package, each std module
+      (`<dir>/std/<module>.bpr`, level B's filing; question 805-a) — level B's `analysis_entry` encoding under its own magic, keyed by
+      the compiler's stamp; only the root's file holds the module order (805-c); `build` / `run --target <t> x.bpr` go straight to
+      `emit`; refusals `runtime-target-required`, `runtime-other-compiler`, `runtime-unreadable`, `runtime-missing`,
+      `runtime-not-a-program`; built from the project's directory (805-b); oracle `compiler-cli/tests/runtime_file.sh` (the direct and
+      the `.bpr` builds byte-equal on four targets, every refusal); the root's bytes may differ between a warm and a cold build (the
+      encoder's identity table follows the live tree's aliasing), the decoded tree the same
+- [ ] the root's `.bpr` records the manifest's wasm host (334 (2)), read into `Config.wasm_host` and the runner's host: today a project
+      declaring `"wasm": { "host": "browser" }` builds a WASI component from its `.bpr` and `run` starts wasmtime, against 798 (5);
+      `--target` stays required, no `--wasm-host` flag; a `runtime_file.sh` case (browser host, the wasm builds byte-equal, `run` under
+      node answering the direct run)
+- [ ] a module that reads `@TypeInfo.all` (level B's `reads_catalogue`) is filed in the root package's `.bpr`, whatever its package:
+      today it is written as its dependency's reusable file holding one program's catalogue, so a second program sharing `<dir>`
+      overwrites it (805 (1)); a case under `build_runtime_binary_reused-805/` or in `runtime_file.sh` (two programs over one `lib`
+      reading `@TypeInfo.all`, both into one `<dir>`, each built from its `.bpr` answering its direct build); closes with
+      `@TypeInfo.all`'s removal (576 (7), (15))
 - [ ] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
       from its intermediate, the same answer byte for byte on four targets (798 (5)); a CLI row for the refused missing directory
 
