@@ -2861,7 +2861,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       an aliased import, a subtype's mark), four targets, red on the parent
 - [ ] decisions 815–821, the component model as it stands (one box; each decision's cell written against this text):
       (1) `Composition<T> = fn(scope: Scope, key: Place) -> T | Async<T>` (815, 819); a one-parameter lambda, `{ _ -> v }` or
-      `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)) — admitted by 888's trailing-parameter rule, cell `lambda_omits_trailing_parameters`; a function answering a member of a union fits where one answering
+      `{ scope -> … }`, a `Composition` without hooks (815 (2), 819 (4)) — admitted by 888's trailing-parameter rule, cell `lambda_omits_trailing_parameters` (written `{ _ -> v }` as 888 (1) spells it); `_` a lambda parameter bound to nothing, any number of times (895); a function answering a member of a union fits where one answering
       the union is expected (returns only); `x.compose()` refused outside std's `resolve`; `{ component -> … }` refused where a `Component<T>`
       is expected, `component-lambda-not-component` (817 (3))
       (2) std's `Place` (a call's number and the item's, or a key: `Place.none()`, `Place.key(k)`, `Place.index(i)` (884, 891), `with`; the stamp's item half recording whether a body or a plain function counted it (891)) and `Scope` (`Scope.root()`,
@@ -2898,7 +2898,7 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       the method and its module (`opaque-method` gone); a behavior member the type implements and the lowering's marked calls exempt;
       `primitives.bp`'s members and their `comptime.zig` mirrors written `pub`, `.d.ts` the `pub` methods only; a member `addMember` adds `pub`
       — landed (cells `method_private_to_module-859/cells/` and `added_member_is_pub-887/cells/`; no library site reached; 886 landed with
-      B-148; 859 (3)'s `Fn.of` names no declaration, `Module.of` stays without `pub` (830 (1)); question 859-a)
+      B-148; 859 (3)'s `Fn.of` names no declaration, `Module.of` stays without `pub` (830 (1)); question 859-a answered by 894)
 - [x] decision 830 (811-c): the opaque checks' `byLowering` read from a mark on the call node (`opaque_types.zig`, `load.zig`), the 3,000,000
       line range gone; `reserved-name` at a call of a `__bp_` name (`reserved_names.zig`); cell `lowering_call_marked` (a program calling
       `__bp_load_module` refused, an adopted default body building an opaque type refused), red on the parent — landed (`CallExpr.lowering`;
@@ -2943,8 +2943,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 - [ ] 809 (8), (9): `RenderScope` → `Scope` (opaque, `root()` / `childAt(key)`, 819), a mutable cell over a persistent map keyed by the
       context's key type; `use provide` replacing its cell's map, `use context` reading the map received at entry; a `Composition`
       answers its value alone (`Rendered` goes); the hooks' state in cells (816, the box above); on erlang and beam the tree one process-dictionary entry per root,
-      `root.close()` (`Closeable`, marking the root closed on the four targets, `scope-closed` after it, 825) and `scope.detach()` (824);
-      cells `scope_tree_lives_with_its_process`, `root_closed_by_run` (a request on the BEAM leaves no `{bp_scope, _}` entry);
+      `root.close()` (`Closeable`, marking the root closed on the four targets, `scope-closed` after it, 825; off a root `scope-not-root`, 896) and `scope.detach()` (824; a seed whose tree starts per reading process and carries its start's ref into each cell, the cells failing `scope-closed` after that process's `close()`, the seed starting anew, no entry left, 897);
+      cells `scope_tree_lives_with_its_process`, `root_closed_by_run` (a request on the BEAM leaves no `{bp_scope, _}` entry), `scope_close_off_root` (896), `detached_root_is_a_seed` (897);
       the codemod over std, the cells and the libraries (rakun's sites in 165's commit); 812: `use c` with a child cell at its place (818, 821),
       `return c` resolved with a child cell (816 (6)), `use provide` in the order written, `context-provide-after-render` removed; cell
       `use_child_cell_provide_in_order`
@@ -2956,7 +2956,8 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
 Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `NodeChildren` box.
 - [x] the cells `async_marked_by_hooks_list-375/cells/component_method_sync` and `component_default_fn_sync` abort on feat since B-116 P4 · fixed: a component method's marker goes with its lowered return (`context_lower.zig`); the answers unchanged
 - [ ] the iterator helpers (596) on `Iter` / `AsyncIter` are exempt from the behavior-member check until B-128 declares them in `primitives.bp`; the exemption goes then
-
+- [ ] decision 894 (859-a): the `.d.ts` declares, beside a type's `pub` methods, every method without `pub` that implements a member of a behavior the type's own `implement` clause names (`typescript.zig` `record` and the enum's methods read the declaration's `implement` list and each behavior's members through `crossModule`; an extension block's member and the lowering's marked calls stay out); test `codegen/tests/dts_behavior_member.zig` beside `dts_skips_templates.zig` (a non-`pub` `toStyled` under `implement Styled` declared, a plain non-`pub` method not, a block-supplied member not); no cell
+- [ ] decision 895 (b162-lambda-underscore): `_` as a lambda parameter — `hasLambdaParams`, `hasLambdaBodyAhead` and the lambda's parameter list (`parser/exprs.zig`) take `.underscore` beside `.identifier`, a marked lambda the same; `_` bound to nothing (a read unresolved, never `binding-redeclared`); lowered as 888 (2)'s unnamed parameter in its position (commonJS a reserved-space name, erlang `_`, wasm by position); the formatter prints `_`; cell `lambda_underscore_parameter` (`{ _, _ -> v }` under `fn(Scope, Place) -> T`, `{ _ -> 1 }` under `fn(i32) -> i32`, `{ _, x -> x }`, a read of `_` refused), four targets, red on the parent
 
 ### B-156 — a function with a `syntax` expression parameter is expanded at its call (decision 719)
 

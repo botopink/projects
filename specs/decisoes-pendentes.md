@@ -113,6 +113,10 @@ O mantenedor pediu (2026-10-21) que toda decisão que um `fable` tomou por ele, 
 | [ ] | 890 | B-27-e, o alcance da 853 | Dois módulos que viram o mesmo átomo recusados em todo alvo |
 | [ ] | 891 | a pergunta aberta da 884 | O renderer do rakun-bpp passa `Place.index(i)` a uma lista de filhos; um índice nunca toca a contagem de um corpo nem uma chave |
 | [ ] | 892 | a varredura de formas retiradas | Linhas 751–879 lidas nas suas substituições; o texto vigente, as caixas abertas e o retired.md reescritos |
+| [ ] | 894 | 859-a | O `.d.ts` declara, além dos métodos `pub`, o método sem `pub` que implementa um membro de um behavior do `implement` do próprio tipo |
+| [ ] | 895 | b162-lambda-underscore | `_` é um parâmetro de lambda que não liga nada, quantas vezes for escrito, baixado como um parâmetro sem nome |
+| [ ] | 896 | b162-close-child | `close()` fora de uma raiz falha `scope-not-root`; um segundo `close()` numa raiz fechada não faz nada |
+| [ ] | 897 | b162-detached-reuse | Uma raiz destacada é uma semente: sua árvore nasce por processo leitor, suas células falham `scope-closed` depois do `close()` desse processo, a semente recomeça, nenhuma entrada fica |
 
 ## Bloqueando agora — prioridade máxima (máquina 2, 2026-10-15)
 
@@ -254,44 +258,6 @@ modelo de módulos), respondidas antes de toda outra parte desta página; na ord
   cada wrapper onde sua seção está escrita, a mesma ordem dos construtores.
 - **Recomendação.** (a): `value` é o nome que o contorno 125 da validation já usa (`Success(value: ReplySuccess)`), e
   para um enum plano (a) e (c) dão a mesma ordem.
-- **Bloqueia.** Nada; construído como (a).
-
-#### 859-a · O `.d.ts` de um método sem `pub` que implementa um membro de um behavior
-- **Medido.** 859 (4) faz o `.d.ts` declarar só métodos `pub`, para todo tipo. 859 (2) deixa todo módulo alcançar um método
-  sem `pub` quando ele implementa um membro de um behavior para o qual o tipo declara `implement`: `s.toStyled()` de outro
-  módulo é aceito. Construído como 859 (4) diz, então um consumidor TypeScript não vê um método que todo módulo botopink pode chamar.
-- **Opções.** (a) Como construído: o `.d.ts` declara só métodos `pub`. (b) O `.d.ts` também declara um método sem `pub`
-  que implementa um membro de um behavior, como 859 (2) o alcança.
-- **Recomendação.** (b): o `.d.ts` é a superfície do módulo para outra linguagem, e 859 (2) faz desse método parte
-  da superfície.
-- **Bloqueia.** Nada; construído como (a).
-
-#### b162-lambda-underscore · `{ _ -> v }` em 815 (2) e 888
-- **Medido.** 815 (2) e 888 escrevem um componente sem hooks como `{ _ -> v }`. O parser só aceita um identificador como
-  parâmetro de lambda, então `_` não é parseado; as células do B-162 P1 escrevem `{ s -> v }`.
-- **Opções.** (a) `_` é aceito como parâmetro de lambda, quantas vezes for, cada um ligado a nada. O commonJS baixa cada
-  `_` para um nome novo, porque o strict mode recusa um nome de parâmetro repetido. (b) Só identificadores são aceitos, e os
-  exemplos das decisões são reescritos `{ s -> v }`.
-- **Recomendação.** (a): `_` já significa "nada ligado" num padrão, e as decisões o escrevem assim.
-- **Bloqueia.** Nada; as células escrevem um identificador.
-
-#### b162-close-child · `close()` num scope que não é raiz
-- **Medido.** 825 (2) faz `root.close()` marcar uma raiz como fechada. Nenhuma decisão diz o que `close()` faz no `Scope` de uma
-  célula filha, o que um corpo de componente recebe. Construído: fecha a árvore inteira da raiz.
-- **Opções.** (a) Como construído: fecha a árvore inteira da raiz a que a célula pertence. (b) É recusado fora de uma raiz, em run time
-  como `scope-not-root`, ou pelo tipo se `root()` responder um tipo próprio que tenha `close`.
-- **Recomendação.** (b): fechar uma árvore a partir de uma de suas folhas acaba com o estado de todo irmão. A leitura mais estrita recusa o que nenhuma
-  decisão dá sentido.
-- **Bloqueia.** Nada; construído como (a).
-
-#### b162-detached-reuse · Uma raiz destacada usada depois do seu `close()` na BEAM
-- **Medido.** 824 (3) faz de `scope.detach()` uma raiz nova sobre os contextos do scope, e 825 (2) faz uma raiz fechada falhar com
-  `scope-closed`. No erlang / beam a entrada do dicionário de processo da raiz fechada é apagada (825 (3): nenhuma entrada `{bp_scope, _}`
-  fica), então uma raiz destacada usada de novo no mesmo processo depois de `close()` começa uma entrada nova em vez de falhar.
-- **Opções.** (a) Como construído: sem lápide; a raiz fechada é reusada como nova. (b) Uma marca de fechada é mantida por raiz, então
-  o uso falha `scope-closed`, e uma pequena entrada por raiz fechada fica, contra 825 (3). (c) O estado de fechada fica
-  no próprio valor `Scope` (sua ref marcada), então nenhuma entrada fica e o uso falha `scope-closed` onde quer que esse valor seja usado.
-- **Recomendação.** (c): mantém ao mesmo tempo a recusa de 825 (2) e o processo limpo de 825 (3).
 - **Bloqueia.** Nada; construído como (a).
 
 ## Frente 165 — rakun-workspace (o mantenedor, 2026-10-14)

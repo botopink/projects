@@ -113,6 +113,10 @@ The maintainer asked (2026-10-21) that every decision a `fable` took for him, an
 | [ ] | 890 | B-27-e, 853's scope | Two modules folding to one atom refused on every target |
 | [ ] | 891 | 884's open question | rakun-bpp's renderer passes `Place.index(i)` to a child list; an index never touches a body's count or a key |
 | [ ] | 892 | the retired-forms sweep | Rows 751–879 read in their replacements; the subject text, the open boxes and retired.md respelled |
+| [ ] | 894 | 859-a | The `.d.ts` declares, beside `pub` methods, a non-`pub` method that implements a member of the type's own `implement` clause |
+| [ ] | 895 | b162-lambda-underscore | `_` is a lambda parameter bound to nothing, any number of times, lowered as an unnamed one |
+| [ ] | 896 | b162-close-child | `close()` off a root fails `scope-not-root`; a second `close()` on a closed root does nothing |
+| [ ] | 897 | b162-detached-reuse | A detached root is a seed: its tree starts per reading process, its cells fail `scope-closed` after that process's `close()`, the seed starts anew, no entry stays |
 
 ## Blocking now — maximum priority (machine 2, 2026-10-15)
 
@@ -254,44 +258,6 @@ group), answered before every other part of this page; in the order of the steps
   each wrapper where its section is written, the same order the constructors are in.
 - **Recommendation.** (a): `value` is the name validation's 125 workaround already holds (`Success(value: ReplySuccess)`), and
   for a flat enum (a) and (c) give the same order.
-- **Blocks.** Nothing; built as (a).
-
-#### 859-a · The `.d.ts` of a method without `pub` that implements a behavior's member
-- **Measured.** 859 (4) has the `.d.ts` declare `pub` methods only, for every type. 859 (2) lets every module reach a method
-  without `pub` when it implements a member of a behavior the type declares `implement` for: `s.toStyled()` from another
-  module stands. Built as 859 (4) reads, so a TypeScript consumer does not see a method that every botopink module may call.
-- **Options.** (a) As built: the `.d.ts` declares `pub` methods only. (b) The `.d.ts` also declares a method without `pub`
-  that implements a behavior's member, as 859 (2) reaches it.
-- **Recommendation.** (b): the `.d.ts` is the module's surface for another language, and 859 (2) makes that method part of
-  the surface.
-- **Blocks.** Nothing; built as (a).
-
-#### b162-lambda-underscore · `{ _ -> v }` in 815 (2) and 888
-- **Measured.** 815 (2) and 888 write a component without hooks as `{ _ -> v }`. The parser takes only an identifier as a
-  lambda parameter, so `_` does not parse; B-162 P1's cells write `{ s -> v }`.
-- **Options.** (a) `_` is admitted as a lambda parameter, any number of times, each one bound to nothing. commonJS lowers each
-  `_` to a fresh name, because strict mode refuses a repeated parameter name. (b) Only identifiers are admitted, and the
-  decisions' examples are respelled `{ s -> v }`.
-- **Recommendation.** (a): `_` already means "nothing bound" in a pattern, and the decisions write it so.
-- **Blocks.** Nothing; the cells write an identifier.
-
-#### b162-close-child · `close()` on a scope that is not a root
-- **Measured.** 825 (2) has `root.close()` mark a root closed. No decision says what `close()` does on a child cell's
-  `Scope`, the one a component body receives. Built: it closes the root's whole tree.
-- **Options.** (a) As built: it closes the whole tree of the root the cell belongs to. (b) It is refused off a root, at run time
-  as `scope-not-root`, or by the type if `root()` answers a type of its own that holds `close`.
-- **Recommendation.** (b): closing a tree from one of its leaves ends every sibling's state. The strictest reading refuses what no
-  decision gives a meaning to.
-- **Blocks.** Nothing; built as (a).
-
-#### b162-detached-reuse · A detached root used after its `close()` on the BEAM
-- **Measured.** 824 (3) makes `scope.detach()` a fresh root over the scope's contexts, and 825 (2) makes a closed root fail with
-  `scope-closed`. On erlang / beam the closed root's process-dictionary entry is erased (825 (3): no `{bp_scope, _}` entry
-  left), so a detached root used again in the same process after `close()` starts a fresh entry instead of failing.
-- **Options.** (a) As built: no tombstone; the closed root is reused as a fresh one. (b) A closed marker is kept per root, so
-  the use fails `scope-closed`, and one small entry per closed root stays behind, against 825 (3). (c) The closed state is held
-  in the `Scope` value itself (its ref marked), so no entry stays and the use fails `scope-closed` wherever that value is used.
-- **Recommendation.** (c): it keeps 825 (2)'s refusal and 825 (3)'s clean process at once.
 - **Blocks.** Nothing; built as (a).
 
 ## Front 165 — rakun-workspace (the maintainer, 2026-10-14)
