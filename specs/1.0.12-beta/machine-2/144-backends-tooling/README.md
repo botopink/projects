@@ -3018,10 +3018,13 @@ Each box is a library's decision-cell draft that builds on the other targets and
       (only `.type_` was copied); cell `optional_chain_present_array_length` (330)
 - [ ] commonJS: an untyped lambda `{ a -> a?.length() ?? 0 }` handed to an `fn(?Holder[]) -> i32` parameter fails `a?.length is not a
       function` (the typed `fn(h: ?Holder[])` form answers); a cell red on commonJS on the parent
-- [ ] wasm: a typed function expression `fn(h: ?Holder[]) -> i32 { return h?.length() ?? 0; }` called with `null` prints `8` where the
+- [x] wasm: a typed function expression `fn(h: ?Holder[]) -> i32 { return h?.length() ?? 0; }` called with `null` prints `8` where the
       other three print `0`; a cell red on wasm on the parent
-- [ ] wasm: `f?.(3)` on a `?fn(i32) -> i32` parameter is refused "the type of what it answers is not known here" where the
+      — not reproduced on `feat` after 64bd10d3d and e1ece76fd (`0` and `2` on four targets); no cell
+- [x] wasm: `f?.(3)` on a `?fn(i32) -> i32` parameter is refused "the type of what it answers is not known here" where the
       other three answer; found by B-155's wasm rows; a cell red on wasm on the parent
+      — built as: a lambda's optional function parameter records its type from `param_ft` (a plain `fn` already answered);
+      cell `optional_call_param_wasm` (330)
 - [ ] commonJS `.d.ts`: `conformance/tsc-check.sh` is red on `libs/std` (`std/compiler.d.ts` names `__DeclKind` / `__HookNode`, which
       it never declares) and on the cells that reach it, red on feat before B-157 P3 too; the emitted declarations type-check (619, 620);
       machine 1's under 769
