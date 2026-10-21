@@ -2975,8 +2975,11 @@ Each box is a library's decision-cell draft that builds on the other targets and
       per shape, red on wasm on the parent
 - [ ] wasm GC mode: the nested optional chain `f?.fields?.[0]?.name` — `optInfoOf`'s fix applies in linear mode only (in GC it traps on
       an absent receiver); a cell case forcing GC, red on the parent
-- [ ] parser: a typed lambda parameter of an optional type, `{ h: ?Holder -> … }`, does not parse (583 writes a lambda's parameter
+- [x] parser: a typed lambda parameter of an optional type, `{ h: ?Holder -> … }`, does not parse (583 writes a lambda's parameter
       types); a cell, red on the parent
+      — void: a brace lambda declares no types (583); the typed form `fn(h: ?Holder) -> string { … }` parses and runs on four targets
+- [ ] wasm: a function value `fn(h: ?Holder[]) -> i32 { return 1; }` called with `null` traps at run time (`main!__lambda2`), beside
+      a `fn(h: ?fn(i32) -> i32) -> i32` in the same program (which one traps not isolated); a cell, red on wasm on the parent
 - [x] wasm: `val #(w, nums) = #("long", xs.map({ x -> x * 2 })); print(nums);` prints `412` where the other three targets
       print `[2, 4]` (found by B-149 P1); a cell of the shape, red on wasm on the parent
       — built as: `noteTupleElemShape` hands a container element's shape to the bound name; cell `tuple_destructure_array_element` (738)
@@ -3201,8 +3204,11 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       — built as: the session carries the paths of the modules that read `@TypeInfo.all`, filed in the root's `.bpr`; `runtime_file.sh`'s
       `cat` case holds the reader out of `lib.bpr` (a dependency's reader sees its own declarations only — by design since 665, the
       language-gaps row on a library's catalogue — so the two programs' answers agree and the case checks where the reader is filed)
-- [ ] a module whose template expansion queries the catalogue (not `@TypeInfo.all` written in the module) is filed in the root's
+- [x] a module whose template expansion queries the catalogue (not `@TypeInfo.all` written in the module) is filed in the root's
       `.bpr` too; a `runtime_file.sh` case, red on the parent
+      — built as: the session's catalogue readers also hold the modules in `Reflection.templateReads`, filed in the root's `.bpr`;
+      `runtime_file.sh`'s `tpl` case (two programs over one `mid` whose template queries `@TypeInfo.all`); until B-137 removes the
+      template catalogue (665)
 - [ ] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
       from its intermediate, the same answer byte for byte on four targets (798 (5)); a CLI row for the refused missing directory
 
