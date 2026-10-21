@@ -23,6 +23,7 @@ rule or in a cell that tests its refusal (`prelude_name_with_sigil` refuses an `
 | `@Hook` | `Component<R>`, read with `use` | 354 (1) | |
 | `@Renderable`, `@Future`, `@Use` | `Renderable`, `Future`, `Use` (written bare, from `primitives.bp`) | 606 (1) | |
 | `@Context<C>` (the context marker on a component's type) | — (removed): a `Component<R>` whose `R` implements `Renderable` is a component | 354 (1) | |
+| `@embed("path")` — the `@` builtin call, in a program and as a printed form of the resolved program | `comptime compiler.embed("path")`, answering a `Link`, opened through `Asset(link).open()` (§ The `compiler` module and builtins) | 606 (1), 607 | 2026-10-18; no `@name` builtin remains. 835 (2)'s printing of a folded `Asset` as `@embed("path")` is a retired form too, its replacement under ctr-embed-resolved (the maintainer, 2026-10-21) |
 | `@getContext(T)` | `use context(themeContext)` | 269, 354, 379, 722 | 269 is `Replaced by 354 and 379` |
 | `Context<T>()` | `createContext(value)` (std's `context` module) | 378 (1) | std's `Context<T>` remains a record holding `contextValue: T` (683) |
 | `use context(T)`, a context read by a bare type name | `use context(themeContext)`, a context value the reader imports | 722, 723 | 2026-10-18 |
