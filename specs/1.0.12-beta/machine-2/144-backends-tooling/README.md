@@ -2160,8 +2160,10 @@ calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for
 - [x] a generic fn passed as a value (`xs.map(show)`): the host callback's extra arguments (the index) land in the
       hidden slot — a cell red on commonJS today
       — built as: a generic fn named as a value takes its print shapes; cell `generic_fn_value_takes_shape` (521)
-- [ ] a call into a generic fn of another module — a cell red on commonJS today
+- [x] a call into a generic fn of another module — a cell red on commonJS today
       — the callee takes its shapes (28ed413f9); the caller passes them to every bodied, non-host generic fn of another module, judged by its signature alone (899; cell `generic_fn_of_other_module_takes_shape`)
+      — built as (f8f9f116c): the callee's declared signature in the export info (`shape_sig`), one trailing `__bp_ty_<T>` per type
+      parameter at the call (a missing trailing default filled `undefined` first); cells under `generic_fn_of_other_module_takes_shape-899/`
 - [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
       today
       — the instance carries its type arguments' shapes (`__bp_s`), written by the generic constructor from the shapes its call handed it and copied by the methods that answer a new value (900; cell `generic_type_value_carries_shapes`); wasm's `shown` not monomorphised through a behavior's member is a 164 row
