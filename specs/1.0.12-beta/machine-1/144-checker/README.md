@@ -2608,17 +2608,22 @@ function whose every parameter is `comptime` is called there and expanded at the
       refused `compiler-output-outside-decorator` at the call; cells in `comptime_init_at_call_site-808/` (`run/`, `refused/`,
       `cells/init_at_call_other_module`), the build lines in `comptime/tests/comptime_blocks.zig`; 615's
       `init_output_outside_decorator` rewritten with a run-time parameter, its refusal unchanged
-- [ ] a function whose every parameter is `comptime` is expanded at its call also when its body only forwards a parameter to another
+- [x] a function whose every parameter is `comptime` is expanded at its call also when its body only forwards a parameter to another
       such function (`fn twice(comptime n: string) -> void { inner(n); inner(n + "!"); }`; 562: never specialised, no run-time body) —
       today `transform.zig` `trySpecializeCall` copies it (`hooks.isExpandedFn` misses a body that only forwards), erlang refusing the
       build (`inner/1` undefined) and wasm the call; cell `comptime_parameter_call_expanded-562/cells/expanded_fn_forwards_parameter`,
       red on the parent, green on the four targets
-- [ ] a function-body `comptime { … }`'s `print` is one build line per build also in a module that holds a top-level `comptime` block
+      — built as: `comptime.zig` leaves out of the transform's `fn_decls` every function `isExpandedFn` answers for on the body the
+      checker reads (the transform's copy had its `.value` reads erased), at both sites that build it
+- [x] a function-body `comptime { … }`'s `print` is one build line per build also in a module that holds a top-level `comptime` block
       (788 (2), 793 (5), 789 (1)): the spliced re-analysis must not run it again (and, checked with it, the top-level block's own `print`
       and `compiler.init` registration); unit test `body_block_prints_once_beside_top_level_block` in `comptime/tests/comptime_blocks.zig`,
       red on the parent
-- [ ] 808's refusal at the call from a template's body and under a value-answering `comptime` (575 (3), 376 (2)) gets its cases
+      — built as: `Env.buildRuns` records each `comptime` node's output range and `keepPassOneTraces` drops from the second pass each run
+      the first already printed, matched by text one for one; the top-level block's `print` and `compiler.init` were not re-run
+- [x] 808's refusal at the call from a template's body and under a value-answering `comptime` (575 (3), 376 (2)) gets its cases
       (458 (2)): `comptime_init_at_call_site-808/refused/src/cases/init_at_call_from_template` and `init_at_call_in_value_comptime`
+      — built as: both already refused at the call on the four targets; the cases and their snapshots added
 - [x] a cached build replays the build output (793 (4)) — a unit test in `level_b.zig` (a dependency read back from the cache replays
       its block's output), no cell: `cell check` records no build line (796)
 - [x] a `comptime { print(…) }` inside a function body writes its print as build output (793 (5)) — a unit test (796); a `void`
