@@ -135,6 +135,11 @@ Writing a type-parameter field is lowered but no cell reaches it.
       `decisions-taken/`); B-162 P1's `run` and `use c` wait on it on wasm only
       — built as: `$task` the GC type of an `Async` type ref, a task boxed into an `unknown` as is, `await` over a `T | Async<T>`
       testing `ref.test (ref $task)`; the cell green on four targets (wasm refused it on the parent)
+- [ ] **B-162 P1's component cells on wasm** (809, 815–825, 823; machine 1's `front/b162-p1`, chat m2-0036 / m2-0037): P-A ✓ — std's
+      memo / hook cells a GC `$cell {filled, value}` (`gc_memo_cell_*`, 1150f1693), so a module binding them stays WasmGC; a `use memo`
+      slot over a `Context<T>` typed `T` in `context_lower.zig` (`createContext(v)` is `v`, 379) · P-B (machine 1): a lowered component
+      fn typed `fn(unknown, unknown) -> R` so `run<T>` / `resolve<T>` bind `T` · P-C: the component cells green on wasm over P-B and 831,
+      `wat.zig` only; linear `is Async<unknown>` not built (the module stays GC)
 - [x] **`needs: [.Gc]`** (518) on every program emitting GC types — wasmtime `-W gc=y`, node and the browser by default
 - [ ] **every `run/` cell's `.out` on wasm unchanged**; a long-running cell (a loop of 10M allocations, a recursion
       without a loop, a request loop) whose memory stays bounded; `std_wasm.wasm` still linked for the std's functions
