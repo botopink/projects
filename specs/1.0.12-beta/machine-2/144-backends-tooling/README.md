@@ -3258,13 +3258,17 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       the resolved program is kept; a folded context `createContext(v)` with its import; a `@TypeInfo.all` read as written (the oracle drops
       `decorator_marker_empty_body` until B-137); the oracle over two modules and a dependency (a dependency's module now its own erlang atom
       in the test harness); `resolved_one_file_per_module` a CLI case, `compiler-cli/tests/resolved_file.sh` (the suite checks no emitted file)
-      — left: the 798 (2) origin comments (`// from #[…] (file:line)`): nothing in the tree records a piece's origin yet; an `Asset` printed
+      — origin comments built (798 (2)): `// from #[entity] (lib/tools.bp:15)` for a decorator's member or executor (567's output records,
+      carried into the re-analysis), `// from shout (…)` for a template expansion, `// from comptime (…)` for a folded value,
+      `// from comptime { … } (…)` for a top-level block — the three non-decorator spellings wait on question 798-f; comment nodes in the
+      resolved copy only, no codegen snapshot changed
+      — left: an `Asset` printed
       `Asset(Link(path: "…"))` and folded bytes `bytes.fromHex("…")` (885; `fromHex` / `toHex` on `bytes` on four targets, a std-wasm leaf;
       cell `resolved_prints_asset_and_bytes`) — after B-139 lands 607's `Asset(link: Link)`; 836: `<f>__type`, `__<Enum>__<Section>`,
       `__embed_<p>` moved into the reserved space, the snapshots re-recorded; cells `resolved_prints_the_builder`, `hand_written_twin_name_is_free`
 - [x] `botopink build --emit-runtime <dir>` (`<dir>/<pkg>.bpr` per package: the resolved tree in binary, uncompressed, a dependency's file
       reused, the compiler's version recorded and another refused) and `build` / `run` over a `.bpr`, `--target` required, no comptime, no build
-      phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment (the comments still open, the printer's box), never read back; the directory required, created
+      phase printed (805 (1)–(3)); `--emit-resolved <dir>` with each piece's origin as a comment, never read back; the directory required, created
       when missing, each file written named (798 (2), (3))
       — built as: one `<dir>/<group>.bpr` per package — the root, each dependency, each loaded file's package, each std module
       (`<dir>/std/<module>.bpr`, level B's filing; 837 (1)) — level B's `analysis_entry` encoding under its own magic, keyed by
@@ -3296,8 +3300,10 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       — built as: the session's catalogue readers also hold the modules in `Reflection.templateReads`, filed in the root's `.bpr`;
       `runtime_file.sh`'s `tpl` case (two programs over one `mid` whose template queries `@TypeInfo.all`); until B-137 removes the
       template catalogue (665)
-- [ ] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
+- [x] cell `build_modes_same_answer`: a package with a decorator, a template and a top-level `comptime` block, built directly and
       from its intermediate, the same answer byte for byte on four targets (798 (5)); a CLI row for the refused missing directory
+      — built as a CLI case, `compiler-cli/tests/build_modes_same_answer.sh` (the suite builds a package one way); a flag after
+      `--emit-resolved` / `--emit-runtime` taken as the directory now refused `flag '…' needs a value`
 
 Oracle: `build_modes_same_answer`; the whole suite built from the intermediate equal to built directly; `zig build test`.
 

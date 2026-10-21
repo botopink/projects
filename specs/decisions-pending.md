@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**28 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**29 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -125,6 +125,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 1 | **B-115-a** | How a commonJS caller learns to pass a generic fn of another module its print shapes | B-115 box 2 | (a) every bodied, non-host generic fn of another module, by its signature alone |
 | 2 | **B-115-b** | How `K` / `V` reach a generic std type's method (`Dict<K, V>.display` through `collections.shown`, `print(d)`) | B-115 box 3 | (a) the shape carried by the instance |
 | 3 | **878-a** | What a second Ctrl-C does while a comptime body is being interrupted | nothing (as built) | (a) as built: the first interrupts, a second ends the process |
+| 4 | **798-f** | The origin comment's spelling for a template, a folded value and a top-level `comptime` block | nothing (as built) | (a) as built |
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
@@ -159,6 +160,15 @@ problem, an example, the options, the recommendation and why — and its full en
   a body's start and its epoch deadline is missed; the second is the fallback.
 - **Options.** (a) as built; (b) every SIGINT only interrupts, the process never killed by it while a body runs.
 - **Recommendation.** (a): a missed interrupt must not leave the user without a way out.
+- **Blocks.** nothing.
+
+#### 798-f · How does `--emit-resolved` spell the origin of a piece no decorator made? (decision 798 (2); 144 B-163)
+
+- **Measured.** 798 (2) fixes `// from #[controller] (file:line)` for a decorator's piece. As built (dbd80bfff): `// from shout (lib/tools.bp:19)`
+  for a template expansion (the template's declaration), `// from comptime (src/main.bp:14)` for a folded value, `// from comptime { … }
+  (src/main.bp:17)` for a top-level block's executor; files labelled as diagnostics label them (545).
+- **Options.** (a) as built; (b) another spelling (a few string literals in `resolved_origins.zig`).
+- **Recommendation.** (a): each names what the source wrote, as 798 (2)'s `#[controller]` does.
 - **Blocks.** nothing.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)

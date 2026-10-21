@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**28 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**29 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -125,6 +125,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 1 | **B-115-a** | Como um chamador commonJS sabe passar as formas de impressão a uma fn genérica de outro módulo | B-115 caixa 2 | (a) toda fn genérica com corpo, não host, de outro módulo, pela assinatura apenas |
 | 2 | **B-115-b** | Como `K` / `V` chegam a um método de um tipo genérico do std (`Dict<K, V>.display` por `collections.shown`, `print(d)`) | B-115 caixa 3 | (a) a forma levada pela instância |
 | 3 | **878-a** | O que um segundo Ctrl-C faz enquanto um corpo comptime está sendo interrompido | nada (como construído) | (a) como construído: o primeiro interrompe, um segundo encerra o processo |
+| 4 | **798-f** | A grafia do comentário de origem para um template, um valor dobrado e um bloco `comptime` de topo | nada (como construído) | (a) como construído |
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
@@ -159,6 +160,15 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
   o início de um corpo e o seu prazo de época se perde; o segundo é o recurso.
 - **Opções.** (a) como construído; (b) todo SIGINT só interrompe, o processo nunca é morto por ele enquanto um corpo roda.
 - **Recomendação.** (a): uma interrupção perdida não pode deixar o usuário sem saída.
+- **Bloqueia.** nada.
+
+#### 798-f · Como o `--emit-resolved` escreve a origem de uma peça que nenhum decorador fez? (decisão 798 (2); 144 B-163)
+
+- **Medido.** A 798 (2) fixa `// from #[controller] (file:line)` para a peça de um decorador. Como construído (dbd80bfff): `// from shout (lib/tools.bp:19)`
+  para a expansão de um template (a declaração do template), `// from comptime (src/main.bp:14)` para um valor dobrado, `// from comptime { … }
+  (src/main.bp:17)` para o executor de um bloco de topo; arquivos rotulados como os diagnósticos os rotulam (545).
+- **Opções.** (a) como construído; (b) outra grafia (algumas strings literais em `resolved_origins.zig`).
+- **Recomendação.** (a): cada uma nomeia o que o código-fonte escreveu, como o `#[controller]` da 798 (2).
 - **Bloqueia.** nada.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
