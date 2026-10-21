@@ -3001,11 +3001,17 @@ Oracle: the cells; `zig build test`.
 - [x] a `syntax` expression function's `code` tree naming an imported std function (`return code @`print(${text})`` with `print` imported) is
       refused "unbound variable 'print' … in `log`'s tree", `-> anyvalue` too; a cell, red on the parent — landed for std's `print` / `panic`
       (`applyAstHygiene` applies the writer's std calls, 669; cell `syntax_fn_code_names_imported_std_function`)
-- [ ] every name of a tree a template or a `syntax` function builds resolves in the writer's module (170, 578), not only std's
+- [x] every name of a tree a template or a `syntax` function builds resolves in the writer's module (170, 578), not only std's
       `print` / `panic`: the writer's own imports and its module's declarations, private ones (859) included, reached from the caller's
       module the way 830's marked lowering reaches `Module.of`. query's grammar (145, decision 914) needs it: its expansion spliced into
       the caller names `of` and `Query<T>`'s methods, which 914 makes private; a cell (a library template naming its module's private
-      function, called from another package), red on the parent
+      function, called from another package), red on the parent — landed (`HygieneResolver`, `dsl_hygiene`, `written_names`;
+      cells `syntax_fn_tree_names_writer_imports`, `syntax_fn_tree_names_writer_privates`; the writer's privates already resolved)
+- [ ] a built tree naming the writer's type as a constructor: `Box(n: …)` is refused `label-on-function-value` (the type bound under its
+      alias as a plain function value) and `Box.make(…)` passes the checker but erlang emits an unbound variable for the alias; a cell,
+      red on the parent
+- [ ] erlang: a consumer's `query @`…`` over query's `Query<T>` crashes `bp_unsupported_method join` (with the grammar answering
+      `-> anyvalue`); a cell over a library type's method reached through a built tree, red on erlang
 - [x] 907: the use decides — `#[f]` applies a function whose first parameter is `syntax` as a decorator, `f(e)` expands any function with a `syntax` parameter at the call; `isSyntaxExprFn` goes (`ast.zig`), each use checked by its own rules against the one declared type; cell `syntax_fn_use_decides_kind` (`log(syntax e: unknown) -> void` annotated on a `val` and called on an expression, four targets, red on the parent); `syntax_fn_run_time_return` keeps its shape; B-69's home rule (592 (3)) reads the kind, a `syntax` function declared in `src/comptime/`
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)
