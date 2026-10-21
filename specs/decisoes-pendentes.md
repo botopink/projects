@@ -179,7 +179,15 @@ Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
-Nenhuma aberta: cada entrada foi respondida por 899–955 (2026-10-21), decidida pelo fable por delegação do mantenedor e listada em § Para revisar.
+#### 810-d · `!(v is A)` e `v is A && …` estreitam `v`? (decisão 810 (2); 144 B-162, B-155)
+
+- **Medido.** 810 (2): dentro de `if (v is A)` `v` é `A`; no seu `else`, e depois dele quando o ramo sai, `v` é sua união sem `A`.
+  Não nomeia nem um teste negado nem `&&`. No `feat` (5a9e86add), todo alvo recusa tanto `if (!(k is A)) { return; } k.tag` quanto
+  `if (k is A && k.tag == 7)` — "cannot read a field of a `A | B` — not every member of the union answers it".
+- **Opções.** (a) os dois estreitam: `!(v is A)` troca os tipos dos dois ramos (depois de `if (!(v is A)) return`, `v` é `A`), e a direita de
+  `v is A && …` vê `v` como `A` (como o corpo do `if`); `||` o dual; (b) só as formas que a 810 (2) nomeia, as outras recusadas como hoje.
+- **Recomendação.** (a): é o mesmo fluxo que a 810 (2) afirma, lido pelos dois operadores pelos quais todo leitor espera lê-lo.
+- **Bloqueia.** uma linha do checker (máquina 1, B-162) e a linha de estreitamento do wasm da B-155.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)
 

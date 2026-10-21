@@ -179,7 +179,15 @@ None open: every entry was answered by 899–955 (2026-10-21), decided by the fa
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
-None open: every entry was answered by 899–955 (2026-10-21), decided by the fable at the maintainer's delegation and listed in § To review.
+#### 810-d · Do `!(v is A)` and `v is A && …` narrow `v`? (decision 810 (2); 144 B-162, B-155)
+
+- **Measured.** 810 (2): inside `if (v is A)` `v` is `A`; in its `else`, and after it when the branch leaves, `v` is its union without `A`.
+  It names neither a negated test nor `&&`. On `feat` (5a9e86add), every target refuses both `if (!(k is A)) { return; } k.tag` and
+  `if (k is A && k.tag == 7)` — "cannot read a field of a `A | B` — not every member of the union answers it".
+- **Options.** (a) both narrow: `!(v is A)` swaps the two branches' types (after `if (!(v is A)) return`, `v` is `A`), and the right of
+  `v is A && …` sees `v` as `A` (as does the `if`'s body); `||` the dual; (b) only the forms 810 (2) names, the others refused as today.
+- **Recommendation.** (a): it is the same flow 810 (2) states, read through the two operators every reader expects it through.
+- **Blocks.** a checker row (machine 1, B-162) and B-155's wasm narrowing row.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
 

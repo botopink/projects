@@ -3098,7 +3098,9 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [ ] wasm: a generic function returning `T` from `e is fn() -> T` then `e()` prints garbage (`276`) — the type parameter's slot not monomorphised; found by B-146
       — not reproduced (the program is refused "cannot box this value as `unknown`"); waits on a repro
 - [x] erlang: `await e.view()` where `view` is a record field holding a component lambda is emitted as a method call (`function view/1 undefined`) — found by 150 s34
-- [ ] wasm: a generic method answering `-> ?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
+- [x] wasm: a generic method answering `-> ?T` hands back garbage — `first<T>(self, t: fn(unknown) -> bool, fallback: ?T) -> ?T` read as `?.count` printed `8928`; the `?T` slot not monomorphised, as the `T` box above; found by B-146
+      — built as (5a9e86add): a method answering its own type parameter is generic on a type with none (`answersOwnTypeParam`),
+      copied per record by `specializeMethod` binding `T` through `?T`; cell `generic_method_optional_answer` (a record, `i32`, `string`, a null)
 - [x] wasm: `fn mapAll<T, R>(items: T[], f: fn(T) -> R) -> R[]` answers wrong values when `R` is `string` or `bool` (prints `496,504` and `[0, 1]`); found by B-152
       — built as: the generic `R[]` of string and bool read right; cell `generic_fn_result_array_string_bool`
 - [x] erlang: a `Source(file, line, col)` built at run time fails to compile, `function '__Source'/3 undefined` — the prelude alias of `__Source` is not constructible on erlang; found by front 160
@@ -3113,7 +3115,7 @@ Each box is a library's decision-cell draft that builds on the other targets and
       run-time `type<T>`; cell `type_token_labelled_field` (758), labelled, out of order and positional
 - [x] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
       — built as (dd0b21d81): `if (k is A)` over a union types `k` as `A` in the branch (the other member in the else of a two-member union); case
-      `union_narrowed_field_read` (810); flow narrowing after an early `return` and through `&&` not covered
+      `union_narrowed_field_read` (810); `!(k is A)` before a `return` and `k is A && …` are refused by the checker on every target (question 810-d), not wasm's
 - [ ] wasm: `.length.toString()` on a `Kid[]` does not resolve; found by B-162; a cell red on the parent
       — not reproduced on `feat` (a local, a parameter, a record field, concatenation, after `map`: `2` on four targets); waits on B-162's repro
 - [x] wasm: `botopink test` of `conformance/test/compiler_load_in_a_test_suite` panics in `wat.zig` `finishGc` (index out of bounds),
