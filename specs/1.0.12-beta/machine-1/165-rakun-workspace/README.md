@@ -214,7 +214,7 @@ before 144 B-139 (decision 605: B-139 removes `@emit` / `@code` / `@expr` with `
       `NodeChild = Component<Element>`, `NodeChildren = NodeChild[]`; a ready `Element` entering as a plain lambda `{ _ -> e }` (815); the resolved tree a record of its own beside `Element` (`Rendered(tag, attrs, children: Rendered[])` in
       813's example), what `rakun-bpp-dom-test` inspects, a `Suspense` keeps and hydration reads
 - [ ] decision 817 (rakun-bpp's renderer): each child resolved with `scope.childAt(Index(i), child)` (`Key(k)` for a keyed child), no table
-      of its own; list items keyed by a `#[key]` parameter of their component, never a `key` prop
+      of its own; list items keyed at the call, `#[key(p.id)] Item(p)` (818 (3)), never a `key` prop
 - [ ] decision 816 (rakun-bpp's renderer): a mounted tree's `Scope.root()` kept between renders; each child's cell reused while the same
       component and key stand at its place, fresh otherwise; (the `key` prop superseded by 817's `#[key]`)
 

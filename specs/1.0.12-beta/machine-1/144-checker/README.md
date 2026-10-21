@@ -2806,6 +2806,11 @@ node's child, run from its `render()`) or resolved by `use c`, only inside a com
       — built as: the cells under `union_narrowing_flow_and_case-810/` (`run`, `refused`); a behavior marked at run time on every target
       (commonJS `prototype.__bp_b_<B>`, erlang / beam `'__bp_behaviors'/0` and `'__bp_implements'/2`); a `case` arm over a behavior an `if` chain;
       the exhaustiveness text kept without a code (810-a); `is Async<unknown>` on commonJS only (810-b); the key unqualified (810-c)
+- [ ] decision 818: every `use` that answers a value (a hook or a component) lowered to `childAt(Use(n), c)`, `provide` / `context` /
+      `inject` taking no place, the node's cell holding its contexts alone; a component's identity the call that made it, numbered within
+      its declaration (no type argument); `#[key(expr)]` before an expression answering a `Component<T>` (`key-type`, a duplicate failing at
+      run time); 817 (2)'s type-argument identity and 817 (4)'s parameter / field `#[key]` (`key-twice`) not built; cell
+      `identity_by_call_and_key` (a branch change resets, a keyed reordered list keeps each item, a generic component at two callers' sites)
 - [ ] decision 817: std's `Scope` keeps the tree of cells — `scope.childAt(place, c)` (`Use(n)`, `Tail`, `Index(i)`, `Key(k)`) in place of a
       public `scope.child()`, the parent's cell keeping `place → (identity, cell)`; `use c` / `return c` lowered to it; identity written by
       each target's lowering (declaration with type arguments, a type, a lambda's position, a `#[key]` value); a reused cell's contexts
