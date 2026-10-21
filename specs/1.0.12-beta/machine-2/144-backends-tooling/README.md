@@ -3107,7 +3107,9 @@ Each box is a library's decision-cell draft that builds on the other targets and
 - [x] wasm: a `?T` or `T` value a generic function returns arrives boxed as a scalar (`__box_i32`), so a field read on it answers garbage (`firstOf<T>(xs: T[], keep) -> ?T` over records prints 296 for 7); found by the 757 / 758 defects
       — built as: cell `generic_answer_record_field_read`
 - [ ] an `i32[]` printed as a pointer on wasm — not reproduced; waits on a repro
-- [ ] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
+- [x] a record constructor whose field is a run-time `type<T>` and the argument labelled — `Holder(owner: Book, …)` — breaks on erlang, beam and wasm (written positionally it works); found by B-140; a cell red on the parent
+      — built as (63f4560b4): the checker picks the parameter by its label (`labelledParamIndex`) where it lowers a written type for a
+      run-time `type<T>`; cell `type_token_labelled_field` (758), labelled, out of order and positional
 - [ ] wasm: a field read on a value narrowed out of a union prints a pointer (`k.tag` printed `640`); found by B-162; a cell red on the parent
 - [ ] wasm: `.length.toString()` on a `Kid[]` does not resolve; found by B-162; a cell red on the parent
 - [x] wasm: `botopink test` of `conformance/test/compiler_load_in_a_test_suite` panics in `wat.zig` `finishGc` (index out of bounds),
