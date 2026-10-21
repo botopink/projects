@@ -2,7 +2,7 @@
 
 As perguntas abertas do milestone corrente, 1.0.12-beta; um arquivo acima de todo milestone desde 2026-10-18.
 
-**29 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
+**30 perguntas e 8 contradições estão abertas, e 100 escolhas de implementação aguardam confirmação** (contadas das
 entradas abaixo: uma pergunta com letra, sendo `nat-d` e `nat-f` títulos de seus casos; `ctr-*` e `119-a` as
 contradições; uma linha de uma tabela de escolhas, ou uma entrada `#####` ao lado dela).
 
@@ -126,6 +126,7 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
 | 2 | **B-115-b** | Como `K` / `V` chegam a um método de um tipo genérico do std (`Dict<K, V>.display` por `collections.shown`, `print(d)`) | B-115 caixa 3 | (a) a forma levada pela instância |
 | 3 | **878-a** | O que um segundo Ctrl-C faz enquanto um corpo comptime está sendo interrompido | nada (como construído) | (a) como construído: o primeiro interrompe, um segundo encerra o processo |
 | 4 | **798-f** | A grafia do comentário de origem para um template, um valor dobrado e um bloco `comptime` de topo | nada (como construído) | (a) como construído |
+| 5 | **547-b** | Se o `x = f(x)` de um var `#[beamMemory(.PersistentTerm)]` é atômico | nada (como construído: não atômico) | (b) não atômico, a referência diz isso |
 
 ## Máquina 2 — prioridade máxima (frente 144, `machine-2/144-backends-tooling/`)
 
@@ -169,6 +170,20 @@ opções) fica na § Máquina 2. Marque uma opção por pergunta (`[x]`); o coor
   (src/main.bp:17)` para o executor de um bloco de topo; arquivos rotulados como os diagnósticos os rotulam (545).
 - **Opções.** (a) como construído; (b) outra grafia (algumas strings literais em `resolved_origins.zig`).
 - **Recomendação.** (a): cada uma nomeia o que o código-fonte escreveu, como o `#[controller]` da 798 (2).
+- **Bloqueia.** nada.
+
+#### 547-b · O `x = f(x)` de um var `PersistentTerm` é atômico? (decisões 547 (ii), 877; 144 B-143 § 877)
+
+- **Medido.** 547 (ii): "uma reatribuição que lê o `var` que escreve (`x = f(x)`) é atômica no BEAM — lê, calcula,
+  `ets:select_replace` contra o valor lido, repetido"; construído assim para o `.Ets` padrão (5f5362c73). Um `var` `#[beamMemory(.PersistentTerm)]`
+  é escrito por `persistent_term:put`, que não tem compare-and-swap: como construído, lê-calcula-`ptPut` sem checagem, então dois processos
+  escrevendo ao mesmo tempo podem perder uma escrita. A 547 chama `PersistentTerm` o armazenamento "para um `var` escrito raramente e muito lido (uma escrita varre todo
+  processo; o custo é da referência documentar e de quem escreve pesar, sem checagem)".
+- **Opções.** (a) atômico: uma trava (um `global:trans` ou uma linha ETS de trava por var) em volta de lê-calcula-put; (b) não atômico, a referência diz que
+  o `x = f(x)` de um var `PersistentTerm` pode perder uma escrita concorrente, "sem checagem" lido como cobrindo isso; (c) `x = f(x)` recusado num
+  var `PersistentTerm`, só `x = v` permitido.
+- **Recomendação.** (b): a 547 escolheu `PersistentTerm` para escritas raras e deixou o custo delas para quem escreve; uma trava acrescenta um custo que a 547 não
+  pediu. (c) é a mais restritiva se o mantenedor não quiser escrita perdida em lugar nenhum.
 - **Bloqueia.** nada.
 
 ## Bloqueando agora — máquina 1 e frente 165 (2026-10-15)

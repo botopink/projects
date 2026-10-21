@@ -2,7 +2,7 @@
 
 The open questions of the current milestone, 1.0.12-beta; one file above every milestone since 2026-10-18.
 
-**29 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
+**30 questions and 8 contradictions are open, and 100 implementation choices await confirmation** (counted from the
 entries below: a lettered question, `nat-d` and `nat-f` being headings of their cases; `ctr-*` and `119-a` the
 contradictions; a row of a choices table, or a `#####` entry beside it).
 
@@ -126,6 +126,7 @@ problem, an example, the options, the recommendation and why — and its full en
 | 2 | **B-115-b** | How `K` / `V` reach a generic std type's method (`Dict<K, V>.display` through `collections.shown`, `print(d)`) | B-115 box 3 | (a) the shape carried by the instance |
 | 3 | **878-a** | What a second Ctrl-C does while a comptime body is being interrupted | nothing (as built) | (a) as built: the first interrupts, a second ends the process |
 | 4 | **798-f** | The origin comment's spelling for a template, a folded value and a top-level `comptime` block | nothing (as built) | (a) as built |
+| 5 | **547-b** | Whether a `#[beamMemory(.PersistentTerm)]` var's `x = f(x)` is atomic | nothing (as built: not atomic) | (b) not atomic, the reference says so |
 
 ## Machine 2 — maximum priority (front 144, `machine-2/144-backends-tooling/`)
 
@@ -169,6 +170,20 @@ problem, an example, the options, the recommendation and why — and its full en
   (src/main.bp:17)` for a top-level block's executor; files labelled as diagnostics label them (545).
 - **Options.** (a) as built; (b) another spelling (a few string literals in `resolved_origins.zig`).
 - **Recommendation.** (a): each names what the source wrote, as 798 (2)'s `#[controller]` does.
+- **Blocks.** nothing.
+
+#### 547-b · Is a `PersistentTerm` var's `x = f(x)` atomic? (decisions 547 (ii), 877; 144 B-143 § 877)
+
+- **Measured.** 547 (ii): "a reassignment that reads the `var` it writes (`x = f(x)`) is atomic on the BEAM — read, compute,
+  `ets:select_replace` against the value read, retried"; built so for the default `.Ets` (5f5362c73). A `#[beamMemory(.PersistentTerm)]`
+  `var` is written by `persistent_term:put`, which has no compare-and-swap: as built, read-compute-`ptPut` with no check, so two processes
+  writing at once can lose one write. 547 calls `PersistentTerm` the holding "for a `var` written rarely and read much (a write scans every
+  process; the cost is the reference's to document and the writer's to weigh, no check)".
+- **Options.** (a) atomic: a lock (a `global:trans` or a per-var ETS lock row) around read-compute-put; (b) not atomic, the reference says
+  a `PersistentTerm` var's `x = f(x)` may lose a concurrent write, "no check" read as covering it; (c) `x = f(x)` refused on a
+  `PersistentTerm` var, only `x = v` allowed.
+- **Recommendation.** (b): 547 chose `PersistentTerm` for rare writes and left their cost to the writer; a lock adds a cost 547 did not
+  ask for. (c) is the strictest if the maintainer wants no lost write anywhere.
 - **Blocks.** nothing.
 
 ## Blocking now — machine 1 and front 165 (2026-10-15)
