@@ -2161,10 +2161,10 @@ calls still write an `f64` bound to `T` the JS engine's way on commonJS (`2` for
       hidden slot — a cell red on commonJS today
       — built as: a generic fn named as a value takes its print shapes; cell `generic_fn_value_takes_shape` (521)
 - [ ] a call into a generic fn of another module — a cell red on commonJS today
-      — the callee takes its shapes (28ed413f9); how the caller learns to pass them waits on question B-115-a
+      — the callee takes its shapes (28ed413f9); the caller passes them to every bodied, non-host generic fn of another module, judged by its signature alone (899; cell `generic_fn_of_other_module_takes_shape`)
 - [ ] a generic method's type parameters (`Dict<K, V>.display` through `collections.shown`) — a cell red on commonJS
       today
-      — waits on question B-115-b (wasm refuses it too: `shown` not monomorphised)
+      — the instance carries its type arguments' shapes (`__bp_s`), written by the generic constructor from the shapes its call handed it and copied by the methods that answer a new value (900; cell `generic_type_value_carries_shapes`); wasm's `shown` not monomorphised through a behavior's member is a 164 row
 - [x] a tuple held in a type-parameter slot is printed as a tuple (`Box(value: #(1, 2))`, `id(#(3, "x"))` answers
       `#(3, "x")`; today `[1, 2]`, `[3, "x"]`) — found by 164 s2's tuple subtype; a cell on every target
       — built as: commonJS prints a tuple in a type-parameter slot and a tuple-typed record field as `#(…)`; cell
@@ -2768,6 +2768,7 @@ library at once; `fable` if opus fails once) · **After:** B-136; its wasm half 
       when B-139 and B-140 land (scaffolding, no decision); the decorator-marker exemption goes by decision 604 (a marker is `fn x(syntax decl: unknown) {}`; cells `declare_without_implementation_decorator`, `decorator_marker_empty_body`)
 
 Oracle: the 158 `external_*` cells; every library's hook on this compiler; the cold gate.
+- [ ] `inline: true` on a type method's `.Erlang(…)` cell refused at the annotation, located; `external_method_local` rewritten into the refusal cell `external_method_inline_refused` (decision 918 (3))
 
 ### B-139 — no `.d.bp`; the prelude and the imported std functions; every builtin in its std module (decisions 575 (1), (2), (7), (8), 606)
 
@@ -2883,8 +2884,12 @@ on wasm too.
       — built as (d8c81241a): `find` stepped in place (stops at the match, closes the generator, answers `?T`), `flatMap` a fifth derived
       handle kind (8 wasm snapshots' body-kind constants one higher); case `generator_find_lazy`; `flatMap`'s cell waits on 596's runtime
       half (erlang `bp_unsupported_method flatMap`, beam `unresolved_method`)
-- [ ] wasm: `take(n)` reaching its count does not close its source, nor `toArray()` its handle — `counted().take(1).toArray()` prints
+- [x] wasm: `take(n)` reaching its count does not close its source, nor `toArray()` its handle — `counted().take(1).toArray()` prints
       `closed` on commonJS and erlang, not on wasm (`$__gen_resume`'s take case at `left <= 0`); a cell red on wasm on the parent
+      — built as (a4a16174f): `$__gen_resume`'s take case closes its source at `left <= 0`, `toArray()` its handle; case
+      `generator_take_closes_source`; 8 wasm snapshots gain the close call (seven the `$__gen_close` helper too)
+- [ ] wasm: `flatMap` handed a bare function value (`counted().flatMap(twice)`) refuses the module ("the wasm backend walks an array or
+      a range; nothing shows this iterable is one") where the lambda form answers; found by 596's runtime half; a cell red on wasm
 
 ### B-143 — commonJS: `push` mutates the array every binding holds, not the `var` it was called on (decisions 447 (2), 448 (2), 547)
 
@@ -2925,14 +2930,16 @@ Oracle: the two cells on commonJS, erlang, beam and wasm.
       — removal built (5f5362c73): `BeamMemory` is `Ets` and `PersistentTerm`; `.ProcessDict` the unknown-member refusal ("expected `Ets`
       or `PersistentTerm`"), `.Ets(keyed: true)` "unknown argument `keyed` — `.Ets` takes none"; an annotated `.Ets` the default lowering; the
       annotation accepted off the BEAM; the keyed cells (168, 340, 167, 547's) closed, 547's `refused/` (`process_dict_member`,
-      `ets_keyed_argument`) kept; a `PersistentTerm` write a plain `ptPut` (atomicity: question 547-b)
+      `ets_keyed_argument`) kept; a `PersistentTerm` write a plain `ptPut` (`x = f(x)` made atomic by 903, a box below)
 - [x] 547 (iii): a module `var` whose type holds an `Async` refused, located, on every target (today `botopink check` passes it); a cell red
       on the parent
-      — built as (71b7b426c): `module-var-holds-task` (the code chosen, question 547-c), at the written type else the name, read
+      — built as (71b7b426c): `module-var-holds-task` (the code chosen, question 547-c; `module-var-holds-async` by 905, a box below), at the written type else the name, read
       through type arguments, tuples, records and variants, never a function type; `refused/` cases direct, in an array, in a record field;
       a module `val` holding a task runs (`cells/module_val_holds_task`); `comptime/AGENTS.md` still to name the code
 - [x] the retired spelling `#[@BeamMemory.Ets(keyed: true)]`'s message still suggests `(keyed: true)`: it names `#[beamMemory(.Ets)]`
       — built as: the hint writes `#[compiler.beamMemory(.Ets)]`
+- [ ] 903: `x = f(x)` on a `#[compiler.beamMemory(.PersistentTerm)]` var atomic on erlang and beam — read, compute, `persistent_term:put` under a per-`var` lock the runtime holds and releases however the writer ends; reads lock-free; cell `persistent_term_var_write_atomic` (N processes incrementing one var, the total on the four targets), red on the parent on erlang and beam
+- [ ] 905: `module-var-holds-task` renamed `module-var-holds-async` in `diagnostics.zig`, the three refused cases of `module_var_one_program_value-547/` re-recorded; cell `module_var_holds_async_refused`
 
 ### B-144 — erlang / beam: a chained call on a namespace member dispatches on the wrong receiver
 
@@ -3161,6 +3168,7 @@ Oracle: the whole suite on four targets; `test-libs`; the cold gate.
       — built as: `pub val length: i32;` parsed in the prelude alone, a local shadowing a primitive's statics, `array`
       `primitive-type-name-taken`, std's `json.array` → `json.arrayOf` (36 library sites in actions, rakun, validation respelled apart),
       `bytes.toUtf8: not valid UTF-8` on four targets; cells under 873's directory
+- [ ] std `regex.bp`: the free `regex.matches(pattern, input)` removed; `Regex.compile(pattern)` answers `Result`, `r.matches(input)` the one test; its consumers rewritten (decision 918 (4))
 
 ### B-149 — no code from text: the typed AST and `compiler.ast` (decision 625)
 
@@ -3233,20 +3241,22 @@ The `fable` plan is written (2026-10-20): a commonJS program at `conformance/che
       Async<Exit>` (repeatable) and `kill(Signal)`; node's `spawn`, no shell, stdout and stderr apart. The choice written here: the program
       runs on commonJS alone and `run` is unchanged (an erlang port folds stderr into stdout); on erlang and beam `start` answers
       `Error(Unsupported(…))` (a call refused there would refuse the whole module, `spawn` with it), on wasm the call is refused
-      `std-unsupported-on-target`; `env` `NAME=value` entries added to the parent's — both waiting on question 790-b; cells under
+      `std-unsupported-on-target`; `env` `NAME=value` entries added to the parent's — `env` confirmed and the erlang / beam answer replaced by a refusal at the call by 906, a box below; cells under
       `cell_check_program-790/`
 - [ ] `conformance/check/` — a package run on commonJS: finds every cell / module package, builds each package once with
       `--json --emit-runtime <scratch>`, each build and run with its working directory the package's (838 (4)), and runs every target of its manifest from the intermediate (798 (6)), the scratch removed after, builds the records (475 (2) with 789's `build`), applies the departures under
       `snapshot/targets/<t>/`, a cell's `deps/`, compares, writes `.new`, never accepts (67); its report the CLI's
       — piece 3a built (0fcc06b28): the package, `records.bp` (a port of `cell_snap.zig` with 789's `build`; `from` spelled `frames`, a
       reserved word), its 13 tests; every accepted `.snap` of the suite and the libraries parses and renders back byte for byte; the
-      `build` lines' place beside a refusal waits on question 789-b · left (3b): `discover` skips `conformance/check/` itself (a dir with
+      `build` lines come before the package's refusal records (904, a box below) · left (3b): `discover` skips `conformance/check/` itself (a dir with
       `src/` reads as a cell), `run.sh` runs its suite, then `main`, `observe`, `compare`, `report` and `proof.sh`
 - [ ] cell `cell_records_build_phase` (789): a package whose top-level `comptime` block prints, its `main.snap` holding the `build`
       lines then the `out` lines, on every target — recorded by the program, not by the CLI (B-160's cut)
 - [ ] the proof script at `conformance/check/proof.sh`; both run over the whole suite until every snapshot agrees byte for byte; then `botopink cell check` leaves the CLI and
       `scripts/gate.sh`, the CI and the fronts' Conformance step call the program; the AGENTS files and the meta `AGENTS.md` follow;
       `proof.sh` leaves with it
+- [ ] 904: `records.bp` takes `build` lines before the package's refusal records and refuses a `build` after a `refused`; `observe` and `cell_records_build_phase` record so; cell `build_lines_precede_refusal` (a top-level `comptime` that prints and then fails: `build <text>` then `refused …`, one answer on the four targets)
+- [ ] 906: a call reaching `io.process.start` on erlang, beam or wasm refused at the call, `std-unsupported-on-target` — `target_check.zig`'s per-call refusal read for erlang and beam as for wasm, a `declare fn` with no cell for the target emitted unreachable, a method body over it no longer refusing its module —; the run-time `Error(Unsupported)` of `start` removed; `env` `NAME=value` as built, an entry with no `=` or an empty name `Error(Other(…))` naming it; the `cell_check_program-790/` cells' erlang / beam answer the refusal; cell `process_start_commonjs_only` (the refusal the answer, commonJS's run its departure)
 
 ### B-163 — the resolved program and the build's three modes (decision 798)
 
@@ -3294,7 +3304,7 @@ open points are answered by decision 805 (a binary `.bpr` per package, `Module.t
       in the test harness); `resolved_one_file_per_module` a CLI case, `compiler-cli/tests/resolved_file.sh` (the suite checks no emitted file)
       — origin comments built (798 (2)): `// from #[entity] (lib/tools.bp:15)` for a decorator's member or executor (567's output records,
       carried into the re-analysis), `// from shout (…)` for a template expansion, `// from comptime (…)` for a folded value,
-      `// from comptime { … } (…)` for a top-level block — the three non-decorator spellings wait on question 798-f; comment nodes in the
+      `// from comptime { … } (…)` for a top-level block — the three non-decorator spellings confirmed as built (902); comment nodes in the
       resolved copy only, no codegen snapshot changed
       — left: an `Asset` printed
       `Asset(Link(path: "…"))` and folded bytes `bytes.fromHex("…")` (885; `fromHex` / `toHex` on `bytes` on four targets, a std-wasm leaf;

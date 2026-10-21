@@ -165,6 +165,7 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
 - [ ] `zig build test-libs` — `onze` 23+, `onze-server` 10+, `onze-test` 7+, on every target its
       manifest declares (`onze-server`: erlang)
 - [ ] `grep -rn "flush()" modules/rakun-ssr modules/rakun-ssr` empty (no style sink)
+- [ ] 941: `config.bp`'s `isString` and `types.bp`'s import deleted for `Json.isString()` once 151 s1 (or std's `json.bp`) carries it
 
 ### 150 s60 — CLI tail (50)
 
@@ -193,13 +194,13 @@ Final state (decision 277): no run-time mark — `onze build` reads each `#[page
 
 #### Step 4 — the signal (`std-d`) (was `50-onze-cli` s4)
 
-- [ ] under (b): `start` execs `bin/onze`, absent from the process tree while the node runs;
+- [ ] under (b): `start` execs `bin/rakun-ssr`, absent from the process tree while the node runs;
       `start_test.bp` sends `SIGTERM` to the node, observes the drain order 71 pins
 - [ ] under (a): `start` forwards `SIGTERM` via `process.forwardSignals`
 
-#### Step 5 — `start` calls `bin/onze`; `build` passes `includeErts` (after 71 step 2) (was `50-onze-cli` s5)
+#### Step 5 — `start` calls `bin/rakun-ssr` (862; 955); `build` passes `includeErts` (after 71 step 2) (was `50-onze-cli` s5)
 
-- [ ] `start.bp` runs `<outDir>/release/bin/onze` when it exists, else refuses naming it — one
+- [ ] `start.bp` runs `<outDir>/release/bin/rakun-ssr` when it exists, else refuses naming it — one
       start path
 - [ ] `build.bp` passes `ReleaseSpec.includeErts` through to 71's `assembleRelease`
 
@@ -252,6 +253,7 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` — `onze-cli` 31+ and `onze-bundler` 42+ on every target its manifest
       declares; `scaffold` green
+- [ ] 928: `#[publicEnv]` on a `val` (`PublicEnv(name)` meta, the name read off the `env.read("…")` literal, another initializer refused); the bundler inlines each marked `val`'s build value and refuses an unmarked `env.read` reached from a `#[client]` component (`env-non-public` naming the marker); `isPublicEnvName` / `publicEnvPrefix` deleted; `contracts.md` § env and the examples' `ONZE_PUBLIC_*` names rewritten; cell `public_env_marker`, red on the parent
 
 ### 150 s61 — image, font and image response (51)
 
@@ -308,6 +310,7 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
 **Gate:** standard (fronts.md § Gate) +
 - [ ] `zig build test-libs` — `onze-assets` at its counts or above (image 8, font 7, styling 13)
       and `onze-og` 10+, on every target its manifest declares
+- [ ] 942: `parseMetrics -> Result<FontMetrics, string>` refusing a malformed integer with its line, `gradientOf` answering its not-a-gradient value for a non-integer angle, the call sites `try`, `og_test.bp` asserting both; cell `og_malformed_integer_refused`, red on the parent
 
 ### 150 s62 — release packaging (71)
 
@@ -320,7 +323,7 @@ no longer resolves `from "@/…"` — `module-import-with-from` like any other. 
       (`alpine:3.20` with ERTS, `erlang:<otpRelease>-alpine` without — as `docker.bp` and its
       snapshot)
 
-#### Step 2 — `bin/onze` (was `71-onze-release-packaging` s2)
+#### Step 2 — `bin/rakun-ssr` (862; was `71-onze-release-packaging` s2)
 
 - [ ] runs `verifyBuildId` before the boot script; exits non-zero naming the mismatch when the
       manifest's id, the stamped id or the payload's differ (`package_test.bp` tampers each in a
@@ -356,7 +359,7 @@ environment (container runtime present).
 - [ ] build id derived once; `verifyBuildId` passes across release, client manifest, payload
 - [ ] the Dockerfile builds; the container runs non-root on `PORT` (gate's environment provides
       `docker` or `podman`; `00-gate` decides how a missing runtime reads)
-- [ ] `scanForSecrets` over the real release finds only the `ONZE_PUBLIC_` table 68 inlined
+- [ ] `scanForSecrets` over the real release finds only the `#[publicEnv]` values table 68 inlined (928)
 
 #### Gate additions (was `71-onze-release-packaging` gate)
 
@@ -540,6 +543,7 @@ Per decision 202 (no `prerender` export).
 - [ ] `botopink test` green on both targets in `onze-cli`, `onze-bundler`, `onze`
 - [ ] `zig build test-libs`: onze green; `examples/blog` builds unchanged
 - [ ] `rakun/modules/rakun-ssr/docs.md` § Configuration, § CLI
+- [ ] 927: `SsrConfig(site, trailingSlash: TrailingSlash, redirects: RedirectRule[], markdown: MarkdownOptions, islands: IslandProps, allowedRedirects: string[])` read by `loadConfig` / `applyKey` / `configKeys`; an unknown key, a wrong kind, an unknown variant or a bad value refused naming the file, the key path and the expected type; `--help`'s table from the record's defaults; cell `ssr_config_typed_keys`, red on the parent
 
 ### 150 s67 — the example app — the proof (53)
 
@@ -596,7 +600,7 @@ Per decision 202 (no `prerender` export).
 
 - [ ] the examples rewritten: the action passed as a reference — `createPost`, never `"createPost"`
       (done in `new-post-form-example.bp` and `components/new_post_form.bpp`; the hook's name,
-      `useActionState` vs `actionState`, is `nat-d8`'s, open) —, `<form action={createPost}>` (no
+      `use actionState(createPost, initial)`, 926) —, `<form action={createPost}>` (no
       `formAction("a_9f31…", …, "__bp_action")`), starters and client props from the catalogue
       found by type at comptime (`#[clientProps]`, 120 step 6; `68-c` → 280, 281 — no
       `registerStarter("…")`, no `Island(component: "LikeButton", …)` in `client-island-example.bp`;

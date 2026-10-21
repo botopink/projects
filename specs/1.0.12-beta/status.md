@@ -335,7 +335,7 @@ The `(W<n>)` marks are the old waves, kept as relative order; the order in force
 
 ### 144 botopink-lang
 - [ ] 144 B-140 — decision 599 (1) landed: the run-time field key removed, 599's own cell module with it; decision 631's `Field(Owner, "name")` run-time form (`meta_field_tuple_and_field_key`, `meta_field_build_member_at_run_time`, `meta_field_compared_by_owner`); a record constructor whose field is a run-time `type<T>` takes a type written positionally; left: the derived types written over `compiler.fields` + `compiler.buildType`, 669–671, `compiler.Field<T>` · B-139
-- [ ] 144 row — decision 596: the eleven iterator helpers declared on `Iter<T, R>` and given by every target (`flatMap` missing on erlang and beam today; wasm the set in GC); cells `iter_helpers_*`, `iter_flat_map_generator` · with B-116 (ii); machine 2
+- [ ] 144 row — decision 596: the eleven iterator helpers declared on `Iter<T, R>` and given by every target · landed: every target gives the eleven (`flatMap` on erlang and beam, f0a21b7c4; cell `iter_flat_map_generator`); left: the declaration on std's `Iter<T, R>` with B-116 (ii); machine 2
 - [x] 144 row — decision 595: the `try { … } catch …` region — landed with 584, no old spelling left, no library sites
 - [x] 144 row — decision 583: `lambda-untyped` landed, also for a module-level `val` and a parameterless lambda; 328's inference code stays (an immediately called fn expression and an argument of a free type parameter still reach it); rakun's and query's sites migrated; std has no `lambda-untyped` left (its tests on four targets)
 - [x] 144 B-116 (i) — decision 584: the marker inside the lambda's brace, landed with 595; no old spelling left, no library sites · P2's codemod and the rest of B-116 stay open

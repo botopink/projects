@@ -32,8 +32,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
       `Quote`, …); it names no framework (113); its fixtures and tests move with it (690, both rows)
 - [ ] rakun-ssr's content maps the tree to rakun-bpp's `Element` (`element.toElement`, built; the content
       depends on `markdown` by git, 242; 31 tests left in the content, 721 with the library's, both rows) —
-      **open:** "a node rendered by a component of the page's own where the page asks" (the hook's form is a
-      question, `decisions-pending.md`)
+      the hook is `toElementWith(doc, render: fn(node: MdNode, kids: NodeChildren) -> ?NodeChild) -> NodeChild`, `null` keeping the default element (decision 916)
 - [x] `markdown`'s one consumer is the maintainer's exception to 115, stated in its `AGENTS.md` (396 (4))
 
 **Gate:** standard (fronts.md § Gate) + every consumer's suite green on both rows after its import

@@ -244,6 +244,7 @@ A bean, an event or a condition is named by its type or its function, never its 
 
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` green in `modules/rakun`;
 `botopink format --check` clean there; `modules/README.md` updated.
+- [ ] 925: `pub behavior Startable { fn start(self: Self) -> void; }` in `lifecycle.bp`; the container runs `start()` when `instance is Startable` after construction and `close()` when `instance is Closeable` at shutdown, in reverse construction order; `#[postConstruct]` / `#[preDestroy]` and `rkRegisterLifecycle` deleted, `context-lifecycle-example.bp` rewritten, the `#[postConstruct]` box above read as `start()`; cell `component_lifecycle_by_behavior`, red on the parent
 
 ### 150 s2 — the rows handed in: the action secret, `codepointIndex`, the `Json` copies, the `#[beamMemory]` migration
 
@@ -437,6 +438,7 @@ Kept for open markers: `examples/city-entity-example.bp`, `examples/audit-and-re
 **Gate:** standard (fronts.md § Gate) + `botopink test --target erlang` and `botopink format --check`
 green in `rakun-messaging` (`test/stream/` in the run), `rakun-data` (`test/tx/`) and
 `rakun-scheduling`; `grep -rn RAKUN_TEST_ modules/rakun-messaging modules/rakun-data/src/tx modules/rakun-data/test/tx` empty.
+- [ ] 937: `rakun-messaging`'s publisher handed to `rakun-data`'s `relayTick(ds, publisher)`; cell `outbox_relay_in_producer_transaction`, red on the parent
 
 ### 150 s6 — OAuth2 and SSO (79)
 
@@ -490,7 +492,7 @@ sidecar and fixtures only.
 
 #### Step 3 — SBOM validation (R81-3, R81-4, 03r-ak) (was `81-rakun-packaging-release` s3)
 
-- [ ] `bom-1.5.schema.json` checked in under `test/release/fixtures/`; `release_test.bp` walks the rendered SBOM against it (`required`, `type`, `enum`, local `$ref`) and passes; a fixture SBOM missing `bomFormat` fails naming the path
+- [ ] `bom-1.5.schema.json` checked in under `test/release/fixtures/`; `release_test.bp` validates the rendered SBOM against it with 399's vendored validator (`test/tools/check-schema.js` through `io.process.run("node", …)`, version and hash in `rakun/AGENTS.md`, 936) and passes; a fixture SBOM missing `bomFormat` fails naming the path
 - [ ] R81-4 reworded to "`src/` renders every file; there is no `templates/`" and ticked
 
 #### Step 4 — the release manifest's marker against `@TypeInfo.all` (decisions 216, 253) (was `81-rakun-packaging-release` s4)
@@ -557,7 +559,7 @@ Blast radius: new files under `rakun-client/src/ws/` only. 88 adds `ws generate`
 
 #### Step 3 — The seven (03r-af) (was `73-rakun-starters` s3)
 
-- [ ] under (a): `modules/README.md` § Examples lists the three, says the seven were retired; the closed 1.0.10 map [`03-rakun/test-snap-examples.md`](../../../1.0.10-beta/03-rakun/test-snap-examples.md) referenced from no live document
+- [ ] 935: every directory of `examples/` gains a `README.md`; `modules/README.md` § Examples lists the directories on disk and says the seven were retired; the closed 1.0.10 map [`03-rakun/test-snap-examples.md`](../../../1.0.10-beta/03-rakun/test-snap-examples.md) referenced from no live document
 - [ ] under (b)/(c): one front directory per example opened by the maintainer, each after the member fronts it exercises; nothing here
 
 **Gate:** standard (fronts.md § Gate) + `zig build test-libs -- --target erlang --lib rakun` lists
@@ -622,6 +624,7 @@ Blast radius: a default pool of 2 changes connection behaviour for every consume
 79's token fetch, 93's `WsClient`, 09's Elasticsearch arm): fewer handshakes, same requests. A
 consumer asserting accept count per request re-records to per origin — 17's export cell, the front
 that wanted it.
+- [ ] 934: the core declares `rkRegisterHttpClient(client)` beside `rkOnReset`; `rakun-restclient` registers its client (timeouts, 74's bundle, the SSRF filter) in its `compiler.init` executor, one registration per program
 
 ### 150 s12 — cache and session (12)
 
@@ -878,13 +881,13 @@ ONZ-49-4.3's third box closes on onze's side.
 - [ ] `fieldGet` / `fieldPut` use hashes, `pushLeft` / `popRight` lists
 - [ ] a connection lost mid-call (`redisDoubleFail`) retried once, then answers `Error(Unavailable(…))`
 - [ ] `redis` health indicator `UP` against the double, `DOWN` with the reason when the port is closed
-- [ ] `index`, `get`, `search`, `delete` go through `rakun-client`; the HTTP double records paths and bodies; timeouts, the bundle and the SSRF filter apply (one negative test each)
+- [ ] `index`, `get`, `search`, `delete` go through the HTTP client registered on the core's `rkRegisterHttpClient` (934; `rakun-restclient` registers it at init, the boot refused naming it when none did); the HTTP double records paths and bodies; timeouts, the bundle and the SSRF filter apply (one negative test each)
 - [ ] a 4xx from the double answers an `Error` carrying the double's error body, not a generic message
 - [ ] no third-party OTP application required (manifest and sidecar list prove it)
 
-#### Step 4 — `#[documentQuery]` (its shape: `erk-b`) (was `09-rakun-data-nosql` s4)
+#### Step 4 — `#[documentRepository]` / `#[documentQuery]` (its shape: 933) (was `09-rakun-data-nosql` s4)
 
-- [ ] writes the repository member answering the template verbatim (named as `#[query]`'s) and registers it
+- [ ] `#[documentRepository]` on a `behavior`, its methods `` #[documentQuery @`…`] ``, the `${name}` holes bound to the parameters by `compiler.lookup`, the generator registering `Posts.Document(store)` / `Posts.of(store)` (933)
 - [ ] empty template, and one with unbalanced braces, each fail the build with a located message (`test/nosql/query_build_test.bp` over a scratch project under `BOTOPINK_TEST_TMPDIR`)
 - [ ] `bind` escapes every parameter for the dialect; a value containing the dialect's quote round-trips
 - [ ] `#[documentQuery]` on a non-method fails at comptime
@@ -910,6 +913,7 @@ ONZ-49-4.3's third box closes on onze's side.
 
 Blast radius: `nosql/*` appended to `rakun-data`'s `files` and `src/root.bp` after 08's lines; no
 existing test changes. `rakun-session`, `rakun-cache` keep their own Redis wires this milestone.
+- [ ] 934: cell `nosql_scheme_refused_names_driver`, red on the parent; the `https://` arm refuses the boot naming `rakun-restclient` when no client is registered
 
 ### 150 s18 — Pulsar (91)
 
@@ -942,7 +946,7 @@ Blast radius: none outside `rakun-messaging`; `rakun-starter-messaging` unchange
 
 #### Step 2 — Transports (R92-1, R92-2, R92-7) (was `92-rakun-rsocket` s2)
 
-- [ ] per 03r-an: WebSocket transport mounts at the mapping path; `interaction_test.bp`'s suite runs twice, once per transport, byte-identical results
+- [ ] per 939: `enum Transport { Tcp, Tls, WebSocket }` and `rkRegisterTransport(t, mount)` in the core, `rakun-websocket` registering `.WebSocket` at init, the boot refused naming it when none registered, the config read into the enum (299); the WebSocket transport mounts at the mapping path; `interaction_test.bp`'s suite runs twice, once per transport, byte-identical results
 - [ ] a `tls` transport with bundle `b` from 74's registry serves the suite over `ssl`; a missing bundle name refuses the boot naming it
 - [ ] requester connects from `tcp://`, `ws://`, `wss://` (the last against the TLS transport), one cell each
 
@@ -1019,7 +1023,7 @@ Blast radius: manifest gains `rakun-client` (nothing depends on `rakun-cli`; upd
 
 #### Step 3 — The broker double (R19-3, 03r-am) (was `19-rakun-test-utilities` s3)
 
-- [ ] loader measurement recorded in the README (cycle refused or accepted); the double's location follows it
+- [ ] the doubles live in `rakun`'s `testing/` module, reaching the registries through `rkOnReset("broker-double", …)` and the core's listener-names term, importing nothing of `rakun-messaging` (938)
 - [ ] `deliver(broker, destination, payload)` reaches a `#[listener]` handler with no broker configured; `published(broker)` lists every destination and payload sent through that arm's template, in order; `clearPublished()` empties it; two tests do not see each other's publishes
 - [ ] `rakun-messaging/test/container_test.bp` runs through the double — one container cell rewritten to it, the rest already on the in-process broker
 
@@ -1285,7 +1289,7 @@ saying two same-named methods in one module collide, and that this is the right 
 **Repository:** rakun · **Model:** haiku (a codemod, the gate the oracle) · **After:** 165 s11
 
 - [ ] the codemod of 862 (1) as 889 (1)–(3): `emilia()` / `emiliaWith` / `emiliaPlugin` → `stylesheet…`, `emilia.bp` → `stylesheet.bp`, the four
-      bundler kinds `emilia-*` → `stylesheet-*`; `OnzeConfig` → `SsrConfig`, `ONZE_PUBLIC_` → `RAKUN_SSR_PUBLIC_`, `/_onze/` → `/_rakun-ssr/`,
+      bundler kinds `emilia-*` → `stylesheet-*`; `OnzeConfig` → `SsrConfig`, the `ONZE_PUBLIC_` prefix deleted for `#[publicEnv]` (928), `/_onze/` → `/_rakun-ssr/`,
       `onze_main.bp` → `ssr_main.bp`; `jhonstart_*.erl` → `rakun_bpp_*.erl`; `rakun-cli`'s `onze` setting, env and function → `rakun-ssr`;
       `examples/rakun-stylesheet/emilia-*` → `stylesheet-*`, `examples/rakun-bpp/jhonstart-*` → the bare name; `styled` untouched (889 (4)) —
       the type `Onze` → `RakunSsr` (`RakunSsr.run`, `cli.parse<RakunSsr>`, 893 (1));

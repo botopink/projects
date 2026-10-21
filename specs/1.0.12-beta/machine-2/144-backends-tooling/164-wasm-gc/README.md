@@ -80,7 +80,7 @@ the cache is the choice. The binary grows from 53 MB to 74 MB; an artifact linki
 543-a answered by 878.
 - [x] the interrupt (878): the CLI's SIGINT handler and the LSP's `$/cancelRequest` / `shutdown` call `persistent_wat.interrupt()`;
       `comptime-interrupted` located at the body; `runtime/AGENTS.md` limit 1 rewritten; a unit test
-      — built as: the CLI's SIGINT handler (exit 130; a second SIGINT ends the process, question 878-a) and the language server's
+      — built as: the CLI's SIGINT handler (exit 130; a second SIGINT ends the process, 901) and the language server's
       reader thread (`shutdown`, `$/cancelRequest` of the request being dispatched) call `interrupt()`; `comptime-interrupted` from the
       `comptime`, decorator and template evaluators; `attempt` at build catches an integer division by zero (878 (3)); no cell yet for
       either (front 166's row 878)

@@ -2,7 +2,7 @@
 
 **Priority:** medium (decision 433) — opens after the library tier, or in a free thread when nothing it needs
 is open.
-**Repository:** `release` (`botopink/release`, born in s1) — worktree `--repo release`; s2's consumer commits (rakun, onze) run in a full worktree, producer first (decision 188)
+**Repository:** `rakun` (`modules/rakun-release`, a package of the workspace born in s1, decision 917) — worktree `--repo rakun`; s2's consumer commits (`rakun-cli`, `rakun-ssr`) are the same repository's
 **Model:** sonnet — the README fixes the design (`AGENTS.md` § Which model a thread runs on); the Conformance step opus
 **Gate:** standard (fronts.md § Gate); a moved block keeps its own `**Gate:**` additions.
 **Owns:** `repository/release/**` when born (`botopink/release`), the consumer lines step 2 names.
@@ -22,7 +22,7 @@ closed records: each resolves here. A "box n" counts the old step's open boxes, 
 
 ### 107 s1 — the package
 
-**Repository:** `release` (`--repo release`) · **Model:** sonnet
+**Repository:** `rakun` (`--repo rakun`, `modules/rakun-release`; decision 917) · **Model:** sonnet
 
 #### Step 1 — the package (was `107-release` s1)
 

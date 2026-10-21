@@ -211,7 +211,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
 
 - [ ] `<AtomRoot initialize={seed}>` (`fn(set: Setter)`) seeds the request's values; the atoms each
       island read travel in its payload and start the browser store; an atom no island read sends
-      nothing; a non-encodable `T` in an island's read set refused at build (`atm-c`)
+      nothing; a non-encodable `T` in an island's read set refused at build unless the atom is declared `#[clientOnly]` (943)
 
 ### Step 7 — `rakun-cardume`: the request store
 
@@ -222,7 +222,7 @@ the four hooks, the refresher), `async-example.bp` (async selectors, `loadable`,
       123 (`locals-and-sequence-example.bp`) read and write through it
 - [ ] a value set in middleware read by the page of the same request; gone at the next
 
-### Step 8 — Effects (after `atm-d`)
+### Step 8 — Effects (deferred by 944: after a measured need)
 
 **Repository:** `cardume` and jhonstart (`jhonstart-dom-test`; a full worktree) · **Model:** sonnet
 

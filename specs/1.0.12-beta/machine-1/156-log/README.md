@@ -35,6 +35,7 @@ Boxes 1–2 landed by the members' owners, ticked here; box 3 this front's own c
 - [ ] rakun-bpp's `error_boundary.bp` digests through `log.errorDigest` (`05-jhonstart/26` step 4)
 - [ ] rakun-service's `problem_digest` cell (`error.bp`, `rakun_chain.erl` `problem_digest/1`) deleted
       for `errorDigest`
+- [ ] `fileSink` / `appendRotating` answer `Error` of `log`'s enum on a failed host call (the four file cells `result: true`), `logfile.bp`'s "raises" and `sink.bp`'s `@print` comment respelled; cell `log_file_sink_answers_error` (decision 921)
 
 ### 156 s2 — the sinks' wasm column (106 s3)
 

@@ -259,6 +259,8 @@ pub fn a(props: AnchorProps) -> Element { return el("a", props.children, attrsOf
 - [ ] the 78 hand-written callers rewritten in the same landing — jhonstart 51, onze 27, a consumer
       commit per library (188); the `(children, attrs:)` form gone, `el(…)` the escape hatch
 - [ ] 118 step 1's handed box closed against this step
+- [ ] 924: the node `NavSignal(outcome: NavOutcome)`; `notFound()`, `redirect(url)`, `permanentRedirect(url)`, `redirectWithStatus(url, status)` answer `Component<Element>`; the renderer answers the node before the first chunk (status, headers, the nearest `NotFoundBoundary`'s view) and after it (the late markup, status 200); `raiseReason`, `isSignal`, `notFoundReason`, `redirectReason`, `signal_runtime.mjs` and its erlang twin deleted, `routing`'s `signalReason` / `isSignalReason` / `signalPrefixes` with them, `rakun-app`'s `rkNavSignal` and `navigation.bp`'s `-> i32` the same; the boundaries' `child` fields `Component<Element>` (930); cells `nav_signal_before_first_chunk`, `nav_signal_after_first_chunk`, `nav_signal_in_nested_component`, red on the parent
+- [ ] decision 953 (30-c, 30-d; 414, 504): `compose(chain, Page())` takes the page as a component value — the `page: fn() -> …` thunk parameter goes with `route: PageContext` (step 11); `suspense.Boundary`'s `child` is `Component<Element>` (809 (7)) and `Suspense(b)` answers the node — `__jhPushBoundary` and `render.mjs`'s `pushBoundary` deleted, `renderSuspense` resolving the node while descending; `plugin.bp`'s `payload` answers `Async<?#(string, Json)>` (114 (2)); `streaming_test.bp` and `suspense` cells green on both rows
 
 ### 150 s37 — link: the reconciler driver (27)
 
@@ -337,6 +339,7 @@ carries a `// LANGUAGE GAP` marker.
 **Gate:** standard (fronts.md § Gate) + `jhonstart-forms` at 15 or above on both rows;
 `jhonstart-dom-test` on commonJS with the new file; `examples/forms` green on both rows with its
 four re-recorded snapshots
+- [ ] 940: `fake_dom.mjs` gains `<form>`, `<input>`, `FormData` and `submit` (this step's edit, org-6); cell `forms_dom_boxes` (commonJS), red on the parent
 
 ### 150 s39 — the template language's residue (118)
 

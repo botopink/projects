@@ -118,7 +118,7 @@ and Marker index row go (meta CI check 5). Groups by the library that carries th
       a decorator's name (`decorator_argument_decorator_name`); validation's four markers and their rows gone. Left:
 - [x] `compiler.variants(d) -> compiler.Variant[]` (name, fields, annotations, section) (848); the prelude mirror; cell
       `compiler_variants_typed_entries`; validation's two markers and their `language-gaps.md` rows in the consumer commit — landed with
-      validation's consumer (its markers stay for 146 s3's box over `Variant.fields`; question 848-a; `annotations` empty until the parser
+      validation's consumer (its markers stay for 146 s3's box over `Variant.fields`; 848-a confirmed as built by 909, cell `compiler_variants_wrapper_entry_order`; `annotations` empty until the parser
       takes an annotation on a variant)
 - [ ] `Field` reflects a field's default · question B-10-a
 - [x] `clock.formatIso8601` always `.sssZ`: the erlang cell on `{unit, millisecond}` (849); cell `clock_iso8601_millis_always` on commonJS,
@@ -812,6 +812,7 @@ After the group's other steps have landed on `feat`; it holds back no front that
 
 - [x] `context-not-declared` for a behavior proposes `createContext(Repository(…))`, which a behavior cannot take: it names
       `createContext(value, Repository)`; then the cell `context_behavior_undeclared` — found by B-17's Conformance step
+- [ ] 943: `HookUse` carries the declaration handle of a module-level `val` argument for every hook (`use atomValue(x)` as `use context(ctx)`, 839) — only if the list carries it for `use context` alone today; the island's read set is read off it
 
 ### B-18 — 311, 415, 426, 429: templates
 
@@ -1489,6 +1490,10 @@ After the group's other steps have landed on `feat`; it holds back no front that
       them); every landed row has its cell, thirteen cells named in `conformance/docs.md`; the completed `test` runs since
       the base red on others' stages (format, B-60's `code_cache.sh`). Box 1 closes on the next completed green `test` run.
 - [ ] `enum_section_value_print` (decision 601); one cell over `Float.toString`'s values (B-78)
+- [ ] 926: `hook-name-use-prefix` — a `Component<R>`-answering declaration named `use[A-Z]…` refused at its name; cell `hook_name_use_prefix_refused`, four targets, red on the parent
+- [ ] 929: `noreturn-falls-through` — a `-> noreturn` body that can complete refused at its name (`stmtsAlwaysExit`); cell `noreturn_body_falls_through_refused`, four targets, red on the parent
+- [ ] 950: `for x in xs { … }` / `for await x in s { … }` / `for x in try xs` the one loop spelling (parser, checker, four backends); `for (xs) {` refused `for-parenthesised`; `botopink format` rewrites the old form; std and the cells migrated in the same commit, each library in its own; `docs.md` § Loops; cells `for_in_loop`, `for_parenthesised_refused`, red on the parent
+- [ ] 951: a `?T`'s non-null arm is `_`, its value read `x!`; the binder arm `case-bare-name-arm`; `docs.md` § case's row and the cells written with the binder rewritten; cell `case_optional_bare_name_refused`, red on the parent
 
 ### B-23 — 247, 255, 310 and the checker's rows
 
@@ -2371,6 +2376,8 @@ catalogue is read at build, 665); `src/internal/` is private to its package; the
       the package's default that of `src/<pkg>.bp`; `expandImports` (`default_fn.zig`) and the "prefix symbol wins" rule
       go; cells: the callable namespace on four targets, the two refusals; `docs.md` § Imports
 - [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] a folder is not importable: `import {io} from "std"` / `import {collections} from "std"` refused, located, naming the leaf; `comptime/std_namespace.zig` deleted; cell `folder_import_refused` (decision 919, 110 (2) amended)
+- [ ] an import of another package's `src/internal/` refused, located, std's included (`import {internal.unicode_tables} from "std"`); cell `std_internal_import_refused` (decision 913)
 
 ### B-70 — `src/comptime/`, the build layer (B-55-a (e) (3))
 
@@ -2439,6 +2446,7 @@ One mechanical pass, as B-33's codemod: no design choice.
       `src/comptime/`, private modules to `src/internal/`; each library's gate green
 - [ ] the specs and `AGENTS.md` files that name `root.bp`, `lib.bp` or `pub mod` updated
 - [ ] Conformance step (459, 474, 477, 478, 480)
+- [ ] `libs/std/src/unicode_tables.bp` moves to `src/internal/unicode_tables.bp`, `unicode.bp` writes `import {internal.unicode_tables as tables};`, the generator's output path with it (decision 913)
 
 ### B-76 — the module-model group's Conformance step
 
@@ -2958,6 +2966,7 @@ Oracle: the cells, red on the parent; `zig build test`; rakun's gate for the `No
 - [ ] the iterator helpers (596) on `Iter` / `AsyncIter` are exempt from the behavior-member check until B-128 declares them in `primitives.bp`; the exemption goes then
 - [ ] decision 894 (859-a): the `.d.ts` declares, beside a type's `pub` methods, every method without `pub` that implements a member of a behavior the type's own `implement` clause names (`typescript.zig` `record` and the enum's methods read the declaration's `implement` list and each behavior's members through `crossModule`; an extension block's member and the lowering's marked calls stay out); test `codegen/tests/dts_behavior_member.zig` beside `dts_skips_templates.zig` (a non-`pub` `toStyled` under `implement Styled` declared, a plain non-`pub` method not, a block-supplied member not); no cell
 - [ ] decision 895 (b162-lambda-underscore): `_` as a lambda parameter — `hasLambdaParams`, `hasLambdaBodyAhead` and the lambda's parameter list (`parser/exprs.zig`) take `.underscore` beside `.identifier`, a marked lambda the same; `_` bound to nothing (a read unresolved, never `binding-redeclared`); lowered as 888 (2)'s unnamed parameter in its position (commonJS a reserved-space name, erlang `_`, wasm by position); the formatter prints `_`; cell `lambda_underscore_parameter` (`{ _, _ -> v }` under `fn(Scope, Place) -> T`, `{ _ -> 1 }` under `fn(i32) -> i32`, `{ _, x -> x }`, a read of `_` refused), four targets, red on the parent
+- [ ] 908: the seven cells carrying a `render(c, scope)` helper (388's `component_is_lambda`, `component_run_root`, `render_scope_library`; 574's `component_lambda_typed_param`, `component_lambda_typed_val`; 791's `component_resolved_by_use_or_tree`; 584's `marker_lambda_brace_component`) rewritten so the children are resolved inside the providing body (`use c`, or `c(scope, Place.none())` / `resolve(c, scope, key)` in a `{ scope -> … }` lambda), their answers kept; the helper gone
 
 ### B-156 — a function with a `syntax` expression parameter is expanded at its call (decision 719)
 
@@ -2977,10 +2986,10 @@ Decision 719 generalises the template (578): a function whose parameter is `synt
 Oracle: the cells; `zig build test`.
 - [x] decision 841: `-> T` on a `syntax` expression function is code of type `T`, `-> void` included; `template-signature` no longer reads the
       return; `syntax_fn_run_time_return` rewritten as a run cell (red on the parent) — landed (the cell under `719/cells/`, four targets; its
-      `log` takes `(label: string, syntax e: i32) -> void`, question 841-a)
+      `log` takes `(label: string, syntax e: i32) -> void`, question 841-a, answered by 907: the use decides, a box below)
 - [ ] a `syntax` expression function's `code` tree naming an imported std function (`return code @`print(${text})`` with `print` imported) is
       refused "unbound variable 'print' … in `log`'s tree", `-> anyvalue` too; a cell, red on the parent
-
+- [ ] 907: the use decides — `#[f]` applies a function whose first parameter is `syntax` as a decorator, `f(e)` expands any function with a `syntax` parameter at the call; `isSyntaxExprFn` goes (`ast.zig`), each use checked by its own rules against the one declared type; cell `syntax_fn_use_decides_kind` (`log(syntax e: unknown) -> void` annotated on a `val` and called on an expression, four targets, red on the parent); `syntax_fn_run_time_return` keeps its shape; B-69's home rule (592 (3)) reads the kind, a `syntax` function declared in `src/comptime/`
 
 ### B-154 — checker defects found by front 166's drafts (166 s3, css)
 

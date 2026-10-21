@@ -131,6 +131,7 @@ program lacks is a boot failure naming it (234); removing the dependency removes
 - [ ] every `@TypeInfo.all` site gone with s10 (576 (7)); no build body reads the list — `compiler.find` is gone (665), every reader is a registry
 - [ ] every package declares its module at its root with its defaults; `examples/` of a program that adds one package
       at a time; the gate green
+- [ ] the manifest sweep: a member's `"targets"` equal to the workspace's is removed (512 (3), 770), the three narrower ones of 762 kept (decision 919 (3)); `modules/rakun-release` born as a row of 724's table, the renderers of `rakun-cli/src/release/` and `rakun-ssr/src/release/otp.bp` folded into it (decision 917; 107 s1 builds it)
 
 ### s6 — erika renamed `query`, outside rakun
 

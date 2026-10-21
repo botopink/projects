@@ -101,6 +101,7 @@ text)`; `test/asserts_test.bp`, one accepted snapshot per target-shared file.
 - [ ] `zig build test-libs` reads `query-test · commonJS: pass` and `query-test · erlang: pass` with
       2 tests; `examples/query-linq/test/__snapshots__/` absent (example tests are inline)
 - [ ] `repository/query/AGENTS.md` names the helper
+- [ ] `Query<T>`'s LINQ-named methods and `of` made private lowering targets of the grammar; `examples/query-linq` and the tests rewritten to `` query @`…` ``; cell `query_array_grammar_is_the_one_spelling` (decision 914)
 
 ### 145 s3 — erika's C-13 migration and C-12 reformat (after 144 B-28)
 

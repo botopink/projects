@@ -66,7 +66,7 @@ README. With (a), the recommendation, the rule reads: "the commit that writes a 
 spelling rewrites the class S lines of `specs/<current>/**` that write it, and adds its row to
 `10-specs/141-specs-sweep/inventory.md`".
 
-- [ ] `141-a` answered, and its rule written where the answer puts it
+- [ ] 945's rule written into `fronts.md` § Rules for a front — the retiring decision's commit rewrites the old form in the current milestone's specs and adds its `specs/retired.md` row; `141-specs-sweep/inventory.md` closed as a record
 
 #### Gate additions (was `141-specs-sweep` gate)
 
