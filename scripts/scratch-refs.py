@@ -61,6 +61,10 @@ def tracked(root: Path, paths: list[Path]) -> list[Path]:
 
 def main() -> int:
     root = meta_root()
+    if not sys.argv[1:] and not (root / "specs").is_dir():
+        # The specs live in specs-data since the cutover; specs-bot refuses a scratch reference at write time.
+        print("scratch-refs: no specs/ in this checkout — specs-bot checks spec text when it is written")
+        return 0
     paths = [Path(a) for a in sys.argv[1:]] or [default_tree(root), *sorted((root / "specs").glob("*.md"))]
     found = 0
     for f in tracked(root, paths):

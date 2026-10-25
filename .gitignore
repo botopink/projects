@@ -28,3 +28,6 @@ __pycache__/
 
 # specs-bot: the machine's token
 .env.local
+
+# CI checks the specs out here (botopink/specs-data)
+.specs-data/

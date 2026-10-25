@@ -190,11 +190,12 @@ check4() {
 
 # 5. every LANGUAGE GAP marker has a row.
 check5() {
-    [ -f scripts/language-gap-markers.sh ] || { echo "  ✗ scripts/language-gap-markers.sh is missing (113 step 4c)"; return 1; }
-    bash scripts/language-gap-markers.sh
+    [ -f scripts/language-gap-markers.py ] || { echo "  ✗ scripts/language-gap-markers.py is missing (113 step 4c)"; return 1; }
+    python3 scripts/language-gap-markers.py
 }
 
-# 6. each repository's decisions-taken.md is what scripts/decisions-split.py writes from specs/decisions-taken-steps.md (decisions 482, 730).
+# 6. each repository's decisions-taken.md is what scripts/decisions-split.py writes from the record, decisions-taken-steps.md
+#    (decisions 482, 730) — read from $SPECS_ROOT in CI (a checkout of botopink/specs-data), else through specs-bot.
 check6() {
     [ -f scripts/decisions-split.py ] || { echo "  ✗ scripts/decisions-split.py is missing (163 s10)"; return 1; }
     python3 scripts/decisions-split.py --check

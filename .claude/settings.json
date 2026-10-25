@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": ["Bash(specs-bot:*)"],
+    "deny": [
+      "Bash(git clone*specs-data*)",
+      "Bash(gh repo clone*specs-data*)",
+      "Bash(gh api*specs-data*)",
+      "Read(**/specs-data/**)",
+      "Edit(**/specs-data/**)",
+      "Write(**/specs-data/**)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}

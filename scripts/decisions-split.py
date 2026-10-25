@@ -15,11 +15,32 @@ with one slug are refused (exit 1, in both modes).
 A row that maps to no repository stays in the meta repository only; those that name no process-only
 target are listed on stderr with their Binds text (never guessed), and are not a failure.
 """
+import atexit
+import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def specs_root() -> Path:
+    """The specs, laid out as `specs/`: $SPECS_ROOT (CI checks out botopink/specs-data), a local specs/ (before the
+    cutover), else what `specs-bot export ledger` writes — the record and the current milestone's READMEs."""
+    if os.environ.get("SPECS_ROOT"):
+        return Path(os.environ["SPECS_ROOT"])
+    if (ROOT / "specs").is_dir():
+        return ROOT / "specs"
+    tmp = Path(tempfile.mkdtemp(prefix="decisions-split-"))
+    atexit.register(shutil.rmtree, tmp, True)
+    out = subprocess.run(["specs-bot", "export", "ledger", "--to", str(tmp)], capture_output=True, text=True)
+    if out.returncode != 0:
+        sys.exit(f"decisions-split: the specs are not in this checkout and specs-bot could not export them:\n{out.stderr.strip()}")
+    return tmp
+
 
 FRONT_REPO = {
     144: "botopink-lang", 145: "query", 146: "validation", 147: "css", 148: "rakun",
@@ -52,9 +73,12 @@ HEADER = "Generated from botopink/projects · specs/decisions-taken-steps.md —
 STEP = r"(?:\s+(?:steps?\s+|s)(?P<{n}>\d+[a-z]?(?:(?:\s*,\s*|\s+and\s+|\s*[–-]\s*)s?\d+[a-z]?)*))?"
 
 
+SPECS = ROOT / "specs"
+
+
 def newest_milestone():
     best = None
-    for d in (ROOT / "specs").iterdir():
+    for d in SPECS.iterdir():
         m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)-beta", d.name)
         if m and (d / "README.md").exists():
             key = tuple(int(x) for x in m.groups())
@@ -230,8 +254,10 @@ def map_row(binds, by_name, by_num, all_repos):
 
 def main():
     check = "--check" in sys.argv[1:]
+    global SPECS
+    SPECS = specs_root()
     ms = newest_milestone()
-    src = ROOT / "specs" / "decisions-taken-steps.md"
+    src = SPECS / "decisions-taken-steps.md"
     by_name, by_num = load_aliases(ms)
     all_repos = sorted(p.name for p in (ROOT / "repository").iterdir() if p.is_dir())
     all_repos = [r for r in all_repos if r in FRONT_REPO.values()]
