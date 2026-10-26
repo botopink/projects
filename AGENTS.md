@@ -34,8 +34,9 @@ its files on GitHub. The bot keeps the conventions — the next free number in s
 the closed milestones frozen, no commit hash or scratch path in a spec's text (a hash goes in `--landed`, which
 keeps it in the commit) — commits each write as the machine that made it, and tells the other machines at once.
 
-- **Through MCP first**: each session gets the `specs-bot` MCP server (`.mcp.json`, `specs-bot mcp`): it holds the
-  folder's party (`SPECS_BOT_AS`) for the whole session and lets it go when the session ends; its tools are the CLI's
+- **Through MCP first**: each session gets the `specs-bot` MCP server (`.mcp.json`, `specs-bot mcp`): call its `as`
+  tool first with your party (`maintainer`, `machine-1`, …) — the party is the session's, never the folder's, since
+  two sessions may share a folder — and it is held for the whole session and let go when the session ends; its tools are the CLI's
   commands (`search`, `doc`, `append`, `claim`, `send`, …, answers in TOON, writes a dry run until `apply: true`),
   and every answer carries the events that arrived since the last call (`wait` blocks for the next one). The CLI
   stays for scripts and for a shell.
