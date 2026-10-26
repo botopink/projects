@@ -90,16 +90,27 @@ function newestMilestone(): string {
 
 const MILESTONE_FIELD = re("^\\*\\*Milestone:\\*\\* *(\\S+)", "M");
 
-/** The current milestone's front READMEs: in the flat tree, the fronts whose `**Milestone:**` is the one
+/** A document's milestone: the `milestone:` key of the YAML block at its top (specs-bot, 2026-10-26), or the
+ *  `**Milestone:**` line under its title it replaced. */
+function milestoneOf(text: string): string | null {
+  if (text.startsWith("---\n")) {
+    const close = text.indexOf("\n---", 4);
+    const block = close < 0 ? "" : text.slice(4, close);
+    const m = /^milestone:[ \t]*["']?([^"'\s]+)/m.exec(block);
+    if (m) return m[1]!;
+  }
+  const f = MILESTONE_FIELD.search(text);
+  return f ? f.group(1) : null;
+}
+
+/** The current milestone's front READMEs: in the flat tree, the fronts whose milestone is the one
  *  milestone/README.md names; before it, <version>/<machine>/<front>/README.md. */
 function frontReadmes(ms: string): string[] {
   if (pname(ms) !== "milestone") return sortPaths(glob(ms, "*/*/README.md"));
-  const m = MILESTONE_FIELD.search(readText(pjoin(ms, "README.md")));
-  const current = m ? m.group(1) : null;
+  const current = milestoneOf(readText(pjoin(ms, "README.md")));
   const found: string[] = [];
   for (const readme of sortPaths(glob(pparent(ms), "*/README.md"))) {
-    const f = MILESTONE_FIELD.search(readText(readme));
-    if (current && f && f.group(1) === current) found.push(readme);
+    if (current && milestoneOf(readText(readme)) === current) found.push(readme);
   }
   return found;
 }

@@ -48,8 +48,9 @@ keeps it in the commit) — commits each write as the machine that made it, and 
   (it reads the record through specs-bot) and commit them in each repository, as before.
 - **Refs** are paths in a flat tree (2026-10-26): `150-rakun/README`, `144-checker/01-compiler/track`, and the
   milestone's own documents under `milestone/` (`milestone/status`, `milestone/language-gaps`, `milestone/machine-1`).
-  A front's README names its milestone and machine (`**Milestone:**`, `**Machine:**`); a front of a closed milestone
-  is frozen. An old ref (`1.0.12-beta/machine-1/150-rakun/README`) still answers, as its new one.
+  Every document's metadata is the YAML block at its top (`milestone`, `owner` — the machine that works it —, then
+  `priority`, `owns`, `depends-on`, …); `specs-bot meta <ref> --set key=value` changes it. A front of a closed
+  milestone is frozen. An old ref (`1.0.12-beta/machine-1/150-rakun/README`) still answers, as its new one.
 - **Waiting on another machine**: `specs-bot watch --once --type chat` returns at the next message to this machine.
 
 ## CI
