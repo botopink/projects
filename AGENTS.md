@@ -60,7 +60,10 @@ keeps it in the commit) — commits each write as the machine that made it, and 
   Every document's metadata is the YAML block at its top (`milestone`, `owner` — the machine that works it —, then
   `priority`, `owns`, `depends-on`, …); `specs-bot meta <ref> --set key=value` changes it. A front of a closed
   milestone is frozen. An old ref (`1.0.12-beta/machine-1/150-rakun/README`) still answers, as its new one.
-- **Waiting on another machine**: `specs-bot watch --once --type chat` returns at the next message to this machine.
+- **Hearing a message at once** (an idle session hears nothing until it calls a tool): keep one chat watcher
+  running as a background Bash command (`run_in_background`) — `specs-bot watch --once --type chat --to <your party>`.
+  It costs nothing while it waits and ends at the next message to you (or to all), which wakes the session: read it
+  with the MCP `chat` tool, act, `mark_read`, then start the watcher again. One watcher per session; never poll.
 
 ## CI
 
