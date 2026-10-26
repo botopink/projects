@@ -110,7 +110,10 @@ const PARENS = re("\\([^()]*\\)");
 const SPACES = re("\\s+");
 const BOLD_LEAD = re("\\*\\*(.+?)\\*\\*");
 const SENTENCE_END = re("(?<=[.!?])\\s");
-const PROCESS_ID = re("\\bprocess\\b", "I");
+// A row's `process` tag, as the record writes it in the id column — `(process)`, `(process, …)`,
+// `· process ·`, `; process, …` —, never the word inside the row's own text ("in-process", "its
+// process", decision 989).
+const PROCESS_ID = re("(?:\\(|·\\s*|;\\s*)process\\b", "I");
 
 function stripParens(text: string): string {
   let prev: string | null = null;

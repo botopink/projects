@@ -146,6 +146,16 @@ test("a rule that opens superseded is a one-liner", () => {
   expect(new Row(22, "x", "**B-1 is overtaken by 10: a rule of its own.**", "144").kind).toBe("code");
 });
 
+test("a process tag is the id column's tag, never the word in the row's text (decision 989)", () => {
+  const rule = "**A rule.** Body.";
+  expect(new Row(30, "a-1 (process)", rule, "144").kind).toBe("process");
+  expect(new Row(31, "a-2 · (process, the maintainer, 2026-10-11)", rule, "144").kind).toBe("process");
+  expect(new Row(32, "a-3 · process · (the maintainer)", rule, "144").kind).toBe("process");
+  expect(new Row(33, "a-4 · (the coordinator; process, the queues' order)", rule, "144").kind).toBe("process");
+  expect(new Row(34, "suite-self · (the maintainer: \"the suite checks itself in-process\")", rule, "144").kind).toBe("code");
+  expect(new Row(35, "809-i · (a root that lives with its process)", rule, "144").kind).toBe("code");
+});
+
 test("process row", () => {
   slugOn(12, "slug_12");
   cell(12, `Decision 12 ${D} A process rule.`);
