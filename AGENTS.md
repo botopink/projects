@@ -35,7 +35,10 @@ the closed milestones frozen, no commit hash or scratch path in a spec's text (a
 keeps it in the commit) — commits each write as the machine that made it, and tells the other machines at once.
 
 - **Setup**: `specs-bot` on the `PATH` (`bun build --compile` of `botopink/specs-bot`'s `packages/cli`); the
-  machine's token in `.env.local` (`SPECS_BOT_TOKEN=…`, never committed). `specs-bot whoami` names the machine.
+  token in `.env.local` (never committed): `SPECS_BOT_TOKEN=…`, or one per party when a machine hosts several
+  (`SPECS_BOT_TOKEN_MAINTAINER=…`, `SPECS_BOT_TOKEN_MACHINE_1=…`) with `SPECS_BOT_AS=<party>` picking one — a task
+  worktree's own `.env.local` names its party and reads the checkout's tokens; `--as <party>` overrides. `specs-bot
+  whoami` names the party.
 - **Read**: `specs-bot search <words>` · `step <n>` · `pending [<id>]` · `review --open` · `subject [<slug>]` ·
   `retired [<words>]` · `fronts` · `front <n>` · `doc <ref> --outline`, then `doc <ref> -s <anchor>` (one section,
   with its etag) · `chat --unread <machine>` · `check`. Output is TOON; `-f json` or `-f text` on request.
