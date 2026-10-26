@@ -22,7 +22,7 @@ what is the task's own: the step, its boxes, its worktree, its model.
   `git ls-remote origin feat`. The libraries and every other front keep the two rules above. This
   paragraph is removed when B-60 lands.
 - **Exception, the maintainer's (2026-10-15):** a commit whose only change is the `decisions-taken.md`
-  `scripts/decisions-split.py` writes (decision 482) is made with `--no-verify` in every repository — the hook's gate
+  `scripts/decisions-split.ts` writes (decision 482) is made with `--no-verify` in every repository — the hook's gate
   tests nothing it changes. Any other file in the commit → the hook, through `scripts/gate.sh exec`.
 - End each commit message with the attribution line the coordinator's prompt gives.
 - Never commit `*.snap.new`, `*.snap.md.new` or `todo.md`.
@@ -80,7 +80,7 @@ what is the task's own: the step, its boxes, its worktree, its model.
 ## Specs and documents
 
 - A spec states what remains and what blocks it: no `.tasks/…`, `/tmp/`, task branch or worktree
-  name (`scripts/scratch-refs.py` exits 0), no commit hash, no status narrative.
+  name (`scripts/scratch-refs.ts` exits 0), no commit hash, no status narrative.
 - An English/Portuguese pair: English holds the meaning; the Portuguese is its most direct
   translation — nothing condensed, reworded or dropped; ids, code and examples as in English.
 - Code, comments, commits and files in English. A code or layout change updates the matching

@@ -190,21 +190,21 @@ check4() {
 
 # 5. every LANGUAGE GAP marker has a row.
 check5() {
-    [ -f scripts/language-gap-markers.py ] || { echo "  ✗ scripts/language-gap-markers.py is missing (113 step 4c)"; return 1; }
-    python3 scripts/language-gap-markers.py
+    [ -f scripts/language-gap-markers.ts ] || { echo "  ✗ scripts/language-gap-markers.ts is missing (113 step 4c)"; return 1; }
+    bun scripts/language-gap-markers.ts
 }
 
-# 6. each repository's decisions-taken.md is what scripts/decisions-split.py writes from the record, decisions-taken-steps.md
+# 6. each repository's decisions-taken.md is what scripts/decisions-split.ts writes from the record, decisions-taken-steps.md
 #    (decisions 482, 730) — read from $SPECS_ROOT in CI (a checkout of botopink/specs-data), else through specs-bot.
 check6() {
-    [ -f scripts/decisions-split.py ] || { echo "  ✗ scripts/decisions-split.py is missing (163 s10)"; return 1; }
-    python3 scripts/decisions-split.py --check
+    [ -f scripts/decisions-split.ts ] || { echo "  ✗ scripts/decisions-split.ts is missing (163 s10)"; return 1; }
+    bun scripts/decisions-split.ts --check
 }
 
-# 7. every decision cell is consistent with the ledger (front 166, scripts/decision-cells.py).
+# 7. every decision cell is consistent with the ledger (front 166, scripts/decision-cells.ts).
 check7() {
-    [ -f scripts/decision-cells.py ] || { echo "  ✗ scripts/decision-cells.py is missing (166 s1)"; return 1; }
-    python3 scripts/decision-cells.py check
+    [ -f scripts/decision-cells.ts ] || { echo "  ✗ scripts/decision-cells.ts is missing (166 s1)"; return 1; }
+    bun scripts/decision-cells.ts check
 }
 
 runChecks() {
@@ -214,8 +214,8 @@ runChecks() {
         "3. no snapshot candidate or todo.md is tracked anywhere"
         "4. the library repositories' guards, runner and gate are one text"
         "5. every LANGUAGE GAP marker has a row"
-        "6. every repository's decisions-taken.md is what decisions-split.py writes"
-        "7. every decision cell matches its ledger row (decision-cells.py)"
+        "6. every repository's decisions-taken.md is what decisions-split.ts writes"
+        "7. every decision cell matches its ledger row (decision-cells.ts)"
     )
     local i red=""
     for i in 1 2 3 4 5 6 7; do

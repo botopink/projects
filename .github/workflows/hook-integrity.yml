@@ -24,13 +24,13 @@
 #      `scripts/known-broken-examples.txt`, and each AGENTS.md naming
 #      `git config core.hooksPath scripts/git-hooks`, `scripts/gate.sh` and
 #      `conformance/`;
-#   5. `scripts/language-gap-markers.py` (113 step 4c) exits 0 — every
+#   5. `scripts/language-gap-markers.ts` (113 step 4c) exits 0 — every
 #      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md.
 #
-#   6. `scripts/decisions-split.py --check` exits 0 — every repository's generated
+#   6. `scripts/decisions-split.ts --check` exits 0 — every repository's generated
 #      `decisions-taken.md` is what the script writes from `decisions-taken-steps.md` (decision 482), read from
 #      a checkout of botopink/specs-data (the specs left this repository for specs-bot, PLAN.md § 6);
-#   7. `scripts/decision-cells.py check` exits 0 (front 166) — every
+#   7. `scripts/decision-cells.ts check` exits 0 (front 166) — every
 #      `conformance/modules/decisions-taken/<slug>-<N>/` is the `Cell` slug of a code-bearing ledger row of its
 #      repository, with its docs.md and program in the generated shape; completeness
 #      per repository once its list in the script names it.
@@ -68,6 +68,12 @@ jobs:
         with:
           repository: botopink/specs-data
           path: .specs-data
+
+      # Checks 5–7 are TypeScript run with Bun.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
 
       - name: scripts/gate.sh — the seven checks
         shell: bash
