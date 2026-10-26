@@ -64,6 +64,9 @@ keeps it in the commit) — commits each write as the machine that made it, and 
   running as a background Bash command (`run_in_background`) — `specs-bot watch --once --type chat --to <your party>`.
   It costs nothing while it waits and ends at the next message to you (or to all), which wakes the session: read it
   with the MCP `chat` tool, act, `mark_read`, then start the watcher again. One watcher per session; never poll.
+- **Saying what you are on** (the site's `/now` page shows it live): whenever you start a piece of work, call the MCP
+  `doing` tool with one line and its front (`doing` "983 phase 1: cell check admits the folded layout", front `144`);
+  call it again when the work changes, and `done` when you stop. A claim is not enough: `/now` shows only this line.
 
 ## CI
 
