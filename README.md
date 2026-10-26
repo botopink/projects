@@ -22,7 +22,7 @@ and [`repository/botopink-lang/docs.md`](repository/botopink-lang/docs.md) (lang
 │   └── vscode-extension/   VS Code extension
 ├── specs/
 │   ├── __template.md       template for new specs
-│   ├── 1.0.0-beta … 1.0.5-beta/   closed (1.0.5: closure.md; open work → 1.0.10-beta/00-compiler-carry-over)
+│   ├── 1.0.0-beta … 1.0.5-beta/   closed (1.0.5: closure.md; open work → 00-compiler-carry-over)
 │   └── 1.0.10-beta/        current milestone (overview.md, status.md, fronts.md, decisions-*.md, 00-compiler-carry-over, 01-std, 02-packaging, 03-rakun, 04-jhonstart, 05-emilia, 06-onze; absorbed/ = the 1.0.6–1.0.9 originals)
 ├── architecture.md         comptime evaluation pipeline (current state)
 ├── CHANGELOG.md            release log

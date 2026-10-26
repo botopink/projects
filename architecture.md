@@ -2,7 +2,7 @@
 
 Visão geral de como o compilador (`repository/botopink-lang/modules/compiler-core/src/`)
 executa código em tempo de compilação. Detalhes de cada arquivo ficam nos `AGENTS.md`
-das pastas citadas; o trabalho pendente está em [`specs/1.0.12-beta/`](specs/1.0.12-beta/README.md).
+das pastas citadas; o trabalho pendente está em [`specs/milestone/`](specs/milestone/README.md).
 
 ## O que roda onde
 
