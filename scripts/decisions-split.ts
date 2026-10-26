@@ -66,7 +66,7 @@ const WORDS: Record<string, number> = {
 };
 
 const SLUG = re("[a-z][a-z0-9]*(?:_[a-z0-9]+)*");
-const HEADER = "Generated from botopink/projects · specs/decisions-taken-steps.md — edit there.";
+const HEADER = "Generated from botopink/specs-data · specs/decisions-taken-steps.md — change it through specs-bot (answer, supersede), never here.";
 const STEP = (n: string) => `(?:\\s+(?:steps?\\s+|s)(?P<${n}>\\d+[a-z]?(?:(?:\\s*,\\s*|\\s+and\\s+|\\s*[–-]\\s*)s?\\d+[a-z]?)*))?`;
 
 let SPECS = pjoin(ROOT, "specs");
