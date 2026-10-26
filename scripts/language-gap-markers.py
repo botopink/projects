@@ -47,6 +47,9 @@ def version_key(p: Path):
 
 
 def newest_with_gaps(specs: Path) -> Path | None:
+    # The flat tree: the milestone's own documents are in specs/milestone/.
+    if (specs / "milestone" / "language-gaps.md").is_file():
+        return specs / "milestone"
     dirs = sorted((d for d in specs.iterdir() if d.is_dir() and d.name[:1].isdigit()), key=version_key)
     found = [d for d in dirs if (d / "language-gaps.md").is_file()]
     return found[-1] if found else None
@@ -58,7 +61,7 @@ def gaps_file(root: Path, tmp: Path) -> tuple[Path, str]:
         if specs is not None and specs.is_dir():
             ms = newest_with_gaps(specs)
             if ms is None:
-                sys.exit(f"language-gap-markers: no <version>/language-gaps.md under {specs}")
+                sys.exit(f"language-gap-markers: no milestone/language-gaps.md under {specs}")
             return ms / "language-gaps.md", source
     out = subprocess.run(["specs-bot", "export", "language-gaps", "--to", str(tmp)], capture_output=True, text=True)
     if out.returncode != 0:

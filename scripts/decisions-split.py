@@ -77,6 +77,9 @@ SPECS = ROOT / "specs"
 
 
 def newest_milestone():
+    # The flat tree: the milestone's own documents are in specs/milestone/, its fronts beside it.
+    if (SPECS / "milestone" / "README.md").exists():
+        return SPECS / "milestone"
     best = None
     for d in SPECS.iterdir():
         m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)-beta", d.name)
@@ -87,10 +90,26 @@ def newest_milestone():
     return best[1]
 
 
+def front_readmes(ms):
+    """The current milestone's front READMEs: in the flat tree, the fronts whose `**Milestone:**` is the one
+    milestone/README.md names; before it, <version>/<machine>/<front>/README.md."""
+    if ms.name != "milestone":
+        return sorted(ms.glob("*/*/README.md"))
+    field = re.compile(r"^\*\*Milestone:\*\* *(\S+)", re.M)
+    m = field.search((ms / "README.md").read_text())
+    current = m and m.group(1)
+    out = []
+    for readme in sorted(ms.parent.glob("*/README.md")):
+        f = field.search(readme.read_text())
+        if current and f and f.group(1) == current:
+            out.append(readme)
+    return out
+
+
 def load_aliases(ms):
     """old name -> [(front, row text)]; old number (string) -> {names}."""
     by_name, by_num = {}, {}
-    for readme in sorted(ms.glob("*/*/README.md")):
+    for readme in front_readmes(ms):
         fm = re.match(r"(\d+)-", readme.parent.name)
         if not fm:
             continue
