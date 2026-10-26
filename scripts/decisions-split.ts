@@ -304,7 +304,9 @@ function main(): number {
   const sections: Section[] = [];
   let cur: Section | null = null;
   const unmapped: [number, string][] = [], processRows: [number, string][] = [];
-  const badRows: string[] = [], slugs = new Map<string, number>();
+  const badRows: string[] = [], slugs = new Map<string, [number, string]>();
+  // a row replaced or overtaken by a later one hands its cell's slug to that row (rows are append-only from 730)
+  const passesTo = ([, held]: [number, string], num: number) => re(`(Replaced|Overtaken) by ${num}\\b`).test(held);
   for (const ln of splitlines(readText(src))) {
     if (ln.startsWith("## ")) {
       cur = [ln, [], []];
@@ -324,8 +326,9 @@ function main(): number {
       const binds = strip(tail[1]), slug = strip(strip(tail[2]), "`");
       if (slug) {
         if (!SLUG.fullmatch(slug)) badRows.push(`decision ${num}: slug \`${slug}\` is not lowercase_with_underscores`);
-        else if (slugs.has(slug)) badRows.push(`decision ${num}: slug \`${slug}\` is already decision ${slugs.get(slug)}'s`);
-        else slugs.set(slug, num);
+        else if (slugs.has(slug) && !passesTo(slugs.get(slug)!, num))
+          badRows.push(`decision ${num}: slug \`${slug}\` is already decision ${slugs.get(slug)![0]}'s`);
+        else slugs.set(slug, [num, ln]);
       }
       const [repos, isProcess] = mapRow(binds, byName, byNum, allRepos);
       if (!repos.length) (isProcess ? processRows : unmapped).push([num, binds]);
