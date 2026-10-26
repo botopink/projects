@@ -34,6 +34,11 @@ its files on GitHub. The bot keeps the conventions — the next free number in s
 the closed milestones frozen, no commit hash or scratch path in a spec's text (a hash goes in `--landed`, which
 keeps it in the commit) — commits each write as the machine that made it, and tells the other machines at once.
 
+- **Through MCP first**: each session gets the `specs-bot` MCP server (`.mcp.json`, `specs-bot mcp`): it holds the
+  folder's party (`SPECS_BOT_AS`) for the whole session and lets it go when the session ends; its tools are the CLI's
+  commands (`search`, `doc`, `append`, `claim`, `send`, …, answers in TOON, writes a dry run until `apply: true`),
+  and every answer carries the events that arrived since the last call (`wait` blocks for the next one). The CLI
+  stays for scripts and for a shell.
 - **Setup**: `specs-bot` on the `PATH` (`bun build --compile` of `botopink/specs-bot`'s `packages/cli`); the
   token in `.env.local` (never committed): `SPECS_BOT_TOKEN=…`, or one per party when a machine hosts several
   (`SPECS_BOT_TOKEN_MAINTAINER=…`, `SPECS_BOT_TOKEN_MACHINE_1=…`) with `SPECS_BOT_AS=<party>` picking one — a task

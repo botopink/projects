@@ -1,6 +1,9 @@
 {
   "permissions": {
-    "allow": ["Bash(specs-bot:*)"],
+    "allow": [
+      "Bash(specs-bot:*)",
+      "mcp__specs-bot"
+    ],
     "deny": [
       "Bash(git clone*specs-data*)",
       "Bash(gh repo clone*specs-data*)",
@@ -10,5 +13,8 @@
       "Write(**/specs-data/**)",
       "WebFetch(domain:raw.githubusercontent.com)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "specs-bot"
+  ]
 }

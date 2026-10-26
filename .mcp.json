@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "specs-bot": { "command": "specs-bot", "args": ["mcp"] }
+  }
+}
