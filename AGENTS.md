@@ -66,7 +66,9 @@ keeps it in the commit) — commits each write as the machine that made it, and 
   with the MCP `chat` tool, act, `mark_read`, then start the watcher again. One watcher per session; never poll.
 - **Saying what you are on** (the site's `/now` page shows it live): whenever you start a piece of work, call the MCP
   `doing` tool with one line and its front (`doing` "983 phase 1: cell check admits the folded layout", front `144`);
-  call it again when the work changes, and `done` when you stop. A claim is not enough: `/now` shows only this line.
+  a new line ends the last one as done. When you stop, `done` if it is finished, `done` with `paused: true` if you
+  will come back to it (saying the same line again resumes it). `/now` shows running, paused and done (24 h) from
+  these lines only; a claim is not enough.
 
 ## CI
 
