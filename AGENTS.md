@@ -175,8 +175,9 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   the leader of a session of its own (`setsid`) and record its pgid in the lease (`pgid=`); on INT, TERM or HUP, and when
   the command ends, that group gets SIGTERM, then SIGKILL after a grace of five seconds; a watcher in the group ends it
   with SIGKILL when `exec` itself is killed with SIGKILL; a lease whose owner died has its recorded group killed when it
-  is reaped. A library's `scripts/gate.sh` (the shared runner) does the same for each compiler run of its stages, under
-  `timeout -k 5` (`BOTOPINK_GATE_TIMEOUT`, default 1800 s a run), and an interrupted gate kills the groups it registered.
+  is reaped. A library's `scripts/gate.sh` (the shared runner) does the same
+  for each compiler run of its stages and for an interrupted gate, and bounds the whole gate run at 1800 s (decision
+  1070; no bound per compiler run): at the limit it kills everything it started and exits 124.
   `scripts/gate-test.sh` proves it: an `exec` killed with TERM and with KILL leaves no process of its session.
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
   for a task; the report names each one. Specs never name them.
