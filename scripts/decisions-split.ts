@@ -66,6 +66,7 @@ const WORDS: Record<string, number> = {
 };
 
 const SLUG = re("[a-z][a-z0-9]*(?:_[a-z0-9]+)*");
+const SCRIPT_PROOF = re("tests/[a-z0-9_]+\\.sh|conformance/run\\.sh --self-test");
 const HEADER = "Generated from botopink/specs-data · specs/decisions-taken-steps.md — change it through specs-bot (answer, supersede), never here.";
 const STEP = (n: string) => `(?:\\s+(?:steps?\\s+|s)(?P<${n}>\\d+[a-z]?(?:(?:\\s*,\\s*|\\s+and\\s+|\\s*[–-]\\s*)s?\\d+[a-z]?)*))?`;
 
@@ -324,7 +325,8 @@ function main(): number {
         continue;
       }
       const binds = strip(tail[1]), slug = strip(strip(tail[2]), "`");
-      if (slug) {
+      // a Cell may name a script that proves the row instead of a cell (decision 1022)
+      if (slug && !SCRIPT_PROOF.fullmatch(slug)) {
         if (!SLUG.fullmatch(slug)) badRows.push(`decision ${num}: slug \`${slug}\` is not lowercase_with_underscores`);
         else if (slugs.has(slug) && !passesTo(slugs.get(slug)!, num))
           badRows.push(`decision ${num}: slug \`${slug}\` is already decision ${slugs.get(slug)![0]}'s`);
