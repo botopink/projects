@@ -99,7 +99,7 @@ keeps it in the commit) — commits each write as the machine that made it, and 
    generated header, or its cases: `run/` / `refused/` packages (decision 779: `botopink.json`, `src/main.bp`,
    `src/cases/mod.bp`, `snapshot/`, each `src/cases/<case>/` holding `mod.bp`), `cells/<case>/` and 765's `cases/<case>/`,
    each a full cell with `botopink.json`, `src/main.bp` and `snapshot/`; a promoted cell's or a case's `"targets"` within the workspace's; completeness (every code-bearing row has its directory) is
-   checked per repository once the script's list names it (every slug has its directory). A red names the repository, the row and front 166.
+   checked per repository once the script's list names it (every slug has its directory); a row proven by a CLI test script (decision 1020) has a `Cell` value `tests/<name>.sh` instead of a slug and no directory — the script must exist at `modules/compiler-cli/tests/<name>.sh` of the repository, and a `<slug>-<N>/` directory for such a row is red. A red names the repository, the row and front 166.
 
 A red check names the repository and the front that owns the fix; nothing here is soft.
 

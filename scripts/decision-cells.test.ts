@@ -257,6 +257,52 @@ test("completeness", () => {
   }
 });
 
+describe("decision 1020: a row proven by a CLI test script", () => {
+  const SH = "tests/runtime_reuse.sh";
+  const withScript = () => writeFileSync(join(repo, "decisions-taken.md"), LEDGER.replace("| code_rule_ten |", `| ${SH} |`));
+  const script = () => write(join(repo, "modules/compiler-cli", SH), "#!/bin/sh\n");
+
+  test("(a) needs no directory; the script existing completes it", () => {
+    withScript();
+    script();
+    cell(13, T13);
+    COMPLETE_REPOS.push("snap");
+    try {
+      const reasons = checkRepo(root, "snap");
+      expect(reasons.map((r) => r.split(": decision ")[1].split(":")[0])).toEqual(["15"]);
+    } finally {
+      COMPLETE_REPOS.splice(COMPLETE_REPOS.indexOf("snap"), 1);
+    }
+    expect(runCmd("scaffold", "snap")[0]).toBe(0);
+    expect(existsSync(join(d, "code_rule_ten-10"))).toBe(false);
+  });
+
+  test("(a) a missing script is red", () => {
+    withScript();
+    const reasons = checkRepo(root, "snap");
+    expect(reasons).toHaveLength(1);
+    expect(reasons[0]).toContain(`decision 10: code-bearing row names the proof script ${SH}`);
+  });
+
+  test("(b) a directory for such a row is refused", () => {
+    withScript();
+    script();
+    const c2 = join(d, "module_bpr_reused-10");
+    mkdirSync(c2, { recursive: true });
+    const reasons = checkRepo(root, "snap");
+    expect(reasons.join("\n")).toContain(`proven by ${SH}, not by a cell`);
+  });
+
+  test("(c) every other row is unchanged", () => {
+    withScript();
+    script();
+    cell(13, T13);
+    expect(checkRepo(root, "snap")).toEqual([]);
+    unlinkSync(join(d, "another_code_rule-13/docs.md"));
+    expect(checkRepo(root, "snap").join("\n")).toContain("decision 13");
+  });
+});
+
 test("scaffold --list, then scaffold", () => {
   const [code, out] = runCmd("scaffold", "--list", "snap");
   expect(code).toBe(0);

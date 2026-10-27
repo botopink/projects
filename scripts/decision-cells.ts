@@ -147,8 +147,13 @@ export class Row {
     else this.kind = "code";
   }
 
+  /** Decision 1020: a `Cell` value `tests/<name>.sh` names the CLI test script that proves the row; the row has no directory. */
+  get script(): string | null {
+    return this.slug && SCRIPT_CELL.test(this.slug) ? this.slug : null;
+  }
+
   get dirname(): string | null {
-    return this.slug ? cellDirname(this.slug, this.num) : null;
+    return this.slug && !this.script ? cellDirname(this.slug, this.num) : null;
   }
 
   get title(): string {
@@ -156,6 +161,7 @@ export class Row {
   }
 }
 
+const SCRIPT_CELL = re("^tests/[A-Za-z0-9_]+\\.sh$");
 const LEDGER_ROW = re("\\| \\d+ \\| ");
 
 function at<T>(xs: T[], i: number): T {
@@ -247,7 +253,7 @@ function cmdScaffold(root: string, args: string[]): number {
     const one = rows.filter((r) => r.kind === "oneliner");
     const tagged = rows.filter((r) => r.kind === "process");
     const code = rows.filter((r) => r.kind === "code");
-    const todo = code.filter((r) => !(r.slug && exists(pjoin(d, r.dirname!))));
+    const todo = code.filter((r) => !r.script && !(r.slug && exists(pjoin(d, r.dirname!))));
     const cand = todo.filter((r) => mark.test(r.binds));
     const sup = todo.filter((r) => !cand.includes(r) && SUPERSEDED.test(cpSlice(r.rule, 0, 200)));
     out(`${repo}: ${rows.length} rows, ${one.length} one-liners, ${tagged.length} tagged process, ` +
@@ -261,6 +267,7 @@ function cmdScaffold(root: string, args: string[]): number {
       continue;
     }
     for (const r of code) {
+      if (r.script) continue;
       if (!r.slug) {
         err(`  decision ${r.num}: no slug in the ledger's Cell column (166 s2), not scaffolded`);
         continue;
@@ -578,6 +585,10 @@ export function checkRepo(root: string, repo: string): string[] {
         red(name, "directory name is <slug>-<N> with N naming no row of the repository's decisions-taken.md");
         continue;
       }
+      if (row.script) {
+        red(name, `row ${row.num} is proven by ${row.script}, not by a cell (decision 1020): the directory must not stay`);
+        continue;
+      }
       if (row.slug !== nm!.group(1)) {
         red(name, `directory slug differs from the row's (${row.slug || "none"})`);
         continue;
@@ -593,9 +604,14 @@ export function checkRepo(root: string, repo: string): string[] {
       checkCell(root, repo, m, row, red);
     }
   }
+  for (const r of rows ?? []) {
+    if (r.kind === "code" && r.script && !exists(pjoin(root, "repository", repo, "modules", "compiler-cli", r.script)))
+      red(r.num, `code-bearing row names the proof script ${r.script} and modules/compiler-cli/${r.script} does not exist (decision 1020)`);
+  }
   if (COMPLETE_REPOS.includes(repo)) {
     for (const r of rows ?? []) {
       if (r.kind !== "code") continue;
+      if (r.script) continue;
       if (!r.slug) red(r.num, "code-bearing row has no slug in the ledger's Cell column");
       else if (!isDir(pjoin(d, r.dirname!))) red(r.num, `code-bearing row has no conformance/modules/decisions-taken/${r.dirname} directory`);
     }
