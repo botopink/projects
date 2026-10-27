@@ -152,7 +152,10 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   jobs, `share = max(1, capacity / gates of the run)`, returned when it ends; a library receives them as
   `--jobs`. Admission is first come, first served, with one exception (front 163 s13): while the pool is not
   empty, a gate asking for less than the capacity may pass older waiters that all ask for the whole pool, at most
-  one such pass in flight; the full-pool gate still starts only on an empty pool. botopink-lang's gate takes no total of jobs yet (it sizes itself to the machine), so a run of
+  one such pass in flight; the full-pool gate still starts only on an empty pool. Only heavy admissions are
+  staggered (decision 1042): a request for at least half the capacity, or a `zig build`, starts only
+  `POOL_STAGGER` (60 s) after the last admission while anything runs; a lighter run is admitted at once while jobs
+  are free (`scripts/gate-test.sh` proves both). botopink-lang's gate takes no total of jobs yet (it sizes itself to the machine), so a run of
   it holds the whole pool. Measuring a gate's time waits for the pool to be empty (`status`) — that is
   the measurer's rule, not a lock on every gate. The commit hook's gate runs outside the pool (470).
   Every run waits for a free job, `--no-conformance` included (the maintainer, 2026-10-12: the lock

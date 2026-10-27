@@ -356,10 +356,11 @@ poolPassing() {
     echo "$n"
 }
 
-# poolAcquire <id> <name> <want> <log> — blocks until a job is free; prints the
-# jobs granted (min(want, free)) and leaves lease.<id>.
+# poolAcquire <id> <name> <want> <log> [heavy] — blocks until a job is free; prints the
+# jobs granted (min(want, free)) and leaves lease.<id>. `heavy` (1) marks a request staggered whatever its jobs
+# (a `zig build`, decision 1042).
 poolAcquire() {
-    local id="$1" name="$2" want="$3" log="$4" cap used free grant waited=0 last passed
+    local id="$1" name="$2" want="$3" log="$4" heavy="${5:-0}" cap used free grant waited=0 last passed
     while :; do
         poolLock
         poolReap
@@ -368,11 +369,13 @@ poolAcquire() {
         cap="$(poolCapacity)"
         used="$(poolUsed)"
         free=$(( cap - used ))
-        # Admissions are staggered (the maintainer, 2026-10-13: "libera o gate paralelo aos poucos"): a gate
-        # starts only when the last one started at least POOL_STAGGER seconds ago, or nothing runs, so the
-        # builds' memory peaks never coincide.
+        # Heavy admissions are staggered (the maintainer, 2026-10-13: "libera o gate paralelo aos poucos"; decision
+        # 1042): a request for at least half the capacity, or a `zig build`, starts only when the last admission was
+        # at least POOL_STAGGER seconds ago, or nothing runs, so the builds' memory peaks never coincide. A light run
+        # (1–2 jobs under half the capacity) is admitted at once while jobs are free.
         last="$(cat "$pool/last_admit" 2>/dev/null || echo 0)"
-        if [ "$used" -gt 0 ] && [ $(( $(date +%s) - last )) -lt "$POOL_STAGGER" ]; then free=0; fi
+        if [ "$used" -gt 0 ] && { [ "$heavy" = 1 ] || [ $(( want * 2 )) -ge "$cap" ]; } \
+            && [ $(( $(date +%s) - last )) -lt "$POOL_STAGGER" ]; then free=0; fi
         # A gate that asks for the whole pool (botopink-lang's, which sizes itself to the machine, run by a commit
         # hook under `exec --jobs <capacity>`) starts only on an empty pool and then holds all of it.
         if [ "$want" -ge "$cap" ] && [ "$used" -gt 0 ]; then free=0; fi
@@ -622,7 +625,7 @@ execConformanceRefused() {
 # cmdExec [--jobs <N>] <name> -- <command>… — run one command under the pool:
 # wait for a free job, hold the jobs granted while it runs, return its status.
 cmdExec() {
-    local want="" name="" id grant rc=0 child
+    local want="" name="" id grant rc=0 child heavy
     while [ "$#" -gt 0 ]; do
         case "$1" in
             --jobs) want="$2"; shift 2 ;;
@@ -637,7 +640,9 @@ cmdExec() {
     fi
     [ -n "$want" ] || { want=$(( $(poolCapacity) / 4 )); [ "$want" -ge 1 ] || want=1; }
     id="$$.exec"
-    grant="$(poolAcquire "$id" "$name" "$want" "")"
+    heavy=0
+    if grep -Eq '(^|[^[:alnum:]_-])zig +build( |$)' <<<"$*"; then heavy=1; fi
+    grant="$(poolAcquire "$id" "$name" "$want" "" "$heavy")"
     trap 'poolRelease "$id"' EXIT
     "$@" &
     child=$!

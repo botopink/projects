@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test of the scheduler's admission rule (front 163 s13), in a private pool: a small gate passes older full-pool
+# Test of the scheduler's admission rule (front 163 s13, decision 1042), in a private pool: a small gate passes older full-pool
 # waiters while the pool is busy, and the full-pool gates still start one at a time on an empty pool, in order.
 #
 # Usage: scripts/gate-test.sh
@@ -36,6 +36,26 @@ sleep 0.3
 BOTOPINK_POOL_SCAN_DELAY=2 "$here/gate.sh" exec --jobs 3 W2 -- true 2>>"$err" &
 wait
 [ ! -s "$err" ] || { cat "$err" >&2; fail "a scan read a lease released mid-scan"; }
+
+# The stagger holds heavy admissions only (decision 1042): with capacity 4 and a 4 s stagger, a 1-job run is admitted
+# at once while another holds a job; a run asking for half the capacity, and a `zig build` of one job, each wait the
+# stagger after the last admission.
+: >"$log"
+srun() { # <name> <jobs> <seconds> [command text]
+    BOTOPINK_POOL_CAPACITY=4 BOTOPINK_POOL_STAGGER=4 "$here/gate.sh" exec --jobs "$2" "$1" -- bash -c "echo \"start $1 \$(date +%s.%N)\" >>'$log'; sleep $3; echo \"end $1 \$(date +%s.%N)\" >>'$log' ${4:+; : $4}" &
+}
+srun L1 1 8; sleep 0.5
+srun L2 1 1; sleep 1.5
+srun H 2 1; sleep 0.5
+wait
+srun L3 1 8; sleep 0.5
+srun Z 1 1 "zig build"
+wait
+since() { awk -v a="$1" -v b="$2" 'BEGIN { printf "%.3f", b - a }'; }
+lt "$(t start L2)" "$(t end L1)" || fail "a light run waited while jobs were free"
+lt "$(since "$(t start L1)" "$(t start L2)")" 2 || fail "a light run was staggered"
+lt 3.5 "$(since "$(t start L2)" "$(t start H)")" || fail "a half-capacity run was not staggered"
+lt 3.5 "$(since "$(t start L3)" "$(t start Z)")" || fail "a zig build was not staggered"
 # machine-1's refusals (decisions 768, 769, 1002 (c)): a whole-suite conformance run is refused before taking a job, one
 # module by its own path and a suite by --only pass. `echo` stands for the command: a passing line only has to run.
 cfg="$tmp/cfg"; mkdir -p "$cfg/botopink"; echo machine-1 >"$cfg/botopink/machine"
