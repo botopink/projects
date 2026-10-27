@@ -638,6 +638,31 @@ function checkCases(root: string, repo: string, m: string, n: number, red: Red, 
   }
 }
 
+/** Decision 989: a self-checking module — botopink.json and src/main.bp loading each `cases/<case>/` (a package
+ *  of botopink.json and src/main.bp; its expected answer is a section of snapshot/main.snap), so a case has no
+ *  snapshot/ of its own and the module's manifest sits within the workspace's targets. */
+function checkSelfChecking(root: string, repo: string, m: string, n: number, red: Red) {
+  const mf = pjoin(m, "botopink.json");
+  if (!isFile(mf)) red(n, "self-checking module has src/main.bp and cases/ but no botopink.json (decision 989)");
+  else {
+    const targets = manifestTargets(mf, () => red(n, "botopink.json is not JSON"));
+    const extra = (targets !== undefined && truthy(targets) ? iter(targets) : []).filter((t) => !contains(workspaceTargets(root, repo), t));
+    if (extra.length) red(n, `botopink.json targets ${repr(extra)} are not the workspace's`);
+  }
+  const found = sortPaths(iterdir(pjoin(m, "cases")).filter(isDir));
+  if (!found.length) red(n, "cases/ holds no case");
+  for (const c of found) {
+    const name = pname(c);
+    if (!isFile(pjoin(c, "botopink.json"))) red(n, `case ${name} has no botopink.json (decision 989)`);
+    else {
+      const targets = manifestTargets(pjoin(c, "botopink.json"), () => red(n, `case ${name} botopink.json is not JSON`));
+      const extra = (targets !== undefined && truthy(targets) ? iter(targets) : []).filter((t) => !contains(workspaceTargets(root, repo), t));
+      if (extra.length) red(n, `case ${name} botopink.json targets ${repr(extra)} are not the workspace's`);
+    }
+    if (!isFile(pjoin(c, "src/main.bp"))) red(n, `case ${name} has no src/main.bp (decision 989)`);
+  }
+}
+
 /** Decision 779: `run/` and `refused/` are packages of cases — botopink.json, src/main.bp,
  *  src/cases/mod.bp, snapshot/, each `src/cases/<case>/` holding mod.bp —, and `cells/<case>/`
  *  each a full cell. */
@@ -662,7 +687,9 @@ function checkCell(root: string, repo: string, m: string, row: Row, red: Red) {
   const draft = isFile(pjoin(m, phase1Main(false))), src = isFile(pjoin(m, phase1Main(true)));
   const packed = ["run", "refused", "cells"].some((x) => isDir(pjoin(m, x)));
   const cases = isDir(pjoin(m, "cases")) || packed;
-  if (cases && (draft || src)) {
+  // decision 989: a self-checking module is src/main.bp beside cases/ (and the leftovers run/, refused/, cells/)
+  const selfChecking = src && !draft && isDir(pjoin(m, "cases"));
+  if (cases && (draft || src) && !selfChecking) {
     red(n, `holds both cases/ and ${phase1Main(draft === false)} (decision 765: a draft or cases, not both)`);
     return;
   }
@@ -676,7 +703,8 @@ function checkCell(root: string, repo: string, m: string, row: Row, red: Red) {
   }
   const promoted = src;
   const program = pjoin(m, phase1Main(promoted));
-  if (isDir(pjoin(m, "cases"))) checkCases(root, repo, m, n, red);
+  if (selfChecking) checkSelfChecking(root, repo, m, n, red);
+  else if (isDir(pjoin(m, "cases"))) checkCases(root, repo, m, n, red);
   if (packed) checkPackages(root, repo, m, n, red);
   const docs = pjoin(m, "docs.md");
   if (!isFile(docs)) red(n, "no docs.md");
@@ -695,12 +723,13 @@ function checkCell(root: string, repo: string, m: string, row: Row, red: Red) {
     }
     if (lines.some((ln) => lstrip(ln).startsWith("```"))) red(n, "docs.md contains a fenced code block (code lives in the included file)");
   }
-  if (cases) return;
-  if (isFile(program)) {
+  if (cases && !selfChecking) return;
+  // a self-checking module's main.bp and cases carry the module's own header (989), not the row's
+  if (isFile(program) && !selfChecking) {
     const first = readText(program).split("\n")[0];
     if (first !== `//// ${row.title}`) red(n, `${phase1Main(promoted)} header is not the row's`);
   }
-  if (promoted) {
+  if (promoted && !selfChecking) {
     const mf = pjoin(m, "botopink.json");
     if (!isFile(mf)) red(n, "promoted cell has no botopink.json");
     else {
@@ -710,7 +739,7 @@ function checkCell(root: string, repo: string, m: string, row: Row, red: Red) {
         if (extra.length) red(n, `botopink.json targets ${repr(extra)} are not the workspace's`);
       }
     }
-  } else if (exists(pjoin(m, "botopink.json")) || exists(pjoin(m, "src"))) {
+  } else if (!selfChecking && (exists(pjoin(m, "botopink.json")) || exists(pjoin(m, "src")))) {
     red(n, "phase 1 cell has a manifest or src/ without being promoted");
   }
 }

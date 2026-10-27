@@ -357,6 +357,59 @@ test("cases malformed", () => {
   expectRed("case a has no botopink.json");
 });
 
+function selfChecking(n: number, title: string, names: string[] = ["a"]): string {
+  const c = cases(n, title, []);
+  for (const nm of names) {
+    const k = join(c, "cases", nm);
+    mkdirSync(join(k, "src"), { recursive: true });
+    writeFileSync(join(k, "botopink.json"), JSON.stringify({ name: `${S[n]}-${n}-${nm}` }));
+    writeFileSync(join(k, "src/main.bp"), `//// ${nm}\npub fn main() -> void {}\n`);
+  }
+  mkdirSync(join(c, "src"), { recursive: true });
+  mkdirSync(join(c, "snapshot"));
+  writeFileSync(join(c, "snapshot/main.snap"), "");
+  writeFileSync(join(c, "src/main.bp"), "//// A module checking itself (decision 989)\npub fn main() -> void {}\n");
+  writeFileSync(join(c, "botopink.json"), JSON.stringify({ name: `${S[n]}-${n}` }));
+  writeFileSync(join(c, "docs.md"), `# ${title}\n\n` + names.map((nm) => `[cases/${nm}/src/main.bp](cases/${nm}/src/main.bp)\n`).join(""));
+  return c;
+}
+
+test("green self-checking module", () => {
+  const c = selfChecking(10, T10, ["a", "b"]);
+  expect(runCmd("check")).toEqual(GREEN);
+  // leftover full cells beside it (989) stay valid
+  const k = join(c, "cells/old");
+  mkdirSync(join(k, "src"), { recursive: true });
+  mkdirSync(join(k, "snapshot"));
+  writeFileSync(join(k, "botopink.json"), '{"name": "old"}');
+  writeFileSync(join(k, "src/main.bp"), "//// old\n");
+  expect(runCmd("check")).toEqual(GREEN);
+});
+
+test("self-checking module malformed", () => {
+  const c = selfChecking(10, T10, ["a"]);
+  unlinkSync(join(c, "cases/a/botopink.json"));
+  expectRed("decision 10: case a has no botopink.json (decision 989)");
+  writeFileSync(join(c, "cases/a/botopink.json"), '{"name": "x"}');
+  unlinkSync(join(c, "cases/a/src/main.bp"));
+  expectRed("decision 10: case a has no src/main.bp (decision 989)");
+  writeFileSync(join(c, "cases/a/src/main.bp"), "//// a\n");
+  unlinkSync(join(c, "botopink.json"));
+  expectRed("decision 10: self-checking module has src/main.bp and cases/ but no botopink.json");
+  writeFileSync(join(c, "botopink.json"), '{"name": "x", "targets": ["wasm"]}');
+  expectRed("botopink.json targets ['wasm'] are not the workspace's");
+  writeFileSync(join(c, "botopink.json"), '{"name": "x"}');
+  writeFileSync(join(c, "cases/a/botopink.json"), '{"name": "x", "targets": ["wasm"]}');
+  expectRed("case a botopink.json targets ['wasm'] are not the workspace's");
+});
+
+test("self-checking module with a draft", () => {
+  const c = selfChecking(10, T10);
+  mkdirSync(join(c, "draft"));
+  writeFileSync(join(c, "draft/main.bp"), `//// ${T10}\n`);
+  expectRed("decision 10: holds both cases/ and");
+});
+
 test("cases empty", () => {
   const c = cases(10, T10, []);
   mkdirSync(join(c, "cases"));
