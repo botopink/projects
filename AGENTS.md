@@ -365,7 +365,7 @@ All Zig commands run from `repository/botopink-lang/`:
 ```sh
 zig build          # botopink + botopink-lsp
 zig build test     # compiler-core + language-server (~17s)
-zig build test-conformance / test-backends / test-vscode / test-bpmp   # the libraries run in test-conformance (996)
+zig build test-conformance / test-vscode / test-bpmp   # the libraries run in test-conformance (996)
 ```
 
 - Comptime evaluation spawns a persistent `erl`; `erl`/`erlc` must be on `PATH`.
