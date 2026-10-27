@@ -16,7 +16,7 @@
 #                                      and time
 #   scripts/gate.sh exec [--jobs <N>] <name> -- <command>…
 #                                      one command (a `zig build`, a test run, a
-#                                      `cell check`, a library commit and its hook)
+#                                      `botopink run` of one module, a library commit and its hook)
 #                                      under the pool: it waits for a free job,
 #                                      holds <N> (default a quarter of the capacity) while
 #                                      it runs, and gives them back when it ends
@@ -244,7 +244,7 @@ pool="$(poolDir)"
 
 # The machine's name (decisions 768, 769): one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else
 # `$HOME/.config/botopink/machine`), holding `machine-1` or `machine-2`; empty when the file is absent. On `machine-1`
-# every gate runs `--no-conformance` and `exec` refuses a whole-suite `cell check` — conformance is machine 2's.
+# every gate runs `--no-conformance` and `exec` refuses a whole-suite conformance run — conformance is machine 2's.
 machineName() {
     local f="${XDG_CONFIG_HOME:-$HOME/.config}/botopink/machine"
     [ -f "$f" ] && tr -d '[:space:]' < "$f" || true
@@ -573,11 +573,14 @@ cmdStatus() {
     [ "$any" -eq 1 ] || echo "(no gate running or waiting)"
 }
 
-# execConformanceRefused <command>… — on machine-1 (decisions 768, 769) the text `exec` would run must not reach
-# conformance: the command line, a `bash -c` string, and the text of a script file the command names (one level,
-# its non-comment lines) are read for a whole-suite `cell check` (a cell check over `conformance`,
-# `conformance/modules` or a library's `conformance/`) and for a library's `scripts/gate.sh` run without
-# `--no-conformance` (the commit hook's `--staged` is allowed: it never runs conformance). Refused with a reason.
+# execConformanceRefused <command>… — on machine-1 (decisions 768, 769, 1002 (c)) the text `exec` would run must not
+# reach conformance: the command line, a `bash -c` string, and the text of a script file the command names (one level,
+# its non-comment lines) are read for a whole-suite run — `conformance/run.sh` without an `--only` naming a `test/`
+# suite or one `modules/<m>` (`--list` and `--self-test` run no suite and pass), `gate.sh --stage test-conformance`,
+# `zig build test-conformance`, and a library's `botopink cell check` over `conformance` (the libraries keep that
+# until 996 / L5) — and for a library's `scripts/gate.sh` run without `--no-conformance` (the commit hook's `--staged`
+# is allowed: it never runs conformance). One module alone passes: `cd conformance/modules/<m> && botopink run
+# --target <t>`. Refused with a reason.
 execConformanceRefused() {
     local text=" $* " a
     for a in "$@"; do
@@ -587,9 +590,21 @@ execConformanceRefused() {
     done
     local line
     while IFS= read -r line; do
-        if grep -Eq 'cell check( +--jobs +[0-9]+)?( +"?[^ ]*conformance(/modules)?/?"?)( |;|$|\)|&|>|\|)' <<<"$line" \
-            && ! grep -Eq 'cell check( +--jobs +[0-9]+)? +"?[^ ]*conformance/modules/[^ /"]+' <<<"$line"; then
-            echo -e "${RED}✗ gate: a whole-suite cell check is machine 2's (decisions 768, 769) — run the cells your change reaches, one path each${NC}" >&2
+        if grep -Eq '(conformance/|(^|[ ;&(])\./)run\.sh( |;|$|\)|&|>|\|)' <<<"$line" \
+            && ! grep -Eq -- '--(list|self-test)( |;|$|\)|&|>|\|)' <<<"$line" \
+            && { ! grep -Eq -- '--only +"?[^ ]*(test/|modules/[^ /"])' <<<"$line" \
+                || grep -Eq -- '--only +"?[^ ]*modules/?"?( |;|$|\)|&|>|\|)' <<<"$line"; }; then
+            echo -e "${RED}✗ gate: a whole-suite conformance run is machine 2's (decisions 768, 769, 1002) — run one module by its path: cd conformance/modules/<m> && botopink run --target <t>${NC}" >&2
+            echo "  in: ${line:0:200}" >&2
+            return 1
+        fi
+        if grep -Eq -- '--stage +"?test-conformance|zig +build +([^;&|]* )?test-conformance' <<<"$line"; then
+            echo -e "${RED}✗ gate: the conformance stage is machine 2's (decisions 768, 769, 1002) — run one module by its path: cd conformance/modules/<m> && botopink run --target <t>${NC}" >&2
+            echo "  in: ${line:0:200}" >&2
+            return 1
+        fi
+        if grep -Eq 'cell check( +--jobs +[0-9]+)?( +"?[^ ]*conformance/?"?)( |;|$|\)|&|>|\|)' <<<"$line"; then
+            echo -e "${RED}✗ gate: a library's whole conformance check is machine 2's (decisions 768, 769) — the libraries keep it until L5${NC}" >&2
             echo "  in: ${line:0:200}" >&2
             return 1
         fi

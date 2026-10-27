@@ -36,4 +36,28 @@ sleep 0.3
 BOTOPINK_POOL_SCAN_DELAY=2 "$here/gate.sh" exec --jobs 3 W2 -- true 2>>"$err" &
 wait
 [ ! -s "$err" ] || { cat "$err" >&2; fail "a scan read a lease released mid-scan"; }
+# machine-1's refusals (decisions 768, 769, 1002 (c)): a whole-suite conformance run is refused before taking a job, one
+# module by its own path and a suite by --only pass. `echo` stands for the command: a passing line only has to run.
+cfg="$tmp/cfg"; mkdir -p "$cfg/botopink"; echo machine-1 >"$cfg/botopink/machine"
+refused() { local o; o="$(XDG_CONFIG_HOME="$cfg" "$here/gate.sh" exec t -- bash -c ": # $1" 2>&1)" && fail "not refused: $1"; case "$o" in *"machine 2's"*|*"--no-conformance"*) ;; *) fail "refused for another reason: $1";; esac; }
+allowed() { XDG_CONFIG_HOME="$cfg" "$here/gate.sh" exec t -- bash -c ": # $1" >/dev/null 2>&1 || fail "refused: $1"; }
+refused "conformance/run.sh"
+refused "conformance/run.sh --target erlang"
+refused "./run.sh --jobs 4"
+refused "conformance/run.sh --only modules"
+refused "conformance/run.sh --only conformance/modules/"
+refused "conformance/run.sh --only test/case_arms.bp --only modules"
+refused "scripts/gate.sh --stage test-conformance"
+refused "zig build test-conformance"
+refused "zig build -Doptimize=ReleaseSafe test-conformance"
+refused "botopink cell check conformance/"
+refused "scripts/gate.sh"
+allowed "conformance/run.sh --list"
+allowed "conformance/run.sh --self-test"
+allowed "conformance/run.sh --only test/case_arms.bp"
+allowed "conformance/run.sh --only modules/foo"
+allowed "cd conformance/modules/foo && botopink run --target erlang"
+allowed "scripts/gate.sh --no-conformance"
+allowed "scripts/gate.sh --staged --no-conformance"
+allowed "zig build test"
 echo "ok: gate-test"

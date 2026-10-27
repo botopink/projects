@@ -13,7 +13,7 @@ closest `AGENTS.md` in each directory you touch.
 
 | Path | What |
 |---|---|
-| `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `modules/std-wasm` and `modules/beam-to-wasm` (comptime on wasm, decision 434), `libs/std`, and `conformance/` — the language's conformance suite (decisions 457, 466, 475): `modules/<module>/cases/<cell>/` (one module per prefix or per decision, decision 765; B-157 P3 landed 2026-10-19) checked by `botopink cell check`, `test/` suites by `botopink test --json` |
+| `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `modules/std-wasm` and `modules/beam-to-wasm` (comptime on wasm, decision 434), `libs/std`, and `conformance/` — the language's conformance suite (decisions 457, 466, 475): `modules/<module>/cases/<cell>/` (one module per prefix or per decision, decision 765; B-157 P3 landed 2026-10-19) the root package `conformance/modules/` built once into one `.bpr` and run per target by `conformance/run.sh` (one module alone: `cd conformance/modules/<m> && botopink run --target <t>`; decisions 989, 990 (6), 1002), `test/` suites by `botopink test --json` |
 | `repository/{rakun,query,actions,http,log,routing,validation,css,snap,json,yaml,markdown}/` | Libraries written in botopink — `rakun` is a botopink workspace (front 165) of plug-and-play packages under `modules/` (`rakun`, `rakun-data`, `rakun-restclient`, `rakun-style`, `rakun-bpp`, `rakun-stylesheet`, `rakun-service`, … `rakun-ssr`, plus `rakun-ssr-server` (was `onze-server`), `rakun-bpp-dom-test` (was `jhonstart-dom-test`) and `rakun-cli`, decision 762; the two renames land with 165 s5), one version, one gate, its cells under `conformance/<package>/`; it absorbed `emilia`, `styled`, `jhonstart`, `onze` and `dbcontext`, which are no longer repositories of the meta; `query` (erika renamed, a typed-query DSL depending on nothing of rakun; the repository is `botopink/query`); `actions`, `http`, `log`, `routing` and `validation` left the compiler with their history (decision 326, front 138); `css`, the base for building CSS, was born as a repository under the same rule (decision 338, `08-bpp/119` step 1); `snap`, the snapshot engine every `<lib>-test` writes through, leaves std's `testing/snapshots.bp` for a repository of its own (decision 391, `20-snap` step 0); `json` (std's `json.bp` whole — std knows nothing of JSON), `yaml` (one subset into `Json`) and `markdown` (a tree of its own) are the data-format libraries (decision 396, `03-bundled-libs/142`); `cardume`, decision 296, joins once `botopink/cardume` holds its scaffold |
 | `repository/vscode-extension/` | VS Code extension |
 | `.env` | specs-bot's address (`SPECS_BOT_API_URL`), the same on every machine; each machine's token lives in `.env.local`, ignored by git — see § Specs |
@@ -120,7 +120,9 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
 
 - **A library's `scripts/gate.sh`** (one text in every library, CI check 4): `[--staged] [--no-conformance]
   [--jobs <N>]`, running the shared `scripts/git-hooks/lib/runner-standalone.sh` — the stages, then
-  `botopink cell check conformance/` when the repository has that directory. The commit hook runs it with
+  `botopink cell check conformance/` when the repository has that directory (the libraries keep that until 996 / L5
+  moves them to the root-package shape: until then that stage 7 is a known red, and a library commit runs with
+  `--no-verify`, decision 1002 (c)). The commit hook runs it with
   `--staged --no-conformance` (470); CI on a push to `feat` and a front's Conformance step run it whole.
   `--jobs` is the total of its cell pools (default the machine's); it keeps no pool and no lock. On a machine whose
   fixed per-machine file (`~/.config/botopink/machine`) reads `machine-1` it adds `--no-conformance` itself and says so
@@ -133,8 +135,10 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   are not gated by it.
 - **The machine's name** (decisions 768, 769) is one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else
   `$HOME/.config/botopink/machine`), holding `machine-1` or `machine-2`. On `machine-1`, `run` / `tasks` / `libs` add
-  `--no-conformance` by themselves and `exec` refuses a whole-suite `cell check` (`conformance/`, `conformance/modules`) —
-  conformance is machine 2's until the maintainer says otherwise; a cell reached by a change is still checked by its path.
+  `--no-conformance` by themselves and `exec` refuses a whole-suite conformance run (`conformance/run.sh` without an `--only` naming a
+  `test/` suite or one module, `scripts/gate.sh --stage test-conformance`, `zig build test-conformance`) —
+  conformance is machine 2's until the maintainer says otherwise; a module reached by a change is still run alone
+  (`cd conformance/modules/<m> && botopink run --target <t>`).
   A machine with no file behaves as before.
 - **The pool** is one directory at a fixed per-machine path, `$XDG_RUNTIME_DIR/botopink-gate-pool` (else
   `/tmp/botopink-gate-pool-<uid>`); not a flag or a variable (decision 67). The machine's jobs are the tighter of
@@ -161,7 +165,8 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   it: a `git commit` in botopink-lang runs so (`exec --jobs 10 <name> -- git commit …`), its hook's gate
   sizing itself to the machine.
   On `machine-1` `exec` refuses, before taking a job, a command whose text — its arguments, a `bash -c` string, the
-  non-comment lines of a script file it names — runs a whole-suite `cell check` or a library's `scripts/gate.sh`
+  non-comment lines of a script file it names — runs a whole-suite conformance run (`conformance/run.sh` without a narrowing `--only`,
+  `gate.sh --stage test-conformance`, `zig build test-conformance`) or a library's `scripts/gate.sh`
   without `--no-conformance` (decisions 768, 769).
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
   for a task; the report names each one. Specs never name them.
@@ -235,7 +240,8 @@ Three rules make it safe:
    suite green, the front's changes analysed against the cells, the cells written, the missing ones
    proposed. The coordinator checks the cells at landing and files the proposals.
    A library front ends the same way (465): its "Conformance" step runs `botopink cell check
-   conformance/` over the whole `<lib>/conformance/`.
+   conformance/` over the whole `<lib>/conformance/` (until 996 / L5 moves the libraries to the root-package shape,
+   when it becomes that shape's run; the stage is a known red meanwhile, 1002 (c)).
    The Conformance step also reads the GitHub pipeline with `gh` (474): `feat`'s runs since the
    front's base green, or each red named and fixed or filed before landing.
 

@@ -31,10 +31,11 @@ what is the task's own: the step, its boxes, its worktree, its model.
 
 - The hook runs `scripts/gate.sh --no-conformance`; conformance is `feat`'s pipeline's (470, 477).
 - **Under 768 / 769 (until the maintainer says otherwise): conformance is machine 2's.** A machine-1 thread runs only the
-  cells its change reaches (its new cells and the ones whose code it touches, by name), never `cell check` over the whole
-  `conformance/modules`, and skips a front's Conformance step. Concretely: a library's gate is always
-  `scripts/gate.sh --no-conformance` (never bare, never `--cold`); `botopink cell check` takes one cell's path at a
-  time (`conformance/modules/<…>/<cell>`), never a directory of cells or a library's `conformance/`. A red met outside the change is listed under Outside for
+  modules its change reaches (by name), one at a time by its path (`cd conformance/modules/<m> && botopink run --target
+  <t>`), never the whole root package (`conformance/run.sh` without `--only`, `gate.sh --stage test-conformance`,
+  `zig build test-conformance`), and skips a front's Conformance step. Concretely: a library's gate is always
+  `scripts/gate.sh --no-conformance` (never bare, never `--cold`); a module is run alone by its path, never the root
+  package, and a library's `conformance/` is never checked whole (its `botopink cell check`, until 996 / L5). A red met outside the change is listed under Outside for
   machine 2, never fixed. A new cell goes where 765 homes it: `conformance/modules/decisions-taken/<slug>-<N>/cases/<cell>/`
   for the decision it proves, else `conformance/modules/<prefix>/cases/<cell>/`; once B-157's moves land, `git rebase
   origin/feat` follows the renames.
@@ -42,7 +43,7 @@ what is the task's own: the step, its boxes, its worktree, its model.
 - **Every heavy command runs under the machine's pool** (the pool is the machine's, so any checkout of the
   meta repository serves — the main one for a `--repo` / `--lang` task):
   `scripts/gate.sh exec <step> -- <command>…` for each `zig build`,
-  `zig build test`, `botopink cell check`, test binary run, and each library `git commit` (its hook runs
+  `zig build test`, `botopink run` of a module, `conformance/run.sh`, test binary run, and each library `git commit` (its hook runs
   a gate). It waits for a free job and holds the lock only while the command executes (the maintainer,
   2026-10-12). Never a gate or a build outside it.
   The command runs in the meta repository's root (`gate.sh` changes to it), not in your directory: a
