@@ -56,6 +56,28 @@ lt "$(t start L2)" "$(t end L1)" || fail "a light run waited while jobs were fre
 lt "$(since "$(t start L1)" "$(t start L2)")" 2 || fail "a light run was staggered"
 lt 3.5 "$(since "$(t start L2)" "$(t start H)")" || fail "a half-capacity run was not staggered"
 lt 3.5 "$(since "$(t start L3)" "$(t start Z)")" || fail "a zig build was not staggered"
+# Nothing an `exec` starts outlives it (decision 1061 (1)): the command spawns a sleeping grandchild; `exec` is killed
+# with TERM, then with KILL, and no process of the command's session is left. The session is read from the pid the
+# command writes, never from a pattern.
+orphans() { # <pidfile> — live (not zombie) processes in the session of the pid in the file
+    local sid; sid="$(cat "$1")"
+    ps -eo sid=,stat= | awk -v s="$sid" '$1 == s && $2 !~ /^Z/ { n++ } END { print n + 0 }'
+}
+for sig in TERM KILL; do
+    pf="$tmp/grand.$sig"; rm -f "$pf"
+    BOTOPINK_GROUP_GRACE=2 "$here/gate.sh" exec --jobs 1 G"$sig" -- bash -c "sleep 300 & echo \$\$ >'$pf'; wait" &
+    gpid=$!
+    for _ in $(seq 50); do [ -s "$pf" ] && break; sleep 0.1; done
+    [ -s "$pf" ] || fail "the $sig exec's command did not start"
+    [ "$(orphans "$pf")" -ge 2 ] || fail "the $sig exec's session has no grandchild"
+    kill -"$sig" "$gpid"; wait "$gpid" 2>/dev/null || true
+    for _ in $(seq 60); do [ "$(orphans "$pf")" -eq 0 ] && break; sleep 0.1; done
+    [ "$(orphans "$pf")" -eq 0 ] || fail "$sig on exec left processes of its session"
+done
+# A command that ends normally leaves nothing either: its backgrounded child is swept.
+pf="$tmp/grand.end"; rm -f "$pf"
+BOTOPINK_GROUP_GRACE=1 "$here/gate.sh" exec --jobs 1 Gend -- bash -c "sleep 300 & echo \$\$ >'$pf'"
+[ "$(orphans "$pf")" -eq 0 ] || fail "a finished command left a process in its session"
 # machine-1's refusals (decisions 768, 769, 1002 (c)): a whole-suite conformance run is refused before taking a job, one
 # module by its own path and a suite by --only pass. `echo` stands for the command: a passing line only has to run.
 cfg="$tmp/cfg"; mkdir -p "$cfg/botopink"; echo machine-1 >"$cfg/botopink/machine"

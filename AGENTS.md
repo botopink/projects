@@ -171,6 +171,13 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   non-comment lines of a script file it names — runs a whole-suite conformance run (`conformance/run.sh` without a narrowing `--only`,
   `gate.sh --stage test-conformance`, `zig build test-conformance`) or a library's `scripts/gate.sh`
   without `--no-conformance` (decisions 768, 769).
+- **Nothing a gate starts outlives it** (decision 1061 (1)). `exec` and `run` / `tasks` / `libs` start each command as
+  the leader of a session of its own (`setsid`) and record its pgid in the lease (`pgid=`); on INT, TERM or HUP, and when
+  the command ends, that group gets SIGTERM, then SIGKILL after a grace of five seconds; a watcher in the group ends it
+  with SIGKILL when `exec` itself is killed with SIGKILL; a lease whose owner died has its recorded group killed when it
+  is reaped. A library's `scripts/gate.sh` (the shared runner) does the same for each compiler run of its stages, under
+  `timeout -k 5` (`BOTOPINK_GATE_TIMEOUT`, default 1800 s a run), and an interrupted gate kills the groups it registered.
+  `scripts/gate-test.sh` proves it: an `exec` killed with TERM and with KILL leaves no process of its session.
 - **Logs** are scratch and git-ignored: `.tasks/.gate-logs/` of the main checkout, `.tasks/<name>/.gate-logs/`
   for a task; the report names each one. Specs never name them.
 - It runs and reports; landing stays the coordinator's.

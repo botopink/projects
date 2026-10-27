@@ -278,6 +278,47 @@ poolCapacity() {
 
 alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
 
+# Decision 1061 (1) — nothing a gate starts outlives it. Every command `exec` and `run` launch is the leader of a
+# session of its own (`setsid`), its pgid is the lease's `pgid=`, and the group gets SIGTERM, then SIGKILL after a
+# grace period, when the command ends, on INT / TERM / HUP, and when a lease whose owner died is reaped. A watcher
+# in the group ends it with SIGKILL when the owner is killed without a trap (SIGKILL cannot be trapped). Any timeout
+# a gate takes is `timeout -k`.
+GROUP_GRACE="${BOTOPINK_GROUP_GRACE:-5}"   # seconds between SIGTERM and SIGKILL (a test knob)
+
+# groupAlive <pgid> — a live (not zombie) process is in the group.
+groupAlive() {
+    [ -n "${1:-}" ] || return 1
+    kill -0 -- "-$1" 2>/dev/null || return 1
+    ps -eo pgid=,stat= 2>/dev/null | awk -v g="$1" '$1 == g && $2 !~ /^Z/ { f = 1 } END { exit !f }'
+}
+
+# groupKill <pgid> — SIGTERM, then SIGKILL once the grace is out; returns when the group is gone.
+groupKill() {
+    local g="${1:-}" i limit
+    [ -n "$g" ] || return 0
+    groupAlive "$g" || return 0
+    kill -TERM -- "-$g" 2>/dev/null || true
+    limit=$(( GROUP_GRACE * 10 ))
+    for ((i = 0; i < limit; i++)); do
+        groupAlive "$g" || return 0
+        sleep 0.1
+    done
+    kill -KILL -- "-$g" 2>/dev/null || true
+}
+
+# spawnGroup <owner pid> <command…> — start the command in the background as the leader of a new session (the
+# caller redirects its output and input); sets GROUP_PID, which is also its pgid. The watcher dies with the group.
+spawnGroup() {
+    local owner="$1"
+    shift
+    if command -v setsid >/dev/null 2>&1; then
+        setsid bash -c 'o=$1; shift; ( while kill -0 "$o" 2>/dev/null; do sleep 1; done; kill -KILL -- "-$$" ) >/dev/null 2>&1 <&- & exec "$@"' _ "$owner" "$@" <&0 &
+    else
+        "$@" <&0 &
+    fi
+    GROUP_PID=$!
+}
+
 # poolLock / poolUnlock — a mkdir lock; a lock whose owner is dead is broken.
 poolLock() {
     mkdir -p "$pool"
@@ -299,7 +340,10 @@ poolReap() {
     local f
     for f in "$pool"/lease.* "$pool"/wait.*; do
         [ -e "$f" ] || continue
-        if ! alive "$(leaseField "$f" owner)" && ! alive "$(leaseField "$f" child)"; then rm -f "$f"; fi
+        if ! alive "$(leaseField "$f" owner)" && ! alive "$(leaseField "$f" child)"; then
+            groupKill "$(leaseField "$f" pgid)"   # what the dead owner's command left behind
+            rm -f "$f"
+        fi
     done
 }
 
@@ -398,7 +442,7 @@ poolAcquire() {
             grant="$want"; [ "$grant" -le "$free" ] || grant="$free"
             [ "$grant" -le "$cap" ] || grant="$cap"
             rm -f "$pool/wait.$id"
-            printf 'owner=%s\nchild=\njobs=%s\nname=%s\nstart=%s\nlog=%s\npassed=%s\n' "$$" "$grant" "$name" "$(date +%s)" "$log" "$passed" >"$pool/lease.$id"
+            printf 'owner=%s\nchild=\npgid=\njobs=%s\nname=%s\nstart=%s\nlog=%s\npassed=%s\n' "$$" "$grant" "$name" "$(date +%s)" "$log" "$passed" >"$pool/lease.$id"
             poolUnlock
             echo "$grant"
             return 0
@@ -416,7 +460,7 @@ poolAcquire() {
 poolSetChild() {
     poolLock
     if [ -f "$pool/lease.$1" ]; then
-        sed "s/^child=.*/child=$2/" "$pool/lease.$1" >"$pool/lease.$1.tmp" && mv "$pool/lease.$1.tmp" "$pool/lease.$1"
+        sed -e "s/^child=.*/child=$2/" -e "s/^pgid=.*/pgid=$2/" "$pool/lease.$1" >"$pool/lease.$1.tmp" && mv "$pool/lease.$1.tmp" "$pool/lease.$1"
     fi
     poolUnlock
 }
@@ -526,20 +570,22 @@ runPlan() {
             start=$SECONDS
             args=("${extra[@]}")
             [ "$kind" != "lib" ] || args=(--jobs "$grant" "${extra[@]}")
-            (
-                cd "$dir"
-                if [ -n "$bin" ]; then export BOTOPINK_BIN="$bin"; fi
-                exec scripts/gate.sh "${args[@]}"
-            ) >"$log" 2>&1 </dev/null &
-            child=$!
+            if [ -n "$bin" ]; then export BOTOPINK_BIN="$bin"; fi
+            spawnGroup "$BASHPID" bash -c 'cd "$1" && shift && exec scripts/gate.sh "$@"' _ "$dir" "${args[@]}" >"$log" 2>&1 </dev/null
+            child=$GROUP_PID
             poolSetChild "$id" "$child"
+            trap 'groupKill "$child"; poolRelease "$id"; exit 143' INT TERM HUP
             rc=0; wait "$child" || rc=$?
+            trap - INT TERM HUP
+            groupKill "$child"
             echo "$rc $((SECONDS - start))" >"$rcs_dir/$i"
         ) &
         pids+=("$!")
         i=$((i + 1))
     done
+    trap 'kill -TERM "${pids[@]}" 2>/dev/null; wait; exit 143' INT TERM HUP
     for i in "${!pids[@]}"; do wait "${pids[$i]}" || true; done
+    trap - INT TERM HUP
     local red=0 rc secs
     for i in "${!names[@]}"; do
         read -r rc secs <"$rcs_dir/$i" 2>/dev/null || { rc=1; secs=0; }
@@ -644,10 +690,13 @@ cmdExec() {
     if grep -Eq '(^|[^[:alnum:]_-])zig +build( |$)' <<<"$*"; then heavy=1; fi
     grant="$(poolAcquire "$id" "$name" "$want" "" "$heavy")"
     trap 'poolRelease "$id"' EXIT
-    "$@" &
-    child=$!
+    spawnGroup "$$" "$@"
+    child=$GROUP_PID
     poolSetChild "$id" "$child"
+    trap 'groupKill "$child"; exit 143' INT TERM HUP
     wait "$child" || rc=$?
+    trap - INT TERM HUP
+    groupKill "$child"
     poolRelease "$id"
     trap - EXIT
     return "$rc"
