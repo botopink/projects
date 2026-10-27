@@ -13,7 +13,7 @@ closest `AGENTS.md` in each directory you touch.
 
 | Path | What |
 |---|---|
-| `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, lib-test-runner, `modules/std-wasm` and `modules/beam-to-wasm` (comptime on wasm, decision 434), `libs/std`, and `conformance/` — the language's conformance suite (decisions 457, 466, 475): `modules/<module>/cases/<cell>/` (one module per prefix or per decision, decision 765; B-157 P3 landed 2026-10-19) the root package `conformance/modules/` built once into one `.bpr` and run per target by `conformance/run.sh` (one module alone: `cd conformance/modules/<m> && botopink run --target <t>`; decisions 989, 990 (6), 1002), `test/` suites by `botopink test --json` |
+| `repository/botopink-lang/` | Compiler (`modules/compiler-core`), CLI, language server, `modules/std-wasm` and `modules/beam-to-wasm` (comptime on wasm, decision 434), `libs/std`, and `conformance/` — the language's conformance suite (decisions 457, 466, 475): `modules/<module>/cases/<cell>/` (one module per prefix or per decision, decision 765; B-157 P3 landed 2026-10-19) the root package `conformance/modules/` built once into one `.bpr` and run per target by `conformance/run.sh` (one module alone: `cd conformance/modules/<m> && botopink run --target <t>`; decisions 989, 990 (6), 1002), `test/` suites by `botopink test --json` |
 | `repository/{rakun,query,actions,http,log,routing,validation,css,snap,json,yaml,markdown}/` | Libraries written in botopink — `rakun` is a botopink workspace (front 165) of plug-and-play packages under `modules/` (`rakun`, `rakun-data`, `rakun-restclient`, `rakun-style`, `rakun-bpp`, `rakun-stylesheet`, `rakun-service`, … `rakun-ssr`, plus `rakun-ssr-server` (was `onze-server`), `rakun-bpp-dom-test` (was `jhonstart-dom-test`) and `rakun-cli`, decision 762; the two renames land with 165 s5), one version, one gate, its cells under `conformance/<package>/`; it absorbed `emilia`, `styled`, `jhonstart`, `onze` and `dbcontext`, which are no longer repositories of the meta; `query` (erika renamed, a typed-query DSL depending on nothing of rakun; the repository is `botopink/query`); `actions`, `http`, `log`, `routing` and `validation` left the compiler with their history (decision 326, front 138); `css`, the base for building CSS, was born as a repository under the same rule (decision 338, `08-bpp/119` step 1); `snap`, the snapshot engine every `<lib>-test` writes through, leaves std's `testing/snapshots.bp` for a repository of its own (decision 391, `20-snap` step 0); `json` (std's `json.bp` whole — std knows nothing of JSON), `yaml` (one subset into `Json`) and `markdown` (a tree of its own) are the data-format libraries (decision 396, `03-bundled-libs/142`); `cardume`, decision 296, joins once `botopink/cardume` holds its scaffold |
 | `repository/vscode-extension/` | VS Code extension |
 | `.env` | specs-bot's address (`SPECS_BOT_API_URL`), the same on every machine; each machine's token lives in `.env.local`, ignored by git — see § Specs |
@@ -205,8 +205,8 @@ the compiler's library walk-up and a library hook's `locateBotopink` stop there:
 
 - a **library** task (`--repo rakun`) runs the **main checkout's compiler**
   (`repository/botopink-lang/zig-out/bin/botopink`) — no compiler build per task;
-- a **compiler** task (`--repo botopink-lang`) builds its own and its gate's
-  `test-libs` sees the main checkout's libraries;
+- a **compiler** task (`--repo botopink-lang`) builds its own and its conformance stage's
+  library jobs (`conformance/run.sh` `libraries/<name>`, decisions 996, 1004) see the main checkout's libraries;
 - the hook is the repository's own (a worktree shares its repository's config).
 
 Three rules make it safe:
@@ -362,7 +362,7 @@ All Zig commands run from `repository/botopink-lang/`:
 ```sh
 zig build          # botopink + botopink-lsp
 zig build test     # compiler-core + language-server (~17s)
-zig build test-libs / test-backends / test-vscode / test-bpmp
+zig build test-conformance / test-backends / test-vscode / test-bpmp   # the libraries run in test-conformance (996)
 ```
 
 - Comptime evaluation spawns a persistent `erl`; `erl`/`erlc` must be on `PATH`.

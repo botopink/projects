@@ -27,7 +27,7 @@
 # stop there: a library task uses the MAIN checkout's compiler
 # (`repository/botopink-lang/zig-out/bin/botopink`, kept at remote `feat` and
 # built by the coordinator at each compiler landing; `source_stamp` refuses it
-# when its sources changed since), and `test-libs` sees the same libraries as
+# when its sources changed since), and the conformance stage's library jobs see the same libraries as
 # a full worktree. The hook is the repository's own (a worktree shares its
 # repository's config, where `core.hooksPath scripts/git-hooks` is set). The
 # coordinator writes the specs and the pointer bump at landing. Remove with
