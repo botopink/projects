@@ -303,6 +303,32 @@ describe("decision 1020: a row proven by a CLI test script", () => {
   });
 });
 
+describe("decision 1022: a row proven by conformance/run.sh --self-test", () => {
+  const ST = "conformance/run.sh --self-test";
+  const withSelfTest = () => writeFileSync(join(repo, "decisions-taken.md"), LEDGER.replace("| code_rule_ten |", `| \`${ST}\` |`));
+
+  test("needs no directory; conformance/run.sh existing completes it", () => {
+    withSelfTest();
+    write(join(repo, "conformance/run.sh"), "#!/bin/sh\n");
+    cell(13, T13);
+    expect(checkRepo(root, "snap")).toEqual([]);
+  });
+
+  test("a missing conformance/run.sh is red", () => {
+    withSelfTest();
+    const reasons = checkRepo(root, "snap");
+    expect(reasons).toHaveLength(1);
+    expect(reasons[0]).toContain(`decision 10: code-bearing row names the proof script ${ST} and conformance/run.sh does not exist`);
+  });
+
+  test("a directory for such a row is refused", () => {
+    withSelfTest();
+    write(join(repo, "conformance/run.sh"), "#!/bin/sh\n");
+    mkdirSync(join(d, "code_rule_ten-10"), { recursive: true });
+    expect(checkRepo(root, "snap").join("\n")).toContain(`proven by ${ST}, not by a cell`);
+  });
+});
+
 test("scaffold --list, then scaffold", () => {
   const [code, out] = runCmd("scaffold", "--list", "snap");
   expect(code).toBe(0);

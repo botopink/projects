@@ -147,9 +147,18 @@ export class Row {
     else this.kind = "code";
   }
 
-  /** Decision 1020: a `Cell` value `tests/<name>.sh` names the CLI test script that proves the row; the row has no directory. */
+  /**
+   * Decision 1020: a `Cell` value `tests/<name>.sh` names the CLI test script that proves the row; decision 1022 adds
+   * `conformance/run.sh --self-test` (its fixtures the proof). Either way the row has no directory.
+   */
   get script(): string | null {
-    return this.slug && SCRIPT_CELL.test(this.slug) ? this.slug : null;
+    return this.slug && (SCRIPT_CELL.test(this.slug) || this.slug === SELF_TEST_CELL) ? this.slug : null;
+  }
+
+  /** The file a script-proven row needs, relative to its repository. */
+  get scriptFile(): string | null {
+    if (!this.script) return null;
+    return this.script === SELF_TEST_CELL ? "conformance/run.sh" : `modules/compiler-cli/${this.script}`;
   }
 
   get dirname(): string | null {
@@ -162,6 +171,7 @@ export class Row {
 }
 
 const SCRIPT_CELL = re("^tests/[A-Za-z0-9_]+\\.sh$");
+const SELF_TEST_CELL = "conformance/run.sh --self-test";
 const LEDGER_ROW = re("\\| \\d+ \\| ");
 
 function at<T>(xs: T[], i: number): T {
@@ -586,7 +596,7 @@ export function checkRepo(root: string, repo: string): string[] {
         continue;
       }
       if (row.script) {
-        red(name, `row ${row.num} is proven by ${row.script}, not by a cell (decision 1020): the directory must not stay`);
+        red(name, `row ${row.num} is proven by ${row.script}, not by a cell (decisions 1020, 1022): the directory must not stay`);
         continue;
       }
       if (row.slug !== nm!.group(1)) {
@@ -605,8 +615,8 @@ export function checkRepo(root: string, repo: string): string[] {
     }
   }
   for (const r of rows ?? []) {
-    if (r.kind === "code" && r.script && !exists(pjoin(root, "repository", repo, "modules", "compiler-cli", r.script)))
-      red(r.num, `code-bearing row names the proof script ${r.script} and modules/compiler-cli/${r.script} does not exist (decision 1020)`);
+    if (r.kind === "code" && r.script && !exists(pjoin(root, "repository", repo, r.scriptFile!)))
+      red(r.num, `code-bearing row names the proof script ${r.script} and ${r.scriptFile} does not exist (decisions 1020, 1022)`);
   }
   if (COMPLETE_REPOS.includes(repo)) {
     for (const r of rows ?? []) {
