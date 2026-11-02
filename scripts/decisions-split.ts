@@ -109,7 +109,7 @@ function frontReadmes(ms: string): string[] {
   if (pname(ms) !== "milestone") return sortPaths(glob(ms, "*/*/README.md"));
   const current = milestoneOf(readText(pjoin(ms, "README.md")));
   const found: string[] = [];
-  for (const readme of sortPaths(glob(pparent(ms), "*/README.md"))) {
+  for (const readme of sortPaths(glob(pparent(ms), "fronts/*/README.md"))) {
     if (current && milestoneOf(readText(readme)) === current) found.push(readme);
   }
   return found;
