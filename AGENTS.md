@@ -262,6 +262,26 @@ checkout. Work in `repository/botopink-lang` on the branch the script created (a
 library on a branch of the same name, when the task commits there). Commit in the
 submodule first, then commit the submodule bump in the meta repo.
 
+### The main session is the control thread (the maintainer, 2026-11-03)
+
+On every machine, the session the operator opened (the main thread) **does no task work itself**. It only does
+the control work:
+
+- reads and answers the chat, keeping the specs-bot watcher running (§ Specs);
+- keeps `doing` current;
+- scopes each task and opens it as a **child thread**: a sub-agent in its own worktree (above), on the model
+  § Which model a thread runs on gives that task, its prompt opening with `scripts/thread-rules.md`;
+- reviews the child's diff and report, runs `scripts/land-check.ts`, verifies the landing on `origin/feat`, and
+  reports to the maintainer.
+
+Every task runs in a child thread, however small it is: code edits, builds, test runs, bisects, shrinks,
+investigations that run commands.
+
+- **Why.** A main session busy with a task cannot answer the chat; a session once sat 6 hours in "waiting" with no
+  one able to reach it. A task done "on the main session's own model" also bypasses the model rule.
+- **When a child needs a decision**, it stops, and the main thread brings the question to the maintainer.
+- **When a permission prompt blocks a child**, the main thread says so in the chat at once, so the operator looks.
+
 ### Which model a thread runs on
 
 A coordinator that spawns a thread (a sub-agent working in its own worktree) picks
