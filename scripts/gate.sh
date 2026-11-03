@@ -194,19 +194,6 @@ check5() {
     bun scripts/language-gap-markers.ts
 }
 
-# 6. each repository's decisions-taken.md is what scripts/decisions-split.ts writes from the record, decisions-taken-steps.md
-#    (decisions 482, 730) — read from $SPECS_ROOT in CI (a checkout of botopink/specs-data), else through specs-bot.
-check6() {
-    [ -f scripts/decisions-split.ts ] || { echo "  ✗ scripts/decisions-split.ts is missing (163 s10)"; return 1; }
-    bun scripts/decisions-split.ts --check
-}
-
-# 7. every decision cell is consistent with the ledger (front 166, scripts/decision-cells.ts).
-check7() {
-    [ -f scripts/decision-cells.ts ] || { echo "  ✗ scripts/decision-cells.ts is missing (166 s1)"; return 1; }
-    bun scripts/decision-cells.ts check
-}
-
 runChecks() {
     local titles=(
         "1. every submodule pointer is on its remote feat"
@@ -214,11 +201,9 @@ runChecks() {
         "3. no snapshot candidate or todo.md is tracked anywhere"
         "4. the library repositories' guards, runner and gate are one text"
         "5. every LANGUAGE GAP marker has a row"
-        "6. every repository's decisions-taken.md is what decisions-split.ts writes"
-        "7. every decision cell matches its ledger row (decision-cells.ts)"
     )
     local i red=""
-    for i in 1 2 3 4 5 6 7; do
+    for i in 1 2 3 4 5; do
         echo "── ${titles[$((i - 1))]}"
         if "check$i"; then :; else red="$red $i"; fi
     done
@@ -226,7 +211,7 @@ runChecks() {
         echo -e "${RED}✗ meta gate: check(s)$red red${NC}"
         return 1
     fi
-    echo -e "${GREEN}✓ meta gate: all seven checks green${NC}"
+    echo -e "${GREEN}✓ meta gate: all five checks green${NC}"
 }
 
 # ═════════════════════════════════════════════════════════════════════════════

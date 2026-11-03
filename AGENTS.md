@@ -18,7 +18,7 @@ closest `AGENTS.md` in each directory you touch.
 | `repository/vscode-extension/` | VS Code extension |
 | `.env` | specs-bot's address (`SPECS_BOT_API_URL`), the same on every machine; each machine's token lives in `.env.local`, ignored by git — see § Specs |
 | `.github/workflows/` | The meta repository's CI: `hook-integrity.yml`, one job on push/PR to `feat`/`main` — see § CI |
-| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `gate-test.sh` — the scheduler's admission test and its release race, in a private pool; `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `stray-loops.sh [--kill]` — the wait loops threads left behind (§ Keeping the threads honest, rule 3); `land-check.ts <repo> <branch> [--base <ref>]` — the coordinator's check before a landing (decision 484): not a fast-forward of `origin/feat`, a tracked `*.snap.new` / `*.snap.md.new` / `todo.md`, in the meta specs a scratch reference or a commit hash or an English/Portuguese pair whose ids or code blocks differ, a `snapshot/targets/` file added; each reason one line, exit 1 when red; `scratch-refs.ts [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.ts` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one; the spec examples' markers are `specs-bot check`'s) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5; `decisions-split.ts [--check]` (decision 482) — writes `repository/<repo>/decisions-taken.md` from the record, `decisions-taken-steps.md` read through specs-bot (each row to the repositories its Binds column names, old ids through the fronts' alias tables; a row it cannot map is printed to stderr, never guessed); `--check` fails when a file differs; a slug is one row's, except that a row replaced or overtaken hands its cell's slug to the row that replaces it; CI check 6; a repository's commit holding only that file skips the hook (`--no-verify`, the maintainer, 2026-10-15); `decision-cells.ts scaffold [--list] \| compile \| promote <repo> \| check` (front 166) — keeps `conformance/modules/decisions-taken/<slug>-<N>/` (the ledger's `Cell` column, decision 647; a `docs.md` and one example program (a phase-1 draft may carry `draft/botopink.json` and `draft/deps/<pkg>/`, which `compile` stages as the package's manifest and dependencies and `promote` merges into the case's manifest and moves to its `deps/`, decision 775), or its cases — `run/` and `refused/`, two packages of cases, and `cells/<case>/` full cells, decision 779, or 765's `cases/<case>/`; `promote` moves `draft/` to `cells/example/`) for every ledger row that fixes program behaviour; a one-liner (`Replaced by` / `Reversed by` / `Overtaken by`) or a `process` row has none; `check` is CI check 7, tested by `decision-cells.test.ts`; the TypeScript tools run with Bun (`bun scripts/<tool>.ts`, or the file itself), share `lib/compat.ts` (the text, pattern, path and JSON semantics they keep), and `bun test scripts/` runs their tests (`decision-cells.test.ts`, `land-check.test.ts`) |
+| `scripts/` | The meta repository's own tools: `gate.sh` — the meta checks (CI's `hook-integrity.yml` calls it) and the machine's gate scheduler, `run <repository\|task>…` · `tasks` · `libs` · `status` (§ Gate orchestrator); `gate-test.sh` — the scheduler's admission test and its release race, in a private pool; `worktree-add.sh [--repo <repo>] <name> [<base>]` (`--lang` = `--repo botopink-lang`) — opens a task worktree; `--repo` one of a single repository, the rest linked from the main checkout (§ Worktrees); `thread-rules.md` — the rules every thread reads first, and its four-line report (decision 484); `stray-loops.sh [--kill]` — the wait loops threads left behind (§ Keeping the threads honest, rule 3); `land-check.ts <repo> <branch> [--base <ref>]` — the coordinator's check before a landing (decision 484): not a fast-forward of `origin/feat`, a tracked `*.snap.new` / `*.snap.md.new` / `todo.md`, in the meta specs a scratch reference or a commit hash or an English/Portuguese pair whose ids or code blocks differ, a `snapshot/targets/` file added; each reason one line, exit 1 when red; `scratch-refs.ts [<path>…]` — every line of the current milestone's specs (or the paths given) that names a scratch location: a concrete `.tasks/…` path, `/tmp/`, a task branch `front/<name>`, a worktree by name; exits 1 when one is found; `language-gap-markers.ts` — every `// LANGUAGE GAP` marker in a tracked `.bp` file (the repositories under `repository/`, and this one; the spec examples' markers are `specs-bot check`'s) against the `## Marker index` of the milestone's `language-gaps.md`; CI check 5; the TypeScript tools run with Bun (`bun scripts/<tool>.ts`, or the file itself), share `lib/compat.ts` (the text, pattern, path and JSON semantics they keep), and `bun test scripts/` runs their tests (`land-check.test.ts`) |
 | `architecture.md` | Comptime evaluation pipeline, current state |
 | `CHANGELOG.md` | Release log |
 
@@ -53,8 +53,6 @@ keeps it in the commit) — commits each write as the machine that made it, and 
   `pending-withdraw` · `answer <id> --rule … --binds …` · `supersede` · `retire` · `send --to … --purpose …
   --subject … -t …` · `mark-read <id>`. Long text comes from a file (`-t @file.md`). Exit 6 means the section changed
   since it was read: read it again and redo the edit over it.
-- **After `answer` or `supersede`**, regenerate the repositories' ledgers with `bun scripts/decisions-split.ts`
-  (it reads the record through specs-bot) and commit them in each repository, as before.
 - **Refs** are paths in a flat tree (2026-10-26): `150-rakun/README`, `144-checker/01-compiler/track`, and the
   milestone's own documents under `milestone/` (`milestone/status`, `milestone/language-gaps`, `milestone/machine-1`).
   Every document's metadata is the YAML block at its top (`milestone`, `owner` — the machine that works it —, then
@@ -72,7 +70,7 @@ keeps it in the commit) — commits each write as the machine that made it, and 
 
 ## CI
 
-`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs-bot front 163`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the seven checks locally, every red listed), and the checks are:
+`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs-bot front 163`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the five checks locally, every red listed), and the checks are:
 
 1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never
    points at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD FETCH_HEAD`);
@@ -88,20 +86,18 @@ keeps it in the commit) — commits each write as the machine that made it, and 
    milestone's `language-gaps.md`: each file that holds one is a row of its `## Marker index` with
    the file's marker count and the gap rows it names, and a missing row, a count that differs, a
    named gap row that is gone and a row for a file with no marker each fail the check.
-6. `scripts/decisions-split.ts --check` exits 0 — every `repository/<repo>/decisions-taken.md` is exactly what
-   the script writes from the record, `decisions-taken-steps.md` (decisions 482, 730) — read through
-   `specs-bot export ledger`, or from `$SPECS_ROOT` in CI (a checkout of `botopink/specs-data`); a repository's file is generated and
-   never edited there.
-7. `scripts/decision-cells.ts check` exits 0 (front 166) — every `conformance/modules/decisions-taken/<slug>-<N>/` of a
-   repository is the `Cell` slug of a code-bearing row of its generated ledger (not a one-liner, not `process`), holds a `docs.md`
-   whose first line is the row's, with every `[…](…)` link resolving, no `{path}` placeholder and no fenced code, and
-   exactly one of its program (`draft/main.bp`, or `src/main.bp` with `botopink.json` once promoted) under the row's
-   generated header, or its cases: `run/` / `refused/` packages (decision 779: `botopink.json`, `src/main.bp`,
-   `src/cases/mod.bp`, `snapshot/`, each `src/cases/<case>/` holding `mod.bp`), `cells/<case>/` and 765's `cases/<case>/`,
-   each a full cell with `botopink.json`, `src/main.bp` and `snapshot/`; a promoted cell's or a case's `"targets"` within the workspace's; completeness (every code-bearing row has its directory) is
-   checked per repository once the script's list names it (every slug has its directory). A red names the repository, the row and front 166.
 
 A red check names the repository and the front that owns the fix; nothing here is soft.
+
+Removed 2026-11-02, by the maintainer's unilateral call: `scripts/decisions-split.ts` (the per-repository
+`decisions-taken.md` generator, decision 482) and `scripts/decision-cells.ts` (front 166's scaffold/compile/promote/check
+over `conformance/modules/decisions-taken/<slug>-<N>/`), along with CI checks 6 and 7 that ran them. `decisions-split.ts`'s
+own CI path had been silently broken since the 2026-10-26 specs-data flat-tree reorg (unreported for a week, the same
+shape as front 228); rather than patch the duplication it produced (the full text of a decision bound to N repositories
+copied verbatim into N generated files) or its broken path, both were removed outright. The existing generated
+`repository/<repo>/decisions-taken.md` files and every `conformance/modules/decisions-taken/<slug>-<N>/` cell directory
+are untouched — they are real content, not regenerated or checked by anything now. A more structured replacement is not
+yet designed.
 
 ## Gate orchestrator
 
