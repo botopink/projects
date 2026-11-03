@@ -70,7 +70,7 @@ keeps it in the commit) — commits each write as the machine that made it, and 
 
 ## CI
 
-`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs-bot front 163`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the five checks locally, every red listed), and the checks are:
+`.github/workflows/hook-integrity.yml` is the one job of this repository (front 163 meta-ci, `specs-bot front 163`), every check hard, over a checkout with submodules. It calls `scripts/gate.sh check` (plain bash; the same command runs the six checks locally, every red listed), and the checks are:
 
 1. every submodule pointer is an ancestor of (or equal to) its remote `feat` — a bump never
    points at an unpushed commit (`git -C repository/<sub> merge-base --is-ancestor HEAD FETCH_HEAD`);
@@ -86,6 +86,14 @@ keeps it in the commit) — commits each write as the machine that made it, and 
    milestone's `language-gaps.md`: each file that holds one is a row of its `## Marker index` with
    the file's marker count and the gap rows it names, and a missing row, a count that differs, a
    named gap row that is gone and a row for a file with no marker each fail the check.
+6. every library repository's `test.yml` dependency step and `BOTOPINK_LIB_ROOTS` are one text — the
+   step named `bpmp install (the manifests' git dependencies)` through the end of the file (the final
+   `scripts/gate.sh` step, which exports `BOTOPINK_LIB_ROOTS`) byte-identical across rakun, query, actions,
+   http, log, routing, validation, css, snap, json, yaml and markdown (478's cheap test: a library
+   dependency misresolved reaches no local gate — the hook runs `--staged --no-conformance` with the
+   developer's own tree beside it — so the "not found" red appears only on a CI runner checked out fresh,
+   with no sibling library; holding the fetch step and `BOTOPINK_LIB_ROOTS` to one text locally is what
+   stands in for that CI-only failure).
 
 A red check names the repository and the front that owns the fix; nothing here is soft.
 
@@ -106,7 +114,7 @@ machine's gate scheduler. A repository's gate — a library's `scripts/gate.sh`,
 nothing of it.
 
 ```sh
-scripts/gate.sh [check]          # the seven checks of § CI, locally
+scripts/gate.sh [check]          # the six checks of § CI, locally
 scripts/gate.sh run <target>…    # those gates together under the pool; --no-conformance is handed on
 scripts/gate.sh tasks            # every open task's gate (its own repositories)
 scripts/gate.sh libs             # every library's gate, on the main checkout's compiler

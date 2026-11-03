@@ -3,7 +3,7 @@
 # (front 163 meta-ci, step s7; decisions 468, 469, 473).
 #
 #   scripts/gate.sh [check]            the meta repository's own checks — the
-#                                      seven of `.github/workflows/hook-integrity.yml`,
+#                                      six of `.github/workflows/hook-integrity.yml`,
 #                                      which calls this script — all run, every
 #                                      red listed, exit 1 if any
 #   scripts/gate.sh run <target>…      those repositories' / tasks' gates together
@@ -194,6 +194,42 @@ check5() {
     bun scripts/language-gap-markers.ts
 }
 
+# 6. every library's test.yml dependency step and BOTOPINK_LIB_ROOTS are one text (decision 478's cheap
+# test: a "not found" red from a library resolving a dependency wrong reaches no local gate, which runs
+# `--staged --no-conformance` with the developer's own tree beside it — it appears only on a CI runner
+# checked out fresh, with no sibling library, so the one thing a local check can hold to one is the text
+# of the step that fetches the dependencies and sets `BOTOPINK_LIB_ROOTS` for the gate step, same style as
+# check 4). The step named "bpmp install (the manifests' git dependencies)" through the end of the file
+# (the final "scripts/gate.sh" step, which exports `BOTOPINK_LIB_ROOTS`) is the slice compared.
+check6() {
+    local ref=rakun bad=0 lib marker="      - name: bpmp install" f_ref f_lib
+    f_ref="repository/$ref/.github/workflows/test.yml"
+    if [ ! -f "$f_ref" ]; then
+        echo "  ✗ $ref: no .github/workflows/test.yml"; return 1
+    fi
+    if ! grep -qF "$marker" "$f_ref"; then
+        echo "  ✗ $ref: test.yml has no '$marker' step"; return 1
+    fi
+    for lib in $libraryRepos; do
+        [ "$lib" = "$ref" ] && continue
+        f_lib="repository/$lib/.github/workflows/test.yml"
+        if [ ! -f "$f_lib" ]; then
+            echo "  ✗ $lib: no .github/workflows/test.yml"; bad=1; continue
+        fi
+        if ! grep -qF "$marker" "$f_lib"; then
+            echo "  ✗ $lib: test.yml has no '$marker' step"; bad=1; continue
+        fi
+        if diff -q \
+            <(awk -v m="$marker" 'index($0, m) { on = 1 } on' "$f_ref") \
+            <(awk -v m="$marker" 'index($0, m) { on = 1 } on' "$f_lib") >/dev/null; then
+            echo "  ✓ $lib: test.yml dependency step and BOTOPINK_LIB_ROOTS identical to $ref's"
+        else
+            echo "  ✗ $lib: test.yml dependency step differs from $ref's — the dependency text is not one"; bad=1
+        fi
+    done
+    [ "$bad" -eq 0 ] || { echo "gate: the library test.yml dependency steps are not one text"; return 1; }
+}
+
 runChecks() {
     local titles=(
         "1. every submodule pointer is on its remote feat"
@@ -201,9 +237,10 @@ runChecks() {
         "3. no snapshot candidate or todo.md is tracked anywhere"
         "4. the library repositories' guards, runner and gate are one text"
         "5. every LANGUAGE GAP marker has a row"
+        "6. every library's test.yml dependency step and BOTOPINK_LIB_ROOTS are one text"
     )
     local i red=""
-    for i in 1 2 3 4 5; do
+    for i in 1 2 3 4 5 6; do
         echo "── ${titles[$((i - 1))]}"
         if "check$i"; then :; else red="$red $i"; fi
     done
@@ -211,7 +248,7 @@ runChecks() {
         echo -e "${RED}✗ meta gate: check(s)$red red${NC}"
         return 1
     fi
-    echo -e "${GREEN}✓ meta gate: all five checks green${NC}"
+    echo -e "${GREEN}✓ meta gate: all six checks green${NC}"
 }
 
 # ═════════════════════════════════════════════════════════════════════════════

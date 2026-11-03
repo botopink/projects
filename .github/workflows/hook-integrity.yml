@@ -25,9 +25,14 @@
 #      `git config core.hooksPath scripts/git-hooks`, `scripts/gate.sh` and
 #      `conformance/`;
 #   5. `scripts/language-gap-markers.ts` (113 step 4c) exits 0 — every
-#      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md.
+#      `// LANGUAGE GAP` marker has a row in the milestone's language-gaps.md;
+#   6. every library's `test.yml` dependency step (the `bpmp install` step that
+#      fetches the manifests' git dependencies) and `BOTOPINK_LIB_ROOTS` (the
+#      final `scripts/gate.sh` step) are one text across rakun, query, actions,
+#      http, log, routing, validation, css, snap, json, yaml and markdown
+#      (front 170 s2, decision 478's cheap test).
 #
-# The five checks are the meta repository's `scripts/gate.sh` (front 163 s7,
+# The six checks are the meta repository's `scripts/gate.sh` (front 163 s7,
 # decision 473): this workflow calls it, and `scripts/gate.sh` from the meta root
 # runs the same checks locally. The same script is the machine's gate scheduler
 # (`run`, `tasks`, `libs`, `status`); CI uses only its checks.
@@ -45,7 +50,7 @@ concurrency:
 
 jobs:
   hook-integrity:
-    name: submodule pointers, layout, tracked candidates, library guards, gap markers
+    name: submodule pointers, layout, tracked candidates, library guards, gap markers, test.yml dependency text
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout with submodules
@@ -67,7 +72,7 @@ jobs:
         with:
           bun-version: 1.3.14
 
-      - name: scripts/gate.sh — the five checks
+      - name: scripts/gate.sh — the six checks
         shell: bash
         env:
           SPECS_ROOT: ${{ github.workspace }}/.specs-data/specs
