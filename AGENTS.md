@@ -128,22 +128,13 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   moves them to the root-package shape: until then that stage 7 is a known red, and a library commit runs with
   `--no-verify`, decision 1002 (c)). The commit hook runs it with
   `--staged --no-conformance` (470); CI on a push to `feat` and a front's Conformance step run it whole.
-  `--jobs` is the total of its cell pools (default the machine's); it keeps no pool and no lock. On a machine whose
-  fixed per-machine file (`~/.config/botopink/machine`) reads `machine-1` it adds `--no-conformance` itself and says so
-  (decisions 768, 769).
+  `--jobs` is the total of its cell pools (default the machine's); it keeps no pool and no lock.
 - **A `<target>`** is a repository of the checkout (`repository/<name>/` with a `scripts/gate.sh`), or
   `task:<name>` (a bare name that is no repository also resolves to a task). Tasks are found by
   `git worktree list` of the meta repository and of every submodule of the main checkout: a task is a
   `.tasks/<name>` worktree; its **own** repositories are the checkouts on its branch `front/<name>`, the
   others (symlinks of a `--repo` / `--lang` task, checkouts left on the pointer) are linked siblings and
   are not gated by it.
-- **The machine's name** (decisions 768, 769) is one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else
-  `$HOME/.config/botopink/machine`), holding `machine-1` or `machine-2`. On `machine-1`, `run` / `tasks` / `libs` add
-  `--no-conformance` by themselves and `exec` refuses a whole-suite conformance run (`conformance/run.sh` without an `--only` naming a
-  `test/` suite or one module, `scripts/gate.sh --stage test-conformance`, `zig build test-conformance`) —
-  conformance is machine 2's until the maintainer says otherwise; a module reached by a change is still run alone
-  (`cd conformance/modules/<m> && botopink run --target <t>`).
-  A machine with no file behaves as before.
 - **The pool** is one directory at a fixed per-machine path, `$XDG_RUNTIME_DIR/botopink-gate-pool` (else
   `/tmp/botopink-gate-pool-<uid>`); not a flag or a variable (decision 67). The machine's jobs are the tighter of
   two bounds, read on every pass (decision 674): the CPUs, a job counted as ~2 runnable threads, and the
@@ -171,10 +162,6 @@ scripts/gate.sh exec [--jobs <N>] <name> -- <command>…   # one command under t
   only their executions queue. `--jobs` at or above the capacity waits for an empty pool and holds all of
   it: a `git commit` in botopink-lang runs so (`exec --jobs 10 <name> -- git commit …`), its hook's gate
   sizing itself to the machine.
-  On `machine-1` `exec` refuses, before taking a job, a command whose text — its arguments, a `bash -c` string, the
-  non-comment lines of a script file it names — runs a whole-suite conformance run (`conformance/run.sh` without a narrowing `--only`,
-  `gate.sh --stage test-conformance`, `zig build test-conformance`) or a library's `scripts/gate.sh`
-  without `--no-conformance` (decisions 768, 769).
 - **Nothing a gate starts outlives it** (decision 1061 (1)). `exec` and `run` / `tasks` / `libs` start each command as
   the leader of a session of its own (`setsid`) and record its pgid in the lease (`pgid=`); on INT, TERM or HUP, and when
   the command ends, that group gets SIGTERM, then SIGKILL after a grace of five seconds; a watcher in the group ends it

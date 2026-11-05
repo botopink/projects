@@ -27,15 +27,9 @@ what is the task's own: the step, its boxes, its worktree, its model.
 ## Gate and tests
 
 - The hook runs `scripts/gate.sh --no-conformance`; conformance is `feat`'s pipeline's (470, 477).
-- **Under 768 / 769 (until the maintainer says otherwise): conformance is machine 2's.** A machine-1 thread runs only the
-  modules its change reaches (by name), one at a time by its path (`cd conformance/modules/<m> && botopink run --target
-  <t>`), never the whole root package (`conformance/run.sh` without `--only`, `gate.sh --stage test-conformance`,
-  `zig build test-conformance`), and skips a front's Conformance step. Concretely: a library's gate is always
-  `scripts/gate.sh --no-conformance` (never bare, never `--cold`); a module is run alone by its path, never the root
-  package, and a library's `conformance/` is never checked whole (its `botopink cell check`, until 996 / L5). A red met outside the change is listed under Outside for
-  machine 2, never fixed. A new cell goes where 765 homes it: `conformance/modules/decisions-taken/<slug>-<N>/cases/<cell>/`
-  for the decision it proves, else `conformance/modules/<prefix>/cases/<cell>/`; once B-157's moves land, `git rebase
-  origin/feat` follows the renames.
+- A new cell goes where 765 homes it: `conformance/modules/decisions-taken/<slug>-<N>/cases/<cell>/` for the decision
+  it proves, else `conformance/modules/<prefix>/cases/<cell>/`; once B-157's moves land, `git rebase origin/feat`
+  follows the renames.
 - No `gate.sh --cold` inside a `--repo` / `--lang` worktree (meta `AGENTS.md` § Worktrees, 4b).
 - **Every heavy command runs under the machine's pool** (the pool is the machine's, so any checkout of the
   meta repository serves — the main one for a `--repo` / `--lang` task):

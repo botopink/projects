@@ -264,15 +264,6 @@ poolDir() {
 }
 pool="$(poolDir)"
 
-# The machine's name (decisions 768, 769): one fixed per-machine file, `$XDG_CONFIG_HOME/botopink/machine` (else
-# `$HOME/.config/botopink/machine`), holding `machine-1` or `machine-2`; empty when the file is absent. On `machine-1`
-# every gate runs `--no-conformance` and `exec` refuses a whole-suite conformance run — conformance is machine 2's.
-machineName() {
-    local f="${XDG_CONFIG_HOME:-$HOME/.config}/botopink/machine"
-    [ -f "$f" ] && tr -d '[:space:]' < "$f" || true
-}
-machine="$(machineName)"
-
 # poolMemAvailableMiB — the machine's MemAvailable, in MiB (empty when /proc/meminfo is unreadable).
 poolMemAvailableMiB() {
     awk '/^MemAvailable:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null || true
@@ -644,52 +635,6 @@ cmdStatus() {
     [ "$any" -eq 1 ] || echo "(no gate running or waiting)"
 }
 
-# execConformanceRefused <command>… — on machine-1 (decisions 768, 769, 1002 (c)) the text `exec` would run must not
-# reach conformance: the command line, a `bash -c` string, and the text of a script file the command names (one level,
-# its non-comment lines) are read for a whole-suite run — `conformance/run.sh` without an `--only` naming a `test/`
-# suite or one `modules/<m>` (`--list` and `--self-test` run no suite and pass), `gate.sh --stage test-conformance`,
-# `zig build test-conformance`, and a library's `botopink cell check` over `conformance` (the libraries keep that
-# until 996 / L5) — and for a library's `scripts/gate.sh` run without `--no-conformance` (the commit hook's `--staged`
-# is allowed: it never runs conformance). One module alone passes: `cd conformance/modules/<m> && botopink run
-# --target <t>`. Refused with a reason.
-execConformanceRefused() {
-    local text=" $* " a
-    for a in "$@"; do
-        if [ -f "$a" ] && [ -r "$a" ] && [ "$(wc -c < "$a")" -lt 200000 ] && grep -Iq . "$a" 2>/dev/null; then
-            text+=$'\n'"$(grep -v '^[[:space:]]*#' "$a")"
-        fi
-    done
-    local line
-    while IFS= read -r line; do
-        if grep -Eq '(conformance/|(^|[ ;&(])\./)run\.sh( |;|$|\)|&|>|\|)' <<<"$line" \
-            && ! grep -Eq -- '--(list|self-test)( |;|$|\)|&|>|\|)' <<<"$line" \
-            && { ! grep -Eq -- '--only +"?[^ ]*(test/|modules/[^ /"])' <<<"$line" \
-                || grep -Eq -- '--only +"?[^ ]*modules/?"?( |;|$|\)|&|>|\|)' <<<"$line"; }; then
-            echo -e "${RED}✗ gate: a whole-suite conformance run is machine 2's (decisions 768, 769, 1002) — run one module by its path: cd conformance/modules/<m> && botopink run --target <t>${NC}" >&2
-            echo "  in: ${line:0:200}" >&2
-            return 1
-        fi
-        if grep -Eq -- '--stage +"?test-conformance|zig +build +([^;&|]* )?test-conformance' <<<"$line"; then
-            echo -e "${RED}✗ gate: the conformance stage is machine 2's (decisions 768, 769, 1002) — run one module by its path: cd conformance/modules/<m> && botopink run --target <t>${NC}" >&2
-            echo "  in: ${line:0:200}" >&2
-            return 1
-        fi
-        if grep -Eq 'cell check( +--jobs +[0-9]+)?( +"?[^ ]*conformance/?"?)( |;|$|\)|&|>|\|)' <<<"$line"; then
-            echo -e "${RED}✗ gate: a library's whole conformance check is machine 2's (decisions 768, 769) — the libraries keep it until L5${NC}" >&2
-            echo "  in: ${line:0:200}" >&2
-            return 1
-        fi
-        if grep -Eq '(^|[ ;&(/])scripts/gate\.sh( |;|$|\)|&|>|\|)' <<<"$line" \
-            && ! grep -Eq 'gate\.sh +(exec|status|check|run|tasks|libs)( |$)' <<<"$line" \
-            && ! grep -Eq 'gate\.sh[^;&|]*--(no-conformance|staged)' <<<"$line"; then
-            echo -e "${RED}✗ gate: a library's gate runs --no-conformance on machine-1 (decisions 768, 769)${NC}" >&2
-            echo "  in: ${line:0:200}" >&2
-            return 1
-        fi
-    done <<<"$text"
-    return 0
-}
-
 # cmdExec [--jobs <N>] <name> -- <command>… — run one command under the pool:
 # wait for a free job, hold the jobs granted while it runs, return its status.
 cmdExec() {
@@ -703,9 +648,6 @@ cmdExec() {
         esac
     done
     [ -n "$name" ] && [ "$#" -gt 0 ] || { echo "usage: scripts/gate.sh exec [--jobs <N>] <name> -- <command>…" >&2; return 1; }
-    if [ "$machine" = "machine-1" ]; then
-        execConformanceRefused "$@" || return 1
-    fi
     [ -n "$want" ] || { want=$(( $(poolCapacity) / 4 )); [ "$want" -ge 1 ] || want=1; }
     id="$$.exec"
     heavy=0
@@ -737,10 +679,6 @@ parseExtra() { # sets targets[] and extra[] from "$@"
             *) targets+=("$a") ;;
         esac
     done
-    if [ "$machine" = "machine-1" ]; then
-        local has=0; for a in ${extra[@]+"${extra[@]}"}; do [ "$a" = "--no-conformance" ] && has=1; done
-        [ "$has" -eq 1 ] || { extra+=("--no-conformance"); echo "gate: machine-1 — --no-conformance added (decisions 768, 769: conformance is machine 2's)"; }
-    fi
 }
 
 cmd="${1:-check}"
